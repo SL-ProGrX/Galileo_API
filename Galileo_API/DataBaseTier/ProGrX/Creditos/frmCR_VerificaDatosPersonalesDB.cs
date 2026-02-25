@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.Data.SqlClient;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -153,10 +154,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var lista = new List<DropDownListaGenericaModel>();
 
-                foreach (var r in rows)
+                foreach (var d in rows.Cast<IDictionary<string, object?>>())
                 {
-                    var d = (IDictionary<string, object?>)r;
-
                     var item = S(V(d, "item"));
                     if (string.IsNullOrWhiteSpace(item)) continue;
 
@@ -183,7 +182,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>> CR_VerificaDatos_Nombramientos_Lista_Obtener(int CodEmpresa, string identificacion, string parametros)
         {
-            return CR_VerificaDatos_Nombramientos_Listar_Core(CodEmpresa, identificacion, parametros, exportAll: false);
+            return CR_VerificaDatos_Nombramientos_Listar_Core(CodEmpresa, identificacion);
         }
         /// <summary>
         /// Guarda la información de una persona.
@@ -216,10 +215,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var pCodNacionalidad = (req.cod_nacionalidad ?? string.Empty).Trim();
             var pEstadoLaboral = (req.estado_laboral ?? string.Empty).Trim();
 
-            var pSexo = (req.sexo ?? string.Empty).Trim().ToUpperInvariant();
-
-            if (pSexo == "FEMENINO" || pSexo == "F") pSexo = "F";
-            else pSexo = "M";
+            var pSexoRaw = (req.sexo ?? string.Empty).Trim().ToUpperInvariant();
+            var pSexo = (pSexoRaw == "FEMENINO" || pSexoRaw == "F") ? "F" : "M";
 
             if (!TryParseFecha(req.fecha_nac, out var dtNac))
                 return DbHelper.ErrorResponse("Fecha de nacimiento inválida.", -2);
@@ -328,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Tipo = 1
                 });
 
-                if (req.guardar_direccion_trabajo)
+                if (req.guardar_direccion_trabajo == true)
                 {
                     var tProv = (req.tra_provincia ?? string.Empty).Trim();
                     var tCant = (req.tra_canton ?? string.Empty).Trim();
@@ -379,7 +376,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>> CR_VerificaDatos_Nombramientos_Lista_Export(int CodEmpresa, string identificacion, string parametros)
         {
-            return CR_VerificaDatos_Nombramientos_Listar_Core(CodEmpresa, identificacion, parametros, exportAll: true);
+            return CR_VerificaDatos_Nombramientos_Listar_Core(CodEmpresa, identificacion);
         }
         /// <summary>
         /// Obtiene el catálogo de Estado Laboral (AFI_ESTADO_LABORAL) para dropdown.
@@ -610,8 +607,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var pUsuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(pUsuarioSesion))
                 return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
-            if (!DateTime.TryParse(pAPartir, out var dt))
+            if (!DateTime.TryParseExact(
+                pAPartir,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var dt))
+            {
                 return DbHelper.ErrorResponse("A partir inválido.", -2);
+            }
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -669,7 +673,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var pUsuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(pUsuarioSesion))
                 return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
-            var tipoMov = req.asignar ? "A" : "E";
+            var tipoMov = req.asignar == true ? "A" : "E";
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -712,7 +716,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodEmpresa,
                     MODULO,
                     pUsuarioSesion,
-                    $"Créditos > Verifica Datos Personales > {pTipo} => {(req.asignar ? "Asignar" : "Eliminar")} (ID {pId}, Item {pCodItem})"
+                    $"Créditos > Verifica Datos Personales > {pTipo} => {(req.asignar == true ? "Asignar" : "Eliminar")} (ID {pId}, Item {pCodItem})"
                 );
 
                 return DbHelper.OkResponse("Proceso concluido satisfactoriamente!");
@@ -722,7 +726,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-        private ErrorDto<CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>> CR_VerificaDatos_Nombramientos_Listar_Core(int CodEmpresa,string identificacion,string parametros,bool exportAll)
+        private ErrorDto<CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>> CR_VerificaDatos_Nombramientos_Listar_Core(int CodEmpresa,string identificacion)
         {
             if (string.IsNullOrWhiteSpace(identificacion))
                 return DbHelper.CreateErrorResponse<CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>>(IDENTIFICACION_INVALIDA, -2);
@@ -742,9 +746,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var lista = new List<CrVerificaDatosNombramientoItem>();
 
-                foreach (var r in rows)
+                foreach (var d in rows.Cast<IDictionary<string, object?>>())
                 {
-                    var d = (IDictionary<string, object?>)r;
                     lista.Add(new CrVerificaDatosNombramientoItem
                     {
                         estado = S(V(d, "EstadoLaboralDesc", "ESTADOLABORALDESC")),
@@ -801,10 +804,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var lista = new List<CrVerificaDatosChecklistItem>();
 
-            foreach (var r in rows)
+            foreach (var d in rows.Cast<IDictionary<string, object?>>())
             {
-                var d = (IDictionary<string, object?>)r;
-
                 lista.Add(new CrVerificaDatosChecklistItem
                 {
                     cod_item = S(V(d, keyField)),
@@ -828,15 +829,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
         private static object? V(IDictionary<string, object?> d, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                foreach (var kv in d)
-                {
-                    if (string.Equals(kv.Key, k, StringComparison.OrdinalIgnoreCase))
-                        return kv.Value;
-                }
-            }
-            return null;
+            return keys
+                .SelectMany(k => d
+                    .Where(kv => string.Equals(kv.Key, k, StringComparison.OrdinalIgnoreCase)))
+                .Select(kv => kv.Value)
+                .FirstOrDefault();
         }
         private static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
         private static int ToInt(object? v)

@@ -73,7 +73,7 @@
         public string? identificacion { get; set; }
         public string? estado { get; set; }
         public string? a_partir { get; set; }
-        public int caps { get; set; }
+        public int? caps { get; set; }
         public string? usuario_sesion { get; set; }
     }
 
@@ -81,7 +81,7 @@
     {
         public string? identificacion { get; set; }
         public string? cod_item { get; set; } 
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public string? usuario_sesion { get; set; }
         public string? tipo { get; set; }
     }
@@ -144,7 +144,7 @@
 
         public string? usuario_sesion { get; set; }
 
-        public bool guardar_direccion_trabajo { get; set; }
+        public bool? guardar_direccion_trabajo { get; set; }
         public string? tra_provincia { get; set; }
         public string? tra_canton { get; set; }
         public string? tra_distrito { get; set; }
