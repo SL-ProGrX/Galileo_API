@@ -57,7 +57,7 @@
 
     public class CrPolProcPrevistaConciliaConsultaRequest
     {
-        public DateTime corte { get; set; }
+        public DateTime? corte { get; set; }
         public string cod_poliza { get; set; } = string.Empty;
     }
 
