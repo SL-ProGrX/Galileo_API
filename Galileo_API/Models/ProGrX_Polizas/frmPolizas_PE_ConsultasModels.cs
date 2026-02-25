@@ -4,8 +4,8 @@
     {
         public class PolizasPeConsultasBuscarRequestDto
         {
-            public bool SoloVencida { get; set; }                 // chkVencida
-            public bool FiltrarVenceCobertura { get; set; }       // chkVenceCobertura
+            public bool? SoloVencida { get; set; }                 // chkVencida
+            public bool? FiltrarVenceCobertura { get; set; }       // chkVenceCobertura
             public DateTime? VenceInicio { get; set; }            // dtpVenceInicio
             public DateTime? VenceCorte { get; set; }             // dtpVenceCorte
             public int? PresentacionId { get; set; }              // cboPresentacion (null = TODOS)
@@ -42,7 +42,7 @@
 
         public class PolizasPeConsultasDto
         { 
-            public long PrendaId { get; set; }
+            public long? PrendaId { get; set; }
             public string? CodPreanalisis { get; set; }
             public string? IdSolicitud { get; set; }
             public string? Cedula { get; set; }
