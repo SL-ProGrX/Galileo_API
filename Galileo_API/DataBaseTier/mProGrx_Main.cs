@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
 using System.Linq;
+using System.ServiceModel.Channels;
 using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
@@ -894,6 +895,10 @@ namespace Galileo.DataBaseTier
                     globales.GOficinaCentroCosto = oficina.Cod_Centro_Costo;
                 }
 
+
+                globales.fxFechaServidor = fxFechaServidor(codEmpresa, 0);
+
+
                 return DbHelper.CreateOkResponse(globales);
             }
             catch (Exception)
@@ -904,7 +909,25 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        
+        public DateTime fxFechaServidor(int codEmpresa, int pConection)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            string strSQL = "";
+            switch (pConection)
+            {
+                case 0:
+                case 2:
+                    strSQL = "Select dbo.MyGetdate() as Fecha";
+                    break;
+                case 1:
+                    strSQL = "Select Getdate() as Fecha";
+                    break;
+            }
+
+            using var connection = new SqlConnection(stringConn);
+
+            return connection.Query<DateTime>(strSQL).FirstOrDefault();
+        }
 
     }
 
