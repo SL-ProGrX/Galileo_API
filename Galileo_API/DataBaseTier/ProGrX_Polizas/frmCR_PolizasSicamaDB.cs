@@ -261,14 +261,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             var row = conn.Execute(sql, parametros);
 
-            if (row > 0)
-            {
-                return DbHelper.OkResponse("Datos subidos correctamente.");
-            }
-            else
-            {
-                return DbHelper.ErrorResponse("No se pudo subir la información.");
-            }
+            return row > 0
+                ? DbHelper.OkResponse("Datos subidos correctamente.")
+                : DbHelper.ErrorResponse("No se pudo subir la información.");
         }
 
         public ErrorDto<List<CrFndPlanillaDirectaConsultaRowDto>>
