@@ -152,5 +152,7 @@
         public bool SysASEVersion { get; set; } = false;
 
         public string GAppRuta { get; set; } = string.Empty;
+
+        public DateTime? fxFechaServidor { get; set; }
     }
 }
