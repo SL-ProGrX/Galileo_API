@@ -29,4 +29,36 @@
         public string? factura { get; set; }
         public string? concilia_tipo { get; set; }
     }
+
+    public class CrPolProcPrevistaDetalleLineaModel
+    {
+        public int linea { get; set; } = 0;               // pLinea
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string n_poliza { get; set; } = string.Empty;
+        public decimal monto_asegurado { get; set; } = 0;  // pMonto
+        public decimal prima { get; set; } = 0;           // pPrima
+        public long operacion { get; set; } = 0;          // pOperacion
+    }
+
+    public class CrPolProcPrevistaDetalleAddRequest
+    {
+        public string cod_poliza { get; set; } = string.Empty;   // pPoliza (VB)
+        public DateTime? corte { get; set; }                      // pCorte
+        public string factura { get; set; } = string.Empty;      // txtR_Factura
+        public List<CrPolProcPrevistaDetalleLineaModel> lineas { get; set; } = new();
+    }
+
+    public class CrPolProcPrevistaDetalleEliminarRequest
+    {
+        public List<long> id_registros { get; set; } = new();
+        public string motivo { get; set; } = "Poliza Descartada por Cancelacion";
+    }
+
+    public class CrPolProcPrevistaConciliaConsultaRequest
+    {
+        public DateTime? corte { get; set; }
+        public string cod_poliza { get; set; } = string.Empty;
+    }
+
 }
