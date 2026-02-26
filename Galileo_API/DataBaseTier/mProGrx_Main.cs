@@ -920,7 +920,6 @@ namespace Galileo.DataBaseTier
                     strSQL = "Select dbo.MyGetdate() as Fecha";
                     break;
                 case 1:
-                default:
                     strSQL = "Select Getdate() as Fecha";
                     break;
             }
