@@ -9,8 +9,10 @@ namespace Galileo_API.DataBaseTier
     public class MCobroDb
     {
         private readonly PortalDB _portalDB;
+        private readonly IConfiguration _config;
         public MCobroDb(IConfiguration config)
         {
+            _config = config;
             _portalDB = new PortalDB(config);
         }
 
@@ -56,6 +58,10 @@ namespace Galileo_API.DataBaseTier
 
             return Math.Round(curCuota, 2); 
 
+        }
+        public DateTime fxFechaCalculo(int codEmpresa, string? pLinea = "", decimal pPriDeduc = 0, int pDiaPago = 32)
+        {
+            return new MSeguimientoDB(_config).fxFechaCalculo(codEmpresa, pLinea, pPriDeduc, pDiaPago);
         }
 
     }
