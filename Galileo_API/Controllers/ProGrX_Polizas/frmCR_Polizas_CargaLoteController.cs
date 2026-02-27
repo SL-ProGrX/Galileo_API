@@ -60,5 +60,19 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.CrdPolizasCargaLote_Cargar(codEmpresa, usuario, request);
         }
 
+        [HttpGet("CrdPolizasCargaLote_Obtener")]
+        public ErrorDto CrdPolizasCargaLote_Obtener(int CodEmpresa, string cedula)
+        {
+            return _BL.CrdPolizasCargaLote_Obtener(CodEmpresa, cedula);
+        }
+
+        [HttpPost("CrdPolizasCargaLote_Procesar")]
+        public ErrorDto<long> CrdPolizasCargaLote_Procesar(
+             int codEmpresa,
+             string usuario,
+             CrdPolizasCargaLoteProcesarRequest request)
+        {
+            return _BL.CrdPolizasCargaLote_Procesar(codEmpresa, usuario, request);
+        }
     }
 }
