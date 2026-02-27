@@ -9,16 +9,16 @@
 
     public class CntXEfPersonalSaveParams
     {
-        public int CodContabilidad { get; set; }
+        public required int CodContabilidad { get; set; }
         public string CodEf { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public string RegistroUsuario { get; set; } = string.Empty;
     }
 
     public class CntXEfPersonalDeleteParams
     {
-        public int CodContabilidad { get; set; }
+        public required int CodContabilidad { get; set; }
         public string CodEf { get; set; } = string.Empty;
     }
 
