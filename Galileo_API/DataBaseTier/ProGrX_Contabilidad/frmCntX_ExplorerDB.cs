@@ -6,6 +6,7 @@ using Galileo.Models.INV;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
@@ -487,6 +488,162 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT tipo_asiento AS item,
+                             descripcion   AS descripcion
+                      FROM CntX_Tipos_Asientos
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      ORDER BY tipo_asiento",
+                    new { cod_contabilidad }).ToList();
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+
+
+        #region F4 Unidad
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Unidades_Buscar(int codEmpresa, int cod_contabilidad)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT cod_unidad AS item,
+                             descripcion AS descripcion
+                      FROM CntX_Unidades
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      ORDER BY cod_unidad",
+                    new { cod_contabilidad }).ToList();
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        #endregion
+
+
+        #region F4 Centro Costo
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_CentroCosto_Buscar(int codEmpresa, int cod_contabilidad)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT cod_centro_costo AS item,
+                             descripcion       AS descripcion
+                      FROM CntX_Centro_Costos
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      ORDER BY cod_centro_costo",
+                    new { cod_contabilidad }).ToList();
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        #endregion
+
+
+        #region F4 Divisa
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT cod_divisa AS item,
+                             descripcion AS descripcion
+                      FROM CntX_Divisas
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      ORDER BY cod_divisa",
+                    new { cod_contabilidad }).ToList();
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        #endregion
+
+        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa,int cod_contabilidad,int anio,int mes)
+        {
+            var response = new ErrorDto<List<CntxAsientoResumenDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa)
+                );
+
+                var result = cn.Query<CntxAsientoResumenDto>(
+                    "spCntx_Consulta_Asientos_Rsm",
+                    new
+                    {
+                        Contabilidad = cod_contabilidad,
+                        Anio = anio,
+                        Mes = mes
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
 
 
     }

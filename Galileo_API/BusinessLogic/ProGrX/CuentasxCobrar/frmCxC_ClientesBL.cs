@@ -115,5 +115,25 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxcCuentasBancarias(codEmpresa, cedula);
         }
+
+        public ErrorDto<List<CxcPersonaAutorizadoDto>> CxcPersonasAutorizados(int codEmpresa, string cedula)
+        {
+            return _db.CxcPersonasAutorizados(codEmpresa, cedula);
+        }
+
+        public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, CxcPersonaAutorizadorSaveParams param)
+        {
+            return _db.CxcPersonaAutorizador_Guardar(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonasAutorizadoras_Lista(int codEmpresa, short rolAutorizador, string orden)
+        {
+            return _db.CxcPersonasAutorizadoras_Lista(codEmpresa, rolAutorizador, orden);
+        }
+
+        public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, CxcPersonaIdCambioParams param)
+        {
+            return _db.CxcPersona_IdCambio(codEmpresa, param);
+        }
     }
 }
