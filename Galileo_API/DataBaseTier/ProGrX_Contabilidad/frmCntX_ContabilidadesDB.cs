@@ -25,6 +25,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _Bitacora = dbBitacora;
         }
 
+        /// <summary>
+        /// Obtiene la información de una contabilidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<CntXContabilidadData?> CntXContabilidad_Obtener(int codEmpresa, int codConta)
         {
             const string sql = @"exec spCntX_Contabilidad_Consulta @codConta;";
@@ -38,6 +44,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de contabilidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXContabilidades_Lista_Obtener(int codEmpresa)
         {
             const string query = @"select COD_CONTABILIDAD as item, nombre as descripcion from cntX_contabilidades";
@@ -45,6 +56,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Navegacion por scroll en la lista de contabilidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="scrollCode"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<CntXContabilidadData?> CntXContabilidad_Scroll_Obtener(int codEmpresa, int scrollCode, int codConta)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -72,6 +90,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtiene lista de consolida base
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownConsolidaListaData>> CntXContabilidad_ConsolidaBaseList_Obtener(int codEmpresa, int codConta)
         {
             const string sql = @"exec spCntX_Consolida_Base_List @codConta;";
@@ -84,6 +108,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene lista de consolida unidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownConsolidaListaData>> CntXContabilidad_ConsolidaUnidadesList_Obtener(int codEmpresa, int codConta)
         {
             const string sql = @"exec spCntX_Consolida_Unidades_List @codConta;";
@@ -96,6 +126,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Guarda la informacion de una contabilidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="edita"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXContabilidades_Guardar(int codEmpresa, string usuario, bool edita, CntXContabilidadData request)
         {
             if (!edita)
@@ -115,9 +153,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (resp.Code < 0)
                 return resp;
 
-            return new ErrorDto { Code = 0, Description = "Información guardada satisfactoriamente..." };
+            return new ErrorDto { Code = resp.Code, Description = "Informacion guardada satisfactoriamente..." };
         }
 
+        /// <summary>
+        /// Elimina una contabilidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto CntXContabilidades_Eliminar(int codEmpresa, int codConta, string usuario)
         {
             const string sqlDelete = @"delete CntX_Contabilidades where cod_contabilidad = @CodConta;";
@@ -188,6 +233,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return resp;
 
             RegistrarBitacora(codEmpresa, usuario, "Modifica - WEB", $"Contabilidad : {request.cod_contabilidad}");
+            resp.Code = request.cod_contabilidad;
             return resp;
         }
 
@@ -229,6 +275,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     return respPred;
             }
 
+            resp.Code = request.cod_contabilidad;
             return resp;
         }
 
