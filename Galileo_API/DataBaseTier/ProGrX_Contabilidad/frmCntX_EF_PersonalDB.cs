@@ -54,6 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Guarda (inserta o actualiza) un registro de personal de EF contable.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="registroUsuario">Usuario que realiza la operación.</param>
         /// <param name="param">Parámetros del registro.</param>
         /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfPersonal_Guardar(int codEmpresa, string registroUsuario, CntXEfPersonalSaveParams param)
@@ -145,6 +146,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Elimina un registro de personal de EF contable.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="registroUsuario">Usuario que realiza la operación.</param>
         /// <param name="param">Parámetros de eliminación.</param>
         /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfPersonal_Eliminar(int codEmpresa, string registroUsuario, CntXEfPersonalDeleteParams param)
@@ -195,6 +197,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXEfSeccionDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf });
         }
 
+        /// <summary>
+        /// Guarda (inserta o actualiza) una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la sección.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfSeccion_Guardar(int codEmpresa, CntXEfSeccionSaveParams param)
         {
             // Verifica existencia
@@ -265,6 +273,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Elimina una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de eliminación de la sección.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfSeccion_Eliminar(int codEmpresa, CntXEfSeccionDeleteParams param)
         {
             var sql = @"DELETE FROM CNTX_EF_SECCIONES WHERE ITEM_ID = @ItemId AND COD_EF = @CodEf AND COD_CONTABILIDAD = @CodContabilidad";
@@ -285,6 +299,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return result;
         }
 
+        /// <summary>
+        /// Obtiene la lista simple de secciones (items) de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContabilidad">Código de contabilidad.</param>
+        /// <param name="codEf">Código de EF.</param>
+        /// <returns>Lista simple de secciones.</returns>
         public ErrorDto<List<CntXEfSeccionSimpleDto>> CntXEfSeccionesItems_Lista(int codEmpresa, int codContabilidad, string codEf)
         {
             var sql = @"
@@ -299,6 +320,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXEfSeccionSimpleDto>(_portalDb, codEmpresa, sql, new { codEf, codContabilidad });
         }
 
+        /// <summary>
+        /// Obtiene la lista de cuentas disponibles para asignar a una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de filtro de cuentas.</param>
+        /// <returns>Lista de cuentas disponibles.</returns>
         public ErrorDto<List<CntXCuentaDto>> CntXEfCuentasDisponibles_Lista(int codEmpresa, CntXCuentaFiltroParams param)
         {
             var sql = @"
@@ -345,6 +372,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXCuentaDto>(_portalDb, codEmpresa, sql, parametros);
         }
 
+        /// <summary>
+        /// Obtiene la lista de cuentas asignadas a una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContabilidad">Código de contabilidad.</param>
+        /// <param name="codEf">Código de EF.</param>
+        /// <param name="itemId">Identificador del item/sección.</param>
+        /// <returns>Lista de cuentas asignadas.</returns>
         public ErrorDto<List<CntXCuentaAsignadaDto>> CntXEfCuentasAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
         {
             var sql = @"
@@ -366,6 +401,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXCuentaAsignadaDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf, itemId });
         }
 
+        /// <summary>
+        /// Obtiene la lista de funciones (FX) asignadas a una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContabilidad">Código de contabilidad.</param>
+        /// <param name="codEf">Código de EF.</param>
+        /// <param name="itemId">Identificador del item/sección.</param>
+        /// <returns>Lista de funciones asignadas.</returns>
         public ErrorDto<List<CntXFxAsignadaDto>> CntXEfFuncionesAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
         {
             var sql = @"
@@ -384,6 +427,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXFxAsignadaDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf, itemId });
         }
 
+        /// <summary>
+        /// Procesa la asignación o eliminación de una cuenta a una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la operación de cuenta.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfCuenta_Proc(int codEmpresa, CntXEfCuentaProcParams param)
         {
             var sql = "spCntX_EF_Cuentas";
@@ -410,6 +459,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.CreateOkResponse(true);
         }
 
+        /// <summary>
+        /// Procesa la asignación o eliminación de una función (FX) a una sección de EF personalizado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la operación de función.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfFx_Proc(int codEmpresa, CntXEfFxProcParams param)
         {
             var sql = "spCntX_EF_Fxs";
@@ -436,6 +491,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.CreateOkResponse(true);
         }
 
+        /// <summary>
+        /// Procesa los resultados de EF personalizado para un periodo y tipo específico.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros del proceso.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXEfProcesa(int codEmpresa, CntXEfProcesaParams param)
         {
             var sql = "spCntX_EF_Procesa";
