@@ -58,8 +58,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         /// <summary>
-        /// Llena combo de Bancos (VB6: cboBanco) ejecutando spCrd_SGT_Bancos.
+        /// Metodo para obtener bancos
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrdPolizasCargaLote_Banco_Obtener(int CodEmpresa, string usuario)
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>

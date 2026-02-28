@@ -117,5 +117,18 @@
             public string? usuario { get; set; }
         }
 
+        public class CntxAsientoResumenDto
+        {
+            public string tipo_asiento { get; set; } = string.Empty;
+            public string descripcion { get; set; } = string.Empty;
+            public int movimientos { get; set; }
+            public decimal debitos { get; set; }
+            public decimal creditos { get; set; }
+            public int asientos_total { get; set; }
+            public int asientos_aplicados { get; set; }
+            public int asientos_pendientes { get; set; }
+            public int asientos_desbalanceados { get; set; }
+        }
+
     }
 }
