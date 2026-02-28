@@ -76,36 +76,36 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
 
         [HttpGet("AsientosTreePorTipo")]
-        public ActionResult<ErrorDto<List<CntxAsientoTreeDto>>>AsientosTreePorTipo(int codEmpresa,int cod_contabilidad,string tipo,int anio,int mes)
+        public ActionResult<ErrorDto<List<CntxAsientoTreeDto>>> AsientosTreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
         {
-            var result = _bl.AsientosTreePorTipo(codEmpresa,cod_contabilidad,tipo,anio,mes);
+            var result = _bl.AsientosTreePorTipo(codEmpresa, cod_contabilidad, tipo, anio, mes);
 
             return Ok(result);
         }
 
         [HttpGet("TiposCuenta")]
-        public ErrorDto<List<CntxTipoCuentaDto>> TiposCuenta(int codEmpresa,int cod_contabilidad)
+        public ErrorDto<List<CntxTipoCuentaDto>> TiposCuenta(int codEmpresa, int cod_contabilidad)
         {
             return _bl.Cntx_TiposCuenta_Obtener(codEmpresa, cod_contabilidad);
         }
 
         [HttpGet("CuentasRaizPorTipo")]
-        public ErrorDto<List<CntxCuentaDto>> CuentasRaizPorTipo( int codEmpresa,int cod_contabilidad,string tipoCuenta)
+        public ErrorDto<List<CntxCuentaDto>> CuentasRaizPorTipo(int codEmpresa, int cod_contabilidad, string tipoCuenta)
         {
             return _bl.Cntx_CuentasRaizPorTipo_Obtener(
                 codEmpresa,
                 cod_contabilidad,
                 tipoCuenta);
         }
-       
+
 
         // ============================================
         // OBTENER DIFERIDOS
         // ============================================
         [HttpGet("diferidos")]
-        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> Diferidos(int codEmpresa,int codContabilidad)
+        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> Diferidos(int codEmpresa, int codContabilidad)
         {
-            var result = _bl.Diferidos_Obtener(codEmpresa,codContabilidad);
+            var result = _bl.Diferidos_Obtener(codEmpresa, codContabilidad);
 
             return Ok(result);
         }
@@ -114,9 +114,9 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         // OBTENER PLANTILLAS POR DIFERIDO
         // ============================================
         [HttpGet("diferidos/plantillas")]
-        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> Plantillas(int codEmpresa,int codContabilidad,int codDiferido)
+        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> Plantillas(int codEmpresa, int codContabilidad, int codDiferido)
         {
-            var result = _bl.DiferidoPlantillas_Obtener(codEmpresa,codContabilidad,codDiferido);
+            var result = _bl.DiferidoPlantillas_Obtener(codEmpresa, codContabilidad, codDiferido);
 
             return Ok(result);
         }
@@ -125,7 +125,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         // OBTENER HISTÓRICO DE DIFERIDO
         // ============================================
         [HttpGet("diferidos/historico")]
-        public ActionResult<ErrorDto<List<CntxDiferidoHistoricoDto>>> Historico(int codEmpresa,int codContabilidad,int codDiferido,int codPlantilla)
+        public ActionResult<ErrorDto<List<CntxDiferidoHistoricoDto>>> Historico(int codEmpresa, int codContabilidad, int codDiferido, int codPlantilla)
         {
             var result = _bl.DiferidoHistorico_Obtener(
                 codEmpresa,
@@ -135,5 +135,31 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
             return Ok(result);
         }
+
+
+        [HttpGet("TiposAsientos_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
+          => _bl.Cntx_TiposAsientos_Buscar(codEmpresa, cod_contabilidad);
+
+        [HttpGet("Unidades_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Buscar(int codEmpresa, int cod_contabilidad)
+            => _bl.Cntx_Unidades_Buscar(codEmpresa, cod_contabilidad);
+
+        [HttpGet("CentroCosto_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Buscar(int codEmpresa, int cod_contabilidad)
+            => _bl.Cntx_CentroCosto_Buscar(codEmpresa, cod_contabilidad);
+
+        [HttpGet("Divisas_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Buscar(int codEmpresa, int cod_contabilidad)
+            => _bl.Cntx_Divisas_Buscar(codEmpresa, cod_contabilidad);
+
+
+        [HttpGet("Asientos_Resumen")]
+        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa,int cod_contabilidad,int anio,int mes)
+        {
+            return _bl.Asientos_Resumen(codEmpresa,cod_contabilidad,anio,mes
+            );
+        }
+
     }
 }
