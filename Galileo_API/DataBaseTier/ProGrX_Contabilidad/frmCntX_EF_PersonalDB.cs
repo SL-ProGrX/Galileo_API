@@ -12,6 +12,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _dbBitacora;
         private const int vModulo = 20;
+        private const string registra = "Registra - WEB";
+        private const string modifica = "Modifica - WEB";
+        private const string elimina = "Elimina - WEB";
 
         public FrmCntXEfPersonalDB(IConfiguration config)
         {
@@ -59,7 +62,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             var sqlExist = @"SELECT COUNT(1) FROM CNTX_EF_PERSONAL WHERE COD_EF = @CodEf AND COD_CONTABILIDAD = @CodContabilidad";
             var existe = DbHelper.ExecuteSingleQuery<int>(
                 _portalDb, codEmpresa, sqlExist, default,
-                new { CodEf = param.CodEf, CodContabilidad = param.CodContabilidad }
+                new {param.CodEf, param.CodContabilidad }
             ).Result;
 
             if (existe == 0)
@@ -101,7 +104,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         codEmpresa,
                         registroUsuario,
                         $"EF Personalizados: {param.CodEf} - {param.Descripcion}",
-                        "Registra - WEB"
+                        registra
                     );
 
                 return result;
@@ -131,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         codEmpresa,
                         registroUsuario,
                         $"EF Personalizados: {param.CodEf} - {param.Descripcion}",
-                        "Modifica - WEB"
+                        modifica
                     );
 
                 return result;
@@ -162,7 +165,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     codEmpresa,
                     registroUsuario,
                     $"EF Personalizados: {param.CodEf}",
-                    "Elimina - WEB"
+                    elimina
                 );
 
             return result;
@@ -190,6 +193,275 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                   and cod_EF = @codEf
                 order by ITEM_ID, ITEM_ID_MADRE, PRIORIDAD";
             return DbHelper.ExecuteListQuery<CntXEfSeccionDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf });
+        }
+
+        public ErrorDto<bool> CntXEfSeccion_Guardar(int codEmpresa, CntXEfSeccionSaveParams param)
+        {
+            // Verifica existencia
+            var sqlExist = @"SELECT COUNT(1) FROM CNTX_EF_SECCIONES WHERE ITEM_ID = @ItemId AND COD_EF = @CodEf AND COD_CONTABILIDAD = @CodContabilidad";
+            var existe = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb, codEmpresa, sqlExist, default,
+                new { param.ItemId, param.CodEf, param.CodContabilidad }
+            ).Result;
+
+            if (existe == 0)
+            {
+                var sqlInsert = @"
+            INSERT INTO CNTX_EF_SECCIONES
+            (
+                COD_EF, COD_CONTABILIDAD, ITEM_ID, ITEM_ID_MADRE, PRIORIDAD, ES_TITULO, TOTALES, DESCRIPCION,
+                REGISTRO_USUARIO, REGISTRO_FECHA
+            )
+            VALUES
+            (
+                @CodEf, @CodContabilidad, @ItemId, @ItemIdMadre, @Prioridad, @EsTitulo, @Totales, @Descripcion,
+                @RegistroUsuario, dbo.Mygetdate()
+            )";
+                var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                {
+                    var rows = conn.Execute(sqlInsert, param);
+                    return rows > 0;
+                });
+
+                if (result.Code == 0)
+                    RegistrarBitacora(
+                        codEmpresa,
+                        param.RegistroUsuario,
+                        $"EF Sección Insertada: {param.ItemId} - {param.Descripcion}",
+                        registra
+                    );
+
+                return result;
+            }
+            else
+            {
+                var sqlUpdate = @"
+            UPDATE CNTX_EF_SECCIONES
+            SET
+                ITEM_ID_MADRE = @ItemIdMadre,
+                PRIORIDAD = @Prioridad,
+                ES_TITULO = @EsTitulo,
+                TOTALES = @Totales,
+                DESCRIPCION = @Descripcion
+            WHERE
+                ITEM_ID = @ItemId
+                AND COD_EF = @CodEf
+                AND COD_CONTABILIDAD = @CodContabilidad";
+                var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                {
+                    var rows = conn.Execute(sqlUpdate, param);
+                    return rows > 0;
+                });
+
+                if (result.Code == 0)
+                    RegistrarBitacora(
+                        codEmpresa,
+                        param.RegistroUsuario,
+                        $"EF Sección Modificada: {param.ItemId} - {param.Descripcion}",
+                        modifica
+                    );
+
+                return result;
+            }
+        }
+
+        public ErrorDto<bool> CntXEfSeccion_Eliminar(int codEmpresa, CntXEfSeccionDeleteParams param)
+        {
+            var sql = @"DELETE FROM CNTX_EF_SECCIONES WHERE ITEM_ID = @ItemId AND COD_EF = @CodEf AND COD_CONTABILIDAD = @CodContabilidad";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+
+            if (result.Code == 0)
+                RegistrarBitacora(
+                    codEmpresa,
+                    param.RegistroUsuario,
+                    $"EF Sección Eliminada: {param.ItemId}",
+                    elimina
+                );
+
+            return result;
+        }
+
+        public ErrorDto<List<CntXEfSeccionSimpleDto>> CntXEfSeccionesItems_Lista(int codEmpresa, int codContabilidad, string codEf)
+        {
+            var sql = @"
+                select 
+                    ITEM_ID as ItemId,
+                    DESCRIPCION
+                from CNTX_EF_SECCIONES
+                where ES_TITULO = 0
+                  and COD_EF = @codEf
+                  and COD_CONTABILIDAD = @codContabilidad
+                order by ITEM_ID_MADRE, PRIORIDAD, ITEM_ID";
+            return DbHelper.ExecuteListQuery<CntXEfSeccionSimpleDto>(_portalDb, codEmpresa, sql, new { codEf, codContabilidad });
+        }
+
+        public ErrorDto<List<CntXCuentaDto>> CntXEfCuentasDisponibles_Lista(int codEmpresa, CntXCuentaFiltroParams param)
+        {
+            var sql = @"
+                select 
+                    Cta.COD_CUENTA as CodCuenta,
+                    Cta.COD_CUENTA_MASK as CodCuentaMask,
+                    Cta.DESCRIPCION,
+                    Cta.COD_DIVISA as CodDivisa,
+                    Cta.ACEPTA_MOVIMIENTOS as AceptaMovimientos
+                from CntX_Cuentas Cta
+                where Cta.COD_CONTABILIDAD = @CodContabilidad
+                  and Cta.COD_CUENTA NOT IN (
+                        select R.Cuenta
+                        from CntX_EF_Cuentas Efc
+                        cross apply dbo.fxCntX_CuentasCascada_Down(Efc.cod_contabilidad, Efc.cod_Cuenta) R
+                        where Efc.COD_CONTABILIDAD = @CodContabilidad
+                          and Efc.COD_EF = @CodEf
+                          and Efc.ITEM_ID = @ItemId
+                  )
+            ";
+
+            // Lógica de rango
+            if (!string.IsNullOrWhiteSpace(param.CuentaInicio) && !string.IsNullOrWhiteSpace(param.CuentaFin))
+            {
+                sql += " and Cta.COD_CUENTA BETWEEN @CuentaInicio AND @CuentaFin";
+            }
+            else if (!string.IsNullOrWhiteSpace(param.CuentaInicio))
+            {
+                sql += " and Cta.COD_CUENTA_MASK like @CuentaInicioMask";
+            }
+
+            sql += " order by Cta.COD_CUENTA";
+
+            var parametros = new
+            {
+                param.CodContabilidad,
+                param.CodEf,
+                param.ItemId,
+                param.CuentaInicio,
+                param.CuentaFin,
+                CuentaInicioMask = param.CuentaInicio + "%"
+            };
+
+            return DbHelper.ExecuteListQuery<CntXCuentaDto>(_portalDb, codEmpresa, sql, parametros);
+        }
+
+        public ErrorDto<List<CntXCuentaAsignadaDto>> CntXEfCuentasAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
+        {
+            var sql = @"
+                select 
+                    Cta.COD_CUENTA as CodCuenta,
+                    Cta.COD_CUENTA_MASK as CodCuentaMask,
+                    Cta.DESCRIPCION,
+                    Cta.COD_DIVISA as CodDivisa,
+                    Cta.ACEPTA_MOVIMIENTOS as AceptaMovimientos,
+                    case when isnull(Efc.COD_CUENTA,'') = '' then 0 else 1 end as Asignado
+                from CntX_Cuentas Cta
+                inner join CntX_EF_Cuentas Efc
+                    on Cta.COD_CONTABILIDAD = Efc.COD_CONTABILIDAD
+                    and Cta.COD_CUENTA = Efc.COD_CUENTA
+                    and Efc.COD_EF = @codEf
+                    and Efc.ITEM_ID = @itemId
+                where Cta.COD_CONTABILIDAD = @codContabilidad
+                order by Cta.COD_CUENTA";
+            return DbHelper.ExecuteListQuery<CntXCuentaAsignadaDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf, itemId });
+        }
+
+        public ErrorDto<List<CntXFxAsignadaDto>> CntXEfFuncionesAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
+        {
+            var sql = @"
+                select 
+                    Cta.COD_FX as CodFx,
+                    Cta.FX_NAME as FxName,
+                    case when isnull(Efc.COD_FX,'') = '' then 0 else 1 end as Asignado
+                from CNTX_EF_FUNCIONES Cta
+                left join CNTX_EF_FX Efc
+                    on Cta.COD_CONTABILIDAD = Efc.COD_CONTABILIDAD
+                    and Cta.COD_FX = Efc.COD_FX
+                    and Efc.COD_EF = @codEf
+                    and Efc.ITEM_ID = @itemId
+                where Cta.COD_CONTABILIDAD = @codContabilidad
+                order by Cta.COD_FX";
+            return DbHelper.ExecuteListQuery<CntXFxAsignadaDto>(_portalDb, codEmpresa, sql, new { codContabilidad, codEf, itemId });
+        }
+
+        public ErrorDto<bool> CntXEfCuenta_Proc(int codEmpresa, CntXEfCuentaProcParams param)
+        {
+            var sql = "spCntX_EF_Cuentas";
+            var dapperParams = new DynamicParameters();
+            dapperParams.Add("@Contabilidad", param.CodContabilidad);
+            dapperParams.Add("@CodEF", param.CodEf);
+            dapperParams.Add("@ItemId", param.ItemId);
+            dapperParams.Add("@Cuenta", param.Cuenta);
+            dapperParams.Add("@Usuario", param.RegistroUsuario);
+            dapperParams.Add("@Mov", param.Movimiento);
+
+            DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sql, dapperParams, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            // Bitácora
+            if (param.Movimiento == 'A')
+                RegistrarBitacora(codEmpresa, param.RegistroUsuario, $"Cuenta asignada: {param.Cuenta} a EF:{param.CodEf} Item:{param.ItemId}", "Registra - WEB");
+            else if (param.Movimiento == 'E')
+                RegistrarBitacora(codEmpresa, param.RegistroUsuario, $"Cuenta eliminada: {param.Cuenta} de EF:{param.CodEf} Item:{param.ItemId}", "Elimina - WEB");
+
+            return DbHelper.CreateOkResponse(true);
+        }
+
+        public ErrorDto<bool> CntXEfFx_Proc(int codEmpresa, CntXEfFxProcParams param)
+        {
+            var sql = "spCntX_EF_Fxs";
+            var dapperParams = new DynamicParameters();
+            dapperParams.Add("@Contabilidad", param.CodContabilidad);
+            dapperParams.Add("@CodEF", param.CodEf);
+            dapperParams.Add("@ItemId", param.ItemId);
+            dapperParams.Add("@Cod_Fx", param.CodFx);
+            dapperParams.Add("@Usuario", param.RegistroUsuario);
+            dapperParams.Add("@Mov", param.Movimiento);
+
+            DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sql, dapperParams, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            // Bitácora
+            if (param.Movimiento == 'A')
+                RegistrarBitacora(codEmpresa, param.RegistroUsuario, $"FX asignada: {param.CodFx} a EF:{param.CodEf} Item:{param.ItemId}", "Registra - WEB");
+            else if (param.Movimiento == 'E')
+                RegistrarBitacora(codEmpresa, param.RegistroUsuario, $"FX eliminada: {param.CodFx} de EF:{param.CodEf} Item:{param.ItemId}", "Elimina - WEB");
+
+            return DbHelper.CreateOkResponse(true);
+        }
+
+        public ErrorDto<bool> CntXEfProcesa(int codEmpresa, CntXEfProcesaParams param)
+        {
+            var sql = "spCntX_EF_Procesa";
+            var dapperParams = new DynamicParameters();
+            dapperParams.Add("@Contabilidad", param.CodContabilidad);
+            dapperParams.Add("@CodEF", param.CodEf);
+            dapperParams.Add("@Anio", param.Anio);
+            dapperParams.Add("@Mes", param.Mes);
+            dapperParams.Add("@Usuario", param.RegistroUsuario);
+            dapperParams.Add("@Tipo", param.Tipo);
+            dapperParams.Add("@Expresado", param.Expresado);
+
+            DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sql, dapperParams, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            RegistrarBitacora(
+                codEmpresa,
+                param.RegistroUsuario,
+                $"Procesa resultados EF: {param.CodEf} Año: {param.Anio} Mes: {param.Mes} Tipo: {param.Tipo} Expresado: {param.Expresado}",
+                "Procesa - WEB"
+            );
+
+            return DbHelper.CreateOkResponse(true);
         }
     }
 }
