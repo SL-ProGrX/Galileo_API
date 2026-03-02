@@ -33,5 +33,50 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         {
             return _db.CntXEfSecciones_Lista(codEmpresa, codContabilidad, codEf);
         }
+
+        public ErrorDto<bool> CntXEfSeccion_Guardar(int codEmpresa, CntXEfSeccionSaveParams param)
+        {
+            return _db.CntXEfSeccion_Guardar(codEmpresa, param);
+        }
+
+        public ErrorDto<bool> CntXEfSeccion_Eliminar(int codEmpresa, CntXEfSeccionDeleteParams param)
+        {
+            return _db.CntXEfSeccion_Eliminar(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CntXEfSeccionSimpleDto>> CntXEfSeccionesItems_Lista(int codEmpresa, int codContabilidad, string codEf)
+        {
+            return _db.CntXEfSeccionesItems_Lista(codEmpresa, codContabilidad, codEf);
+        }
+
+        public ErrorDto<List<CntXCuentaDto>> CntXEfCuentasDisponibles_Lista(int codEmpresa, CntXCuentaFiltroParams param)
+        {
+            return _db.CntXEfCuentasDisponibles_Lista(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CntXCuentaAsignadaDto>> CntXEfCuentasAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
+        {
+            return _db.CntXEfCuentasAsignadas_Lista(codEmpresa, codContabilidad, codEf, itemId);
+        }
+
+        public ErrorDto<List<CntXFxAsignadaDto>> CntXEfFuncionesAsignadas_Lista(int codEmpresa, int codContabilidad, string codEf, string itemId)
+        {
+            return _db.CntXEfFuncionesAsignadas_Lista(codEmpresa, codContabilidad, codEf, itemId);
+        }
+
+        public ErrorDto<bool> CntXEfCuenta_Proc(int codEmpresa, CntXEfCuentaProcParams param)
+        {
+            return _db.CntXEfCuenta_Proc(codEmpresa, param);
+        }
+
+        public ErrorDto<bool> CntXEfFx_Proc(int codEmpresa, CntXEfFxProcParams param)
+        {
+            return _db.CntXEfFx_Proc(codEmpresa, param);
+        }
+
+        public ErrorDto<bool> CntXEfProcesa(int codEmpresa, CntXEfProcesaParams param)
+        {
+            return _db.CntXEfProcesa(codEmpresa, param);
+        }
     }
 }
