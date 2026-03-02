@@ -256,10 +256,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
                         msj = "Pin de AutoGestion (Impresión de Seguridad)";
                         break;
                     case "T"://Talonario
-                        msj = "Pin de AutoGestion Renovado satisfactoriamente (Registro en Talonario)"
+                        msj = "Pin de AutoGestion Renovado satisfactoriamente (Registro en Talonario)";
                         break;
                     case "E":
-                        msj = "Pin de AutoGestion Renovado satisfactoriamente (Enviado por E-mail)"
+                        msj = "Pin de AutoGestion Renovado satisfactoriamente (Enviado por E-mail)";
                         break;
                 }
 
