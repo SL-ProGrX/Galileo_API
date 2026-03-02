@@ -28,8 +28,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"exec spTes_Cuenta_Bancaria_Acceso_General @usuario, 'ASI'";
-                return conn.Query<TesConciliacionCuentaData>(query, new { usuario }).ToList();
+                const string query = @"exec spTes_Cuenta_Bancaria_Acceso_General @Usuario, 'ASI'";
+                return conn.Query<TesConciliacionCuentaData>(query, new { Usuario = usuario }).ToList();
             });
         }
 
@@ -42,8 +42,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"exec spTes_Concilia_Periodo_Consulta @id_banco, @usuario";
-                return conn.Query<TesConciliacionHistorico>(query, new { id_banco, usuario }).ToList();
+                const string query = @"exec spTes_Concilia_Periodo_Consulta @BancoId, @Usuario";
+                return conn.Query<TesConciliacionHistorico>(query, new { BancoId = id_banco, Usuario = usuario }).ToList();
             });
         }
 
@@ -117,15 +117,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Periodo_Actualiza_Saldo_Cta @banco, @ahno,@mes,@saldo,@usuario";
+                    const string query = @"exec spTes_Concilia_Periodo_Actualiza_Saldo_Cta @BancoId, @Anio,@Mes,@CtaSaldo,@Usuario";
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        saldo = filtro.saldo,
-                        usuario = filtro.usuario
+                        BancoId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        CtaSaldo = filtro.saldo,
+                        Usuario = filtro.usuario
                     });
 
                     spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
@@ -143,17 +143,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Periodo_Add @banco,@ahno,@mes,'A',@notas,@usuarios,@saldos,@saldoActual";
+                    const string query = @"exec spTes_Concilia_Periodo_Add @BancoId,@Anio,@Mes,'A',@Notas,@Usuario,@Libros_Saldo,@Cta_Saldo";
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        notas = filtro.notas ?? string.Empty,
-                        usuarios = filtro.usuario,
-                        saldos = filtro.saldo,
-                        saldoActual = filtro.saldoActual
+                        BancoId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        Notas = filtro.notas ?? string.Empty,
+                        Usuario = filtro.usuario,
+                        Libros_Saldo = filtro.saldo,
+                        Cta_Saldo = filtro.saldoActual
                     });
 
                     return DbHelper.CreateOkResponse();
@@ -178,17 +178,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         string fechaExcel = MProGrXAuxiliarDB.validaFechaGlobal(row.fecha, vDateFormat) ?? string.Empty;
 
-                        const string query = @"exec spTes_Concilia_Banco_Mov @banco,@fechaExcel,@ndocumento,@tipo,@importe,@descripcion,0,@usuario";
+                        const string query = @"exec spTes_Concilia_Banco_Mov @BancoId,@Fecha,@Documento,@TipoMov,@Importe,@Descripcion ,0,@Usuario";
 
                         conn.Execute(query, new
                         {
-                            banco = filtro.banco,
-                            fechaExcel,
-                            ndocumento = row.documento,
-                            tipo = row.tipo,
-                            importe = row.importe,
-                            descripcion = row.descripcion,
-                            usuario = filtro.usuario
+                            BancoId = filtro.banco,
+                            Fecha = fechaExcel,
+                            Documento = row.documento,
+                            TipoMov = row.tipo,
+                            Importe = row.importe,
+                            Descripcion = row.descripcion,
+                            Usuario = filtro.usuario
                         });
                     }
 
@@ -207,14 +207,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Periodo_Cierra @banco,@ahno,@mes,@usuario";
+                    const string query = @"exec spTes_Concilia_Periodo_Cierra @BancoId,@Anio,@Mes,@Usuario";
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        usuario = filtro.usuario
+                        BancoId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        Usuario = filtro.usuario
                     }, commandTimeout: 300);
 
                     return DbHelper.CreateOkResponse();
@@ -234,10 +234,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     switch (tipo)
                     {
                         case 0:
-                            query = @"exec spTes_Concilia_Bancos_EntreSi @banco,@ahno,@mes,@usuario";
+                            query = @"exec spTes_Concilia_Bancos_EntreSi @BancosId,@Anio,@Mes,@Usuario";
                             break;
                         case 1:
-                            query = @"exec spTes_Concilia_Libros_EntreSi @banco,@ahno,@mes,@usuario";
+                            query = @"exec spTes_Concilia_Libros_EntreSi @BancosId,@Anio,@Mes,@Usuario";
                             break;
                         default:
                             return DbHelper.ErrorResponse("Tipo de operación no válido.");
@@ -245,10 +245,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        usuario = filtro.usuario
+                        BancosId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        Usuario = filtro.usuario
                     }, commandTimeout: 300);
 
                     return DbHelper.CreateOkResponse();
@@ -264,14 +264,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Automatica @banco,@ahno,@mes,@usuario";
+                    const string query = @"exec spTes_Concilia_Automatica @BancoId,@Anio,@Mes,@Usuario";
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        usuario = filtro.usuario
+                        BancoId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        Usuario = filtro.usuario
                     }, commandTimeout: 900);
 
                     spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
@@ -289,14 +289,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Periodo_Inicializa @banco,@ahno,@mes,@usuario";
+                    const string query = @"exec spTes_Concilia_Periodo_Inicializa @BancoId,@Anio,@Mes,@Usuario";
 
                     conn.Execute(query, new
                     {
-                        banco = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        usuario = filtro.usuario
+                        BancoId = filtro.banco,
+                        Anio = filtro.ahno,
+                        Mes = filtro.mes,
+                        Usuario = filtro.usuario
                     }, commandTimeout: 300);
 
                     spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
@@ -317,16 +317,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"exec spTes_Concilia_Periodo_Resultados @banco, @ahno ,@mes,@ubicacion,@tipoDoc,@estadoCasos";
+                const string query = @"exec spTes_Concilia_Periodo_Resultados @BancoId, @Anio ,@Mes,@Ubicacion,@Tipo,@Estado";
+
+                string estado = filtros.estadoCasos.Substring(0, 1);
 
                 return conn.Query<TesConciliaResultados>(query, new
                 {
-                    banco = filtros.id_banco,
-                    ahno = filtros.ahno,
-                    mes = filtros.mes,
-                    ubicacion = filtros.ubicacion,
-                    tipoDoc = filtros.tipoDoc,
-                    estadoCasos = filtros.estadoCasos
+                    BancoId = filtros.id_banco,
+                    Anio = filtros.ahno,
+                    Mes = filtros.mes,
+                    Ubicacion = filtros.ubicacion,
+                    Tipo = filtros.tipoDoc,
+                    Estado = estado
                 }).ToList();
             });
         }
@@ -345,19 +347,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         return DbHelper.ErrorResponse("La cuenta contable indicada para el auto-registro no es válida!");
                     }
 
-                    const string query = @"exec spTes_Concilia_Auto_Registro @bancos, @ahno , @mes , @id, @cuenta , @usuario , @chkAutoReg";
+                    const string query = @"exec spTes_Concilia_Auto_Registro @BancoId, @Anio , @Mes , @Id, @Cuenta , @Usuario , @Conta_Registro";
 
                     foreach (var item in datos)
                     {
                         conn.Execute(query, new
                         {
-                            bancos = filtro.banco,
-                            ahno = filtro.ahno,
-                            mes = filtro.mes,
-                            id = item.id,
-                            cuenta = filtro.ar_cuenta,
-                            usuario = filtro.usuario,
-                            chkAutoReg = filtro.chkAutoReg ? 1 : 0
+                            BancoId = filtro.banco,
+                            Anio = filtro.ahno,
+                            Mes = filtro.mes,
+                            Id = item.id,
+                            Cuenta = filtro.ar_cuenta,
+                            Usuario = filtro.usuario,
+                            Conta_Registro = filtro.chkAutoReg ? 1 : 0
                         });
                     }
 
@@ -376,18 +378,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Pendiente @bancos, @ahno , @mes , @id , @ubicacion , @usuario";
+                    const string query = @"exec spTes_Concilia_Pendiente @BancoId, @Anio , @Mes , @Id , @Ubicacion , @Usuario";
 
                     foreach (var item in datos)
                     {
                         conn.Execute(query, new
                         {
-                            bancos = filtro.banco,
-                            ahno = filtro.ahno,
-                            mes = filtro.mes,
-                            id = item.id,
-                            ubicacion = filtro.ubicacion,
-                            usuario = filtro.usuario
+                            BancoId = filtro.banco,
+                            Anio = filtro.ahno,
+                            Mes = filtro.mes,
+                            Id = item.id,
+                            Ubicacion = filtro.ubicacion,
+                            Usuario = filtro.usuario
                         });
                     }
 
@@ -418,33 +420,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 string resultadoCorte = afechaFin.ToString(vDateFormat);
 
                 const string query = @"exec spTes_Concilia_Periodo_Disponibles 
-                                            @banco,
-                                            @ahno,
-                                            @mes,
-                                            @ubicacion,
-                                            @tipoMov,
-                                            @movImporte,
-                                            @movFiltro,
-                                            @chkConciliaPendientes,
-                                            @chkConciliaFiltroMontos,
-                                            @chkConciliaFiltroFechas,
-                                            @dtpConciliaInicio,
-                                            @dtpConciliaCorte";
+                                            @BancoId,
+                                            @Anio,
+                                            @Mes,
+                                            @Ubicacion,
+                                            @Tipo,
+                                            @Importe,
+                                            @Filtro,
+                                            @Pendientes,
+                                            @FiltroMnts,
+                                            @FiltroFechas,
+                                            @fInicio,
+                                            @fCorte";
 
                 var response = conn.Query<TesConciliaAsigna>(query, new
                 {
-                    banco = filtros.banco,
-                    ahno = filtros.ahno,
-                    mes = filtros.mes,
-                    ubicacion = filtros.ubicacion,
-                    tipoMov = filtros.tipoMov,
-                    movImporte = filtros.movImporte,
-                    movFiltro = filtros.movFiltro,
-                    chkConciliaPendientes = filtros.chkConciliaPendientes ? 1 : 0,
-                    chkConciliaFiltroMontos = filtros.chkConciliaFiltroMontos ? 1 : 0,
-                    chkConciliaFiltroFechas = filtros.chkConciliaFiltroFechas ? 1 : 0,
-                    dtpConciliaInicio = resultadoInicio,
-                    dtpConciliaCorte = resultadoCorte
+                    BancoId = filtros.banco,
+                    Anio = filtros.ahno,
+                    Mes = filtros.mes,
+                    Ubicacion = filtros.ubicacion,
+                    Tipo = filtros.tipoMov,
+                    Importe = filtros.movImporte,
+                    Filtro = filtros.movFiltro,
+                    Pendientes = filtros.chkConciliaPendientes ? 1 : 0,
+                    FiltroMnts = filtros.chkConciliaFiltroMontos ? 1 : 0,
+                    FiltroFechas = filtros.chkConciliaFiltroFechas ? 1 : 0,
+                    fInicio = resultadoInicio,
+                    fCorte = resultadoCorte
                 }).ToList();
 
                 return DbHelper.CreateOkResponse(response);
@@ -481,12 +483,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         conn.Execute(storedProcedure, new
                         {
-                            bancos = filtro.banco,
-                            ahno = filtro.ahno,
-                            mes = filtro.mes,
-                            id_bancos = pId_Bancos,
-                            id_libros = pId_Libros,
-                            usuario = filtro.usuario
+                            BancoId = filtro.banco,
+                            Anio = filtro.ahno,
+                            Mes = filtro.mes,
+                            Bancos_Id = pId_Bancos,
+                            Libros_Id = pId_Libros,
+                            Usuario = filtro.usuario
                         }, commandType: CommandType.StoredProcedure);
                     });
 
@@ -503,19 +505,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"exec spTes_Concilia_Periodo_Resultados_Caso_Detalle  
-                                            @banco,
-                                            @ahno,
-                                            @mes,
-                                            @ubicacion,
-                                            @caso";
+                                            @BancoId,
+                                            @Anio,
+                                            @Mes,
+                                            @Ubicacion,
+                                            @Id";
 
                 return conn.Query<TesConciliacionDetallesData>(query, new
                 {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    ubicacion = filtro.ubicacion,
-                    caso = filtro.caso
+                    BancoId = filtro.banco,
+                    Anio = filtro.ahno,
+                    Mes = filtro.mes,
+                    Ubicacion = filtro.ubicacion,
+                    Id = filtro.caso
                 }).ToList();
             });
         }
@@ -528,19 +530,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"exec spTes_Concilia_Periodo_Resultados_Caso_Lote 
-                                            @banco,
-                                            @ahno,
-                                            @mes,
-                                            @ubicacion,
-                                            @caso";
+                                            @BancoId,
+                                            @Anio,
+                                            @Mes,
+                                            @Ubicacion,
+                                            @Id";
 
                 return conn.Query<TesConciliacionDetallesLoteData>(query, new
                 {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    ubicacion = filtro.ubicacion,
-                    caso = filtro.caso
+                    BancoId = filtro.banco,
+                    Anio = filtro.ahno,
+                    Mes = filtro.mes,
+                    Ubicacion = filtro.ubicacion,
+                    Id = filtro.caso
                 }).ToList();
             });
         }
@@ -553,7 +555,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    const string query = @"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario";
+                    const string query = @"exec spTes_Concilia_Reversa @BancoId, @Anio , @Mes , @Bancos_Id, @Libros_Id, @Usuario";
 
                     datos.ForEach(item =>
                     {
@@ -573,12 +575,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         conn.Execute(query, new
                         {
-                            bancos = filtro.banco,
-                            ahno = filtro.ahno,
-                            mes = filtro.mes,
-                            id_bancos = pId_Bancos,
-                            id_libros = pId_Libros,
-                            usuario = filtro.usuario
+                            BancoId = filtro.banco,
+                            Anio = filtro.ahno,
+                            Mes = filtro.mes,
+                            Bancos_Id = pId_Bancos,
+                            Libros_Id = pId_Libros,
+                            Usuario = filtro.usuario
                         });
                     });
 
@@ -594,14 +596,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private void spTesConciliaPeriodoActualiza(int CodEmpresa, int banco, int ahno, int mes, string usuario)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            const string query = @"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario";
+            const string query = @"exec spTes_Concilia_Periodo_Actualiza @BancoId, @Anio , @Mes , @Usuario";
 
             conn.Execute(query, new
             {
-                bancos = banco,
-                ahno,
-                mes,
-                usuario
+                BancoId = banco,
+                Anio = ahno,
+                Mes = mes,
+                Usuario = usuario
             }, commandTimeout: 900);
         }
 
