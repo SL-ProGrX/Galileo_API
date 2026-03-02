@@ -40,28 +40,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-            string sql;
-
-            if (direccion == 1)
-            {
-                sql = @"
+            string sql = direccion == 1
+                ? @"
             SELECT TOP 1
                 COD_POLIZA CodPoliza,
                 DESCRIPCION Descripcion
             FROM CRD_CATALOGO_POLIZAS
             WHERE COD_POLIZA > @CodPolizaActual
-            ORDER BY COD_POLIZA ASC";
-            }
-            else
-            {
-                sql = @"
+            ORDER BY COD_POLIZA ASC"
+                : @"
             SELECT TOP 1
                 COD_POLIZA CodPoliza,
                 DESCRIPCION Descripcion
             FROM CRD_CATALOGO_POLIZAS
             WHERE COD_POLIZA < @CodPolizaActual
             ORDER BY COD_POLIZA DESC";
-            }
 
             var result = connection.QueryFirstOrDefault<PolizaLookupResponseDto>(
                 sql,
