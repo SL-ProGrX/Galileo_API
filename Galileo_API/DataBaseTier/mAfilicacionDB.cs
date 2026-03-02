@@ -90,5 +90,47 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        public string fxgAFIParametro(int CodEmpresa, string pCodigo)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string result = "";
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                var query = $@"select valor from afi_parametros where cod_parametro = @codigo";
+                result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
+
+            }
+            catch (Exception ex)
+            {
+                result = ex.Message;
+            }
+            return result;
+        }
+
+        public void sbgAFIBitacora(int CodEmpresa, string pMovimiento,  string pDetalle, string pCedula, string usuario)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string result = "";
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                var query = $@"exec spAFI_Persona_Bitacora_Especial_Add @Cedula, @Movimiento,  @Detalle,  @Usuario";
+                connection.Execute(query, new
+                {
+                    Cedula = pCedula,
+                    Movimiento = pMovimiento,
+                    Detalle = pDetalle,
+                    Usuario = usuario
+                });
+
+            }
+            catch (Exception ex)
+            {
+                result = ex.Message;
+            }
+        }
     }
 }
