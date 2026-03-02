@@ -105,7 +105,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
         /// Método para generar un PIN seguro de 4 dígitos utilizando RandomNumberGenerator.
         /// </summary>
         /// <returns></returns>
-        public string GenerarPinSeguro(int CodEmpresa)
+        public static string GenerarPinSeguro(int CodEmpresa)
         {
             var bytes = new byte[4];
             RandomNumberGenerator.Fill(bytes);

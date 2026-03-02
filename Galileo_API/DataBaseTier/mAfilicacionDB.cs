@@ -112,7 +112,6 @@ namespace Galileo.DataBaseTier
         public void sbgAFIBitacora(int CodEmpresa, string pMovimiento,  string pDetalle, string pCedula, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string result = "";
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -129,7 +128,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                result = ex.Message;
+                _ = ex.Message;
             }
         }
     }

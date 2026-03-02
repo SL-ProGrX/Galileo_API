@@ -28,9 +28,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Clientes
             return _db.fxTicketValida(CodEmpresa, ticket);
         }
 
-        public string GenerarPinSeguro(int CodEmpresa)
+        public static string GenerarPinSeguro(int CodEmpresa)
         {
-            return _db.GenerarPinSeguro(CodEmpresa);
+            var result = FrmAfCambioPinPinDB.GenerarPinSeguro(CodEmpresa);
+            return result;
         }
 
         public ErrorDto Af_CambioPin_Bitacora(int CodEmpresa, string usuario, string vTicket)

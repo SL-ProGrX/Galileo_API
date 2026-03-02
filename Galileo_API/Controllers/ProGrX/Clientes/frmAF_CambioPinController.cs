@@ -40,7 +40,8 @@ namespace Galileo_API.Controllers.ProGrX.Clientes
         [HttpGet("GenerarPinSeguro")]
         public string GenerarPinSeguro(int CodEmpresa)
         {
-            return _bl.GenerarPinSeguro(CodEmpresa);
+            var result = FrmAfCambioPinBL.GenerarPinSeguro(CodEmpresa);
+            return result;
         }
 
         [HttpPost("Af_CambioPin_Bitacora")]
