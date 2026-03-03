@@ -10,7 +10,7 @@
     {
         public string? tipo_id { get; set; }
         public string? descripcion { get; set; }
-        public int activo { get; set; }
+        public required int activo { get; set; }
         public bool activob => activo == 1;
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }

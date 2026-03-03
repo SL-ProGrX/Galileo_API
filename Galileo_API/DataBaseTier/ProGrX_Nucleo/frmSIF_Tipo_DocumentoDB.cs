@@ -74,7 +74,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new SifTipoDocumentoData()
+                Result = new SifTipoDocumentoData
+                {
+                    activo = 0,
+                    asiento_transaccion = 0,
+                    asiento_modulo = 0,
+                    impuesto_registra = 0,
+                    impuesto_porcentaje = 0,
+                    permite_reversion = 0,
+                    aplica_cierre_especial = 0,
+                    reversion_dias_autorizados = 0
+                }
             };
             try
             {

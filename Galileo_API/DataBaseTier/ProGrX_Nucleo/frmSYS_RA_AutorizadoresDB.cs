@@ -78,7 +78,7 @@ namespace Galileo.DataBaseTier
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AutorizadoresExpDto()
+                Result = new AutorizadoresExpDto { autorizador_id = codAutorizador }
             };
 
             try

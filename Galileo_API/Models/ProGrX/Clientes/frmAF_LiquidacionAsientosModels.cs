@@ -46,19 +46,19 @@ namespace Galileo.Models.ProGrX.Clientes
 
     public class LiquidacionAsientoModel
     {
-        public decimal valor { get; set; }
-        public int consec { get; set; }
+        public required decimal valor { get; set; }
+        public required int consec { get; set; }
         public string? cedula { get; set; }
         public string? nombre { get; set; }
-        public decimal tneto { get; set; }
-        public int cod_banco { get; set; }
+        public required decimal tneto { get; set; }
+        public required int cod_banco { get; set; }
         public string? tdocumento { get; set; }
         public string? tipo { get; set; }
         public string? cuenta { get; set; }
-        public DateTime fecliq { get; set; }
+        public required DateTime fecliq { get; set; }
         public string? usuario { get; set; }
         public string? descripcion { get; set; }
-        public int duplicado { get; set; }
+        public required int duplicado { get; set; }
         public DateTime? tes_supervision_fecha { get; set; }
         public string? cod_divisa { get; set; }
         public string? id_token { get; set; }
