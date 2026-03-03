@@ -4,6 +4,7 @@
     {
         public string CodPoliza { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
+        public bool poliza_general { get; set; } = false;
     }
 
     public class PolizaScrollRequestDto

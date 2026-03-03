@@ -22,7 +22,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 const string query = @"
                         SELECT 
                             COD_POLIZA CodPoliza,
-                            DESCRIPCION Descripcion
+                            DESCRIPCION Descripcion,
+                            Poliza_General
                         FROM CRD_CATALOGO_POLIZAS
                         WHERE COD_POLIZA = @CodPoliza";
 
