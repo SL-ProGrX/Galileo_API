@@ -48,7 +48,7 @@ namespace Galileo.Models.SYS
         public required bool rol_autoriza { get; set; }
         public required bool rol_encargado { get; set; }
 
-        public bool rol_lider { get; set; }
+        public required bool rol_lider { get; set; }
     }
 
     public class UnidadesDtoList
