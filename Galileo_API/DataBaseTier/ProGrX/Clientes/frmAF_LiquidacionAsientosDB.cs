@@ -282,7 +282,6 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             try
             {
                 decimal curMonto = 0;
-                decimal vTipoCambio = 1;
                 string vDivisa = row.cod_divisa ?? string.Empty; //'Divisa del Banco
                 decimal curDebitos = 0;
                 decimal curCreditos = 0;
