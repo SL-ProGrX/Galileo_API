@@ -288,6 +288,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 long lngSolicitud = 0;
                 string oDivisa = "";
                 decimal oTipoCambio = 1;
+                decimal vTipoCambio = 1;
 
                 using (var connection = new SqlConnection(conn))
                 {
