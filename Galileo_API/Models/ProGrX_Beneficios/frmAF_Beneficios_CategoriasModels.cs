@@ -78,4 +78,119 @@ namespace Galileo.Models.AF
         public bool registro_justifica { get; set; } = false;
         public bool pago_justifica { get; set; } = false;
     }
+
+    public static class QuerysStringValidaciones
+    {
+        public const string registroVal = "REGISTRO";
+        public const string pagoVal = "PAGO";
+
+        public const string CodCategoriaPlaceholder = "@cod_categoria";
+        public const string CodBeneficioPlaceholder = "@cod_beneficio";
+        public const string CedulaPlaceholder = "@cedula";
+        public const string UsuarioPlaceholder = "@usuario";
+        public const string IdBeneficioPlaceholder = "@id_beneficio";
+        public const string MontoUsuarioPlaceholder = "@monto_usuario";
+        public const string SepelioIdentificacionPlaceholder = "@sepelio_identificacion";
+
+        public const string registroP = @"SELECT * 
+                              FROM AFI_BENE_VALIDACIONES 
+                              WHERE ESTADO = 1 AND 
+                              TIPO = 'P' AND 
+                              REGISTRO = 1 
+                              ORDER BY PRIORIDAD ASC";
+
+        public const string registroPCategoria = @"
+                        select abv.* 
+                        FROM AFI_BENE_VALIDA_CATEGORIA c 
+                        left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                        WHERE COD_CATEGORIA = 
+                        (
+	                        SELECT ab.COD_CATEGORIA 
+                            FROM AFI_BENEFICIOS ab 
+	                        WHERE ab.COD_BENEFICIO = @cod_beneficio
+                        ) 
+                        AND c.ESTADO = 1 
+                        AND TIPO = 'P' 
+                        AND REGISTRO = 1 
+                        order by abv.PRIORIDAD asc";
+
+        public const string pagoP = @"SELECT * 
+                              FROM AFI_BENE_VALIDACIONES 
+                              WHERE ESTADO = 1 
+                                AND PAGO = 1 
+                                AND TIPO = 'P' 
+                              ORDER BY PRIORIDAD ASC";
+
+        public const string pagoPCategoria = @"
+                        select abv.* 
+                        FROM AFI_BENE_VALIDA_CATEGORIA c 
+                        left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                        WHERE COD_CATEGORIA = 
+                        (
+	                        SELECT ab.COD_CATEGORIA 
+                            FROM AFI_BENEFICIOS ab 
+	                        WHERE ab.COD_BENEFICIO = @cod_beneficio
+                        ) 
+                        AND c.ESTADO = 1 
+                        AND TIPO = 'P' 
+                        AND PAGO = 1 
+                        order by abv.PRIORIDAD asc";
+
+        public const string registroGCategoria = @"
+                    select abv.* 
+                    FROM AFI_BENE_VALIDA_CATEGORIA c 
+                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                    WHERE COD_CATEGORIA = 
+                    (
+	                    SELECT ab.COD_CATEGORIA 
+                        FROM AFI_BENEFICIOS ab 
+                        WHERE ab.COD_BENEFICIO = @CodBeneficio
+                    ) 
+                    AND c.ESTADO = 1 
+                    AND TIPO = 'G' 
+                    AND REGISTRO = 1 
+                    order by abv.PRIORIDAD asc";
+
+        public const string pagoGCategoria = @"
+                    select abv.* 
+                    FROM AFI_BENE_VALIDA_CATEGORIA c 
+                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                    WHERE COD_CATEGORIA = 
+                    (
+	                    SELECT ab.COD_CATEGORIA 
+                        FROM AFI_BENEFICIOS ab 
+                        WHERE ab.COD_BENEFICIO = @CodBeneficio
+                    ) 
+                    AND c.ESTADO = 1 
+                    AND TIPO = 'G' 
+                    AND PAGO = 1 
+                    order by abv.PRIORIDAD asc";
+
+        public const string pagoGDif = @"
+                    select abv.*, c.pago_justifica 
+                    FROM AFI_BENE_VALIDA_CATEGORIA c 
+                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                    WHERE COD_CATEGORIA = 
+                        (
+	                        SELECT ab.COD_CATEGORIA 
+                            FROM AFI_BENEFICIOS ab 
+                            WHERE ab.COD_BENEFICIO = @CodBeneficio
+                        ) 
+                      AND c.ESTADO = 1 
+                      AND PAGO = 1 
+                      AND TIPO != 'G' 
+                    order by abv.PRIORIDAD asc";
+
+    }
+
+    public class BeneCategoriaValidaListaRequest
+    {
+        public string? cod_categoria { get; set; } = string.Empty;
+        public string? cod_beneficio { get; set; } = string.Empty;
+        public string? cedula { get; set; } = string.Empty;
+        public string? usuario { get; set; } = string.Empty;
+        public string? id_beneficio { get; set; } = string.Empty;
+        public string? monto_usuario { get; set; } = string.Empty;
+        public string? sepelio_identificacion { get; set; } = string.Empty;
+    }
 }
