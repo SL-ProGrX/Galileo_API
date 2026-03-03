@@ -111,7 +111,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (string.IsNullOrWhiteSpace(request.Tipo))
                     return DbHelper.ErrorResponse("Debe indicar el tipo de cierre.");
 
-                var fecha = request.FechaCorte.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var fecha = request.FechaCorte?.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
 
                 connection.Execute(
                     "spCrdPolizasCierre",
