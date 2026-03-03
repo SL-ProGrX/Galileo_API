@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
@@ -227,27 +228,24 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 string vfecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 using (var connection = new SqlConnection(conn))
                 {
-                    foreach (var liq in liquidaciones)
+                    foreach (var liq in liquidaciones.Where(liq => liq.duplicado == 0))
                     {
-                        if (liq.duplicado == 0)
+                        if (filtros.accion == "D")
                         {
-                            if (filtros.accion == "D")
+                            ErrorDto res = sbTesoreria(CodEmpresa, usuario, "OC", vfecha, filtros.token ?? string.Empty, liq);
+                            if(res.Code == -1)
                             {
-                                ErrorDto res = sbTesoreria(CodEmpresa, usuario, "OC", vfecha, filtros.token ?? string.Empty, liq);
-                                if(res.Code == -1)
-                                {
-                                    msjError.AppendLine(res.Description);
-                                }
+                                msjError.AppendLine(res.Description);
                             }
-                            else
-                            {
-                                //'Retener
-                                var strDup = $@"Update Liquidacion set Fecha_Traspaso= dbo.MyGetdate(),EstadoAsiento = 'G',NDocumento= '0',Tdocumento = 'RT'
+                        }
+                        else
+                        {
+                            //'Retener
+                            var strDup = $@"Update Liquidacion set Fecha_Traspaso= dbo.MyGetdate(),EstadoAsiento = 'G',NDocumento= '0',Tdocumento = 'RT'
                                            ,Tesoreria_Solicitud = 0, Traspaso_Usuario = @usuario
                                             Where Consec = @consec";
 
-                                connection.Execute(strDup, new { usuario = usuario, consec = liq.consec });
-                            }
+                            connection.Execute(strDup, new { usuario = usuario, consec = liq.consec });
                         }
                     }
 
