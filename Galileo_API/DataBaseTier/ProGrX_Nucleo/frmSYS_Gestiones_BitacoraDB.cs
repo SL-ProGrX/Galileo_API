@@ -107,7 +107,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         private static GestionesSpec BuildSpec(SysGestionesBitacoraFiltro? filtro, bool includeGeneral)
         {
-            var f = filtro ?? new SysGestionesBitacoraFiltro();
+            var f = filtro ?? new SysGestionesBitacoraFiltro { TodasFechas = false };
             var ui = f.Filtros ?? new FiltrosLazyLoadData();
 
             var offset = Math.Max(0, ui.pagina);

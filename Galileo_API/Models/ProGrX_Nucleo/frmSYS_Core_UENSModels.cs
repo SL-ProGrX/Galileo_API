@@ -20,8 +20,8 @@ namespace Galileo.Models.SYS
         public string cntx_unidad { get; set; } = string.Empty;
         public string? cntx_centro_costo { get; set; } = string.Empty;
         public string? unidad_principal { get; set; } = string.Empty;
-        public bool activa { get; set; }
-        public bool btn { get; set; }
+        public required bool activa { get; set; }
+        public required bool btn { get; set; }
     }
 
     public class CoreUsuariosDto
@@ -29,10 +29,10 @@ namespace Galileo.Models.SYS
         public string core_usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string usuario_ref { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public required bool activo { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public bool asignado { get; set; }
+        public required bool asignado { get; set; }
     }
 
     public class CoreRolesDto
@@ -40,13 +40,13 @@ namespace Galileo.Models.SYS
         public string core_usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string usuario_ref { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public required bool activo { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public bool rol_solicita { get; set; }
-        public bool rol_consulta { get; set; }
-        public bool rol_autoriza { get; set; }
-        public bool rol_encargado { get; set; }
+        public required bool rol_solicita { get; set; }
+        public required bool rol_consulta { get; set; }
+        public required bool rol_autoriza { get; set; }
+        public required bool rol_encargado { get; set; }
 
         public bool rol_lider { get; set; }
     }

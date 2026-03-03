@@ -14,9 +14,9 @@ namespace Galileo.Models.SIF
         public string nombre_contacto { get; set; } = string.Empty;
         public string sitio_web { get; set; } = string.Empty;
 
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
 
-        public int provincia { get; set; }
+        public required int provincia { get; set; }
         public string canton { get; set; } = string.Empty;
         public string distrito { get; set; } = string.Empty;
     }

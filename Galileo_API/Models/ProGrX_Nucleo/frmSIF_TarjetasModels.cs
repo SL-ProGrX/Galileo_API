@@ -4,7 +4,7 @@ namespace Galileo.Models.ProGrX_Nucleo
     {
         public string? cod_tarjeta { get; set; }
         public string? descripcion { get; set; }
-        public bool activa { get; set; }
+        public required bool activa { get; set; }
     }
 
     public class SifTarjetasLista
