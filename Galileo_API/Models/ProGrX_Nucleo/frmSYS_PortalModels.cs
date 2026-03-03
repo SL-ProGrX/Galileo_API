@@ -30,7 +30,7 @@
 
         public string tipo_formato_cod { get; set; } = string.Empty;   // 3 chars
         public string tipo_formato_desc { get; set; } = string.Empty;  // opcional para lectura
-        public bool activa { get; set; }
+        public required bool activa { get; set; }
 
         // --- Contenido ---
         public string pie_01 { get; set; } = string.Empty;

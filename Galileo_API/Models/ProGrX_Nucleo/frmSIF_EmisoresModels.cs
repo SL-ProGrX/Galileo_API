@@ -10,7 +10,7 @@ namespace Galileo.Models.ProGrX_Nucleo
     {
         public string? cod_emisor { get; set; }
         public string? descripcion { get; set; }
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
     }
 
     public class SifTarjetasAsignadasData

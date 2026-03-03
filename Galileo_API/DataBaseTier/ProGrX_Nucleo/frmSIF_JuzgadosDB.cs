@@ -137,7 +137,11 @@ namespace Galileo.DataBaseTier
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new JuzgadosDto()
+                Result = new JuzgadosDto
+                {
+                    activo = false, // o true según valor por defecto deseado
+                    provincia = 1 // o el valor por defecto adecuado
+                }
             };
 
             const string query = "SELECT * FROM sif_juzgados WHERE COD_JUZGADO = @CodJuzgado";
