@@ -475,12 +475,12 @@ namespace Galileo.DataBaseTier
             static string BuildValidationSql(string? template, BeneficioGeneralDatos b)
             {
                 return (template ?? string.Empty)
-                    .Replace(CedulaPlaceholder, b.cedula)
-                    .Replace(UsuarioPlaceholder, b.registra_user)
-                    .Replace(CodBeneficioPlaceholder, b.cod_beneficio.item.ToString(CultureInfo.InvariantCulture))
-                    .Replace(CodCategoriaPlaceholder, b.cod_categoria)
-                    .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                    .Replace(SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
+                    .Replace(QuerysStringValidaciones.CedulaPlaceholder, b.cedula)
+                    .Replace(QuerysStringValidaciones.UsuarioPlaceholder, b.registra_user)
+                    .Replace(QuerysStringValidaciones.CodBeneficioPlaceholder, b.cod_beneficio.item.ToString(CultureInfo.InvariantCulture))
+                    .Replace(QuerysStringValidaciones.CodCategoriaPlaceholder, b.cod_categoria)
+                    .Replace(QuerysStringValidaciones.MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
+                    .Replace(QuerysStringValidaciones.SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
             }
         }
 
@@ -538,13 +538,13 @@ namespace Galileo.DataBaseTier
 
             static string BuildValidationSql(string? template, BeneficioGeneralDatos b) =>
                 (template ?? string.Empty)
-                .Replace(CedulaPlaceholder, b.cedula)
-                .Replace(UsuarioPlaceholder, b.registra_user)
-                .Replace(IdBeneficioPlaceholder, b.id_beneficio.ToString())
-                .Replace(CodBeneficioPlaceholder, b.cod_beneficio.item.ToString())
-                .Replace(CodCategoriaPlaceholder, b.cod_categoria)
-                .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                .Replace(SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
+                .Replace(QuerysStringValidaciones.CedulaPlaceholder, b.cedula)
+                .Replace(QuerysStringValidaciones.UsuarioPlaceholder, b.registra_user)
+                .Replace(QuerysStringValidaciones.IdBeneficioPlaceholder, b.id_beneficio.ToString())
+                .Replace(QuerysStringValidaciones.CodBeneficioPlaceholder, b.cod_beneficio.item.ToString())
+                .Replace(QuerysStringValidaciones.CodCategoriaPlaceholder, b.cod_categoria)
+                .Replace(QuerysStringValidaciones.MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
+                .Replace(QuerysStringValidaciones.SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
 
             static int DecideCode(int justificadas, int obligatorias, bool justifica, bool hasDesc)
             {
@@ -591,54 +591,27 @@ namespace Galileo.DataBaseTier
             var response = new ErrorDto { Code = 0 };
             string query = "";
 
-            if (request.cod_beneficio == null)
-            {
-                if (col == QuerysStringValidaciones.registroVal)
-                {
-                    if (tipo == "P")
-                    {
-                        query = QuerysStringValidaciones.registroP;
-                    }
-                    else
-                    {
-                        query = QuerysStringValidaciones.registroGCategoria;
-                    }
-                }
-                else
-                {
-                    if (tipo == "P")
-                    {
-                        query = QuerysStringValidaciones.pagoP;
-                    }
-                    else
-                    {
-                        query = QuerysStringValidaciones.pagoGDif;
-                    }
-                }
-            }
-            else
-            {
-                if (col == QuerysStringValidaciones.registroVal)
-                {
-                    if (tipo == "P")
-                    {
-                        query = QuerysStringValidaciones.registroPCategoria;
-                    }
-                }
-                else
-                {
-                    if (tipo == "P")
-                    {
-                        query = QuerysStringValidaciones.pagoPCategoria;
-                    }
-                    else
-                    {
-                        query = QuerysStringValidaciones.pagoGCategoria;
-                    }
-                }
-                
-            }
+            bool hasBeneficio = request.cod_beneficio != null;
+            bool isRegistro = col == QuerysStringValidaciones.registroVal;
+            string t = (tipo ?? "").Trim().ToUpperInvariant();
 
+            query = (hasBeneficio, isRegistro, t) switch
+            {
+                // SIN cod_beneficio
+                (false, true, "P") => QuerysStringValidaciones.registroP,
+                (false, true, _) => QuerysStringValidaciones.registroGCategoria,
+
+                (false, false, "P") => QuerysStringValidaciones.pagoP,
+                (false, false, "G") => QuerysStringValidaciones.registroPCategoria, // (ojo: raro el nombre, pero respeto tu lógica)
+                (false, false, _) => QuerysStringValidaciones.pagoGDif,
+
+                // CON cod_beneficio
+                (true, true, "P") => QuerysStringValidaciones.registroPCategoria,
+                (true, true, _) => QuerysStringValidaciones.registroGCategoria, // o string.Empty / throw si no aplica
+
+                (true, false, "P") => QuerysStringValidaciones.pagoPCategoria,
+                (true, false, _) => QuerysStringValidaciones.pagoGCategoria,
+            };
 
             var validaciones = connection.Query<AfiBeneCalidaciones>(query, new { request.cod_beneficio }).ToList();
 
