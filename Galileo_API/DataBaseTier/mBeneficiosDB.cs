@@ -259,6 +259,7 @@ namespace Galileo.DataBaseTier
 
                 var validaciones = connection.Query<AfiBeneCalidaciones>(query, new { cod_beneficio }).ToList();
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var validacion in validaciones)
                 {
                     var sql = validacion.query_val
@@ -270,9 +271,11 @@ namespace Galileo.DataBaseTier
                     if (result == validacion.resultado_val)
                     {
                         info.Code = 0;
-                        info.Description += validacion.msj_val + "...\n";
+                        sb.Append(validacion.msj_val).AppendLine("...");
                     }
                 }
+
+                info.Description = sb.ToString();
             }
             catch (Exception ex)
             {
@@ -321,6 +324,7 @@ namespace Galileo.DataBaseTier
 
                 var validaciones = connection.Query<AfiBeneCalidaciones>(query, new { cod_beneficio }).ToList();
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var validacion in validaciones)
                 {
                     var sql = validacion.query_val
@@ -332,9 +336,10 @@ namespace Galileo.DataBaseTier
                     if (result == validacion.resultado_val)
                     {
                         info.Code = 0;
-                        info.Description += validacion.msj_val + "...\n";
+                        sb.Append(validacion.msj_val).AppendLine("...");
                     }
                 }
+                info.Description = sb.ToString();
             }
             catch (Exception ex)
             {
@@ -417,6 +422,7 @@ namespace Galileo.DataBaseTier
 
                 if (fallecido.Count > 0)
                 {
+
                     var otrosRegistros = new StringBuilder();
                     foreach (var item in fallecido)
                     {
@@ -463,6 +469,7 @@ namespace Galileo.DataBaseTier
                     .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
                     .ToList();
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var validacion in validaciones)
                 {
                     var sql = (validacion.query_val ?? string.Empty)
@@ -478,9 +485,10 @@ namespace Galileo.DataBaseTier
                     if (result == validacion.resultado_val)
                     {
                         info.Code = -1;
-                        info.Description += validacion.msj_val + "...\n";
+                        sb.Append(validacion.msj_val).AppendLine("...");
                     }
                 }
+                info.Description = sb.ToString();
             }
             catch (Exception ex)
             {
@@ -518,6 +526,7 @@ namespace Galileo.DataBaseTier
                     .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
                     .ToList();
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var validacion in validaciones)
                 {
                     var sql = (validacion.query_val ?? string.Empty)
@@ -533,9 +542,10 @@ namespace Galileo.DataBaseTier
                     if (result == validacion.resultado_val)
                     {
                         info.Code = -1;
-                        info.Description += validacion.msj_val + "...\n";
+                        sb.Append(validacion.msj_val).AppendLine("...");
                     }
                 }
+                info.Description = sb.ToString();
             }
             catch (Exception ex)
             {
@@ -579,6 +589,7 @@ namespace Galileo.DataBaseTier
                 int justificadas = 0;
                 int obligatorias = 0;
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var v in validaciones)
                 {
                     var sql = BuildValidationSql(v.query_val, beneficio);
@@ -590,8 +601,10 @@ namespace Galileo.DataBaseTier
                     if (v.registro_justifica) justificadas++;
 
                     if (!string.IsNullOrEmpty(v.msj_val))
-                        info.Description += v.msj_val + "...\n";
+                        sb.Append(v.msj_val).AppendLine("...");
                 }
+
+                info.Description = sb.ToString();
 
                 if (justificadas > 0)
                     info.Code = justifica ? 0 : -1;
@@ -649,6 +662,7 @@ namespace Galileo.DataBaseTier
                 int justificadas = 0, obligatorias = 0;
                 var desc = new StringBuilder();
 
+                
                 foreach (var v in validaciones)
                 {
                     var sql = BuildValidationSql(v.query_val, beneficio);
@@ -717,6 +731,7 @@ namespace Galileo.DataBaseTier
                     .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
                     .ToList();
 
+                var sb = new StringBuilder(info.Description);
                 foreach (var validacion in validaciones)
                 {
                     var sql = (validacion.query_val ?? string.Empty)
@@ -734,16 +749,17 @@ namespace Galileo.DataBaseTier
                     {
                         if (validacion.pago_justifica)
                         {
-                            info.Description += " ** " + validacion.msj_val + " ** ...\n";
+                            sb.Append(" ** " + validacion.msj_val + " **").AppendLine("...");
                         }
                         else
                         {
-                            info.Description += validacion.msj_val + "...\n";
+                            sb.Append(validacion.msj_val).AppendLine("...");
                         }
 
                         info.Code = 0;
                     }
                 }
+                info.Description = sb.ToString();
             }
             catch (Exception ex)
             {
