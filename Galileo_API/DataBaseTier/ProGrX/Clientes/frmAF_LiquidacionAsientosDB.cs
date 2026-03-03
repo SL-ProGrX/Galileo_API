@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
-using System.Text;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
@@ -81,40 +80,12 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         public ErrorDto<List<LiquidacionAsientoModel>> AF_LiquidacionAsiento_Obtener(int CodEmpresa, FiltrosSolicitud filtros)
         {
             var response = DbHelper.CreateOkResponse(new List<LiquidacionAsientoModel>());
-
             try
             {
-                var (where, p) = BuildLiquidacionAsientoWhereClause(CodEmpresa, filtros);
-
-                int todos = filtros.chkTodos ? 1 : 0;
-
-                string query = $@"Select {todos} as valor,
-                                           L.consec,
-                                           S.cedula,
-                                           S.nombre,
-                                           L.TNeto,
-                                           L.cod_banco,
-                                           L.TDocumento,
-                                           case when L.EstadoActLiq = 'A' then 'Ren.Asociación'
-                                                when L.EstadoActLiq = 'P' then 'Ren.Patronal' end as Tipo,
-                                           isnull(L.cta_ahorros,0) as Cuenta,
-                                           L.FecLiq,
-                                           L.usuario,
-                                           B.Descripcion,
-                                           dbo.fxTesSupervisa(L.cedula,S.nombre,L.TNeto,0,'L') as Duplicado,
-                                           TES_SUPERVISION_FECHA,
-                                           isnull(B.Cod_Divisa,'') as Cod_Divisa,
-                                           L.Id_Token
-                                    from Liquidacion L
-                                    inner join Socios S on L.cedula = S.cedula
-                                    left join Tes_Bancos B on L.cod_Banco = B.id_Banco
-                                    where L.FecLiq between @fechaInicio and @fechaFin
-                                      and L.Ubicacion = 'T'
-                                      and L.Estado = 'P' {where}
-                                    order by L.consec";
+                var (sql, p) = BuildLiquidacionAsientoSql(CodEmpresa, filtros);
 
                 using var connection = _portalDb.CreateConnection(CodEmpresa);
-                response.Result = connection.Query<LiquidacionAsientoModel>(query, p).ToList();
+                response.Result = connection.Query<LiquidacionAsientoModel>(sql, p).ToList();
             }
             catch (Exception ex)
             {
@@ -122,88 +93,115 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 response.Description = ex.Message;
                 response.Result = null;
             }
-
             return response;
         }
 
-        private (string where, DynamicParameters p) BuildLiquidacionAsientoWhereClause(int CodEmpresa, FiltrosSolicitud filtros)
+
+
+        private (string sql, DynamicParameters p) BuildLiquidacionAsientoSql(int codEmpresa, FiltrosSolicitud filtros)
         {
-            var where = new StringBuilder();
             var p = new DynamicParameters();
             p.Add("@fechaInicio", filtros.fechaInicio);
             p.Add("@fechaFin", filtros.fechaFin);
+            p.Add("@todos", filtros.chkTodos ? 1 : 0);
 
-            AppendAnalistaRevision(where, CodEmpresa);
-            AppendBancoTipo(where, p, filtros);
-            AppendEstadoAsiento(where, filtros);
-            AppendTipoRenuncia(where, filtros);
-            AppendFiltros(where, p, filtros);
+            var builder = new WhereSqlBuilder();
 
-            return (where.ToString(), p);
+            // Base mandatory conditions
+            builder.Where("L.FecLiq between @fechaInicio and @fechaFin");
+            builder.Where("L.Ubicacion = 'T'");
+            builder.Where("L.Estado = 'P'");
+
+            ApplyAnalistaRevision(builder, codEmpresa);
+            ApplyAccionTipo(builder, p, filtros);
+            ApplyEstadoAsiento(builder, filtros);
+            ApplyTipoRenuncia(builder, filtros);
+            ApplyFiltrosOpcionales(builder, p, filtros);
+
+            string sql = builder.ApplyWhereTemplate(LiquidacionAsientoTemplateSql);
+            return (sql, p);
         }
 
-        private void AppendAnalistaRevision(StringBuilder where, int CodEmpresa)
+        private void ApplyAnalistaRevision(WhereSqlBuilder builder, int codEmpresa)
         {
-            if (_main.FxSIFParametros(CodEmpresa, "15") == "S")
-                where.Append(" and L.Analista_Revision = 'S' ");
+            if (_main.FxSIFParametros(codEmpresa, "15") == "S")
+                builder.Where("L.Analista_Revision = 'S'");
         }
 
-        private static void AppendBancoTipo(StringBuilder where, DynamicParameters p, FiltrosSolicitud filtros)
+        private static void ApplyAccionTipo(WhereSqlBuilder builder, DynamicParameters p, FiltrosSolicitud filtros)
         {
             if (filtros.accion == "D" && filtros.tipo != "T")
             {
-                where.Append(" and L.cod_Banco = @codBanco ");
+                builder.Where("L.cod_Banco = @codBanco");
                 p.Add("@codBanco", filtros.tipo);
             }
         }
 
-        private static void AppendEstadoAsiento(StringBuilder where, FiltrosSolicitud filtros)
+        private static void ApplyEstadoAsiento(WhereSqlBuilder builder, FiltrosSolicitud filtros)
         {
-            if (filtros.estado == "P")
-                where.Append(" and L.EstadoAsiento = 'P' ");
-            else
-                where.Append(" and L.EstadoAsiento = 'G' ");
+            builder.Where(filtros.estado == "P" ? "L.EstadoAsiento = 'P'" : "L.EstadoAsiento = 'G'");
         }
 
-        private static void AppendTipoRenuncia(StringBuilder where, FiltrosSolicitud filtros)
+        private static void ApplyTipoRenuncia(WhereSqlBuilder builder, FiltrosSolicitud filtros)
         {
-            if (filtros.tipoRenuncia != "T")
-            {
-                if (filtros.tipoRenuncia == "A")
-                    where.Append(" and L.ESTADOACTLIQ = 'A' ");
-                else
-                    where.Append(" and L.ESTADOACTLIQ = 'P' ");
-            }
+            if (filtros.tipoRenuncia == "T")
+                return;
+
+            builder.Where(filtros.tipoRenuncia == "A" ? "L.ESTADOACTLIQ = 'A'" : "L.ESTADOACTLIQ = 'P'");
         }
 
-        private static void AppendFiltros(StringBuilder where, DynamicParameters p, FiltrosSolicitud filtros)
+        private static void ApplyFiltrosOpcionales(WhereSqlBuilder builder, DynamicParameters p, FiltrosSolicitud filtros)
         {
-            if (!filtros.chkFiltros) return;
+            if (!filtros.chkFiltros)
+                return;
 
             if (filtros.id_banco != null)
             {
-                where.Append(" and L.cod_Banco = @fIdBanco ");
+                builder.Where("L.cod_Banco = @fIdBanco");
                 p.Add("@fIdBanco", filtros.id_banco);
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.cod_oficina))
             {
-                where.Append(" and L.cod_oficina = @codOficina ");
+                builder.Where("L.cod_oficina = @codOficina");
                 p.Add("@codOficina", filtros.cod_oficina);
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.usuario))
             {
-                where.Append(" and L.usuario = @usr ");
+                builder.Where("L.usuario = @usr");
                 p.Add("@usr", filtros.usuario);
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.id_token))
             {
-                where.Append(" and isnull(L.ID_Token,'') like @idToken ");
+                builder.Where("isnull(L.ID_Token,'') like @idToken");
                 p.Add("@idToken", $"{filtros.id_token}%");
             }
         }
+
+        private const string LiquidacionAsientoTemplateSql = @"Select @todos as valor,
+                           L.consec,
+                           S.cedula,
+                           S.nombre,
+                           L.TNeto,
+                           L.cod_banco,
+                           L.TDocumento,
+                           case when L.EstadoActLiq = 'A' then 'Ren.Asociación'
+                                when L.EstadoActLiq = 'P' then 'Ren.Patronal' end as Tipo,
+                           isnull(L.cta_ahorros,0) as Cuenta,
+                           L.FecLiq,
+                           L.usuario,
+                           B.Descripcion,
+                           dbo.fxTesSupervisa(L.cedula,S.nombre,L.TNeto,0,'L') as Duplicado,
+                           TES_SUPERVISION_FECHA,
+                           isnull(B.Cod_Divisa,'') as Cod_Divisa,
+                           L.Id_Token
+                    from Liquidacion L
+                    inner join Socios S on L.cedula = S.cedula
+                    left join Tes_Bancos B on L.cod_Banco = B.id_Banco
+                    /**where**/
+                    order by L.consec";
 
 
         /// <summary>
@@ -498,5 +496,26 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return response;
         }
 
+        private sealed class WhereSqlBuilder
+        {
+            private readonly List<string> _where = new();
+
+            public void Where(string predicate)
+            {
+                if (!string.IsNullOrWhiteSpace(predicate))
+                    _where.Add(predicate);
+            }
+
+            public string ApplyWhereTemplate(string templateSql)
+            {
+                // Template uses the marker /**where**/ which will be replaced.
+                // All predicates are constant strings; runtime values are passed via parameters (Dapper).
+                if (_where.Count == 0)
+                    return templateSql.Replace("/**where**/", string.Empty);
+
+                string whereSql = "where " + string.Join(" and ", _where);
+                return templateSql.Replace("/**where**/", whereSql);
+            }
+        }
     }
 }
