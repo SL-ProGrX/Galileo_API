@@ -170,38 +170,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         {
             using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            if (string.IsNullOrWhiteSpace(cod_poliza))
-                return DbHelper.ErrorResponse("Debe indicar la póliza.");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(cod_poliza))
+                    return DbHelper.ErrorResponse("Debe indicar la póliza.");
 
-            if (cod_corte <= 0)
-                return DbHelper.ErrorResponse("Debe indicar el corte.");
+                if (cod_corte <= 0)
+                    return DbHelper.ErrorResponse("Debe indicar el corte.");
 
-            if (string.IsNullOrWhiteSpace(Tipo))
-                return DbHelper.ErrorResponse("Debe indicar el tipo.");
+                if (string.IsNullOrWhiteSpace(Tipo))
+                    return DbHelper.ErrorResponse("Debe indicar el tipo.");
 
-            Tipo = Tipo.Trim().ToUpperInvariant();
+                Tipo = Tipo.Trim().ToUpperInvariant();
 
-            // Regla VB6: solo puede eliminar cierres preliminares
-            if (Tipo != "P")
-                return DbHelper.ErrorResponse("Solo se pueden eliminar cierres preliminares.");
+                // Regla VB6: solo puede eliminar cierres preliminares
+                if (Tipo != "P")
+                    return DbHelper.ErrorResponse("Solo se pueden eliminar cierres preliminares.");
 
-            const string sql = @"
+                const string sql = @"
             DELETE FROM crd_polizas_cortes
             WHERE cod_poliza = @cod_poliza
               AND cod_corte  = @cod_corte
               AND Tipo       = @Tipo;";
 
-            var affected = connection.Execute(sql, new
+                var affected = connection.Execute(sql, new
+                {
+                    cod_poliza = cod_poliza.Trim(),
+                    cod_corte,
+                    Tipo
+                });
+
+                if (affected <= 0)
+                    return DbHelper.ErrorResponse("No se encontró el cierre para eliminar.");
+
+                return DbHelper.OkResponse("Cierre eliminado satisfactoriamente.");
+            }
+            catch (Exception ex)
             {
-                cod_poliza = cod_poliza.Trim(),
-                cod_corte,
-                Tipo
-            });
+                return DbHelper.ErrorResponse("No se pudo eliminar la linea: " + ex.Message);
+            }
 
-            if (affected <= 0)
-                return DbHelper.ErrorResponse("No se encontró el cierre para eliminar.");
-
-            return DbHelper.OkResponse("Cierre eliminado satisfactoriamente.");
+            
         }
     }
 }
