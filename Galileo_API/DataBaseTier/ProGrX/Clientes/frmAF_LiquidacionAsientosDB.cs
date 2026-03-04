@@ -10,14 +10,12 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
     public class FrmAfLiquidacionAsientosDB
     {
-        private readonly IConfiguration _config;
         private readonly PortalDB _portalDb;
         private readonly MTesoreria _mtes;
         private readonly MProGrxMain _main;
 
         public FrmAfLiquidacionAsientosDB(IConfiguration config)
         {
-            _config = config;
             _portalDb = new PortalDB(config);
             _mtes = new MTesoreria(config);
             _main = new MProGrxMain(config);
@@ -64,7 +62,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                             response.Insert(0, new DropDownListaGenericaModel
                             {
                                 item = "T",
-                                descripcion = "TODOS"
+                                descripcion = ConstanteLiquidacionAsientos.todos
                             });
 
                             return response;
@@ -100,7 +98,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                             response.Insert(0, new DropDownListaGenericaModel
                             {
                                 item = "T",
-                                descripcion = "TODOS"
+                                descripcion = ConstanteLiquidacionAsientos.todos
                             });
 
                             return response;
@@ -136,7 +134,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                             response.Insert(0, new DropDownListaGenericaModel
                             {
                                 item = "T",
-                                descripcion = "TODOS"
+                                descripcion = ConstanteLiquidacionAsientos.todos
                             });
 
                             return response;
@@ -168,7 +166,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 response.Insert(0, new DropDownListaGenericaModel
                 {
                     item = "T",
-                    descripcion = "TODOS"
+                    descripcion = ConstanteLiquidacionAsientos.todos
                 });
 
                 return response;
@@ -206,7 +204,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             response.Result.Insert(0, new DropDownListaGenericaModel
             {
                 item = "T",
-                descripcion = "TODOS"
+                descripcion = ConstanteLiquidacionAsientos.todos
             });
 
             return response;
@@ -254,17 +252,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             #region Validaciones
 
-            if (request == null)
-                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("Request inválido.");
-
-            if (string.IsNullOrWhiteSpace(request.accion))
-                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("accion es requerida.");
-
-            var accion = request.accion.Trim().ToUpperInvariant();
-            if (accion != "D" && accion != "R")
-                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("accion inválida. Use 'D' o 'R'.");
-
-            if (accion == "D" && string.IsNullOrWhiteSpace(request.token))
+            if (request.accion == "D" && string.IsNullOrWhiteSpace(request.token))
                 return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("token es requerido para Desembolsar (D).");
 
             if (string.IsNullOrWhiteSpace(request.usuario))
@@ -291,7 +279,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     if (!it.marcado) continue;
                     if (it.duplicado == 1) continue;
 
-                    if (accion == "D")
+                    if (request.accion == "D")
                     {
                         // VB6: exec spAFI_Liquidacion_Traslado_Bancos <consec>, '<usuario>', '<token>'
                         const string sp = "EXEC spAFI_Liquidacion_Traslado_Bancos @Liq, @Usuario, @Token;";
@@ -329,242 +317,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error al generar liquidaciones: {ex.Message}", ex);
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>(ex.Message);
             }
         }
-
-        /// <summary>
-        /// 'OBJETIVO:      Genera el Asiento de la liquidacion en el modulo de Tesoreria, junto con su
-        /// '               detalle y cambia el estado del asiento de la liquidacion a generado.
-        /// 'REFERENCIAS:   fxFechaServidor - (Devuelve la fecha del servidor)
-        /// 'OBSERVACIONES: Verifica que el monto al Debe este equilibrado con el monto al Haber.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vFecha"></param>
-        /// <param name="pToken"></param>
-        /// <param name="row"></param>
-        /// <returns></returns>
-        private ErrorDto sbTesoreria(int CodEmpresa,string usuario, string oficina ,string vFecha, string pToken, LiquidacionAsientoModel row)
-        {
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto { Code = 0 };
-            try
-            {
-                decimal curMonto = 0;
-                string vDivisa = row.cod_divisa ?? string.Empty; //'Divisa del Banco
-                decimal curDebitos = 0;
-                decimal curCreditos = 0;
-                long lngSolicitud = 0;
-                string oDivisa = "";
-                decimal oTipoCambio = 1;
-                decimal vTipoCambio = 1;
-
-                using (var connection = new SqlConnection(conn))
-                {
-                    var query = $@"select COD_DIVISA, isnull(TIPO_CAMBIO,1) as 'TIPO_CAMBIO' FROM LIQUIDACION WHERE CONSEC =  @consec";
-                    var result = connection.QueryFirstOrDefault<(string CodDivisa, decimal TipoCambio)>(
-                           query,
-                           new { consec = row.consec }
-                       );
-
-                    if (result != default)
-                    {
-                        oDivisa = result.CodDivisa;
-                        oTipoCambio = result.TipoCambio;
-                    }
-
-                    //'Control de Documentos v2
-                    query = $@"Select isnull(SUM(MONTO),0) as MONTO 
-                                    From SIF_Transacciones_Asiento 
-                                    Where  Tipo_Documento = 'LIQ' and cod_transaccion = @cod_transaccion  And Tipo_Movimiento ='D'";
-                    curDebitos = connection.QueryFirstOrDefault<decimal>(query, new { cod_transaccion = row.consec });
-
-                    query = $@"Select isnull(SUM(MONTO),0) as MONTO 
-                                    From SIF_Transacciones_Asiento 
-                                     Where  Tipo_Documento = 'LIQ' and cod_transaccion = @cod_transaccion  And Tipo_Movimiento ='C'";
-                    curCreditos = connection.QueryFirstOrDefault<decimal>(query, new { cod_transaccion = row.consec });
-
-
-                    if (curDebitos != curCreditos)
-                    {
-                        response.Code = -1;
-                        response.Description = $"La liquidación No. {row.consec}  -> No se Emite a Tesoreria porque se encuentra desbalanceada.!";
-                        return response;
-                    }
-                    else
-                    {
-                        if (curCreditos == 0 || curDebitos == 0)
-                        {
-                            response.Code = -1;
-                            response.Description = $"La liquidación No. {row.consec}  -> No se Emite a Tesoreria el asiento contable presenta problemas o no existe.!";
-                            return response;
-                        }
-                    }
-
-                    curMonto = row.valor;
-
-                    //Revisar la Conversion en Multi Divisa
-                    vTipoCambio = oTipoCambio;
-
-                    curMonto = curMonto/ Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(vTipoCambio));
-
-                    //Busco concepto de afiliacion
-                    query = $@"select VALOR from SIF_PARAMETROS where COD_PARAMETRO = 'AFICL'";
-                    var concepto = connection.QueryFirstOrDefault<string>(query);
-
-                    // 'Registra
-                    query = $@"Insert Tes_Transacciones(
-                                        ID_Banco,
-                                        Tipo,
-                                        Codigo,
-                                        Beneficiario,
-                                        Monto,
-                                        Fecha_Solicitud,
-                                        Estado,
-                                        EstadoI,
-                                        Modulo,
-                                        Cta_Ahorros,
-                                        Detalle1,
-                                        Detalle2,
-                                        Detalle3,
-                                        Detalle4,
-                                        Detalle5,
-                                        SubModulo,
-                                        Actualiza,
-                                        cod_unidad,
-                                        cod_concepto,
-                                        user_solicita,
-                                        ID_TOKEN ,
-                                        REMESA_TIPO, 
-                                        REMESA_ID, 
-                                        COD_DIVISA, 
-                                        TIPO_CAMBIO, 
-                                        COD_APP )
-                                        VALUES (
-                                        @ID_Banco,
-                                        @Tipo,
-                                        @Codigo,
-                                        @Beneficiario,
-                                        @Monto,
-                                        @Fecha_Solicitud,
-                                        @Estado,
-                                        @EstadoI,
-                                        @Modulo,
-                                        @Cta_Ahorros,
-                                        @Detalle1,
-                                        @Detalle2,
-                                        @Detalle3,
-                                        @Detalle4,
-                                        @Detalle5,
-                                        @SubModulo,
-                                        @Actualiza,
-                                        @cod_unidad,
-                                        @cod_concepto,
-                                        @user_solicita,
-                                        @ID_TOKEN ,
-                                        @REMESA_TIPO, 
-                                        @REMESA_ID, 
-                                        @COD_DIVISA, 
-                                        @TIPO_CAMBIO, 
-                                        @COD_APP
-                                        )";
-
-                    connection.Execute(query, new 
-                    {
-                        ID_Banco = row.cod_banco,
-                        Tipo = row.tipo,
-                        Codigo = row.consec,
-                        Beneficiario = row.cedula,
-                        Monto = curMonto,
-                        Fecha_Solicitud = vFecha,
-                        Estado = "P",
-                        EstadoI = "P",
-                        Modulo = "CC",
-                        Cta_Ahorros = row.cuenta,
-                        Detalle1 = "LIQ. DE PERSONA-AFILIACION",
-                        Detalle2 = $"'#Liq: {row.consec}",
-                        Detalle3 = $"'Tipo: {row.tdocumento}",
-                        Detalle4 = $"'Fecha: {row.fecliq}",
-                        Detalle5 = $"'Usuario: {row.usuario}",
-                        SubModulo = "A",
-                        Actualiza = "S",
-                        cod_unidad = oficina,
-                        cod_concepto = concepto,
-                        user_solicita = usuario,
-                        ID_TOKEN = pToken,
-                        REMESA_TIPO = "LIQ",
-                        REMESA_ID = 0,
-                        COD_DIVISA = vDivisa,
-                        TIPO_CAMBIO = vTipoCambio,
-                        COD_APP = "ProGrX"
-                    });
-
-                    query = $@"Select Max(NSolicitud) as Solicitud from Tes_Transacciones Where Codigo = @codigo  and Fecha_Solicitud = @fechSolicitud ";
-                    lngSolicitud = connection.QueryFirstOrDefault<long>(query, new { codigo = row.consec, fechSolicitud = vFecha });
-
-                    //-Asiento
-                    curMonto = curMonto * Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(vTipoCambio));
-
-                    query = $@"Select CTACONTA From Tes_Bancos where id_banco= @id_banco";
-                    var vCtaBanco = connection.QueryFirstOrDefault<string>(query, new { id_banco = row.cod_banco });
-
-                    if (!string.IsNullOrEmpty(vCtaBanco))
-                    {
-                        query = $@"Insert Into Tes_Trans_Asiento(NSolicitud,Cuenta_Contable,Monto,DebeHaber,Linea,COD_UNIDAD,Tipo_Cambio,cod_Divisa) 
-                                                  Values
-                                                                 (@NSolicitud,@Cuenta_Contable,@Monto,@DebeHaber,@Linea,@COD_UNIDAD,@Tipo_Cambio,@cod_Divisa)";
-
-                        connection.Execute(query, new {
-                            NSolicitud = lngSolicitud,
-                            Cuenta_Contable = vCtaBanco,
-                            Monto = curMonto,
-                            DebeHaber = "H",
-                            Linea = 1,
-                            COD_UNIDAD = oficina,
-                            Tipo_Cambio = vTipoCambio,
-                            cod_Divisa = vDivisa
-                        });
-                    }
-
-                    query = $@"Select CTA_LIQPAS From Par_AfAH Where cod_Divisa = @cod_divisa";
-                    var vCtaLiqPas = connection.QueryFirstOrDefault<string>(query, new { cod_divisa = oDivisa });
-                    if (!string.IsNullOrEmpty(vCtaLiqPas))
-                    {
-                        query = $@"Insert Into Tes_Trans_Asiento(NSolicitud,Cuenta_Contable,Monto,DebeHaber,Linea,COD_UNIDAD,Tipo_Cambio,cod_Divisa) 
-                                                  Values
-                                                                 (@NSolicitud,@Cuenta_Contable,@Monto,@DebeHaber,@Linea,@COD_UNIDAD,@Tipo_Cambio,@cod_Divisa)";
-
-                        connection.Execute(query, new {
-                            NSolicitud = lngSolicitud,
-                            Cuenta_Contable = vCtaLiqPas,
-                            Monto = curMonto,
-                            DebeHaber = "D",
-                            Linea = 2,
-                            COD_UNIDAD = oficina,
-                            Tipo_Cambio = oTipoCambio,
-                            cod_Divisa = oDivisa
-                        });
-                    }
-
-                    query = @"Update Liquidacion
-                              set EstadoAsiento = 'G',
-                                  Fecha_Traspaso = dbo.MyGetdate(),
-                                  Traspaso_Usuario = @Traspaso_Usuario,
-                                  ID_TOKEN = @token,
-                                  Tesoreria_Solicitud = @nSolicitud
-                              where consec = @consec";
-                    connection.Execute(query, new { Traspaso_Usuario = usuario, token = pToken, nSolicitud = lngSolicitud, consec = row.consec });
-
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"La liquidación No. {row.consec}  -> {ex.Message}!";
-            }
-            return response;
-        }
-
 
         /// <summary>
         /// OBJETIVO:

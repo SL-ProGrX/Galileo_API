@@ -3,7 +3,10 @@
 namespace Galileo.Models.ProGrX.Clientes
 {
 
-   
+    public static class ConstanteLiquidacionAsientos
+    {
+        public const string todos = "TODOS";
+    }
 
     public class FiltrosSolicitud
     {
