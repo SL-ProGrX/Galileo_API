@@ -40,17 +40,57 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
-        [HttpGet("AF_LiquidacionAsiento_Obtener")]
-        public ErrorDto<List<LiquidacionAsientoModel>> AF_LiquidacionAsiento_Obtener(int CodEmpresa, string filtros)
+        [HttpPost("Af_LiquidacionAsientos_Generar")]
+        public ErrorDto<AfLiquidacionAsientosGenerarResponse> Af_LiquidacionAsientos_Generar(
+             int CodEmpresa,
+             AfLiquidacionAsientosGenerarRequest request)
         {
-            return _BL.AF_LiquidacionAsiento_Obtener(CodEmpresa, filtros);
+            return _BL.Af_LiquidacionAsientos_Generar(CodEmpresa, request);
         }
 
         [Authorize]
-        [HttpPost("Af_LiquidacionAsiento_Generar")]
-        public ErrorDto Af_LiquidacionAsiento_Generar(int CodEmpresa, string usuario, string filtros, List<LiquidacionAsientoModel> liquidaciones)
+        [HttpPost("Af_LiquidacionAsientos_Buscar")]
+        public ErrorDto<List<AfLiquidacionAsientosRowDto>> Af_LiquidacionAsientos_Buscar(
+                int CodEmpresa,
+                AfLiquidacionAsientosBuscarRequest request)
         {
-            return _BL.Af_LiquidacionAsiento_Generar(CodEmpresa, usuario, filtros, liquidaciones);
+            return _BL.Af_LiquidacionAsientos_Buscar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Af_LiquidacionAsientos_Bancos")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Bancos(
+              int CodEmpresa,
+              AfLiquidacionFiltroRequest request)
+        {
+            return _BL.Af_LiquidacionAsientos_Bancos(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Af_LiquidacionAsientos_Usuarios")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Usuarios(
+               int CodEmpresa,
+               AfLiquidacionFiltroRequest request)
+        {
+            return _BL.Af_LiquidacionAsientos_Usuarios(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Af_LiquidacionAsientos_Tokens")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Tokens(
+                int CodEmpresa,
+                AfLiquidacionFiltroRequest request)
+        {
+            return _BL.Af_LiquidacionAsientos_Tokens(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Af_LiquidacionAsientos_Oficinas")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Oficinas(
+            int CodEmpresa,
+            AfLiquidacionFiltroRequest request)
+        {
+            return _BL.Af_LiquidacionAsientos_Oficinas(CodEmpresa, request);
         }
     }
 }

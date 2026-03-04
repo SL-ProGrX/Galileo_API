@@ -1,8 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
+using Microsoft.Reporting.Map.WebForms.BingMaps;
 using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
@@ -11,15 +12,167 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
     {
         private readonly IConfiguration _config;
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain _main;
         private readonly MTesoreria _mtes;
+        private readonly MProGrxMain _main;
 
         public FrmAfLiquidacionAsientosDB(IConfiguration config)
         {
             _config = config;
             _portalDb = new PortalDB(config);
-            _main = new MProGrxMain(config);
             _mtes = new MTesoreria(config);
+            _main = new MProGrxMain(config);
+        }
+
+        public ErrorDto<string> fxSIFParametros(int CodEmpresa, string codigo)
+        {
+            var valor = _main.FxSIFParametros(CodEmpresa, codigo);
+            return new ErrorDto<string>
+            {
+                Result = valor,
+                Code = 0,
+                Description = "OK"
+            };
+        }
+
+        /// <summary>
+        /// Metodo: Obtiene los bancos disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Bancos(
+                int CodEmpresa,
+                AfLiquidacionFiltroRequest request)
+                    {
+                        return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+                        {
+                            var query = @"
+                                Select L.cod_banco as item,
+                                       isnull(B.descripcion,'Sin Banco') as descripcion
+                                From Liquidacion L
+                                left join Tes_Bancos B on L.cod_Banco = B.id_Banco
+                                Where L.FecLiq between @Desde and @Hasta
+                                Group by L.cod_banco,B.descripcion";
+
+                            var response = conn.Query<DropDownListaGenericaModel>(query, new
+                            {
+                                Desde = request.desde,
+                                Hasta = request.hasta
+                            }).ToList();
+
+                            //agregar opcion TODOS al inicio
+                            response.Insert(0, new DropDownListaGenericaModel
+                            {
+                                item = "T",
+                                descripcion = "TODOS"
+                            });
+
+                            return response;
+                        });
+        }
+
+        /// <summary>
+        /// Metodo: Obtiene los usuarios disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Usuarios(
+                int CodEmpresa,
+                AfLiquidacionFiltroRequest request)
+                    {
+                        return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+                        {
+                            var query = @"
+            Select L.USUARIO as item,
+                   L.USUARIO as descripcion
+            From Liquidacion L
+            Where L.FecLiq between @Desde and @Hasta
+            Group by L.USUARIO";
+
+                            var response = conn.Query<DropDownListaGenericaModel>(query, new
+                            {
+                                Desde = request.desde,
+                                Hasta = request.hasta
+                            }).ToList();
+
+                            //agregar opcion TODOS al inicio
+                            response.Insert(0, new DropDownListaGenericaModel
+                            {
+                                item = "T",
+                                descripcion = "TODOS"
+                            });
+
+                            return response;
+                        });
+        }
+
+        /// <summary>
+        /// Metodo: Obtiene los tokens disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Tokens(
+                int CodEmpresa,
+                AfLiquidacionFiltroRequest request)
+                    {
+                        return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+                        {
+                            var query = @"
+                                Select ISNULL(L.ID_TOKEN,'') as item,
+                                       ISNULL(L.ID_TOKEN,'') as descripcion
+                                From Liquidacion L
+                                Where L.FecLiq between @Desde and @Hasta
+                                Group by ISNULL(L.ID_TOKEN,'')";
+
+                            var response = conn.Query<DropDownListaGenericaModel>(query, new
+                            {
+                                Desde = request.desde,
+                                Hasta = request.hasta
+                            }).ToList();
+
+                            //agregar opcion TODOS al inicio
+                            response.Insert(0, new DropDownListaGenericaModel
+                            {
+                                item = "T",
+                                descripcion = "TODOS"
+                            });
+
+                            return response;
+                        });
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Oficinas(
+            int CodEmpresa,
+            AfLiquidacionFiltroRequest request)
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                var query = @"
+                    Select rtrim(L.cod_Oficina) as item,
+                           isnull(O.descripcion,'') as descripcion
+                    From Liquidacion L
+                    left join SIF_Oficinas O on L.cod_oficina = O.cod_oficina
+                    Where L.FecLiq between @Desde and @Hasta
+                    Group by L.cod_Oficina,O.descripcion";
+
+                var response = conn.Query<DropDownListaGenericaModel>(query, new
+                {
+                    Desde = request.desde,
+                    Hasta = request.hasta
+                }).ToList();
+
+                //agregar opcion TODOS al inicio
+                response.Insert(0, new DropDownListaGenericaModel
+                {
+                    item = "T",
+                    descripcion = "TODOS"
+                });
+
+                return response;
+            });
         }
 
         /// <summary>
@@ -47,7 +200,16 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             if (string.IsNullOrWhiteSpace(query))
                 return DbHelper.CreateErrorResponse("Acción no válida para obtener tipos de asiento.", -1, new List<DropDownListaGenericaModel>());
 
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
+            var response = DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
+
+            //agregar opcion TODOS al inicio
+            response.Result.Insert(0, new DropDownListaGenericaModel
+            {
+                item = "T",
+                descripcion = "TODOS"
+            });
+
+            return response;
         }
 
         /// <summary>
@@ -72,138 +234,6 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return _mtes.spTes_Token_New(CodEmpresa, usuario);
         }
 
-        /// <summary>
-        /// Busca Liquidaciones pendientes o generadas con ubicacion en tesoreria.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<List<LiquidacionAsientoModel>> AF_LiquidacionAsiento_Obtener(int CodEmpresa, FiltrosSolicitud filtros)
-        {
-            var response = DbHelper.CreateOkResponse(new List<LiquidacionAsientoModel>());
-            try
-            {
-                var (sql, p) = BuildLiquidacionAsientoSql(CodEmpresa, filtros);
-
-                using var connection = _portalDb.CreateConnection(CodEmpresa);
-                response.Result = connection.Query<LiquidacionAsientoModel>(sql, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
-        }
-
-
-
-        private (string sql, DynamicParameters p) BuildLiquidacionAsientoSql(int codEmpresa, FiltrosSolicitud filtros)
-        {
-            var p = new DynamicParameters();
-            p.Add("@fechaInicio", filtros.fechaInicio);
-            p.Add("@fechaFin", filtros.fechaFin);
-            p.Add("@todos", filtros.chkTodos ? 1 : 0);
-
-            var builder = new WhereSqlBuilder();
-
-            // Base mandatory conditions
-            builder.Where("L.FecLiq between @fechaInicio and @fechaFin");
-            builder.Where("L.Ubicacion = 'T'");
-            builder.Where("L.Estado = 'P'");
-
-            ApplyAnalistaRevision(builder, codEmpresa);
-            ApplyAccionTipo(builder, p, filtros);
-            ApplyEstadoAsiento(builder, filtros);
-            ApplyTipoRenuncia(builder, filtros);
-            ApplyFiltrosOpcionales(builder, p, filtros);
-
-            string sql = builder.ApplyWhereTemplate(LiquidacionAsientoTemplateSql);
-            return (sql, p);
-        }
-
-        private void ApplyAnalistaRevision(WhereSqlBuilder builder, int codEmpresa)
-        {
-            if (_main.FxSIFParametros(codEmpresa, "15") == "S")
-                builder.Where("L.Analista_Revision = 'S'");
-        }
-
-        private static void ApplyAccionTipo(WhereSqlBuilder builder, DynamicParameters p, FiltrosSolicitud filtros)
-        {
-            if (filtros.accion == "D" && filtros.tipo != "T")
-            {
-                builder.Where("L.cod_Banco = @codBanco");
-                p.Add("@codBanco", filtros.tipo);
-            }
-        }
-
-        private static void ApplyEstadoAsiento(WhereSqlBuilder builder, FiltrosSolicitud filtros)
-        {
-            builder.Where(filtros.estado == "P" ? "L.EstadoAsiento = 'P'" : "L.EstadoAsiento = 'G'");
-        }
-
-        private static void ApplyTipoRenuncia(WhereSqlBuilder builder, FiltrosSolicitud filtros)
-        {
-            if (filtros.tipoRenuncia == "T")
-                return;
-
-            builder.Where(filtros.tipoRenuncia == "A" ? "L.ESTADOACTLIQ = 'A'" : "L.ESTADOACTLIQ = 'P'");
-        }
-
-        private static void ApplyFiltrosOpcionales(WhereSqlBuilder builder, DynamicParameters p, FiltrosSolicitud filtros)
-        {
-            if (!filtros.chkFiltros)
-                return;
-
-            if (filtros.id_banco != null)
-            {
-                builder.Where("L.cod_Banco = @fIdBanco");
-                p.Add("@fIdBanco", filtros.id_banco);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.cod_oficina))
-            {
-                builder.Where("L.cod_oficina = @codOficina");
-                p.Add("@codOficina", filtros.cod_oficina);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.usuario))
-            {
-                builder.Where("L.usuario = @usr");
-                p.Add("@usr", filtros.usuario);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.id_token))
-            {
-                builder.Where("isnull(L.ID_Token,'') like @idToken");
-                p.Add("@idToken", $"{filtros.id_token}%");
-            }
-        }
-
-        private const string LiquidacionAsientoTemplateSql = @"Select @todos as valor,
-                           L.consec,
-                           S.cedula,
-                           S.nombre,
-                           L.TNeto,
-                           L.cod_banco,
-                           L.TDocumento,
-                           case when L.EstadoActLiq = 'A' then 'Ren.Asociación'
-                                when L.EstadoActLiq = 'P' then 'Ren.Patronal' end as Tipo,
-                           isnull(L.cta_ahorros,0) as Cuenta,
-                           L.FecLiq,
-                           L.usuario,
-                           B.Descripcion,
-                           dbo.fxTesSupervisa(L.cedula,S.nombre,L.TNeto,0,'L') as Duplicado,
-                           TES_SUPERVISION_FECHA,
-                           isnull(B.Cod_Divisa,'') as Cod_Divisa,
-                           L.Id_Token
-                    from Liquidacion L
-                    inner join Socios S on L.cedula = S.cedula
-                    left join Tes_Bancos B on L.cod_Banco = B.id_Banco
-                    /**where**/
-                    order by L.consec";
-
 
         /// <summary>
         /// OBJETIVO:      Genera a Tesoreria las liquidaciones.
@@ -217,49 +247,90 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="liquidaciones"></param>
         /// <returns></returns>
-        public ErrorDto Af_LiquidacionAsiento_Generar(int CodEmpresa, string usuario, FiltrosSolicitud filtros ,List<LiquidacionAsientoModel> liquidaciones)
+        public ErrorDto<AfLiquidacionAsientosGenerarResponse> Af_LiquidacionAsientos_Generar(
+              int CodEmpresa,
+              AfLiquidacionAsientosGenerarRequest request)
         {
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto { Code = 0 };
+            using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+            #region Validaciones
+
+            if (request == null)
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("Request inválido.");
+
+            if (string.IsNullOrWhiteSpace(request.accion))
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("accion es requerida.");
+
+            var accion = request.accion.Trim().ToUpperInvariant();
+            if (accion != "D" && accion != "R")
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("accion inválida. Use 'D' o 'R'.");
+
+            if (accion == "D" && string.IsNullOrWhiteSpace(request.token))
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("token es requerido para Desembolsar (D).");
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("usuario es requerido.");
+
+            if (request.items == null || request.items.Count == 0)
+                return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>("No hay items para procesar.");
+
+            #endregion
+
+            var resp = new AfLiquidacionAsientosGenerarResponse
+            {
+                total_items = request.items.Count,
+                seleccionados = request.items.Count(x => x.marcado),
+                omitidos_no_marcado = request.items.Count(x => !x.marcado),
+                omitidos_duplicado = request.items.Count(x => x.marcado && x.duplicado == 1),
+                procesados = 0
+            };
+
             try
             {
-                var msjError = new System.Text.StringBuilder();
-
-                string vfecha = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                using (var connection = new SqlConnection(conn))
+                foreach (var it in request.items)
                 {
-                    foreach (var liq in liquidaciones.Where(liq => liq.duplicado == 0))
-                    {
-                        if (filtros.accion == "D")
-                        {
-                            ErrorDto res = sbTesoreria(CodEmpresa, usuario, "OC", vfecha, filtros.token ?? string.Empty, liq);
-                            if(res.Code == -1)
-                            {
-                                msjError.AppendLine(res.Description);
-                            }
-                        }
-                        else
-                        {
-                            //'Retener
-                            var strDup = $@"Update Liquidacion set Fecha_Traspaso= dbo.MyGetdate(),EstadoAsiento = 'G',NDocumento= '0',Tdocumento = 'RT'
-                                           ,Tesoreria_Solicitud = 0, Traspaso_Usuario = @usuario
-                                            Where Consec = @consec";
+                    if (!it.marcado) continue;
+                    if (it.duplicado == 1) continue;
 
-                            connection.Execute(strDup, new { usuario = usuario, consec = liq.consec });
-                        }
+                    if (accion == "D")
+                    {
+                        // VB6: exec spAFI_Liquidacion_Traslado_Bancos <consec>, '<usuario>', '<token>'
+                        const string sp = "EXEC spAFI_Liquidacion_Traslado_Bancos @Liq, @Usuario, @Token;";
+                        conn.Execute(sp, new
+                        {
+                            Liq = it.consec,
+                            Usuario = request.usuario.Trim(),
+                            Token = request.token.Trim()
+                        });
+                    }
+                    else
+                    {
+                        // VB6: Retener (UPDATE Liquidacion ...)
+                        const string sql = @"
+                                UPDATE Liquidacion
+                                SET Fecha_Traspaso = dbo.MyGetdate(),
+                                    EstadoAsiento = 'G',
+                                    NDocumento = '0',
+                                    Tdocumento = 'RT',
+                                    Tesoreria_Solicitud = 0,
+                                    Traspaso_Usuario = @Usuario
+                                WHERE Consec = @Consec;";
+
+                        conn.Execute(sql, new
+                        {
+                            Usuario = request.usuario.Trim(),
+                            Consec = it.consec
+                        });
                     }
 
-                    response.Code = msjError.Length == 0 ? 0 : -1;
-                    response.Description = msjError.Length == 0 ? "OK" : msjError.ToString();
+                    resp.procesados++;
                 }
-              
+
+                return DbHelper.CreateOkResponse<AfLiquidacionAsientosGenerarResponse>(resp);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                throw new Exception($"Error al generar liquidaciones: {ex.Message}", ex);
             }
-            return response;
         }
 
         /// <summary>
@@ -494,26 +565,124 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return response;
         }
 
-        private sealed class WhereSqlBuilder
+
+        /// <summary>
+        /// OBJETIVO:
+        ///     Ejecuta la consulta de liquidaciones para traslado a Tesorería,
+        ///     equivalente al método sbBuscar del formulario VB6 frmAF_LiquidacionAsientos.
+        ///
+        /// DESCRIPCIÓN FUNCIONAL (VB6 original):
+        ///     - Consulta liquidaciones dentro de un rango de fechas.
+        ///     - Permite filtrar por:
+        ///         * Tipo de salida (Banco cuando Acción = Desembolsar)
+        ///         * Estado del asiento (Pendiente / Generado)
+        ///         * Tipo de renuncia (Asociación / Patronal)
+        ///         * Filtros adicionales: Banco, Oficina, Usuario, Token
+        ///     - Ejecuta el SP:
+        ///         spAFI_Liquidacion_Traslado_Bancos_Lista
+        ///
+        /// PARAMETROS IMPORTANTES:
+        ///     @Marcar            -> 1/0 (equivalente a chkTodos.Value)
+        ///     @Desde             -> Fecha inicio 00:00:00
+        ///     @Hasta             -> Fecha fin 23:59:59
+        ///     @TipoSalida        -> Id Banco (solo si Acción = Desembolsar)
+        ///     @EstadoAsiento     -> 'P' o 'G'
+        ///     @TipoRenuncia      -> 'A', 'P' o NULL
+        ///     @Banco             -> Filtro adicional banco
+        ///     @Oficina           -> Filtro adicional oficina
+        ///     @Usuario           -> Filtro adicional usuario
+        ///     @Token             -> Filtro adicional token
+        ///
+        /// OBSERVACIONES:
+        ///     - Valida rango de fechas.
+        ///     - Normaliza valores tipo char a su primera letra (P/G/A).
+        ///     - Devuelve listado tipado para el grid.
+        /// </summary>
+        public ErrorDto<List<AfLiquidacionAsientosRowDto>> Af_LiquidacionAsientos_Buscar(
+            int CodEmpresa,
+            AfLiquidacionAsientosBuscarRequest request)
         {
-            private readonly List<string> _where = new();
+            #region Validaciones
 
-            public void Where(string predicate)
+            if (request == null)
+                return DbHelper.CreateErrorResponse<List<AfLiquidacionAsientosRowDto>>("Request inválido.");
+
+            if (request.desde == default || request.hasta == default)
+                return DbHelper.CreateErrorResponse<List<AfLiquidacionAsientosRowDto>>("El rango de fechas es requerido.");
+
+            if (request.hasta.Date < request.desde.Date)
+                return DbHelper.CreateErrorResponse<List<AfLiquidacionAsientosRowDto>>("Verifique el rango de fechas.");
+
+            #endregion
+
+            #region Normalización de Fechas (00:00:00 - 23:59:59)
+
+            var desde = request.desde.Date;
+            var hasta = request.hasta.Date.AddDays(1).AddTicks(-1);
+
+            #endregion
+
+            #region Normalización de Flags Tipo Char
+
+            string? estadoAsiento = NormalizeChar(request.estado_asiento, new[] { "P", "G" });
+            string? tipoRenuncia = NormalizeChar(request.tipo_renuncia, new[] { "A", "P" });
+
+            #endregion
+
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                if (!string.IsNullOrWhiteSpace(predicate))
-                    _where.Add(predicate);
-            }
+                const string query = @"
+                    EXEC spAFI_Liquidacion_Traslado_Bancos_Lista
+                        @SelValue,
+                        @Inicio,
+                        @Corte,
+                        @TipoSalida,
+                        @EstadoAsiento,
+                        @TipoRenuncia,
+                        @BancoId,
+                        @Oficina,
+                        @Usuario,
+                        @Token;";
 
-            public string ApplyWhereTemplate(string templateSql)
-            {
-                // Template uses the marker /**where**/ which will be replaced.
-                // All predicates are constant strings; runtime values are passed via parameters (Dapper).
-                if (_where.Count == 0)
-                    return templateSql.Replace("/**where**/", string.Empty);
+                var param = new
+                {
+                    SelValue = request.marcar ? 1 : 0,
+                    Inicio = desde,
+                    Corte = hasta,
+                    TipoSalida = request.tipo_salida,
+                    EstadoAsiento = estadoAsiento,
+                    TipoRenuncia = tipoRenuncia,
+                    BancoId = request.filtro_banco,
+                    Oficina = string.IsNullOrWhiteSpace(request.filtro_oficina) ? null : request.filtro_oficina.Trim(),
+                    Usuario = string.IsNullOrWhiteSpace(request.filtro_usuario) ? null : request.filtro_usuario.Trim(),
+                    Token = string.IsNullOrWhiteSpace(request.filtro_token) ? null : request.filtro_token.Trim()
+                };
 
-                string whereSql = "where " + string.Join(" and ", _where);
-                return templateSql.Replace("/**where**/", whereSql);
-            }
+                return conn.Query<AfLiquidacionAsientosRowDto>(query, param).ToList();
+            });
         }
+
+        /// <summary>
+        /// Normaliza valores tipo catálogo que en VB6 se evaluaban por la primera letra.
+        /// Ejemplo:
+        ///     "Pendiente" -> "P"
+        ///     "Generado"  -> "G"
+        ///     "Asociación"-> "A"
+        /// </summary>
+        private static string? NormalizeChar(string? input, string[] allowed)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return null;
+
+            var x = input.Trim();
+
+            if (x.Length > 1)
+                x = x.Substring(0, 1);
+
+            x = x.ToUpperInvariant();
+
+            return allowed.Contains(x) ? x : null;
+        }
+
     }
 }
