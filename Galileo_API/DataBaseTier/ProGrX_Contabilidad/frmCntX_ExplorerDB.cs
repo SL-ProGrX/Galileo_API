@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using Galileo_API.Models.ProGrX_Contabilidad;
@@ -54,20 +55,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsiento_Obtener(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxTipoAsientoDto>> Cntx_TiposAsiento_Obtener(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<CntxTipoAsientoDto>>();
 
             try
             {
                 using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var sql = @"SELECT tipo_asiento AS Item,
-                                   descripcion AS Descripcion
+                var sql = @"SELECT
+                        tipo_asiento,
+                        descripcion,
+                        consecutivo
                             FROM CntX_Tipos_Asientos
-                            WHERE cod_contabilidad = @cod_contabilidad";
+                            WHERE cod_contabilidad = @cod_contabilidad
+                            ORDER BY tipo_asiento";
 
-                response.Result = cn.Query<DropDownListaGenericaModel>(sql,
+                response.Result = cn.Query<CntxTipoAsientoDto>(sql,
                     new { cod_contabilidad }).ToList();
             }
             catch (Exception ex)
@@ -80,7 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        public ErrorDto<List<CntxPeriodoDto>> Cntx_Periodos_Obtener(int codEmpresa, string estado)
+        public ErrorDto<List<CntxPeriodoDto>> Cntx_Periodos_Obtener(int codEmpresa, int cod_contabilidad, string estado)
         {
             var response = new ErrorDto<List<CntxPeriodoDto>>();
 
@@ -89,15 +93,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 var sql = @"SELECT 
-                                CONCAT(anio,'-',FORMAT(mes,'00')) AS Periodo,
-                                CAST(CONCAT(anio,'-',FORMAT(mes,'00'),'-01') AS DATE) AS Fecha_Periodo
-                            FROM CntX_Periodos
-                            WHERE cod_contabilidad = @codEmpresa
-                              AND estado = @estado
-                            ORDER BY anio DESC, mes DESC";
+                                ANIO AS anio,
+                                MES AS mes,
+                                PERIODO_CORTE AS fecha_corte,
+
+                                CASE 
+                                    WHEN ESTADO = 'C' THEN 'CERRADO'
+                                    ELSE 'ABIERTO'
+                                END AS cerrado
+
+                            FROM CNTX_PERIODOS
+                            WHERE COD_CONTABILIDAD = @cod_contabilidad
+                            ORDER BY ANIO, MES";
 
                 response.Result = cn.Query<CntxPeriodoDto>(sql,
-                    new { codEmpresa, estado }).ToList();
+                    new { cod_contabilidad, estado }).ToList();
             }
             catch (Exception ex)
             {
@@ -191,24 +201,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var sql = @"
             SELECT 
-                D.cod_cuenta,
-                C.descripcion AS cuenta_descripcion,
-                D.monto_debito,
-                D.monto_credito,
-                D.detalle,
-                D.centro_costo
+                D.COD_CUENTA            AS cod_cuenta,
+                C.DESCRIPCION           AS cuenta_descripcion,
+                D.MONTO_DEBITO          AS monto_debito,
+                D.MONTO_CREDITO         AS monto_credito,
+                D.DOCUMENTO             AS documento,
+                D.DETALLE               AS detalle,
+                D.COD_UNIDAD            AS cod_unidad,
+                D.COD_CENTRO_COSTO      AS cod_centro_costo,
+                D.COD_DIVISA            AS cod_divisa
             FROM CntX_Asientos_Detalle D
             INNER JOIN CntX_Cuentas C
-                ON D.cod_contabilidad = C.cod_contabilidad
-                AND D.cod_cuenta = C.cod_cuenta
-            WHERE D.cod_contabilidad = @codEmpresa
-              AND D.tipo_asiento = @tipo
-              AND D.num_asiento = @numero
-            ORDER BY D.linea";
+                ON D.COD_CONTABILIDAD = C.COD_CONTABILIDAD
+                AND D.COD_CUENTA = C.COD_CUENTA
+            WHERE D.COD_CONTABILIDAD = @codContabilidad
+              AND D.TIPO_ASIENTO = @tipo
+              AND D.NUM_ASIENTO = @numero
+            ORDER BY D.NUM_LINEA";
 
                 response.Result = cn.Query<CntxAsientoDetDto>(sql, new
                 {
-                    codEmpresa,
+                    codContabilidad = filtros.cod_contabilidad,
                     tipo = filtros.cod_tipo_asiento,
                     numero = filtros.num_asiento
                 }).ToList();
@@ -253,21 +266,48 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         #region CATALOGO CUENTAS
 
-        public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, string? codCuentaPadre)
+        public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, int cod_contabilidad, string? codCuentaPadre)
         {
             var response = new ErrorDto<List<CntxCuentaDto>>();
 
             try
             {
-                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var lista = cn.Query<CntxCuentaDto>(
-                    "spCntX_Cuentas_PorPadre",
-                    new { codCuentaPadre },
-                    commandType: System.Data.CommandType.StoredProcedure
+                var sql = @"
+            SELECT  
+                cod_cuenta,
+                descripcion,
+                CASE 
+                    WHEN acepta_movimientos = 0 THEN 1
+                    ELSE 0
+                END AS es_mayor,
+    CASE tipo_cuenta
+                                WHEN '01' THEN 'ACTIVOS'
+                                WHEN '02' THEN 'PASIVOS'
+                                WHEN '03' THEN 'PATRIMONIO'
+                                WHEN '04' THEN 'INGRESOS'
+                                WHEN '05' THEN 'GASTOS'
+                                WHEN '06' THEN 'COSTO VENTAS'
+                                WHEN '08' THEN 'CUENTA ORDEN'
+                                WHEN '09' THEN 'CUENTA ORDEN'
+                                ELSE 'NO DEFINIDO'
+                            END AS tipo_descripcion,
+                                CASE 
+                    WHEN acepta_movimientos = 0 THEN 'NO'
+                    WHEN acepta_movimientos = 1 THEN 'SI'
+                    ELSE 'NO DEFINIDO'
+                END AS acepta_movimientos_desc
+            FROM CntX_Cuentas
+            WHERE cod_contabilidad = @cod_contabilidad
+              AND cuenta_madre = @codCuentaPadre
+            ORDER BY cod_cuenta";
+
+                response.Result = cn.Query<CntxCuentaDto>(
+                    sql,
+                    new { codEmpresa, codCuentaPadre, cod_contabilidad }
                 ).ToList();
-
-                response.Result = lista;
             }
             catch (Exception ex)
             {
@@ -282,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         #region GENERICOS
 
-        public ErrorDto<List<CntxAsientoTreeDto>>Cntx_Asientos_TreePorTipo(int codEmpresa,int cod_contabilidad,string tipo,int anio,int mes)
+        public ErrorDto<List<CntxAsientoTreeDto>> Cntx_Asientos_TreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
         {
             var response = new ErrorDto<List<CntxAsientoTreeDto>>();
 
@@ -319,7 +359,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        public ErrorDto<List<CntxTipoCuentaDto>> Cntx_TiposCuenta_Obtener(int codEmpresa,int codContabilidad)
+        public ErrorDto<List<CntxTipoCuentaDto>> Cntx_TiposCuenta_Obtener(int codEmpresa, int codContabilidad)
         {
             var response = new ErrorDto<List<CntxTipoCuentaDto>>();
 
@@ -349,7 +389,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        public ErrorDto<List<CntxCuentaDto>> Cntx_CuentasRaizPorTipo_Obtener(int codEmpresa,int codContabilidad,string tipoCuenta)
+        public ErrorDto<List<CntxCuentaDto>> Cntx_CuentasRaizPorTipo_Obtener(int codEmpresa, int codContabilidad, string tipoCuenta)
         {
             var response = new ErrorDto<List<CntxCuentaDto>>();
 
@@ -358,18 +398,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var sql = @"
-            SELECT cod_cuenta,
-                   descripcion,
-                   CASE 
-                       WHEN acepta_movimientos = 0 THEN 1
-                       ELSE 0
-                   END AS es_mayor
-            FROM CntX_Cuentas
-            WHERE cod_contabilidad = @codContabilidad
-              AND tipo_cuenta = @tipoCuenta
-              AND ISNULL(cuenta_madre,'') = ''
-            ORDER BY cod_cuenta";
+                var sql = @"SELECT  
+                            cod_cuenta,
+                            descripcion,
+
+                            CASE 
+                                WHEN acepta_movimientos = 0 THEN 1
+                                ELSE 0
+                            END AS es_mayor,
+
+                            CASE tipo_cuenta
+                                WHEN '01' THEN 'ACTIVOS'
+                                WHEN '02' THEN 'PASIVOS'
+                                WHEN '03' THEN 'PATRIMONIO'
+                                WHEN '04' THEN 'INGRESOS'
+                                WHEN '05' THEN 'GASTOS'
+                                WHEN '06' THEN 'COSTO VENTAS'
+                                WHEN '08' THEN 'CUENTA ORDEN'
+                                WHEN '09' THEN 'CUENTA ORDEN'
+                                ELSE 'NO DEFINIDO'
+                            END AS tipo_descripcion,
+                                CASE 
+                    WHEN acepta_movimientos = 0 THEN 'NO'
+                    WHEN acepta_movimientos = 1 THEN 'SI'
+                    ELSE 'NO DEFINIDO'
+                END AS acepta_movimientos_desc
+                        FROM CntX_Cuentas
+                        WHERE cod_contabilidad = @codContabilidad
+                          AND tipo_cuenta = @tipoCuenta
+                            AND ISNULL(cuenta_madre,'') = ''
+                        ORDER BY cod_cuenta;";
 
                 response.Result = cn.Query<CntxCuentaDto>(
                     sql,
@@ -419,9 +477,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
 
-        public ErrorDto<List<DropDownListaGenericaModel>> DiferidoPlantillas_Obtener(int codEmpresa,int codContabilidad,int codDiferido)
+        public ErrorDto<List<CntxDiferidoPlantillaDto>> DiferidoPlantillas_Obtener(
+    int codEmpresa,
+    int codContabilidad,
+    int codDiferido)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<CntxDiferidoPlantillaDto>>();
 
             try
             {
@@ -429,14 +490,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 var sql = @"
-            SELECT cod_difPlantilla AS Item,
-                   descripcion AS Descripcion
-            FROM CntX_diferido_plantilla
-            WHERE cod_contabilidad = @codContabilidad
-              AND cod_diferido = @codDiferido
-            ORDER BY cod_difPlantilla";
+        SELECT 
+            COD_DIFPLANTILLA      AS Item,
+            DESCRIPCION           AS Descripcion,
+            MONTO_DIFERIR         AS Monto,
+            ACUMULADO             AS Acumulado,
+            (MONTO_DIFERIR - ACUMULADO) AS Pendiente,
+            PLAZO                 AS Plazo,
+            FECHA_CREA            AS Inicio,
+            USER_CREA             AS Usuario,
+            DOCUMENTO             AS Documento
+        FROM CntX_diferido_plantilla
+        WHERE COD_CONTABILIDAD = @codContabilidad
+          AND COD_DIFERIDO = @codDiferido
+        ORDER BY COD_DIFPLANTILLA";
 
-                response.Result = cn.Query<DropDownListaGenericaModel>(
+                response.Result = cn.Query<CntxDiferidoPlantillaDto>(
                     sql,
                     new { codContabilidad, codDiferido }
                 ).ToList();
@@ -451,7 +520,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        public ErrorDto<List<CntxDiferidoHistoricoDto>> DiferidoHistorico_Obtener(int codEmpresa,int codContabilidad,int codDiferido,int codPlantilla)
+        public ErrorDto<List<CntxDiferidoHistoricoDto>> DiferidoHistorico_Obtener(int codEmpresa, int codContabilidad, int codDiferido, int codPlantilla)
         {
             var response = new ErrorDto<List<CntxDiferidoHistoricoDto>>();
 
@@ -469,7 +538,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                    usuario
             FROM CntX_Diferido_Historico
             WHERE cod_contabilidad = @codContabilidad
-              AND cod_diferido = @codDiferido
               AND cod_difPlantilla = @codPlantilla
             ORDER BY anio, mes";
 
@@ -584,20 +652,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         #region F4 Divisa
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxDivisaDto>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<CntxDivisaDto>>();
 
             try
             {
                 using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    @"SELECT cod_divisa AS item,
-                             descripcion AS descripcion
-                      FROM CntX_Divisas
-                      WHERE cod_contabilidad = @cod_contabilidad
-                      ORDER BY cod_divisa",
+                var result = cn.Query<CntxDivisaDto>(
+                    @"SELECT 
+                        cod_divisa,
+                        descripcion,
+                        tc_venta,
+                        tc_compra,
+                        divisa_local
+                    FROM CntX_Divisas
+                    WHERE cod_contabilidad = @cod_contabilidad
+                    ORDER BY cod_divisa",
                     new { cod_contabilidad }).ToList();
 
                 response.Result = result;
@@ -613,7 +685,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         #endregion
 
-        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa,int cod_contabilidad,int anio,int mes)
+        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa, int cod_contabilidad, int anio, int mes)
         {
             var response = new ErrorDto<List<CntxAsientoResumenDto>>();
 
@@ -645,6 +717,276 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        public ErrorDto<List<CntxCatalogoResumenDto>> Catalogo_Resumen(CatalogoResumenRequest request)
+        {
+            var response = new ErrorDto<List<CntxCatalogoResumenDto>>();
 
+            try
+            {
+                if (request.codEmpresa == null)
+                {
+                    response.Code = -1;
+                    response.Description = "La empresa es requerida.";
+                    return response;
+                }
+
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(request.codEmpresa.Value)
+                );
+
+                var sql = @"
+                        SELECT TOP 50
+                            TC.tipo_cuenta        AS codigo,
+                            TC.descripcion        AS descripcion,
+                            TC.descripcion        AS clasificacion,
+                            COUNT(D.num_linea)    AS movimientos,
+                            ISNULL(SUM(D.monto_debito),0)  AS total_debitos,
+                            ISNULL(SUM(D.monto_credito),0) AS total_creditos,
+                            ISNULL(SUM(D.monto_debito - D.monto_credito),0) AS diferencia
+                        FROM CntX_Tipos_Cuentas TC
+                        LEFT JOIN CntX_Cuentas C
+                            ON C.tipo_cuenta = TC.tipo_cuenta
+                            AND C.cod_contabilidad = @cod_contabilidad
+                        LEFT JOIN CntX_Asientos_Detalle D
+                            ON D.cod_cuenta = C.cod_cuenta
+                            AND D.cod_contabilidad = @cod_contabilidad
+                        LEFT JOIN CntX_Asientos A
+                            ON A.cod_contabilidad = D.cod_contabilidad
+                            AND A.tipo_asiento = D.tipo_asiento
+                            AND A.num_asiento = D.num_asiento
+                        WHERE TC.cod_contabilidad = @cod_contabilidad
+                          AND (@fechaDesde IS NULL OR A.fecha_asiento >= @fechaDesde)
+                          AND (@fechaHasta IS NULL OR A.fecha_asiento <= @fechaHasta)
+                        GROUP BY TC.tipo_cuenta, TC.descripcion
+                        ORDER BY TC.tipo_cuenta";
+
+                response.Result = cn.Query<CntxCatalogoResumenDto>(
+                    sql,
+                    new
+                    {
+                        request.cod_contabilidad,
+                        request.fechaDesde,
+                        request.fechaHasta
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> PlantillaRate_Obtener(int codEmpresa, int codContabilidad)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"
+            SELECT 
+                cod_plantilla AS Item,
+                descripcion   AS Descripcion
+            FROM CntX_Plantilla_Rate
+            WHERE cod_contabilidad = @codContabilidad
+            ORDER BY cod_plantilla";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    new { codContabilidad }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<CntxPlantillaRateDetalleDto>> PlantillaRate_Detalle(int codEmpresa, int codContabilidad, int codPlantilla)
+        {
+            var response = new ErrorDto<List<CntxPlantillaRateDetalleDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"
+            SELECT 
+                P.cod_cuenta,
+                C.cod_Cuenta_Mask      AS cod_cuenta_mask,
+                C.descripcion          AS descripcion,
+                P.debitos,
+                P.creditos,
+                P.detalle
+            FROM CntX_Plantilla_Rate_Detalle P
+            INNER JOIN CntX_Cuentas C
+                ON P.cod_contabilidad = C.cod_contabilidad
+                AND P.cod_cuenta = C.cod_cuenta
+            WHERE P.cod_contabilidad = @codContabilidad
+              AND P.cod_plantilla = @codPlantilla
+            ORDER BY P.num_linea";
+
+                response.Result = cn.Query<CntxPlantillaRateDetalleDto>(
+                    sql,
+                    new { codContabilidad, codPlantilla }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int? codAreaPadre)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"
+            SELECT 
+                cod_area AS Item,
+                cod_contabilidad AS Descripcion
+            FROM CNTX_AREAS_UNIDADES
+            ORDER BY cod_area";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    new { codAreaPadre }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<AreaResumenDto>> AreasTrabajo_Resumen(int codEmpresa, int codContabilidad, int codArea, DateTime fechaDesde, DateTime fechaHasta)
+        {
+            var response = new ErrorDto<List<AreaResumenDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"
+        EXEC spCntX_Areas_Resumen
+            @codContabilidad,
+            @codArea,
+            @fechaDesde,
+            @fechaHasta";
+
+                response.Result = cn.Query<AreaResumenDto>(
+                    sql,
+                    new
+                    {
+                        codContabilidad,
+                        codArea,
+                        fechaDesde,
+                        fechaHasta
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
+        {
+            var response = new ErrorDto<List<CntxContabilidadDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"
+        SELECT 
+            cod_contabilidad AS codigo,
+            nombre,
+            tel_central,
+            tel_fax,
+            contacto
+        FROM CntX_Contabilidades
+        ORDER BY cod_contabilidad";
+
+                response.Result = cn.Query<CntxContabilidadDto>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
+        {
+            var response = new ErrorDto<List<CntxCierreDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var sql = @"SELECT
+                        INICIO_ANIO      AS in_anio,
+                        INICIO_MES       AS in_mes,
+                        CORTE_ANIO       AS co_anio,
+                        CORTE_MES        AS co_mes,
+                        DESCRIPCION      AS descripcion,
+                        CUENTA_GANPER    AS gan_per,
+                        CUENTA_UTILIDAD  AS exc_uti,
+                        CUENTA_IMPRENTA  AS renta_cta,
+                        IMPUESTO_RENTA   AS renta,
+                        CASE 
+                            WHEN ACTIVO = 1 THEN 'Si'
+                            ELSE 'No'
+                        END AS vigente
+                    FROM CNTX_CIERRES
+                    WHERE COD_CONTABILIDAD = @cod_contabilidad
+                    ORDER BY INICIO_ANIO DESC, INICIO_MES DESC";
+
+                response.Result = cn.Query<CntxCierreDto>(
+                    sql,
+                    new { cod_contabilidad }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
     }
 }
