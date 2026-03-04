@@ -72,8 +72,8 @@ namespace Galileo.Models.ProGrX.Clientes
 
     public class AfLiquidacionFiltroRequest
     {
-        public DateTime? desde { get; set; }
-        public DateTime? hasta { get; set; }
+        public DateTime desde { get; set; } = DateTime.Today.AddDays(-7); // Por defecto, última semana
+        public DateTime hasta { get; set; } = DateTime.Today;
 
         public string? tipo_salida { get; set; }
 
