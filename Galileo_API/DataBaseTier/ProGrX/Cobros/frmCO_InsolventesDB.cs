@@ -1,17 +1,17 @@
-﻿using Dapper;
-using Galileo.DataBaseTier; 
-using Galileo.Models.ERROR; 
-using Galileo.Models.Security; 
-using static Galileo_API.Models.ProGrX.Cobros.FrmCoInsolventesModels; 
+﻿using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using static Galileo_API.Models.ProGrX.Cobros.FrmCoInsolventesModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCOInsolventesDB
     {
         private readonly PortalDB _portalDB;
-        private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
 
+        // Módulo para bitácora
+        private const int ModuloBitacora = 36;
 
         public FrmCOInsolventesDB(IConfiguration config)
         {
@@ -20,56 +20,116 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Registro de bitacora
+        /// Registro de bitácora.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="detalle"></param>
-        /// <param name="movimiento"></param>
-        private void RegistrarBitacora(
-           int CodEmpresa,
-           string usuario,
-           string detalle,
-           string movimiento)
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalle, string movimiento)
         {
             _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId = CodEmpresa,
+                EmpresaId = codEmpresa,
                 Usuario = usuario ?? string.Empty,
                 DetalleMovimiento = detalle,
                 Movimiento = movimiento,
-                Modulo = vModulo
+                Modulo = ModuloBitacora
             });
         }
 
         /// <summary>
-        /// Consulta de casos insolventes según filtros. 
+        /// Helper: construye rango de fechas equivalente a VB6:
+        /// - IgnorarFechas: 2000-01-01 a 2100-01-01
+        /// - Caso contrario: Inicio 00:00:00 y Corte 23:59:59.999...
+        /// (Se especifica DateTimeKind para cumplir Sonar.)
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CbrInsolventeGridItem>> CoInsolventes_Buscar(
-            int codEmpresa,
-            CbrInsolventesBuscarRequest request)
+        private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CbrInsolventesBuscarRequest request)
         {
-            DateTime inicio;
-            DateTime corte;
             if (request.IgnorarFechas)
             {
-                inicio = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                corte = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                var inicioAll = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                var corteAll = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                return (inicioAll, corteAll);
             }
-            else
+
+            var inicio = DateTime.SpecifyKind(
+                (request.FechaInicio ?? DateTime.Today).Date,
+                DateTimeKind.Utc);
+
+            var corte = DateTime.SpecifyKind(
+                (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
+                DateTimeKind.Utc);
+
+            return (inicio, corte);
+        }
+
+        /// <summary>
+        /// Helper: construye respuesta de validación para SP Movimiento.
+        /// </summary>
+        private static ErrorDto<CbrSpMovimientoResult> ErrorValidacion(string validation)
+            => DbHelper.CreateErrorResponse(
+                validation,
+                1,
+                new CbrSpMovimientoResult
+                {
+                    Pass = 0,
+                    Movimiento = null,
+                    Mensaje = validation
+                });
+
+        /// <summary>
+        /// Helper: ejecuta SP que retorna CbrSpMovimientoResult y centraliza:
+        /// - manejo de error DbHelper
+        /// - bitácora (si Pass=1)
+        /// - respuesta estándar ErrorDto
+        /// </summary>
+        private ErrorDto<CbrSpMovimientoResult> EjecutarMovimiento(
+            int codEmpresa,
+            string usuario,
+            string sql,
+            object parameters,
+            string msgErrorGenerico)
+        {
+            var spRes = DbHelper.ExecuteSingleQuery<CbrSpMovimientoResult>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                defaultValue: null,
+                parameters: parameters);
+
+            if (spRes.Code != 0 || spRes.Result is null)
             {
-                inicio = DateTime.SpecifyKind(
-                 (request.FechaInicio ?? DateTime.Today).Date,
-                 DateTimeKind.Utc);
-
-                corte = DateTime.SpecifyKind(
-                    (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
-                    DateTimeKind.Utc);
+                return DbHelper.CreateErrorResponse(
+                    msgErrorGenerico,
+                    -1,
+                    new CbrSpMovimientoResult
+                    {
+                        Pass = 0,
+                        Movimiento = null,
+                        Mensaje = "Error interno."
+                    });
             }
 
+            if (spRes.Result.Pass == 1)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    usuario,
+                    spRes.Result.Mensaje ?? string.Empty,
+                    $"{spRes.Result.Movimiento}- WEB ");
+            }
+
+            return new ErrorDto<CbrSpMovimientoResult>
+            {
+                Code = 0,
+                Description = spRes.Result.Mensaje ?? "OK",
+                Result = spRes.Result
+            };
+        }
+
+        /// <summary>
+        /// Consulta de casos insolventes según filtros.
+        /// </summary>
+        public ErrorDto<List<CbrInsolventeGridItem>> CoInsolventes_Buscar(int codEmpresa, CbrInsolventesBuscarRequest request)
+        {
+            var (inicio, corte) = ResolverRangoFechas(request);
 
             var parameters = new
             {
@@ -81,47 +141,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Usuario = request.Usuario?.Trim() ?? string.Empty
             };
 
-
             const string sql = @"
-            EXEC spCBR_Insolventes_List
-                @Estado,
-                @Inicio,
-                @Corte,
-                @Filtro,
-                @Expediente,
-                @Usuario;";
+EXEC spCBR_Insolventes_List
+    @Estado,
+    @Inicio,
+    @Corte,
+    @Filtro,
+    @Expediente,
+    @Usuario;";
 
             return DbHelper.ExecuteListQuery<CbrInsolventeGridItem>(_portalDB, codEmpresa, sql, parameters);
         }
 
-
         /// <summary>
-        /// Registra un nuevo caso insolvente. 
+        /// Registra un nuevo caso insolvente.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<CbrSpMovimientoResult> CoInsolventes_Registrar(
-      int codEmpresa,
-      CbrInsolventeRegistrarRequest request,
-      string usuario)
+            int codEmpresa,
+            CbrInsolventeRegistrarRequest request,
+            string usuario)
         {
             var validation = ValidateRegistrar(request);
             if (!string.IsNullOrWhiteSpace(validation))
             {
-                return DbHelper.CreateErrorResponse(
-                    validation,
-                    1,
-                    new CbrSpMovimientoResult
-                    {
-                        Pass = 0,
-                        Movimiento = null,
-                        Mensaje = validation
-                    });
+                return ErrorValidacion(validation);
             }
 
-            // Mantengo tu lógica, aunque ojo: SpecifyKind no convierte zona horaria, solo marca el Kind.
             DateTime? fechaSen = request.FechaSentencia.HasValue
                 ? DateTime.SpecifyKind(request.FechaSentencia.Value, DateTimeKind.Utc)
                 : null;
@@ -137,59 +182,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             };
 
             const string sql = @"
-                EXEC spCBR_Insolventes_Add
-                    @Cedula,
-                    @Nombre,
-                    @Expediente,
-                    @FechaSentencia,
-                    @Notas,
-                    @Usuario;";
+EXEC spCBR_Insolventes_Add
+    @Cedula,
+    @Nombre,
+    @Expediente,
+    @FechaSentencia,
+    @Notas,
+    @Usuario;";
 
-            var spRes = DbHelper.ExecuteSingleQuery<CbrSpMovimientoResult>(
-                _portalDB,
-                codEmpresa,
-                sql,
-                defaultValue: null,
-                parameters: parameters);
-
-
-            if (spRes.Code != 0 || spRes.Result is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Error al registrar caso insolvente.",
-                    -1,
-                    new CbrSpMovimientoResult
-                    {
-                        Pass = 0,
-                        Movimiento = null,
-                        Mensaje = "Error interno."
-                    });
-            }
-
-            if (spRes.Result.Pass == 1)
-            {
-                RegistrarBitacora(
+            return EjecutarMovimiento(
                 codEmpresa,
                 usuario,
-                $"{spRes.Result.Mensaje}",
-                $"{spRes.Result.Movimiento}- WEB ");
-            }
-
-            return new ErrorDto<CbrSpMovimientoResult>
-            {
-                Code = 0,
-                Description = spRes.Result.Mensaje ?? "OK",
-                Result = spRes.Result
-            };
+                sql,
+                parameters,
+                "Error al registrar caso insolvente.");
         }
 
         /// <summary>
-        /// Reversa un caso insolvente activo, marcándolo como reversado. Solo se puede revertir casos activos, no reversados.
+        /// Reversa un caso insolvente activo, marcándolo como reversado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<CbrSpMovimientoResult> CoInsolventes_Reversar(
             int codEmpresa,
             CbrInsolventeRegistrarRequest request,
@@ -198,74 +209,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var validation = ValidateReversar(request);
             if (!string.IsNullOrWhiteSpace(validation))
             {
-                return DbHelper.CreateErrorResponse(
-                        validation,
-                        1,
-                        new CbrSpMovimientoResult
-                        {
-                            Pass = 0,
-                            Movimiento = null,
-                            Mensaje = validation
-                        });
+                return ErrorValidacion(validation);
             }
 
             var parameters = new
             {
-                request.CasoId,
+                CasoId = request.CasoId,
                 Notas = request.Notas.Trim(),
                 Usuario = usuario.Trim()
             };
 
             const string sql = @"
-                    EXEC spCBR_Insolventes_Del
-                        @CasoId,
-                        @Notas,
-                        @Usuario;";
+EXEC spCBR_Insolventes_Del
+    @CasoId,
+    @Notas,
+    @Usuario;";
 
-            var spRes = DbHelper.ExecuteSingleQuery<CbrSpMovimientoResult>(
-                             _portalDB,
-                             codEmpresa,
-                             sql,
-                             defaultValue: null,
-                             parameters: parameters);
-
-
-            if (spRes.Code != 0 || spRes.Result is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Error al reversar caso insolvente.",
-                    -1,
-                    new CbrSpMovimientoResult
-                    {
-                        Pass = 0,
-                        Movimiento = null,
-                        Mensaje = "Error interno."
-                    });
-            }
-
-            if (spRes.Result.Pass == 1)
-            {
-                RegistrarBitacora(
+            return EjecutarMovimiento(
                 codEmpresa,
                 usuario,
-                $"{spRes.Result.Mensaje}",
-                $"{spRes.Result.Movimiento}- WEB ");
-            }
-
-            return new ErrorDto<CbrSpMovimientoResult>
-            {
-                Code = 0,
-                Description = spRes.Result.Mensaje ?? "OK",
-                Result = spRes.Result
-            };
+                sql,
+                parameters,
+                "Error al reversar caso insolvente.");
         }
 
-
         /// <summary>
-        /// Valida los datos de entrada para registrar un nuevo caso insolvente. Retorna mensaje de error o string vacío si es válido.
+        /// Valida datos para registrar un nuevo caso insolvente.
         /// </summary>
-        /// <param name="r"></param>
-        /// <returns></returns>
         private static string ValidateRegistrar(CbrInsolventeRegistrarRequest r)
         {
             if (string.IsNullOrWhiteSpace(r.Cedula))
@@ -281,10 +251,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Valida los datos de entrada para reversar un caso insolvente. Retorna mensaje de error o string vacío si es válido.
+        /// Valida datos para reversar un caso insolvente.
         /// </summary>
-        /// <param name="r"></param>
-        /// <returns></returns>
         private static string ValidateReversar(CbrInsolventeRegistrarRequest r)
         {
             if (r.CasoId <= 0)
@@ -296,14 +264,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return string.Empty;
         }
 
+        /// <summary>
+        /// Obtiene socios para búsqueda (F4).
+        /// </summary>
         public ErrorDto<List<CbrInsolventeSocioResult>> CoInsolventes_Socios_Obtener(int codEmpresa)
         {
-            var query = @"select Cedula, CedulaR, nombre from socios order by nombre";
+            const string query = @"select Cedula, CedulaR, nombre from socios order by nombre";
             return DbHelper.ExecuteListQuery<CbrInsolventeSocioResult>(_portalDB, codEmpresa, query);
         }
-
-
-
     }
-
 }
