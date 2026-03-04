@@ -59,9 +59,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             var result = connection.QueryFirstOrDefault<PolizaLookupResponseDto>(
                 sql,
-                new { CodPolizaActual = codPolizaActual }) ?? new PolizaLookupResponseDto();
+                new { CodPolizaActual = codPolizaActual });
 
-            return DbHelper.CreateOkResponse<PolizaLookupResponseDto>(result);
+            return DbHelper.CreateOkResponse<PolizaLookupResponseDto?>(result);
         }
 
         /// <summary>
