@@ -1,30 +1,24 @@
-﻿using System.Globalization;
-using System.Text;
-using Dapper;
-using Microsoft.Data.SqlClient;
+﻿using Dapper;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Galileo_API.DataBaseTier.mBeneficios;
+using Microsoft.Data.SqlClient;
+using System.Globalization;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class MBeneficiosDB
     {
         private readonly IConfiguration _config;
-        private const string CodCategoriaPlaceholder = "@cod_categoria";
-        private const string CodBeneficioPlaceholder = "@cod_beneficio";
-        private const string CedulaPlaceholder = "@cedula";
-        private const string UsuarioPlaceholder = "@usuario";
-        private const string IdBeneficioPlaceholder = "@id_beneficio";
-        private const string MontoUsuarioPlaceholder = "@monto_usuario";
-        private const string SepelioIdentificacionPlaceholder = "@sepelio_identificacion";
 
         public MBeneficiosDB(IConfiguration config)
         {
             _config = config;
         }
 
-        #region Helpers comunes
+        #region Conexión + helpers base
 
         private SqlConnection CreateEmpresaConnection(int codEmpresa)
         {
@@ -35,42 +29,69 @@ namespace Galileo.DataBaseTier
             return new SqlConnection(connString);
         }
 
-        #endregion
-
-        public ErrorDto fxNombre(int CodEmpresa, string cedula)
+        private ErrorDto WithConn(int codEmpresa, Func<SqlConnection, ErrorDto> work, string opName)
         {
-            var info = new ErrorDto { Code = 0 };
-
             try
             {
-                using var connection = CreateEmpresaConnection(CodEmpresa);
-                const string query = "select nombre from socios where cedula = @cedula";
-                info.Description = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
+                using var connection = CreateEmpresaConnection(codEmpresa);
+                return work(connection);
             }
             catch (Exception ex)
             {
-                info.Code = -1;
-                info.Description = ex.Message;
+                return new ErrorDto { Code = -1, Description = $"{opName} - {ex.Message}" };
             }
-            return info;
+        }
+
+        private static BeneCategoriaValidaListaRequest ToValidaRequest(BeneficioGeneralDatos b) => new()
+        {
+            cedula = b.cedula,
+            
+            cod_beneficio = b.id_beneficio.ToString(CultureInfo.InvariantCulture),
+            usuario = b.registra_user,
+            cod_categoria = b.cod_categoria,
+            monto_usuario = Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture),
+            sepelio_identificacion = b.sepelio_identificacion
+        };
+
+        private static DynamicParameters BuildParams(BeneCategoriaValidaListaRequest request)
+        {
+            var p = new DynamicParameters();
+            p.Add("cod_categoria", request.cod_categoria);
+            p.Add("cod_beneficio", request.cod_beneficio);
+            p.Add("cedula", request.cedula);
+            p.Add("usuario", request.usuario);
+            p.Add("id_beneficio", request.id_beneficio);
+            p.Add("monto_usuario", request.monto_usuario);
+            p.Add("sepelio_identificacion", request.sepelio_identificacion);
+            return p;
+        }
+
+
+
+        #endregion
+
+        #region Métodos simples (sin tocar lógica)
+
+        public ErrorDto fxNombre(int CodEmpresa, string cedula)
+        {
+            return WithConn(CodEmpresa, connection =>
+            {
+                const string query = "select nombre from socios where cedula = @cedula";
+                var nombre = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
+
+                return new ErrorDto { Code = 0, Description = nombre };
+            }, nameof(fxNombre));
         }
 
         public ErrorDto fxDescribeBanco(int CodEmpresa, int codBanco)
         {
-            var info = new ErrorDto { Code = 0 };
-
-            try
+            return WithConn(CodEmpresa, connection =>
             {
-                using var connection = CreateEmpresaConnection(CodEmpresa);
                 const string query = "select descripcion from Tes_Bancos where id_banco = @codBanco";
-                info.Description = connection.Query<string>(query, new { codBanco }).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = ex.Message;
-            }
-            return info;
+                var desc = connection.Query<string>(query, new { codBanco }).FirstOrDefault();
+
+                return new ErrorDto { Code = 0, Description = desc };
+            }, nameof(fxDescribeBanco));
         }
 
         public static string fxEstadoBeneficio(string estado)
@@ -78,7 +99,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(estado))
                 return "DESCONOCIDO";
 
-            return estado.ToUpper() switch
+            return estado.ToUpperInvariant() switch
             {
                 "A" => "APROBADO",
                 "S" => "SOLICITADO",
@@ -96,49 +117,36 @@ namespace Galileo.DataBaseTier
 
         public string fxSIFParametros(int CodEmpresa, string cod_parametro)
         {
-            string resp;
             try
             {
                 using var connection = CreateEmpresaConnection(CodEmpresa);
                 const string query = "Select valor from SIF_parametros where cod_parametro = @cod_parametro";
-                resp = connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
+                return connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
             }
-            catch (Exception ex)
+            catch
             {
-                resp = "N";
-                _ = ex.Message;
+                return "N";
             }
-            return resp;
         }
 
         public string fxFSL_Parametros(int CodEmpresa, string cod_parametro)
         {
-            string resp;
             try
             {
                 using var connection = CreateEmpresaConnection(CodEmpresa);
                 const string query = "select valor from fsl_parametros where cod_parametro = @cod_parametro";
-                resp = connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
+                return connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                resp = "N";
+                return "N";
             }
-            return resp;
         }
 
-        /// <summary>
-        /// Registra en bitácora los movimientos del beneficio Integral
-        /// </summary>
         public ErrorDto BitacoraBeneficios(BitacoraBeneInsertarDto req)
         {
-            var resp = new ErrorDto { Code = 0 };
-
-            try
+            return WithConn(req.EmpresaId, connection =>
             {
-                using var connection = CreateEmpresaConnection(req.EmpresaId);
-
                 var strSQL = @"
                     INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
                                ([COD_BENEFICIO]
@@ -155,7 +163,7 @@ namespace Galileo.DataBaseTier
                                ,getdate()
                                ,@registro_usuario)";
 
-                resp.Code = connection.Execute(strSQL, new
+                var rows = connection.Execute(strSQL, new
                 {
                     req.cod_beneficio,
                     req.consec,
@@ -163,196 +171,62 @@ namespace Galileo.DataBaseTier
                     req.detalle,
                     req.registro_usuario
                 });
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+
+                return new ErrorDto { Code = rows, Description = "Ok" };
+            }, nameof(BitacoraBeneficios));
         }
 
-        /// <summary>
-        /// Busca el ultimo consecutivo de un beneficio
-        /// </summary>
         public long fxConsec(int CodCliente, string cod_beneficio)
         {
-            long vBeneConsec;
             try
             {
                 using var connection = CreateEmpresaConnection(CodCliente);
                 const string query = @"Select isnull(Max(consec),0) as consecutivo 
                                        from afi_bene_otorga 
                                        where cod_beneficio = @cod_beneficio";
-                vBeneConsec = connection.Query<long>(query, new { cod_beneficio }).FirstOrDefault() + 1;
+                return connection.Query<long>(query, new { cod_beneficio }).FirstOrDefault() + 1;
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                vBeneConsec = 0;
+                return 0;
             }
-            return vBeneConsec;
         }
 
-        /// <summary>
-        /// Valida si es socio esta activo o inactivo.
-        /// </summary>
         public ErrorDto<BeneficioGeneralDatos> ValidaEstadoSocio(int CodCliente, string cedula)
         {
-            var response = new ErrorDto<BeneficioGeneralDatos>();
-
             try
             {
                 using var connection = CreateEmpresaConnection(CodCliente);
                 const string query = @"SELECT ESTADOACTUAL FROM SOCIOS WHERE CEDULA = @cedula";
-                string? estado = connection.Query<string>(query, new { cedula }).FirstOrDefault();
+                var estado = connection.Query<string>(query, new { cedula }).FirstOrDefault();
 
                 if (estado != "S")
                 {
-                    response.Code = -1;
-                    response.Description = "El asociado se encuentra inactivo";
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = "ValidaEstadoSocio - " + ex.Message;
-                response.Result = null;
-            }
-            return response;
-        }
-
-        public ErrorDto ValidarPersona(int CodCliente, string cedula, string? cod_beneficio)
-        {
-            var info = new ErrorDto { Code = 0 };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                string query;
-                if (cod_beneficio == null)
-                {
-                    query = @"SELECT * 
-                              FROM AFI_BENE_VALIDACIONES 
-                              WHERE ESTADO = 1 AND TIPO = 'P' AND REGISTRO = 1 
-                              ORDER BY PRIORIDAD ASC";
-                }
-                else
-                {
-                    query = @"
-                        select abv.* 
-                        FROM AFI_BENE_VALIDA_CATEGORIA c 
-                        left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                        WHERE COD_CATEGORIA = 
-                        (
-	                        SELECT ab.COD_CATEGORIA 
-                            FROM AFI_BENEFICIOS ab 
-	                        WHERE ab.COD_BENEFICIO = @cod_beneficio
-                        ) 
-                        AND c.ESTADO = 1 
-                        AND TIPO = 'P' 
-                        AND REGISTRO = 1 
-                        order by abv.PRIORIDAD asc";
-                }
-
-                var validaciones = connection.Query<AfiBeneCalidaciones>(query, new { cod_beneficio }).ToList();
-
-                foreach (var validacion in validaciones)
-                {
-                    var sql = validacion.query_val
-                        .Replace("CedulaPlaceholder", cedula)
-                        .Replace("CodBeneficioPlaceholder", cod_beneficio);
-
-                    var result = connection.Query<int>(sql).FirstOrDefault();
-
-                    if (result == validacion.resultado_val)
+                    return new ErrorDto<BeneficioGeneralDatos>
                     {
-                        info.Code = 0;
-                        info.Description += validacion.msj_val + "...\n";
-                    }
+                        Code = -1,
+                        Description = "El asociado se encuentra inactivo",
+                        Result = null
+                    };
                 }
+
+                return new ErrorDto<BeneficioGeneralDatos> { Code = 0, Description = "Ok", Result = null };
             }
             catch (Exception ex)
             {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
-        }
-
-        public ErrorDto ValidarPersonaPago(int CodCliente, string cedula, string? cod_beneficio)
-        {
-            var info = new ErrorDto { Code = 0 };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                string query;
-                if (cod_beneficio == null)
+                return new ErrorDto<BeneficioGeneralDatos>
                 {
-                    query = @"SELECT * 
-                              FROM AFI_BENE_VALIDACIONES 
-                              WHERE ESTADO = 1 
-                                AND PAGO = 1 
-                                AND TIPO = 'P' 
-                              ORDER BY PRIORIDAD ASC";
-                }
-                else
-                {
-                    query = @"
-                        select abv.* 
-                        FROM AFI_BENE_VALIDA_CATEGORIA c 
-                        left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                        WHERE COD_CATEGORIA = 
-                        (
-	                        SELECT ab.COD_CATEGORIA 
-                            FROM AFI_BENEFICIOS ab 
-	                        WHERE ab.COD_BENEFICIO = @cod_beneficio
-                        ) 
-                        AND c.ESTADO = 1 
-                        AND TIPO = 'P' 
-                        AND PAGO = 1 
-                        order by abv.PRIORIDAD asc";
-                }
-
-                var validaciones = connection.Query<AfiBeneCalidaciones>(query, new { cod_beneficio }).ToList();
-
-                foreach (var validacion in validaciones)
-                {
-                    var sql = validacion.query_val
-                        .Replace(CedulaPlaceholder, cedula)
-                        .Replace(CodBeneficioPlaceholder, cod_beneficio);
-
-                    var result = connection.Query<int>(sql).FirstOrDefault();
-
-                    if (result == validacion.resultado_val)
-                    {
-                        info.Code = 0;
-                        info.Description += validacion.msj_val + "...\n";
-                    }
-                }
+                    Code = -1,
+                    Description = "ValidaEstadoSocio - " + ex.Message,
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
         }
 
         public ErrorDto ValidaRequisitos(int CodCliente, string estado, string cod_beneficio, int consec)
         {
-            var response = new ErrorDto();
-
-            try
+            return WithConn(CodCliente, connection =>
             {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
                 const string dtEstado = @"
                     SELECT COD_ESTADO
                     FROM [dbo].[AFI_BENE_ESTADOS]
@@ -360,54 +234,42 @@ namespace Galileo.DataBaseTier
                       AND P_FINALIZA = 1 
                       AND PROCESO = 'A'";
 
-                string? finaliza = connection.Query<string>(dtEstado, new { estado }).FirstOrDefault();
+                var finaliza = connection.Query<string>(dtEstado, new { estado }).FirstOrDefault();
+                if (finaliza == null)
+                    return new ErrorDto { Code = 0 };
 
-                if (finaliza != null)
-                {
-                    var query = @"
-                        SELECT 
-                            CASE 
-                                WHEN COUNT(CASE WHEN R.REQUERIDO = 1 AND RR.COD_BENEFICIO IS NOT NULL THEN 1 END) 
-                                     = COUNT(CASE WHEN R.REQUERIDO = 1 THEN 1 END)
-                                THEN 0
-                                ELSE 1
-                            END AS CumplenRequisito
-                        FROM [AFI_BENE_GRUPO_REQUISITOS] GR
-                        LEFT JOIN AFI_BENE_REQUISITOS R 
-                            ON R.COD_REQUISITO = GR.COD_REQUISITO
-                        LEFT JOIN AFI_BENE_REGISTRO_REQUISITOS RR 
-                            ON RR.COD_REQUISITO = GR.COD_REQUISITO
-                           AND RR.COD_BENEFICIO = @cod_beneficio
-                           AND RR.CONSEC = @consec
-                        WHERE GR.COD_GRUPO = 
-                              (SELECT COD_GRUPO 
-                               FROM AFI_BENEFICIOS 
-                               WHERE COD_BENEFICIO = @cod_beneficio)";
+                var query = @"
+                    SELECT 
+                        CASE 
+                            WHEN COUNT(CASE WHEN R.REQUERIDO = 1 AND RR.COD_BENEFICIO IS NOT NULL THEN 1 END) 
+                                 = COUNT(CASE WHEN R.REQUERIDO = 1 THEN 1 END)
+                            THEN 0
+                            ELSE 1
+                        END AS CumplenRequisito
+                    FROM [AFI_BENE_GRUPO_REQUISITOS] GR
+                    LEFT JOIN AFI_BENE_REQUISITOS R 
+                        ON R.COD_REQUISITO = GR.COD_REQUISITO
+                    LEFT JOIN AFI_BENE_REGISTRO_REQUISITOS RR 
+                        ON RR.COD_REQUISITO = GR.COD_REQUISITO
+                       AND RR.COD_BENEFICIO = @cod_beneficio
+                       AND RR.CONSEC = @consec
+                    WHERE GR.COD_GRUPO = 
+                          (SELECT COD_GRUPO 
+                           FROM AFI_BENEFICIOS 
+                           WHERE COD_BENEFICIO = @cod_beneficio)";
 
-                    var cumpleRequisito = connection.Query<int>(query, new { cod_beneficio, consec }).FirstOrDefault();
-                    if (cumpleRequisito == 1)
-                    {
-                        response.Code = -1;
-                        response.Description = "No cumple con los requisitos del beneficio";
-                        return response;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = "ValidaBeneficio - " + ex.Message;
-            }
-            return response;
+                var cumple = connection.Query<int>(query, new { cod_beneficio, consec }).FirstOrDefault();
+                if (cumple == 1)
+                    return new ErrorDto { Code = -1, Description = "No cumple con los requisitos del beneficio" };
+
+                return new ErrorDto { Code = 0 };
+            }, nameof(ValidaRequisitos));
         }
 
         public ErrorDto ValidaFallecido(int CodCliente, string cedulafallecido)
         {
-            var response = new ErrorDto { Code = 0 };
-
-            try
+            return WithConn(CodCliente, connection =>
             {
-                using var connection = CreateEmpresaConnection(CodCliente);
                 const string query = @"
                     SELECT CONCAT(O.ID_BENEFICIO, TRIM(O.COD_BENEFICIO), FORMAT(O.CONSEC,'00000'), '- cédula: ', O.CEDULA) as Texto
                     FROM AFI_BENE_OTORGA O 
@@ -415,343 +277,246 @@ namespace Galileo.DataBaseTier
 
                 var fallecido = connection.Query<string>(query, new { cedulafallecido }).ToList();
 
-                if (fallecido.Count > 0)
-                {
-                    var otrosRegistros = new StringBuilder();
-                    foreach (var item in fallecido)
-                    {
-                        otrosRegistros.Append(item + " - ");
-                    }
+                if (fallecido.Count == 0)
+                    return new ErrorDto { Code = 0 };
 
-                    response.Code = -1;
-                    response.Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " +
-                                           otrosRegistros.ToString();
-                }
-            }
-            catch (Exception ex)
+                var otros = new StringBuilder();
+                foreach (var item in fallecido)
+                    otros.Append(item).Append(" - ");
+
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otros
+                };
+            }, nameof(ValidaFallecido));
+        }
+
+        #endregion
+
+        #region Validaciones unificadas
+
+        public ErrorDto ValidarPersona(int CodCliente, string cedula, string? cod_beneficio)
+        {
+           
+            var req = new BeneCategoriaValidaListaRequest
             {
-                response.Code = -1;
-                response.Description = "ValidaFallecido - " + ex.Message;
-            }
-            return response;
+                cedula = cedula,
+                cod_beneficio = cod_beneficio
+            };
+
+            return fxValidaciones(
+                CodCliente,
+                tipo: "P",
+                col: QuerysStringValidaciones.registroVal,
+                request: req,
+                codeOnMatch: 0,
+                marcarJustificables: false);
+        }
+
+        public ErrorDto ValidarPersonaPago(int CodCliente, string cedula, string? cod_beneficio)
+        {
+           
+            var req = new BeneCategoriaValidaListaRequest
+            {
+                cedula = cedula,
+                cod_beneficio = cod_beneficio
+            };
+
+            return fxValidaciones(
+                CodCliente,
+                tipo: "P",
+                col: QuerysStringValidaciones.pagoVal,
+                request: req,
+                codeOnMatch: 0,
+                marcarJustificables: false);
         }
 
         public ErrorDto ValidarBeneficioDato(int CodCliente, BeneficioGeneralDatos beneficio)
         {
-            var info = new ErrorDto { Code = 0 };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                const string queryValidaciones = @"
-                    select abv.* 
-                    FROM AFI_BENE_VALIDA_CATEGORIA c 
-                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                    WHERE COD_CATEGORIA = 
-                    (
-	                    SELECT ab.COD_CATEGORIA 
-                        FROM AFI_BENEFICIOS ab 
-                        WHERE ab.COD_BENEFICIO = @CodBeneficio
-                    ) 
-                    AND c.ESTADO = 1 
-                    AND TIPO = 'G' 
-                    AND REGISTRO = 1 
-                    order by abv.PRIORIDAD asc";
-
-                var validaciones = connection
-                    .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
-                    .ToList();
-
-                foreach (var validacion in validaciones)
-                {
-                    var sql = (validacion.query_val ?? string.Empty)
-                        .Replace(CedulaPlaceholder, beneficio.cedula)
-                        .Replace(UsuarioPlaceholder, beneficio.registra_user)
-                        .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
-                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                        .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(beneficio.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                        .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
-
-                    var result = connection.Query<int>(sql).FirstOrDefault();
-
-                    if (result == validacion.resultado_val)
-                    {
-                        info.Code = -1;
-                        info.Description += validacion.msj_val + "...\n";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
+           
+            return fxValidaciones(
+                CodCliente,
+                tipo: "G",
+                col: QuerysStringValidaciones.registroVal,
+                request: ToValidaRequest(beneficio),
+                codeOnMatch: -1,
+                marcarJustificables: false);
         }
 
         public ErrorDto ValidarBeneficioPagoDato(int CodCliente, BeneficioGeneralDatos beneficio)
         {
-            var info = new ErrorDto { Code = 0 };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                const string queryValidaciones = @"
-                    select abv.* 
-                    FROM AFI_BENE_VALIDA_CATEGORIA c 
-                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                    WHERE COD_CATEGORIA = 
-                    (
-	                    SELECT ab.COD_CATEGORIA 
-                        FROM AFI_BENEFICIOS ab 
-                        WHERE ab.COD_BENEFICIO = @CodBeneficio
-                    ) 
-                    AND c.ESTADO = 1 
-                    AND TIPO = 'G' 
-                    AND PAGO = 1 
-                    order by abv.PRIORIDAD asc";
-
-                var validaciones = connection
-                    .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
-                    .ToList();
-
-                foreach (var validacion in validaciones)
-                {
-                    var sql = (validacion.query_val ?? string.Empty)
-                        .Replace(CedulaPlaceholder, beneficio.cedula)
-                        .Replace(UsuarioPlaceholder, beneficio.registra_user)
-                        .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
-                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                        .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(beneficio.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                        .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
-
-                    var result = connection.Query<int>(sql).FirstOrDefault();
-
-                    if (result == validacion.resultado_val)
-                    {
-                        info.Code = -1;
-                        info.Description += validacion.msj_val + "...\n";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
-        }
-
-        public ErrorDto ValidarBeneficioJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
-        {
-            var info = new ErrorDto
-            {
-                Code = 0,
-                Description = string.Empty
-            };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                const string queryValidaciones = @"
-                    SELECT abv.*, c.registro_justifica
-                    FROM AFI_BENE_VALIDA_CATEGORIA c
-                    LEFT JOIN AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                    WHERE c.COD_CATEGORIA = (
-                        SELECT ab.COD_CATEGORIA
-                        FROM AFI_BENEFICIOS ab
-                        WHERE ab.COD_BENEFICIO = @CodBeneficio
-                    )
-                      AND c.ESTADO = 1
-                      AND c.REGISTRO = 1
-                      AND c.TIPO <> 'G'
-                    ORDER BY abv.PRIORIDAD ASC;";
-
-                var validaciones = connection
-                    .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
-                    .ToList();
-
-                int justificadas = 0;
-                int obligatorias = 0;
-
-                foreach (var v in validaciones)
-                {
-                    var sql = BuildValidationSql(v.query_val, beneficio);
-                    var result = connection.QueryFirstOrDefault<int>(sql);
-
-                    if (result != v.resultado_val) continue;
-
-                    obligatorias++;
-                    if (v.registro_justifica) justificadas++;
-
-                    if (!string.IsNullOrEmpty(v.msj_val))
-                        info.Description += v.msj_val + "...\n";
-                }
-
-                if (justificadas > 0)
-                    info.Code = justifica ? 0 : -1;
-
-                int activas = obligatorias - justificadas;
-                if (activas > 0 && !string.IsNullOrEmpty(info.Description))
-                    info.Code = -1;
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
-
-            static string BuildValidationSql(string? template, BeneficioGeneralDatos b)
-            {
-                return (template ?? string.Empty)
-                    .Replace(CedulaPlaceholder, b.cedula)
-                    .Replace(UsuarioPlaceholder, b.registra_user)
-                    .Replace(CodBeneficioPlaceholder, b.cod_beneficio.item.ToString(CultureInfo.InvariantCulture))
-                    .Replace(CodCategoriaPlaceholder, b.cod_categoria)
-                    .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                    .Replace(SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
-            }
-        }
-
-        public ErrorDto ValidarBeneficioPagoJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
-        {
-            var info = new ErrorDto { Code = 0, Description = string.Empty };
-
-            try
-            {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                const string queryValidaciones = @"
-                    SELECT abv.*, c.pago_justifica
-                    FROM AFI_BENE_VALIDA_CATEGORIA c
-                    LEFT JOIN AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                    WHERE c.COD_CATEGORIA = (
-                        SELECT ab.COD_CATEGORIA
-                        FROM AFI_BENEFICIOS ab
-                        WHERE ab.COD_BENEFICIO = @CodBeneficio
-                    )
-                    AND c.ESTADO = 1
-                    AND c.PAGO = 1
-                    AND c.TIPO <> 'G'
-                    ORDER BY abv.PRIORIDAD ASC";
-
-                var validaciones = connection
-                    .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
-                    .ToList();
-
-                int justificadas = 0, obligatorias = 0;
-                var desc = new StringBuilder();
-
-                foreach (var v in validaciones)
-                {
-                    var sql = BuildValidationSql(v.query_val, beneficio);
-                    var result = connection.QueryFirstOrDefault<int>(sql);
-                    if (result != v.resultado_val) continue;
-
-                    obligatorias++;
-                    if (v.pago_justifica) justificadas++;
-                    if (!string.IsNullOrEmpty(v.msj_val)) desc.Append(v.msj_val).Append("...\n");
-                }
-
-                info.Description = desc.ToString();
-                info.Code = DecideCode(justificadas, obligatorias, justifica, !string.IsNullOrEmpty(info.Description));
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
-
-            return info;
-
-            static string BuildValidationSql(string? template, BeneficioGeneralDatos b) =>
-                (template ?? string.Empty)
-                .Replace(CedulaPlaceholder, b.cedula)
-                .Replace(UsuarioPlaceholder, b.registra_user)
-                .Replace(IdBeneficioPlaceholder, b.id_beneficio.ToString())
-                .Replace(CodBeneficioPlaceholder, b.cod_beneficio.item.ToString())
-                .Replace(CodCategoriaPlaceholder, b.cod_categoria)
-                .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                .Replace(SepelioIdentificacionPlaceholder, b.sepelio_identificacion);
-
-            static int DecideCode(int justificadas, int obligatorias, bool justifica, bool hasDesc)
-            {
-                if (justificadas > 0 && !justifica) return -1;
-                var activas = obligatorias - justificadas;
-                if (activas > 0 && hasDesc) return -1;
-                return 0;
-            }
+           
+            return fxValidaciones(
+                CodCliente,
+                tipo: "G",
+                col: QuerysStringValidaciones.pagoVal,
+                request: ToValidaRequest(beneficio),
+                codeOnMatch: -1,
+                marcarJustificables: false);
         }
 
         public ErrorDto ValidaCargaPagos(int CodCliente, BeneficioGeneralDatos beneficio)
         {
-            var info = new ErrorDto { Code = 0 };
+            // Mantengo tu semántica actual: mensajes con codeOnMatch=0,
+            // y si viene pago_justifica, se marca con **...**
+            return fxValidaciones(
+                CodCliente,
+                tipo: "!G",
+                col: QuerysStringValidaciones.pagoVal,
+                request: ToValidaRequest(beneficio),
+                codeOnMatch: 0,
+                marcarJustificables: true);
+        }
 
-            try
+        public ErrorDto ValidarBeneficioJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
+        {
+            // Mantengo tu lógica original (obligatorias/justificadas/activas) pero con helper para el foreach.
+            return fxValidacionesJustifica(
+                CodCliente,
+                col: QuerysStringValidaciones.registroVal,
+                request: ToValidaRequest(beneficio),
+                justifica: justifica);
+        }
+
+        public ErrorDto ValidarBeneficioPagoJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
+        {
+            return fxValidacionesJustifica(
+                CodCliente,
+                col: QuerysStringValidaciones.pagoVal,
+                request: ToValidaRequest(beneficio),
+                justifica: justifica);
+        }
+
+        /// <summary>
+        /// Ejecuta validaciones estándar (persona/beneficio/carga pagos) usando query_val parametrizada con Dapper.
+        /// </summary>
+        public ErrorDto fxValidaciones(
+            int CodCliente,
+            string tipo,
+            string col,
+            BeneCategoriaValidaListaRequest request,
+            int codeOnMatch,
+            bool marcarJustificables)
+        {
+            return WithConn(CodCliente, connection =>
             {
-                using var connection = CreateEmpresaConnection(CodCliente);
-
-                const string queryValidaciones = @"
-                    select abv.*, c.pago_justifica 
-                    FROM AFI_BENE_VALIDA_CATEGORIA c 
-                    left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                    WHERE COD_CATEGORIA = 
-                        (
-	                        SELECT ab.COD_CATEGORIA 
-                            FROM AFI_BENEFICIOS ab 
-                            WHERE ab.COD_BENEFICIO = @CodBeneficio
-                        ) 
-                      AND c.ESTADO = 1 
-                      AND PAGO = 1 
-                      AND TIPO != 'G' 
-                    order by abv.PRIORIDAD asc";
-
+                var query = QuerysStringValidaciones.ResolveQuery(tipo, col, request.cod_beneficio);
                 var validaciones = connection
-                    .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
+                    .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
                     .ToList();
 
-                foreach (var validacion in validaciones)
+                var parms = BuildParams(request);
+                var sb = new StringBuilder();
+                var code = 0;
+
+                foreach (var v in validaciones)
                 {
-                    var sql = (validacion.query_val ?? string.Empty)
-                        .Replace(CedulaPlaceholder, beneficio.cedula)
-                        .Replace(UsuarioPlaceholder, beneficio.registra_user)
-                        .Replace(IdBeneficioPlaceholder, beneficio.id_beneficio.ToString())
-                        .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
-                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                        .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(beneficio.monto_aplicado).ToString(CultureInfo.InvariantCulture))
-                        .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
+                    if (string.IsNullOrWhiteSpace(v.query_val)) continue;
 
-                    var result = connection.Query<int>(sql).FirstOrDefault();
+                    var result = connection.QueryFirstOrDefault<int>(v.query_val, parms);
+                    if (result != v.resultado_val) continue;
 
-                    if (result == validacion.resultado_val)
-                    {
-                        if (validacion.pago_justifica)
-                        {
-                            info.Description += " ** " + validacion.msj_val + " ** ...\n";
-                        }
-                        else
-                        {
-                            info.Description += validacion.msj_val + "...\n";
-                        }
+                    code = codeOnMatch;
 
-                        info.Code = 0;
-                    }
+                    var msg = FormatMsg(v.msj_val, marcarJustificables && v.pago_justifica);
+                    if (msg.Length > 0) sb.AppendLine(msg);
                 }
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = $"Error al validar socio: {ex.Message}";
-            }
 
-            return info;
+                return new ErrorDto
+                {
+                    Code = code,
+                    Description = sb.ToString()
+                };
+            }, nameof(fxValidaciones));
         }
+
+        private static string FormatMsg(string? raw, bool destacar)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+            // Mantengo tu formato "...", y el marcado con ** **
+            return destacar
+                ? $" ** {raw} **..."
+                : $"{raw}...";
+        }
+
+        /// <summary>
+        /// Ejecuta validaciones con lógica de "justifica" (registro/pago), conservando comportamiento original.
+        /// </summary>
+        private ErrorDto fxValidacionesJustifica(
+    int CodCliente,
+    string col,
+    BeneCategoriaValidaListaRequest request,
+    bool justifica)
+        {
+            return WithConn(CodCliente, connection =>
+            {
+                var query = BuildJustificaQuery(col);
+
+                var validaciones = connection
+                    .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
+                    .ToList();
+
+                var parms = BuildParams(request);
+                var sb = new StringBuilder();
+
+                int obligatorias = 0;
+                int justificadas = 0;
+
+                foreach (var v in validaciones)
+                {
+                    if (string.IsNullOrWhiteSpace(v.query_val)) continue;
+
+                    var result = connection.QueryFirstOrDefault<int>(v.query_val, parms);
+                    if (result != v.resultado_val) continue;
+
+                    obligatorias++;
+
+                    if (IsJustificable(col, v)) justificadas++;
+
+                    AppendMsg(sb, v.msj_val);
+                }
+
+                var desc = sb.ToString();
+                var code = DecideJustificaCode(justifica, justificadas, obligatorias, desc);
+
+                return new ErrorDto { Code = code, Description = desc };
+            }, nameof(fxValidacionesJustifica));
+        }
+
+        private static string BuildJustificaQuery(string col)
+        {
+            // por tu lógica original: TIPO <> 'G'
+            const string tipo = "!G";
+
+            return QuerysStringValidaciones.BuildCategoriaQuery(
+                tipo: tipo,
+                col: col,
+                incluirPagoJustifica: col == QuerysStringValidaciones.pagoVal,
+                incluirRegistroJustifica: col == QuerysStringValidaciones.registroVal);
+        }
+
+        private static bool IsJustificable(string col, ValidacionRow v) =>
+            col == QuerysStringValidaciones.registroVal ? v.registro_justifica : v.pago_justifica;
+
+        private static void AppendMsg(StringBuilder sb, string? msg)
+        {
+            if (string.IsNullOrWhiteSpace(msg)) return;
+            sb.Append(msg).AppendLine("...");
+        }
+
+        private static int DecideJustificaCode(bool justifica, int justificadas, int obligatorias, string desc)
+        {
+            // Misma regla que tenías:
+            if (justificadas > 0 && !justifica) return -1;
+
+            var activas = obligatorias - justificadas;
+            if (activas > 0 && !string.IsNullOrWhiteSpace(desc)) return -1;
+
+            return 0;
+        }
+
+        #endregion
     }
 }
