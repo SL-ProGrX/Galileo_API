@@ -72,8 +72,8 @@ namespace Galileo.Models.ProGrX.Clientes
 
     public class AfLiquidacionFiltroRequest
     {
-        public DateTime desde { get; set; }
-        public DateTime hasta { get; set; }
+        public DateTime? desde { get; set; }
+        public DateTime? hasta { get; set; }
 
         public string? tipo_salida { get; set; }
 
