@@ -1,6 +1,5 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo.Models;
-using static Galileo_API.Models.ProGrX.Cobros.FrmCcCuotaMantenimientoModels;
 using Galileo_API.DataBaseTier.ProGrX_Procesos;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Procesos
