@@ -450,24 +450,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             int linea = 1;
 
-            foreach (var d in (detalles ?? new List<CntXDiferidosDetalleData>())
-                .Where(x => !string.IsNullOrWhiteSpace(x.cod_cuenta)))
+            var parametros = (detalles ?? new List<CntXDiferidosDetalleData>())
+                 .Where(x => !string.IsNullOrWhiteSpace(x.cod_cuenta))
+                 .Select(d => new
+                 {
+                     CodDiferido = codDiferido,
+                     CodConta = codConta,
+                     Linea = linea++,
+                     CodCuenta = NormalizarCuenta(d.cod_cuenta),
+                     CodUnidad = (d.cod_unidad ?? string.Empty).Trim(),
+                     CodCentroCosto = (d.cod_centro_costo ?? string.Empty).Trim(),
+                     CodDivisa = (d.cod_divisa ?? string.Empty).Trim(),
+                     PorcDebito = d.porc_debito,
+                     PorcCredito = d.porc_credito,
+                     TipoAsiento = tipoAsiento
+                 });
+            foreach (var param in parametros)
             {
                 var respDet = DbHelper.ExecuteNonQuery(
                     _portalDb, codEmpresa, sqlInsertDetalle,
-                    new
-                    {
-                        CodDiferido = codDiferido,
-                        CodConta = codConta,
-                        Linea = linea++,
-                        CodCuenta = NormalizarCuenta(d.cod_cuenta),
-                        CodUnidad = (d.cod_unidad ?? string.Empty).Trim(),
-                        CodCentroCosto = (d.cod_centro_costo ?? string.Empty).Trim(),
-                        CodDivisa = (d.cod_divisa ?? string.Empty).Trim(),
-                        PorcDebito = d.porc_debito,
-                        PorcCredito = d.porc_credito,
-                        TipoAsiento = tipoAsiento
-                    }
+                    param
                 );
 
                 if (respDet?.Code < 0) return respDet;
