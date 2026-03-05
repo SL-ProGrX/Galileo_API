@@ -12,7 +12,7 @@
         public required int CodContabilidad { get; set; }
         public string CodGrupo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public short Activa { get; set; }
+        public short? Activa { get; set; }
         public string RegistroUsuario { get; set; } = string.Empty;
     }
 
