@@ -119,12 +119,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     tasaLabel = $"Tasa (TBP + {tbpAdd.Value})";
                 if (liqTasaX == 1)
                     tasaLabel = tasaLabel + " + PtsLiq";
-                var sysPlanPagos = 0;
-                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, (string.Empty));
-                if (init.Code == 0 && init.Result != null)
-                    sysPlanPagos = init.Result.SysPlanPagos;
-                else
-                    sysPlanPagos = GetSysPlanPagos(conn, tx:null,  CodEmpresa);
+
+                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, string.Empty);
+
+                var sysPlanPagos = (init.Code == 0 && init.Result != null)
+                    ? init.Result.SysPlanPagos
+                    : GetSysPlanPagos(conn, tx: null, CodEmpresa);
 
                 if (sysPlanPagos == 1)
                 {
@@ -937,18 +937,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private static string S(object? v) => (Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
         private static object? V(IDictionary<string, object?> d, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                var value = d
+            return keys
+                .Select(k => d
                     .Where(x => string.Equals(x.Key, k, StringComparison.OrdinalIgnoreCase))
                     .Select(x => x.Value)
-                    .FirstOrDefault();
-
-                if (value != null)
-                    return value;
-            }
-
-            return null;
+                    .FirstOrDefault())
+                .FirstOrDefault(value => value != null);
         }
         private static int ToInt(object? v)
         {
