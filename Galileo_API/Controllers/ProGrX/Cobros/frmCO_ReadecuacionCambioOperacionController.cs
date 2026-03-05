@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Galileo_API.Controllers.ProGrX.Cobros
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]
-    public class frmCO_ReadecuacionCambioOperacionController : ControllerBase
+    [Route("api/[controller]")]
+    public class FrmCOReadecuacionCambioOperacionController : ControllerBase
     {
-        private readonly frmCO_ReadecuacionCambioOperacionBL _bl;
+        private readonly FrmCOReadecuacionCambioOperacionBL _bl;
 
-        public frmCO_ReadecuacionCambioOperacionController(frmCO_ReadecuacionCambioOperacionBL bl)
+        public FrmCOReadecuacionCambioOperacionController(IConfiguration config)
         {
-            _bl = bl;
+            _bl = new FrmCOReadecuacionCambioOperacionBL(config);
         }
         [Authorize]
         [HttpGet("CO_ReadecuacionCambioOperacion_Obtener")]
@@ -27,6 +27,19 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         public ErrorDto<CoReadecuacionCambioOperacionAplicarResponse> CO_ReadecuacionCambioOperacion_Aplicar([FromQuery] int CodEmpresa, [FromBody] CoReadecuacionCambioOperacionAplicarRequest req)
         {
         return  _bl.CO_ReadecuacionCambioOperacion_Aplicar(CodEmpresa, req);
-        }    
+        }
+        [Authorize]
+        [HttpGet("CO_Readecuacion_ReporteOperacionNueva_Obtener")]
+        public ErrorDto<CoReadecuacionReporteOperacionNuevaDto> CO_Readecuacion_ReporteOperacionNueva_Obtener(
+            [FromQuery] int CodEmpresa,
+            [FromQuery] long id_solicitud)
+        {
+            var req = new CoReadecuacionReporteOperacionNuevaRequest
+            {
+                id_solicitud = id_solicitud
+            };
+
+            return _bl.CO_Readecuacion_ReporteOperacionNueva_Obtener(CodEmpresa, req);
+        }
     }
 }

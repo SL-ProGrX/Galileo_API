@@ -9,22 +9,40 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class frmCO_ReadecuacionCambioOperacionDB
+    public class FrmCOReadecuacionCambioOperacionDB
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _security_MainDB;
-        private readonly IConfiguration _config;
-
+        private readonly MProGrxMain _mProGrxMain;
+        private readonly MRecibos _mRecibosDB;
+        private readonly MSeguimientoDB _mSeguimientoDB;
         private const string IDENTIFICACION_CONGELADA = "Esta Persona se encuentra CONGELADA, verifique...";
         private const string OPERACION_INVALIDA = "No se encontró el número de operación [Activa]";
         private const string NOTA_INVALIDA = "La nota para realizar la transacción no es válida...";
         private const int MODULO = 4;
 
-        public frmCO_ReadecuacionCambioOperacionDB(IConfiguration config)
+        public FrmCOReadecuacionCambioOperacionDB(IConfiguration config)
+            : this(
+                new PortalDB(config),
+                new MSecurityMainDb(config),
+                new MProGrxMain(config),
+                new MRecibos(config),
+                new MSeguimientoDB(config))
         {
-            _config = config;
-            _portalDB = new PortalDB(config);
-            _security_MainDB = new MSecurityMainDb(config);
+        }
+
+        public FrmCOReadecuacionCambioOperacionDB(
+            PortalDB portalDB,
+            MSecurityMainDb securityMainDb,
+            MProGrxMain mProGrxMain,
+            MRecibos mRecibosDB,
+            MSeguimientoDB mSeguimientoDB)
+        {
+            _portalDB = portalDB;
+            _security_MainDB = securityMainDb;
+            _mProGrxMain = mProGrxMain;
+            _mRecibosDB = mRecibosDB;
+            _mSeguimientoDB = mSeguimientoDB;
         }
         /// <summary>
         /// Obtiene la informacion por codigo de tramite de una operacion.
@@ -98,11 +116,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 if (liqTasaX == 1)
                     tasaLabel = tasaLabel + " + PtsLiq";
                 var sysPlanPagos = 0;
-                var init = new MProGrxMain(_config).sbSifParametrosInicializa(CodEmpresa, (string.Empty));
+                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, (string.Empty));
                 if (init.Code == 0 && init.Result != null)
                     sysPlanPagos = init.Result.SysPlanPagos;
                 else
-                    sysPlanPagos = GetSysPlanPagos(conn, CodEmpresa);
+                    sysPlanPagos = GetSysPlanPagos(conn, tx:null,  CodEmpresa);
 
                 if (sysPlanPagos == 1)
                 {
@@ -187,7 +205,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto<CoReadecuacionCambioOperacionAplicarResponse> CO_ReadecuacionCambioOperacion_Aplicar(int CodEmpresa, CoReadecuacionCambioOperacionAplicarRequest req)
+        public ErrorDto<CoReadecuacionCambioOperacionAplicarResponse> CO_ReadecuacionCambioOperacion_Aplicar(int CodEmpresa,CoReadecuacionCambioOperacionAplicarRequest req)
         {
             if (req.id_tramite <= 0)
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2);
@@ -200,7 +218,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(pUsuario))
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Usuario sesión inválido.", -2);
 
-            if (req.no_monto <= 0 || req.no_plazo <= 0 || req.no_tasa <= 0)
+            if (req.no_monto <= 0 || req.no_plazo <= 0 || req.no_tasa < 0)
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Monto/Tasa/Plazo no son válidos.", -2);
 
             var cuotaBe = MCobroDb.fxCalcula_Cuota(req.no_monto, req.no_plazo, req.no_tasa, "M");
@@ -214,35 +232,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 conn.Open();
 
                 const string sqlOp = @"
-                SELECT
-                    R.id_solicitud,
-                    R.cedula,
-                    R.codigo,
-                    C.descripcion,
-                    S.nombre,
-                    R.plazo,
-                    R.interesv,
-                    R.saldo,
-                    R.montoapr,
-                    R.opex,
-                    R.dia_pago,
-                    R.ind_deduce_planilla,
-                    R.id_comite,
-                    R.acta,
-                    R.garantia,
-                    R.pagare,
-                    R.premio,
-                    R.fecult,
-                    R.TBP_PuntosAdd,
-                    R.LiqTasa,
-                    R.cod_oficina_r,
-                    R.cod_oficina_f,
-                    R.cod_oficina_comision,
-                    R.cod_grupo
-                FROM reg_creditos R
-                INNER JOIN Socios S ON R.cedula = S.cedula
-                INNER JOIN catalogo C ON R.codigo = C.codigo
-                WHERE R.id_solicitud = @Id AND R.estado = 'A';";
+        SELECT
+            R.id_solicitud,
+            R.cedula,
+            R.codigo,
+            C.descripcion,
+            S.nombre,
+            R.plazo,
+            R.interesv,
+            R.saldo,
+            R.montoapr,
+            R.opex,
+            R.dia_pago,
+            R.ind_deduce_planilla,
+            R.id_comite,
+            R.acta,
+            R.garantia,
+            R.pagare,
+            R.premio,
+            R.fecult,
+            R.TBP_PuntosAdd,
+            R.LiqTasa,
+            R.cod_oficina_r,
+            R.cod_oficina_f,
+            R.cod_oficina_comision,
+            R.cod_grupo
+        FROM reg_creditos R
+        INNER JOIN Socios S ON R.cedula = S.cedula
+        INNER JOIN catalogo C ON R.codigo = C.codigo
+        WHERE R.id_solicitud = @Id AND R.estado = 'A';";
 
                 var op = conn.QueryFirstOrDefault(sqlOp, new { Id = req.id_tramite });
                 if (op == null)
@@ -251,14 +269,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var dop = (IDictionary<string, object?>)op;
 
                 var cedula = S(V(dop, "cedula"));
-                if (PersonaCongelada(conn, cedula, "per_readecuaciones"))
+                if (PersonaCongelada(conn, tx: null, cedula, "per_readecuaciones"))
                     return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(IDENTIFICACION_CONGELADA, -2);
 
                 var nombre = S(V(dop, "nombre"));
                 var descripcion = S(V(dop, "descripcion"));
                 var codigoLinea = S(V(dop, "codigo"));
 
-                var init = new MProGrxMain(_config).sbSifParametrosInicializa(CodEmpresa, pUsuario);
+                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, pUsuario);
                 if (init.Code != 0 || init.Result == null)
                     return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("No se pudo inicializar parámetros del sistema.", -2);
 
@@ -266,30 +284,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var sysDocVersion = init.Result.SysDocVersion;
                 var sysPlanPagos = init.Result.SysPlanPagos;
 
-                if (sysDocVersion != 2)
-                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
-                        $"SysDocVersion={sysDocVersion} no soporta documento REA en este proceso.", -2);
-
                 var vTipoDoc = "REA";
-                var vTipoMov = "REA";
-                var vConcepto = "CBR001";
+                string vTipoMov;
+                string vNumDocStr;
 
+                var vConcepto = "CBR001";
                 var vFecha = MyGetDate(conn);
 
                 using var tx = conn.BeginTransaction();
-                var vNumDoc = new MRecibos(_config)
-                    .FxDocumentoConsecutivo(CodEmpresa, vTipoDoc)
-                    .ToString(CultureInfo.InvariantCulture);
+
+                if (sysDocVersion == 2)
+                {
+                    vTipoMov = "REA";
+                    if (!ObjectExists(conn, tx, "dbo.spSIFDocsConsecutivo", "P"))
+                        return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                            "No existe dbo.spSIFDocsConsecutivo para obtener consecutivo de documento.", -2);
+
+                    var hasUsuario = ProcedureHasParams(conn, tx, "dbo.spSIFDocsConsecutivo", "@Tipo", "@Usuario");
+                    object? consObj;
+
+                    if (hasUsuario)
+                    {
+                        consObj = conn.QueryFirstOrDefault<object>(
+                            "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;",
+                            new { Tipo = vTipoDoc, Usuario = pUsuario },
+                            tx);
+                    }
+                    else
+                    {
+                        consObj = conn.QueryFirstOrDefault<object>(
+                            "exec dbo.spSIFDocsConsecutivo @Tipo;",
+                            new { Tipo = vTipoDoc },
+                            tx);
+                    }
+
+                    var cons = ToInt(consObj);
+                    if (cons <= 0)
+                        return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                            $"No fue posible obtener consecutivo para documento {vTipoDoc}.", -2);
+
+                    vNumDocStr = cons.ToString(CultureInfo.InvariantCulture);
+                }
+                else if (sysDocVersion == 1)
+                {
+                    vTipoMov = "4";
+                    vNumDocStr = "8889";
+                }
+                else
+                {
+                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        $"SysDocVersion={sysDocVersion} no soportado en este proceso.", -2);
+                }
+
                 if (sysPlanPagos == 1)
                 {
-                    const string sp = "exec spCrdPlanPagoAbonoCancelacion @Id, @Concepto, @Usuario, @TipoDoc, @NumDoc, @Monto, @Fecha, @Empty";
+                    const string sp = "exec spCrdPlanPagoAbonoCancelacion @Id, @Concepto, @Usuario, @TipoDoc, @NumDoc, @Monto, @Fecha, @Empty;";
                     conn.Execute(sp, new
                     {
                         Id = req.id_tramite,
                         Concepto = vConcepto,
                         Usuario = pUsuario,
                         TipoDoc = vTipoDoc,
-                        NumDoc = vNumDoc,
+                        NumDoc = vNumDocStr,
                         Monto = req.no_monto,
                         Fecha = vFecha.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture),
                         Empty = ""
@@ -298,37 +354,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 else
                 {
                     const string updMor = @"
-                    UPDATE morosidad
-                    SET estado = 'C',
-                        abintc = intc,
-                        abintm = intm,
-                        abamortiza = amortiza,
-                        abCargo = cargo,
-                        tcon = @Tcon,
-                        ncon = @Ncon,
-                        fecult = dbo.MyGetdate(),
-                        usuario = @Usuario,
-                        cod_concepto = @Concepto,
-                        cod_caja = ''
-                    WHERE estado = 'A' AND id_solicitud = @Id;";
+            UPDATE morosidad
+            SET estado = 'C',
+                abintc = intc,
+                abintm = intm,
+                abamortiza = amortiza,
+                abCargo = cargo,
+                tcon = @Tcon,
+                ncon = @Ncon,
+                fecult = dbo.MyGetdate(),
+                usuario = @Usuario,
+                cod_concepto = @Concepto,
+                cod_caja = ''
+            WHERE estado = 'A' AND id_solicitud = @Id;";
 
                     conn.Execute(updMor, new
                     {
                         Id = req.id_tramite,
                         Tcon = vTipoMov,
-                        Ncon = vNumDoc,
+                        Ncon = vNumDocStr,
                         Usuario = pUsuario,
                         Concepto = vConcepto
                     }, tx);
 
-                    const string sqlAm = "SELECT ISNULL(SUM(abamortiza),0) AS Amortiza FROM morosidad WHERE tcon=@Tcon AND ncon=@Ncon AND id_solicitud=@Id;";
-                    var amortiza = conn.QueryFirstOrDefault<decimal>(sqlAm, new { Tcon = vTipoMov, Ncon = vNumDoc, Id = req.id_tramite }, tx);
+                    const string sqlAm = @"
+                SELECT ISNULL(SUM(abamortiza),0)
+                FROM morosidad
+                WHERE tcon=@Tcon AND ncon=@Ncon AND id_solicitud=@Id;";
+
+                    var amortiza = conn.QueryFirstOrDefault<decimal>(
+                        sqlAm,
+                        new { Tcon = vTipoMov, Ncon = vNumDocStr, Id = req.id_tramite },
+                        tx);
 
                     var interesTotal = conn.QueryFirstOrDefault<decimal>(
-                        "SELECT dbo.fxCRDCalculoIntCorte(@Id, dbo.MyGetdate())",
+                        "SELECT dbo.fxCRDCalculoIntCorte(@Id, dbo.MyGetdate());",
                         new { Id = req.id_tramite },
-                        tx
-                    );
+                        tx);
 
                     var saldoActual = ToDec(V(dop, "saldo"));
                     var intCorVenc = interesTotal;
@@ -336,8 +398,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     var fechaP = GetFechaCR(conn, tx);
 
                     const string insDt = @"
-                        INSERT creditos_dt(CODIGO,ID_SOLICITUD,CUOTA,ABONO,INTCP,AMORTIZA,FECHAS,FECHAP,TCON,NCON,ESTADO,ESTADO_ASIENTO,Usuario,Cod_Concepto,Cod_Caja)
-                        VALUES(@Codigo,@Id,@Cuota,@Abono,@Intcp,@Amortiza,dbo.MyGetdate(),@FechaP,@Tcon,@Ncon,'A','G',@Usuario,@Concepto,'');";
+                INSERT creditos_dt(
+                    CODIGO,ID_SOLICITUD,CUOTA,ABONO,INTCP,AMORTIZA,FECHAS,FECHAP,TCON,NCON,ESTADO,ESTADO_ASIENTO,Usuario,Cod_Concepto,Cod_Caja
+                )
+                VALUES(
+                    @Codigo,@Id,@Cuota,@Abono,@Intcp,@Amortiza,dbo.MyGetdate(),@FechaP,@Tcon,@Ncon,'A','G',@Usuario,@Concepto,''
+                );";
 
                     conn.Execute(insDt, new
                     {
@@ -349,20 +415,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         Amortiza = (saldoActual - amortiza),
                         FechaP = fechaP,
                         Tcon = vTipoMov,
-                        Ncon = vNumDoc,
+                        Ncon = vNumDocStr,
                         Usuario = pUsuario,
                         Concepto = vConcepto
                     }, tx);
 
                     const string updOp = @"
-                        UPDATE reg_creditos
-                        SET saldo = 0,
-                            amortiza = montoapr,
-                            saldo_mes = 0,
-                            estado = 'C',
-                            FECHA_ENVIAPROCESO = dbo.MyGetdate(),
-                            OBSERVACION_PROCESO = 'Readecuación de Deuda'
-                        WHERE id_solicitud = @Id;";
+                UPDATE reg_creditos
+                SET saldo = 0,
+                    amortiza = montoapr,
+                    saldo_mes = 0,
+                    estado = 'C',
+                    FECHA_ENVIAPROCESO = dbo.MyGetdate(),
+                    OBSERVACION_PROCESO = 'Readecuación de Deuda'
+                WHERE id_solicitud = @Id;";
 
                     conn.Execute(updOp, new { Id = req.id_tramite }, tx);
                 }
@@ -373,7 +439,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var vDiaPago = req.chk_dia_pago ? diaPagoOld : vFecha.Day;
                 if (indDeduc == "S" && vDiaPago < 32) vDiaPago = 32;
 
-                var primerDeduccion = new MSeguimientoDB(_config).fxPrimerDeduccion(
+                var primerDeduccion = _mSeguimientoDB.fxPrimerDeduccion(
                     CodEmpresa,
                     codigoLinea,
                     0,
@@ -382,21 +448,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 );
 
                 const string insOp = @"
-                    INSERT reg_creditos(
-                        codigo,id_comite,cedula,montosol,estadosol,fechasol,fechares,plazo,int,montoapr,prideduc,fechaforp,fechaforf,acta,saldo,amortiza,interesc,
-                        cuota,estado,opex,proceso,userrec,userres,userfor,garantia,observacion,firma_deudor,monto_girado,interesv,tesoreria,usertesoreria,primer_cuota,
-                        tdocumento,ndocumento,pagare,fecha_calculo_int,premio,cuotas_planilla,cuotas_directas,cuotas_anuladas,FECULT,TBP_PuntosAdd,
-                        LiqTasa,cod_oficina_r,cod_oficina_f,cod_oficina_comision,referencia,fecha_registro,DIA_PAGO, IND_DEDUCE_PLANILLA
-                    )
-                    VALUES(
-                        @Codigo,@IdComite,@Cedula,@Monto,'F',@F,@F,@Plazo,@Tasa,@Monto,@PriDeduc,@F,@F,@Acta,@Monto,0,0,
-                        @Cuota,'A',@Opex,'N',@Usuario,@Usuario,@Usuario,@Garantia,@Obs,
-                        1,0,@Tasa,@F,@Usuario,'N','ND',
-                        @OldId,@Pagare,@F,@Premio,
-                        0,0,0,@FecUlt,@TbpAdd,
-                        @LiqTasa,@OfR,@OfF,@OfC,@Referencia,dbo.MyGetdate(),@DiaPago,@IndDeduc
-                    );
-                    SELECT CAST(SCOPE_IDENTITY() AS int) AS NewId;";
+            INSERT reg_creditos(
+                codigo,id_comite,cedula,montosol,estadosol,fechasol,fechares,plazo,int,montoapr,prideduc,fechaforp,fechaforf,acta,saldo,amortiza,interesc,
+                cuota,estado,opex,proceso,userrec,userres,userfor,garantia,observacion,firma_deudor,monto_girado,interesv,tesoreria,usertesoreria,primer_cuota,
+                tdocumento,ndocumento,pagare,fecha_calculo_int,premio,cuotas_planilla,cuotas_directas,cuotas_anuladas,FECULT,TBP_PuntosAdd,
+                LiqTasa,cod_oficina_r,cod_oficina_f,cod_oficina_comision,referencia,fecha_registro,DIA_PAGO, IND_DEDUCE_PLANILLA
+            )
+            VALUES(
+                @Codigo,@IdComite,@Cedula,@Monto,'F',@F,@F,@Plazo,@Tasa,@Monto,@PriDeduc,@F,@F,@Acta,@Monto,0,0,
+                @Cuota,'A',@Opex,'N',@Usuario,@Usuario,@Usuario,@Garantia,@Obs,
+                1,0,@Tasa,@F,@Usuario,'N','ND',
+                @OldId,@Pagare,@F,@Premio,
+                0,0,0,@FecUlt,@TbpAdd,
+                @LiqTasa,@OfR,@OfF,@OfC,@Referencia,dbo.MyGetdate(),@DiaPago,@IndDeduc
+            );
+            SELECT CAST(SCOPE_IDENTITY() AS int) AS NewId;";
 
                 var newId = conn.QueryFirstOrDefault<int>(insOp, new
                 {
@@ -417,7 +483,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     OldId = req.id_tramite,
                     Pagare = ToInt(V(dop, "pagare")),
                     Premio = ToDec(V(dop, "premio")),
-                    FecUlt = ToDateTime(V(dop, "fecult")),
+                    FecUlt = V(dop, "fecult"),
                     TbpAdd = V(dop, "TBP_PuntosAdd"),
                     LiqTasa = V(dop, "LiqTasa"),
                     OfR = V(dop, "cod_oficina_r"),
@@ -431,19 +497,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var nuevaOperacion = newId > 0 ? newId : UltimaOperacion(conn, tx, cedula);
 
                 const string insF = @"
-                    INSERT INTO fiadores(id_solicitud,codigo,cedulaf,nombre,firma,estado,interno)
-                    SELECT @NewId,codigo,cedulaf,nombre,firma,estado,interno
-                    FROM fiadores
-                    WHERE id_solicitud = @OldId;";
+            INSERT INTO fiadores(id_solicitud,codigo,cedulaf,nombre,firma,estado,interno)
+            SELECT @NewId,codigo,cedulaf,nombre,firma,estado,interno
+            FROM fiadores
+            WHERE id_solicitud = @OldId;";
 
                 conn.Execute(insF, new { NewId = nuevaOperacion, OldId = req.id_tramite }, tx);
 
                 if (sysPlanPagos == 1)
                 {
-                    conn.Execute("exec spCrdPlanPagos @Id", new { Id = nuevaOperacion }, tx);
-                    conn.Execute("exec spCrdPlanPagosActivaCuota @Id", new { Id = nuevaOperacion }, tx);
+                    conn.Execute("exec spCrdPlanPagos @Id;", new { Id = nuevaOperacion }, tx);
+                    conn.Execute("exec spCrdPlanPagosActivaCuota @Id;", new { Id = nuevaOperacion }, tx);
                 }
+
                 var pantalla = CalcularPantallaParaRegTransac(conn, tx, sysPlanPagos, req.id_tramite, vFecha, dop);
+
                 var docCtx = new DocumentoContext(
                     codEmpresa: CodEmpresa,
                     sysDocVersion: sysDocVersion,
@@ -460,7 +528,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     fechaServidor: vFecha,
 
                     tipoDoc: vTipoDoc,
-                    numDoc: vNumDoc,
+                    numDoc: vNumDocStr,
                     concepto: vConcepto,
                     tipoMov: vTipoMov,
 
@@ -488,20 +556,88 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     DetalleMovimiento = $"Readecuacion de Operacion de {req.id_tramite} A {nuevaOperacion}"
                 });
 
-                var msg = $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{vNumDoc}";
+                var msg = $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{vNumDocStr}";
 
                 return DbHelper.CreateOkResponse(new CoReadecuacionCambioOperacionAplicarResponse
                 {
                     operacion_original = req.id_tramite,
                     operacion_nueva = nuevaOperacion,
                     tipo_documento = vTipoDoc,
-                    num_documento = vNumDoc,
+                    num_documento = vNumDocStr,
                     mensaje = msg
                 });
             }
             catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(ex.Message);
+            }
+        }
+        /// <summary>
+        /// Obtiene el id de la nueva operacion para el reporte.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        public ErrorDto<CoReadecuacionReporteOperacionNuevaDto> CO_Readecuacion_ReporteOperacionNueva_Obtener(int CodEmpresa,CoReadecuacionReporteOperacionNuevaRequest req)
+        {
+            if (req == null || req.id_solicitud <= 0)
+                return DbHelper.CreateErrorResponse<CoReadecuacionReporteOperacionNuevaDto>("Solicitud inválida.", -2);
+
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                const string sqlRef = @"
+                    SELECT TOP 1
+                        ISNULL(id_solicitud, 0)
+                    FROM reg_creditos
+                    WHERE referencia = @idOriginal
+                      AND estadosol = 'F'
+                    ORDER BY id_solicitud DESC;";
+
+                var opRef = conn.ExecuteScalar<long>(sqlRef, new { idOriginal = req.id_solicitud });
+                if (opRef > 0)
+                {
+                    return DbHelper.CreateOkResponse(new CoReadecuacionReporteOperacionNuevaDto
+                    {
+                        operacion_nueva = opRef
+                    });
+                }
+
+                const string sqlBase = @"
+                    SELECT TOP 1
+                        RTRIM(cedula) AS cedula,
+                        RTRIM(codigo) AS codigo
+                    FROM reg_creditos
+                    WHERE id_solicitud = @id;";
+
+                var baseData = conn.QueryFirstOrDefault(sqlBase, new { id = req.id_solicitud });
+                if (baseData == null)
+                    return DbHelper.CreateOkResponse(new CoReadecuacionReporteOperacionNuevaDto { operacion_nueva = 0 });
+
+                const string sqlVop = @"
+                    SELECT ISNULL(MIN(id_solicitud), 0)
+                    FROM reg_creditos
+                    WHERE cedula = @cedula
+                      AND codigo = @codigo
+                      AND estadosol = 'F'
+                      AND id_solicitud > @idOriginal;";
+
+                var vop = conn.ExecuteScalar<long>(sqlVop, new
+                {
+                    cedula = (string)baseData.cedula,
+                    codigo = (string)baseData.codigo,
+                    idOriginal = req.id_solicitud
+                });
+
+                return DbHelper.CreateOkResponse(new CoReadecuacionReporteOperacionNuevaDto
+                {
+                    operacion_nueva = vop
+                });
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CoReadecuacionReporteOperacionNuevaDto>(ex.Message);
             }
         }
         private sealed record PantallaValores(
@@ -624,9 +760,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (ctx.sysPlanPagos == 1)
             {
-                if (ObjectExists(conn, "dbo.spCrdDocumentoAfectacion", "P"))
+                if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "P"))
                 {
-                    var ok = ProcedureHasParams(conn, "dbo.spCrdDocumentoAfectacion", "@TipoDoc", "@NumDoc", "@Tipo");
+                    var ok = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacion", "@TipoDoc", "@NumDoc", "@Tipo");
                     if (ok)
                     {
                         var r = conn.QueryFirstOrDefault("exec spCrdDocumentoAfectacion @TipoDoc,@NumDoc,@Tipo", new
@@ -650,7 +786,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
             else
             {
-                if (ObjectExists(conn, "dbo.vCRDsReportesMov", "V"))
+                if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "V"))
                 {
                     const string sql = @"
                     SELECT
@@ -683,7 +819,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             var curMonto = curCargo + curIntC + curIntM + curAmortiza + curPoliza;
 
-            if (!ObjectExists(conn, "dbo.spCrdOperacionCtas", "P"))
+            if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "P"))
                 return;
 
             var cuentas = conn.QueryFirstOrDefault("exec spCrdOperacionCtas @Id", new { Id = ctx.operacionId }, tx);
@@ -715,7 +851,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var ctaCargos = S(V(ctas, "CtaCargos", "ctacargos"));
             if (ctx.sysDocVersion == 1)
             {
-                if (!ObjectExists(conn, "dbo.asientos_tmp", "U"))
+                if (!ObjectExists(conn, tx, "dbo.asientos_tmp", "U"))
                     return;
 
                 var caso = "RA" + ctx.operacionId.ToString(CultureInfo.InvariantCulture);
@@ -743,7 +879,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return;
             }
 
-            if (!ObjectExists(conn, "dbo.SIF_TRANSACCIONES", "U"))
+            if (!ObjectExists(conn, tx, "dbo.SIF_TRANSACCIONES", "U"))
                 return;
 
             var codOficina = S(V(dop, "cod_oficina_r"));
@@ -787,10 +923,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Documento = ctx.docDeposito
             }, tx);
 
-            if (!ObjectExists(conn, "dbo.spSIFDocsAsiento", "P"))
+            if (!ObjectExists(conn, tx, "dbo.spSIFDocsAsiento", "P"))
                 return;
 
-            var okAsiento = ProcedureHasParams(conn, "dbo.spSIFDocsAsiento",
+            var okAsiento = ProcedureHasParams(conn, tx, "dbo.spSIFDocsAsiento",
                 "@TipoDocumento", "@NumDocumento", "@Monto", "@DebeHaber", "@CodDivisa",
                 "@Factor", "@Enlace", "@CodUnidad", "@CodCentroCosto", "@CodCuenta",
                 "@IdSolicitud", "@Codigo", "@Deposito");
@@ -818,9 +954,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (curCargo > 0 && ctx.sysPlanPagos == 0 && !string.IsNullOrWhiteSpace(ctaCargos))
                 conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curCargo, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaCargos, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
 
-            if (curCargo > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, "dbo.spCrdDocumentoAfectacionCargos", "P"))
+            if (curCargo > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", "P"))
             {
-                var okCargos = ProcedureHasParams(conn, "dbo.spCrdDocumentoAfectacionCargos", "@TipoDoc", "@NumDoc");
+                var okCargos = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", "@TipoDoc", "@NumDoc");
                 if (okCargos)
                 {
                     var rows = conn.Query("exec spCrdDocumentoAfectacionCargos @TipoDoc,@NumDoc", new { TipoDoc = ctx.tipoDoc, NumDoc = ctx.numDoc }, tx);
@@ -856,7 +992,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 }
             }
 
-            if (curPoliza > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, "dbo.fxCrdOperacionCtaContaPolizas", "FN"))
+            if (curPoliza > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, tx, "dbo.fxCrdOperacionCtaContaPolizas", "FN"))
             {
                 var cuentaPoliza = conn.QueryFirstOrDefault<string>(
                     "select dbo.fxCrdOperacionCtaContaPolizas(@Id) as Cuenta;",
@@ -874,10 +1010,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static void SbCBRRegTransacSiExiste(SqlConnection conn, SqlTransaction tx, DocumentoContext ctx)
         {
-            if (!ObjectExists(conn, "dbo.spCBRRegTransac", "P"))
+            if (!ObjectExists(conn, tx, "dbo.spCBRRegTransac", "P"))
                 return;
 
-            var hasFull = ProcedureHasParams(conn, "dbo.spCBRRegTransac",
+            var hasFull = ProcedureHasParams(conn, tx, "dbo.spCBRRegTransac",
                 "@Tipo", "@Cedula", "@Operacion", "@Notas", "@Saldo", "@IntCor",
                 "@IntMor", "@Cargos", "@Polizas", "@SaldoAnt", "@TipoDoc", "@NumDoc");
 
@@ -902,7 +1038,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return;
             }
 
-            var hasMini = ProcedureHasParams(conn, "dbo.spCBRRegTransac",
+            var hasMini = ProcedureHasParams(conn, tx, "dbo.spCBRRegTransac",
                 "@Tipo", "@Cedula", "@Operacion", "@Notas", "@Usuario", "@TipoDoc", "@NumDoc");
 
             if (hasMini)
@@ -975,12 +1111,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var diff = Math.Abs(cuotaBe - cuotaFe);
             return diff <= 0.50m;
         }
-        private static bool ObjectExists(SqlConnection conn, string objectName, string objectType)
+        private static bool ObjectExists(SqlConnection conn, SqlTransaction? tx, string objectName, string objectType)
         {
             const string sql = "SELECT CASE WHEN OBJECT_ID(@obj, @type) IS NOT NULL THEN 1 ELSE 0 END;";
-            return conn.QueryFirst<int>(sql, new { obj = objectName, type = objectType }) == 1;
+            return conn.QueryFirst<int>(sql, new { obj = objectName, type = objectType }, transaction: tx) == 1;
         }
-        private static bool ColumnExists(SqlConnection conn, string tableName, string columnName)
+        private static bool ColumnExists(SqlConnection conn, SqlTransaction? tx, string tableName, string columnName)
         {
             const string sql = @"
             SELECT CASE WHEN EXISTS(
@@ -990,16 +1126,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 WHERE o.object_id = OBJECT_ID(@tbl, 'U') AND c.name = @col
             ) THEN 1 ELSE 0 END;";
 
-            return conn.QueryFirst<int>(sql, new { tbl = tableName, col = columnName }) == 1;
+            return conn.QueryFirst<int>(sql, new { tbl = tableName, col = columnName }, transaction: tx) == 1;
         }
-        private static bool ProcedureHasParams(SqlConnection conn, string procName, params string[] paramNames)
+        private static bool ProcedureHasParams(SqlConnection conn, SqlTransaction? tx, string procName, params string[] paramNames)
         {
             const string sql = @"
-            SELECT p.name
-            FROM sys.parameters p
-            WHERE p.object_id = OBJECT_ID(@proc, 'P');";
+                SELECT p.name
+                FROM sys.parameters p
+                WHERE p.object_id = OBJECT_ID(@proc, 'P');";
 
-            var existing = conn.Query<string>(sql, new { proc = procName })
+            var existing = conn.Query<string>(sql, new { proc = procName }, transaction: tx)
                 .Select(s => s.Trim())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -1012,27 +1148,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return true;
         }
-        private static int GetSysPlanPagos(SqlConnection conn, int codEmpresa)
+        private static int GetSysPlanPagos(SqlConnection conn, SqlTransaction? tx, int codEmpresa)
         {
-            if (ObjectExists(conn, "dbo.SIF_EMPRESA", "U") && ColumnExists(conn, "dbo.SIF_EMPRESA", "SysPlanPagos"))
+            if (ObjectExists(conn, tx, "dbo.SIF_EMPRESA", "U") && ColumnExists(conn, tx, "dbo.SIF_EMPRESA", "SysPlanPagos"))
             {
                 const string sql = "SELECT ISNULL(SysPlanPagos,0) FROM SIF_EMPRESA WHERE PORTAL_ID = @CodEmpresa;";
-                return conn.QueryFirstOrDefault<int>(sql, new { CodEmpresa = codEmpresa });
+                return conn.QueryFirstOrDefault<int>(sql, new { CodEmpresa = codEmpresa }, transaction: tx);
             }
 
-            if (ObjectExists(conn, "dbo.fxSysPlanPagos", "FN"))
+            if (ObjectExists(conn, tx, "dbo.fxSysPlanPagos", "FN"))
             {
                 const string sql = "SELECT dbo.fxSysPlanPagos(@CodEmpresa) AS Val;";
-                return conn.QueryFirstOrDefault<int>(sql, new { CodEmpresa = codEmpresa });
+                return conn.QueryFirstOrDefault<int>(sql, new { CodEmpresa = codEmpresa }, transaction: tx);
             }
+
             return 0;
         }
-        private static bool PersonaCongelada(SqlConnection conn, string cedula, string tipo)
+        private static bool PersonaCongelada(SqlConnection conn, SqlTransaction? tx, string cedula, string tipo)
         {
-            if (ObjectExists(conn, "dbo.fxgCongelamiento", "FN"))
+            if (ObjectExists(conn, tx, "dbo.fxgCongelamiento", "FN"))
             {
                 const string sql = "SELECT dbo.fxgCongelamiento(@Cedula, @Tipo) AS Val;";
-                var val = conn.QueryFirstOrDefault<object>(sql, new { Cedula = cedula, Tipo = tipo });
+                var val = conn.QueryFirstOrDefault<object>(sql, new { Cedula = cedula, Tipo = tipo }, transaction: tx);
                 var s = (Convert.ToString(val, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
                 return s == "1" || s.Equals("S", StringComparison.OrdinalIgnoreCase) || s.Equals("SI", StringComparison.OrdinalIgnoreCase);
             }
@@ -1040,7 +1177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static int GetFechaCR(SqlConnection conn, SqlTransaction tx)
         {
-            if (ObjectExists(conn, "dbo.fxFechaCR", "FN"))
+            if (ObjectExists(conn,tx, "dbo.fxFechaCR", "FN"))
             {
                 const string sql = "SELECT dbo.fxFechaCR() AS Val;";
                 return conn.QueryFirstOrDefault<int>(sql, transaction: tx);

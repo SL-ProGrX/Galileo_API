@@ -63,4 +63,13 @@
 
         public string mensaje { get; set; } = string.Empty; 
     }
+    public class CoReadecuacionReporteOperacionNuevaRequest
+    {
+        public long id_solicitud { get; set; }
+    }
+
+    public class CoReadecuacionReporteOperacionNuevaDto
+    {
+        public long operacion_nueva { get; set; }
+    }
 }
