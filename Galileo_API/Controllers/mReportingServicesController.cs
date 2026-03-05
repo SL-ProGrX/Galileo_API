@@ -18,6 +18,8 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteRDLC_v2")]
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorDto<IActionResult>), StatusCodes.Status200OK)]
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
             var result = _reportingServicesBL.ReporteRDLC_v2(data);

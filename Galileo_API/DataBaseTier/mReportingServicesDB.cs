@@ -154,11 +154,10 @@ namespace Galileo.DataBaseTier
                 // Subreport processing
                 _subs.ConfigureSubreportProcessing(report, subMeta, connection, autoAliases, paramDict, subErrors, _patcher.ParseFxConstants(data.codeSection));
 
-                string errorDesc = string.Empty;    
-                foreach (var error in subErrors)
-                {
-                    errorDesc += $"{error}\n";
-                }
+                string errorDesc = string.Join("\n", subErrors) + "\n";
+
+                //elimino ultimo salto de linea
+                errorDesc = errorDesc.TrimEnd('\n');
 
                 if (errorDesc.Length > 0)
                 {
