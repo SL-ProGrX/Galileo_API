@@ -208,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                 {
                     return DbHelper.CreateErrorResponse(
-                        "Request inválido.",
+                        "Request inválido. " + usuario,
                         -1,
                         new CrdPolizasCargaLoteCargaResponse());
                 }
@@ -580,7 +580,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             // Fallback VB6-like si SCOPE_IDENTITY no aplica: MAX por código.
             const string maxSql = @"SELECT MAX(nsolicitud) FROM Tes_Transacciones WHERE codigo = @Codigo;";
-            return request.Conn.QueryFirstOrDefault<long>(maxSql, new { Codigo = request.CodigoCliente });
+            return request.Conn!.QueryFirstOrDefault<long>(maxSql, new { Codigo = request.CodigoCliente });
         }
 
         private static string ObtenerCtaBanco(IDbConnection conn, int idBanco)

@@ -319,7 +319,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 const string query = @"exec spTes_Concilia_Periodo_Resultados @BancoId, @Anio ,@Mes,@Ubicacion,@Tipo,@Estado";
 
-                string estado = filtros.estadoCasos.Substring(0, 1);
+                string estado = filtros.estadoCasos!.Substring(0, 1);
 
                 return conn.Query<TesConciliaResultados>(query, new
                 {

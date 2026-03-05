@@ -2,18 +2,18 @@ namespace Galileo.Models.GG_PE
 {
     public class PeProyectosDto
     {
-        public int proyecto_id { get; set; }
-        public int programa_id { get; set; }
+        public required int proyecto_id { get; set; }
+        public required int programa_id { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string responsable { get; set; } = string.Empty;
-        public float presupuesto { get; set; }
+        public required float presupuesto { get; set; }
         public Nullable<DateTime> fecha_inicio { get; set; }
         public Nullable<DateTime> fecha_finaliza { get; set; }
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
     }
