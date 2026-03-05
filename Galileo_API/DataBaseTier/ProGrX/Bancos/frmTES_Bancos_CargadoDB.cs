@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Newtonsoft.Json;
 using System.Data;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -217,7 +218,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                
+                var sb = new StringBuilder();
                 foreach (var row in file)
                 {
 
@@ -235,11 +236,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                     if (result == -1)
                     {
-                        response.Description += $"Documneto Repetido: [{row.documento}] \n";
+                        sb.AppendLine($"Documento Repetido: [{row.documento}]");
                     }
                 }
 
-                if(response.Description.Length > 0)
+                response.Description = sb.ToString();
+
+                if (response.Description.Length > 0)
                 {
                     response.Code = -1;
                 }

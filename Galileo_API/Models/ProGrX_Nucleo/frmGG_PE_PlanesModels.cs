@@ -15,16 +15,16 @@ namespace Galileo.Models.GG_PE
 
     public class PePlanesDto
     {
-        public int pe_id { get; set; }
+        public required int pe_id { get; set; }
         public string descripcion { get; set; } = string.Empty;
-        public DateTime inicio { get; set; }
-        public DateTime finalizacion { get; set; }
+        public required DateTime inicio { get; set; }
+        public required DateTime finalizacion { get; set; }
         public string estado { get; set; } = string.Empty;
         public string mision { get; set; } = string.Empty;
         public string vision { get; set; } = string.Empty;
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public required DateTime registro_fecha { get; set; }
     }
 }

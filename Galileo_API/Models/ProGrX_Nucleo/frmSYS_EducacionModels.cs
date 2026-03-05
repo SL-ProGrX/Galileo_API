@@ -11,7 +11,7 @@
         public string cod_educ { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
-        public int activa { get; set; }
+        public required int activa { get; set; }
         public bool activab => activa == 1;
         public bool isNew { get; set; } = false;
     }

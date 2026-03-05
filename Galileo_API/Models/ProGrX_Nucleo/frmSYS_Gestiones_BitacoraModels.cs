@@ -36,7 +36,7 @@
         public string? UsuarioBuscar { get; set; }
         public string? FechaInicio { get; set; }
         public string? FechaFin { get; set; }
-        public bool TodasFechas { get; set; }
+        public required bool TodasFechas { get; set; }
         public FiltrosLazyLoadData? Filtros { get; set; }
     }
 }
