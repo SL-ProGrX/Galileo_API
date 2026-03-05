@@ -37,18 +37,18 @@
     }
     public class CoReadecuacionCambioOperacionAplicarRequest
     {
-        public int id_tramite { get; set; }
+        public int? id_tramite { get; set; }
         public string? notas { get; set; }
         public string? usuario_sesion { get; set; }
 
-        public decimal no_monto { get; set; }
-        public int no_plazo { get; set; }
-        public decimal no_tasa { get; set; }
-        public decimal no_cuota { get; set; }
+        public decimal? no_monto { get; set; }
+        public int? no_plazo { get; set; }
+        public decimal? no_tasa { get; set; }
+        public decimal? no_cuota { get; set; }
 
-        public bool chk_dia_pago { get; set; }
-        public int sys_doc_version { get; set; }
-        public int g_enlace { get; set; }
+        public bool? chk_dia_pago { get; set; }
+        public int? sys_doc_version { get; set; }
+        public int? g_enlace { get; set; }
         public string? gstr_mascara { get; set; }
     }
 

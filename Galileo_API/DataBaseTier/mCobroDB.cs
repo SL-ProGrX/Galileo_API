@@ -47,7 +47,6 @@ namespace Galileo_API.DataBaseTier
                 case "Q":
                     curInteresMensual = tasa / (24m * 100m);
                     break;
-                case "M":
                 default:
                     curInteresMensual = tasa / (12m * 100m);
                     break;

@@ -115,7 +115,7 @@ namespace Galileo_API.DataBaseTier
             conn.Open();
             var fechaServidor = conn.QueryFirst<DateTime>("select dbo.MyGetdate();");
             var baseDate = (vFechaI ?? fechaServidor).AddMonths(1);
-            var primerDiaMes = new DateTime(baseDate.Year, baseDate.Month, 1);
+            var primerDiaMes = new DateTime(baseDate.Year, baseDate.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
             var vFecha = primerDiaMes.AddDays(-1);
 
             int iMes = vFecha.Month;

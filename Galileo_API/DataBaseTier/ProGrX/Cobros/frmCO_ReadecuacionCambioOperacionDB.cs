@@ -1,11 +1,13 @@
-﻿using System.Data;
-using System.Globalization;
-using Dapper;
+﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
+using System.CodeDom;
+using System.Data;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -14,19 +16,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _security_MainDB;
         private readonly MProGrxMain _mProGrxMain;
-        private readonly MRecibos _mRecibosDB;
         private readonly MSeguimientoDB _mSeguimientoDB;
         private const string IDENTIFICACION_CONGELADA = "Esta Persona se encuentra CONGELADA, verifique...";
         private const string OPERACION_INVALIDA = "No se encontró el número de operación [Activa]";
         private const string NOTA_INVALIDA = "La nota para realizar la transacción no es válida...";
         private const int MODULO = 4;
-
+        private const string CARGOS = "Cargos";
+        private const string FORMATO_FECHA = "yyyy/MM/dd";
+        private const string IntMor = "IntMor";
+        private const string IntCor = "IntCor";
+        private const string TIPO = "@tipo";
+        private const string TIPO_DOC = "@TipoDoc";
+        private const string NUM_DOC = "@NumDoc";
         public FrmCOReadecuacionCambioOperacionDB(IConfiguration config)
             : this(
                 new PortalDB(config),
                 new MSecurityMainDb(config),
                 new MProGrxMain(config),
-                new MRecibos(config),
                 new MSeguimientoDB(config))
         {
         }
@@ -35,13 +41,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             PortalDB portalDB,
             MSecurityMainDb securityMainDb,
             MProGrxMain mProGrxMain,
-            MRecibos mRecibosDB,
             MSeguimientoDB mSeguimientoDB)
         {
             _portalDB = portalDB;
             _security_MainDB = securityMainDb;
             _mProGrxMain = mProGrxMain;
-            _mRecibosDB = mRecibosDB;
             _mSeguimientoDB = mSeguimientoDB;
         }
         /// <summary>
@@ -94,7 +98,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var interesTotal = ToDec(V(d, "InteresTotal"));
                 var intMorCor = ToDec(V(d, "IntMorCor"));
                 var intMorMor = ToDec(V(d, "IntMorMor"));
-                var cargos = ToDec(V(d, "Cargos"));
+                var cargos = ToDec(V(d, CARGOS));
                 var poliza = ToDec(V(d, "Poliza"));
                 var saldo = ToDec(V(d, "saldo"));
                 var montoApr = ToDec(V(d, "montoapr"));
@@ -125,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 if (sysPlanPagos == 1)
                 {
                     var fechaServer = ToDateTime(V(d, "FechaServer"));
-                    var fechaStr = fechaServer.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+                    var fechaStr = fechaServer.ToString(FORMATO_FECHA, CultureInfo.InvariantCulture);
 
                     const string sp = "exec spCrdPlanPagosInfoCancelacion @Id, @Fecha";
                     var r2 = conn.QueryFirstOrDefault(sp, new { Id = idTramite, Fecha = fechaStr });
@@ -134,9 +138,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         var d2 = (IDictionary<string, object?>)r2;
 
                         intCorVenc = 0m;
-                        intMorMor = ToDec(V(d2, "IntMor"));
-                        intMorCor = ToDec(V(d2, "IntCor"));
-                        cargos = ToDec(V(d2, "Cargos"));
+                        intMorMor = ToDec(V(d2, IntMor));
+                        intMorCor = ToDec(V(d2, IntCor));
+                        cargos = ToDec(V(d2, CARGOS));
                         poliza = ToDec(V(d2, "Poliza"));
 
                         var principal = ToDec(V(d2, "Principal"));
@@ -149,7 +153,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var noTasa = tasa;
                 var noCuota = MCobroDb.fxCalcula_Cuota(noMonto, noPlazo, noTasa, "M");
 
-                var fechaServerFinal = ToDateTime(V(d, "FechaServer")).ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+                var fechaServerFinal = ToDateTime(V(d, "FechaServer")).ToString(FORMATO_FECHA, CultureInfo.InvariantCulture);
 
                 var dto = new CoReadecuacionCambioOperacionConsultaDto
                 {
@@ -207,23 +211,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<CoReadecuacionCambioOperacionAplicarResponse> CO_ReadecuacionCambioOperacion_Aplicar(int CodEmpresa,CoReadecuacionCambioOperacionAplicarRequest req)
         {
-            if (req.id_tramite <= 0)
-                return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2);
-
-            var pNotas = (req.notas ?? string.Empty).Trim();
-            if (pNotas.Length < 10)
-                return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(NOTA_INVALIDA, -2);
-
-            var pUsuario = (req.usuario_sesion ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(pUsuario))
-                return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Usuario sesión inválido.", -2);
-
-            if (req.no_monto <= 0 || req.no_plazo <= 0 || req.no_tasa < 0)
-                return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Monto/Tasa/Plazo no son válidos.", -2);
-
-            var cuotaBe = MCobroDb.fxCalcula_Cuota(req.no_monto, req.no_plazo, req.no_tasa, "M");
-            if (!CuotaCoincide(cuotaBe, req.no_cuota))
-                return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Cuota no coincide con el cálculo del sistema.", -2);
+            var valid = ValidarAplicar(req);
+            if (valid.Error != null)
+                return valid.Error;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -231,308 +221,94 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 conn.Open();
 
-                const string sqlOp = @"
-        SELECT
-            R.id_solicitud,
-            R.cedula,
-            R.codigo,
-            C.descripcion,
-            S.nombre,
-            R.plazo,
-            R.interesv,
-            R.saldo,
-            R.montoapr,
-            R.opex,
-            R.dia_pago,
-            R.ind_deduce_planilla,
-            R.id_comite,
-            R.acta,
-            R.garantia,
-            R.pagare,
-            R.premio,
-            R.fecult,
-            R.TBP_PuntosAdd,
-            R.LiqTasa,
-            R.cod_oficina_r,
-            R.cod_oficina_f,
-            R.cod_oficina_comision,
-            R.cod_grupo
-        FROM reg_creditos R
-        INNER JOIN Socios S ON R.cedula = S.cedula
-        INNER JOIN catalogo C ON R.codigo = C.codigo
-        WHERE R.id_solicitud = @Id AND R.estado = 'A';";
+                var op = ObtenerOperacionActiva(conn, req.id_tramite ?? 0);
+                if (op.Error != null || op.Dop == null)
+                    return op.Error ?? DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2);
 
-                var op = conn.QueryFirstOrDefault(sqlOp, new { Id = req.id_tramite });
-                if (op == null)
-                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2);
-
-                var dop = (IDictionary<string, object?>)op;
-
-                var cedula = S(V(dop, "cedula"));
-                if (PersonaCongelada(conn, tx: null, cedula, "per_readecuaciones"))
+                if (PersonaCongelada(conn, tx: null, op.Cedula, "per_readecuaciones"))
                     return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(IDENTIFICACION_CONGELADA, -2);
 
-                var nombre = S(V(dop, "nombre"));
-                var descripcion = S(V(dop, "descripcion"));
-                var codigoLinea = S(V(dop, "codigo"));
-
-                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, pUsuario);
+                var init = _mProGrxMain.sbSifParametrosInicializa(CodEmpresa, valid.Usuario);
                 if (init.Code != 0 || init.Result == null)
-                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("No se pudo inicializar parámetros del sistema.", -2);
+                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        "No se pudo inicializar parámetros del sistema.", -2);
 
-                var gEnlaceFinal = init.Result.GEnlace;
-                var sysDocVersion = init.Result.SysDocVersion;
-                var sysPlanPagos = init.Result.SysPlanPagos;
+                var g = init.Result;
 
                 var vTipoDoc = "REA";
-                string vTipoMov;
-                string vNumDocStr;
-
                 var vConcepto = "CBR001";
                 var vFecha = MyGetDate(conn);
 
                 using var tx = conn.BeginTransaction();
 
-                if (sysDocVersion == 2)
-                {
-                    vTipoMov = "REA";
-                    if (!ObjectExists(conn, tx, "dbo.spSIFDocsConsecutivo", "P"))
-                        return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
-                            "No existe dbo.spSIFDocsConsecutivo para obtener consecutivo de documento.", -2);
+                var doc = ResolverDocumento(conn, tx, g.SysDocVersion, vTipoDoc, valid.Usuario);
+                if (doc.Error != null)
+                    return doc.Error;
 
-                    var hasUsuario = ProcedureHasParams(conn, tx, "dbo.spSIFDocsConsecutivo", "@Tipo", "@Usuario");
-                    object? consObj;
+                var ctx = new AplicarCtx(
+                    CodEmpresa: CodEmpresa,
+                    Req: req,
+                    Valid: valid,
+                    Op: op,
+                    Globales: g,
+                    FechaServidor: vFecha,
+                    TipoDoc: vTipoDoc,
+                    Concepto: vConcepto,
+                    Doc: doc
+                );
 
-                    if (hasUsuario)
-                    {
-                        consObj = conn.QueryFirstOrDefault<object>(
-                            "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;",
-                            new { Tipo = vTipoDoc, Usuario = pUsuario },
-                            tx);
-                    }
-                    else
-                    {
-                        consObj = conn.QueryFirstOrDefault<object>(
-                            "exec dbo.spSIFDocsConsecutivo @Tipo;",
-                            new { Tipo = vTipoDoc },
-                            tx);
-                    }
+                EjecutarCancelacion(conn, tx, ctx);
 
-                    var cons = ToInt(consObj);
-                    if (cons <= 0)
-                        return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
-                            $"No fue posible obtener consecutivo para documento {vTipoDoc}.", -2);
-
-                    vNumDocStr = cons.ToString(CultureInfo.InvariantCulture);
-                }
-                else if (sysDocVersion == 1)
-                {
-                    vTipoMov = "4";
-                    vNumDocStr = "8889";
-                }
-                else
-                {
-                    return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
-                        $"SysDocVersion={sysDocVersion} no soportado en este proceso.", -2);
-                }
-
-                if (sysPlanPagos == 1)
-                {
-                    const string sp = "exec spCrdPlanPagoAbonoCancelacion @Id, @Concepto, @Usuario, @TipoDoc, @NumDoc, @Monto, @Fecha, @Empty;";
-                    conn.Execute(sp, new
-                    {
-                        Id = req.id_tramite,
-                        Concepto = vConcepto,
-                        Usuario = pUsuario,
-                        TipoDoc = vTipoDoc,
-                        NumDoc = vNumDocStr,
-                        Monto = req.no_monto,
-                        Fecha = vFecha.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture),
-                        Empty = ""
-                    }, tx);
-                }
-                else
-                {
-                    const string updMor = @"
-            UPDATE morosidad
-            SET estado = 'C',
-                abintc = intc,
-                abintm = intm,
-                abamortiza = amortiza,
-                abCargo = cargo,
-                tcon = @Tcon,
-                ncon = @Ncon,
-                fecult = dbo.MyGetdate(),
-                usuario = @Usuario,
-                cod_concepto = @Concepto,
-                cod_caja = ''
-            WHERE estado = 'A' AND id_solicitud = @Id;";
-
-                    conn.Execute(updMor, new
-                    {
-                        Id = req.id_tramite,
-                        Tcon = vTipoMov,
-                        Ncon = vNumDocStr,
-                        Usuario = pUsuario,
-                        Concepto = vConcepto
-                    }, tx);
-
-                    const string sqlAm = @"
-                SELECT ISNULL(SUM(abamortiza),0)
-                FROM morosidad
-                WHERE tcon=@Tcon AND ncon=@Ncon AND id_solicitud=@Id;";
-
-                    var amortiza = conn.QueryFirstOrDefault<decimal>(
-                        sqlAm,
-                        new { Tcon = vTipoMov, Ncon = vNumDocStr, Id = req.id_tramite },
-                        tx);
-
-                    var interesTotal = conn.QueryFirstOrDefault<decimal>(
-                        "SELECT dbo.fxCRDCalculoIntCorte(@Id, dbo.MyGetdate());",
-                        new { Id = req.id_tramite },
-                        tx);
-
-                    var saldoActual = ToDec(V(dop, "saldo"));
-                    var intCorVenc = interesTotal;
-
-                    var fechaP = GetFechaCR(conn, tx);
-
-                    const string insDt = @"
-                INSERT creditos_dt(
-                    CODIGO,ID_SOLICITUD,CUOTA,ABONO,INTCP,AMORTIZA,FECHAS,FECHAP,TCON,NCON,ESTADO,ESTADO_ASIENTO,Usuario,Cod_Concepto,Cod_Caja
-                )
-                VALUES(
-                    @Codigo,@Id,@Cuota,@Abono,@Intcp,@Amortiza,dbo.MyGetdate(),@FechaP,@Tcon,@Ncon,'A','G',@Usuario,@Concepto,''
-                );";
-
-                    conn.Execute(insDt, new
-                    {
-                        Codigo = codigoLinea,
-                        Id = req.id_tramite,
-                        Cuota = (intCorVenc + saldoActual - amortiza),
-                        Abono = (saldoActual - amortiza),
-                        Intcp = intCorVenc,
-                        Amortiza = (saldoActual - amortiza),
-                        FechaP = fechaP,
-                        Tcon = vTipoMov,
-                        Ncon = vNumDocStr,
-                        Usuario = pUsuario,
-                        Concepto = vConcepto
-                    }, tx);
-
-                    const string updOp = @"
-                UPDATE reg_creditos
-                SET saldo = 0,
-                    amortiza = montoapr,
-                    saldo_mes = 0,
-                    estado = 'C',
-                    FECHA_ENVIAPROCESO = dbo.MyGetdate(),
-                    OBSERVACION_PROCESO = 'Readecuación de Deuda'
-                WHERE id_solicitud = @Id;";
-
-                    conn.Execute(updOp, new { Id = req.id_tramite }, tx);
-                }
-                var vOpex = ToInt(V(dop, "opex"));
-                var diaPagoOld = ToInt(V(dop, "dia_pago"));
-                var indDeduc = S(V(dop, "ind_deduce_planilla")).Trim().ToUpperInvariant();
-
-                var vDiaPago = req.chk_dia_pago ? diaPagoOld : vFecha.Day;
-                if (indDeduc == "S" && vDiaPago < 32) vDiaPago = 32;
+                var vDiaPago = CalcularDiaPago(req.chk_dia_pago, op.DiaPagoOld, vFecha, op.IndDeduc);
 
                 var primerDeduccion = _mSeguimientoDB.fxPrimerDeduccion(
                     CodEmpresa,
-                    codigoLinea,
+                    op.CodigoLinea,
                     0,
                     0,
                     vDiaPago
                 );
 
-                const string insOp = @"
-            INSERT reg_creditos(
-                codigo,id_comite,cedula,montosol,estadosol,fechasol,fechares,plazo,int,montoapr,prideduc,fechaforp,fechaforf,acta,saldo,amortiza,interesc,
-                cuota,estado,opex,proceso,userrec,userres,userfor,garantia,observacion,firma_deudor,monto_girado,interesv,tesoreria,usertesoreria,primer_cuota,
-                tdocumento,ndocumento,pagare,fecha_calculo_int,premio,cuotas_planilla,cuotas_directas,cuotas_anuladas,FECULT,TBP_PuntosAdd,
-                LiqTasa,cod_oficina_r,cod_oficina_f,cod_oficina_comision,referencia,fecha_registro,DIA_PAGO, IND_DEDUCE_PLANILLA
-            )
-            VALUES(
-                @Codigo,@IdComite,@Cedula,@Monto,'F',@F,@F,@Plazo,@Tasa,@Monto,@PriDeduc,@F,@F,@Acta,@Monto,0,0,
-                @Cuota,'A',@Opex,'N',@Usuario,@Usuario,@Usuario,@Garantia,@Obs,
-                1,0,@Tasa,@F,@Usuario,'N','ND',
-                @OldId,@Pagare,@F,@Premio,
-                0,0,0,@FecUlt,@TbpAdd,
-                @LiqTasa,@OfR,@OfF,@OfC,@Referencia,dbo.MyGetdate(),@DiaPago,@IndDeduc
-            );
-            SELECT CAST(SCOPE_IDENTITY() AS int) AS NewId;";
+                var nuevaOperacion = InsertarNuevaOperacion(conn, tx, ctx, Convert.ToInt32(primerDeduccion), vDiaPago);
 
-                var newId = conn.QueryFirstOrDefault<int>(insOp, new
-                {
-                    Codigo = codigoLinea,
-                    IdComite = ToInt(V(dop, "id_comite")),
-                    Cedula = cedula,
-                    Monto = req.no_monto,
-                    F = vFecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
-                    Plazo = req.no_plazo,
-                    Tasa = req.no_tasa,
-                    PriDeduc = primerDeduccion,
-                    Acta = ToInt(V(dop, "acta")),
-                    Cuota = cuotaBe,
-                    Opex = vOpex,
-                    Usuario = pUsuario,
-                    Garantia = S(V(dop, "garantia")),
-                    Obs = pNotas,
-                    OldId = req.id_tramite,
-                    Pagare = ToInt(V(dop, "pagare")),
-                    Premio = ToDec(V(dop, "premio")),
-                    FecUlt = V(dop, "fecult"),
-                    TbpAdd = V(dop, "TBP_PuntosAdd"),
-                    LiqTasa = V(dop, "LiqTasa"),
-                    OfR = V(dop, "cod_oficina_r"),
-                    OfF = V(dop, "cod_oficina_f"),
-                    OfC = V(dop, "cod_oficina_comision"),
-                    Referencia = req.id_tramite,
-                    DiaPago = vDiaPago,
-                    IndDeduc = indDeduc
-                }, tx);
+                CopiarFiadores(conn, tx, nuevaOperacion, req.id_tramite ?? 0);
 
-                var nuevaOperacion = newId > 0 ? newId : UltimaOperacion(conn, tx, cedula);
-
-                const string insF = @"
-            INSERT INTO fiadores(id_solicitud,codigo,cedulaf,nombre,firma,estado,interno)
-            SELECT @NewId,codigo,cedulaf,nombre,firma,estado,interno
-            FROM fiadores
-            WHERE id_solicitud = @OldId;";
-
-                conn.Execute(insF, new { NewId = nuevaOperacion, OldId = req.id_tramite }, tx);
-
-                if (sysPlanPagos == 1)
+                if (g.SysPlanPagos == 1)
                 {
                     conn.Execute("exec spCrdPlanPagos @Id;", new { Id = nuevaOperacion }, tx);
                     conn.Execute("exec spCrdPlanPagosActivaCuota @Id;", new { Id = nuevaOperacion }, tx);
                 }
 
-                var pantalla = CalcularPantallaParaRegTransac(conn, tx, sysPlanPagos, req.id_tramite, vFecha, dop);
+                var pantalla = CalcularPantallaParaRegTransac(
+                    conn,
+                    tx,
+                    g.SysPlanPagos,
+                    req.id_tramite ?? 0,
+                    vFecha,
+                    op.Dop
+                );
 
                 var docCtx = new DocumentoContext(
                     codEmpresa: CodEmpresa,
-                    sysDocVersion: sysDocVersion,
-                    sysPlanPagos: sysPlanPagos,
+                    sysDocVersion: g.SysDocVersion,
+                    sysPlanPagos: g.SysPlanPagos,
 
-                    operacionId: req.id_tramite,
-                    cedula: cedula,
-                    nombre: nombre,
-                    descripcion: descripcion,
-                    codigoLinea: codigoLinea,
+                    operacionId: req.id_tramite ?? 0,
+                    cedula: op.Cedula,
+                    nombre: op.Nombre,
+                    descripcion: op.Descripcion,
+                    codigoLinea: op.CodigoLinea,
 
-                    usuario: pUsuario,
-                    notas: pNotas,
+                    usuario: valid.Usuario,
+                    notas: valid.Notas,
                     fechaServidor: vFecha,
 
                     tipoDoc: vTipoDoc,
-                    numDoc: vNumDocStr,
+                    numDoc: doc.NumDocStr,
                     concepto: vConcepto,
-                    tipoMov: vTipoMov,
+                    tipoMov: doc.TipoMov,
 
-                    gEnlace: gEnlaceFinal,
+                    gEnlace: g.GEnlace,
                     docDeposito: (req.gstr_mascara ?? string.Empty).Trim(),
 
                     saldoPantalla: pantalla.Saldo,
@@ -543,27 +319,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     polizas: pantalla.Polizas
                 );
 
-                SbDocumento(conn, tx, dop, docCtx);
+                SbDocumento(conn, tx, op.Dop, docCtx);
 
                 tx.Commit();
 
                 _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = pUsuario,
+                    Usuario = valid.Usuario,
                     Modulo = MODULO,
                     Movimiento = "Modifica - WEB",
                     DetalleMovimiento = $"Readecuacion de Operacion de {req.id_tramite} A {nuevaOperacion}"
                 });
 
-                var msg = $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{vNumDocStr}";
+                var msg =
+                    $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{doc.NumDocStr}";
 
                 return DbHelper.CreateOkResponse(new CoReadecuacionCambioOperacionAplicarResponse
                 {
-                    operacion_original = req.id_tramite,
+                    operacion_original = req.id_tramite ?? 0,
                     operacion_nueva = nuevaOperacion,
                     tipo_documento = vTipoDoc,
-                    num_documento = vNumDocStr,
+                    num_documento = doc.NumDocStr,
                     mensaje = msg
                 });
             }
@@ -648,7 +425,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             decimal Cargos,
             decimal Polizas
         );
-
         private sealed record DocumentoContext(
             int codEmpresa,
             int sysDocVersion,
@@ -679,7 +455,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             decimal cargos,
             decimal polizas
         );
-
         private static PantallaValores CalcularPantallaParaRegTransac( SqlConnection conn,SqlTransaction tx,int sysPlanPagos,int idTramite,DateTime fechaServidor,IDictionary<string, object?> dop)
         {
             var saldo = ToDec(V(dop, "saldo"));
@@ -692,7 +467,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (sysPlanPagos == 1)
             {
-                var fechaStr = fechaServidor.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+                var fechaStr = fechaServidor.ToString(FORMATO_FECHA, CultureInfo.InvariantCulture);
                 const string sp = "exec spCrdPlanPagosInfoCancelacion @Id, @Fecha";
 
                 var r2 = conn.QueryFirstOrDefault(sp, new { Id = idTramite, Fecha = fechaStr }, tx);
@@ -700,9 +475,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 {
                     var d2 = (IDictionary<string, object?>)r2;
                     intCorVenc = 0m;
-                    intMor = ToDec(V(d2, "IntMor"));
-                    intCorAtrasado = ToDec(V(d2, "IntCor"));
-                    cargos = ToDec(V(d2, "Cargos"));
+                    intMor = ToDec(V(d2, IntMor));
+                    intCorAtrasado = ToDec(V(d2, IntCor));
+                    cargos = ToDec(V(d2, CARGOS));
                     polizas = ToDec(V(d2, "Poliza"));
                 }
 
@@ -733,7 +508,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var intMorCor = ToDec(V(d, "IntMorCor"));
                 var intMorMor = ToDec(V(d, "IntMorMor"));
 
-                cargos = ToDec(V(d, "Cargos"));
+                cargos = ToDec(V(d, CARGOS));
                 polizas = 0m;
                 var tmp = interesTotal - (intMorCor + intMorMor);
                 intCorVenc = tmp < 0 ? 0m : tmp;
@@ -750,7 +525,74 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Polizas: polizas
             );
         }
+        private sealed record MovMontos(
+    decimal Cargo,
+    decimal IntC,
+    decimal IntM,
+    decimal Amortiza,
+    decimal Poliza
+)
+        {
+            public decimal MontoTotal => Cargo + IntC + IntM + Amortiza + Poliza;
+        }
+        private sealed record CtasOperacion(
+            string CodDivisa,
+            string CodUnidad,
+            string CodCentroCosto,
+            string CtaAmortiza,
+            string CtaIntC,
+            string CtaIntM,
+            string CtaCargos
+        );
+        private sealed record LineasTransaccion(
+            string Linea1,
+            string Linea2,
+            string Linea3,
+            string Linea4,
+            string Linea5,
+            string Linea6,
+            string Linea7,
+            string Linea8,
+            string Linea9,
+            string Linea10
+        );
         private static void SbDocumento(SqlConnection conn,SqlTransaction tx,IDictionary<string, object?> dop,DocumentoContext ctx)
+        {
+            var mov = ObtenerMontosDocumento(conn, tx, ctx);
+
+            if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "P"))
+                return;
+
+            var ctas = ObtenerCuentasOperacion(conn, tx, ctx);
+            if (ctas == null)
+                return;
+            var lineas = ConstruirLineas(ctx, mov);
+            if (ctx.sysDocVersion == 1)
+            {
+                InsertarAsientosTmpSiAplica(conn, tx, ctx, ctas, mov);
+                return;
+            }
+            if (!ObjectExists(conn, tx, "dbo.SIF_TRANSACCIONES", "U"))
+                return;
+
+            InsertarSifTransacciones(conn, tx, dop, ctx, lineas, mov.MontoTotal);
+
+            if (!ObjectExists(conn, tx, "dbo.spSIFDocsAsiento", "P"))
+                return;
+
+            const string spAs =
+                "exec spSIFDocsAsiento @TipoDocumento,@NumDocumento,@Monto,@DebeHaber,@CodDivisa,@Factor,@Enlace,@CodUnidad,@CodCentroCosto,@CodCuenta,@IdSolicitud,@Codigo,@Deposito;";
+
+            if (!ValidarFirmaSpSifDocsAsiento(conn, tx))
+                return;
+
+            EjecutarAsientosBase(conn, tx, ctx, ctas, mov, spAs);
+            EjecutarAsientosCargosPlanPagosSiAplica(conn, tx, ctx, ctas, spAs);
+            EjecutarAsientoPolizaSiAplica(conn, tx, ctx, ctas, mov, spAs);
+
+            SbCBRRegTransacSiExiste(conn, tx, ctx);
+        }
+        private static MovMontos ObtenerMontosDocumento(SqlConnection conn, SqlTransaction tx, DocumentoContext ctx)
         {
             decimal curCargo = 0m;
             decimal curIntC = 0m;
@@ -762,85 +604,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "P"))
                 {
-                    var ok = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacion", "@TipoDoc", "@NumDoc", "@Tipo");
+                    var ok = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacion", TIPO_DOC, NUM_DOC, TIPO);
                     if (ok)
                     {
-                        var r = conn.QueryFirstOrDefault("exec spCrdDocumentoAfectacion @TipoDoc,@NumDoc,@Tipo", new
-                        {
-                            TipoDoc = ctx.tipoDoc,
-                            NumDoc = ctx.numDoc,
-                            Tipo = "R"
-                        }, tx);
+                        var r = conn.QueryFirstOrDefault(
+                            "exec spCrdDocumentoAfectacion @TipoDoc,@NumDoc,@Tipo",
+                            new { TipoDoc = ctx.tipoDoc, NumDoc = ctx.numDoc, Tipo = "R" },
+                            tx);
 
                         if (r != null)
                         {
                             var d = (IDictionary<string, object?>)r;
-                            curCargo = ToDec(V(d, "Cargos"));
-                            curIntC = ToDec(V(d, "IntCor"));
-                            curIntM = ToDec(V(d, "IntMor"));
+                            curCargo = ToDec(V(d, CARGOS));
+                            curIntC = ToDec(V(d, IntCor));
+                            curIntM = ToDec(V(d, IntMor));
                             curAmortiza = ToDec(V(d, "Principal"));
                             curPoliza = ToDec(V(d, "Polizas"));
                         }
                     }
                 }
+
+                return new MovMontos(curCargo, curIntC, curIntM, curAmortiza, curPoliza);
             }
-            else
+            if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "V"))
             {
-                if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "V"))
+                const string sql = @"
+            SELECT
+                ISNULL(SUM(intCor),0) AS IntCor,
+                ISNULL(SUM(intMor),0) AS IntMor,
+                ISNULL(SUM(Cargo),0)  AS Cargos,
+                ISNULL(SUM(Poliza),0) AS Polizas,
+                ISNULL(SUM(Principal),0) AS Principal
+            FROM dbo.vCRDsReportesMov
+            WHERE Tcon = @Tcon AND Ncon = @Ncon AND id_solicitud = @Id;";
+
+                var r = conn.QueryFirstOrDefault(sql, new
                 {
-                    const string sql = @"
-                    SELECT
-                        ISNULL(SUM(intCor),0) AS IntCor,
-                        ISNULL(SUM(intMor),0) AS IntMor,
-                        ISNULL(SUM(Cargo),0)  AS Cargos,
-                        ISNULL(SUM(Poliza),0) AS Polizas,
-                        ISNULL(SUM(Principal),0) AS Principal
-                    FROM dbo.vCRDsReportesMov
-                    WHERE Tcon = @Tcon AND Ncon = @Ncon AND id_solicitud = @Id;";
+                    Tcon = ctx.tipoMov,
+                    Ncon = ctx.numDoc,
+                    Id = ctx.operacionId
+                }, tx);
 
-                    var r = conn.QueryFirstOrDefault(sql, new
-                    {
-                        Tcon = ctx.tipoMov,
-                        Ncon = ctx.numDoc,
-                        Id = ctx.operacionId
-                    }, tx);
-
-                    if (r != null)
-                    {
-                        var d = (IDictionary<string, object?>)r;
-                        curCargo = ToDec(V(d, "Cargos"));
-                        curIntC = ToDec(V(d, "IntCor"));
-                        curIntM = ToDec(V(d, "IntMor"));
-                        curAmortiza = ToDec(V(d, "Principal"));
-                        curPoliza = ToDec(V(d, "Polizas"));
-                    }
+                if (r != null)
+                {
+                    var d = (IDictionary<string, object?>)r;
+                    curCargo = ToDec(V(d, CARGOS));
+                    curIntC = ToDec(V(d, IntCor));
+                    curIntM = ToDec(V(d, IntMor));
+                    curAmortiza = ToDec(V(d, "Principal"));
+                    curPoliza = ToDec(V(d, "Polizas"));
                 }
             }
 
-            var curMonto = curCargo + curIntC + curIntM + curAmortiza + curPoliza;
-
-            if (!ObjectExists(conn, tx, "dbo.spCrdOperacionCtas", "P"))
-                return;
-
+            return new MovMontos(curCargo, curIntC, curIntM, curAmortiza, curPoliza);
+        }
+        private static CtasOperacion? ObtenerCuentasOperacion(SqlConnection conn, SqlTransaction tx, DocumentoContext ctx)
+        {
             var cuentas = conn.QueryFirstOrDefault("exec spCrdOperacionCtas @Id", new { Id = ctx.operacionId }, tx);
             if (cuentas == null)
-                return;
+                return null;
 
             var ctas = (IDictionary<string, object?>)cuentas;
-
-            var saldoAnterior = ctx.saldoPantalla;
-            var saldoActual = saldoAnterior - curAmortiza;
-
-            var linea1 = "Saldo Anterior    " + saldoAnterior.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea2 = "Interes Corriente " + curIntC.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea3 = "Interes Moratorio " + curIntM.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea4 = "Amortización      " + curAmortiza.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea5 = "Saldo Actual      " + saldoActual.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea6 = "Pólizas           " + curPoliza.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea7 = "Cargos [General]  " + curCargo.ToString("0.00", CultureInfo.InvariantCulture);
-            var linea8 = "Operacion/Línea   " + "Op.:" + ctx.operacionId.ToString(CultureInfo.InvariantCulture) + " L.:" + ctx.codigoLinea;
-            var linea9 = "Descripción       " + ctx.descripcion.Trim();
-            var linea10 = " ";
 
             var codDivisa = S(V(ctas, "cod_divisa"));
             var codUnidad = S(V(ctas, "Cod_Unidad", "cod_unidad"));
@@ -849,52 +673,79 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var ctaIntC = S(V(ctas, "ctaintc"));
             var ctaIntM = S(V(ctas, "ctaintm"));
             var ctaCargos = S(V(ctas, "CtaCargos", "ctacargos"));
-            if (ctx.sysDocVersion == 1)
-            {
-                if (!ObjectExists(conn, tx, "dbo.asientos_tmp", "U"))
-                    return;
 
-                var caso = "RA" + ctx.operacionId.ToString(CultureInfo.InvariantCulture);
-                var f = ctx.fechaServidor.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+            return new CtasOperacion(
+                CodDivisa: codDivisa,
+                CodUnidad: codUnidad,
+                CodCentroCosto: codCentroCosto,
+                CtaAmortiza: ctaAmortiza,
+                CtaIntC: ctaIntC,
+                CtaIntM: ctaIntM,
+                CtaCargos: ctaCargos
+            );
+        }
+        private static LineasTransaccion ConstruirLineas(DocumentoContext ctx, MovMontos mov)
+        {
+            var saldoAnterior = ctx.saldoPantalla;
+            var saldoActual = saldoAnterior - mov.Amortiza;
 
-                const string insTmp = @"
-                    INSERT asientos_tmp(TMP_TIPO,TMP_USUARIO,TMP_CASO,TMP_CUENTA,TMP_MONTO,TMP_DEBEHABER,TMP_FECHA,TMP_ESTADO_ASIENTO)
-                    VALUES('TRA',@Usuario,@Caso,@Cuenta,@Monto,@DH,@Fecha,'P');";
+            var l1 = "Saldo Anterior    " + saldoAnterior.ToString("0.00", CultureInfo.InvariantCulture);
+            var l2 = "Interes Corriente " + mov.IntC.ToString("0.00", CultureInfo.InvariantCulture);
+            var l3 = "Interes Moratorio " + mov.IntM.ToString("0.00", CultureInfo.InvariantCulture);
+            var l4 = "Amortización      " + mov.Amortiza.ToString("0.00", CultureInfo.InvariantCulture);
+            var l5 = "Saldo Actual      " + saldoActual.ToString("0.00", CultureInfo.InvariantCulture);
+            var l6 = "Pólizas           " + mov.Poliza.ToString("0.00", CultureInfo.InvariantCulture);
+            var l7 = "Cargos [General]  " + mov.Cargo.ToString("0.00", CultureInfo.InvariantCulture);
+            var l8 = "Operacion/Línea   " + "Op.:" + ctx.operacionId.ToString(CultureInfo.InvariantCulture) + " L.:" + ctx.codigoLinea;
+            var l9 = "Descripción       " + ctx.descripcion.Trim();
+            var l10 = " ";
 
-                if (curMonto > 0 && !string.IsNullOrWhiteSpace(ctaAmortiza))
-                    conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctaAmortiza, Monto = curMonto, DH = "D", Fecha = f }, tx);
-
-                if (curAmortiza > 0 && !string.IsNullOrWhiteSpace(ctaAmortiza))
-                    conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctaAmortiza, Monto = curAmortiza, DH = "H", Fecha = f }, tx);
-
-                if (curCargo > 0 && !string.IsNullOrWhiteSpace(ctaCargos))
-                    conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctaCargos, Monto = curCargo, DH = "H", Fecha = f }, tx);
-
-                if (curIntC > 0 && !string.IsNullOrWhiteSpace(ctaIntC))
-                    conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctaIntC, Monto = curIntC, DH = "H", Fecha = f }, tx);
-
-                if (curIntM > 0 && !string.IsNullOrWhiteSpace(ctaIntM))
-                    conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctaIntM, Monto = curIntM, DH = "H", Fecha = f }, tx);
-
+            return new LineasTransaccion(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10);
+        }
+        private static void InsertarAsientosTmpSiAplica(SqlConnection conn,SqlTransaction tx,DocumentoContext ctx,CtasOperacion ctas,MovMontos mov)
+        {
+            if (!ObjectExists(conn, tx, "dbo.asientos_tmp", "U"))
                 return;
-            }
 
-            if (!ObjectExists(conn, tx, "dbo.SIF_TRANSACCIONES", "U"))
-                return;
+            var caso = "RA" + ctx.operacionId.ToString(CultureInfo.InvariantCulture);
+            var f = ctx.fechaServidor.ToString(FORMATO_FECHA, CultureInfo.InvariantCulture);
 
+            const string insTmp = @"
+            INSERT asientos_tmp(TMP_TIPO,TMP_USUARIO,TMP_CASO,TMP_CUENTA,TMP_MONTO,TMP_DEBEHABER,TMP_FECHA,TMP_ESTADO_ASIENTO)
+            VALUES('TRA',@Usuario,@Caso,@Cuenta,@Monto,@DH,@Fecha,'P');";
+
+            var curMonto = mov.MontoTotal;
+
+            if (curMonto > 0 && !string.IsNullOrWhiteSpace(ctas.CtaAmortiza))
+                conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctas.CtaAmortiza, Monto = curMonto, DH = "D", Fecha = f }, tx);
+
+            if (mov.Amortiza > 0 && !string.IsNullOrWhiteSpace(ctas.CtaAmortiza))
+                conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctas.CtaAmortiza, Monto = mov.Amortiza, DH = "H", Fecha = f }, tx);
+
+            if (mov.Cargo > 0 && !string.IsNullOrWhiteSpace(ctas.CtaCargos))
+                conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctas.CtaCargos, Monto = mov.Cargo, DH = "H", Fecha = f }, tx);
+
+            if (mov.IntC > 0 && !string.IsNullOrWhiteSpace(ctas.CtaIntC))
+                conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctas.CtaIntC, Monto = mov.IntC, DH = "H", Fecha = f }, tx);
+
+            if (mov.IntM > 0 && !string.IsNullOrWhiteSpace(ctas.CtaIntM))
+                conn.Execute(insTmp, new { Usuario = ctx.usuario, Caso = caso, Cuenta = ctas.CtaIntM, Monto = mov.IntM, DH = "H", Fecha = f }, tx);
+        }
+        private static void InsertarSifTransacciones(SqlConnection conn,SqlTransaction tx,IDictionary<string, object?> dop,DocumentoContext ctx,LineasTransaccion lineas,decimal monto)
+        {
             var codOficina = S(V(dop, "cod_oficina_r"));
 
             const string insTr = @"
-            INSERT SIF_TRANSACCIONES(
-                COD_TRANSACCION,TIPO_DOCUMENTO,REGISTRO_FECHA,REGISTRO_USUARIO,Cliente_IDENTIFICACION,CLIENTE_NOMBRE,
-                cod_concepto,monto,estado,Referencia_01,Referencia_02,Referencia_03,cod_oficina,
-                linea1,linea2,linea3,linea4,linea5,linea6,linea7,linea8,linea9,linea10,detalle,documento
-            )
-            VALUES(
-                @NumDoc,@TipoDoc,dbo.MyGetdate(),@Usuario,@Cedula,@Nombre,
-                @Concepto,@Monto,'P',@Ref1,@Ref2,@Ref3,@CodOficina,
-                @L1,@L2,@L3,@L4,@L5,@L6,@L7,@L8,@L9,@L10,@Detalle,@Documento
-            );";
+                INSERT SIF_TRANSACCIONES(
+                    COD_TRANSACCION,TIPO_DOCUMENTO,REGISTRO_FECHA,REGISTRO_USUARIO,Cliente_IDENTIFICACION,CLIENTE_NOMBRE,
+                    cod_concepto,monto,estado,Referencia_01,Referencia_02,Referencia_03,cod_oficina,
+                    linea1,linea2,linea3,linea4,linea5,linea6,linea7,linea8,linea9,linea10,detalle,documento
+                )
+                VALUES(
+                    @NumDoc,@TipoDoc,dbo.MyGetdate(),@Usuario,@Cedula,@Nombre,
+                    @Concepto,@Monto,'P',@Ref1,@Ref2,@Ref3,@CodOficina,
+                    @L1,@L2,@L3,@L4,@L5,@L6,@L7,@L8,@L9,@L10,@Detalle,@Documento
+                );";
 
             conn.Execute(insTr, new
             {
@@ -904,109 +755,136 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Cedula = ctx.cedula,
                 Nombre = ctx.nombre,
                 Concepto = ctx.concepto,
-                Monto = curMonto,
+                Monto = monto,
                 Ref1 = ctx.operacionId.ToString(CultureInfo.InvariantCulture),
                 Ref2 = ctx.codigoLinea,
                 Ref3 = ctx.docDeposito,
                 CodOficina = codOficina,
-                L1 = linea1,
-                L2 = linea2,
-                L3 = linea3,
-                L4 = linea4,
-                L5 = linea5,
-                L6 = linea6,
-                L7 = linea7,
-                L8 = linea8,
-                L9 = linea9,
-                L10 = linea10,
+                L1 = lineas.Linea1,
+                L2 = lineas.Linea2,
+                L3 = lineas.Linea3,
+                L4 = lineas.Linea4,
+                L5 = lineas.Linea5,
+                L6 = lineas.Linea6,
+                L7 = lineas.Linea7,
+                L8 = lineas.Linea8,
+                L9 = lineas.Linea9,
+                L10 = lineas.Linea10,
                 Detalle = ctx.notas,
                 Documento = ctx.docDeposito
             }, tx);
-
-            if (!ObjectExists(conn, tx, "dbo.spSIFDocsAsiento", "P"))
-                return;
-
-            var okAsiento = ProcedureHasParams(conn, tx, "dbo.spSIFDocsAsiento",
+        }
+        private static bool ValidarFirmaSpSifDocsAsiento(SqlConnection conn, SqlTransaction tx)
+        {
+            return ProcedureHasParams(conn, tx, "dbo.spSIFDocsAsiento",
                 "@TipoDocumento", "@NumDocumento", "@Monto", "@DebeHaber", "@CodDivisa",
                 "@Factor", "@Enlace", "@CodUnidad", "@CodCentroCosto", "@CodCuenta",
                 "@IdSolicitud", "@Codigo", "@Deposito");
+        }
+        private static void EjecutarAsientosBase(SqlConnection conn,SqlTransaction tx,DocumentoContext ctx,CtasOperacion ctas,MovMontos mov,string spAs)
+        {
+            var idSol = ctx.operacionId;
+            var codigo = ctx.codigoLinea;
 
-            if (!okAsiento)
+            if (mov.MontoTotal > 0 && !string.IsNullOrWhiteSpace(ctas.CtaAmortiza))
+                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = mov.MontoTotal, DebeHaber = "D", CodDivisa = ctas.CodDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = ctas.CodUnidad, CodCentroCosto = ctas.CodCentroCosto, CodCuenta = ctas.CtaAmortiza, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
+
+            if (mov.Amortiza > 0 && !string.IsNullOrWhiteSpace(ctas.CtaAmortiza))
+                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = mov.Amortiza, DebeHaber = "C", CodDivisa = ctas.CodDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = ctas.CodUnidad, CodCentroCosto = ctas.CodCentroCosto, CodCuenta = ctas.CtaAmortiza, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
+
+            if (mov.IntC > 0 && !string.IsNullOrWhiteSpace(ctas.CtaIntC))
+                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = mov.IntC, DebeHaber = "C", CodDivisa = ctas.CodDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = ctas.CodUnidad, CodCentroCosto = ctas.CodCentroCosto, CodCuenta = ctas.CtaIntC, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
+
+            if (mov.IntM > 0 && !string.IsNullOrWhiteSpace(ctas.CtaIntM))
+                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = mov.IntM, DebeHaber = "C", CodDivisa = ctas.CodDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = ctas.CodUnidad, CodCentroCosto = ctas.CodCentroCosto, CodCuenta = ctas.CtaIntM, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
+            if (mov.Cargo > 0 && ctx.sysPlanPagos == 0 && !string.IsNullOrWhiteSpace(ctas.CtaCargos))
+                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = mov.Cargo, DebeHaber = "C", CodDivisa = ctas.CodDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = ctas.CodUnidad, CodCentroCosto = ctas.CodCentroCosto, CodCuenta = ctas.CtaCargos, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
+        }
+        private static void EjecutarAsientosCargosPlanPagosSiAplica(SqlConnection conn,SqlTransaction tx,DocumentoContext ctx,CtasOperacion ctas,string spAs)
+        {
+            if (ctx.sysPlanPagos != 1)
                 return;
 
-            const string spAs = "exec spSIFDocsAsiento @TipoDocumento,@NumDocumento,@Monto,@DebeHaber,@CodDivisa,@Factor,@Enlace,@CodUnidad,@CodCentroCosto,@CodCuenta,@IdSolicitud,@Codigo,@Deposito;";
+            if (!ObjectExists(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", "P"))
+                return;
+
+            var okCargos = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", TIPO_DOC, NUM_DOC);
+            if (!okCargos)
+                return;
+
+            var rows = conn.Query(
+                "exec spCrdDocumentoAfectacionCargos @TipoDoc,@NumDoc",
+                new { TipoDoc = ctx.tipoDoc, NumDoc = ctx.numDoc },
+                tx);
 
             var idSol = ctx.operacionId;
             var codigo = ctx.codigoLinea;
 
-            if (curMonto > 0 && !string.IsNullOrWhiteSpace(ctaAmortiza))
-                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curMonto, DebeHaber = "D", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaAmortiza, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-
-            if (curAmortiza > 0 && !string.IsNullOrWhiteSpace(ctaAmortiza))
-                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curAmortiza, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaAmortiza, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-
-            if (curIntC > 0 && !string.IsNullOrWhiteSpace(ctaIntC))
-                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curIntC, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaIntC, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-
-            if (curIntM > 0 && !string.IsNullOrWhiteSpace(ctaIntM))
-                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curIntM, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaIntM, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-
-            if (curCargo > 0 && ctx.sysPlanPagos == 0 && !string.IsNullOrWhiteSpace(ctaCargos))
-                conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curCargo, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = ctaCargos, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-
-            if (curCargo > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", "P"))
+            foreach (var r in rows.Cast<IDictionary<string, object?>>())
             {
-                var okCargos = ProcedureHasParams(conn, tx, "dbo.spCrdDocumentoAfectacionCargos", "@TipoDoc", "@NumDoc");
-                if (okCargos)
+                var movMonto = ToDec(V(r, "Mov_Monto", "monto", "Monto"));
+                if (movMonto <= 0) continue;
+
+                var codCuenta = S(V(r, "cod_cuenta", "Cod_Cuenta", "Cuenta"));
+                if (string.IsNullOrWhiteSpace(codCuenta)) continue;
+
+                var u = S(V(r, "Cod_Unidad", "cod_unidad"));
+                var cc = S(V(r, "Cod_Centro_Costo", "cod_centro_costo"));
+                var id = ToInt(V(r, "Id_Solicitud", "id_solicitud"));
+                var cod = S(V(r, "Codigo", "codigo"));
+
+                conn.Execute(spAs, new
                 {
-                    var rows = conn.Query("exec spCrdDocumentoAfectacionCargos @TipoDoc,@NumDoc", new { TipoDoc = ctx.tipoDoc, NumDoc = ctx.numDoc }, tx);
-                    foreach (var r in rows.Cast<IDictionary<string, object?>>())
-                    {
-                        var movMonto = ToDec(V(r, "Mov_Monto", "monto", "Monto"));
-                        if (movMonto <= 0) continue;
-
-                        var codCuenta = S(V(r, "cod_cuenta", "Cod_Cuenta", "Cuenta"));
-                        var u = S(V(r, "Cod_Unidad", "cod_unidad"));
-                        var cc = S(V(r, "Cod_Centro_Costo", "cod_centro_costo"));
-                        var id = ToInt(V(r, "Id_Solicitud", "id_solicitud"));
-                        var cod = S(V(r, "Codigo", "codigo"));
-
-                        if (!string.IsNullOrWhiteSpace(codCuenta))
-                            conn.Execute(spAs, new
-                            {
-                                TipoDocumento = ctx.tipoDoc,
-                                NumDocumento = ctx.numDoc,
-                                Monto = movMonto,
-                                DebeHaber = "C",
-                                CodDivisa = codDivisa,
-                                Factor = 1,
-                                Enlace = ctx.gEnlace,
-                                CodUnidad = u,
-                                CodCentroCosto = cc,
-                                CodCuenta = codCuenta,
-                                IdSolicitud = id > 0 ? id : idSol,
-                                Codigo = string.IsNullOrWhiteSpace(cod) ? codigo : cod,
-                                Deposito = ctx.docDeposito
-                            }, tx);
-                    }
-                }
+                    TipoDocumento = ctx.tipoDoc,
+                    NumDocumento = ctx.numDoc,
+                    Monto = movMonto,
+                    DebeHaber = "C",
+                    CodDivisa = ctas.CodDivisa,
+                    Factor = 1,
+                    Enlace = ctx.gEnlace,
+                    CodUnidad = u,
+                    CodCentroCosto = cc,
+                    CodCuenta = codCuenta,
+                    IdSolicitud = id > 0 ? id : idSol,
+                    Codigo = string.IsNullOrWhiteSpace(cod) ? codigo : cod,
+                    Deposito = ctx.docDeposito
+                }, tx);
             }
+        }
+        private static void EjecutarAsientoPolizaSiAplica(SqlConnection conn,SqlTransaction tx,DocumentoContext ctx,CtasOperacion ctas,MovMontos mov,string spAs)
+        {
+            if (mov.Poliza <= 0 || ctx.sysPlanPagos != 1)
+                return;
 
-            if (curPoliza > 0 && ctx.sysPlanPagos == 1 && ObjectExists(conn, tx, "dbo.fxCrdOperacionCtaContaPolizas", "FN"))
+            if (!ObjectExists(conn, tx, "dbo.fxCrdOperacionCtaContaPolizas", "FN"))
+                return;
+
+            var cuentaPoliza = conn.QueryFirstOrDefault<string>(
+                "select dbo.fxCrdOperacionCtaContaPolizas(@Id) as Cuenta;",
+                new { Id = ctx.operacionId },
+                tx
+            ) ?? string.Empty;
+
+            cuentaPoliza = cuentaPoliza.Trim();
+            if (string.IsNullOrWhiteSpace(cuentaPoliza))
+                return;
+
+            conn.Execute(spAs, new
             {
-                var cuentaPoliza = conn.QueryFirstOrDefault<string>(
-                    "select dbo.fxCrdOperacionCtaContaPolizas(@Id) as Cuenta;",
-                    new { Id = ctx.operacionId },
-                    tx
-                ) ?? string.Empty;
-
-                cuentaPoliza = cuentaPoliza.Trim();
-
-                if (!string.IsNullOrWhiteSpace(cuentaPoliza))
-                    conn.Execute(spAs, new { TipoDocumento = ctx.tipoDoc, NumDocumento = ctx.numDoc, Monto = curPoliza, DebeHaber = "C", CodDivisa = codDivisa, Factor = 1, Enlace = ctx.gEnlace, CodUnidad = codUnidad, CodCentroCosto = codCentroCosto, CodCuenta = cuentaPoliza, IdSolicitud = idSol, Codigo = codigo, Deposito = ctx.docDeposito }, tx);
-            }
-
-            SbCBRRegTransacSiExiste(conn, tx, ctx);
+                TipoDocumento = ctx.tipoDoc,
+                NumDocumento = ctx.numDoc,
+                Monto = mov.Poliza,
+                DebeHaber = "C",
+                CodDivisa = ctas.CodDivisa,
+                Factor = 1,
+                Enlace = ctx.gEnlace,
+                CodUnidad = ctas.CodUnidad,
+                CodCentroCosto = ctas.CodCentroCosto,
+                CodCuenta = cuentaPoliza,
+                IdSolicitud = ctx.operacionId,
+                Codigo = ctx.codigoLinea,
+                Deposito = ctx.docDeposito
+            }, tx);
         }
         private static void SbCBRRegTransacSiExiste(SqlConnection conn, SqlTransaction tx, DocumentoContext ctx)
         {
@@ -1014,8 +892,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return;
 
             var hasFull = ProcedureHasParams(conn, tx, "dbo.spCBRRegTransac",
-                "@Tipo", "@Cedula", "@Operacion", "@Notas", "@Saldo", "@IntCor",
-                "@IntMor", "@Cargos", "@Polizas", "@SaldoAnt", "@TipoDoc", "@NumDoc");
+                TIPO, "@Cedula", "@Operacion", "@Notas", "@Saldo", "@IntCor",
+                "@IntMor", "@Cargos", "@Polizas", "@SaldoAnt", TIPO_DOC, NUM_DOC);
 
             if (hasFull)
             {
@@ -1039,7 +917,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
 
             var hasMini = ProcedureHasParams(conn, tx, "dbo.spCBRRegTransac",
-                "@Tipo", "@Cedula", "@Operacion", "@Notas", "@Usuario", "@TipoDoc", "@NumDoc");
+                TIPO, "@Cedula", "@Operacion", "@Notas", "@Usuario", TIPO_DOC, NUM_DOC);
 
             if (hasMini)
             {
@@ -1061,12 +939,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             foreach (var k in keys)
             {
-                foreach (var kv in d)
-                {
-                    if (string.Equals(kv.Key, k, StringComparison.OrdinalIgnoreCase))
-                        return kv.Value;
-                }
+                var value = d
+                    .Where(x => string.Equals(x.Key, k, StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.Value)
+                    .FirstOrDefault();
+
+                if (value != null)
+                    return value;
             }
+
             return null;
         }
         private static int ToInt(object? v)
@@ -1087,7 +968,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (v is DateTime dt) return dt;
 
             var s = Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty;
-            var formats = new[] { "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd", "yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy" };
+            var formats = new[] { "yyyy/MM/dd HH:mm:ss", FORMATO_FECHA, "yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy" };
 
             if (DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var r))
                 return r;
@@ -1191,6 +1072,380 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new { Cedula = cedula },
                 tx
             );
+        }
+        private sealed record AplicarValidacion(
+    string Usuario,
+    string Notas,
+    decimal CuotaBe,
+    ErrorDto<CoReadecuacionCambioOperacionAplicarResponse>? Error);
+        private sealed record AplicarCtx(
+    int CodEmpresa,
+    CoReadecuacionCambioOperacionAplicarRequest Req,
+    AplicarValidacion Valid,
+    OperacionActivaInfo Op,
+    Globales Globales,
+    DateTime FechaServidor,
+    string TipoDoc,
+    string Concepto,
+    DocumentoInfo Doc
+);
+        private sealed record OperacionActivaInfo(
+            IDictionary<string, object?>? Dop,
+            string Cedula,
+            string Nombre,
+            string Descripcion,
+            string CodigoLinea,
+            int DiaPagoOld,
+            string IndDeduc,
+            int Opex,
+            ErrorDto<CoReadecuacionCambioOperacionAplicarResponse>? Error);
+        private sealed record DocumentoInfo(
+            string TipoMov,
+            string NumDocStr,
+            ErrorDto<CoReadecuacionCambioOperacionAplicarResponse>? Error);
+        private static AplicarValidacion ValidarAplicar(CoReadecuacionCambioOperacionAplicarRequest req)
+        {
+            if (req.id_tramite <= 0)
+            {
+                return new AplicarValidacion(
+                    Usuario: string.Empty,
+                    Notas: string.Empty,
+                    CuotaBe: 0m,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2));
+            }
+
+            var pNotas = (req.notas ?? string.Empty).Trim();
+            if (pNotas.Length < 10)
+            {
+                return new AplicarValidacion(
+                    Usuario: string.Empty,
+                    Notas: pNotas,
+                    CuotaBe: 0m,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(NOTA_INVALIDA, -2));
+            }
+
+            var pUsuario = (req.usuario_sesion ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(pUsuario))
+            {
+                return new AplicarValidacion(
+                    Usuario: pUsuario,
+                    Notas: pNotas,
+                    CuotaBe: 0m,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Usuario sesión inválido.", -2));
+            }
+
+            if (req.no_monto <= 0 || req.no_plazo <= 0 || req.no_tasa < 0)
+            {
+                return new AplicarValidacion(
+                    Usuario: pUsuario,
+                    Notas: pNotas,
+                    CuotaBe: 0m,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>("Monto/Tasa/Plazo no son válidos.", -2));
+            }
+
+            var cuotaBe = MCobroDb.fxCalcula_Cuota(req.no_monto ?? 0m, req.no_plazo ?? 0, req.no_tasa ?? 0m, "M");
+            if (!CuotaCoincide(cuotaBe, req.no_cuota ?? 0m))
+            {
+                return new AplicarValidacion(
+                    Usuario: pUsuario,
+                    Notas: pNotas,
+                    CuotaBe: cuotaBe,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        "Cuota no coincide con el cálculo del sistema.", -2));
+            }
+
+            return new AplicarValidacion(
+                Usuario: pUsuario,
+                Notas: pNotas,
+                CuotaBe: cuotaBe,
+                Error: null);
+        }
+        private static OperacionActivaInfo ObtenerOperacionActiva(SqlConnection conn, int idTramite)
+        {
+            const string sqlOp = @"
+        SELECT
+            R.id_solicitud,
+            R.cedula,
+            R.codigo,
+            C.descripcion,
+            S.nombre,
+            R.plazo,
+            R.interesv,
+            R.saldo,
+            R.montoapr,
+            R.opex,
+            R.dia_pago,
+            R.ind_deduce_planilla,
+            R.id_comite,
+            R.acta,
+            R.garantia,
+            R.pagare,
+            R.premio,
+            R.fecult,
+            R.TBP_PuntosAdd,
+            R.LiqTasa,
+            R.cod_oficina_r,
+            R.cod_oficina_f,
+            R.cod_oficina_comision,
+            R.cod_grupo
+        FROM reg_creditos R
+        INNER JOIN Socios S ON R.cedula = S.cedula
+        INNER JOIN catalogo C ON R.codigo = C.codigo
+        WHERE R.id_solicitud = @Id AND R.estado = 'A';";
+
+            var op = conn.QueryFirstOrDefault(sqlOp, new { Id = idTramite });
+            if (op == null)
+            {
+                return new OperacionActivaInfo(
+                    Dop: null,
+                    Cedula: string.Empty,
+                    Nombre: string.Empty,
+                    Descripcion: string.Empty,
+                    CodigoLinea: string.Empty,
+                    DiaPagoOld: 0,
+                    IndDeduc: string.Empty,
+                    Opex: 0,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2));
+            }
+
+            var dop = (IDictionary<string, object?>)op;
+
+            return new OperacionActivaInfo(
+                Dop: dop,
+                Cedula: S(V(dop, "cedula")),
+                Nombre: S(V(dop, "nombre")),
+                Descripcion: S(V(dop, "descripcion")),
+                CodigoLinea: S(V(dop, "codigo")),
+                DiaPagoOld: ToInt(V(dop, "dia_pago")),
+                IndDeduc: S(V(dop, "ind_deduce_planilla")).Trim().ToUpperInvariant(),
+                Opex: ToInt(V(dop, "opex")),
+                Error: null);
+        }
+        private static DocumentoInfo ResolverDocumento(SqlConnection conn,SqlTransaction tx,int sysDocVersion,string tipoDoc,string usuario)
+        {
+            if (sysDocVersion == 2)
+                return ResolverDocumentoV2(conn, tx, tipoDoc, usuario);
+
+            if (sysDocVersion == 1)
+                return new DocumentoInfo(TipoMov: "4", NumDocStr: "8889", Error: null);
+
+            return new DocumentoInfo(
+                TipoMov: string.Empty,
+                NumDocStr: string.Empty,
+                Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                    $"SysDocVersion={sysDocVersion} no soportado en este proceso.", -2));
+        }
+        private static DocumentoInfo ResolverDocumentoV2(SqlConnection conn,SqlTransaction tx,string tipoDoc,string usuario)
+        {
+            if (!ObjectExists(conn, tx, "dbo.spSIFDocsConsecutivo", "P"))
+            {
+                return new DocumentoInfo(
+                    TipoMov: string.Empty,
+                    NumDocStr: string.Empty,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        "No existe dbo.spSIFDocsConsecutivo para obtener consecutivo de documento.", -2));
+            }
+
+            var hasUsuario = ProcedureHasParams(conn, tx, "dbo.spSIFDocsConsecutivo", TIPO, "@Usuario");
+
+            object? consObj = hasUsuario
+                ? conn.QueryFirstOrDefault<object>(
+                    "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;",
+                    new { Tipo = tipoDoc, Usuario = usuario },
+                    tx)
+                : conn.QueryFirstOrDefault<object>(
+                    "exec dbo.spSIFDocsConsecutivo @Tipo;",
+                    new { Tipo = tipoDoc },
+                    tx);
+
+            var cons = ToInt(consObj);
+            if (cons <= 0)
+            {
+                return new DocumentoInfo(
+                    TipoMov: string.Empty,
+                    NumDocStr: string.Empty,
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        $"No fue posible obtener consecutivo para documento {tipoDoc}.", -2));
+            }
+
+            return new DocumentoInfo(
+                TipoMov: "REA",
+                NumDocStr: cons.ToString(CultureInfo.InvariantCulture),
+                Error: null);
+        }
+        private static void EjecutarCancelacion(SqlConnection conn, SqlTransaction tx, AplicarCtx ctx)
+        {
+            var req = ctx.Req;
+            var op = ctx.Op;
+            var pUsuario = ctx.Valid.Usuario;
+
+            if (ctx.Globales.SysPlanPagos == 1)
+            {
+                const string sp = "exec spCrdPlanPagoAbonoCancelacion @Id, @Concepto, @Usuario, @TipoDoc, @NumDoc, @Monto, @Fecha, @Empty;";
+                conn.Execute(sp, new
+                {
+                    Id = req.id_tramite,
+                    Concepto = ctx.Concepto,
+                    Usuario = pUsuario,
+                    TipoDoc = ctx.TipoDoc,
+                    NumDoc = ctx.Doc.NumDocStr,
+                    Monto = req.no_monto,
+                    Fecha = ctx.FechaServidor.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    Empty = ""
+                }, tx);
+
+                return;
+            }
+
+            const string updMor = @"
+            UPDATE morosidad
+            SET estado = 'C',
+                abintc = intc,
+                abintm = intm,
+                abamortiza = amortiza,
+                abCargo = cargo,
+                tcon = @Tcon,
+                ncon = @Ncon,
+                fecult = dbo.MyGetdate(),
+                usuario = @Usuario,
+                cod_concepto = @Concepto,
+                cod_caja = ''
+            WHERE estado = 'A' AND id_solicitud = @Id;";
+
+            conn.Execute(updMor, new
+            {
+                Id = req.id_tramite,
+                Tcon = ctx.Doc.TipoMov,
+                Ncon = ctx.Doc.NumDocStr,
+                Usuario = pUsuario,
+                Concepto = ctx.Concepto
+            }, tx);
+
+            const string sqlAm = @"
+                SELECT ISNULL(SUM(abamortiza),0)
+                FROM morosidad
+                WHERE tcon=@Tcon AND ncon=@Ncon AND id_solicitud=@Id;";
+
+            var amortiza = conn.QueryFirstOrDefault<decimal>(
+                sqlAm,
+                new { Tcon = ctx.Doc.TipoMov, Ncon = ctx.Doc.NumDocStr, Id = req.id_tramite },
+                tx);
+
+            var interesTotal = conn.QueryFirstOrDefault<decimal>(
+                "SELECT dbo.fxCRDCalculoIntCorte(@Id, dbo.MyGetdate());",
+                new { Id = req.id_tramite },
+                tx);
+
+            var saldoActual = ToDec(V(op.Dop!, "saldo"));
+            var intCorVenc = interesTotal;
+
+            var fechaP = GetFechaCR(conn, tx);
+
+            const string insDt = @"
+                INSERT creditos_dt(
+                    CODIGO,ID_SOLICITUD,CUOTA,ABONO,INTCP,AMORTIZA,FECHAS,FECHAP,TCON,NCON,ESTADO,ESTADO_ASIENTO,Usuario,Cod_Concepto,Cod_Caja
+                )
+                VALUES(
+                    @Codigo,@Id,@Cuota,@Abono,@Intcp,@Amortiza,dbo.MyGetdate(),@FechaP,@Tcon,@Ncon,'A','G',@Usuario,@Concepto,''
+                );";
+
+            conn.Execute(insDt, new
+            {
+                Codigo = op.CodigoLinea,
+                Id = req.id_tramite,
+                Cuota = (intCorVenc + saldoActual - amortiza),
+                Abono = (saldoActual - amortiza),
+                Intcp = intCorVenc,
+                Amortiza = (saldoActual - amortiza),
+                FechaP = fechaP,
+                Tcon = ctx.Doc.TipoMov,
+                Ncon = ctx.Doc.NumDocStr,
+                Usuario = pUsuario,
+                Concepto = ctx.Concepto
+            }, tx);
+
+            const string updOp = @"
+                UPDATE reg_creditos
+                SET saldo = 0,
+                    amortiza = montoapr,
+                    saldo_mes = 0,
+                    estado = 'C',
+                    FECHA_ENVIAPROCESO = dbo.MyGetdate(),
+                    OBSERVACION_PROCESO = 'Readecuación de Deuda'
+                WHERE id_solicitud = @Id;";
+
+            conn.Execute(updOp, new { Id = req.id_tramite }, tx);
+        }
+        private static int CalcularDiaPago(bool? chkDiaPago, int diaPagoOld, DateTime fechaServidor, string indDeduc)
+        {
+            var vDiaPago = chkDiaPago == true ? diaPagoOld : fechaServidor.Day;
+            if (indDeduc == "S" && vDiaPago < 32) vDiaPago = 32;
+            return vDiaPago;
+        }
+        private static int InsertarNuevaOperacion(SqlConnection conn,SqlTransaction tx,AplicarCtx ctx,int primerDeduccion,int diaPago)
+        {
+            var req = ctx.Req;
+            var op = ctx.Op;
+            var valid = ctx.Valid;
+
+            const string insOp = @"
+            INSERT reg_creditos(
+                codigo,id_comite,cedula,montosol,estadosol,fechasol,fechares,plazo,int,montoapr,prideduc,fechaforp,fechaforf,acta,saldo,amortiza,interesc,
+                cuota,estado,opex,proceso,userrec,userres,userfor,garantia,observacion,firma_deudor,monto_girado,interesv,tesoreria,usertesoreria,primer_cuota,
+                tdocumento,ndocumento,pagare,fecha_calculo_int,premio,cuotas_planilla,cuotas_directas,cuotas_anuladas,FECULT,TBP_PuntosAdd,
+                LiqTasa,cod_oficina_r,cod_oficina_f,cod_oficina_comision,referencia,fecha_registro,DIA_PAGO, IND_DEDUCE_PLANILLA
+            )
+            VALUES(
+                @Codigo,@IdComite,@Cedula,@Monto,'F',@F,@F,@Plazo,@Tasa,@Monto,@PriDeduc,@F,@F,@Acta,@Monto,0,0,
+                @Cuota,'A',@Opex,'N',@Usuario,@Usuario,@Usuario,@Garantia,@Obs,
+                1,0,@Tasa,@F,@Usuario,'N','ND',
+                @OldId,@Pagare,@F,@Premio,
+                0,0,0,@FecUlt,@TbpAdd,
+                @LiqTasa,@OfR,@OfF,@OfC,@Referencia,dbo.MyGetdate(),@DiaPago,@IndDeduc
+            );
+            SELECT CAST(SCOPE_IDENTITY() AS int) AS NewId;";
+
+            var newId = conn.QueryFirstOrDefault<int>(insOp, new
+            {
+                Codigo = op.CodigoLinea,
+                IdComite = ToInt(V(op.Dop!, "id_comite")),
+                Cedula = op.Cedula,
+                Monto = req.no_monto,
+                F = ctx.FechaServidor.ToString(FORMATO_FECHA, CultureInfo.InvariantCulture),
+                Plazo = req.no_plazo,
+                Tasa = req.no_tasa,
+                PriDeduc = primerDeduccion,
+                Acta = ToInt(V(op.Dop!, "acta")),
+                Cuota = valid.CuotaBe,
+                Opex = op.Opex,
+                Usuario = valid.Usuario,
+                Garantia = S(V(op.Dop!, "garantia")),
+                Obs = valid.Notas,
+                OldId = req.id_tramite,
+                Pagare = ToInt(V(op.Dop!, "pagare")),
+                Premio = ToDec(V(op.Dop!, "premio")),
+                FecUlt = V(op.Dop!, "fecult"),
+                TbpAdd = V(op.Dop!, "TBP_PuntosAdd"),
+                LiqTasa = V(op.Dop!, "LiqTasa"),
+                OfR = V(op.Dop!, "cod_oficina_r"),
+                OfF = V(op.Dop!, "cod_oficina_f"),
+                OfC = V(op.Dop!, "cod_oficina_comision"),
+                Referencia = req.id_tramite,
+                DiaPago = diaPago,
+                IndDeduc = op.IndDeduc
+            }, tx);
+
+            return newId > 0 ? newId : UltimaOperacion(conn, tx, op.Cedula);
+        }
+        private static void CopiarFiadores(SqlConnection conn, SqlTransaction tx, int nuevaOperacion, int oldOperacion)
+        {
+            const string insF = @"
+            INSERT INTO fiadores(id_solicitud,codigo,cedulaf,nombre,firma,estado,interno)
+            SELECT @NewId,codigo,cedulaf,nombre,firma,estado,interno
+            FROM fiadores
+            WHERE id_solicitud = @OldId;";
+
+            conn.Execute(insF, new { NewId = nuevaOperacion, OldId = oldOperacion }, tx);
         }
     }
 }
