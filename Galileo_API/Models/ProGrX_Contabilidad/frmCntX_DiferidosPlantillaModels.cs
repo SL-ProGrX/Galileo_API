@@ -7,7 +7,7 @@
         public string tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string observacion { get; set; } = string.Empty;
-        public DateTime fecha_crea { get; set; }
+        public DateTime? fecha_crea { get; set; }
         public string user_crea { get; set; } = string.Empty;
         public int consecutivo { get; set; } = 0;
     }

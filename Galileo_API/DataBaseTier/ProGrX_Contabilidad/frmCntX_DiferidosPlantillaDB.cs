@@ -505,10 +505,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             var errores = new List<string>();
 
             const string sqlExisteTipo = @"
-                select isnull(count(*),0)
-                from CntX_Tipos_Asientos
-                where cod_contabilidad = @CodConta
-                  and tipo_asiento = @TipoAsiento;";
+        select isnull(count(*),0)
+        from CntX_Tipos_Asientos
+        where cod_contabilidad = @CodConta
+          and tipo_asiento = @TipoAsiento;";
 
             int existeTipo = DbHelper.ExecuteSingleQuery(
                 _portalDb, codEmpresa, sqlExisteTipo, 0,
@@ -529,7 +529,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var cuentas = (request.detalles ?? new List<CntXDiferidosDetalleData>())
                 .Where(d => !string.IsNullOrWhiteSpace(d.cod_cuenta))
-                .Select(d => d.cod_cuenta.Replace("-", "").Trim()) 
+                .Select(d => d.cod_cuenta.Replace("-", "").Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -550,11 +550,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var existentes = existentesDto?.Result ?? new List<string>();
                 var setExistentes = new HashSet<string>(existentes, StringComparer.OrdinalIgnoreCase);
 
-                foreach (var cta in cuentas)
-                {
-                    if (!setExistentes.Contains(cta))
-                        errores.Add($"- Cuenta {cta} No Existe o No Acepta Movimientos");
-                }
+                errores.AddRange(
+                    cuentas
+                        .Where(cta => !setExistentes.Contains(cta))
+                        .Select(cta => $"- Cuenta {cta} No Existe o No Acepta Movimientos")
+                );
             }
 
             if (errores.Count > 0)
