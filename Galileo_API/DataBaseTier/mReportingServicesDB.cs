@@ -88,7 +88,7 @@ namespace Galileo.DataBaseTier
 
         // ================= API PRINCIPAL (V2) =================
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
-        {
+         {
             string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             if (data.parametros == null)
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
@@ -153,6 +153,17 @@ namespace Galileo.DataBaseTier
 
                 // Subreport processing
                 _subs.ConfigureSubreportProcessing(report, subMeta, connection, autoAliases, paramDict, subErrors, _patcher.ParseFxConstants(data.codeSection));
+
+                string errorDesc = string.Empty;    
+                foreach (var error in subErrors)
+                {
+                    errorDesc += $"{error}\n";
+                }
+
+                if (errorDesc.Length > 0)
+                {
+                   return ReportRenderer.Error($"Errores en subreportes:\n{errorDesc}", 500);
+                }
 
                 return data.cod_reporte == "P"
                     ? ReportRenderer.AsPdf(report, data.nombreReporte)

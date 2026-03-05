@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 
 namespace Galileo.Controllers
 {
@@ -20,6 +21,7 @@ namespace Galileo.Controllers
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
             var result = _reportingServicesBL.ReporteRDLC_v2(data);
+         
             if (result is FileContentResult fcr)
             {
                 var nombreReporte = data.nombreReporte + ".pdf";
@@ -30,9 +32,32 @@ namespace Galileo.Controllers
                 fcr.FileDownloadName = nombreReporte;
                 return fcr;
             }
-           
 
-                return result;
+            if (result is ObjectResult objectResult && objectResult.Value != null)
+            {
+                var j = JObject.FromObject(objectResult.Value);
+
+                var code = j["Code"]?.Value<int?>() ?? 0;
+                var desc = j["Description"]?.Value<string>() ?? string.Empty;
+
+                return new ObjectResult(new ErrorDto<IActionResult>
+                {
+                    Code = code,
+                    Description = desc
+                })
+                {
+                    StatusCode = 200
+                };
+            }
+
+            return new ObjectResult(new ErrorDto<IActionResult>
+            {
+                Code = 0,
+                Description = "Unexpected result type"
+            })
+            {
+                StatusCode = 200
+            };
         }
 
         [HttpPost("ReporteRDLC")]
