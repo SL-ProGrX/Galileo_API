@@ -52,6 +52,18 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXDiferidosPlantilla_Detalle_Obtener(codEmpresa, codConta, codDiferido);
         }
 
+        [HttpGet("CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener(int codEmpresa, int codConta, string codUnidad)
+        {
+            return _bl.CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener(codEmpresa, codConta, codUnidad);
+        }
+
+        [HttpGet("CntXDiferidosPlantilla_Divisas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_Divisas_Obtener(int codEmpresa, int codConta)
+        {
+            return _bl.CntXDiferidosPlantilla_Divisas_Obtener(codEmpresa, codConta);
+        }
+
         [HttpPost("CntXDiferidosPlantilla_Guardar")]
         public ErrorDto CntXDiferidosPlantilla_Guardar(int codEmpresa, CntXDiferidosPlantillaRequest request)
         {

@@ -25,6 +25,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMain = mProGrxMain;
         }
 
+        /// <summary>
+        /// Obtiene un registro de diferidos plantilla por su codigo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto<CntXDiferidosData?> CntXDiferidosPlantilla_Obtener(int codEmpresa, int codConta, int codDiferido)
         {
             const string query = @"select * from CntX_Diferidos where cod_contabilidad = @codConta 
@@ -33,6 +40,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, query, new CntXDiferidosData(), new { codConta, codDiferido });
         }
 
+        /// <summary>
+        /// Obtiene un registro de diferidos plantilla por su codigo de desplazamiento
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="scrollCode"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto<CntXDiferidosData?> CntXDiferidosPlantilla_Scroll_Obtener(int CodEmpresa, int codConta, int scrollCode, int codDiferido)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
@@ -63,6 +78,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtiene el listado de diferidos plantilla 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_Lista_Obtener(int codEmpresa, int codConta)
         {
             const string query = @"select cod_diferido as item,descripcion from CntX_Diferidos 
@@ -71,6 +92,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { codConta });
         }
 
+        /// <summary>
+        /// Obtiene el listado de tipos de asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_TiposAsientos_Obtener(int codEmpresa, int codConta)
         {
             const string query = @"select Tipo_Asiento as item,descripcion from CntX_Tipos_Asientos 
@@ -79,6 +106,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { codConta });
         }
 
+        /// <summary>
+        /// Obtiene la descripcion de un tipo de asiento
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<string?> CntXDiferidosPlantilla_TipoAsientoDesc_Obtener(int codEmpresa, int codConta, string tipoAsiento)
         {
             const string query = @"select descripcion from CntX_Tipos_Asientos 
@@ -87,10 +121,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, query, tipoAsiento, new { codConta, tipoAsiento });
         }
 
+        /// <summary>
+        /// Obtiene el detalle de un diferido plantilla 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXDiferidosDetalleData>> CntXDiferidosPlantilla_Detalle_Obtener(int codEmpresa, int codConta, int codDiferido)
         {
             const string query = @"select A.cod_cuenta,B.descripcion,porc_debito,porc_credito,linea,
-                A.cod_unidad,U.descripcion as UniDes,A.cod_divisa,A.cod_centro_costo 
+                A.cod_unidad,U.descripcion as UniDes,A.cod_divisa,A.cod_centro_costo, C.DESCRIPCION as ccDes 
                 from CntX_Diferidos_detalle A inner join CntX_Cuentas B 
                 on A.cod_cuenta = B.cod_cuenta and A.cod_contabilidad = B.cod_contabilidad 
                 inner join CntX_Unidades U on A.cod_unidad = U.cod_unidad and A.cod_contabilidad = U.cod_contabilidad 
@@ -102,6 +143,55 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXDiferidosDetalleData>(_portalDb, codEmpresa, query, new { codConta, codDiferido });
         }
 
+        /// <summary>
+        /// Obtiene el listado de centros de costo por unidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener(int codEmpresa, int codConta, string codUnidad)
+        {
+            const string query = @"
+                select 
+                    C.cod_centro_costo as item,
+                    C.descripcion
+                from CntX_Centro_Costos C
+                where C.cod_contabilidad = @codConta
+                  and C.cod_centro_costo in (
+                      select UCC.cod_centro_costo
+                      from cntX_unidades_cc UCC
+                      where UCC.cod_contabilidad = @codConta
+                        and UCC.cod_unidad = @codUnidad
+                  )
+                order by C.descripcion;";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb,
+                codEmpresa, query,
+                new { codConta, codUnidad }
+            );
+        }
+
+        /// <summary>
+        /// Obtiene el listado de divisas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_Divisas_Obtener(int codEmpresa, int codConta)
+        {
+            const string query = @"select cod_divisa as item,descripcion from CntX_Divisas  
+                where cod_contabilidad = @codConta";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { codConta });
+        }
+
+        /// <summary>
+        /// Guardar o actualizar un registro de diferidos plantilla
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXDiferidosPlantilla_Guardar(int codEmpresa, CntXDiferidosPlantillaRequest request)
         {
             var vr = ValidarRequestYAsiento(codEmpresa, request);
@@ -128,6 +218,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Elimina un registro de diferidos plantilla por su codigo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto CntXDiferidosPlantilla_Eliminar(int codEmpresa, int codConta, string usuario, int codDiferido)
         {
             const string sqlDeleteDetalle = @"delete CntX_Diferidos_detalle 
@@ -455,7 +553,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 foreach (var cta in cuentas)
                 {
                     if (!setExistentes.Contains(cta))
-                        errores.Add($"- Cuenta {cta} No Existe");
+                        errores.Add($"- Cuenta {cta} No Existe o No Acepta Movimientos");
                 }
             }
 

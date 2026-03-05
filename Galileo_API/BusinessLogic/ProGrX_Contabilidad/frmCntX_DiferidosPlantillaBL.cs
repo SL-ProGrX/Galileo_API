@@ -42,6 +42,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXDiferidosPlantilla_Detalle_Obtener(codEmpresa, codConta, codDiferido);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener(int codEmpresa, int codConta, string codUnidad)
+        {
+            return _db.CntXDiferidosPlantilla_CentroCostoPorUnidad_Obtener(codEmpresa, codConta, codUnidad);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXDiferidosPlantilla_Divisas_Obtener(int codEmpresa, int codConta)
+        {
+            return _db.CntXDiferidosPlantilla_Divisas_Obtener(codEmpresa, codConta);
+        }
+
         public ErrorDto CntXDiferidosPlantilla_Guardar(int codEmpresa, CntXDiferidosPlantillaRequest request)
         {
             return _db.CntXDiferidosPlantilla_Guardar(codEmpresa, request);

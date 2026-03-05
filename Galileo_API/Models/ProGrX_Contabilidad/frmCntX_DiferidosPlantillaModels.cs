@@ -23,6 +23,7 @@
         public string unides { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
         public string cod_centro_costo { get; set; } = string.Empty;
+        public string ccdes { get; set; } = string.Empty;
     }
 
     public class CntXDiferidosPlantillaRequest
