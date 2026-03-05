@@ -78,4 +78,15 @@ namespace Galileo.Models.AF
         public bool registro_justifica { get; set; } = false;
         public bool pago_justifica { get; set; } = false;
     }
+
+    public class BeneCategoriaValidaListaRequest
+    {
+        public string? cod_categoria { get; set; } = string.Empty;
+        public string? cod_beneficio { get; set; } = string.Empty;
+        public string? cedula { get; set; } = string.Empty;
+        public string? usuario { get; set; } = string.Empty;
+        public string? id_beneficio { get; set; } = string.Empty;
+        public string? monto_usuario { get; set; } = string.Empty;
+        public string? sepelio_identificacion { get; set; } = string.Empty;
+    }
 }

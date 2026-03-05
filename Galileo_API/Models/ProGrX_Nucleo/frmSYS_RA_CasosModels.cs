@@ -18,12 +18,12 @@
 
     public class SysCasosFiltroData
     {
-        public int persona_id { get; set; }
+        public required int persona_id { get; set; }
         public string? cedula { get; set; } = string.Empty;
         public string? nombre { get; set; } = string.Empty;
         public string? estado { get; set; } = string.Empty;
         public string? tipo { get; set; } = string.Empty;
-        public bool vence { get; set; }
+        public required bool vence { get; set; }
         public string? inicioVenc { get; set; } = string.Empty;
         public string? finVenc { get; set; } = string.Empty;
     }

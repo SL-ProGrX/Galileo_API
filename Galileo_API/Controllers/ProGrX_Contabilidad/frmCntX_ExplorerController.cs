@@ -24,15 +24,15 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("TiposAsiento")]
-        public ErrorDto<List<DropDownListaGenericaModel>> TiposAsiento(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxTipoAsientoDto>> TiposAsiento(int codEmpresa, int cod_contabilidad)
         {
             return _bl.TiposAsiento_Obtener(codEmpresa, cod_contabilidad);
         }
 
         [HttpGet("Periodos")]
-        public ErrorDto<List<CntxPeriodoDto>> Periodos(int codEmpresa, string estado) // "P"|"C"
+        public ErrorDto<List<CntxPeriodoDto>> Periodos(int codEmpresa, int cod_contabilidad, string estado) // "P"|"C"
         {
-            return _bl.Periodos_Obtener(codEmpresa, estado);
+            return _bl.Periodos_Obtener(codEmpresa, cod_contabilidad, estado);
         }
 
         [HttpPost("ListarAsientos")]
@@ -58,9 +58,10 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         [HttpGet("CuentasPorPadre")]
         public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(
             int codEmpresa,
+            int cod_contabilidad,
             string? codCuentaPadre)
         {
-            return _bl.CuentasPorPadre(codEmpresa, codCuentaPadre);
+            return _bl.CuentasPorPadre(codEmpresa, cod_contabilidad, codCuentaPadre);
         }
 
         #endregion
@@ -114,7 +115,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         // OBTENER PLANTILLAS POR DIFERIDO
         // ============================================
         [HttpGet("diferidos/plantillas")]
-        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> Plantillas(int codEmpresa, int codContabilidad, int codDiferido)
+        public ActionResult<ErrorDto<List<CntxDiferidoPlantillaDto>>> Plantillas(int codEmpresa, int codContabilidad, int codDiferido)
         {
             var result = _bl.DiferidoPlantillas_Obtener(codEmpresa, codContabilidad, codDiferido);
 
@@ -150,16 +151,66 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             => _bl.Cntx_CentroCosto_Buscar(codEmpresa, cod_contabilidad);
 
         [HttpGet("Divisas_Buscar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Buscar(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxDivisaDto>> Divisas_Buscar(int codEmpresa, int cod_contabilidad)
             => _bl.Cntx_Divisas_Buscar(codEmpresa, cod_contabilidad);
 
 
         [HttpGet("Asientos_Resumen")]
-        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa,int cod_contabilidad,int anio,int mes)
+        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa, int cod_contabilidad, int anio, int mes)
         {
-            return _bl.Asientos_Resumen(codEmpresa,cod_contabilidad,anio,mes
-            );
+            return _bl.Asientos_Resumen(codEmpresa, cod_contabilidad, anio, mes);
         }
+
+        [HttpPost("Catalogo_Resumen")]
+        public ErrorDto<List<CntxCatalogoResumenDto>> Catalogo_Resumen(CatalogoResumenRequest request)
+        {
+            return _bl.Catalogo_Resumen(request);
+        }
+
+
+        [HttpGet("PlantillaRate_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> PlantillaRate_Obtener(int codEmpresa, int codContabilidad)
+        {
+            return _bl.PlantillaRate_Obtener(
+                codEmpresa,
+                codContabilidad);
+        }
+
+        [HttpGet("PlantillaRate_Detalle")]
+        public ErrorDto<List<CntxPlantillaRateDetalleDto>> PlantillaRate_Detalle(int codEmpresa, int codContabilidad, int codPlantilla)
+        {
+            return _bl.PlantillaRate_Detalle(
+                codEmpresa,
+                codContabilidad,
+                codPlantilla);
+        }
+
+        [HttpGet("AreasTrabajo_ObtenerPorPadre")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int? codAreaPadre)
+        {
+            return _bl.AreasTrabajo_ObtenerPorPadre(codEmpresa, codAreaPadre);
+        }
+
+
+        [HttpGet("AreasTrabajo_Resumen")]
+        public ErrorDto<List<AreaResumenDto>> AreasTrabajo_Resumen(int codEmpresa, int codContabilidad, int codArea, DateTime fechaDesde, DateTime fechaHasta)
+        {
+            return _bl.AreasTrabajo_Resumen(codEmpresa, codContabilidad, codArea, fechaDesde, fechaHasta);
+        }
+
+        [HttpGet("Contabilidades")]
+        public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
+        {
+            return _bl.ObtenerContabilidades(codEmpresa);
+        }
+
+
+        [HttpGet("Cierres")]
+        public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
+        {
+            return _bl.ObtenerCierres(codEmpresa, cod_contabilidad);
+        }
+
 
     }
 }

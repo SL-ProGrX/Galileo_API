@@ -15,7 +15,7 @@ namespace Galileo.Models.GG_PE
 
     public class PeObjetivosEstrategicosDto
     {
-        public int objetivo_id { get; set; }
+        public required int objetivo_id { get; set; }
         public int? perspectiva_id { get; set; }
         public string? nombre_pespectiva { get; set; }
         public string? nombre { get; set; }
@@ -23,9 +23,9 @@ namespace Galileo.Models.GG_PE
         public string? indicador_clave { get; set; }
         public float? meta { get; set; }
         public string? unidad_medida { get; set; }
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
         public string? registro_usuario { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
     }

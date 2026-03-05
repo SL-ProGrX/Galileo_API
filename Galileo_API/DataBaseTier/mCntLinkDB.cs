@@ -1,7 +1,8 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -325,16 +326,24 @@ namespace Galileo.DataBaseTier
                     conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
                 };
 
+                var sbMascara = new StringBuilder();
+                var sbNiveles = new StringBuilder();
+
                 for (int idx = 0; idx < niveles.Length; idx++)
                 {
                     int nivel = niveles[idx];
                     if (nivel <= 0) continue;
 
-                    if (idx > 0) info.Result.gstrMascara += "-";
-                    info.Result.gstrNiveles += nivel;
+                    if (idx > 0)
+                        sbMascara.Append('-');
+
+                    sbNiveles.Append(nivel);
                     info.Result.gMascaraTChar += nivel;
-                    info.Result.gstrMascara += new string('#', nivel);
+                    sbMascara.Append('#', nivel);
                 }
+                info.Result.gstrMascara = sbMascara.ToString();
+                info.Result.gstrNiveles = sbNiveles.ToString();
+
             }
             catch (Exception ex)
             {
