@@ -60,13 +60,20 @@ namespace Galileo_API.DataBaseTier
         public long FxDocumentoConsecutivo(int codEmpresa, string vTipo)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
             try
             {
-                string strCampo = "", strUpdate = "";
-                var query = "SELECT SysDocVersion FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa";
-                if(conn.Query<int>(query, codEmpresa).FirstOrDefault() == 1)
+                const string qSys = "SELECT SysDocVersion FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa;";
+                var sysDocVersion = conn.QueryFirstOrDefault<int>(qSys, new { codEmpresa });
+
+                var tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+
+                if (sysDocVersion == 1)
                 {
-                    switch (vTipo)
+                    string strCampo;
+                    string strUpdate;
+
+                    switch (tipo)
                     {
                         case "RE":
                             strCampo = "select CS_RECIBO as Consecutivo from ase_consecutivos";
@@ -84,34 +91,29 @@ namespace Galileo_API.DataBaseTier
                             strCampo = "select CS_NOTA_CREDITO as Consecutivo from ase_consecutivos";
                             strUpdate = "update ase_consecutivos set CS_NOTA_CREDITO = CS_NOTA_CREDITO + 1";
                             break;
+                        default:
+                            return 0;
                     }
 
-                    long consecutivo = conn.Query<long>(strCampo).FirstOrDefault();
+                    var consecutivo = conn.QueryFirstOrDefault<long>(strCampo);
+                    if (consecutivo <= 0) return 0;
 
-                    if (consecutivo == 0)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        conn.Execute(strUpdate);
-                    }
-
-                        return consecutivo;
+                    conn.Execute(strUpdate);
+                    return consecutivo;
                 }
-                else
+                const string sp = "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;";
+                var cons = conn.QueryFirstOrDefault<long>(sp, new
                 {
-                    strCampo = "exec spSIFDocsConsecutivo @vTipo";
-                }
+                    Tipo = tipo,
+                    Usuario = "ADMIN"
+                });
 
-                return conn.Query<long>(strCampo, new {vTipo}).FirstOrDefault();
-
+                return cons <= 0 ? 0 : cons;
             }
-            catch (Exception)
+            catch
             {
                 return 0;
             }
-
         }
 
 
