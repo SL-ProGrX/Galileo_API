@@ -122,29 +122,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
 
                 var pasos = new[]
-                    {
-                        new FndsPasoConfig
-                        {
-                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso1),
-                            MontoBase = 150m,
-                            Garantia = "S",
-                            Actualizar = Db_FNDS_ActualizarPaso1
-                        },
-                        new FndsPasoConfig
-                        {
-                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso2),
-                            MontoBase = 300m,
-                            Garantia = "Z",
-                            Actualizar = Db_FNDS_ActualizarPaso2
-                        },
-                        new FndsPasoConfig
-                        {
-                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso3),
-                            MontoBase = 300m,
-                            Garantia = "Z",
-                            Actualizar = Db_FNDS_ActualizarPaso3
-                        }
-                    };
+                              {
+                                new FndsPasoConfig
+                                {
+                                    Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso1),
+                                    MontoBase = 150m,
+                                    Garantia = "S",
+                                    Actualizar = (conn, tx, id, monto) =>
+                                        Db_FNDS_ActualizarPaso(conn, tx, id, monto, FndsUpdateTipo.Reemplazar)
+                                },
+                                new FndsPasoConfig
+                                {
+                                    Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso2),
+                                    MontoBase = 300m,
+                                    Garantia = "Z",
+                                    Actualizar = (conn, tx, id, monto) =>
+                                        Db_FNDS_ActualizarPaso(conn, tx, id, monto, FndsUpdateTipo.SumarConSaldoMes)
+                                },
+                                new FndsPasoConfig
+                                {
+                                    Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso3),
+                                    MontoBase = 300m,
+                                    Garantia = "Z",
+                                    Actualizar = (conn, tx, id, monto) =>
+                                        Db_FNDS_ActualizarPaso(conn, tx, id, monto, FndsUpdateTipo.SumarSinSaldoMes)
+                                }
+                            };
 
                 foreach (var paso in pasos)
                     ProcesarPasoFnds(connection, tx, ctx, codigo, paso);
@@ -236,11 +239,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             conn.Execute(sql, new { Codigo = codigo, Monto = monto }, transaction: tx);
         }
         private static void Db_FBEN_InsertarCasosNuevos(
-    IDbConnection conn,
-    IDbTransaction tx,
-    FondoSolidarioContext ctx,
-    string codigo,
-    decimal monto)
+            IDbConnection conn,
+            IDbTransaction tx,
+            FondoSolidarioContext ctx,
+            string codigo,
+            decimal monto)
         {
             const string sql = @"
         insert into reg_creditos
@@ -335,44 +338,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
           and S.cod_institucion = @CodInstitucion";
 
             conn.Execute(sql, new { Codigo = codigo, CodInstitucion = codInstitucion }, transaction: tx);
-        } 
-        private static void Db_FNDS_ActualizarPaso1(IDbConnection conn, IDbTransaction tx, int idSolicitud, decimal vFnd)
+        }
+
+        private enum FndsUpdateTipo
         {
-            const string sql = @"
-        update reg_creditos
-        set cuota = @Monto,
-            saldo = @Monto,
-            montoapr = @Monto,
-            saldo_mes = @Monto
-        where id_solicitud = @IdSolicitud";
+            Reemplazar,
+            SumarConSaldoMes,
+            SumarSinSaldoMes
+        }
+
+        private static void Db_FNDS_ActualizarPaso(
+            IDbConnection conn,
+            IDbTransaction tx,
+            int idSolicitud,
+            decimal vFnd,
+            FndsUpdateTipo tipo)
+        {
+            var sql = tipo switch
+            {
+                FndsUpdateTipo.Reemplazar => @"
+            update reg_creditos
+            set cuota = @Monto,
+                saldo = @Monto,
+                montoapr = @Monto,
+                saldo_mes = @Monto
+            where id_solicitud = @IdSolicitud",
+
+                FndsUpdateTipo.SumarConSaldoMes => @"
+            update reg_creditos
+            set cuota = cuota + @Monto,
+                saldo = saldo + @Monto,
+                saldo_mes = saldo_mes + @Monto,
+                montoapr = montoapr + @Monto
+            where id_solicitud = @IdSolicitud",
+
+                _ => @"
+            update reg_creditos
+            set cuota = cuota + @Monto,
+                saldo = saldo + @Monto,
+                montoapr = montoapr + @Monto
+            where id_solicitud = @IdSolicitud"
+            };
 
             conn.Execute(sql, new { Monto = vFnd, IdSolicitud = idSolicitud }, transaction: tx);
         }
 
-        private static void Db_FNDS_ActualizarPaso2(IDbConnection conn, IDbTransaction tx, int idSolicitud, decimal vFnd)
-        {
-            const string sql = @"
-        update reg_creditos
-        set cuota = cuota + @Monto,
-            saldo = saldo + @Monto,
-            saldo_mes = saldo_mes + @Monto,
-            montoapr = montoapr + @Monto
-        where id_solicitud = @IdSolicitud";
-
-            conn.Execute(sql, new { Monto = vFnd, IdSolicitud = idSolicitud }, transaction: tx);
-        }
-   
-        private static void Db_FNDS_ActualizarPaso3(IDbConnection conn, IDbTransaction tx, int idSolicitud, decimal vFnd)
-        {
-            const string sql = @"
-        update reg_creditos
-        set cuota = cuota + @Monto,
-            saldo = saldo + @Monto,
-            montoapr = montoapr + @Monto
-        where id_solicitud = @IdSolicitud";
-
-            conn.Execute(sql, new { Monto = vFnd, IdSolicitud = idSolicitud }, transaction: tx);
-        }
         private static (int IdSolicitud, decimal Cuota)? Db_FNDS_ObtenerActivo(IDbConnection conn, IDbTransaction tx, string codigo, string cedula)
         {
             const string sql = @"
@@ -513,26 +523,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 _ => "R.fechaforp >= @FechaCorte"
             };
             var sql = $@"
-select R.cedula as Cedula, sum(R.montoapr) as Monto
-from reg_creditos R
-inner join Catalogo C on R.codigo = C.codigo
-inner join Socios S on R.cedula = S.cedula
-where C.retencion = 'N'
-  and C.poliza = 'N'
-  and C.cobertura = 1
-  and {garantiaFiltro}
-  and R.saldo > 0
-  and R.estado = 'A'
-  and R.proceso <> 'J'
-  and {fechaFiltro}
-  and S.cod_institucion = @CodInstitucion
-group by R.cedula";
+                select R.cedula as Cedula, sum(R.montoapr) as Monto
+                from reg_creditos R
+                inner join Catalogo C on R.codigo = C.codigo
+                inner join Socios S on R.cedula = S.cedula
+                where C.retencion = 'N'
+                  and C.poliza = 'N'
+                  and C.cobertura = 1
+                  and {garantiaFiltro}
+                  and R.saldo > 0
+                  and R.estado = 'A'
+                  and R.proceso <> 'J'
+                  and {fechaFiltro}
+                  and S.cod_institucion = @CodInstitucion
+                group by R.cedula";
 
-            return conn.Query<(string Cedula, decimal Monto)>(
-                sql,
-                new { CodInstitucion = codInstitucion, FechaCorte = new DateTime(2004, 6, 1, 0, 0, 0, DateTimeKind.Unspecified) },
-                transaction: tx);
+
+               return conn.Query<(string Cedula, decimal Monto)>(
+                    sql,
+                    new { CodInstitucion = codInstitucion, FechaCorte = FechaCorteFnds },
+                    transaction: tx);
         }
-
+        private static readonly DateTime FechaCorteFnds =
+    new(2004, 6, 1, 0, 0, 0, DateTimeKind.Unspecified);
     }
 }
