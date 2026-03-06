@@ -2,9 +2,9 @@
 {
     public class CntXDiferidosCreacionRequest
     {
-        public int cod_contabilidad { get; set; }
-        public bool edita { get; set; }
-        public string? usuario { get; set; }
+        public int cod_contabilidad { get; set; } = 0;
+        public bool edita { get; set; } = false;
+        public string usuario { get; set; } = string.Empty;
         public CntXDiferidoCreacionData? data { get; set; }
     }
 
