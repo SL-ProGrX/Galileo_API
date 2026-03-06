@@ -265,28 +265,11 @@ namespace Galileo.DataBaseTier
 
                     if (vTipo == "RE" || vTipo == "FRE")
                     {
-                        if (vFlat)
-                        {
-                            if (SysDocVersion == 1)
-                            {
-                                reporteData.nombreReporte = "Fondos_DocumentoFlat";
-                            }
-                            else
-                            {
-                                reporteData.nombreReporte = "Fondos_DocumentoFlat02";
-                            }
-                        }
-                        else
-                        {
-                            if (SysDocVersion == 1)
-                            {
-                                reporteData.nombreReporte = "Fondos_DocumentoCls";
-                            }
-                            else
-                            {
-                                reporteData.nombreReporte = "Fondos_DocumentoCls02";
-                            }
-                        }
+                        var nombreReporte = vFlat
+                            ? (SysDocVersion == 1 ? "Fondos_DocumentoFlat" : "Fondos_DocumentoFlat02")
+                            : (SysDocVersion == 1 ? "Fondos_DocumentoCls" : "Fondos_DocumentoCls02");
+
+                        reporteData.nombreReporte = nombreReporte;
                     }
                     else
                     {
