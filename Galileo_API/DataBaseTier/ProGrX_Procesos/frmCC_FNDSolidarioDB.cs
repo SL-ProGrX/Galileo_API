@@ -3,12 +3,8 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models;
 using System.Data.Common;
-using System.Data;
-using Microsoft.ReportingServices.Diagnostics.Internal;
-using static Galileo_API.Models.ProGrX_Procesos.FrmCcFndSolidarioModels;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
-using System.Threading;
+using System.Data; 
+using static Galileo_API.Models.ProGrX_Procesos.FrmCcFndSolidarioModels; 
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 {
@@ -89,7 +85,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
             globales = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad)?.Result ?? new Globales();
 
-          
+
 
             if (globales.GlngFechaCR <= 0)
             {
@@ -139,86 +135,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     FechaProcesoSiguiente = fechaProX,
                     FechaServidor = fechaServidor
                 };
-                // 3) Paso 1
-                var paso1 = Db_FNDS_Paso1_Listar(connection, tx, codInstitucion);
-                foreach (var (cedula, monto) in paso1)
-                {
-                    var vFnd = FxFondoSolidario(monto, 150m);
 
-                    var activo = Db_FNDS_ObtenerActivo(connection, tx, codigo, cedula);
-                    if (activo is null)
+                ProcesarPasoFnds(connection, tx, ctx, codigo,
+                    new FndsPasoConfig
                     {
+                        Rows = Db_FNDS_Paso1_Listar(connection, tx, codInstitucion),
+                        MontoBase = 150m,
+                        Garantia = "S",
+                        Actualizar = Db_FNDS_ActualizarPaso1
+                    });
 
+                ProcesarPasoFnds(connection, tx, ctx, codigo,
+              new FndsPasoConfig
+              {
+                  Rows = Db_FNDS_Paso2_Listar(connection, tx, codInstitucion),
+                  MontoBase = 300m,
+                  Garantia = "Z",
+                  Actualizar = Db_FNDS_ActualizarPaso2
+              });
 
-                        // VB6: garantia = 'S'
-                        Db_FNDS_InsertarPaso(
-                                   connection,
-                                   tx,
-                                   ctx,
-                                   codigo,
-                                  cedula,
-                                   vFnd,
-                                   "S");
-                    }
-                    else
-                    {
-                        if (Math.Abs(vFnd - activo.Value.Cuota) > 1m)
-                            Db_FNDS_ActualizarPaso1(connection, tx, activo.Value.IdSolicitud, vFnd);
-                    }
-                }
-
-                // 4) Paso 2
-                var paso2 = Db_FNDS_Paso2_Listar(connection, tx, codInstitucion);
-                foreach (var (cedula, monto) in paso2)
-                {
-                    var vFnd = FxFondoSolidario(monto, 300m);
-
-                    var activo = Db_FNDS_ObtenerActivo(connection, tx, codigo, cedula);
-                    if (activo is null)
-                    {
-                        // VB6: garantia = 'Z'
-                        Db_FNDS_InsertarPaso(
-                                   connection,
-                                   tx,
-                                   ctx,
-                                   codigo,
-                                  cedula,
-                                   vFnd,
-                                   "Z");
-                    }
-                    else
-                    {
-                        if (Math.Abs(vFnd - activo.Value.Cuota) > 1m)
-                            Db_FNDS_ActualizarPaso2(connection, tx, activo.Value.IdSolicitud, vFnd);
-                    }
-                }
-
-                // 5) Paso 3
-                var paso3 = Db_FNDS_Paso3_Listar(connection, tx, codInstitucion);
-                foreach (var (cedula, monto) in paso3)
-                {
-                    var vFnd = FxFondoSolidario(monto, 300m);
-
-                    var activo = Db_FNDS_ObtenerActivo(connection, tx, codigo, cedula);
-                    if (activo is null)
-                    {
-                        // VB6: garantia = 'Z'
-                        Db_FNDS_InsertarPaso(
-                                      connection,
-                                      tx,
-                                      ctx,
-                                      codigo,
-                                     cedula,
-                                      vFnd,
-                                      "Z");
-                    }
-                    else
-                    {
-                        if (Math.Abs(vFnd - activo.Value.Cuota) > 1m)
-                            Db_FNDS_ActualizarPaso3(connection, tx, activo.Value.IdSolicitud, vFnd);
-                    }
-                }
-
+                ProcesarPasoFnds(connection, tx, ctx, codigo,
+    new FndsPasoConfig
+    {
+        Rows = Db_FNDS_Paso3_Listar(connection, tx, codInstitucion),
+        MontoBase = 300m,
+        Garantia = "Z",
+        Actualizar = Db_FNDS_ActualizarPaso3
+    });
                 // 6) Cancela por congelamiento (al final)
                 Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
 
@@ -589,6 +532,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 Garantia = garantia,
                 Usuario = ctx.Usuario.Trim()
             }, transaction: tx);
+        }
+
+        private static void ProcesarPasoFnds(
+               DbConnection connection,
+                DbTransaction tx,
+                FondoSolidarioContext ctx,
+                string codigo,
+                FndsPasoConfig config)
+        {
+            foreach (var (cedula, monto) in config.Rows)
+            {
+                var vFnd = FxFondoSolidario(monto, config.MontoBase);
+
+                var activo = Db_FNDS_ObtenerActivo(connection, tx, codigo, cedula);
+
+                if (activo is null)
+                {
+                    Db_FNDS_InsertarPaso(connection, tx, ctx, codigo, cedula, vFnd, config.Garantia);
+                }
+                else
+                {
+                    if (Math.Abs(vFnd - activo.Value.Cuota) > 1m)
+                        config.Actualizar?.Invoke(connection, tx, activo.Value.IdSolicitud, vFnd);
+                }
+            }
         }
 
 
