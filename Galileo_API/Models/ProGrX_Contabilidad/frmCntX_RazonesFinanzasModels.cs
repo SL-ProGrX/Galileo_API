@@ -48,9 +48,9 @@
 
     public class CntXRazonDetalleDto
     {
-        public int Idx { get; set; }
+        public required int Idx { get; set; }
         public string CodRazon { get; set; } = string.Empty;
-        public int CodContabilidad { get; set; }
+        public required int CodContabilidad { get; set; }
         public string CodCuenta { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
