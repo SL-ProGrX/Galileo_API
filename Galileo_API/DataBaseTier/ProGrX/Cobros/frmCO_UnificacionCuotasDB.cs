@@ -17,6 +17,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly MSecurityMainDb _securityMainDb;
         private readonly MAfilicacionDB _mAfiliacion;
         private readonly int vModulo = 4;
+        private const string CODIGO = "codigo";
+        private const string CEDULA = "cedula";
+        private const string CUOTA = "cuota";
 
         public FrmCOUnificacionCuotasDB(IConfiguration config)
             : this(
@@ -337,10 +340,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (parametros is Newtonsoft.Json.Linq.JObject jo)
             {
-                codigo = (jo["codigo"]?.ToString() ?? "").Trim();
-                cedula = (jo["cedula"]?.ToString() ?? "").Trim();
+                codigo = (jo[CODIGO]?.ToString() ?? "").Trim();
+                cedula = (jo[CEDULA]?.ToString() ?? "").Trim();
 
-                var cuotaStr = (jo["cuota"]?.ToString() ?? "").Trim();
+                var cuotaStr = (jo[CUOTA]?.ToString() ?? "").Trim();
                 if (int.TryParse(cuotaStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var c))
                     cuota = c;
 
@@ -351,10 +354,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (parametros is IDictionary<string, object?> dict)
             {
-                codigo = (dict.TryGetValue("codigo", out var v1) ? Convert.ToString(v1) : "")?.Trim() ?? "";
-                cedula = (dict.TryGetValue("cedula", out var v2) ? Convert.ToString(v2) : "")?.Trim() ?? "";
+                codigo = (dict.TryGetValue(CODIGO, out var v1) ? Convert.ToString(v1) : "")?.Trim() ?? "";
+                cedula = (dict.TryGetValue(CEDULA, out var v2) ? Convert.ToString(v2) : "")?.Trim() ?? "";
 
-                var cuotaStr = (dict.TryGetValue("cuota", out var v3) ? Convert.ToString(v3) : "")?.Trim() ?? "";
+                var cuotaStr = (dict.TryGetValue(CUOTA, out var v3) ? Convert.ToString(v3) : "")?.Trim() ?? "";
                 if (int.TryParse(cuotaStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var c))
                     cuota = c;
 
@@ -385,16 +388,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             foreach (var d in rows)
             {
-                var cedula = GetStr(d, "cedula");
+                var cedula = GetStr(d, CEDULA);
                 var estado = GetStr(d, "estado");
 
                 var item = new CoUnificacionCuotasData
                 {
                     id_solicitud = GetInt(d, "id_solicitud"),
-                    codigo = GetStr(d, "codigo"),
+                    codigo = GetStr(d, CODIGO),
                     cedula = cedula,
                     nombre = string.IsNullOrWhiteSpace(cedula) ? "" : (_mAfiliacion.fxNombre(CodEmpresa, cedula) ?? ""),
-                    cuota = GetInt(d, "cuota"),
+                    cuota = GetInt(d, CUOTA),
                     intc = GetDec(d, "intc"),
                     intm = GetDec(d, "intm"),
                     amortiza = GetDec(d, "amortiza"),
@@ -439,22 +442,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private static List<CoUnificacionCuotasData> AplicarSort(List<CoUnificacionCuotasData> lista, string? sortField, int sortOrder)
         {
             var f = (sortField ?? "").Trim().ToLowerInvariant();
-            bool asc = sortOrder == 1;
-            bool desc = sortOrder == 2;
-
-            if (!asc && !desc) return lista;
+            if (!EsSortValido(sortOrder))
+                return lista;
 
             return f switch
             {
-                "id_solicitud" => (asc ? lista.OrderBy(x => x.id_solicitud) : lista.OrderByDescending(x => x.id_solicitud)).ToList(),
-                "codigo" => (asc ? lista.OrderBy(x => x.codigo) : lista.OrderByDescending(x => x.codigo)).ToList(),
-                "cedula" => (asc ? lista.OrderBy(x => x.cedula) : lista.OrderByDescending(x => x.cedula)).ToList(),
-                "nombre" => (asc ? lista.OrderBy(x => x.nombre) : lista.OrderByDescending(x => x.nombre)).ToList(),
-                "cuota" => (asc ? lista.OrderBy(x => x.cuota) : lista.OrderByDescending(x => x.cuota)).ToList(),
-                "saldo" => (asc ? lista.OrderBy(x => x.saldo) : lista.OrderByDescending(x => x.saldo)).ToList(),
-                "estado" => (asc ? lista.OrderBy(x => x.estado) : lista.OrderByDescending(x => x.estado)).ToList(),
+                "id_solicitud" => Ordenar(lista, x => x.id_solicitud, sortOrder),
+                CODIGO => Ordenar(lista, x => x.codigo, sortOrder),
+                CEDULA => Ordenar(lista, x => x.cedula, sortOrder),
+                "nombre" => Ordenar(lista, x => x.nombre, sortOrder),
+                CUOTA => Ordenar(lista, x => x.cuota, sortOrder),
+                "saldo" => Ordenar(lista, x => x.saldo, sortOrder),
+                "estado" => Ordenar(lista, x => x.estado, sortOrder),
                 _ => lista
             };
+        }
+        private static bool EsSortValido(int sortOrder)
+        {
+            return sortOrder == 1 || sortOrder == 2;
+        }
+        private static List<CoUnificacionCuotasData> Ordenar<TKey>(List<CoUnificacionCuotasData> lista,Func<CoUnificacionCuotasData, TKey> keySelector,int sortOrder)
+        {
+            return sortOrder == 1
+                ? lista.OrderBy(keySelector).ToList()
+                : lista.OrderByDescending(keySelector).ToList();
         }
         private static List<CoUnificacionCuotasData> AplicarPaginacion(List<CoUnificacionCuotasData> lista, int pagina, int paginacion)
         {
