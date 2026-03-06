@@ -279,14 +279,9 @@ namespace Galileo.DataBaseTier
                         vFlat = false;
                     }
                     string selectionFormula = "";
-                    if (SysDocVersion == 1)
-                    {
-                        selectionFormula = $" where FND_DOCUMENTOS.ID_DOCUMENTO = {lngRecibo} AND FND_DOCUMENTOS.TIPO = '{vTipo}' AND FND_DOCUMENTOS.COD_OPERADORA = {vOperadora}";
-                    }
-                    else
-                    {
-                        selectionFormula = $" where SIF_TRANSACCIONES.COD_TRANSACCION = '{lngRecibo}' AND SIF_TRANSACCIONES.TIPO_DOCUMENTO = '{vTipo}'";
-                    }
+                    selectionFormula = SysDocVersion == 1
+                        ? $" where FND_DOCUMENTOS.ID_DOCUMENTO = {lngRecibo} AND FND_DOCUMENTOS.TIPO = '{vTipo}' AND FND_DOCUMENTOS.COD_OPERADORA = {vOperadora}"
+                        : $" where SIF_TRANSACCIONES.COD_TRANSACCION = '{lngRecibo}' AND SIF_TRANSACCIONES.TIPO_DOCUMENTO = '{vTipo}'";
 
                     if (!vFlat && vTipo != "RE")
                     {
