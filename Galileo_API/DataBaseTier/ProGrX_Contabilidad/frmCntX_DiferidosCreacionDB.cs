@@ -24,7 +24,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMain = mProGrxMain;
         }
 
-
+        /// <summary>
+        /// Obtiene la informacion de un diferido especifico basado en su codigo de plantilla y codigo de diferido.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codDifPlantilla"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto<CntXDiferidoCreacionData?> CntXDiferidosCreacion_Obtener(
             int codEmpresa, int codConta, int codDifPlantilla, int codDiferido)
         {
@@ -49,6 +56,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Navega a traves de los diferidos utilizando scroll, 
+        /// obteniendo el siguiente o anterior registro basado en el codigo de plantilla y codigo de diferido actual.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="scrollValue"></param>
+        /// <param name="codDiferido"></param>
+        /// <param name="codDifPlantillaActual"></param>
+        /// <returns></returns>
         public ErrorDto<CntXDiferidoCreacionData?> CntXDiferidosCreacion_Scroll_Obtener(
             int codEmpresa, int codConta, int scrollValue, int codDiferido, int codDifPlantillaActual)
         {
@@ -101,6 +118,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtiene el historial de un diferido
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codDifPlantilla"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXDiferidoHistoricoData>> CntXDiferidosCreacion_Historico_Obtener(
             int codEmpresa, int codConta, int codDifPlantilla, int codDiferido)
         {
@@ -125,6 +150,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de plantillas de diferidos 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXDiferidosPlantillaData>> CntXDiferidosCreacion_PlantillaLista_Obtener(int codEmpresa, int codConta)
         {
             const string sql = @"
@@ -139,6 +170,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de diferidos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXDiferidoCreacionData>> CntXDiferidosCreacion_Lista_Obtener(int codEmpresa, int codConta)
         {
             const string sql = @"
@@ -154,6 +191,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Guarda un diferido
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXDiferidosCreacion_Guardar(int codEmpresa, CntXDiferidosCreacionRequest request)
         {
             int codConta = request.cod_contabilidad;
@@ -278,6 +321,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Elimina un diferido especifico 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codDifPlantilla"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
         public ErrorDto CntXDiferidosCreacion_Eliminar(
             int codEmpresa, int codConta, string usuario, int codDifPlantilla, int codDiferido)
         {
