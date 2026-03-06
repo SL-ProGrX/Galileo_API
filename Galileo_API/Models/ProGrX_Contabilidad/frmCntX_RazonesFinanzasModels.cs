@@ -39,4 +39,26 @@
         public string CodGrupo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
+
+    public class CntXRazonNotasDto
+    {
+        public string Notas { get; set; } = string.Empty;
+        public string Formula { get; set; } = string.Empty;
+    }
+
+    public class CntXRazonDetalleDto
+    {
+        public int Idx { get; set; }
+        public string CodRazon { get; set; } = string.Empty;
+        public int CodContabilidad { get; set; }
+        public string CodCuenta { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public string Cod_Cuenta_Mask { get; set; } = string.Empty;
+        public string Operador { get; set; } = string.Empty;
+    }
+
+    public class CntXRazonDetalleIdxDto
+    {
+        public int Idx { get; set; }
+    }
 }
