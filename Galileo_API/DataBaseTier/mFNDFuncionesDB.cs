@@ -290,14 +290,9 @@ namespace Galileo.DataBaseTier
                     }
                     else
                     {
-                        if (SysDocVersion == 1)
-                        {
-                            reporteData.nombreReporte = "Fondos_DocumentoBoleta";
-                        }
-                        else
-                        {
-                            reporteData.nombreReporte = "Fondos_DocumentoBoleta02";
-                        }
+                        reporteData.nombreReporte = SysDocVersion == 1
+                            ? "Fondos_DocumentoBoleta"
+                            : "Fondos_DocumentoBoleta02";
                         vFlat = false;
                     }
                     string selectionFormula = "";
