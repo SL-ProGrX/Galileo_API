@@ -1,17 +1,22 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier
 {
     public class MFndFuncionesDb
     {
         private readonly IConfiguration _config;
+        private readonly MReportingServicesDB _reportingServicesDB;
 
         public MFndFuncionesDb(IConfiguration config)
         {
             _config = config;
+            _reportingServicesDB = new MReportingServicesDB(_config);
         }
 
         // ========= Helpers comunes =========
@@ -227,5 +232,130 @@ namespace Galileo.DataBaseTier
                 }
             );
         }
+
+        public ErrorDto<object> sbgFNDImprimeRecibo(int CodEmpresa, long lngRecibo, string vTipo, long vOperadora)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<object>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = null
+            };
+            bool vFlat = false;
+            try
+            {
+                var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
+                int SysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
+                using var connection = new SqlConnection(stringConn);
+                {
+                    var query = "select cs_utilizar_reciboFlat as Flat from ase_consecutivos";
+                    vFlat = connection.QueryFirstOrDefault<string>(query) == "S";
+
+                    query = "select nombre,cedula_juridica from sif_empresa";
+                    var vEmpresa = connection.QueryFirstOrDefault(query);
+
+                    //Imprime reporte
+                    FrmReporteGlobal reporteData = new()
+                    {
+                        codEmpresa = CodEmpresa,
+                        cod_reporte = "P",
+                        folder = "Fondos"
+                    };
+
+                    if (vTipo == "RE" || vTipo == "FRE")
+                    {
+                        if (vFlat)
+                        {
+                            if (SysDocVersion == 1)
+                            {
+                                reporteData.nombreReporte = "Fondos_DocumentoFlat";
+                            }
+                            else
+                            {
+                                reporteData.nombreReporte = "Fondos_DocumentoFlat02";
+                            }
+                        }
+                        else
+                        {
+                            if (SysDocVersion == 1)
+                            {
+                                reporteData.nombreReporte = "Fondos_DocumentoCls";
+                            }
+                            else
+                            {
+                                reporteData.nombreReporte = "Fondos_DocumentoCls02";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (SysDocVersion == 1)
+                        {
+                            reporteData.nombreReporte = "Fondos_DocumentoBoleta";
+                        }
+                        else
+                        {
+                            reporteData.nombreReporte = "Fondos_DocumentoBoleta02";
+                        }
+                        vFlat = false;
+                    }
+                    string selectionFormula = "";
+                    if (SysDocVersion == 1)
+                    {
+                        selectionFormula = $" where FND_DOCUMENTOS.ID_DOCUMENTO = {lngRecibo} AND FND_DOCUMENTOS.TIPO = '{vTipo}' AND FND_DOCUMENTOS.COD_OPERADORA = {vOperadora}";
+                    }
+                    else
+                    {
+                        selectionFormula = $" where SIF_TRANSACCIONES.COD_TRANSACCION = '{lngRecibo}' AND SIF_TRANSACCIONES.TIPO_DOCUMENTO = '{vTipo}'";
+                    }
+
+                    if (!vFlat && vTipo != "RE")
+                    {
+                        reporteData.codeSection = "sbAsiento";
+                    }
+
+                    reporteData.parametros = JsonConvert.SerializeObject(
+                        new
+                        {
+                            filtros = selectionFormula,
+                            fxEmpresa = vEmpresa.nombre,
+                            fxCedJur = vEmpresa.cedula_juridica,
+                            operadora = vOperadora,
+                            vTipo,
+                            lngRecibo
+                        });
+
+                    var actionResult = _reportingServicesDB.ReporteRDLC_v2(reporteData);
+
+                    //Valida respuesta de ReporteRDLC_v2
+                    var objectResult = actionResult as ObjectResult;
+
+                    if (objectResult == null)
+                    {
+                        response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
+                    }
+                    else
+                    {
+                        var res = objectResult.Value;
+                        //converto res a JSON
+                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
+
+                        // convierto JSON a ErrorDTO
+                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
+
+                        response.Code = err.Code;
+                        response.Description = err.Description;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            return response;
+        }
+
     }
 }
