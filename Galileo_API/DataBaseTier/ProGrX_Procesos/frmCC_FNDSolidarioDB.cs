@@ -75,6 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             return (monto / 1000000m) * montoBase;
         }
 
+
         public ErrorDto FrmCC_FNDSolidario_Ejecutar(
             int codEmpresa,
             string usuario,
@@ -82,17 +83,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             int codInstitucion)
         {
 
-
             globales = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad)?.Result ?? new Globales();
-
-
 
             if (globales.GlngFechaCR <= 0)
             {
                 return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar el proceso.");
             }
-
-
 
             return globales.SysASEVersion
                 ? FrmCC_FNDSolidario_Ejecutar_FNDS(codEmpresa, usuario, codInstitucion)
@@ -100,30 +96,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         //sbFondoSolidario
-        private ErrorDto FrmCC_FNDSolidario_Ejecutar_FNDS(
-            int codEmpresa,
-            string usuario,
-            int codInstitucion)
+        private ErrorDto FrmCC_FNDSolidario_Ejecutar_FNDS(int codEmpresa, string usuario, int codInstitucion)
         {
-            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
-            connection.Open();
-
-            using var tx = connection.BeginTransaction();
-
-            try
+            return EjecutarEnTransaccion(codEmpresa, (connection, tx) =>
             {
-                // fxFechaServidor (DB)
+               
                 var fechaServidor = FechaServidor(connection, tx);
-
                 var fechaProX = FxFechaProcesoSiguiente(connection, tx, globales.GlngFechaCR);
 
-                // ===== Orden EXACTO como VB6 sbFondoSolidario =====
+            
                 const string codigo = "FNDS";
 
-                // 1) Cancela operaciones FNDS sin cobertura
                 Db_FNDS_CancelarSinCobertura(connection, tx, codInstitucion, codigo);
-
-                // 2) Inicializa cuotas
                 Db_FNDS_InicializarCuotas(connection, tx, codInstitucion, codigo);
 
                 var ctx = new FondoSolidarioContext
@@ -135,58 +119,54 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     FechaProcesoSiguiente = fechaProX,
                     FechaServidor = fechaServidor
                 };
-
-                ProcesarPasoFnds(connection, tx, ctx, codigo,
+                             
+                var pasos = new[]
+                {
                     new FndsPasoConfig
                     {
                         Rows = Db_FNDS_Paso1_Listar(connection, tx, codInstitucion),
                         MontoBase = 150m,
                         Garantia = "S",
                         Actualizar = Db_FNDS_ActualizarPaso1
-                    });
+                    },
+                    new FndsPasoConfig
+                    {
+                        Rows = Db_FNDS_Paso2_Listar(connection, tx, codInstitucion),
+                        MontoBase = 300m,
+                        Garantia = "Z",
+                        Actualizar = Db_FNDS_ActualizarPaso2
+                    },
+                    new FndsPasoConfig
+                    {
+                        Rows = Db_FNDS_Paso3_Listar(connection, tx, codInstitucion),
+                        MontoBase = 300m,
+                        Garantia = "Z",
+                        Actualizar = Db_FNDS_ActualizarPaso3
+                    }
+                };
 
-                ProcesarPasoFnds(connection, tx, ctx, codigo,
-              new FndsPasoConfig
-              {
-                  Rows = Db_FNDS_Paso2_Listar(connection, tx, codInstitucion),
-                  MontoBase = 300m,
-                  Garantia = "Z",
-                  Actualizar = Db_FNDS_ActualizarPaso2
-              });
+                foreach (var paso in pasos)
+                    ProcesarPasoFnds(connection, tx, ctx, codigo, paso);
 
-                ProcesarPasoFnds(connection, tx, ctx, codigo,
-    new FndsPasoConfig
-    {
-        Rows = Db_FNDS_Paso3_Listar(connection, tx, codInstitucion),
-        MontoBase = 300m,
-        Garantia = "Z",
-        Actualizar = Db_FNDS_ActualizarPaso3
-    });
+
                 // 6) Cancela por congelamiento (al final)
                 Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
 
-                tx.Commit();
+                Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
+
                 return DbHelper.OkResponse("Fondo Solidario Actualizado Satisfactoriamente...");
-            }
-            catch (Exception ex)
-            {
-                tx.Rollback();
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            });
         }
+       
+        
         private ErrorDto FrmCC_FNDSolidario_Ejecutar_FBEN(
             int codEmpresa,
             string usuario,
             int codContabilidad)
         {
-            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
-            connection.Open();
-
-            using var tx = connection.BeginTransaction();
-
-            try
+            return EjecutarEnTransaccion(codEmpresa, (connection, tx) =>
             {
-                // ===== Globales (marcados) =====
+                
                 var globalesDto = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad);
                 var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
 
@@ -196,13 +176,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar FBEN.");
 
                 }
-
-                // fxFechaServidor
+                 
                 var fechaServidor = FechaServidor(connection, tx);
 
                 var fechaProcesoSiguiente = FxFechaProcesoSiguiente(connection, tx, glngFechaCR);
                 var fechaProcesoAnterior = FxFechaProcesoAnterior(connection, tx, glngFechaCR);
-                // ===== Orden EXACTO como VB6 sbFondoBeneficioSocial =====
+                
                 const string codigo = "FBEN";
                 const decimal monto = 800m;
 
@@ -233,13 +212,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 tx.Commit();
 
                 return DbHelper.OkResponse("Fondo de Beneficio Socual Actualizado Satisfactoriamente...");
-            }
-            catch (Exception ex)
-            {
-                tx.Rollback();
-                return DbHelper.ErrorResponse(ex.Message);
-
-            }
+            });
         }
         private static void Db_FBEN_ExcluirExSocios(IDbConnection conn, IDbTransaction tx, string codigo)
         {
@@ -535,7 +508,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         private static void ProcesarPasoFnds(
-               DbConnection connection,
+                DbConnection connection,
                 DbTransaction tx,
                 FondoSolidarioContext ctx,
                 string codigo,
@@ -559,6 +532,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             }
         }
 
+        private ErrorDto EjecutarEnTransaccion(int codEmpresa, Func<DbConnection, DbTransaction, ErrorDto> action)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            connection.Open();
+
+            using var tx = connection.BeginTransaction();
+            try
+            {
+                var result = action(connection, tx);
+                tx.Commit();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                tx.Rollback();
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
 
     }
 }
