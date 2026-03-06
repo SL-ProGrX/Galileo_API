@@ -5,7 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
-using System.CodeDom;
 using System.Data;
 using System.Globalization;
 

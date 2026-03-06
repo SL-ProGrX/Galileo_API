@@ -221,5 +221,13 @@
         public decimal? divisa_local { get; set; }
     }
 
+    public class CntxMayorizarRequest
+    {
+        public int? cod_empresa { get; set; }
+        public string? tipo_asiento { get; set; } = "";
+        public string? num_asiento { get; set; } = "";
+        public DateTime? fecha_asiento { get; set; }
+    }
+
 
 }
