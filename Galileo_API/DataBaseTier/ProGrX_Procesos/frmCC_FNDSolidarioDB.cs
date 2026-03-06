@@ -11,8 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
     public class FrmCcFndSolidarioDB
     {
         private readonly PortalDB _portalDB;
-        private readonly MProGrxMain mProGrxDll;
-        private Globales globales = new();
+        private readonly MProGrxMain mProGrxDll; 
 
         public FrmCcFndSolidarioDB(IConfiguration config)
         {
@@ -74,7 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         {
             return (monto / 1000000m) * montoBase;
         }
-
+        private enum FndsPasoTipo { Paso1, Paso2, Paso3 }
 
         public ErrorDto FrmCC_FNDSolidario_Ejecutar(
             int codEmpresa,
@@ -83,7 +82,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             int codInstitucion)
         {
 
-            globales = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad)?.Result ?? new Globales();
+            var globales = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad)?.Result
+                       ?? new Globales();
 
             if (globales.GlngFechaCR <= 0)
             {
@@ -91,18 +91,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             }
 
             return globales.SysASEVersion
-                ? FrmCC_FNDSolidario_Ejecutar_FNDS(codEmpresa, usuario, codInstitucion)
+                ? FrmCC_FNDSolidario_Ejecutar_FNDS(codEmpresa, usuario, codInstitucion, globales)
                 : FrmCC_FNDSolidario_Ejecutar_FBEN(codEmpresa, usuario, codContabilidad);
         }
 
         //sbFondoSolidario
-        private ErrorDto FrmCC_FNDSolidario_Ejecutar_FNDS(int codEmpresa, string usuario, int codInstitucion)
+        private ErrorDto FrmCC_FNDSolidario_Ejecutar_FNDS(int codEmpresa, string usuario, int codInstitucion, Globales globalesLocal)
         {
             return EjecutarEnTransaccion(codEmpresa, (connection, tx) =>
             {
                
                 var fechaServidor = FechaServidor(connection, tx);
-                var fechaProX = FxFechaProcesoSiguiente(connection, tx, globales.GlngFechaCR);
+                var fechaProX = FxFechaProcesoSiguiente(connection, tx, globalesLocal.GlngFechaCR);
 
             
                 const string codigo = "FNDS";
@@ -115,44 +115,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     CodEmpresa = codEmpresa,
                     CodInstitucion = codInstitucion,
                     Usuario = usuario,
-                    GlngFechaCR = globales.GlngFechaCR,
+                    GlngFechaCR = globalesLocal.GlngFechaCR,
                     FechaProcesoSiguiente = fechaProX,
                     FechaServidor = fechaServidor
                 };
-                             
+
+
                 var pasos = new[]
-                {
-                    new FndsPasoConfig
                     {
-                        Rows = Db_FNDS_Paso1_Listar(connection, tx, codInstitucion),
-                        MontoBase = 150m,
-                        Garantia = "S",
-                        Actualizar = Db_FNDS_ActualizarPaso1
-                    },
-                    new FndsPasoConfig
-                    {
-                        Rows = Db_FNDS_Paso2_Listar(connection, tx, codInstitucion),
-                        MontoBase = 300m,
-                        Garantia = "Z",
-                        Actualizar = Db_FNDS_ActualizarPaso2
-                    },
-                    new FndsPasoConfig
-                    {
-                        Rows = Db_FNDS_Paso3_Listar(connection, tx, codInstitucion),
-                        MontoBase = 300m,
-                        Garantia = "Z",
-                        Actualizar = Db_FNDS_ActualizarPaso3
-                    }
-                };
+                        new FndsPasoConfig
+                        {
+                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso1),
+                            MontoBase = 150m,
+                            Garantia = "S",
+                            Actualizar = Db_FNDS_ActualizarPaso1
+                        },
+                        new FndsPasoConfig
+                        {
+                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso2),
+                            MontoBase = 300m,
+                            Garantia = "Z",
+                            Actualizar = Db_FNDS_ActualizarPaso2
+                        },
+                        new FndsPasoConfig
+                        {
+                            Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso3),
+                            MontoBase = 300m,
+                            Garantia = "Z",
+                            Actualizar = Db_FNDS_ActualizarPaso3
+                        }
+                    };
 
                 foreach (var paso in pasos)
                     ProcesarPasoFnds(connection, tx, ctx, codigo, paso);
 
 
                 // 6) Cancela por congelamiento (al final)
-                Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
-
-                Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
+                Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo); 
 
                 return DbHelper.OkResponse("Fondo Solidario Actualizado Satisfactoriamente...");
             });
@@ -171,8 +170,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
 
                 if (glngFechaCR <= 0)
-                {
-                    tx.Rollback();
+                {                    
                     return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar FBEN.");
 
                 }
@@ -208,8 +206,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
                 // 4) Cancela sin aportes > 2 meses
                 Db_FBEN_CancelarSinAporteMas2Meses(connection, tx, codigo);
-
-                tx.Commit();
 
                 return DbHelper.OkResponse("Fondo de Beneficio Socual Actualizado Satisfactoriamente...");
             });
@@ -339,48 +335,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
           and S.cod_institucion = @CodInstitucion";
 
             conn.Execute(sql, new { Codigo = codigo, CodInstitucion = codInstitucion }, transaction: tx);
-        }
-        private static IEnumerable<(string Cedula, decimal Monto)> Db_FNDS_Paso1_Listar(IDbConnection conn, IDbTransaction tx, int codInstitucion)
-        {
-            const string sql = @"
-        select R.cedula as Cedula, sum(R.montoapr) as Monto
-        from reg_creditos R
-        inner join Catalogo C on R.codigo = C.codigo
-        inner join Socios S on R.cedula = S.cedula
-        where C.retencion = 'N'
-          and C.poliza = 'N'
-          and C.cobertura = 1
-          and R.garantia in ('A','N')
-          and R.saldo > 0
-          and R.estado = 'A'
-          and R.proceso <> 'J'
-          and R.fechaforp < '2004/06/01'
-          and S.cod_institucion = @CodInstitucion
-        group by R.cedula";
-
-            return conn.Query<(string Cedula, decimal Monto)>(sql, new { CodInstitucion = codInstitucion }, transaction: tx);
-        }
-
-        private static IEnumerable<(string Cedula, decimal Monto)> Db_FNDS_Paso2_Listar(IDbConnection conn, IDbTransaction tx, int codInstitucion)
-        {
-            const string sql = @"
-        select R.cedula as Cedula, sum(R.montoapr) as Monto
-        from reg_creditos R
-        inner join Catalogo C on R.codigo = C.codigo
-        inner join Socios S on R.cedula = S.cedula
-        where C.retencion = 'N'
-          and C.poliza = 'N'
-          and C.cobertura = 1
-          and R.garantia in ('F','X')
-          and R.saldo > 0
-          and R.estado = 'A'
-          and R.proceso <> 'J'
-          and R.fechaforp < '2004/06/01'
-          and S.cod_institucion = @CodInstitucion
-        group by R.cedula";
-
-            return conn.Query<(string Cedula, decimal Monto)>(sql, new { CodInstitucion = codInstitucion }, transaction: tx);
-        }
+        } 
         private static void Db_FNDS_ActualizarPaso1(IDbConnection conn, IDbTransaction tx, int idSolicitud, decimal vFnd)
         {
             const string sql = @"
@@ -406,26 +361,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
             conn.Execute(sql, new { Monto = vFnd, IdSolicitud = idSolicitud }, transaction: tx);
         }
-        private static IEnumerable<(string Cedula, decimal Monto)> Db_FNDS_Paso3_Listar(IDbConnection conn, IDbTransaction tx, int codInstitucion)
-        {
-            const string sql = @"
-        select R.cedula as Cedula, sum(R.montoapr) as Monto
-        from reg_creditos R
-        inner join Catalogo C on R.codigo = C.codigo
-        inner join Socios S on R.cedula = S.cedula
-        where C.retencion = 'N'
-          and C.poliza = 'N'
-          and C.cobertura = 1
-          and R.garantia not in ('H')
-          and R.saldo > 0
-          and R.estado = 'A'
-          and R.proceso <> 'J'
-          and R.fechaforp >= '2004/06/01'
-          and S.cod_institucion = @CodInstitucion
-        group by R.cedula";
-
-            return conn.Query<(string Cedula, decimal Monto)>(sql, new { CodInstitucion = codInstitucion }, transaction: tx);
-        }
+   
         private static void Db_FNDS_ActualizarPaso3(IDbConnection conn, IDbTransaction tx, int idSolicitud, decimal vFnd)
         {
             const string sql = @"
@@ -508,8 +444,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         private static void ProcesarPasoFnds(
-                DbConnection connection,
-                DbTransaction tx,
+                IDbConnection connection,
+                IDbTransaction tx,
                 FondoSolidarioContext ctx,
                 string codigo,
                 FndsPasoConfig config)
@@ -532,7 +468,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             }
         }
 
-        private ErrorDto EjecutarEnTransaccion(int codEmpresa, Func<DbConnection, DbTransaction, ErrorDto> action)
+        private ErrorDto EjecutarEnTransaccion(int codEmpresa, Func<IDbConnection, IDbTransaction, ErrorDto> action)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
             connection.Open();
@@ -541,6 +477,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             try
             {
                 var result = action(connection, tx);
+                if ((result.Code ?? 0) != 0)
+                {
+                    tx.Rollback();
+                    return result;
+                }
+
                 tx.Commit();
                 return result;
             }
@@ -549,6 +491,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 tx.Rollback();
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        private static IEnumerable<(string Cedula, decimal Monto)> Db_FNDS_Paso_Listar(
+    IDbConnection conn,
+    IDbTransaction tx,
+    int codInstitucion,
+    FndsPasoTipo tipo)
+        {
+
+            var garantiaFiltro = tipo switch
+            {
+                FndsPasoTipo.Paso1 => "R.garantia in ('A','N')",
+                FndsPasoTipo.Paso2 => "R.garantia in ('F','X')",
+                _ => "R.garantia not in ('H')"
+            };
+
+            var fechaFiltro = tipo switch
+            {
+                FndsPasoTipo.Paso1 or FndsPasoTipo.Paso2 => "R.fechaforp < @FechaCorte",
+                _ => "R.fechaforp >= @FechaCorte"
+            };
+            var sql = $@"
+select R.cedula as Cedula, sum(R.montoapr) as Monto
+from reg_creditos R
+inner join Catalogo C on R.codigo = C.codigo
+inner join Socios S on R.cedula = S.cedula
+where C.retencion = 'N'
+  and C.poliza = 'N'
+  and C.cobertura = 1
+  and {garantiaFiltro}
+  and R.saldo > 0
+  and R.estado = 'A'
+  and R.proceso <> 'J'
+  and {fechaFiltro}
+  and S.cod_institucion = @CodInstitucion
+group by R.cedula";
+
+            return conn.Query<(string Cedula, decimal Monto)>(
+                sql,
+                new { CodInstitucion = codInstitucion, FechaCorte = new DateTime(2004, 6, 1, 0, 0, 0, DateTimeKind.Unspecified) },
+                transaction: tx);
         }
 
     }

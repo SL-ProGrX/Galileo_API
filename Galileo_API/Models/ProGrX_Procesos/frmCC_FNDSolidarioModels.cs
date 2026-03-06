@@ -1,5 +1,4 @@
-﻿using System.Data.Common;
-
+﻿using System.Data;
 namespace Galileo_API.Models.ProGrX_Procesos
 {
     public class FrmCcFndSolidarioModels
@@ -23,7 +22,7 @@ namespace Galileo_API.Models.ProGrX_Procesos
             public IEnumerable<(string Cedula, decimal Monto)> Rows { get; set; } = [];
             public decimal MontoBase { get; set; }
             public string Garantia { get; set; } = "";
-            public Action<DbConnection, DbTransaction, int, decimal>? Actualizar { get; set; }
+            public Action<IDbConnection, IDbTransaction, int, decimal>? Actualizar { get; set; }
         }
 
     }
