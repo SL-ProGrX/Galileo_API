@@ -34,17 +34,17 @@
 
     public class SysCuentasBancariasList
     {
-        public int id_banco { get; set; }
+        public int id_banco { get; set; } = 0;
         public string? descripcion { get; set; }
         public string? cta { get; set; }
-        public int idx { get; set; }
+        public int idx { get; set; } = 0;
         public string? cod_divisa { get; set; }
         public string? entidad_desc { get; set; }
     }
 
     public class SifFormasPagoBancoAsgDto
     {
-        public int IdBanco { get; set; }
+        public int IdBanco { get; set; } = 0;
         public string? CodFormaPago { get; set; }
         public string? RegistroUsuario { get; set; }
     }

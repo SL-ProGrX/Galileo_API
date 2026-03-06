@@ -88,7 +88,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 Code = 0,
                 Description = "Ok",
-                Result = r.Result ?? new SysAutorizacionesData()
+                Result = r.Result ?? new SysAutorizacionesData { persona_id = 0, horas = 0 }
             };
         }
 

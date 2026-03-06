@@ -13,7 +13,7 @@ namespace Galileo.Models.SIF
         public string? usuario_ref { get; set; }
         public string? email { get; set; }
         public string? tel_movil { get; set; }
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
         public string? registro_usuario { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? modificacion_usuario { get; set; }

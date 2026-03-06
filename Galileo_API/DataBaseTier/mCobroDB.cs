@@ -3,14 +3,17 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Microsoft.CodeAnalysis;
 using Org.BouncyCastle.Utilities;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier
 {
     public class MCobroDb
     {
         private readonly PortalDB _portalDB;
+        private readonly IConfiguration _config;
         public MCobroDb(IConfiguration config)
         {
+            _config = config;
             _portalDB = new PortalDB(config);
         }
 
@@ -30,32 +33,37 @@ namespace Galileo_API.DataBaseTier
             return DbHelper.ExecuteSingleQuery<decimal>(_portalDB, CodEmpresa, sql, 0, parametros).Result;
         }
 
-        public static decimal fxCalcula_Cuota(decimal Monto,int Plazo,object Interes, string? Frecuencia = "M")
+        public static decimal fxCalcula_Cuota(decimal Monto, int Plazo, object Interes, string? Frecuencia = "M")
         {
-            decimal curInteresMensual = 0, curfactor = 1;
+            if (Plazo <= 0) return 0m;
 
-            switch (Frecuencia)
+            var tasa = Convert.ToDecimal(Interes);
+            if (tasa == 0m)
+                return Math.Round(Monto / Plazo, 2);
+
+            decimal curInteresMensual;
+            switch ((Frecuencia ?? "M").Trim().ToUpperInvariant())
             {
-                case "M":
-                    curInteresMensual = Convert.ToDecimal(Interes) / (12 * 100);
-                    break;
                 case "Q":
-                    curInteresMensual = Convert.ToDecimal(Interes) / (24 * 100);
+                    curInteresMensual = tasa / (24m * 100m);
                     break;
                 default:
-                    curInteresMensual = Convert.ToDecimal(Interes) / (12 * 100);
+                    curInteresMensual = tasa / (12m * 100m);
                     break;
             }
 
+            decimal curfactor = 1m;
             for (int i = 1; i <= Plazo; i++)
-            {
-                curfactor = curfactor * (1 +curInteresMensual);
-            }
-            var curCuota = Monto * curInteresMensual * curfactor / (curfactor - 1);
-            curCuota = (Convert.ToDecimal(Interes) == 0)? Monto / Plazo : curCuota;
+                curfactor *= (1m + curInteresMensual);
+            if (curfactor == 1m)
+                return Math.Round(Monto / Plazo, 2);
 
-            return Math.Round(curCuota, 2); 
-
+            var curCuota = Monto * curInteresMensual * curfactor / (curfactor - 1m);
+            return Math.Round(curCuota, 2);
+        }
+        public DateTime fxFechaCalculo(int codEmpresa, string? pLinea = "", decimal pPriDeduc = 0, int pDiaPago = 32)
+        {
+            return new MSeguimientoDB(_config).fxFechaCalculo(codEmpresa, pLinea, pPriDeduc, pDiaPago);
         }
 
     }

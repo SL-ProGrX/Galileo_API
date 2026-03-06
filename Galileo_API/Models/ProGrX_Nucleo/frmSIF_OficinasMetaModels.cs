@@ -11,12 +11,12 @@ namespace Galileo.Models.ProGrX_Nucleo
     {
 
         public string cod_oficina { get; set; } = string.Empty;
-        public int anio { get; set; }
-        public int mes { get; set; }
-        public decimal mes_meta { get; set; }
-        public decimal mes_real { get; set; }
-        public decimal acumulado_meta { get; set; }
-        public decimal acumulado_real { get; set; }
-        public decimal mes_meta_anterior { get; set; }
+        public required int anio { get; set; }
+        public required int mes { get; set; }
+        public required decimal mes_meta { get; set; }
+        public required decimal mes_real { get; set; }
+        public required decimal acumulado_meta { get; set; }
+        public required decimal acumulado_real { get; set; }
+        public required decimal mes_meta_anterior { get; set; }
     }
 }

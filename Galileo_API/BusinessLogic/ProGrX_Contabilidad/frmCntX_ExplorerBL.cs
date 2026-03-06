@@ -20,11 +20,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Obtener(int codEmpresa)
             => _db.Cntx_Cuentas_Obtener(codEmpresa);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> TiposAsiento_Obtener(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxTipoAsientoDto>> TiposAsiento_Obtener(int codEmpresa, int cod_contabilidad)
             => _db.Cntx_TiposAsiento_Obtener(codEmpresa, cod_contabilidad);
 
-        public ErrorDto<List<CntxPeriodoDto>> Periodos_Obtener(int codEmpresa, string estado)
-            => _db.Cntx_Periodos_Obtener(codEmpresa, estado);
+        public ErrorDto<List<CntxPeriodoDto>> Periodos_Obtener(int codEmpresa, int cod_contabilidad, string estado)
+            => _db.Cntx_Periodos_Obtener(codEmpresa, cod_contabilidad,estado);
 
         #endregion
 
@@ -48,8 +48,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         #endregion
 
 
-        public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, string? codCuentaPadre)
-        => _db.CuentasPorPadre(codEmpresa, codCuentaPadre);
+        public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, int cod_contabilidad, string? codCuentaPadre)
+        => _db.CuentasPorPadre(codEmpresa, cod_contabilidad, codCuentaPadre);
 
 
         public ErrorDto<List<CntxAsientoTreeDto>> AsientosTreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
@@ -72,7 +72,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Diferidos_Obtener(codEmpresa, codContabilidad);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> DiferidoPlantillas_Obtener(int codEmpresa, int codContabilidad, int codDiferido)
+        public ErrorDto<List<CntxDiferidoPlantillaDto>> DiferidoPlantillas_Obtener(int codEmpresa, int codContabilidad, int codDiferido)
         {
             return _db.DiferidoPlantillas_Obtener(codEmpresa, codContabilidad, codDiferido);
         }
@@ -91,15 +91,50 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_CentroCosto_Buscar(int codEmpresa, int cod_contabilidad)
             => _db.Cntx_CentroCosto_Buscar(codEmpresa, cod_contabilidad);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<List<CntxDivisaDto>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
             => _db.Cntx_Divisas_Buscar(codEmpresa, cod_contabilidad);
 
 
-        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa,int cod_contabilidad,int anio,int mes)
+        public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa, int cod_contabilidad, int anio, int mes)
         {
-            return _db.Asientos_Resumen(codEmpresa,cod_contabilidad,anio,mes
-            );
+            return _db.Asientos_Resumen(codEmpresa, cod_contabilidad, anio, mes);
         }
 
+        public ErrorDto<List<CntxCatalogoResumenDto>> Catalogo_Resumen(CatalogoResumenRequest request)
+        {
+            return _db.Catalogo_Resumen(request);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>>PlantillaRate_Obtener(int codEmpresa, int codContabilidad)
+        {
+            return _db.PlantillaRate_Obtener(codEmpresa,codContabilidad);
+        }
+
+        public ErrorDto<List<CntxPlantillaRateDetalleDto>>PlantillaRate_Detalle(int codEmpresa,int codContabilidad,int codPlantilla)
+        {
+            return _db.PlantillaRate_Detalle(codEmpresa,codContabilidad,codPlantilla);
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AreasTrabajo_ObtenerPorPadre(int codEmpresa,int? codAreaPadre)
+        {
+            return _db.AreasTrabajo_ObtenerPorPadre(codEmpresa,codAreaPadre);
+        }
+
+        public ErrorDto<List<AreaResumenDto>> AreasTrabajo_Resumen(int codEmpresa,int codContabilidad,int codArea,DateTime fechaDesde,DateTime fechaHasta)
+        {
+            return _db.AreasTrabajo_Resumen(codEmpresa,codContabilidad,codArea,fechaDesde,fechaHasta);
+        }
+
+        public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
+        {
+            return _db.ObtenerContabilidades(codEmpresa);
+        }
+
+
+        public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
+        {
+            return _db.ObtenerCierres(codEmpresa, cod_contabilidad);
+        }
     }
 }

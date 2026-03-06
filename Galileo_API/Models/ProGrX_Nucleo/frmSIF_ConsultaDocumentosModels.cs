@@ -207,7 +207,7 @@
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte{ get; set; }
         public string? tipo_estado { get; set; } = string.Empty;
-        public bool chk_documentos_bloqueados { get; set; }
+        public required bool chk_documentos_bloqueados { get; set; }
         public string? usuario_registra { get; set; } = string.Empty;
         public string? no_transaccion { get; set; } = string.Empty;
         public string? no_documento { get; set; } = string.Empty;

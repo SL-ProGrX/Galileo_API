@@ -2,7 +2,7 @@ namespace Galileo.Models.ProGrX_Nucleo
 {
     public class FrmSifEmpresaModel
     {
-        public int id_empresa { get; set; }
+        public required int id_empresa { get; set; }
 
         // --- Datos b�sicos de empresa ---
         public string nombre { get; set; } = string.Empty;
@@ -32,16 +32,16 @@ namespace Galileo.Models.ProGrX_Nucleo
         public string pag_seccion_02 { get; set; } = string.Empty;
 
         // --- Estado de cuenta ---
-        public bool usar_estado_comercial { get; set; }
+        public required bool usar_estado_comercial { get; set; }
         public string ec_nota01 { get; set; } = string.Empty;
         public string ec_nota02 { get; set; } = string.Empty;
 
-        public bool ec_visible_patrimonio { get; set; }
-        public bool ec_visible_fondos { get; set; }
-        public bool ec_visible_creditos { get; set; }
-        public bool ec_visible_fianzas { get; set; }
-        public bool ec_visible_excedentes { get; set; }
-        public bool ec_visible_disponible { get; set; }
+        public required bool ec_visible_patrimonio { get; set; }
+        public required bool ec_visible_fondos { get; set; }
+        public required bool ec_visible_creditos { get; set; }
+        public required bool ec_visible_fianzas { get; set; }
+        public required bool ec_visible_excedentes { get; set; }
+        public required bool ec_visible_disponible { get; set; }
 
         public string liq_boleta_pie { get; set; } = string.Empty;
 
@@ -59,7 +59,7 @@ namespace Galileo.Models.ProGrX_Nucleo
         public string constancia_crd_pie { get; set; } = string.Empty;
         public string constancia_pat_encabezado { get; set; } = string.Empty;
         public string constancia_pat_pie { get; set; } = string.Empty;
-        public bool constancia_fecha_vinculacion { get; set; }
+        public required bool constancia_fecha_vinculacion { get; set; }
 
         // --- Logos / im�genes ---
         public byte[]? logo { get; set; }
