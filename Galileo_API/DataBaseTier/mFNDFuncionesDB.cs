@@ -233,105 +233,161 @@ namespace Galileo.DataBaseTier
             );
         }
 
-        public ErrorDto<object> sbgFNDImprimeRecibo(int CodEmpresa, long lngRecibo, string vTipo, long vOperadora)
+        public ErrorDto<object> sbgFNDImprimeRecibo(int codEmpresa, long lngRecibo, string vTipo, long vOperadora)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            try
+            {
+                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+                int sysDocVersion = ObtenerSysDocVersion();
+
+                using var connection = new SqlConnection(stringConn);
+
+                bool esFlat = EsReciboFlat(connection);
+                var empresa = ObtenerEmpresa(connection);
+
+                var reporteData = ConstruirReporteData(
+                    codEmpresa,
+                    lngRecibo,
+                    vTipo,
+                    vOperadora,
+                    sysDocVersion,
+                    esFlat,
+                    empresa);
+
+                var actionResult = _reportingServicesDB.ReporteRDLC_v2(reporteData);
+
+                return ProcesarRespuestaReporte(actionResult);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<object>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = null
+                };
+            }
+        }
+
+        private int ObtenerSysDocVersion()
+        {
+            var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
+            return empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
+        }
+
+        private bool EsReciboFlat(SqlConnection connection)
+        {
+            const string query = "select cs_utilizar_reciboFlat as Flat from ase_consecutivos";
+            return connection.QueryFirstOrDefault<string>(query) == "S";
+        }
+
+        private dynamic ObtenerEmpresa(SqlConnection connection)
+        {
+            const string query = "select nombre, cedula_juridica from sif_empresa";
+            return connection.QueryFirstOrDefault(query) ?? new { nombre = string.Empty, cedula_juridica = string.Empty };
+        }
+
+        private FrmReporteGlobal ConstruirReporteData(
+            int codEmpresa,
+            long lngRecibo,
+            string vTipo,
+            long vOperadora,
+            int sysDocVersion,
+            bool esFlat,
+            dynamic empresa)
+        {
+            bool usarFlat = esFlat;
+
+            var reporteData = new FrmReporteGlobal
+            {
+                codEmpresa = codEmpresa,
+                cod_reporte = "P",
+                folder = "Fondos",
+                nombreReporte = ObtenerNombreReporte(vTipo, usarFlat, sysDocVersion)
+            };
+
+            if (vTipo != "RE" && vTipo != "FRE")
+            {
+                usarFlat = false;
+            }
+
+            string selectionFormula = ConstruirSelectionFormula(sysDocVersion, lngRecibo, vTipo, vOperadora);
+
+            if (!usarFlat && vTipo != "RE")
+            {
+                reporteData.codeSection = "sbAsiento";
+            }
+
+            reporteData.parametros = JsonConvert.SerializeObject(new
+            {
+                filtros = selectionFormula,
+                fxEmpresa = empresa?.nombre,
+                fxCedJur = empresa?.cedula_juridica,
+                operadora = vOperadora,
+                vTipo,
+                lngRecibo
+            });
+
+            return reporteData;
+        }
+
+        private string ObtenerNombreReporte(string vTipo, bool esFlat, int sysDocVersion)
+        {
+            bool esRecibo = vTipo == "RE" || vTipo == "FRE";
+
+            if (esRecibo)
+            {
+                if (esFlat)
+                {
+                    return sysDocVersion == 1
+                        ? "Fondos_DocumentoFlat"
+                        : "Fondos_DocumentoFlat02";
+                }
+
+                return sysDocVersion == 1
+                    ? "Fondos_DocumentoCls"
+                    : "Fondos_DocumentoCls02";
+            }
+
+            return sysDocVersion == 1
+                ? "Fondos_DocumentoBoleta"
+                : "Fondos_DocumentoBoleta02";
+        }
+
+        private string ConstruirSelectionFormula(int sysDocVersion, long lngRecibo, string vTipo, long vOperadora)
+        {
+            if (sysDocVersion == 1)
+            {
+                return $" where FND_DOCUMENTOS.ID_DOCUMENTO = {lngRecibo} AND FND_DOCUMENTOS.TIPO = '{vTipo}' AND FND_DOCUMENTOS.COD_OPERADORA = {vOperadora}";
+            }
+
+            return $" where SIF_TRANSACCIONES.COD_TRANSACCION = '{lngRecibo}' AND SIF_TRANSACCIONES.TIPO_DOCUMENTO = '{vTipo}'";
+        }
+
+        private ErrorDto<object> ProcesarRespuestaReporte(object actionResult)
+        {
             var response = new ErrorDto<object>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = null
             };
-            bool vFlat = false;
-            try
+
+            var objectResult = actionResult as ObjectResult;
+
+            if (objectResult == null)
             {
-                var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
-                int SysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "select cs_utilizar_reciboFlat as Flat from ase_consecutivos";
-                    vFlat = connection.QueryFirstOrDefault<string>(query) == "S";
-
-                    query = "select nombre,cedula_juridica from sif_empresa";
-                    var vEmpresa = connection.QueryFirstOrDefault(query);
-
-                    //Imprime reporte
-                    FrmReporteGlobal reporteData = new()
-                    {
-                        codEmpresa = CodEmpresa,
-                        cod_reporte = "P",
-                        folder = "Fondos"
-                    };
-
-                    if (vTipo == "RE" || vTipo == "FRE")
-                    {
-                        var nombreReporte = vFlat
-                            ? (SysDocVersion == 1 ? "Fondos_DocumentoFlat" : "Fondos_DocumentoFlat02")
-                            : (SysDocVersion == 1 ? "Fondos_DocumentoCls" : "Fondos_DocumentoCls02");
-
-                        reporteData.nombreReporte = nombreReporte;
-                    }
-                    else
-                    {
-                        reporteData.nombreReporte = SysDocVersion == 1
-                            ? "Fondos_DocumentoBoleta"
-                            : "Fondos_DocumentoBoleta02";
-                        vFlat = false;
-                    }
-                    string selectionFormula = "";
-                    if (SysDocVersion == 1)
-                    {
-                        selectionFormula = $" where FND_DOCUMENTOS.ID_DOCUMENTO = {lngRecibo} AND FND_DOCUMENTOS.TIPO = '{vTipo}' AND FND_DOCUMENTOS.COD_OPERADORA = {vOperadora}";
-                    }
-                    else
-                    {
-                        selectionFormula = $" where SIF_TRANSACCIONES.COD_TRANSACCION = '{lngRecibo}' AND SIF_TRANSACCIONES.TIPO_DOCUMENTO = '{vTipo}'";
-                    }
-
-                    if (!vFlat && vTipo != "RE")
-                    {
-                        reporteData.codeSection = "sbAsiento";
-                    }
-
-                    reporteData.parametros = JsonConvert.SerializeObject(
-                        new
-                        {
-                            filtros = selectionFormula,
-                            fxEmpresa = vEmpresa.nombre,
-                            fxCedJur = vEmpresa.cedula_juridica,
-                            operadora = vOperadora,
-                            vTipo,
-                            lngRecibo
-                        });
-
-                    var actionResult = _reportingServicesDB.ReporteRDLC_v2(reporteData);
-
-                    //Valida respuesta de ReporteRDLC_v2
-                    var objectResult = actionResult as ObjectResult;
-
-                    if (objectResult == null)
-                    {
-                        response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
-                    }
-                    else
-                    {
-                        var res = objectResult.Value;
-                        //converto res a JSON
-                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
-
-                        // convierto JSON a ErrorDTO
-                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
-
-                        response.Code = err.Code;
-                        response.Description = err.Description;
-                    }
-                }
+                response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
+                return response;
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+
+            var res = objectResult.Value;
+            var json = System.Text.Json.JsonSerializer.Serialize(res);
+            var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(json);
+
+            response.Code = err?.Code ?? -1;
+            response.Description = err?.Description ?? "Error al procesar respuesta del reporte";
+
             return response;
         }
 
