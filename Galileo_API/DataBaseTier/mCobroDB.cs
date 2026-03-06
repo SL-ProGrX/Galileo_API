@@ -65,6 +65,16 @@ namespace Galileo_API.DataBaseTier
         {
             return new MSeguimientoDB(_config).fxFechaCalculo(codEmpresa, pLinea, pPriDeduc, pDiaPago);
         }
-
+        public static string fxDescribeEstado(string? strEstado)
+        {
+            var e = (strEstado ?? string.Empty).Trim().ToUpperInvariant();
+            return e switch
+            {
+                "A" => "Activo",
+                "N" => "Anulado",
+                "C" => "Cancelado",
+                _ => ""
+            };
+        }
     }
 }
