@@ -1,9 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
-using Galileo.Models.AF;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.Data.SqlClient;
@@ -26,8 +24,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = portalDb;
         }
 
-        #region CARGA TREE
+      
 
+        /// <summary>
+        /// Obtiene cuentas 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Cuentas_Obtener(int codEmpresa)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -54,7 +57,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Obtiene tipo de asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxTipoAsientoDto>> Cntx_TiposAsiento_Obtener(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<CntxTipoAsientoDto>>();
@@ -83,7 +91,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Obtiene periodos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="estado"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxPeriodoDto>> Cntx_Periodos_Obtener(int codEmpresa, int cod_contabilidad, string estado)
         {
             var response = new ErrorDto<List<CntxPeriodoDto>>();
@@ -118,10 +132,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
-
-        #region LISTADO ASIENTOS
-
+  
+        /// <summary>
+        /// Asientos listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxAsientoRsmDto>> Cntx_Asientos_Listar(int codEmpresa, int cod_contabilidad, CntxExploradorFiltrosDto filtros)
         {
             var response = new ErrorDto<List<CntxAsientoRsmDto>>();
@@ -189,7 +207,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Asientos detalle Listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxAsientoDetDto>> AsientoDetalle_Listar(int codEmpresa, CntxExploradorFiltrosDto filtros)
         {
             var response = new ErrorDto<List<CntxAsientoDetDto>>();
@@ -235,6 +258,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Obtiene la fecha servidor
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
 
         public ErrorDto<string> FechaServidor_Obtener(int codEmpresa)
         {
@@ -261,11 +289,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
 
-
-        #region CATALOGO CUENTAS
-
+        /// <summary>
+        /// Cuentas por Padre
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="codCuentaPadre"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, int cod_contabilidad, string? codCuentaPadre)
         {
             var response = new ErrorDto<List<CntxCuentaDto>>();
@@ -282,8 +313,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 CASE 
                     WHEN acepta_movimientos = 0 THEN 1
                     ELSE 0
-                END AS es_mayor,
-    CASE tipo_cuenta
+                                END AS es_mayor,
+                    CASE tipo_cuenta
                                 WHEN '01' THEN 'ACTIVOS'
                                 WHEN '02' THEN 'PASIVOS'
                                 WHEN '03' THEN 'PATRIMONIO'
@@ -318,11 +349,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
 
-        #region GENERICOS
 
-        public ErrorDto<List<CntxAsientoTreeDto>> Cntx_Asientos_TreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
+
+        /// <summary>
+        /// Obtiene Asientros TreePorTipo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="tipo"></param>
+        /// <param name="anio"></param>
+        /// <param name="mes"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CntxAsientoTreeDto>> Cntx_Asientos_TreePorTipo(int codEmpresa, int cod_contabilidad, string tipo)
         {
             var response = new ErrorDto<List<CntxAsientoTreeDto>>();
 
@@ -331,23 +370,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
+                var periodo = cn.QueryFirstOrDefault<(int anio, int mes)>(
+                @"SELECT TOP 1 anio, mes
+                      FROM CntX_Periodos
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      AND estado = 'P'
+                      ORDER BY anio ASC, mes ASC",
+                new { cod_contabilidad });
+
+                if (periodo.anio == 0)
+                {
+                    response.Result = new List<CntxAsientoTreeDto>();
+                    return response;
+                }
+
                 var sql = @"
-            SELECT 
-                num_asiento,
-                fecha_asiento
-            FROM CntX_Asientos
-            WHERE cod_contabilidad = @cod_contabilidad
-              AND tipo_asiento = @tipo
-              AND anio = @anio
-              AND mes = @mes
-            ORDER BY num_asiento";
+                            SELECT 
+                                num_asiento,
+                                fecha_asiento
+                            FROM CntX_Asientos
+                            WHERE cod_contabilidad = @cod_contabilidad
+                              AND tipo_asiento = @tipo
+                              AND anio = @anio
+                              AND mes = @mes
+                            ORDER BY num_asiento";
 
                 response.Result = cn.Query<CntxAsientoTreeDto>(sql, new
                 {
                     cod_contabilidad,
                     tipo,
-                    anio,
-                    mes
+                    anio = periodo.anio,
+                    mes = periodo.mes
                 }).ToList();
             }
             catch (Exception ex)
@@ -359,6 +412,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Obtiene tipos de Cuenta
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxTipoCuentaDto>> Cntx_TiposCuenta_Obtener(int codEmpresa, int codContabilidad)
         {
             var response = new ErrorDto<List<CntxTipoCuentaDto>>();
@@ -389,6 +448,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Obtiene cuenta raiz por Tipo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="tipoCuenta"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxCuentaDto>> Cntx_CuentasRaizPorTipo_Obtener(int codEmpresa, int codContabilidad, string tipoCuenta)
         {
             var response = new ErrorDto<List<CntxCuentaDto>>();
@@ -443,8 +509,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
 
+        /// <summary>
+        /// Diferidos Obtener
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Diferidos_Obtener(int codEmpresa, int codContabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -476,11 +547,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-
-        public ErrorDto<List<CntxDiferidoPlantillaDto>> DiferidoPlantillas_Obtener(
-    int codEmpresa,
-    int codContabilidad,
-    int codDiferido)
+        /// <summary>
+        /// Obtiene plantillas diferidos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codDiferido"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CntxDiferidoPlantillaDto>> DiferidoPlantillas_Obtener(int codEmpresa,int codContabilidad,int codDiferido)
         {
             var response = new ErrorDto<List<CntxDiferidoPlantillaDto>>();
 
@@ -520,6 +594,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        /// <summary>
+        /// Obtiene diferidos historicos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codDiferido"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxDiferidoHistoricoDto>> DiferidoHistorico_Obtener(int codEmpresa, int codContabilidad, int codDiferido, int codPlantilla)
         {
             var response = new ErrorDto<List<CntxDiferidoHistoricoDto>>();
@@ -556,6 +638,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        /// <summary>
+        /// Tipos asientos buscar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -585,9 +673,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
 
-
-        #region F4 Unidad
-
+        /// <summary>
+        /// Buscar unidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Unidades_Buscar(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -615,11 +706,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
 
-
-        #region F4 Centro Costo
-
+        /// <summary>
+        /// Centro de costo buscar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_CentroCosto_Buscar(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -647,11 +740,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
-
-
-        #region F4 Divisa
-
+      
+        /// <summary>
+        /// Busca divisas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxDivisaDto>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<CntxDivisaDto>>();
@@ -683,8 +778,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        #endregion
-
+    
+        /// <summary>
+        /// Asientos resumen
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="anio"></param>
+        /// <param name="mes"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxAsientoResumenDto>> Asientos_Resumen(int codEmpresa, int cod_contabilidad, int anio, int mes)
         {
             var response = new ErrorDto<List<CntxAsientoResumenDto>>();
@@ -717,6 +819,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Catalogo Resumen
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxCatalogoResumenDto>> Catalogo_Resumen(CatalogoResumenRequest request)
         {
             var response = new ErrorDto<List<CntxCatalogoResumenDto>>();
@@ -778,6 +885,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Plantilla Rate Obtener
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> PlantillaRate_Obtener(int codEmpresa, int codContabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -810,6 +923,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        /// <summary>
+        /// Plantilla Rate Detalle
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxPlantillaRateDetalleDto>> PlantillaRate_Detalle(int codEmpresa, int codContabilidad, int codPlantilla)
         {
             var response = new ErrorDto<List<CntxPlantillaRateDetalleDto>>();
@@ -850,6 +970,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        /// <summary>
+        /// Areas de Trabajo por Padre
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codAreaPadre"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int? codAreaPadre)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -880,7 +1006,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Areas de trabajo resumen
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codArea"></param>
+        /// <param name="fechaDesde"></param>
+        /// <param name="fechaHasta"></param>
+        /// <returns></returns>
         public ErrorDto<List<AreaResumenDto>> AreasTrabajo_Resumen(int codEmpresa, int codContabilidad, int codArea, DateTime fechaDesde, DateTime fechaHasta)
         {
             var response = new ErrorDto<List<AreaResumenDto>>();
@@ -916,7 +1050,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Obtener contabilidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
         {
             var response = new ErrorDto<List<CntxContabilidadDto>>();
@@ -927,14 +1065,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 var sql = @"
-        SELECT 
-            cod_contabilidad AS codigo,
-            nombre,
-            tel_central,
-            tel_fax,
-            contacto
-        FROM CntX_Contabilidades
-        ORDER BY cod_contabilidad";
+                        SELECT 
+                            cod_contabilidad AS codigo,
+                            nombre,
+                            tel_central,
+                            tel_fax,
+                            contacto
+                        FROM CntX_Contabilidades
+                        ORDER BY cod_contabilidad";
 
                 response.Result = cn.Query<CntxContabilidadDto>(sql).ToList();
             }
@@ -947,7 +1085,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
+        /// <summary>
+        /// Obtener Cierres
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
         {
             var response = new ErrorDto<List<CntxCierreDto>>();
@@ -988,5 +1131,93 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             return response;
         }
+
+        /// <summary>
+        /// Aplica asientos mayorizar
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> Asientos_Mayorizar(CntxMayorizarRequest dto)
+        {
+            var response = new ErrorDto<bool>();
+
+            try
+            {
+                if (!dto.cod_empresa.HasValue)
+                {
+                    response.Code = -1;
+                    response.Description = "cod_empresa es requerido";
+                    return response;
+                }
+
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(dto.cod_empresa.Value)
+                );
+
+                cn.Execute(
+                    "sbCntX_Asiento_Mayorizar",
+                    new
+                    {
+                        Tipo_Asiento = dto.tipo_asiento,
+                        Num_Asiento = dto.num_asiento,
+                        Fecha = dto.fecha_asiento
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                response.Result = true;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Obtiene las notas de Asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="tipo_asiento"></param>
+        /// <param name="num_asiento"></param>
+        /// <returns></returns>
+        public ErrorDto<string?> NotasAsiento(int codEmpresa,int cod_contabilidad,string tipo_asiento,int num_asiento)
+        {
+            var response = new ErrorDto<string?>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa)
+                );
+
+                var result = cn.QueryFirstOrDefault<string>(
+                    @"SELECT nota
+              FROM Cntx_Asientos
+              WHERE cod_contabilidad = @cod_contabilidad
+              AND tipo_asiento = @tipo_asiento
+              AND num_asiento = @num_asiento",
+                    new
+                    {
+                        cod_contabilidad,
+                        tipo_asiento,
+                        num_asiento
+                    });
+
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
     }
+
+
 }
