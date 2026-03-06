@@ -1143,8 +1143,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
+                if (!dto.cod_empresa.HasValue)
+                {
+                    response.Code = -1;
+                    response.Description = "cod_empresa es requerido";
+                    return response;
+                }
+
                 using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(dto.cod_empresa)
+                    _portalDb.ObtenerDbConnStringEmpresa(dto.cod_empresa.Value)
                 );
 
                 cn.Execute(
