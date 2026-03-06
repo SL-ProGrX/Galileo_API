@@ -275,7 +275,7 @@ namespace Galileo.DataBaseTier
             return empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
         }
 
-        private bool EsReciboFlat(SqlConnection connection)
+        private static bool EsReciboFlat(SqlConnection connection)
         {
             const string query = "select cs_utilizar_reciboFlat as Flat from ase_consecutivos";
             return connection.QueryFirstOrDefault<string>(query) == "S";
@@ -331,7 +331,7 @@ namespace Galileo.DataBaseTier
             return reporteData;
         }
 
-        private string ObtenerNombreReporte(string vTipo, bool esFlat, int sysDocVersion)
+        private static string ObtenerNombreReporte(string vTipo, bool esFlat, int sysDocVersion)
         {
             bool esRecibo = vTipo == "RE" || vTipo == "FRE";
 
@@ -354,7 +354,7 @@ namespace Galileo.DataBaseTier
                 : "Fondos_DocumentoBoleta02";
         }
 
-        private string ConstruirSelectionFormula(int sysDocVersion, long lngRecibo, string vTipo, long vOperadora)
+        private static string ConstruirSelectionFormula(int sysDocVersion, long lngRecibo, string vTipo, long vOperadora)
         {
             if (sysDocVersion == 1)
             {
