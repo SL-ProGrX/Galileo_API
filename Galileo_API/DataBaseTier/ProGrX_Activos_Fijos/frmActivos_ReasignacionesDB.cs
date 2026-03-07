@@ -42,50 +42,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MensajeBoletaNoGen  = "No se pudo generar la boleta de reasignación.";
         private const string MensajeTrasladoOk   = "Traslado realizado satisfactoriamente.";
 
-        // Lista blanca de campos para ORDER BY en Activos_Principal
-        private static readonly Dictionary<string, string> SortFieldActivosMap =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                // Columnas en BD
-                { ColA_NumPlaca,        ColA_NumPlaca },
-                { ColA_PlacaAlterna,    ColA_PlacaAlterna },
-                { ColA_Nombre,          ColA_Nombre },
-
-                // Propiedades del modelo / nombres sin alias
-                { "num_placa",          ColA_NumPlaca },
-                { "placa_alterna",      ColA_PlacaAlterna },
-                { "Placa_Alterna",      ColA_PlacaAlterna },
-                { "nombre",             ColA_Nombre },
-                { "Nombre",             ColA_Nombre }
-            };
-
-        // Lista blanca de campos para ORDER BY en vActivos_TrasladosHistorico
-        private static readonly Dictionary<string, string> SortFieldBoletasMap =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                // Columnas en la vista
-                { ColCodTraslado,       ColCodTraslado },
-                { ColNumPlaca,          ColNumPlaca },
-                { ColPlacaAlterna,      ColPlacaAlterna },
-                { ColDescripcion,       ColDescripcion },
-                { ColRegistroFecha,     ColRegistroFecha },
-                { ColRegistroUsuario,   ColRegistroUsuario },
-                { ColPersona,           ColPersona },
-                { ColPersonaDestino,    ColPersonaDestino },
-                { ColMotivo,            ColMotivo },
-                { ColEstadoDesc,        ColEstadoDesc },
-
-                // Posibles nombres de propiedades de DTO
-                { "placa_alterna",      ColPlacaAlterna },
-                { "descripcion",        ColDescripcion },
-                { "registro_fecha",     ColRegistroFecha },
-                { "registro_usuario",   ColRegistroUsuario },
-                { "persona_origen",     ColPersona },
-                { "persona_destino",    ColPersonaDestino },
-                { "motivo",             ColMotivo },
-                { "estado_desc",        ColEstadoDesc }
-            };
-
+      
         // WHERE común para consultas de boletas
         private const string BoletasWhereBase = @"
             FROM vActivos_TrasladosHistorico
@@ -99,36 +56,26 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // ORDER BY común para consultas de boletas
         private const string BoletasOrderBase = @"
             ORDER BY
-                -- ASC
-                CASE @sortDir WHEN 1 THEN
-                    CASE @sortIndex
-                        WHEN 1  THEN cod_traslado
-                        WHEN 2  THEN num_placa
-                        WHEN 3  THEN PLACA_ALTERNA
-                        WHEN 4  THEN Descripcion
-                        WHEN 5  THEN Registro_fecha
-                        WHEN 6  THEN Registro_Usuario
-                        WHEN 7  THEN Persona
-                        WHEN 8  THEN Persona_Destino
-                        WHEN 9  THEN Motivo
-                        WHEN 10 THEN Estado_Desc
-                    END
-                END ASC,
-                -- DESC
-                CASE @sortDir WHEN 0 THEN
-                    CASE @sortIndex
-                        WHEN 1  THEN cod_traslado
-                        WHEN 2  THEN num_placa
-                        WHEN 3  THEN PLACA_ALTERNA
-                        WHEN 4  THEN Descripcion
-                        WHEN 5  THEN Registro_fecha
-                        WHEN 6  THEN Registro_Usuario
-                        WHEN 7  THEN Persona
-                        WHEN 8  THEN Persona_Destino
-                        WHEN 9  THEN Motivo
-                        WHEN 10 THEN Estado_Desc
-                    END
-                END DESC";
+                CASE WHEN @sortDir = 1 AND @sortIndex = 1  THEN cod_traslado END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 2  THEN num_placa END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 3  THEN PLACA_ALTERNA END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 4  THEN Descripcion END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 5  THEN Registro_fecha END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 6  THEN Registro_Usuario END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 7  THEN Persona END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 8  THEN Persona_Destino END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 9  THEN Motivo END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 10 THEN Estado_Desc END ASC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 1  THEN cod_traslado END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 2  THEN num_placa END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 3  THEN PLACA_ALTERNA END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 4  THEN Descripcion END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 5  THEN Registro_fecha END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 6  THEN Registro_Usuario END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 7  THEN Persona END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 8  THEN Persona_Destino END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 9  THEN Motivo END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 10 THEN Estado_Desc END DESC";
 
         // Estructura interna para compartir lógica de filtros de boletas
         private sealed record BoletasFiltroInterno(
@@ -181,6 +128,45 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             };
         }
 
+        private static string GetActivosSortFieldCanonical(string? sortField)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+                return ColA_NumPlaca;
+
+            return sortField.Trim().ToLowerInvariant() switch
+            {
+                "a.num_placa"     => ColA_NumPlaca,
+                "num_placa"       => ColA_NumPlaca,
+                "a.placa_alterna" => ColA_PlacaAlterna,
+                "placa_alterna"   => ColA_PlacaAlterna,
+                "a.nombre"        => ColA_Nombre,
+                "nombre"          => ColA_Nombre,
+                _                 => ColA_NumPlaca
+            };
+        }
+
+        private static string GetBoletasSortFieldCanonical(string? sortField)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+                return ColCodTraslado;
+
+            return sortField.Trim().ToLowerInvariant() switch
+            {
+                "cod_traslado"     => ColCodTraslado,
+                "num_placa"        => ColNumPlaca,
+                "placa_alterna"    => ColPlacaAlterna,
+                "descripcion"      => ColDescripcion,
+                "registro_fecha"   => ColRegistroFecha,
+                "registro_usuario" => ColRegistroUsuario,
+                "persona"          => ColPersona,
+                "persona_origen"   => ColPersona,
+                "persona_destino"  => ColPersonaDestino,
+                "motivo"           => ColMotivo,
+                "estado_desc"      => ColEstadoDesc,
+                _                  => ColCodTraslado
+            };
+        }
+
         /// <summary>
         /// Construye parámetros comunes para consultas de boletas (lista y export).
         /// </summary>
@@ -201,12 +187,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 ? null
                 : filtros.boletaCorte.Trim();
 
-            var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                ? ColCodTraslado
-                : filtros.sortField!;
-
-            if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                sortFieldCanonical = ColCodTraslado;
+          var sortFieldCanonical = GetBoletasSortFieldCanonical(filtros.sortField);
 
             var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
             var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
@@ -290,12 +271,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
 
-                var sortFieldKey = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? ColA_NumPlaca
-                    : filtros.sortField!;
-
-                if (!SortFieldActivosMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                    sortFieldCanonical = ColA_NumPlaca;
+               var sortFieldCanonical = GetActivosSortFieldCanonical(filtros?.sortField);
 
                 var sortIndex = sortFieldCanonical switch
                 {
