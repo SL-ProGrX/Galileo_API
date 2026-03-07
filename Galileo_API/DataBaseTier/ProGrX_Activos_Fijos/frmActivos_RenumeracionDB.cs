@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -16,6 +17,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string ColPlacaAlterna  = "Placa_Alterna";
         private const string ColNombre        = "Nombre";
         private const string MensajeOk        = "Ok";
+        private const string MensajeRenumeracionConRelacion = "No se puede renumerar el activo porque el activo tiene registros relacionados.";
+        private const string MensajeNuevoNumeroExiste = "El nuevo número de placa ya existe. Verifique la información e intente nuevamente.";
 
         // Lista blanca para ORDER BY
         private static readonly Dictionary<string, string> SortFieldMap =
@@ -23,10 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 { ColNumPlaca,     ColNumPlaca },
                 { ColPlacaAlterna, ColPlacaAlterna },
-                { ColNombre,       ColNombre },
-                // por si vienen en minúsculas desde el front:
-                { "placa_alterna", ColPlacaAlterna },
-                { "nombre",        ColNombre }
+                { ColNombre,       ColNombre }
             };
 
         public FrmActivosRenumeracionDb(IConfiguration config)
@@ -195,16 +195,41 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string queryExisteNuevoNumero = @"
+                    SELECT COUNT(1)
+                    FROM Activos_Principal
+                    WHERE num_placa = @nuevo_num;";
+
+                int existeNuevoNumero = connection.QueryFirstOrDefault<int>(queryExisteNuevoNumero, new
+                {
+                    nuevo_num
+                });
+
+                if (existeNuevoNumero > 0)
+                {
+                    result.Code = -1;
+                    result.Description = MensajeNuevoNumeroExiste;
+                    return result;
+                }
+
                 const string query = @"
                     UPDATE Activos_Principal
                        SET num_placa = @nuevo_num                                      
                      WHERE num_placa = @num_placa;";
 
-                connection.Execute(query, new
+                int filasAfectadas = connection.Execute(query, new
                 {
                     num_placa,
                     nuevo_num
                 });
+
+                if (filasAfectadas == 0)
+                {
+                    result.Code = -1;
+                    result.Description = "No se encontró el activo a renumerar.";
+                    return result;
+                }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
@@ -214,6 +239,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
+            }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                result.Code = -1;
+                result.Description = MensajeRenumeracionConRelacion;
             }
             catch (Exception ex)
             {
