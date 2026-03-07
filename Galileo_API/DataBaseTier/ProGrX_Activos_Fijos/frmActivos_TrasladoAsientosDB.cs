@@ -76,26 +76,36 @@ SELECT
 FROM Activos_Asientos
 " + WhereActivosPendientes + @"
 ORDER BY
-    -- Orden ascendente
-    CASE 
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Num_Asiento'      THEN Num_Asiento
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Tipo_Asiento'     THEN Tipo_Asiento
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Fecha_Asiento'    THEN Fecha_Asiento
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Descripcion'      THEN Descripcion
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Anio'             THEN Anio
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Mes'              THEN Mes
-        WHEN @sortOrder = 'ASC' AND @sortField = 'Cod_Contabilidad' THEN Cod_Contabilidad
-    END ASC,
-    -- Orden descendente
-    CASE 
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Num_Asiento'      THEN Num_Asiento
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Tipo_Asiento'     THEN Tipo_Asiento
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Fecha_Asiento'    THEN Fecha_Asiento
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Descripcion'      THEN Descripcion
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Anio'             THEN Anio
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Mes'              THEN Mes
-        WHEN @sortOrder = 'DESC' AND @sortField = 'Cod_Contabilidad' THEN Cod_Contabilidad
-    END DESC
+    -- Num_Asiento
+    CASE WHEN @sortField = 'Num_Asiento'      AND @sortOrder = 'ASC'  THEN Num_Asiento END ASC,
+    CASE WHEN @sortField = 'Num_Asiento'      AND @sortOrder = 'DESC' THEN Num_Asiento END DESC,
+
+    -- Tipo_Asiento
+    CASE WHEN @sortField = 'Tipo_Asiento'     AND @sortOrder = 'ASC'  THEN Tipo_Asiento END ASC,
+    CASE WHEN @sortField = 'Tipo_Asiento'     AND @sortOrder = 'DESC' THEN Tipo_Asiento END DESC,
+
+    -- Fecha_Asiento
+    CASE WHEN @sortField = 'Fecha_Asiento'    AND @sortOrder = 'ASC'  THEN Fecha_Asiento END ASC,
+    CASE WHEN @sortField = 'Fecha_Asiento'    AND @sortOrder = 'DESC' THEN Fecha_Asiento END DESC,
+
+    -- Descripcion
+    CASE WHEN @sortField = 'Descripcion'      AND @sortOrder = 'ASC'  THEN Descripcion END ASC,
+    CASE WHEN @sortField = 'Descripcion'      AND @sortOrder = 'DESC' THEN Descripcion END DESC,
+
+    -- Anio
+    CASE WHEN @sortField = 'Anio'             AND @sortOrder = 'ASC'  THEN Anio END ASC,
+    CASE WHEN @sortField = 'Anio'             AND @sortOrder = 'DESC' THEN Anio END DESC,
+
+    -- Mes
+    CASE WHEN @sortField = 'Mes'              AND @sortOrder = 'ASC'  THEN Mes END ASC,
+    CASE WHEN @sortField = 'Mes'              AND @sortOrder = 'DESC' THEN Mes END DESC,
+
+    -- Cod_Contabilidad
+    CASE WHEN @sortField = 'Cod_Contabilidad' AND @sortOrder = 'ASC'  THEN Cod_Contabilidad END ASC,
+    CASE WHEN @sortField = 'Cod_Contabilidad' AND @sortOrder = 'DESC' THEN Cod_Contabilidad END DESC,
+
+    -- Fallback estable (para paginación consistente)
+    Num_Asiento ASC
 OFFSET @offset ROWS
 FETCH NEXT @fetch ROWS ONLY;";
 
