@@ -75,22 +75,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 var offset = usarPaginacion ? pagina * paginacion : 0;
 
                 var likeDescripcion = string.IsNullOrWhiteSpace(criterios.descripcion)
-                    ? null
-                    : $"%{criterios.descripcion.Trim()}%";
+                   ? null
+                   : $"%{criterios.descripcion.Trim()}%";
 
                 const string sqlCount = @"
-                    select count(1)
-                    from INSTITUCIONES I
-                    inner join PRM_USUARIOS U
-                        on U.COD_INSTITUCION = I.COD_INSTITUCION
-                       and U.USUARIO = @usuario
-                    where I.ACTIVA = @activa
-                      and (@codigo is null or I.COD_INSTITUCION = @codigo)
-                      and (
-                            @descripcion is null
-                            or I.DESCRIPCION like @likeDescripcion
-                            or isnull(I.DESC_CORTA,'') like @likeDescripcion
-                          );";
+                select count(1)
+                from INSTITUCIONES I
+                inner join PRM_USUARIOS U
+                    on U.COD_INSTITUCION = I.COD_INSTITUCION
+                   and U.USUARIO = @usuario
+                where I.ACTIVA = @activa
+                  and (@codigo is null or I.COD_INSTITUCION = @codigo)
+                  and (
+                        @descripcion is null
+                        or I.DESCRIPCION like @likeDescripcion
+                        or isnull(I.DESC_CORTA,'') like @likeDescripcion
+                      );";
+
+                response.Result ??= new TablasListaGenericaModel
+                {
+                    total = 0,
+                    lista = new List<CcProcesoMensualPlanillaListaDto>()
+                };
 
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
                 {
@@ -209,8 +215,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     total = 0,
                     lista = new List<CcProcesoMensualPlanillaListaDto>()
                 };
-
-                response.Result.total = response.Result.total;
                 response.Result.lista = lista;
 
                 return response;
