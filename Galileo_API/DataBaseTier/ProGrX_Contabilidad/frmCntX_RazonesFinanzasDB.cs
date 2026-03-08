@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Contabilidad;
@@ -187,7 +188,147 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     RegistrarBitacora(codEmpresa, param.RegistroUsuario, $"Razon Financiera Id: {param.CodRazon} - {param.Descripcion}", modifica);
 
                 return result;
-            }
+            }            
         }
+
+        /// <summary>
+        /// Obtiene lista genérica de grupos para combos.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXRazonFinancieraGrupos_Combo(int codEmpresa, int codContabilidad)
+        {
+            var sql = @"
+                select rtrim(cod_grupo) as item, rtrim(descripcion) as descripcion
+                from CntX_Razones_Tipos
+                where cod_contabilidad = @codContabilidad
+                order by cod_grupo";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { codContabilidad });
+        }
+
+        /// <summary>
+        /// Obtiene lista de razones financieras filtradas por grupo y ordenadas.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXRazonFinancieraSimple_Lista(int codEmpresa, int codContabilidad, string codGrupo, string orden)
+        {
+            var sql = @"
+                select cod_razon as item, descripcion
+                from CntX_Razones
+                where cod_contabilidad = @codContabilidad
+                  and cod_grupo = @codGrupo
+                order by " + (orden == "descripcion" ? "descripcion" : "cod_razon");
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { codContabilidad, codGrupo });
+        }
+
+        /// <summary>
+        /// Obtiene las notas y la fórmula de una razón financiera.
+        /// </summary>
+        public ErrorDto<CntXRazonNotasDto> CntXRazonFinanciera_Notas(int codEmpresa, int codContabilidad, string codGrupo, string codRazon)
+        {
+            var sql = @"
+                select notas, formula
+                from CntX_Razones
+                where cod_grupo = @codGrupo
+                  and cod_razon = @codRazon
+                  and cod_contabilidad = @codContabilidad";
+            return DbHelper.ExecuteSingleQuery<CntXRazonNotasDto>(_portalDb, codEmpresa, sql, default, new { codGrupo, codRazon, codContabilidad });
+        }
+
+        /// <summary>
+        /// Obtiene el detalle de cuentas de una razón financiera.
+        /// </summary>
+        public ErrorDto<List<CntXRazonDetalleDto>> CntXRazonFinanciera_Detalle(int codEmpresa, int codContabilidad, string codRazon)
+        {
+            var sql = @"
+                select R.*, C.descripcion, C.cod_cuenta_mask
+                from CntX_Razones_detalle R
+                inner join CntX_Cuentas C
+                  on R.cod_contabilidad = C.cod_contabilidad
+                 and R.cod_cuenta = C.cod_cuenta
+                where R.cod_razon = @codRazon
+                  and R.cod_contabilidad = @codContabilidad
+                order by R.idx";
+            return DbHelper.ExecuteListQuery<CntXRazonDetalleDto>(_portalDb, codEmpresa, sql, new { codRazon, codContabilidad });
+        }
+
+        /// <summary>
+        /// Obtiene el próximo Idx para detalle de razón financiera.
+        /// </summary>
+        public ErrorDto<CntXRazonDetalleIdxDto> CntXRazonDetalle_ProximoIdx(int codEmpresa, int codContabilidad, string codRazon)
+        {
+            var sql = @"
+                select (isnull(max(idx),0) + 1) as Idx
+                from CntX_Razones_detalle
+                where cod_contabilidad = @codContabilidad
+                  and cod_razon = @codRazon";
+            return DbHelper.ExecuteSingleQuery<CntXRazonDetalleIdxDto>(_portalDb, codEmpresa, sql, default, new { codContabilidad, codRazon });
+        }
+
+        /// <summary>
+        /// Valida si existe un detalle con operador 'B', con opción de excluir un idx.
+        /// </summary>
+        public ErrorDto<int?> CntXRazonDetalle_ValidaB(int codEmpresa, int codContabilidad, string codRazon, int? excludeIdx = null)
+        {
+            var sql = @"
+                select idx
+                from CntX_Razones_detalle
+                where cod_contabilidad = @codContabilidad
+                  and cod_razon = @codRazon
+                  and operador = 'B'";
+            if (excludeIdx.HasValue)
+                sql += " and idx <> @excludeIdx";
+            return DbHelper.ExecuteSingleQuery<int?>(_portalDb, codEmpresa, sql, default, new { codContabilidad, codRazon, excludeIdx });
+        }
+
+        /// <summary>
+        /// Inserta un detalle de razón financiera.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonDetalle_Insertar(int codEmpresa, CntXRazonDetalleDto param)
+        {
+            var sql = @"
+                insert into CntX_Razones_detalle(idx, cod_contabilidad, cod_razon, cod_cuenta, operador)
+                values(@Idx, @CodContabilidad, @CodRazon, @CodCuenta, @Operador)";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Actualiza un detalle de razón financiera.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonDetalle_Actualizar(int codEmpresa, CntXRazonDetalleDto param)
+        {
+            var sql = @"
+                update CntX_Razones_detalle
+                set cod_cuenta = @CodCuenta,
+                    operador = @Operador
+                where cod_contabilidad = @CodContabilidad
+                  and cod_razon = @CodRazon
+                  and idx = @Idx";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Elimina un detalle de razón financiera (excepto operador 'B').
+        /// </summary>
+        public ErrorDto<bool> CntXRazonDetalle_Eliminar(int codEmpresa, int codContabilidad, string codRazon, int idx)
+        {
+            var sql = @"
+                delete from CntX_Razones_detalle
+                where idx = @idx
+                  and cod_contabilidad = @codContabilidad
+                  and cod_razon = @codRazon
+                  and operador <> 'B'";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, new { idx, codContabilidad, codRazon });
+                return rows > 0;
+            });
+        }
+
     }
 }
