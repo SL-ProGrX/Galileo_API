@@ -198,40 +198,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
 
                 const string qDatos = @"
-                    SELECT 
-                        cod_traslado,
-                        identificacion,
-                        persona,
-                        estado_desc,
-                        CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
-                    FROM vActivos_Traslados_Boletas
-                    WHERE (@filtro IS NULL
-                           OR cod_traslado   LIKE @filtro
-                           OR persona        LIKE @filtro
-                           OR identificacion LIKE @filtro)
-                    ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN cod_traslado
-                                WHEN 2 THEN identificacion
-                                WHEN 3 THEN persona
-                                WHEN 4 THEN estado_desc
-                                WHEN 5 THEN registro_fecha
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN cod_traslado
-                                WHEN 2 THEN identificacion
-                                WHEN 3 THEN persona
-                                WHEN 4 THEN estado_desc
-                                WHEN 5 THEN registro_fecha
-                            END
-                        END DESC
-                    OFFSET @offset ROWS
-                    FETCH NEXT @fetch ROWS ONLY;";
+                                    SELECT 
+                                        cod_traslado,
+                                        identificacion,
+                                        persona,
+                                        estado_desc,
+                                        CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
+                                    FROM vActivos_Traslados_Boletas
+                                    WHERE (@filtro IS NULL
+                                        OR cod_traslado   LIKE @filtro
+                                        OR persona        LIKE @filtro
+                                        OR identificacion LIKE @filtro)
+                                    ORDER BY
+                                        CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN cod_traslado END ASC,
+                                        CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN identificacion END ASC,
+                                        CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN persona END ASC,
+                                        CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN estado_desc END ASC,
+                                        CASE WHEN @sortDir = 1 AND @sortIndex = 5 THEN registro_fecha END ASC,
+                                        CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN cod_traslado END DESC,
+                                        CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN identificacion END DESC,
+                                        CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN persona END DESC,
+                                        CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN estado_desc END DESC,
+                                        CASE WHEN @sortDir = 0 AND @sortIndex = 5 THEN registro_fecha END DESC
+                                    OFFSET @offset ROWS
+                                    FETCH NEXT @fetch ROWS ONLY;";
 
                 result.Result.lista = connection
                     .Query<ActivosResponsablesCambioBoletaResumen>(qDatos, p)

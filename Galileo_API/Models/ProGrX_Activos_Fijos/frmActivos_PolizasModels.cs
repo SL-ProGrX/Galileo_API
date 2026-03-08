@@ -16,7 +16,7 @@
         public string fecha_vence { get; set; } = string.Empty;
         public decimal? monto { get; set; }
         public string? num_poliza { get; set; }
-        public string? documento { get; set; }
+        public string documento { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string? tipo_poliza_desc { get; set; }
         public string? registro_usuario { get; set; }

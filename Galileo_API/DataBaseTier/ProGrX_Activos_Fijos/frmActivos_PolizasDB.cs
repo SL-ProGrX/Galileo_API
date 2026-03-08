@@ -704,7 +704,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 fv,
                 monto = data.monto,
                 num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
-                documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
+                documento = string.IsNullOrWhiteSpace(data.documento) ? string.Empty : data.documento,
                 mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
             };
         }

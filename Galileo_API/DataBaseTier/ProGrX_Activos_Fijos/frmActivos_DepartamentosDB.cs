@@ -37,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
                 ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
             LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
-                ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENT";
+                ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO";
 
         private const string SeccWhereFilterSql = @"
             WHERE 1 = 1
@@ -224,28 +224,36 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 " + DeptWhereFilterSql + @";";
 
                 const string sqlData = @"
-                    SELECT DISTINCT
-                        d.COD_DEPARTAMENTO            AS cod_departamento,
-                        ISNULL(d.DESCRIPCION,'')      AS descripcion,
-                        ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
-                        ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
-                        ISNULL(d.REGISTRO_USUARIO,'') AS usuario
-                    " + DeptSelectBaseSql + @"
-                    " + DeptWhereFilterSql + @"
+                    SELECT
+                        x.cod_departamento,
+                        x.descripcion,
+                        x.cod_unidad,
+                        x.unidad_desc,
+                        x.usuario
+                    FROM (
+                        SELECT DISTINCT
+                            d.COD_DEPARTAMENTO            AS cod_departamento,
+                            ISNULL(d.DESCRIPCION,'')      AS descripcion,
+                            ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
+                            ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
+                            ISNULL(d.REGISTRO_USUARIO,'') AS usuario
+                        " + DeptSelectBaseSql + @"
+                        " + DeptWhereFilterSql + @"
+                    ) x
                     ORDER BY
                         -- sortOrder = 0 => DESC
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento' THEN d.COD_DEPARTAMENTO END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion'      THEN d.DESCRIPCION      END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_unidad'       THEN d.COD_UNIDAD       END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'unidad_desc'      THEN u.DESCRIPCION      END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'usuario'          THEN d.REGISTRO_USUARIO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento' THEN x.cod_departamento END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion'      THEN x.descripcion      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_unidad'       THEN x.cod_unidad       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'unidad_desc'      THEN x.unidad_desc      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'usuario'          THEN x.usuario          END DESC,
 
                         -- sortOrder = 1 => ASC
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_departamento' THEN d.COD_DEPARTAMENTO END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion'      THEN d.DESCRIPCION      END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_unidad'       THEN d.COD_UNIDAD       END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'unidad_desc'      THEN u.DESCRIPCION      END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'usuario'          THEN d.REGISTRO_USUARIO END ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_departamento' THEN x.cod_departamento END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion'      THEN x.descripcion      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_unidad'       THEN x.cod_unidad       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'unidad_desc'      THEN x.unidad_desc      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'usuario'          THEN x.usuario          END ASC
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);

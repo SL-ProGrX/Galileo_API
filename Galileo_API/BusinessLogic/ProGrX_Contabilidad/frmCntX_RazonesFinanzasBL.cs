@@ -1,6 +1,8 @@
-﻿using Galileo_API.DataBaseTier.ProGrX_Contabilidad;
-using Galileo_API.Models.ProGrX_Contabilidad;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.DataBaseTier.ProGrX_Contabilidad;
+using Galileo_API.Models.ProGrX_Contabilidad;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 
@@ -32,5 +34,33 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 
         public ErrorDto<bool> CntXRazonFinanciera_Guardar(int codEmpresa, CntXRazonFinancieraSaveParams param)
             => _db.CntXRazonFinanciera_Guardar(codEmpresa, param);
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXRazonFinancieraGrupos_Combo(int codEmpresa, int codContabilidad)
+        => _db.CntXRazonFinancieraGrupos_Combo(codEmpresa, codContabilidad);
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXRazonFinancieraSimple_Lista(int codEmpresa, int codContabilidad, string codGrupo, string orden)
+            => _db.CntXRazonFinancieraSimple_Lista(codEmpresa, codContabilidad, codGrupo, orden);
+
+        public ErrorDto<CntXRazonNotasDto> CntXRazonFinanciera_Notas(int codEmpresa, int codContabilidad, string codGrupo, string codRazon)
+            => _db.CntXRazonFinanciera_Notas(codEmpresa, codContabilidad, codGrupo, codRazon);
+
+        public ErrorDto<List<CntXRazonDetalleDto>> CntXRazonFinanciera_Detalle(int codEmpresa, int codContabilidad, string codRazon)
+            => _db.CntXRazonFinanciera_Detalle(codEmpresa, codContabilidad, codRazon);
+
+        public ErrorDto<CntXRazonDetalleIdxDto> CntXRazonDetalle_ProximoIdx(int codEmpresa, int codContabilidad, string codRazon)
+        => _db.CntXRazonDetalle_ProximoIdx(codEmpresa, codContabilidad, codRazon);
+
+        public ErrorDto<int?> CntXRazonDetalle_ValidaB(int codEmpresa, int codContabilidad, string codRazon, int? excludeIdx = null)
+            => _db.CntXRazonDetalle_ValidaB(codEmpresa, codContabilidad, codRazon, excludeIdx);
+
+        public ErrorDto<bool> CntXRazonDetalle_Insertar(int codEmpresa, CntXRazonDetalleDto param)
+            => _db.CntXRazonDetalle_Insertar(codEmpresa, param);
+
+        public ErrorDto<bool> CntXRazonDetalle_Actualizar(int codEmpresa, CntXRazonDetalleDto param)
+            => _db.CntXRazonDetalle_Actualizar(codEmpresa, param);
+
+        public ErrorDto<bool> CntXRazonDetalle_Eliminar(int codEmpresa, int codContabilidad, string codRazon, int idx)
+            => _db.CntXRazonDetalle_Eliminar(codEmpresa, codContabilidad, codRazon, idx);
+
     }
 }
