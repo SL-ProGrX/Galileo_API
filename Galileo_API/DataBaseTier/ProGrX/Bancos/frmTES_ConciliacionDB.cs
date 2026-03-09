@@ -2,7 +2,6 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using Galileo.Models.Security;
 using System.Data;
 using System.Globalization;
 
