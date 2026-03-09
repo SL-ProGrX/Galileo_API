@@ -579,7 +579,7 @@ where F.Cod_Operadora = @CodOperadora
                 rendimiento = row.rendimiento,
                 bancofinal = row.bancox,
                 cuentafinal = row.cuentaahorrox ?? string.Empty,
-                fechafinal = (row.fecha_corte ?? row.fecha_inicio)?.ToString("yyyy/MM/dd") ?? string.Empty,
+                fechafinal = row.fecha_corte?.ToString("yyyy/MM/dd") ?? string.Empty,
                 estadodesc = row.estadodesc ?? string.Empty
             };
         }
