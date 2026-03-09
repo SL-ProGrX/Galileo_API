@@ -32,10 +32,12 @@
             public decimal? Saldo { get; set; }
 
             public string FormaPago { get; set; } = string.Empty;
-
+            public string CxP_Estado { get; set; } = string.Empty;
             public string Notas { get; set; } = string.Empty;
-            public string Creacion_User { get; set; } = string.Empty;
+            public string Creacion_User { get; set; } = string.Empty;        
             public DateTime? Creacion_Fecha { get; set; }
+            public string anula_user { get; set; } = string.Empty;
+            public DateTime? anula_fecha { get; set; }
         }
         public class CrdPolizaFacturaVerAsientoModel
         {
