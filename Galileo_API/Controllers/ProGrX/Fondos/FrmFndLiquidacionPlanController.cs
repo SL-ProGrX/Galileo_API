@@ -33,23 +33,58 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [HttpGet("FND_LiquidacionPlan_Plan_Scroll_Obtener")]
+        public ErrorDto<DropDownListaGenericaModel> FND_LiquidacionPlan_Plan_Scroll_Obtener(
+         int CodEmpresa,
+         int codOperadora,
+         string? codPlanActual,
+         int scrollCode)
+        {
+            return _bl.FND_LiquidacionPlan_Plan_Scroll_Obtener(CodEmpresa, codOperadora, codPlanActual, scrollCode);
+        }
+
+        [Authorize]
         [HttpGet("FND_LiquidacionPlan_Operadora_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> FND_LiquidacionPlan_Operadora_Obtener(int CodEmpresa)
         {
             return _bl.FND_LiquidacionPlan_Operadora_Obtener(CodEmpresa);
         }
 
+       
+
         [Authorize]
-        [HttpPost("FND_LiquidacionPlanContartos_Buscar")]
-        public ErrorDto<List<FndConsultaPlanRowDto>> FND_LiquidacionPlanContartos_Buscar(
+        [HttpPost("FND_LiquidacionPlanContratos_Buscar")]
+        public ErrorDto<List<FndConsultaPlanRowDto>> FND_LiquidacionPlanContratos_Buscar(
           int CodEmpresa,
           FndLiquidacionPlanFiltrosData filtro)
         {
-            return _bl.FND_LiquidacionPlanContartos_Buscar(CodEmpresa, filtro);
+            return _bl.FND_LiquidacionPlanContratos_Buscar(CodEmpresa, filtro);
         }
 
+        [Authorize]
+        [HttpGet("FND_LiquidacionPlan_Catalogo_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_LiquidacionPlan_Catalogo_Buscar(int CodEmpresa)
+        {
+            return _bl.FND_LiquidacionPlan_Catalogo_Buscar(CodEmpresa);
+        }
 
-       
+        [Authorize]
+        [HttpPost("FND_LiquidacionPlan_Liquidar")]
+        public ErrorDto<FndLiquidacionPlanLiquidarResult> FND_LiquidacionPlan_Liquidar(
+         int codEmpresa,
+         FndLiquidacionPlanLiquidarRequest request)
+        {
+            return _bl.FND_LiquidacionPlan_Liquidar(codEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("FND_LiquidacionPlan_ArchivoRef_Cargar")]
+        public ErrorDto<int> FND_LiquidacionPlan_ArchivoRef_Cargar(
+               int codEmpresa,
+               FndArchivoRefCargaRequest request)
+        {
+            return _bl.FND_LiquidacionPlan_ArchivoRef_Cargar(codEmpresa, request);
+        }
 
     }
 }
