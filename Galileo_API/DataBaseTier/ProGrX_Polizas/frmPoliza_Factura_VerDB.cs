@@ -100,6 +100,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 F.impuesto_ventas AS Impuesto,
                 F.CREACION_USER,
 		        F.CREACION_FECHA,
+                CxP_Estado,
+                anula_fecha,
+                anula_user,
                 dbo.fxCxPSaldoFacturaCorte(
                     F.cod_proveedor,
                     F.cod_factura,
