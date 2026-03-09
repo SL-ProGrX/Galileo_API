@@ -284,7 +284,7 @@ where F.Cod_Operadora = @CodOperadora
         /// <param name="filtro"></param>
         private static void AddJoinCuentaFiltro(StringBuilder sql, FndLiquidacionPlanFiltrosData filtro)
         {
-            if (string.Equals(filtro.cuentaFiltro, "TODOS", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(filtro.cuentaFiltro, FndLiquidaPlanConst.vTodos, StringComparison.OrdinalIgnoreCase))
                 return;
 
             if (string.Equals(filtro.cuentaFiltro, "Cuenta Interna", StringComparison.OrdinalIgnoreCase))
@@ -327,7 +327,7 @@ where F.Cod_Operadora = @CodOperadora
                 FndLiquidacionPlanFiltrosData filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro.cod_institucion) ||
-                string.Equals(filtro.cod_institucion, "TODOS", StringComparison.OrdinalIgnoreCase))
+                string.Equals(filtro.cod_institucion, FndLiquidaPlanConst.vTodos, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -376,7 +376,7 @@ where F.Cod_Operadora = @CodOperadora
             FndLiquidacionPlanFiltrosData filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro.estado) ||
-                string.Equals(filtro.estado, "TODOS", StringComparison.OrdinalIgnoreCase))
+                string.Equals(filtro.estado, FndLiquidaPlanConst.vTodos, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -465,7 +465,7 @@ where F.Cod_Operadora = @CodOperadora
             FndLiquidacionPlanFiltrosData filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro.creditos) ||
-                string.Equals(filtro.creditos, "TODOS", StringComparison.OrdinalIgnoreCase))
+                string.Equals(filtro.creditos, FndLiquidaPlanConst.vTodos, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
