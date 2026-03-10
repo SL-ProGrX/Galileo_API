@@ -9,9 +9,10 @@ namespace Galileo.DataBaseTier
 {
     public class FrmCprSolicitudAutorizaDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _dbBitacora;
         private readonly FrmCprSolicitudDB _solicitudDB;
+        private readonly FrmCprCompraDirectaDB compraDirectaDB;
 
         private const string MsgOk = "Ok";
         private const string MsgSolicitudNoExiste = "La solicitud no existe.";
@@ -23,9 +24,10 @@ namespace Galileo.DataBaseTier
 
         public FrmCprSolicitudAutorizaDB(IConfiguration config)
         {
-            _config = config;
+            _portalDb = new PortalDB(config);
             _dbBitacora = new MSecurityMainDb(config);
             _solicitudDB = new FrmCprSolicitudDB(config);
+            compraDirectaDB = new FrmCprCompraDirectaDB(config);
         }
 
         // ---- Helpers ----
@@ -41,11 +43,7 @@ namespace Galileo.DataBaseTier
         private ErrorDto FailNoResult(Exception ex)
             => new ErrorDto { Code = -1, Description = ex.Message };
 
-        private ErrorDto<T> WithConn<T>(int codEmpresa, Func<SqlConnection, T> work)
-        {
-            var portal = new PortalDB(_config);
-            return DbHelper.WithConn(portal, codEmpresa, work);
-        }
+     
 
         public ErrorDto Bitacora(BitacoraInsertarDto data) => _dbBitacora.Bitacora(data);
 
@@ -55,7 +53,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                return WithConn(CodEmpresa, conn =>
+                return DbHelper.WithConn(_portalDb, CodEmpresa,  conn =>
                 {
                     const string sql = "EXEC spCprSolicitudProveedoresLista_Obtener @cpr_id;";
                     return conn.Query<CprSolicitudAdjudicaConsulta>(sql, new { cpr_id }).ToList();
@@ -72,7 +70,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                return WithConn(CodEmpresa, conn =>
+                return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                 {
                     var solicitud = conn.QueryFirstOrDefault<CprSolicitudDto>(SqlSolicitudById, new { cpr_id });
                     if (solicitud == null)
@@ -101,7 +99,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                return WithConn(CodEmpresa, conn =>
+                return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                     conn.QueryFirstOrDefault<string>(SqlRecomendacionById, new { cpr_id }) ?? string.Empty
                 );
             }
@@ -115,7 +113,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                return WithConn(CodEmpresa, conn =>
+                return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                     conn.QueryFirstOrDefault<string>(SqlContratoById, new { cpr_id }) ?? string.Empty
                 );
             }
@@ -133,7 +131,7 @@ namespace Galileo.DataBaseTier
             {
                 var datos = ParseAdjudica(adjudica);
 
-                var resp = WithConn(CodEmpresa, conn =>
+                var resp = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                 {
                     var solicitud = GetSolicitudOrThrow(conn, datos.cpr_id);
                     ValidateMontoIfGM(conn, CodEmpresa, solicitud, datos);
@@ -277,7 +275,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                var resp = WithConn(CodEmpresa, conn =>
+                var resp = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                 {
                     if (requiereContrato)
                     {
@@ -320,7 +318,7 @@ UPDATE CPR_SOLICITUD
         {
             try
             {
-                var resp = WithConn(CodEmpresa, conn =>
+                var resp = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
                 {
                     EnsureNoProductosSinAdjudicar(conn, cpr_id);
 
@@ -842,8 +840,6 @@ LEFT JOIN CPR_SOLICITUD_BS S ON S.CPR_ID = BS.CPR_ID
 WHERE BS.CPR_ID = @cpr_id;";
 
                 var detalle = conn.Query<CprSolicitudBsDto>(sqlDet, new { cpr_id = CPR_ID }).ToList();
-
-                var compraDirectaDB = new FrmCprCompraDirectaDB(_config);
 
                 float impVenta = 0;
                 float descuento = 0;
