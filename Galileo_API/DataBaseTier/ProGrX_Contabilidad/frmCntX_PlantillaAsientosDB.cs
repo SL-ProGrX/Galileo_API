@@ -16,15 +16,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = new PortalDB(config);
         }
 
-        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
+
+        private ErrorDto<T> Ejecutar<T>(int codEmpresa, Func<SqlConnection, T> accion)
         {
-            var response = new ErrorDto<CntxPlantillaResponseDto>();
+            var response = new ErrorDto<T>();
 
             try
             {
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
+                response.Result = accion(cn);
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+
+        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
+        {
+            return Ejecutar(codEmpresa, cn =>
+            {
                 var header = cn.QueryFirstOrDefault<CntxPlantillaDto>(
                     @"SELECT *
                       FROM CntX_Plantilla_Asientos
@@ -38,30 +56,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                       ORDER BY num_linea",
                     new { codPlantilla }).ToList();
 
-                response.Result = new CntxPlantillaResponseDto
+                return new CntxPlantillaResponseDto
                 {
                     header = header,
                     detalle = detalle
                 };
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            });
         }
+
+
 
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
-            var response = new ErrorDto<int>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
                 var nuevoCodigo = cn.QueryFirst<int>(
                     @"SELECT ISNULL(MAX(cod_plantilla),0) + 1
                       FROM CntX_Plantilla_Asientos");
@@ -95,26 +103,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         d);
                 }
 
-                response.Result = nuevoCodigo;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+                return nuevoCodigo;
+            });
         }
+
+
 
         public ErrorDto<int> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
-            var response = new ErrorDto<int>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
                 cn.Execute(
                     @"UPDATE CntX_Plantilla_Asientos
                       SET descripcion=@descripcion,
@@ -146,26 +144,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         d);
                 }
 
-                response.Result = modelo.header.cod_plantilla;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+                return modelo.header.cod_plantilla;
+            });
         }
+
+  
 
         public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
         {
-            var response = new ErrorDto<int>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
                 cn.Execute(
                     @"DELETE FROM CntX_Plantilla_detalle
                       WHERE cod_plantilla=@codPlantilla",
@@ -176,26 +164,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                       WHERE cod_plantilla=@codPlantilla",
                     new { codPlantilla });
 
-                response.Result = 1;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+                return 1;
+            });
         }
+
+
 
         public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
         {
-            var response = new ErrorDto<int?>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
                 string sql = direccion > 0
                     ? @"SELECT TOP 1 cod_plantilla
                         FROM CntX_Plantilla_Asientos
@@ -206,91 +184,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         WHERE cod_plantilla < @codigoActual
                         ORDER BY cod_plantilla DESC";
 
-                response.Result = cn.QueryFirstOrDefault<int?>(
+                return cn.QueryFirstOrDefault<int?>(
                     sql,
                     new { codigoActual = codigoActual ?? 0 });
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            });
         }
+
+
 
         public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa)
         {
-            var response = new ErrorDto<List<CntxPlantillaDto>>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CntxPlantillaDto>(
+                return cn.Query<CntxPlantillaDto>(
                     @"SELECT cod_plantilla, descripcion
                       FROM CntX_Plantilla_Asientos
                       ORDER BY cod_plantilla"
                 ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            });
         }
 
+ 
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa,int cod_contabilidad
-        )
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(
+            int codEmpresa,
+            int cod_contabilidad)
         {
-
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
-
-            try
+            return Ejecutar(codEmpresa, cn =>
             {
-
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
-
-                var sql = @"
-
-                    SELECT
+                return cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT
                         tipo_asiento AS item,
                         descripcion
-                    FROM CntX_Tipos_Asientos
-                    WHERE cod_contabilidad = @cod_contabilidad
-                    ORDER BY tipo_asiento
-
-                ";
-
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    sql,
-                    new
-                    {
-                        cod_contabilidad
-                    }
+                      FROM CntX_Tipos_Asientos
+                      WHERE cod_contabilidad = @cod_contabilidad
+                      ORDER BY tipo_asiento",
+                    new { cod_contabilidad }
                 ).ToList();
-
-                response.Result = result;
-
-            }
-            catch (Exception ex)
-            {
-
-                response.Code = -1;
-                response.Description = ex.Message;
-
-            }
-
-            return response;
-
+            });
         }
 
-    
-}
+    }
 }
