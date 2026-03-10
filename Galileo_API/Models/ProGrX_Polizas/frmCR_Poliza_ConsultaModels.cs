@@ -17,9 +17,9 @@
         public decimal? Saldo { get; set; }
         public decimal? Cuota { get; set; }
         public string Estado { get; set; } = string.Empty;
-        public int? Proceso { get; set; }
-        public int? Prideduc { get; set; }
-        public DateTime? Fecult { get; set; }
+        public string? Proceso { get; set; }
+        public decimal? Prideduc { get; set; }
+        public decimal? Fecult { get; set; }
     }
 
     public class PolizaPersonaOperacionPolizaDto : PolizaPersonaOperacionBaseDto
