@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
 
-        public ErrorDto<int> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
+        public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
             return Ejecutar(codEmpresa, cn =>
             {

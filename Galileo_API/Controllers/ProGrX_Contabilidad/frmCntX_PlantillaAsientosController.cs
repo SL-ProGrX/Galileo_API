@@ -34,7 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpPut("Actualizar")]
-        public ErrorDto<int> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
+        public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
             return _bl.Actualizar(codEmpresa, modelo);
         }

@@ -20,7 +20,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
             => _db.Insertar(codEmpresa, modelo);
 
-        public ErrorDto<int> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
+        public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
             => _db.Actualizar(codEmpresa, modelo);
 
         public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
