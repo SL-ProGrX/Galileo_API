@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Humanizer;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models.ProGrX.Fondos;
 using System.Data;
@@ -656,7 +657,7 @@ where F.Cod_Operadora = @CodOperadora
 
             var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result;
 
-            request.oficinaTitular = globales.GOficinaTitular;
+            request.oficinaTitular = globales!.GOficinaTitular;
             request.oficinaUnidad = globales.GOficinaUnidad;
             request.oficinaCentroCosto = globales.GOficinaCentroCosto;
 
@@ -730,17 +731,18 @@ where F.Cod_Operadora = @CodOperadora
                         });
                 }
 
-                CrearDocumentoGeneral(
-                    conn,
-                    tx,
-                    codOperadora,
-                    request,
-                    plan,
-                    operadora,
-                    docRef,
-                    tipoDoc,
-                    concepto
-                    );
+                CrearDocumentoGeneral(new CrearDocumentoGeneralParametros
+                {
+                    conn = conn,
+                    tx = tx,
+                    codOperador = codOperadora,
+                    request = request,
+                    plan = plan,
+                    operadora = operadora,
+                    docRef = docRef,
+                    tipoDoc = tipoDoc,
+                    concepto = concepto
+                });
 
                 tx.Commit();
 
@@ -768,7 +770,6 @@ where F.Cod_Operadora = @CodOperadora
             if (string.IsNullOrWhiteSpace(request.cod_plan)) return "El plan es requerido.";
             if (string.IsNullOrWhiteSpace(request.usuario)) return "El usuario es requerido.";
             if (string.IsNullOrWhiteSpace(request.oficinaTitular)) return "La oficina titular es requerida.";
-           // if (string.IsNullOrWhiteSpace(request.oficinaUnidad)) return "La oficina unidad es requerida.";
             if (EsRetener(request.proceso) && string.IsNullOrWhiteSpace(request.retencionCodigo)) return "La retención es requerida.";
             return null;
         }
@@ -866,39 +867,122 @@ where F.Cod_Operadora = @CodOperadora
         }
 
         private static void CrearDocumentoGeneral(
-            SqlConnection conn,
-            SqlTransaction tx,
-            int codOperadora,
-            FndLiquidacionPlanLiquidarRequest request,
-            FndLiquidacionPlanInfoData plan,
-            FndLiquidacionPlanOperadoraData operadora,
-            string docRef,
-            string tipoDoc,
-            string concepto
+            CrearDocumentoGeneralParametros parametro
            )
         {
-            var resumen = ObtenerResumenDocumento(conn, tx, codOperadora, request.cod_plan, docRef);
-            string detalleAsiento = LimitarTexto($"Liquidacion general {request.cod_plan}", 30);
+            var resumen = ObtenerResumenDocumento(parametro.conn!, parametro.tx!, parametro.codOperador, parametro.request!.cod_plan, parametro.docRef!);
+            string detalleAsiento = LimitarTexto($"Liquidacion general {parametro.request.cod_plan}", 30);
 
             foreach (var item in resumen)
             {
-                InsertarDocumentoMaestro(conn, tx, request, plan, item, docRef, tipoDoc, concepto);
+                InsertarDocumentoMaestro(
+                    new InsertarDocumentoMaestroParametros
+                    {
+                        conn = parametro.conn!,
+                        tx = parametro.tx!,
+                        request = parametro.request!,
+                        plan = parametro.plan!,
+                        item = item,
+                        docRef = parametro.docRef!,
+                        tipoDoc = parametro.tipoDoc!,
+                        concepto = parametro.concepto!
+                    });
 
-                EjecutarAsiento(conn, tx, tipoDoc, docRef, item.aporte, "D", plan.cod_moneda, request.enlace,
-                    request.oficinaUnidad, string.Empty, item.cuenta_conta, item.cod_operadora, item.cod_plan, detalleAsiento);
+                EjecutarAsiento(
+                    new EjecutarAsientoParametros
+                    {
+                        conn = parametro.conn!,
+                        tx = parametro.tx!,
+                        tipoDocumento = parametro.tipoDoc!,
+                        numDocumento = parametro.docRef!,
+                        monto = item.aporte,
+                        debeHaber = "D",
+                        codDivisa = parametro.plan!.cod_moneda,
+                        enlace = parametro.request.enlace,
+                        codUnidad = parametro.request.oficinaUnidad,
+                        codCentroCosto = string.Empty,
+                        codCuenta = item.cuenta_conta,
+                        referencia1 = item.cod_operadora,
+                        referencia2 = item.cod_plan,
+                        detalle = detalleAsiento
+                    });
 
-                EjecutarAsiento(conn, tx, tipoDoc, docRef, item.rendimiento, "D", plan.cod_moneda, request.enlace,
-                    request.oficinaUnidad, request.oficinaCentroCosto, item.cuenta_rendimiento, item.cod_operadora, item.cod_plan, detalleAsiento);
+                EjecutarAsiento(
+                    new EjecutarAsientoParametros
+                    {
+                        conn = parametro.conn!,
+                        tx = parametro.tx!,
+                        tipoDocumento = parametro.tipoDoc!,
+                        numDocumento = parametro.docRef!,
+                        monto = item.rendimiento,
+                        debeHaber = "D",
+                        codDivisa = parametro.plan!.cod_moneda,
+                        enlace = parametro.request.enlace,
+                        codUnidad = parametro.request.oficinaUnidad,
+                        codCentroCosto = parametro.request.oficinaCentroCosto,
+                        codCuenta = item.cuenta_rendimiento,
+                        referencia1 = item.cod_operadora,
+                        referencia2 = item.cod_plan,
+                        detalle = detalleAsiento
+                    });
 
-                EjecutarAsiento(conn, tx, tipoDoc, docRef, item.isr_monto, "C", plan.cod_moneda, request.enlace,
-                    request.oficinaUnidad, request.oficinaCentroCosto, item.isr_cta, item.cod_operadora, item.cod_plan, detalleAsiento);
+                EjecutarAsiento(
+                    new EjecutarAsientoParametros
+                    {
+                        conn = parametro.conn!,
+                        tx = parametro.tx!,
+                        tipoDocumento = parametro.tipoDoc!,
+                        numDocumento = parametro.docRef!,
+                        monto = item.isr_monto,
+                        debeHaber = "C",
+                        codDivisa = parametro.plan!.cod_moneda,
+                        enlace = parametro.request.enlace,
+                        codUnidad = parametro.request.oficinaUnidad,
+                        codCentroCosto = parametro.request.oficinaCentroCosto,
+                        codCuenta = item.isr_cta,
+                        referencia1 = item.cod_operadora,
+                        referencia2 = item.cod_plan,
+                        detalle = detalleAsiento
+                    });
 
-                EjecutarAsiento(conn, tx, tipoDoc, docRef, item.multa, "C", plan.cod_moneda, request.enlace,
-                    request.oficinaUnidad, request.oficinaCentroCosto, operadora.cta_ingresos, item.cod_operadora, item.cod_plan, detalleAsiento);
+                EjecutarAsiento(
+                    new EjecutarAsientoParametros
+                    {
+                        conn = parametro.conn!,
+                        tx = parametro.tx!,
+                        tipoDocumento = parametro.tipoDoc!,
+                        numDocumento = parametro.docRef!,
+                        monto = item.multa,
+                        debeHaber = "C",
+                        codDivisa = parametro.plan!.cod_moneda,
+                        enlace = parametro.request.enlace,
+                        codUnidad = parametro.request.oficinaUnidad,
+                        codCentroCosto = parametro.request.oficinaCentroCosto,
+                        codCuenta = parametro.operadora!.cta_ingresos,
+                        referencia1 = item.cod_operadora,
+                        referencia2 = item.cod_plan,
+                        detalle = detalleAsiento
+                    });
 
                 decimal neto = item.aporte + item.rendimiento - (item.multa + item.isr_monto);
-                EjecutarAsiento(conn, tx, tipoDoc, docRef, neto, "C", plan.cod_moneda, request.enlace,
-                    request.oficinaUnidad, string.Empty, item.cod_cuenta, item.cod_operadora, item.cod_plan, detalleAsiento);
+                EjecutarAsiento(
+                     new EjecutarAsientoParametros
+                     {
+                         conn = parametro.conn!,
+                         tx = parametro.tx!,
+                         tipoDocumento = parametro.tipoDoc!,
+                         numDocumento = parametro.docRef!,
+                         monto = neto,
+                         debeHaber = "C",
+                         codDivisa = parametro.plan!.cod_moneda,
+                         enlace = parametro.request.enlace,
+                         codUnidad = parametro.request.oficinaUnidad,
+                         codCentroCosto = string.Empty,
+                         codCuenta = item.cod_cuenta,
+                         referencia1 = item.cod_operadora,
+                         referencia2 = item.cod_plan,
+                         detalle = detalleAsiento
+                     });
             }
         }
 
@@ -940,15 +1024,7 @@ where F.Cod_Operadora = @CodOperadora
             return conn.Query<FndLiquidacionPlanDocumentoResumenData>(sql, new { codOperadora, codPlan, docRef }, tx).ToList();
         }
 
-        private static void InsertarDocumentoMaestro(
-            SqlConnection conn,
-            SqlTransaction tx,
-            FndLiquidacionPlanLiquidarRequest request,
-            FndLiquidacionPlanInfoData plan,
-            FndLiquidacionPlanDocumentoResumenData item,
-            string docRef,
-            string tipoDoc,
-            string concepto)
+        private static void InsertarDocumentoMaestro(InsertarDocumentoMaestroParametros parametros)
         {
             const string sql = @"
         insert into SIF_TRANSACCIONES
@@ -968,49 +1044,35 @@ where F.Cod_Operadora = @CodOperadora
             @Detalle, @Documento
         )";
 
-            decimal total = item.aporte + item.rendimiento;
+            decimal total = parametros.item.aporte + parametros.item.rendimiento;
             var fecha = DateTime.Now;
-            conn.Execute(sql, new
+            parametros.conn!.Execute(sql, new
             {
-                DocRef = docRef,
-                TipoDoc = tipoDoc,
-                Usuario = request.usuario.Trim(),
-                ClienteIdentificacion = request.cod_plan.Trim(),
-                ClienteNombre = plan.descripcion,
-                Concepto = concepto,
+                DocRef = parametros.docRef,
+                TipoDoc = parametros.tipoDoc,
+                Usuario = parametros.request!.usuario.Trim(),
+                ClienteIdentificacion = parametros.request.cod_plan.Trim(),
+                ClienteNombre = parametros.plan!.descripcion,
+                Concepto = parametros.concepto,
                 Monto = total,
-                Referencia01 = item.cod_operadora,
-                Referencia02 = item.cod_plan,
-                CodOficina = request.oficinaTitular.Trim(),
+                Referencia01 = parametros.item.cod_operadora,
+                Referencia02 = parametros.item.cod_plan,
+                CodOficina = parametros.request.oficinaTitular.Trim(),
                 Linea1 = "Aplica Liquidacion General",
-                Linea2 = $"Aplicado por..:{request.usuario.Trim()}",
+                Linea2 = $"Aplicado por..:{parametros.request.usuario.Trim()}",
                 Linea3 = $"El dia        :{fecha:dd/MM/yyyy}",
                 Linea4 = string.Empty,
-                Linea5 = $"Aportes Liq.:{item.aporte:Standard}",
-                Linea6 = $"Rendim. Liq.:{item.rendimiento:Standard}",
+                Linea5 = $"Aportes Liq.:{parametros.item.aporte:Standard}",
+                Linea6 = $"Rendim. Liq.:{parametros.item.rendimiento:Standard}",
                 Linea7 = $"Total.  Liq.:{total:Standard}",
-                Detalle = LimitarTexto(request.notas, 1000),
-                Documento = docRef
-            }, tx);
+                Detalle = LimitarTexto(parametros.request.notas, 1000),
+                Documento = parametros.docRef
+            }, parametros.tx);
         }
 
-        private static void EjecutarAsiento(
-            SqlConnection conn,
-            SqlTransaction tx,
-            string tipoDocumento,
-            string numDocumento,
-            decimal monto,
-            string debeHaber,
-            string codDivisa,
-            int enlace,
-            string codUnidad,
-            string codCentroCosto,
-            string codCuenta,
-            string referencia1,
-            string referencia2,
-            string detalle)
+        private static void EjecutarAsiento(EjecutarAsientoParametros parametros)
         {
-            if (monto <= 0 || string.IsNullOrWhiteSpace(codCuenta))
+            if (parametros.monto <= 0 || string.IsNullOrWhiteSpace(parametros.codCuenta))
                 return;
 
             const string sql = @"
@@ -1029,22 +1091,22 @@ where F.Cod_Operadora = @CodOperadora
             @Referencia2,
             @Detalle";
 
-            conn.Execute(sql, new
+            parametros.conn.Execute(sql, new
             {
-                TipoDocumento = tipoDocumento,
-                NumDocumento = numDocumento,
-                Monto = monto,
-                DebeHaber = debeHaber,
-                CodDivisa = codDivisa,
+                TipoDocumento = parametros.tipoDocumento,
+                NumDocumento = parametros.numDocumento,
+                Monto = parametros.monto,
+                DebeHaber = parametros.debeHaber,
+                CodDivisa = parametros.codDivisa,
                 Factor = 1,
-                Enlace = enlace,
-                CodUnidad = codUnidad,
-                CodCentroCosto = codCentroCosto,
-                CodCuenta = codCuenta,
-                Referencia1 = referencia1,
-                Referencia2 = referencia2,
-                Detalle = detalle
-            }, tx);
+                Enlace = parametros.enlace,
+                CodUnidad = parametros.codUnidad,
+                CodCentroCosto = parametros.codCentroCosto,
+                CodCuenta = parametros.codCuenta,
+                Referencia1 = parametros.referencia1,
+                Referencia2 = parametros.referencia2,
+                Detalle = parametros.detalle
+            }, parametros.tx);
         }
 
         #endregion

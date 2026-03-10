@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 
 namespace PgxAPI.Models.ProGrX.Fondos
 {
@@ -126,7 +127,7 @@ namespace PgxAPI.Models.ProGrX.Fondos
         public string cuentafinal { get; set; } = string.Empty;
     }
 
-    public sealed class FndLiquidacionPlanLiquidarRequest
+    public class FndLiquidacionPlanLiquidarRequest
     {
         public string cod_operadora { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
@@ -137,8 +138,8 @@ namespace PgxAPI.Models.ProGrX.Fondos
         public string oficinaTitular { get; set; } = string.Empty;
         public string oficinaUnidad { get; set; } = string.Empty;
         public string oficinaCentroCosto { get; set; } = string.Empty;
-        public int enlace { get; set; }
-        public decimal multa { get; set; }
+        public int enlace { get; set; } = 0;
+        public decimal multa { get; set; } = 0;
         public string? notas { get; set; }
         public string? retencionCodigo { get; set; }
         public DateTime? fechaVence { get; set; }
@@ -162,7 +163,7 @@ namespace PgxAPI.Models.ProGrX.Fondos
         public int consecutivo { get; set; }
     }
 
-    internal sealed class FndLiquidacionPlanInfoData
+    public class FndLiquidacionPlanInfoData
     {
         public string descripcion { get; set; } = string.Empty;
         public string cod_moneda { get; set; } = string.Empty;
@@ -171,13 +172,13 @@ namespace PgxAPI.Models.ProGrX.Fondos
         public string cuenta_impuestos { get; set; } = string.Empty;
     }
 
-    internal sealed class FndLiquidacionPlanOperadoraData
+    public class FndLiquidacionPlanOperadoraData
     {
         public string cta_retiros { get; set; } = string.Empty;
         public string cta_ingresos { get; set; } = string.Empty;
     }
 
-    internal sealed class FndLiquidacionPlanDocumentoResumenData
+    public class FndLiquidacionPlanDocumentoResumenData
     {
         public string cod_operadora { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
@@ -196,4 +197,43 @@ namespace PgxAPI.Models.ProGrX.Fondos
     {
         public List<FndConsultaPlanRowDto> lineas { get; set; } = new();
     }
+
+    public class ParametroConn
+    {
+        public SqlConnection conn { get; set; } = new();
+        public SqlTransaction? tx { get; set; }
+    }
+
+    public class CrearDocumentoGeneralParametros: ParametroConn
+    {
+        public int codOperador { get; set; } = 0;
+        public FndLiquidacionPlanLiquidarRequest? request { get; set; }
+        public FndLiquidacionPlanInfoData? plan { get; set; }
+        public FndLiquidacionPlanOperadoraData? operadora { get; set; }
+        public string? docRef { get; set; }
+        public string? tipoDoc { get; set; }
+        public string? concepto { get; set; }
+    }
+
+    public class InsertarDocumentoMaestroParametros: CrearDocumentoGeneralParametros
+    {
+        public FndLiquidacionPlanDocumentoResumenData item { get; set; } = new();
+    }
+
+    public class EjecutarAsientoParametros: ParametroConn
+    {
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string debeHaber { get; set; } = string.Empty;
+        public string codDivisa { get; set; } = string.Empty;
+        public int enlace { get; set; } = 0;
+        public string codUnidad { get; set; } = string.Empty;
+        public string codCentroCosto { get; set; } = string.Empty;
+        public string codCuenta { get; set; } = string.Empty;
+        public string referencia1 { get; set; } = string.Empty;
+        public string referencia2 { get; set; } = string.Empty;
+        public string detalle { get; set; } = string.Empty;
+    }
+
 }
