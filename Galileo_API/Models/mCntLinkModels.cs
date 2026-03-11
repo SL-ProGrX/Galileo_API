@@ -54,6 +54,8 @@
         public string gstrNiveles { get; set; } = string.Empty;
         public string gstrMascara { get; set; } = string.Empty;
         public int gEnlace { get; set; }
+        public int? gPeriodoAnio { get; set; }
+        public int? gPeriodoMes { get; set; }
     }
 
     public class SifEmpresaDto
