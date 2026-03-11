@@ -32,18 +32,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 const string query = @"EXEC spPolizas_Motivos @CodPoliza";
 
-                var data = conn.Query<dynamic>(
+                var dataMotivo = conn.Query<dynamic>(
                     query,
                     new { CodPoliza = codPoliza.Trim() }
                 ).ToList();
 
-                var result = data.Select(x => new DropDownListaGenericaModel
+                var resultMotivo = dataMotivo.Select(x => new DropDownListaGenericaModel
                 {
                     item = x.IdX,
                     descripcion = x.ItmX
                 }).ToList();
 
-                return result;
+                return resultMotivo;
             });
         }
 
@@ -65,18 +65,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 const string query = @"EXEC spPolizas_Causas @CodPoliza";
 
-                var data = conn.Query<dynamic>(
+                var dataCausa = conn.Query<dynamic>(
                     query,
                     new { CodPoliza = codPoliza.Trim() }
                 ).ToList();
 
-                var result = data.Select(x => new DropDownListaGenericaModel
+                var resultCausa = dataCausa.Select(x => new DropDownListaGenericaModel
                 {
                     item = x.IdX,
                     descripcion = x.ItmX
                 }).ToList();
 
-                return result;
+                return resultCausa;
             });
         }
 
@@ -121,18 +121,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 const string query = @"EXEC spCrd_SGT_Bancos @Usuario";
 
-                var data = conn.Query<dynamic>(
+                var dataBanco = conn.Query<dynamic>(
                     query,
                     new { Usuario = usuario.Trim() }
                 ).ToList();
 
-                var result = data.Select(x => new DropDownListaGenericaModel
+                var resultBanco = dataBanco.Select(x => new DropDownListaGenericaModel
                 {
                     item = x.IdX,
                     descripcion = x.ItmX
                 }).ToList();
 
-                return result;
+                return resultBanco;
             });
         }
 
@@ -157,7 +157,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 const string query = @"EXEC spSys_Cuentas_Bancarias @Cedula, @BancoId, @Tipo";
 
-                var data = conn.Query<dynamic>(
+                var dataCuentas = conn.Query<dynamic>(
                     query,
                     new
                     {
@@ -167,13 +167,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     }
                 ).ToList();
 
-                var result = data.Select(x => new DropDownListaGenericaModel
+                var resultCuentas = dataCuentas.Select(x => new DropDownListaGenericaModel
                 {
                     item = x.IdX,
                     descripcion = x.ItmX
                 }).ToList();
 
-                return result;
+                return resultCuentas;
             });
         }
 
