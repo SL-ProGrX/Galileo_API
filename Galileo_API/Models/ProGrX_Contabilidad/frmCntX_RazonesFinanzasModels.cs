@@ -74,7 +74,7 @@
         public string Usuario { get; set; } = string.Empty;
         public required int CodContabilidad { get; set; }
         public string CodRazon { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
     }
 
     public class CntXRazonesReporteUpdateParams
@@ -82,7 +82,7 @@
         public string Usuario { get; set; } = string.Empty;
         public required int CodContabilidad { get; set; }
         public string CodRazon { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
         public string Mes { get; set; } = "Mes01"; // Mes01, Mes02, etc.
     }
 
