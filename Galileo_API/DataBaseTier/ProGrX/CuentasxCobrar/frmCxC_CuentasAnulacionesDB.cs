@@ -21,6 +21,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             _mProGrx = new MProGrxMain(config);
         }
 
+        /// <summary>
+        /// Obtiene los datos de la operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<CxcOperacionAnulacionData?> CxcOperacion_Obtener(int codEmpresa, int operacion)
         {
             var sql = @"
@@ -57,6 +63,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de movimientos de una operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<CxcOperacionMovimientoData>> CxcOperacionMovimientos_Lista_Obtener(int codEmpresa, int operacion)
         {
             var sql = @"
@@ -82,6 +94,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             );
         }
 
+        /// <summary>
+        /// Anula operacion de abono a cuentas 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
         public ErrorDto CxcCuentasAbono_Anular(int codEmpresa, CxcAbonoAnularParams req)
         {
             try
