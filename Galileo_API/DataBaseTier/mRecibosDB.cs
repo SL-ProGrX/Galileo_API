@@ -323,35 +323,33 @@ namespace Galileo_API.DataBaseTier
                 var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
                 int sysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
 
-                var tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+                string tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
 
                 if (sysDocVersion == 1)
                 {
-                    string strCampo = tipo switch
+                    string? sql = tipo switch
                     {
-                        "RE" => "CS_RE_CUENTA",
-                        "DP" => "CS_DP_CUENTA",
-                        "ND" => "CS_ND_CUENTA",
-                        "NC" => "CS_NC_CUENTA",
-                        _ => string.Empty
+                        "RE" => "select CS_RE_CUENTA as cuenta from ase_consecutivos",
+                        "DP" => "select CS_DP_CUENTA as cuenta from ase_consecutivos",
+                        "ND" => "select CS_ND_CUENTA as cuenta from ase_consecutivos",
+                        "NC" => "select CS_NC_CUENTA as cuenta from ase_consecutivos",
+                        _ => null
                     };
 
-                    if (string.IsNullOrWhiteSpace(strCampo))
+                    if (string.IsNullOrWhiteSpace(sql))
+                    {
                         return string.Empty;
+                    }
 
-                    var sql = $"select {strCampo} as cuenta from ase_consecutivos";
-
-                    return (conn.QueryFirstOrDefault<string>(sql) ?? "").Trim();
+                    return (conn.QueryFirstOrDefault<string>(sql) ?? string.Empty).Trim();
                 }
-                else
-                {
-                    const string sql = @"
-                        SELECT COD_CUENTA
-                        FROM SIF_DOCUMENTOS
-                        where tipo_documento = @tipo";
 
-                    return (conn.QueryFirstOrDefault<string>(sql, new { tipo }) ?? "").Trim();
-                }
+                const string sqlV2 = @"
+            SELECT COD_CUENTA
+            FROM SIF_DOCUMENTOS
+            WHERE tipo_documento = @tipo";
+
+                return (conn.QueryFirstOrDefault<string>(sqlV2, new { tipo }) ?? string.Empty).Trim();
             }
             catch
             {
