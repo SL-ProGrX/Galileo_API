@@ -133,4 +133,28 @@
         public string cod_concepto { get; set; } = "";
         public string deposito { get; set; } = "";
     }
+
+    public class CxcRegistrarAsientoRequest
+    {
+        public int CodEmpresa { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public int Documento { get; set; }
+        public decimal Monto { get; set; }
+        public string Dc { get; set; } = string.Empty;
+        public string TipoDoc { get; set; } = string.Empty;
+        public int Operacion { get; set; }
+        public string CodDivisa { get; set; } = string.Empty;
+        public string CodUnidad { get; set; } = string.Empty;
+        public string CodCentroCosto { get; set; } = string.Empty;
+        public string Cuenta { get; set; } = string.Empty;
+        public string CodConcepto { get; set; } = string.Empty;
+        public string Deposito { get; set; } = string.Empty;
+    }
+
+    sealed class AsientoItem
+    {
+        public decimal Monto { get; init; }
+        public string? Cuenta { get; init; }
+        public string Dc { get; init; } = string.Empty;
+    }
 }

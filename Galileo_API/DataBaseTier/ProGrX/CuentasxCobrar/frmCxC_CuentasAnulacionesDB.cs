@@ -123,6 +123,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     var respDoc = CxcDocumentoAbono_Generar(codEmpresa, req, vCuenta, vTipoDoc);
                     ErrorDto eeDoc;
                     if (FailIfError(respDoc, out eeDoc)) return eeDoc;
+
+                    lngRecibo = respDoc.Code ?? 0;
                 }
 
                 var respAnula = Exec(codEmpresa,
@@ -271,37 +273,60 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 if (FailIfError(respIns, out ee))
                     return new ErrorDto { Code = ee.Code, Description = ee.Description };
 
-                if (req.intcor > 0)
+                var asientosDebito = new List<AsientoItem>
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intcor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintc, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
-                    if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
-                }
+                    new() { Monto = req.intcor, Cuenta = op.ctaintc, Dc = "D" },
+                    new() { Monto = req.intmor, Cuenta = op.ctaintm, Dc = "D" },
+                    new() { Monto = req.cargos, Cuenta = op.ctacargos, Dc = "D" },
+                    new() { Monto = req.amortizacion, Cuenta = op.ctaamortiza, Dc = "D" }
+                };
 
-                if (req.intmor > 0)
+                foreach (var asiento in asientosDebito.Where(x => x.Monto > 0))
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intmor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintm, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
-                    if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
-                }
+                    var resp = RegistrarAsiento(new CxcRegistrarAsientoRequest
+                    {
+                        CodEmpresa = codEmpresa,
+                        Usuario = req.usuario,
+                        Documento = recibo,
+                        Monto = asiento.Monto,
+                        Dc = asiento.Dc,
+                        TipoDoc = vTipoDoc,
+                        Operacion = op.operacion,
+                        CodDivisa = op.cod_divisa ?? "",
+                        CodUnidad = op.cod_unidad ?? "",
+                        CodCentroCosto = op.cod_centro_costo ?? "",
+                        Cuenta = asiento.Cuenta ?? "",
+                        CodConcepto = op.cod_concepto ?? "",
+                        Deposito = req.deposito ?? ""
+                    });
 
-                if (req.cargos > 0)
-                {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.cargos, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctacargos, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
-                    if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
-                }
-
-                if (req.amortizacion > 0)
-                {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.amortizacion, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaamortiza, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
-                    if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
+                    if (FailIfError(resp, out ee))
+                        return new ErrorDto { Code = ee.Code, Description = ee.Description };
                 }
 
                 var total = req.intcor + req.intmor + req.amortizacion + req.cargos;
                 if (total > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, total, "C", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, vCuenta, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
-                    if (FailIfError(r, out ee)) return new ErrorDto  { Code = ee.Code, Description = ee.Description };
-                }
+                    var respCredito = RegistrarAsiento(new CxcRegistrarAsientoRequest
+                    {
+                        CodEmpresa = codEmpresa,
+                        Usuario = req.usuario,
+                        Documento = recibo,
+                        Monto = total,
+                        Dc = "C",
+                        TipoDoc = vTipoDoc,
+                        Operacion = op.operacion,
+                        CodDivisa = op.cod_divisa ?? "",
+                        CodUnidad = op.cod_unidad ?? "",
+                        CodCentroCosto = op.cod_centro_costo ?? "",
+                        Cuenta = vCuenta,
+                        CodConcepto = op.cod_concepto ?? "",
+                        Deposito = req.deposito ?? ""
+                    });
 
+                    if (FailIfError(respCredito, out ee))
+                        return new ErrorDto { Code = ee.Code, Description = ee.Description };
+                }
 
                 return new ErrorDto
                 {
@@ -319,38 +344,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
         }
 
-        private ErrorDto RegistrarAsiento(
-             int codEmpresa,
-             CxcAbonoAnularParams req,
-             int documento,
-             decimal monto,
-             string dc,
-             string? cod_divisa,
-             string? cod_unidad,
-             string? cod_centro_costo,
-             string? cuenta,
-             int operacion,
-             string vTipoDoc,
-             string? cod_concepto,
-             string? deposito)
+        private ErrorDto RegistrarAsiento(CxcRegistrarAsientoRequest request)
         {
-            int gEnlace = _mProGrx.sbSifParametrosInicializa(codEmpresa, req.usuario).Result!.GEnlace; 
+            int gEnlace = _mProGrx
+                .sbSifParametrosInicializa(request.CodEmpresa, request.Usuario)
+                .Result!
+                .GEnlace;
 
-            return SifDocsAsiento_Registrar(codEmpresa, new SifDocsAsientoParams
+            return SifDocsAsiento_Registrar(request.CodEmpresa, new SifDocsAsientoParams
             {
-                tipodoc = vTipoDoc,
-                numdoc = documento.ToString(),
-                monto = monto,
-                dc = dc,
-                cod_divisa = cod_divisa ?? "",
+                tipodoc = request.TipoDoc,
+                numdoc = request.Documento.ToString(),
+                monto = request.Monto,
+                dc = request.Dc,
+                cod_divisa = request.CodDivisa,
                 tipo_cambio = 1,
                 enlace = gEnlace,
-                cod_unidad = cod_unidad ?? "",
-                cod_centro_costo = cod_centro_costo ?? "",
-                cuenta = cuenta ?? "",
-                operacion = operacion,
-                cod_concepto = cod_concepto ?? "",
-                deposito = deposito ?? ""
+                cod_unidad = request.CodUnidad,
+                cod_centro_costo = request.CodCentroCosto,
+                cuenta = request.Cuenta,
+                operacion = request.Operacion,
+                cod_concepto = request.CodConcepto,
+                deposito = request.Deposito
             });
         }
 
