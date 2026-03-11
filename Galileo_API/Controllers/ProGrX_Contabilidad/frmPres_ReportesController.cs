@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
@@ -34,6 +35,12 @@ namespace Galileo.Controllers
         public ErrorDto<List<object>> Pres_ReporteBalanceEstado(int CodEmpresa, PresFiltrosReportes presFiltros)
         {
             return _bl.Pres_ReporteBalanceEstado(CodEmpresa, presFiltros);
+        }
+
+        [HttpGet("Pres_ReportesIndicadores")]
+        public ErrorDto<PresReportesIndicadoresData> Pres_ReportesIndicadoresPeriodo(int CodEmpresa, string modelo, int codContab, DateTime periodo)
+        {
+            return _bl.Pres_ReportesIndicadoresPeriodo(CodEmpresa, modelo, codContab, periodo);
         }
     }
 }

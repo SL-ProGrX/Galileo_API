@@ -1,8 +1,9 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
-using Microsoft.VisualBasic;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using Microsoft.Data.SqlClient;
+using Microsoft.VisualBasic;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -10,10 +11,12 @@ namespace Galileo.DataBaseTier
     public class FrmPresModeloDb
     {
         private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb;
 
         public FrmPresModeloDb(IConfiguration config)
         {
             _config = config;
+            _portalDb = new PortalDB(config);
         }
 
         #region Helpers
@@ -525,6 +528,170 @@ namespace Galileo.DataBaseTier
                 resp.Code = -1;
                 resp.Description = "Pres_Model_Eliminar: " + ex.Message;
             }
+            return resp;
+        }
+
+        /// <summary>
+        /// Obtiene el rango de inicio y corte del cierre seleccionado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContab">Código de la contabilidad.</param>
+        /// <param name="periodoId">Id del cierre o periodo seleccionado.</param>
+        /// <returns>Información del cierre para construir los indicadores mensuales.</returns>
+        public ErrorDto<PresModeloCierreData> Pres_Modelo_Cierre_Obtener(int codEmpresa, int codContab, int periodoId)
+        {
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                const string query = @"
+                    SELECT TOP 1
+                           INICIO_ANIO AS Inicio_Anio,
+                           INICIO_MES  AS Inicio_Mes,
+                           CORTE_ANIO  AS Corte_Anio,
+                           CORTE_MES   AS Corte_Mes
+                    FROM CNTX_CIERRES
+                    WHERE COD_CONTABILIDAD = @CodContab
+                      AND ID_CIERRE = @PeriodoId
+                    ORDER BY INICIO_ANIO DESC;";
+
+                return conn.QueryFirstOrDefault<PresModeloCierreData>(query,
+                    new
+                    {
+                        CodContab = codContab,
+                        PeriodoId = periodoId
+                    }) ?? new PresModeloCierreData();
+            });
+        }
+
+        /// <summary>
+        /// Obtiene los indicadores mensuales registrados para un modelo y contabilidad.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codModelo">Código del modelo.</param>
+        /// <param name="codContab">Código de la contabilidad.</param>
+        /// <returns>Lista de indicadores mensuales registrados.</returns>
+        public ErrorDto<List<PresModeloIndicadorData>> Pres_Modelo_Indicadores_Obtener(int codEmpresa, string codModelo, int codContab)
+        {
+            var resp = new ErrorDto<List<PresModeloIndicadorData>>
+            {
+                Code = 0,
+                Result = new List<PresModeloIndicadorData>()
+            };
+
+            const string sql = @"
+        SELECT
+            CORTE,
+            COD_MODELO,
+            COD_CONTABILIDAD,
+            TIPO_CAMBIO,
+            TASA_BASICA_PASIVA,
+            INDICE_INFLACION,
+            REGISTRO_USUARIO,
+            REGISTRO_FECHA,
+            MODIFICA_FECHA,
+            MODIFICA_USUARIO
+        FROM PRES_MODELOS_INDICADORES
+        WHERE COD_MODELO = @CodModelo
+          AND COD_CONTABILIDAD = @CodContab
+        ORDER BY CORTE;";
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                resp.Result = connection.Query<PresModeloIndicadorData>(
+                    sql,
+                    new
+                    {
+                        CodModelo = codModelo,
+                        CodContab = codContab
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "Pres_Modelo_Indicadores_Obtener: " + ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+        /// <summary>
+        /// Guarda los indicadores mensuales del modelo. Si el registro ya existe, lo actualiza; si no existe, lo inserta.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Datos de indicadores a guardar.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto Pres_Modelo_Indicadores_Guardar(int codEmpresa, PresModeloIndicadoresGuardarRequest request)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
+            const string sql = @"
+        MERGE PRES_MODELOS_INDICADORES AS T
+        USING (
+            SELECT
+                @Corte AS CORTE,
+                @CodModelo AS COD_MODELO,
+                @CodContab AS COD_CONTABILIDAD
+        ) AS S
+        ON T.CORTE = S.CORTE
+        AND T.COD_MODELO = S.COD_MODELO
+        AND T.COD_CONTABILIDAD = S.COD_CONTABILIDAD
+        WHEN MATCHED THEN
+            UPDATE SET
+                T.TIPO_CAMBIO = @TipoCambio,
+                T.TASA_BASICA_PASIVA = @TasaBasicaPasiva,
+                T.INDICE_INFLACION = @IndiceInflacion,
+                T.MODIFICA_FECHA = GETDATE(),
+                T.MODIFICA_USUARIO = @Usuario
+        WHEN NOT MATCHED THEN
+            INSERT (
+                CORTE,
+                COD_MODELO,
+                COD_CONTABILIDAD,
+                TIPO_CAMBIO,
+                TASA_BASICA_PASIVA,
+                INDICE_INFLACION,
+                REGISTRO_USUARIO,
+                REGISTRO_FECHA
+            )
+            VALUES (
+                @Corte,
+                @CodModelo,
+                @CodContab,
+                @TipoCambio,
+                @TasaBasicaPasiva,
+                @IndiceInflacion,
+                @Usuario,
+                GETDATE()
+            );";
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                foreach (var item in request.Indicadores)
+                {
+                    connection.Execute(
+                        sql,
+                        new
+                        {
+                            Corte = item.Corte,
+                            CodModelo = request.Cod_Modelo,
+                            CodContab = request.Cod_Contabilidad,
+                            TipoCambio = item.Tipo_Cambio,
+                            TasaBasicaPasiva = item.Tasa_Basica_Pasiva,
+                            IndiceInflacion = item.Indice_Inflacion,
+                            Usuario = request.Usuario
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "Pres_Modelo_Indicadores_Guardar: " + ex.Message;
+            }
+
             return resp;
         }
     }

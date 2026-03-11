@@ -27,5 +27,11 @@ namespace Galileo.BusinessLogic
         {
             return DbfrmPres_Reportes.Pres_ReporteBalanceEstado(CodEmpresa, presFiltros);
         }
+
+        public ErrorDto<PresReportesIndicadoresData> Pres_ReportesIndicadoresPeriodo(int CodEmpresa, string modelo, int codContab, DateTime periodo)
+        {
+            string vfecha = periodo.ToString("yyyy-MM-dd");
+            return DbfrmPres_Reportes.Pres_ReportesIndicadoresPeriodo(CodEmpresa, modelo, codContab, vfecha);
+        }
     }
 }

@@ -29,4 +29,11 @@ namespace Galileo.Models.PRES
         public bool chkCuentasOrden { get; set; } = false;
         public bool chkFormatoNumCuentas { get; set; } = false;
     }
+
+    public class PresReportesIndicadoresData
+    {
+        public decimal? Tipo_Cambio { get; set; }
+        public double? Tasa_Basica_Pasiva { get; set; }
+        public double? Indice_Inflacion { get; set; }
+    }
 }
