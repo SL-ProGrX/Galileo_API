@@ -200,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             try
             {
                 long lngRecibo = _mRecibos.FxDocumentoConsecutivo(codEmpresa, "CxC_ND");
-                int recibo = (int?)lngRecibo ?? 0;
+                int recibo = (int)lngRecibo;
                 if (recibo <= 0)
                 {
                     return new ErrorDto
