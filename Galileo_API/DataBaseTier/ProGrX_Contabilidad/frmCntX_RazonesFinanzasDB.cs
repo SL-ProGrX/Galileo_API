@@ -221,7 +221,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las notas y la fórmula de una razón financiera.
         /// </summary>
-        public ErrorDto<CntXRazonNotasDto> CntXRazonFinanciera_Notas(int codEmpresa, int codContabilidad, string codGrupo, string codRazon)
+        public ErrorDto<CntXRazonNotasDto?> CntXRazonFinanciera_Notas(int codEmpresa, int codContabilidad, string codGrupo, string codRazon)
         {
             var sql = @"
                 select notas, formula
@@ -252,7 +252,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene el próximo Idx para detalle de razón financiera.
         /// </summary>
-        public ErrorDto<CntXRazonDetalleIdxDto> CntXRazonDetalle_ProximoIdx(int codEmpresa, int codContabilidad, string codRazon)
+        public ErrorDto<CntXRazonDetalleIdxDto?> CntXRazonDetalle_ProximoIdx(int codEmpresa, int codContabilidad, string codRazon)
         {
             var sql = @"
                 select (isnull(max(idx),0) + 1) as Idx
@@ -328,6 +328,166 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var rows = conn.Execute(sql, new { idx, codContabilidad, codRazon });
                 return rows > 0;
             });
+        }
+
+        /// <summary>
+        /// Actualiza las notas y la fórmula de una razón financiera.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonFinanciera_ActualizarNotas(int codEmpresa, CntXRazonNotasUpdateParams param)
+        {
+            var sql = @"
+                update CntX_Razones
+                set notas = @Notas,
+                    formula = @Formula
+                where cod_contabilidad = @CodContabilidad
+                  and cod_grupo = @CodGrupo
+                  and cod_razon = @CodRazon";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la lista de unidades para combos.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXUnidades_Combo(int codEmpresa, int codContabilidad)
+        {
+            var sql = @"
+                select rtrim(cod_unidad) as item, rtrim(descripcion) as descripcion
+                from CntX_Unidades
+                where cod_contabilidad = @codContabilidad";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { codContabilidad });
+        }
+
+        /// <summary>
+        /// Obtiene la lista de razones con operador 'B', con filtro opcional por grupo.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXRazonesConOperadorB_Lista(int codEmpresa, int codContabilidad, string? codGrupo = null)
+        {
+            var sql = @"
+                select R.cod_razon as item, R.descripcion
+                from CntX_Razones R
+                inner join CntX_Razones_detalle D
+                  on R.cod_razon = D.cod_razon
+                 and R.cod_contabilidad = D.cod_contabilidad
+                where R.cod_contabilidad = @codContabilidad
+                  and D.operador = 'B'";
+            if (!string.IsNullOrWhiteSpace(codGrupo) && codGrupo != "TODOS")
+                sql += " and R.cod_grupo = @codGrupo";
+            sql += " group by R.cod_razon, R.descripcion";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { codContabilidad, codGrupo });
+        }
+
+        /// <summary>
+        /// Elimina registros de CntX_Razones_Reporte por usuario y contabilidad.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonesReporte_Eliminar(int codEmpresa, string usuario, int codContabilidad)
+        {
+            var sql = @"
+                delete from CntX_Razones_Reporte
+                where usuario = @usuario
+                  and cod_contabilidad = @codContabilidad";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, new { usuario, codContabilidad });
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Inserta un registro en CntX_Razones_Reporte.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonesReporte_Insertar(int codEmpresa, CntXRazonesReporteInsertParams param)
+        {
+            var sql = @"
+                insert into CntX_Razones_Reporte (usuario, cod_contabilidad, cod_razon, monto)
+                values (@Usuario, @CodContabilidad, @CodRazon, @Monto)";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        public ErrorDto<bool> CntXRazonesReporte_ActualizarMes(int codEmpresa, CntXRazonesReporteUpdateParams param)
+        {
+            string sql = "";
+
+            // Validación estricta para evitar inyección SQL
+            switch (param.Mes)
+            {
+                case "Mes01":
+                    sql = @"
+                update CntX_Razones_Reporte
+                set Mes01 = @Monto
+                where usuario = @Usuario
+                  and cod_contabilidad = @CodContabilidad
+                  and cod_razon = @CodRazon";
+                    break;
+                case "Mes02":
+                    sql = @"
+                update CntX_Razones_Reporte
+                set Mes02 = @Monto
+                where usuario = @Usuario
+                  and cod_contabilidad = @CodContabilidad
+                  and cod_razon = @CodRazon";
+                    break;
+                default:
+                    return DbHelper.CreateErrorResponse<bool>("Mes inválido");
+            }
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la fórmula de una razón financiera.
+        /// </summary>
+        public ErrorDto<CntXRazonFormulaDto?> CntXRazonFinanciera_Formula(int codEmpresa, int codContabilidad, string codRazon)
+        {
+            var sql = @"
+                select formula
+                from CntX_Razones
+                where cod_contabilidad = @codContabilidad
+                  and cod_razon = @codRazon";
+            return DbHelper.ExecuteSingleQuery<CntXRazonFormulaDto>(_portalDb, codEmpresa, sql, default, new { codContabilidad, codRazon });
+        }
+
+        /// <summary>
+        /// Obtiene el monto de una razón financiera, filtrando por unidad si corresponde.
+        /// </summary>
+        public ErrorDto<CntXRazonMontoDto?> CntXRazonFinanciera_Monto(int codEmpresa, CntXRazonMontoParams param)
+        {
+            string sql = param.Unidad == "TODOS"
+                ? @"
+                    select (M.saldo_inicial + M.total_debitos + M.total_creditos) as Monto
+                    from CntX_Razones_detalle R
+                    inner join vCntX_Mov_Cuentas_General M
+                        on R.cod_contabilidad = M.cod_contabilidad
+                       and R.cod_cuenta       = M.cod_cuenta
+                    where R.cod_razon = @CodRazon
+                      and M.Anio = @Anio
+                      and M.mes  = @Mes
+                      and R.idX  = @Idx
+                      and R.cod_contabilidad = @CodContabilidad"
+                : @"
+                    select (M.saldo_inicial + M.total_debitos + M.total_creditos) as Monto
+                    from CntX_Razones_detalle R
+                    inner join vCntX_Mov_Cuentas_Unidad M
+                        on R.cod_contabilidad = M.cod_contabilidad
+                       and R.cod_cuenta       = M.cod_cuenta
+                       and M.cod_unidad       = @Unidad
+                    where R.cod_razon = @CodRazon
+                      and M.Anio = @Anio
+                      and M.mes  = @Mes
+                      and R.idX  = @Idx
+                      and R.cod_contabilidad = @CodContabilidad";
+            return DbHelper.ExecuteSingleQuery<CntXRazonMontoDto>(_portalDb, codEmpresa, sql, default, param);
         }
 
     }
