@@ -76,5 +76,33 @@ namespace Galileo_API.DataBaseTier
                 _ => ""
             };
         }
+        public string fxDescribeCodigo(int CodEmpresa, string strCodigo)
+        {
+            strCodigo = (strCodigo ?? string.Empty).Trim();
+
+            if (strCodigo.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            const string sql = @"
+                select rtrim(descripcion)
+                from catalogo
+                where codigo = @codigo;";
+
+            var result = DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                string.Empty,
+                new { codigo = strCodigo });
+
+            if (result.Code != 0)
+            {
+                return string.Empty;
+            }
+
+            return (result.Result ?? string.Empty).Trim();
+        }
     }
 }
