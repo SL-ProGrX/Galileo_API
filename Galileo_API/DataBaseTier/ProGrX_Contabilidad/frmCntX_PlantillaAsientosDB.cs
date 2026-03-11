@@ -16,7 +16,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = new PortalDB(config);
         }
 
-
+        /// <summary>
+        /// Helper de Ejecutar
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="codEmpresa"></param>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private ErrorDto<T> Ejecutar<T>(int codEmpresa, Func<SqlConnection, T> accion)
         {
             var response = new ErrorDto<T>();
@@ -38,7 +44,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-
+        /// <summary>
+        /// Consulta plantilla asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
         public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -65,7 +76,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-
+        /// <summary>
+        /// Inserta nuevas plantillas asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="modelo"></param>
+        /// <returns></returns>
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -108,7 +124,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-
+        /// <summary>
+        /// Actualiza las plantillas asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="modelo"></param>
+        /// <returns></returns>
         public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -148,8 +169,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-  
 
+        /// <summary>
+        /// Borra los registros
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
         public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -169,7 +195,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-
+        /// <summary>
+        /// Realiza funcion del scroll
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigoActual"></param>
+        /// <param name="direccion"></param>
+        /// <returns></returns>
         public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -190,8 +222,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-
-
+        /// <summary>
+        /// Busca las plantillas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa)
         {
             return Ejecutar(codEmpresa, cn =>
@@ -204,11 +239,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
- 
+        /// <summary>
+        /// Busca los tipo de asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(
-            int codEmpresa,
-            int cod_contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
         {
             return Ejecutar(codEmpresa, cn =>
             {
@@ -220,6 +258,62 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                       WHERE cod_contabilidad = @cod_contabilidad
                       ORDER BY tipo_asiento",
                     new { cod_contabilidad }
+                ).ToList();
+            });
+        }
+
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return Ejecutar(codEmpresa, cn =>
+            {
+                return cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT
+                cod_unidad AS item,
+                descripcion
+              FROM CntX_Unidades
+              WHERE cod_contabilidad = @cod_contabilidad
+              ORDER BY cod_unidad",
+                    new { cod_contabilidad }
+                ).ToList();
+            });
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return Ejecutar(codEmpresa, cn =>
+            {
+                return cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT
+                cod_divisa AS item,
+                descripcion
+              FROM CntX_Divisas
+              WHERE cod_contabilidad = @cod_contabilidad
+              ORDER BY cod_divisa",
+                    new { cod_contabilidad }
+                ).ToList();
+            });
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, int cod_contabilidad, string codUnidad)
+        {
+            return Ejecutar(codEmpresa, cn =>
+            {
+                return cn.Query<DropDownListaGenericaModel>(
+                    @"SELECT
+                C.cod_centro_costo AS item,
+                C.descripcion
+              FROM CntX_Centro_Costos C
+              INNER JOIN CntX_Unidades_CC U
+                ON C.cod_centro_costo = U.cod_centro_costo
+                AND C.cod_contabilidad = U.cod_contabilidad
+              WHERE C.cod_contabilidad = @cod_contabilidad
+                AND U.cod_unidad = @codUnidad
+              ORDER BY C.cod_centro_costo",
+                    new { cod_contabilidad, codUnidad }
                 ).ToList();
             });
         }

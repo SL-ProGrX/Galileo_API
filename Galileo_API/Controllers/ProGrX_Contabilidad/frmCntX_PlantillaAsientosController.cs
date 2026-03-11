@@ -60,11 +60,36 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.BuscarPlantillas(codEmpresa);
         }
 
+        [Authorize]
         [HttpGet]
         [Route("Cntx_TiposAsientos_Buscar")]
         public ErrorDto<List<DropDownListaGenericaModel>> TiposAsientosBuscar(int codEmpresa, int cod_contabilidad)
         {
             return _bl.Cntx_TiposAsientos_Buscar(codEmpresa, cod_contabilidad);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("Unidades_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return _bl.Unidades_Obtener(codEmpresa, cod_contabilidad);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("Divisas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return _bl.Divisas_Obtener(codEmpresa, cod_contabilidad);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("CentroCosto_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, int cod_contabilidad, string codUnidad)
+        {
+            return _bl.CentroCosto_Obtener(codEmpresa, cod_contabilidad, codUnidad);
         }
     }
 }
