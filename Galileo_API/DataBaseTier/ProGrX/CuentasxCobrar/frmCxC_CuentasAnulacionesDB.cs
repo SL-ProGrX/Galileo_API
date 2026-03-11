@@ -107,7 +107,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 const string vTipoDoc = "CxC_ND";
                 var fecha = DateTime.Now;
                 string vCuenta = _mRecibos.FxDocumentoCuenta(codEmpresa, vTipoDoc);
-                if (string.IsNullOrWhiteSpace(vCuenta?.Trim()))
+                if (string.IsNullOrWhiteSpace(vCuenta))
                 {
                     return new ErrorDto
                     {
