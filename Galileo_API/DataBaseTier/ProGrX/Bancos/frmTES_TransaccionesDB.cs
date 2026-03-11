@@ -698,12 +698,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+                string fechaAutoriza = string.Empty;
                 if (transaccion.user_autoriza == null)
                 {
                     fechaAutoriza = string.Empty;
                 }
-                using var connection = OpenConnection(CodEmpresa);
+                else
+                {
+                    fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+                }
+                    using var connection = OpenConnection(CodEmpresa);
 
                 var query = @"
                     INSERT INTO Tes_Transacciones (
@@ -804,9 +808,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         cod_divisa =  @cod_divisa,
                         referencia = @referencia,
                         Autoriza = @Autoriza, 
-                        fecha_autorizacion = @fecha_autorizacion,
                         CORREO_NOTIFICA = @correo_notifica,
-                        user_autoriza = @user_autoriza,
                         TIPO_CED_ORIGEN = @tipo_ced_origen, 
                         CTA_IBAN_ORIGEN= @cta_iban_origen,
                         CEDULA_ORIGEN= @cedula_origen, 
@@ -833,9 +835,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     cod_divisa = transaccion.cod_divisa,
                     referencia = transaccion.referencia,
                     autoriza = transaccion.autoriza,
-                    fecha_autorizacion = transaccion.fecha_autorizacion,
                     correo_notifica = transaccion.correo_notifica,
-                    user_autoriza = transaccion.user_autoriza,
                     nsolicitud = transaccion.nsolicitud,
                     tipo_ced_origen = transaccion.tipo_ced_origen,
                     cta_iban_origen = transaccion.cta_iban_origen,
