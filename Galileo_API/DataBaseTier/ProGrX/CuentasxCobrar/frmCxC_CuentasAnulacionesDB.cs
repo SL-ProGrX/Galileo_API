@@ -228,18 +228,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     };
                 }
 
-                var strLinea1 = $"Saldo Actual      {op.saldo:N2}";
-                var strLinea2 = $"Interes Corriente {(req.intcor * -1):N2}";
-                var strLinea3 = $"Interes Moratorio {(req.intmor * -1):N2}";
-                var strLinea4 = $"Amortización      {(req.amortizacion * -1):N2}";
-                var strLinea5 = $"Cargos            {(req.cargos * -1):N2}";
-                var strLinea6 = "";
-                var strLinea7 = $"Nuevo Saldo       {(op.saldo + req.amortizacion):N2}";
-                var strLinea8 = $"Operación /Linea  {req.operacion}_{req.cod_concepto_operacion}";
-                var strLinea9 = "";
-                var strLinea10 = $"Usuario           {req.usuario}";
-                var strLinea11 = "Anulación";
-
                 string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, req.usuario).Result!.GOficinaTitular;
 
                 var respIns = SifTransaccion_Insertar(codEmpresa, new SifTransaccionInsertParams
