@@ -256,17 +256,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     referencia_02 = req.cod_concepto_operacion,
                     referencia_03 = req.deposito ?? "",
                     cod_oficina = gOficinaTitular,
-                    linea1 = strLinea1,
-                    linea2 = strLinea2,
-                    linea3 = strLinea3,
-                    linea4 = strLinea4,
-                    linea5 = strLinea5,
-                    linea6 = strLinea6,
-                    linea7 = strLinea7,
-                    linea8 = strLinea8,
-                    linea9 = strLinea9,
-                    linea10 = strLinea10,
-                    linea11 = strLinea11,
+                    lineas = new[]
+                    {
+                        $"Saldo Actual      {op.saldo:N2}",
+                        $"Interes Corriente {(req.intcor * -1):N2}",
+                        $"Interes Moratorio {(req.intmor * -1):N2}",
+                        $"Amortización      {(req.amortizacion * -1):N2}",
+                        $"Cargos            {(req.cargos * -1):N2}",
+                        "",
+                        $"Nuevo Saldo       {(op.saldo + req.amortizacion):N2}",
+                        $"Operación /Linea  {req.operacion}_{req.cod_concepto_operacion}",
+                        "",
+                        $"Usuario           {req.usuario}",
+                        "Anulación"
+                    },
                     detalle = (req.detalle ?? "") + Environment.NewLine + "Depósito..:" + (req.deposito ?? "")
                 });
 
@@ -455,7 +458,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     @detalle
                 )";
 
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, param);
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new
+            {
+                param.cod_transaccion,
+                param.tipo_documento,
+                param.registro_usuario,
+                param.cliente_identificacion,
+                param.cliente_nombre,
+                param.cod_concepto,
+                param.monto,
+                param.estado,
+                param.referencia_01,
+                param.referencia_02,
+                param.referencia_03,
+                param.cod_oficina,
+                linea1 = param.lineas.ElementAtOrDefault(0) ?? string.Empty,
+                linea2 = param.lineas.ElementAtOrDefault(1) ?? string.Empty,
+                linea3 = param.lineas.ElementAtOrDefault(2) ?? string.Empty,
+                linea4 = param.lineas.ElementAtOrDefault(3) ?? string.Empty,
+                linea5 = param.lineas.ElementAtOrDefault(4) ?? string.Empty,
+                linea6 = param.lineas.ElementAtOrDefault(5) ?? string.Empty,
+                linea7 = param.lineas.ElementAtOrDefault(6) ?? string.Empty,
+                linea8 = param.lineas.ElementAtOrDefault(7) ?? string.Empty,
+                linea9 = param.lineas.ElementAtOrDefault(8) ?? string.Empty,
+                linea10 = param.lineas.ElementAtOrDefault(9) ?? string.Empty,
+                linea11 = param.lineas.ElementAtOrDefault(10) ?? string.Empty,
+                param.detalle
+            });
         }
 
         public ErrorDto SifDocsAsiento_Registrar(int codEmpresa, SifDocsAsientoParams param)

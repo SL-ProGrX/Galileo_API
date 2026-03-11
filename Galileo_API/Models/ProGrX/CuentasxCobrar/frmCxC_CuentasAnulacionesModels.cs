@@ -102,17 +102,7 @@
 
         public string cod_oficina { get; set; } = "";
 
-        public string linea1 { get; set; } = string.Empty; //linea numero 1
-        public string linea2 { get; set; } = string.Empty; //linea numero 2
-        public string linea3 { get; set; } = string.Empty; //linea numero 3
-        public string linea4 { get; set; } = string.Empty; //linea numero 4
-        public string linea5 { get; set; } = string.Empty; //linea numero 5
-        public string linea6 { get; set; } = string.Empty; //linea numero 6
-        public string linea7 { get; set; } = string.Empty; //linea numero 7
-        public string linea8 { get; set; } = string.Empty; //linea numero 8
-        public string linea9 { get; set; } = string.Empty; //linea numero 9
-        public string linea10 { get; set; } = string.Empty; //linea numero 10
-        public string linea11 { get; set; } = string.Empty; //linea numero 11
+        public string[] lineas { get; set; } = new string[11];
         public string detalle { get; set; } = "";
     }
 
