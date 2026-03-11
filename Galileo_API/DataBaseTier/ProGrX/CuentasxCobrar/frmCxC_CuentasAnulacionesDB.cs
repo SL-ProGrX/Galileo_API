@@ -104,8 +104,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             try
             {
+                const string vTipoDoc = "CxC_ND";
                 var fecha = DateTime.Now;
-                string vCuenta = _mRecibos.FxDocumentoCuenta(codEmpresa, "CxC_ND");
+                string vCuenta = _mRecibos.FxDocumentoCuenta(codEmpresa, vTipoDoc);
                 if (string.IsNullOrWhiteSpace(vCuenta?.Trim()))
                 {
                     return new ErrorDto
@@ -119,7 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (req.generar_recibo)
                 {
-                    var respDoc = CxcDocumentoAbono_Generar(codEmpresa, req, vCuenta);
+                    var respDoc = CxcDocumentoAbono_Generar(codEmpresa, req, vCuenta, vTipoDoc);
                     ErrorDto eeDoc;
                     if (FailIfError(respDoc, out eeDoc)) return eeDoc;
                 }
@@ -195,11 +196,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sqlString, param);
         }
 
-        public ErrorDto CxcDocumentoAbono_Generar(int codEmpresa, CxcAbonoAnularParams req, string vCuenta)
+        public ErrorDto CxcDocumentoAbono_Generar(int codEmpresa, CxcAbonoAnularParams req, string vCuenta, string vTipoDoc)
         {
             try
             {
-                long lngRecibo = _mRecibos.FxDocumentoConsecutivo(codEmpresa, "CxC_ND");
+                long lngRecibo = _mRecibos.FxDocumentoConsecutivo(codEmpresa, vTipoDoc);
                 int recibo = (int?)lngRecibo ?? 0;
                 if (recibo <= 0)
                 {
@@ -242,7 +243,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var respIns = SifTransaccion_Insertar(codEmpresa, new SifTransaccionInsertParams
                 {
                     cod_transaccion = recibo,
-                    tipo_documento = "CxC_ND",
+                    tipo_documento = vTipoDoc,
                     registro_usuario = req.usuario,
                     cliente_identificacion = req.cedula,
                     cliente_nombre = req.nombre,
@@ -272,32 +273,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (req.intcor > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intcor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintc, op.operacion, op.cod_concepto, req.deposito);
+                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intcor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintc, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
                     if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
                 }
 
                 if (req.intmor > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intmor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintm, op.operacion, op.cod_concepto, req.deposito);
+                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.intmor, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaintm, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
                     if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
                 }
 
                 if (req.cargos > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.cargos, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctacargos, op.operacion, op.cod_concepto, req.deposito);
+                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.cargos, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctacargos, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
                     if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
                 }
 
                 if (req.amortizacion > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.amortizacion, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaamortiza, op.operacion, op.cod_concepto, req.deposito);
+                    var r = RegistrarAsiento(codEmpresa, req, recibo, req.amortizacion, "D", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, op.ctaamortiza, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
                     if (FailIfError(r, out ee)) return new ErrorDto { Code = ee.Code, Description = ee.Description };
                 }
 
                 var total = req.intcor + req.intmor + req.amortizacion + req.cargos;
                 if (total > 0)
                 {
-                    var r = RegistrarAsiento(codEmpresa, req, recibo, total, "C", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, vCuenta, op.operacion, op.cod_concepto, req.deposito);
+                    var r = RegistrarAsiento(codEmpresa, req, recibo, total, "C", op.cod_divisa, op.cod_unidad, op.cod_centro_costo, vCuenta, op.operacion, vTipoDoc, op.cod_concepto, req.deposito);
                     if (FailIfError(r, out ee)) return new ErrorDto  { Code = ee.Code, Description = ee.Description };
                 }
 
@@ -329,6 +330,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
              string? cod_centro_costo,
              string? cuenta,
              int operacion,
+             string vTipoDoc,
              string? cod_concepto,
              string? deposito)
         {
@@ -336,7 +338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             return SifDocsAsiento_Registrar(codEmpresa, new SifDocsAsientoParams
             {
-                tipodoc = "CxC_ND",
+                tipodoc = vTipoDoc,
                 numdoc = documento.ToString(),
                 monto = monto,
                 dc = dc,
