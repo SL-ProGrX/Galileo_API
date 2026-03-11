@@ -1,0 +1,528 @@
+﻿using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
+
+namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
+{
+    public class FrmCxCCuentasAnulacionesDb
+    {
+        private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora; 
+        private readonly MRecibos _mRecibos;
+        private readonly MProGrxMain _mProGrx;
+        private const int vModulo = 31;
+
+        public FrmCxCCuentasAnulacionesDb(IConfiguration config)
+        {
+            _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
+            _mRecibos = new MRecibos(config);
+            _mProGrx = new MProGrxMain(config);
+        }
+
+        /// <summary>
+        /// Obtiene los datos de la operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
+        public ErrorDto<CxcOperacionAnulacionData?> CxcOperacion_Obtener(int codEmpresa, int operacion)
+        {
+            var sql = @"
+                select
+                    R.Operacion as operacion,
+                    R.saldo as saldo,
+                    R.num_documento as num_documento,
+                    R.Tasa_Corriente as tasa_corriente,
+                    R.dias_plazo as dias_plazo,
+                    R.interesc as interesc,
+                    R.amortiza as amortiza,
+                    R.Fecha_UltMov as fecha_ultmov,
+                    R.Cod_Concepto as cod_concepto,
+                    R.cedula as cedula,
+                    S.nombre as nombre,
+                    C.descripcion as descripcion,
+                    R.Activa_Fecha as activa_fecha,
+                    R.Tipo_Plazo as tipo_plazo,
+                    R.Proceso as proceso
+                from CxC_Cuentas R
+                inner join CxC_Conceptos C
+                    on R.Cod_Concepto = C.Cod_Concepto
+                inner join CxC_Personas S
+                    on R.cedula = S.cedula
+                where R.estado in ('A','C')
+                  and R.Operacion = @operacion";
+
+            return DbHelper.ExecuteSingleQuery<CxcOperacionAnulacionData>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                default,
+                new { operacion }
+            );
+        }
+
+        /// <summary>
+        /// Obtiene la lista de movimientos de una operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CxcOperacionMovimientoData>> CxcOperacionMovimientos_Lista_Obtener(int codEmpresa, int operacion)
+        {
+            var sql = @"
+                select
+                    linea as linea,
+                    estado as estado,
+                    dias as dias,
+                    dias_mora as dias_mora,
+                    mov_int_cor as mov_intcor,
+                    mov_int_mor as mov_intmor,
+                    mov_principal as mov_principal,
+                    mov_cargos as mov_cargos
+                from CXC_CUENTAS_MOV
+                where estado = 'C'
+                  and operacion = @operacion
+                order by linea desc";
+
+            return DbHelper.ExecuteListQuery<CxcOperacionMovimientoData>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { operacion }
+            );
+        }
+
+        /// <summary>
+        /// Anula operacion de abono a cuentas 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        public ErrorDto CxcCuentasAbono_Anular(int codEmpresa, CxcAbonoAnularParams req)
+        {
+            try
+            {
+                const string vTipoDoc = "CxC_ND";
+                var fecha = DateTime.Now;
+                string vCuenta = _mRecibos.FxDocumentoCuenta(codEmpresa, vTipoDoc);
+                if (string.IsNullOrWhiteSpace(vCuenta))
+                {
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = "No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación."
+                    };
+                }
+
+                int lngRecibo = 0;
+
+                if (req.generar_recibo)
+                {
+                    var respDoc = CxcDocumentoAbono_Generar(codEmpresa, req, vCuenta, vTipoDoc);
+                    ErrorDto eeDoc;
+                    if (FailIfError(respDoc, out eeDoc)) return eeDoc;
+
+                    lngRecibo = respDoc.Code ?? 0;
+                }
+
+                var respAnula = Exec(codEmpresa,
+                    @"exec spCrdPlanPagoAnulaAbono
+                        @operacion,
+                        'CRD008',
+                        @usuario,
+                        'CxC_ND',
+                        @recibo,
+                        1,
+                        @intcor,
+                        @intmor,
+                        @amortizacion,
+                        @cargos,
+                        @fecha,
+                        ''",
+                    new
+                    {
+                        operacion = req.operacion,
+                        usuario = req.usuario,
+                        recibo = lngRecibo,
+                        intcor = req.intcor,
+                        intmor = req.intmor,
+                        amortizacion = req.amortizacion,
+                        cargos = req.cargos,
+                        fecha
+                    });
+
+                ErrorDto eeAnula;
+                if (FailIfError(respAnula, out eeAnula)) return eeAnula;
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    req.usuario,
+                    $"OP: {req.operacion} Doc.: {lngRecibo} Total : {req.total}",
+                    "Anula"
+                );
+
+                return new ErrorDto
+                {
+                    Code = lngRecibo,
+                    Description = $"Anulación realizada ... Con Nota Débito #{lngRecibo}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = ex.Message
+                };
+            }
+        }
+
+        #region helpers CxcAbono_Anular
+
+        private static bool FailIfError(ErrorDto? resp, out ErrorDto err)
+        {
+            if (resp is { Code: not null } && resp.Code != 0)
+            {
+                err = resp;
+                return true;
+            }
+
+            err = new ErrorDto { Code = 0, Description = "" };
+            return false;
+        }
+
+        private ErrorDto Exec(int codEmpresa, string sqlString, object param)
+        {
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sqlString, param);
+        }
+
+        public ErrorDto CxcDocumentoAbono_Generar(int codEmpresa, CxcAbonoAnularParams req, string vCuenta, string vTipoDoc)
+        {
+            try
+            {
+                long lngRecibo = _mRecibos.FxDocumentoConsecutivo(codEmpresa, vTipoDoc);
+                int recibo = (int)lngRecibo;
+                if (recibo <= 0)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = "No se pudo obtener el consecutivo del documento."
+                    };
+                }
+
+                var opResp = CxcOperacionCtas_Consultar(codEmpresa, req.operacion);
+                var opErrorDTO = new ErrorDto{ Code = opResp.Code, Description = opResp.Description };
+                if (FailIfError(opErrorDTO, out var ee))
+                    return new ErrorDto { Code = ee.Code, Description = ee.Description };
+
+                var op = opResp.Result;
+                if (op == null)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = "No se pudo obtener la información contable de la operación."
+                    };
+                }
+
+                string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, req.usuario).Result!.GOficinaTitular;
+
+                var respIns = SifTransaccion_Insertar(codEmpresa, new SifTransaccionInsertParams
+                {
+                    cod_transaccion = recibo,
+                    tipo_documento = vTipoDoc,
+                    registro_usuario = req.usuario,
+                    cliente_identificacion = req.cedula,
+                    cliente_nombre = req.nombre,
+                    cod_concepto = "CRD008",
+                    monto = req.intcor + req.intmor + req.amortizacion + req.cargos,
+                    estado = "P",
+                    referencia_01 = req.operacion.ToString(),
+                    referencia_02 = req.cod_concepto_operacion,
+                    referencia_03 = req.deposito ?? "",
+                    cod_oficina = gOficinaTitular,
+                    lineas = new[]
+                    {
+                        $"Saldo Actual      {op.saldo:N2}",
+                        $"Interes Corriente {(req.intcor * -1):N2}",
+                        $"Interes Moratorio {(req.intmor * -1):N2}",
+                        $"Amortización      {(req.amortizacion * -1):N2}",
+                        $"Cargos            {(req.cargos * -1):N2}",
+                        "",
+                        $"Nuevo Saldo       {(op.saldo + req.amortizacion):N2}",
+                        $"Operación /Linea  {req.operacion}_{req.cod_concepto_operacion}",
+                        "",
+                        $"Usuario           {req.usuario}",
+                        "Anulación"
+                    },
+                    detalle = (req.detalle ?? "") + Environment.NewLine + "Depósito..:" + (req.deposito ?? "")
+                });
+
+                if (FailIfError(respIns, out ee))
+                    return new ErrorDto { Code = ee.Code, Description = ee.Description };
+
+                var asientosDebito = new List<AsientoItem>
+                {
+                    new() { Monto = req.intcor, Cuenta = op.ctaintc, Dc = "D" },
+                    new() { Monto = req.intmor, Cuenta = op.ctaintm, Dc = "D" },
+                    new() { Monto = req.cargos, Cuenta = op.ctacargos, Dc = "D" },
+                    new() { Monto = req.amortizacion, Cuenta = op.ctaamortiza, Dc = "D" }
+                };
+
+                foreach (var asiento in asientosDebito.Where(x => x.Monto > 0))
+                {
+                    var resp = RegistrarAsiento(new CxcRegistrarAsientoRequest
+                    {
+                        CodEmpresa = codEmpresa,
+                        Usuario = req.usuario,
+                        Documento = recibo,
+                        Monto = asiento.Monto,
+                        Dc = asiento.Dc,
+                        TipoDoc = vTipoDoc,
+                        Operacion = op.operacion,
+                        CodDivisa = op.cod_divisa ?? "",
+                        CodUnidad = op.cod_unidad ?? "",
+                        CodCentroCosto = op.cod_centro_costo ?? "",
+                        Cuenta = asiento.Cuenta ?? "",
+                        CodConcepto = op.cod_concepto ?? "",
+                        Deposito = req.deposito ?? ""
+                    });
+
+                    if (FailIfError(resp, out ee))
+                        return new ErrorDto { Code = ee.Code, Description = ee.Description };
+                }
+
+                var total = req.intcor + req.intmor + req.amortizacion + req.cargos;
+                if (total > 0)
+                {
+                    var respCredito = RegistrarAsiento(new CxcRegistrarAsientoRequest
+                    {
+                        CodEmpresa = codEmpresa,
+                        Usuario = req.usuario,
+                        Documento = recibo,
+                        Monto = total,
+                        Dc = "C",
+                        TipoDoc = vTipoDoc,
+                        Operacion = op.operacion,
+                        CodDivisa = op.cod_divisa ?? "",
+                        CodUnidad = op.cod_unidad ?? "",
+                        CodCentroCosto = op.cod_centro_costo ?? "",
+                        Cuenta = vCuenta,
+                        CodConcepto = op.cod_concepto ?? "",
+                        Deposito = req.deposito ?? ""
+                    });
+
+                    if (FailIfError(respCredito, out ee))
+                        return new ErrorDto { Code = ee.Code, Description = ee.Description };
+                }
+
+                return new ErrorDto
+                {
+                    Code = recibo,
+                    Description = ""
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = ex.Message
+                };
+            }
+        }
+
+        private ErrorDto RegistrarAsiento(CxcRegistrarAsientoRequest request)
+        {
+            int gEnlace = _mProGrx
+                .sbSifParametrosInicializa(request.CodEmpresa, request.Usuario)
+                .Result!
+                .GEnlace;
+
+            return SifDocsAsiento_Registrar(request.CodEmpresa, new SifDocsAsientoParams
+            {
+                tipodoc = request.TipoDoc,
+                numdoc = request.Documento.ToString(),
+                monto = request.Monto,
+                dc = request.Dc,
+                cod_divisa = request.CodDivisa,
+                tipo_cambio = 1,
+                enlace = gEnlace,
+                cod_unidad = request.CodUnidad,
+                cod_centro_costo = request.CodCentroCosto,
+                cuenta = request.Cuenta,
+                operacion = request.Operacion,
+                cod_concepto = request.CodConcepto,
+                deposito = request.Deposito
+            });
+        }
+
+
+        public ErrorDto<CxCOperacionCtasData?> CxcOperacionCtas_Consultar(int codEmpresa, int operacion)
+        {
+            try
+            {
+                var sql = @"exec spCxC_OperacionCtas @operacion";
+
+                return DbHelper.ExecuteSingleQuery<CxCOperacionCtasData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    default,
+                    new { operacion }
+                );
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<CxCOperacionCtasData?>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = null
+                };
+            }
+        }
+
+        public ErrorDto SifTransaccion_Insertar(int codEmpresa, SifTransaccionInsertParams param)
+        {
+            var sql = @"
+                insert into SIF_TRANSACCIONES
+                (
+                    COD_TRANSACCION,
+                    TIPO_DOCUMENTO,
+                    REGISTRO_FECHA,
+                    REGISTRO_USUARIO,
+                    Cliente_IDENTIFICACION,
+                    CLIENTE_NOMBRE,
+                    cod_concepto,
+                    monto,
+                    estado,
+                    Referencia_01,
+                    Referencia_02,
+                    Referencia_03,
+                    cod_oficina,
+                    linea1,
+                    linea2,
+                    linea3,
+                    linea4,
+                    linea5,
+                    linea6,
+                    linea7,
+                    linea8,
+                    linea9,
+                    linea10,
+                    linea11,
+                    detalle
+                )
+                values
+                (
+                    @cod_transaccion,
+                    @tipo_documento,
+                    dbo.MyGetdate(),
+                    @registro_usuario,
+                    @cliente_identificacion,
+                    @cliente_nombre,
+                    @cod_concepto,
+                    @monto,
+                    @estado,
+                    @referencia_01,
+                    @referencia_02,
+                    @referencia_03,
+                    @cod_oficina,
+                    @linea1,
+                    @linea2,
+                    @linea3,
+                    @linea4,
+                    @linea5,
+                    @linea6,
+                    @linea7,
+                    @linea8,
+                    @linea9,
+                    @linea10,
+                    @linea11,
+                    @detalle
+                )";
+
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new
+            {
+                param.cod_transaccion,
+                param.tipo_documento,
+                param.registro_usuario,
+                param.cliente_identificacion,
+                param.cliente_nombre,
+                param.cod_concepto,
+                param.monto,
+                param.estado,
+                param.referencia_01,
+                param.referencia_02,
+                param.referencia_03,
+                param.cod_oficina,
+                linea1 = param.lineas.ElementAtOrDefault(0) ?? string.Empty,
+                linea2 = param.lineas.ElementAtOrDefault(1) ?? string.Empty,
+                linea3 = param.lineas.ElementAtOrDefault(2) ?? string.Empty,
+                linea4 = param.lineas.ElementAtOrDefault(3) ?? string.Empty,
+                linea5 = param.lineas.ElementAtOrDefault(4) ?? string.Empty,
+                linea6 = param.lineas.ElementAtOrDefault(5) ?? string.Empty,
+                linea7 = param.lineas.ElementAtOrDefault(6) ?? string.Empty,
+                linea8 = param.lineas.ElementAtOrDefault(7) ?? string.Empty,
+                linea9 = param.lineas.ElementAtOrDefault(8) ?? string.Empty,
+                linea10 = param.lineas.ElementAtOrDefault(9) ?? string.Empty,
+                linea11 = param.lineas.ElementAtOrDefault(10) ?? string.Empty,
+                param.detalle
+            });
+        }
+
+        public ErrorDto SifDocsAsiento_Registrar(int codEmpresa, SifDocsAsientoParams param)
+        {
+            var sql = @"
+                exec spSIFDocsAsiento
+                    @tipodoc,
+                    @numdoc,
+                    @monto,
+                    @dc,
+                    @cod_divisa,
+                    @tipo_cambio,
+                    @enlace,
+                    @cod_unidad,
+                    @cod_centro_costo,
+                    @cuenta,
+                    @operacion,
+                    @cod_concepto,
+                    @deposito";
+
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new
+            {
+                param.tipodoc,
+                param.numdoc,
+                param.monto,
+                param.dc,
+                param.cod_divisa,
+                param.tipo_cambio,
+                param.enlace,
+                param.cod_unidad,
+                param.cod_centro_costo,
+                param.cuenta,
+                param.operacion,
+                param.cod_concepto,
+                param.deposito
+            });
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalle, string movimiento)
+        {
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+
+        #endregion
+    }
+}

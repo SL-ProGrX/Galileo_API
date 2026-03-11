@@ -314,6 +314,47 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
-        
+        public string FxDocumentoCuenta(int codEmpresa, string vTipo)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+            try
+            {
+                var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
+                int sysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
+
+                string tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+
+                if (sysDocVersion == 1)
+                {
+                    string? sql = tipo switch
+                    {
+                        "RE" => "select CS_RE_CUENTA as cuenta from ase_consecutivos",
+                        "DP" => "select CS_DP_CUENTA as cuenta from ase_consecutivos",
+                        "ND" => "select CS_ND_CUENTA as cuenta from ase_consecutivos",
+                        "NC" => "select CS_NC_CUENTA as cuenta from ase_consecutivos",
+                        _ => null
+                    };
+
+                    if (string.IsNullOrWhiteSpace(sql))
+                    {
+                        return string.Empty;
+                    }
+
+                    return (conn.QueryFirstOrDefault<string>(sql) ?? string.Empty).Trim();
+                }
+
+                const string sqlV2 = @"
+            SELECT COD_CUENTA
+            FROM SIF_DOCUMENTOS
+            WHERE tipo_documento = @tipo";
+
+                return (conn.QueryFirstOrDefault<string>(sqlV2, new { tipo }) ?? string.Empty).Trim();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
     }
 }
