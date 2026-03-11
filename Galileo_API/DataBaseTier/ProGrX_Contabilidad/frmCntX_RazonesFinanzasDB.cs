@@ -463,10 +463,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         public ErrorDto<CntXRazonMontoDto?> CntXRazonFinanciera_Monto(int codEmpresa, CntXRazonMontoParams param)
         {
-            string sql;
-            if (param.Unidad == "TODOS")
-            {
-                sql = @"
+            string sql = param.Unidad == "TODOS"
+                ? @"
                     select (M.saldo_inicial + M.total_debitos + M.total_creditos) as Monto
                     from CntX_Razones_detalle R
                     inner join vCntX_Mov_Cuentas_General M
@@ -476,11 +474,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                       and M.Anio = @Anio
                       and M.mes  = @Mes
                       and R.idX  = @Idx
-                      and R.cod_contabilidad = @CodContabilidad";
-            }
-            else
-            {
-                sql = @"
+                      and R.cod_contabilidad = @CodContabilidad"
+                : @"
                     select (M.saldo_inicial + M.total_debitos + M.total_creditos) as Monto
                     from CntX_Razones_detalle R
                     inner join vCntX_Mov_Cuentas_Unidad M
@@ -492,7 +487,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                       and M.mes  = @Mes
                       and R.idX  = @Idx
                       and R.cod_contabilidad = @CodContabilidad";
-            }
             return DbHelper.ExecuteSingleQuery<CntXRazonMontoDto>(_portalDb, codEmpresa, sql, default, param);
         }
 
