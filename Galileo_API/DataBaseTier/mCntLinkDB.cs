@@ -320,6 +320,27 @@ namespace Galileo.DataBaseTier
 
                 info.Result.gEnlace = sif.Cod_Empresa_Enlace;
 
+                const string sql = @"
+                    SELECT TOP 1 anio, mes
+                    FROM CntX_Periodos
+                    WHERE estado = 'P'
+                      AND cod_contabilidad = @Contabilidad;";
+
+                var gPeriodo = connection.QueryFirstOrDefault(sql, new
+                {
+                    Contabilidad = sif.Cod_Empresa_Enlace
+                });
+
+                if (gPeriodo == null)
+                {
+                    info.Code = -1;
+                    info.Description = "No CntPeriodosDto found.";
+                    return info;
+                }
+
+                info.Result.gPeriodoAnio = gPeriodo.anio;
+                info.Result.gPeriodoMes = gPeriodo.mes;
+
                 int[] niveles =
                 {
                     conta.Nivel1, conta.Nivel2, conta.Nivel3, conta.Nivel4,
