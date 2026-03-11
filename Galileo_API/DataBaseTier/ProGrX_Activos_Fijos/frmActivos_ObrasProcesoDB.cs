@@ -21,9 +21,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         #region Helpers privados
 
-        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDown(
-            int CodEmpresa,
-            string sql)
+        /// <summary>
+        /// Ejecuta consultas simples para poblar dropdowns, mapeando a un modelo genérico con campos "item" y "descripcion".
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa</param>
+        /// <param name="sql">Consulta SQL a ejecutar</param>
+        /// <returns>Lista de elementos para el dropdown</returns>
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDown(int CodEmpresa,string sql)
         {
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDB,
@@ -31,6 +35,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 sql);
         }
 
+
+        /// <summary>
+        /// Construye un filtro para consultas SQL usando LIKE, agregando los comodines '%' al inicio y al final del texto filtrado.
+        /// </summary>
+        /// <param name="filtros">Objeto que contiene los filtros de la consulta</param>
+        /// <returns>Cadena de texto con comodines para el filtro SQL</returns>
         private static string? BuildFiltroLike(FiltrosLazyLoadData? filtros)
         {
             if (string.IsNullOrWhiteSpace(filtros?.filtro))
@@ -39,15 +49,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return $"%{filtros.filtro.Trim()}%";
         }
 
+
         /// <summary>
-        /// Crea parámetros comunes para listas paginadas con filtro de texto + contrato
-        /// y mapea el campo de orden a índice entero.
+        /// Construye los parámetros necesarios para consultas paginadas, incluyendo filtros, ordenamiento y paginación.
         /// </summary>
-        private static DynamicParameters BuildPagedParams(
-            FiltrosLazyLoadData? filtros,
-            string contrato,
-            Func<string, int> mapSortIndex,
-            string defaultSortField)
+        /// <param name="filtros"></param>
+        /// <param name="contrato"></param>
+        /// <param name="mapSortIndex"></param>
+        /// <param name="defaultSortField"></param>
+        /// <returns></returns>
+        private static DynamicParameters BuildPagedParams(FiltrosLazyLoadData? filtros,string contrato,Func<string, int> mapSortIndex,string defaultSortField)
         {
             var p = new DynamicParameters();
             p.Add("@contrato", contrato);
@@ -76,14 +87,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         #endregion
 
-        /// <summary>
-        /// Metodo para actualizar datos de finiquito de una obra en proceso
-        /// </summary>
-        public ErrorDto Activos_Obras_Actualizar(
-            int CodEmpresa,
-            string estado,
-            DateTime fecha_finiquito,
-            string contrato)
+       /// <summary>
+       /// Metodo para actualizar el estado y fecha de finiquito de una obra en proceso, utilizado al finalizar la obra
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="estado"></param>
+       /// <param name="fecha_finiquito"></param>
+       /// <param name="contrato"></param>
+       /// <returns></returns>
+        public ErrorDto Activos_Obras_Actualizar(int CodEmpresa,string estado,DateTime fecha_finiquito,string contrato)
         {
             const string query = @"
                 UPDATE Activos_obras 
@@ -91,16 +103,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        fecha_finiquito = @fecha_finiquito 
                  WHERE contrato        = @contrato";
 
-            return DbHelper.ExecuteNonQuery(
-                _portalDB,
-                CodEmpresa,
-                query,
+            return DbHelper.ExecuteNonQuery(_portalDB,CodEmpresa,query,
                 new { estado, fecha_finiquito, contrato });
         }
 
-        /// <summary>
-        /// Metodo de consulta de tipos de obras en Proceso
-        /// </summary>
+
+       /// <summary>
+       /// Consulta de tipos de obras para poblar dropdown, utilizado en el formulario de obras en proceso
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTipos_Obtener(int CodEmpresa)
         {
             const string query = @"
@@ -111,9 +123,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarDropDown(CodEmpresa, query);
         }
 
+
         /// <summary>
-        /// Consulta de tipos de desembolso
+        /// Consulta de tipos de desembolsos para poblar dropdown, utilizado en el formulario de obras en proceso
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTiposDesem_Obtener(int CodEmpresa)
         {
             const string query = @"
@@ -124,9 +139,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarDropDown(CodEmpresa, query);
         }
 
-        /// <summary>
-        /// Consulta el listado de obras en proceso
-        /// </summary>
+
+       /// <summary>
+       /// Consulta de obras en proceso para poblar dropdown, utilizado en el formulario de obras en proceso y otros procesos relacionados
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obras_Obtener(int CodEmpresa)
         {
             const string query = @"
@@ -137,9 +155,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarDropDown(CodEmpresa, query);
         }
 
-        /// <summary>
-        /// Metodo para consultar el listado de proveedores
-        /// </summary>
+
+       /// <summary>
+       /// Consulta de proveedores para poblar dropdown, utilizado en el formulario de obras en proceso y otros procesos relacionados
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obra_Proveedores_Obtener(int CodEmpresa)
         {
             const string query = @"
@@ -150,12 +171,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarDropDown(CodEmpresa, query);
         }
 
+
         /// <summary>
-        /// Consulta lo datos de una obra en proceso
+        /// Metodo para consulta de detalle de obra en proceso, utilizado para mostrar la información principal de la obra y su avance en el formulario de obras en proceso
         /// </summary>
-        public ErrorDto<ActivosObrasData?> Activos_Obras_Consultar(
-            int CodEmpresa,
-            string contrato)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contrato"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosObrasData?> Activos_Obras_Consultar(int CodEmpresa,string contrato)
         {
             const string query = @"
                 SELECT  o.contrato,
@@ -183,27 +206,25 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 INNER JOIN cxp_proveedores      P ON O.cod_proveedor = P.cod_proveedor
                 WHERE   O.contrato = @contrato";
 
-            return DbHelper.ExecuteSingleQuery(
-                _portalDB,
-                CodEmpresa,
-                query,
+            return DbHelper.ExecuteSingleQuery(_portalDB,CodEmpresa,query,
                 new ActivosObrasData(),
                 new { contrato });
         }
 
-        /// <summary>
-        /// Consulta de adendums (paginado + filtro, seguro para S2077)
-        /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(
-            int CodEmpresa,
-            string contrato,
-            FiltrosLazyLoadData filtros)
+
+       /// <summary>
+       /// Metodo para consulta de adendums de una obra en proceso, con paginación y filtro
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="contrato"></param>
+       /// <param name="filtros"></param>
+       /// <returns></returns>
+        public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(int CodEmpresa,string contrato,FiltrosLazyLoadData filtros)
         {
             var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoAdendumsData>());
 
             try
             {
-                // Mapeo de sortIndex seguro
                 int MapSortIndex(string sfNorm) => sfNorm switch
                 {
                     "cod_adendum" => 1,
@@ -271,13 +292,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        /// <summary>
-        /// Consulta de lista de desembolsos (paginado + filtro, seguro para S2077)
-        /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(
-            int CodEmpresa,
-            string contrato,
-            FiltrosLazyLoadData filtros)
+
+       /// <summary>
+       /// 
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="contrato"></param>
+       /// <param name="filtros"></param>
+       /// <returns></returns>
+        public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(int CodEmpresa,string contrato,FiltrosLazyLoadData filtros)
         {
             var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoDesembolsosData>());
 
@@ -368,12 +391,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
+
         /// <summary>
-        /// Metodo para consulta de resultado de obras en proceso
+        /// Metodo para consulta de resultados (activos y mejoras) de una obra en proceso
         /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(
-            int CodEmpresa,
-            string contrato)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contrato"></param>
+        /// <returns></returns>
+        public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(int CodEmpresa,string contrato)
         {
             const string query = @"
                 SELECT O.ID_RESULTADOS,
@@ -410,13 +435,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 new { contrato });
         }
 
-        /// <summary>
-        /// Metodo para modificar el registro de la obra en proceso
-        /// </summary>
-        public ErrorDto Activos_Obras_Modificar(
-            int CodEmpresa,
-            ActivosObrasData data,
-            string usuario)
+
+       /// <summary>
+       /// Metodo para modificar un registro de obra en proceso
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="data"></param>
+       /// <param name="usuario"></param>
+       /// <returns></returns>
+        public ErrorDto Activos_Obras_Modificar(int CodEmpresa,ActivosObrasData data,string usuario)
         {
             const string query = @"
                 UPDATE Activos_obras 
@@ -466,13 +493,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
+
         /// <summary>
-        /// Metodo para insertar un nuevo registro de una obra en proceso
+        /// Metodo para insertar un nuevo registro de obra en proceso
         /// </summary>
-        public ErrorDto Activos_Obras_Insertar(
-            int CodEmpresa,
-            ActivosObrasData data,
-            string usuario)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Obras_Insertar(int CodEmpresa,ActivosObrasData data,string usuario)
         {
             const string query = @"
                 INSERT INTO Activos_obras
@@ -524,13 +553,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
+
         /// <summary>
-        /// Metodo para eliminar un registro de obras en proceso
+        /// Metodo para eliminar un registro de obra en proceso
         /// </summary>
-        public ErrorDto Activos_Obra_Eliminar(
-            int CodEmpresa,
-            string contrato,
-            string usuario)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contrato"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Obra_Eliminar(int CodEmpresa,string contrato,string usuario)
         {
             const string query = @"DELETE FROM Activos_Obras WHERE contrato = @contrato";
 
@@ -555,9 +586,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        /// <summary>
-        /// Metodo para guardar adendum de una obra en proceso
-        /// </summary>
+
+       /// <summary>
+       /// Metodo para guardar nuevo adendum de obra en proceso
+       /// <param name="CodEmpresa"></param>
+       /// <param name="dato"></param>
+       /// <param name="usuario"></param>
+       /// <param name="contrato"></param>
+       /// <param name="addendums"></param>
+       /// <param name="presu_actual"></param>
+       /// <returns></returns>
         public ErrorDto Activos_ObrasAdendum_Guardar(
             int CodEmpresa,
             ActivosObrasProcesoAdendumsData dato,
@@ -609,10 +647,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        private void Activos_ObrasAdendum_Actualizar(
-            int CodEmpresa,
-            string contrato,
-            decimal monto)
+
+        /// <summary>
+        /// Metodo para actualizar el presupuesto actual de una obra en proceso al agregar un nuevo adendum, sumando el monto del adendum al presupuesto actual
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contrato"></param>
+        /// <param name="monto"></param>
+        private void Activos_ObrasAdendum_Actualizar(int CodEmpresa,string contrato,decimal monto)
         {
             const string query = @"
                 UPDATE Activos_obras 
@@ -627,10 +669,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 new { monto, contrato });
         }
 
-        private void Activos_ObrasAdendum_Insertar(
-            int CodEmpresa,
-            ActivosObrasProcesoAdendumsData data,
-            string contrato)
+
+        /// <summary>
+        /// Metodo para insertar un nuevo adendum de obra en proceso
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <param name="contrato"></param>
+        private void Activos_ObrasAdendum_Insertar(int CodEmpresa,ActivosObrasProcesoAdendumsData data,string contrato)
         {
             const string query = @"
                 INSERT INTO Activos_obras_ade
@@ -652,9 +698,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 });
         }
 
+
         /// <summary>
         /// Metodo para guardar nuevo desembolso de obra en proceso
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="dato"></param>
+        /// <param name="usuario"></param>
+        /// <param name="contrato"></param>
+        /// <returns></returns>
         public ErrorDto Activos_ObrasDesembolso_Guardar(
             int CodEmpresa,
             ActivosObrasProcesoDesembolsosData dato,
@@ -698,6 +750,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
+
+        /// <summary>
+        /// Metodo para actualizar el monto desembolsado y presupuesto actual de una obra en proceso al agregar un nuevo desembolso, sumando el monto del desembolso al monto desembolsado y restando el monto del desembolso al presupuesto actual
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contrato"></param>
+        /// <param name="monto"></param>
         private void Activos_ObrasDesembolso_Actualizar(
             int CodEmpresa,
             string contrato,
@@ -716,10 +775,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 new { monto, contrato });
         }
 
-        private void Activos_Desembolso_Insertar(
-            int CodEmpresa,
-            ActivosObrasProcesoDesembolsosData data,
-            string contrato)
+
+        /// <summary>
+        /// Metodo para insertar un nuevo desembolso de obra en proceso
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <param name="contrato"></param>
+        private void Activos_Desembolso_Insertar(int CodEmpresa,ActivosObrasProcesoDesembolsosData data,string contrato)
         {
             const string query = @"
                 INSERT INTO Activos_obras_desem
