@@ -61,4 +61,47 @@
     {
         public int Idx { get; set; }
     }
+
+    public class CntXRazonNotasUpdateParams : CntXRazonNotasDto
+    {
+        public required int CodContabilidad { get; set; }
+        public string CodGrupo { get; set; } = string.Empty;
+        public string CodRazon { get; set; } = string.Empty;
+    }
+
+    public class CntXRazonesReporteInsertParams
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public required int CodContabilidad { get; set; }
+        public string CodRazon { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+    }
+
+    public class CntXRazonesReporteUpdateParams
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public required int CodContabilidad { get; set; }
+        public string CodRazon { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public string Mes { get; set; } = "Mes01"; // Mes01, Mes02, etc.
+    }
+
+    public class CntXRazonFormulaDto
+    {
+        public string Formula { get; set; } = string.Empty;
+    }
+
+    public class CntXRazonMontoParams
+    {
+        public required int CodContabilidad { get; set; }
+        public string CodRazon { get; set; } = string.Empty;
+        public int Idx { get; set; }
+        public int Anio { get; set; }
+        public int Mes { get; set; }
+        public string Unidad { get; set; } = "TODOS";
+    }
+    public class CntXRazonMontoDto
+    {
+        public decimal Monto { get; set; }
+    }
 }
