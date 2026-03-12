@@ -15,29 +15,53 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         }
 
         public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
-            => _db.Consultar(codEmpresa, codPlantilla);
+        {
+            return _db.Consultar(codEmpresa, codPlantilla);
+        }
 
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
-            => _db.Insertar(codEmpresa, modelo);
+        {
+            return _db.Insertar(codEmpresa, modelo);
+        }
 
         public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
-            => _db.Actualizar(codEmpresa, modelo);
+        {
+            return _db.Actualizar(codEmpresa, modelo);
+        }
 
         public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
-            => _db.Borrar(codEmpresa, codPlantilla);
+        {
+            return _db.Borrar(codEmpresa, codPlantilla);
+        }
 
         public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
-            => _db.Scroll(codEmpresa, codigoActual, direccion);
+        {
+            return _db.Scroll(codEmpresa, codigoActual, direccion);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
+        {
+            return _db.Cntx_TiposAsientos_Buscar(codEmpresa, cod_contabilidad);
+        }
 
         public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa)
-            => _db.BuscarPlantillas(codEmpresa);
-
-        public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa,int cod_contabilidad)
         {
+            return _db.BuscarPlantillas(codEmpresa);
+        }
 
-            return _db.Cntx_TiposAsientos_Buscar(codEmpresa,cod_contabilidad
-            );
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return _db.Unidades_Obtener(codEmpresa, cod_contabilidad);
+        }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa, int cod_contabilidad)
+        {
+            return _db.Divisas_Obtener(codEmpresa, cod_contabilidad);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, int cod_contabilidad, string codUnidad)
+        {
+            return _db.CentroCosto_Obtener(codEmpresa, cod_contabilidad, codUnidad);
         }
     }
 }

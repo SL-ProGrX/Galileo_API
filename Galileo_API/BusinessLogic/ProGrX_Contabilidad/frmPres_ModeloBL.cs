@@ -102,5 +102,20 @@ namespace Galileo.BusinessLogic
         {
             return _db.Pres_Model_Eliminar(CodEmpresa, CodModelo);
         }
+
+        public ErrorDto<PresModeloCierreData> Pres_Modelo_Cierre_Obtener(int codEmpresa, int codContab, int periodoId)
+        {
+            return _db.Pres_Modelo_Cierre_Obtener(codEmpresa, codContab, periodoId);
+        }
+
+        public ErrorDto<List<PresModeloIndicadorData>> Pres_Modelo_Indicadores_Obtener(int CodEmpresa, string CodModelo, int CodContab)
+        {
+            return _db.Pres_Modelo_Indicadores_Obtener(CodEmpresa, CodModelo, CodContab);
+        }
+
+        public ErrorDto Pres_Modelo_Indicadores_Guardar(int CodEmpresa, PresModeloIndicadoresGuardarRequest request)
+        {
+            return _db.Pres_Modelo_Indicadores_Guardar(CodEmpresa, request);
+        }
     }
 }
