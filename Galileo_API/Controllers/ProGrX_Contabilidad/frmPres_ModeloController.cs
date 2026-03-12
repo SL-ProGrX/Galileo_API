@@ -143,5 +143,26 @@ namespace Galileo.Controllers
         {
             return _bl.Pres_Model_Eliminar(CodEmpresa, CodModelo);
         }
+
+        [HttpGet("Pres_Modelo_Cierre_Obtener")]
+        [Authorize]
+        public ErrorDto<PresModeloCierreData> Pres_Modelo_Cierre_Obtener(int codEmpresa, int codContab, int periodoId)
+        {
+            return _bl.Pres_Modelo_Cierre_Obtener(codEmpresa, codContab, periodoId);
+        }
+
+        [HttpGet("Pres_Modelo_Indicadores_Obtener")]
+        [Authorize]
+        public ErrorDto<List<PresModeloIndicadorData>> Pres_Modelo_Indicadores_Obtener(int CodEmpresa, string CodModelo, int CodContab)
+        {
+            return _bl.Pres_Modelo_Indicadores_Obtener(CodEmpresa, CodModelo, CodContab);
+        }
+
+        [HttpPost("Pres_Modelo_Indicadores_Guardar")]
+        [Authorize]
+        public ErrorDto Pres_Modelo_Indicadores_Guardar(int CodEmpresa, PresModeloIndicadoresGuardarRequest request)
+        {
+            return _bl.Pres_Modelo_Indicadores_Guardar(CodEmpresa, request);
+        }
     }
 }

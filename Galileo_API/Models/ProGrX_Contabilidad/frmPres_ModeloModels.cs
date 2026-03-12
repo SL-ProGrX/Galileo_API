@@ -65,4 +65,44 @@ namespace Galileo.Models.PRES
         public string UsuarioReg { get; set; } = string.Empty;
         public bool? Activo { get; set; }
     }
+
+    public class PresModeloCierreData
+    {
+        public int Inicio_Anio { get; set; } = 1900;
+        public int Inicio_Mes { get; set; } = 1;
+        public int Corte_Anio { get; set; } = 1900;
+        public int Corte_Mes { get; set; } = 12;
+    }
+
+    public class PresModeloIndicadorData
+    {
+        public DateTime Corte { get; set; }
+        public string Cod_Modelo { get; set; } = string.Empty;
+        public int Cod_Contabilidad { get; set; }
+        public decimal? Tipo_Cambio { get; set; }
+        public double? Tasa_Basica_Pasiva { get; set; }
+        public double? Indice_Inflacion { get; set; }
+        public string Registro_Usuario { get; set; } = string.Empty;
+        public DateTime? Registro_Fecha { get; set; }
+        public DateTime? Modifica_Fecha { get; set; }
+        public string Modifica_Usuario { get; set; } = string.Empty;
+    }
+
+    public class PresModeloIndicadorGuardar
+    {
+        public DateTime Corte { get; set; }
+        public decimal? Tipo_Cambio { get; set; }
+        public double? Tasa_Basica_Pasiva { get; set; }
+        public double? Indice_Inflacion { get; set; }
+    }
+
+    public class PresModeloIndicadoresGuardarRequest
+    {
+        public string Cod_Modelo { get; set; } = string.Empty;
+        public int Cod_Contabilidad { get; set; } = 0;
+        public string Usuario { get; set; } = string.Empty;
+        public List<PresModeloIndicadorGuardar> Indicadores { get; set; } = new();
+    }
+
+
 }

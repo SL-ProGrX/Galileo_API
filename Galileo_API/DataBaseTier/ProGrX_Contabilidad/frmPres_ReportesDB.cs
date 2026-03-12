@@ -114,9 +114,9 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        CodContab = codContab,
-                        CodModelo = codModelo,
-                        Usuario
+                        Contabilidad = codContab,
+                        Modelo = codModelo,
+                        Usuario = Usuario
                     },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
@@ -180,6 +180,8 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+       
+
         public ErrorDto<float> Pres_ReportesIndicadores(int CodEmpresa, string modelo, int codContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -206,5 +208,53 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        public ErrorDto<PresReportesIndicadoresData> Pres_ReportesIndicadoresPeriodo(int CodEmpresa, string modelo, int codContab, string periodo)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<PresReportesIndicadoresData>
+            {
+                Result = new PresReportesIndicadoresData()
+            };
+
+            const string sql = @"
+                    SELECT TOP 1
+                        TIPO_CAMBIO AS Tipo_Cambio,
+                        TASA_BASICA_PASIVA AS Tasa_Basica_Pasiva,
+                        INDICE_INFLACION AS Indice_Inflacion
+                    FROM PRES_MODELOS_INDICADORES
+                    WHERE COD_MODELO = @Modelo
+                      AND COD_CONTABILIDAD = @CodContab
+                      AND YEAR(CORTE) = YEAR(@Periodo)
+                      AND MONTH(CORTE) = MONTH(@Periodo)
+                    ORDER BY CORTE DESC;";
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                resp.Result = connection.QueryFirstOrDefault<PresReportesIndicadoresData>(
+                    sql,
+                    new
+                    {
+                        Modelo = modelo,
+                        CodContab = codContab,
+                        Periodo = periodo
+                    }) ?? new PresReportesIndicadoresData();
+
+                resp.Code = 0;
+                resp.Description = "OK";
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "Pres_ReportesIndicadores - " + ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
     }
+
+  
 }

@@ -1,13 +1,16 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/frmPres_Reportes")]
     [Route("api/FrmPresReportes")]
     [ApiController]
+    [Authorize]
     public class FrmPresReportesController : ControllerBase
     {
         readonly FrmPresReportesBl _bl;
@@ -17,7 +20,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("fxPres_Periodo_Obtener")]
-        // [Authorize]
         public ErrorDto<List<ModeloGenericList>> fxPres_Periodo_Obtener(int CodEmpresa, int CodContab, string CodModelo)
         {
             return _bl.fxPres_Periodo_Obtener(CodEmpresa, CodContab, CodModelo);
@@ -34,6 +36,18 @@ namespace Galileo.Controllers
         public ErrorDto<List<object>> Pres_ReporteBalanceEstado(int CodEmpresa, PresFiltrosReportes presFiltros)
         {
             return _bl.Pres_ReporteBalanceEstado(CodEmpresa, presFiltros);
+        }
+
+        [HttpGet("Pres_ReportesIndicadores")]
+        public ErrorDto<float> Pres_ReportesIndicadores(int CodEmpresa, string modelo, int codContab)
+        {
+            return _bl.Pres_ReportesIndicadores(CodEmpresa, modelo, codContab);
+        }
+
+        [HttpGet("Pres_ReportesIndicadoresPeriodo")]
+        public ErrorDto<PresReportesIndicadoresData> Pres_ReportesIndicadoresPeriodo(int CodEmpresa, string modelo, int codContab, DateTime periodo)
+        {
+            return _bl.Pres_ReportesIndicadoresPeriodo(CodEmpresa, modelo, codContab, periodo);
         }
     }
 }
