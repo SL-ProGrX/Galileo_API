@@ -20,7 +20,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("fxPres_Periodo_Obtener")]
-        // 
         public ErrorDto<List<ModeloGenericList>> fxPres_Periodo_Obtener(int CodEmpresa, int CodContab, string CodModelo)
         {
             return _bl.fxPres_Periodo_Obtener(CodEmpresa, CodContab, CodModelo);

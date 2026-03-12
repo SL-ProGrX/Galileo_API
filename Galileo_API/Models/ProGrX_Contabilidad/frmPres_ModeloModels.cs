@@ -99,7 +99,7 @@ namespace Galileo.Models.PRES
     public class PresModeloIndicadoresGuardarRequest
     {
         public string Cod_Modelo { get; set; } = string.Empty;
-        public int Cod_Contabilidad { get; set; }
+        public int Cod_Contabilidad { get; set; } = 0;
         public string Usuario { get; set; } = string.Empty;
         public List<PresModeloIndicadorGuardar> Indicadores { get; set; } = new();
     }
