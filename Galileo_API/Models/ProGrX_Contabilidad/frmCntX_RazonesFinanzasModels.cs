@@ -104,4 +104,10 @@
     {
         public decimal Monto { get; set; }
     }
+
+    public class CntXRazonFormulaUpdateParams : CntXRazonFormulaDto
+    {
+        public required int CodContabilidad { get; set; }
+        public string CodRazon { get; set; } = string.Empty;
+    }
 }
