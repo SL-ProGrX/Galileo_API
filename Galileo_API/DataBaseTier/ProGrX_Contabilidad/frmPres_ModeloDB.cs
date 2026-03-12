@@ -277,7 +277,7 @@ namespace Galileo.DataBaseTier
             var parameters = new
             {
                 Cod_Modelo = request.Cod_Modelo,
-                Cod_Contab = request.Cod_Contabilidad,
+                COD_CONTA = request.Cod_Contabilidad,
                 Cierre = request.ID_Cierre,
                 Descripcion = request.Descripcion,
                 Notas = request.Notas,

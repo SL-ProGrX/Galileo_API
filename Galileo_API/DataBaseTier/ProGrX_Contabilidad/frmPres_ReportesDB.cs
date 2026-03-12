@@ -224,7 +224,9 @@ namespace Galileo.DataBaseTier
                     FROM PRES_MODELOS_INDICADORES
                     WHERE COD_MODELO = @Modelo
                       AND COD_CONTABILIDAD = @CodContab
-                      AND CONVERT(date, CORTE) = CONVERT(date, @Periodo);";
+                      AND YEAR(CORTE) = YEAR(@Periodo)
+                      AND MONTH(CORTE) = MONTH(@Periodo)
+                    ORDER BY CORTE DESC;";
 
             try
             {
