@@ -198,43 +198,43 @@
 
     public class PolizaReclamoActualizarVidaRequest
     {
-        public int reclamo_id { get; set; }
-        public int motivo_id { get; set; }
-        public int enfermedad_id { get; set; }
-        public int edad { get; set; }
+        public int? reclamo_id { get; set; } 
+        public int? motivo_id { get; set; }
+        public int? enfermedad_id { get; set; }
+        public int? edad { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoActualizarIncendioRequest
     {
-        public int reclamo_id { get; set; }
-        public int siniestro_id { get; set; }
-        public int causa_id { get; set; }
+        public int? reclamo_id { get; set; }
+        public int? siniestro_id { get; set; }
+        public int? causa_id { get; set; }
         public string finca { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoActualizarRecepcionRequest
     {
-        public int reclamo_id { get; set; }
-        public DateTime fecha { get; set; }
+        public int? reclamo_id { get; set; }
+        public DateTime fecha { get; set; } = DateTime.Now;
         public string observaciones { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoSeguimientoManualAddRequest
     {
-        public int reclamo_id { get; set; }
-        public int estado_id { get; set; }
+        public int? reclamo_id { get; set; }
+        public int? estado_id { get; set; }
         public string observaciones { get; set; } = string.Empty;
-        public int i_correo { get; set; }
+        public int i_correo { get; set; } = 0;
         public string destinatarios { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoFondoCrearRequest
     {
-        public int reclamo_id { get; set; }
+        public int? reclamo_id { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -247,7 +247,7 @@
 
     public class PolizaReclamoFondoAportacionRequest
     {
-        public int reclamo_id { get; set; }
+        public int? reclamo_id { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -260,11 +260,11 @@
 
     public class PolizaReclamoDesembolsoAplicaRequest
     {
-        public int reclamo_id { get; set; }
-        public decimal monto { get; set; }
+        public int? reclamo_id { get; set; }
+        public decimal monto { get; set; } = 0;
         public string plan { get; set; } = string.Empty;
-        public int contrato { get; set; }
-        public int banco_id { get; set; }
+        public int? contrato { get; set; }
+        public int? banco_id { get; set; }
         public string cuenta { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
@@ -277,9 +277,9 @@
 
     public class PolizaReclamoEtiquetaManualAddRequest
     {
-        public int reclamo_id { get; set; }
+        public int? reclamo_id { get; set; }
         public string observaciones { get; set; } = string.Empty;
-        public int i_correo { get; set; }
+        public int i_correo { get; set; }  = 0;
         public string destinatarios { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
@@ -294,10 +294,10 @@
 
     public class PolizaReclamoAddRequest
     {
-        public int reclamo_id { get; set; }
-        public int operacion { get; set; }
+        public int? reclamo_id { get; set; }
+        public int? operacion { get; set; }
         public string poliza_codigo { get; set; } = string.Empty;
-        public int poliza_id { get; set; }
+        public int? poliza_id { get; set; }
 
         public string cedula { get; set; } = string.Empty;
         public string apellido1 { get; set; } = string.Empty;
@@ -306,7 +306,7 @@
 
         public string sexo { get; set; } = string.Empty;
         public DateTime? fecha_nac { get; set; }
-        public int edad { get; set; }
+        public int edad { get; set; } = 0;
         public string finca { get; set; } = string.Empty;
 
         public int? siniestro_id { get; set; }
@@ -314,20 +314,20 @@
         public int? motivo_id { get; set; }
         public int? enfermedad_id { get; set; }
 
-        public int desembolso_id { get; set; }
-        public int pago_id { get; set; }
+        public int? desembolso_id { get; set; }
+        public int? pago_id { get; set; }
         public string observaciones { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoAddResponse
     {
-        public int reclamo_id { get; set; }
+        public int? reclamo_id { get; set; }
         public string mensaje { get; set; } = string.Empty;
     }
 
     public class PolizaReclamoFondoDisponibleResponse
     {
-        public decimal disponible { get; set; }
+        public decimal disponible { get; set; } = 0;
     }
 }
