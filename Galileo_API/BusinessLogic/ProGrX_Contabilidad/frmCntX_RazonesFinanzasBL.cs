@@ -86,5 +86,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<CntXRazonMontoDto?> CntXRazonFinanciera_Monto(int codEmpresa, CntXRazonMontoParams param)
             => _db.CntXRazonFinanciera_Monto(codEmpresa, param);
 
+        public ErrorDto<bool> CntXRazonFinanciera_ActualizarFormula(int codEmpresa, CntXRazonFormulaUpdateParams param)
+            => _db.CntXRazonFinanciera_ActualizarFormula(codEmpresa, param);
+
     }
 }
