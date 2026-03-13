@@ -11,6 +11,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         private const string BaseConnStringName = "BaseConnString";
         private const string ProcConsultaPadron = "spSYS_Consulta_Padron";
 
+        private const string ErrorDesconocido = "Ocurrió un error desconocido.";
+
         private readonly string _connStr;
 
         public FrmSysContactoServicioDB(IConfiguration config)
@@ -79,7 +81,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (general.Code != 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    general.Description ?? "Ocurrió un error desconocido.",
+                    general.Description ?? ErrorDesconocido,
                     general.Code ?? -1,
                     new List<SysContactoServicioGeneralData>());
             }
@@ -102,7 +104,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (result.Code != 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    result.Description ?? "Ocurrió un error desconocido.",
+                    result.Description ?? ErrorDesconocido,
                     result.Code ?? -1,
                     new SysContactoServicioTelefonoLista
                     {
@@ -142,7 +144,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (result.Code != 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    result.Description ?? "Ocurrió un error desconocido.",
+                    result.Description ?? ErrorDesconocido,
                     result.Code ?? -1,
                     new SysContactoServicioDireccionLista
                     {
@@ -182,7 +184,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (result.Code != 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    result.Description ?? "Ocurrió un error desconocido.",
+                    result.Description ?? ErrorDesconocido,
                     result.Code ?? -1,
                     new SysContactoServicioEmpresaLista
                     {
