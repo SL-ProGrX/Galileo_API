@@ -129,8 +129,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 var resultBanco = dataBanco.Select(x => new DropDownListaGenericaModel
                 {
-                    item = x.IdX,
-                    descripcion = x.ItmX
+                    item = x.IDX,
+                    descripcion = x.ITMX
                 }).ToList();
 
                 return resultBanco;
@@ -419,7 +419,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             int contrato)
         {
             if (string.IsNullOrWhiteSpace(plan))
-                return DbHelper.CreateErrorResponse<List<PolizaReclamoFondoItemResponse>>("Debe indicar el plan.");
+                return DbHelper.CreateErrorResponse<List<PolizaReclamoFondoItemResponse>>(PolizaReclamoConstFrm.valPlan);
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
@@ -456,7 +456,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return DbHelper.CreateErrorResponse<List<PolizaReclamoDesembolsoItemResponse>>("Debe indicar el reclamoId.");
 
             if (string.IsNullOrWhiteSpace(plan))
-                return DbHelper.CreateErrorResponse<List<PolizaReclamoDesembolsoItemResponse>>("Debe indicar el plan.");
+                return DbHelper.CreateErrorResponse<List<PolizaReclamoDesembolsoItemResponse>>(PolizaReclamoConstFrm.valPlan);
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
@@ -592,17 +592,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
+                var validacion = ValidarRequestBasico(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
                 if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 5)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
 
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
-
                 const string sql = @"EXEC spPoliza_Reclamo_Actualiza_Recepcion
-            @ReclamoId, @Fecha, @Observaciones, @Usuario";
+            @ReclamoId = @ReclamoId,
+            @Fecha = @Fecha,
+            @Observaciones = @Observaciones,
+            @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
                     sql,
@@ -610,16 +611,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     {
                         ReclamoId = request.reclamo_id,
                         Fecha = request.fecha,
-                        Observaciones = request.observaciones.Trim(),
-                        Usuario = request.usuario.Trim()
+                        Observaciones = TrimOrEmpty(request.observaciones),
+                        Usuario = TrimOrEmpty(request.usuario)
                     });
 
-                if (row == null)
-                    return DbHelper.ErrorResponse("No se obtuvo respuesta al actualizar la recepción.");
-
-                return (row.Pass ?? 0) == 1
-                    ? DbHelper.CreateOkResponse(row.Mensaje?.ToString() ?? "Recepción actualizada correctamente.")
-                    : DbHelper.ErrorResponse(row.Mensaje?.ToString() ?? "No fue posible actualizar la recepción.");
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al actualizar la recepción.",
+                    "No fue posible actualizar la recepción.");
             }
             catch (Exception ex)
             {
@@ -644,8 +643,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
+                var validacion = ValidarRequestBasico(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
                 if (request.estado_id <= 0)
                     return DbHelper.ErrorResponse("Debe indicar el estado.");
@@ -653,14 +653,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 5)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
 
-                if (request.i_correo == 1 && (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 5))
+                if (request.i_correo == 1 &&
+                    (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 5))
                     return DbHelper.ErrorResponse("No ha indicado destinatarios válidos.");
 
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
-
                 const string sql = @"EXEC spPoliza_Reclamo_Seguimiento_Manual_Add
-            @ReclamoId, @EstadoId, @Observaciones, @ICorreo, @Destinatarios, @Usuario";
+            @ReclamoId = @ReclamoId,
+            @EstadoId = @EstadoId,
+            @Observaciones = @Observaciones,
+            @ICorreo = @ICorreo,
+            @Destinatarios = @Destinatarios,
+            @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
                     sql,
@@ -668,18 +671,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     {
                         ReclamoId = request.reclamo_id,
                         EstadoId = request.estado_id,
-                        Observaciones = request.observaciones.Trim(),
+                        Observaciones = TrimOrEmpty(request.observaciones),
                         ICorreo = request.i_correo,
-                        Destinatarios = request.destinatarios?.Trim() ?? string.Empty,
-                        Usuario = request.usuario.Trim()
+                        Destinatarios = TrimOrEmpty(request.destinatarios),
+                        Usuario = TrimOrEmpty(request.usuario)
                     });
 
-                if (row == null)
-                    return DbHelper.ErrorResponse("No se obtuvo respuesta al registrar el seguimiento.");
-
-                return (row.Pass ?? 0) == 1
-                    ? DbHelper.CreateOkResponse(row.Mensaje?.ToString() ?? "Seguimiento registrado correctamente.")
-                    : DbHelper.ErrorResponse(row.Mensaje?.ToString() ?? "No fue posible registrar el seguimiento.");
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al registrar el seguimiento.",
+                    "No fue posible registrar el seguimiento.");
             }
             catch (Exception ex)
             {
@@ -704,11 +705,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valReclamo);
-
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valUsuario);
+                var validacion = ValidarRequestBasico<PolizaReclamoFondoCrearResponse>(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
                 const string sql = @"EXEC spPoliza_Reclamo_Fondo_Creacion @ReclamoId, @Usuario";
 
@@ -720,21 +719,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Usuario = request.usuario.Trim()
                     });
 
-                if (row == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>("No se obtuvo respuesta al generar el fondo.");
-
-                if ((row.Pass ?? 0) != 1)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(
-                        row.Mensaje?.ToString() ?? "No fue posible generar el fondo.");
-
-                var response = new PolizaReclamoFondoCrearResponse
+                Func<dynamic, PolizaReclamoFondoCrearResponse> mapResponse = x => new PolizaReclamoFondoCrearResponse
                 {
-                    cod_plan = row.Cod_Plan ?? string.Empty,
-                    codigo_fondo = row.Codigo_Fondo,
-                    mensaje = row.Mensaje?.ToString() ?? "Fondo generado correctamente."
+                    cod_plan = x.Cod_Plan ?? string.Empty,
+                    codigo_fondo = x.Codigo_Fondo,
+                    mensaje = x.Mensaje?.ToString() ?? "Fondo generado correctamente."
                 };
 
-                return DbHelper.CreateOkResponse(response);
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al generar el fondo.",
+                    "No fue posible generar el fondo.",
+                    mapResponse);
             }
             catch (Exception ex)
             {
@@ -761,37 +757,34 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valReclamo);
+                var validacion = ValidarRequestBasico<PolizaReclamoFondoAportacionResponse>(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valUsuario);
-
-                const string sql = @"EXEC spPoliza_Reclamo_Fondo_Aportacion @ReclamoId, @Usuario";
+                const string sql = @"EXEC spPoliza_Reclamo_Fondo_Aportacion
+                                        @ReclamoId = @ReclamoId,
+                                        @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
                     sql,
                     new
                     {
                         ReclamoId = request.reclamo_id,
-                        Usuario = request.usuario.Trim()
+                        Usuario = TrimOrEmpty(request.usuario)
                     });
 
-                if (row == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>("No se obtuvo respuesta al aplicar la aportación.");
-
-                if ((row.Pass ?? 0) != 1)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(
-                        row.Mensaje?.ToString() ?? "No fue posible aplicar la aportación.");
-
-                var response = new PolizaReclamoFondoAportacionResponse
+                Func<dynamic, PolizaReclamoFondoAportacionResponse> mapResponse = x => new PolizaReclamoFondoAportacionResponse
                 {
-                    cod_plan = row.Cod_Plan ?? string.Empty,
-                    codigo_fondo = row.Codigo_Fondo,
-                    mensaje = row.Mensaje?.ToString() ?? "Aportación aplicada correctamente."
+                    cod_plan = x.Cod_Plan ?? string.Empty,
+                    codigo_fondo = x.Codigo_Fondo,
+                    mensaje = x.Mensaje?.ToString() ?? "Aportación aplicada correctamente."
                 };
 
-                return DbHelper.CreateOkResponse(response);
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al aplicar la aportación.",
+                    "No fue posible aplicar la aportación.",
+                    mapResponse);
             }
             catch (Exception ex)
             {
@@ -817,14 +810,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valReclamo);
+                var validacion = ValidarRequestBasico<PolizaReclamoDesembolsoAplicaResponse>(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
                 if (request.monto <= 0)
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar un monto superior a 0.");
 
                 if (string.IsNullOrWhiteSpace(request.plan))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar el plan.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valPlan);
 
                 if (request.contrato <= 0)
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar el contrato.");
@@ -835,11 +829,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (string.IsNullOrWhiteSpace(request.cuenta))
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar la cuenta.");
 
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valUsuario);
-
                 const string sql = @"EXEC spPoliza_Reclamo_Desembolsos_Aplica
-            @ReclamoId, @Monto, @Plan, @Contrato, @BancoId, @Cuenta, @Usuario";
+            @ReclamoId = @ReclamoId,
+            @Monto = @Monto,
+            @Plan = @Plan,
+            @Contrato = @Contrato,
+            @BancoId = @BancoId,
+            @Cuenta = @Cuenta,
+            @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
                     sql,
@@ -847,26 +844,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     {
                         ReclamoId = request.reclamo_id,
                         Monto = request.monto,
-                        Plan = request.plan.Trim(),
+                        Plan = TrimOrEmpty(request.plan),
                         Contrato = request.contrato,
                         BancoId = request.banco_id,
-                        Cuenta = request.cuenta.Trim(),
-                        Usuario = request.usuario.Trim()
+                        Cuenta = TrimOrEmpty(request.cuenta),
+                        Usuario = TrimOrEmpty(request.usuario)
                     });
 
-                if (row == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(
-                        "No se obtuvo respuesta al aplicar el desembolso.");
-
-                if ((row.Pass ?? 0) != 1)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(
-                        row.Mensaje?.ToString() ?? "No fue posible aplicar el desembolso.");
-
-                return DbHelper.CreateOkResponse(new PolizaReclamoDesembolsoAplicaResponse
+                Func<dynamic, PolizaReclamoDesembolsoAplicaResponse> mapResponse = x => new PolizaReclamoDesembolsoAplicaResponse
                 {
-                    mensaje = row.Mensaje?.ToString() ?? "Desembolso aplicado correctamente.",
-                    movimiento = row.Movimiento?.ToString() ?? string.Empty
-                });
+                    mensaje = x.Mensaje?.ToString() ?? "Desembolso aplicado correctamente.",
+                    movimiento = x.Movimiento?.ToString() ?? string.Empty
+                };
+
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al aplicar el desembolso.",
+                    "No fue posible aplicar el desembolso.",
+                    mapResponse);
             }
             catch (Exception ex)
             {
@@ -892,38 +887,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request == null)
                     return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
+                var validacion = ValidarRequestBasico(request.reclamo_id, request.usuario);
+                if (validacion.Code == -1)
+                    return validacion;
 
                 if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 10)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
 
-                if (request.i_correo == 1 && (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 10))
+                if (request.i_correo == 1 &&
+                    (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 10))
                     return DbHelper.ErrorResponse("No ha indicado destinatarios válidos.");
 
-                if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
-
                 const string sql = @"EXEC spPoliza_Reclamo_Etiqueta_Manual_Add
-            @ReclamoId, @Observaciones, @ICorreo, @Destinatarios, @Usuario";
+                            @ReclamoId = @ReclamoId,
+                            @Observaciones = @Observaciones,
+                            @ICorreo = @ICorreo,
+                            @Destinatarios = @Destinatarios,
+                            @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
                     sql,
                     new
                     {
                         ReclamoId = request.reclamo_id,
-                        Observaciones = request.observaciones.Trim(),
+                        Observaciones = TrimOrEmpty(request.observaciones),
                         ICorreo = request.i_correo,
-                        Destinatarios = request.destinatarios?.Trim() ?? string.Empty,
-                        Usuario = request.usuario.Trim()
+                        Destinatarios = TrimOrEmpty(request.destinatarios),
+                        Usuario = TrimOrEmpty(request.usuario)
                     });
 
-                if (row == null)
-                    return DbHelper.ErrorResponse("No se obtuvo respuesta al registrar la etiqueta.");
-
-                return (row.Pass ?? 0) == 1
-                    ? DbHelper.CreateOkResponse(row.Mensaje?.ToString() ?? "Etiqueta registrada correctamente.")
-                    : DbHelper.ErrorResponse(row.Mensaje?.ToString() ?? "No fue posible registrar la etiqueta.");
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al registrar la etiqueta.",
+                    "No fue posible registrar la etiqueta.");
             }
             catch (Exception ex)
             {
@@ -931,5 +927,204 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
         }
 
+
+        /// <summary>
+        /// Registra o actualiza la información principal del reclamo.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos del reclamo.</param>
+        /// <returns>Resultado del proceso con el reclamo generado/actualizado.</returns>
+        public ErrorDto<PolizaReclamoAddResponse> Poliza_Reclamo_Add(
+            int codEmpresa,
+            PolizaReclamoAddRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            try
+            {
+                if (request == null)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>(PolizaReclamoConstFrm.valRequest);
+
+                if (request.operacion <= 0)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar la operación.");
+
+                if (request.poliza_id <= 0)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar la póliza.");
+
+                if (string.IsNullOrWhiteSpace(request.poliza_codigo))
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar el código de póliza.");
+
+                if (string.IsNullOrWhiteSpace(request.cedula))
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar la cédula.");
+
+                if (string.IsNullOrWhiteSpace(request.nombre))
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar el nombre.");
+
+                if (!request.fecha_nac.HasValue)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar la fecha de nacimiento.");
+
+                if (request.desembolso_id < 0 || request.pago_id <= 0)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar desembolso y método de pago válidos.");
+
+                if (string.IsNullOrWhiteSpace(request.usuario))
+                    return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>("Debe indicar el usuario.");
+
+                const string sql = @"EXEC spPoliza_Reclamo_Add
+            @ReclamoId = @ReclamoId,
+            @Operacion = @Operacion,
+            @PolizaCodigo = @PolizaCodigo,
+            @PolizaId = @PolizaId,
+            @Cedula = @Cedula,
+            @Apellido1 = @Apellido1,
+            @Apellido2 = @Apellido2,
+            @Nombre = @Nombre,
+            @Sexo = @Sexo,
+            @FechaNac = @FechaNac,
+            @Edad = @Edad,
+            @Finca = @Finca,
+            @SiniestroId = @SiniestroId,
+            @CausaId = @CausaId,
+            @MotivoId = @MotivoId,
+            @EnfermedadId = @EnfermedadId,
+            @DesembolsoId = @DesembolsoId,
+            @PagoId = @PagoId,
+            @Observaciones = @Observaciones,
+            @Usuario = @Usuario";
+
+                var row = connection.QueryFirstOrDefault<dynamic>(
+                    sql,
+                    new
+                    {
+                        ReclamoId = request.reclamo_id,
+                        Operacion = request.operacion,
+                        PolizaCodigo = TrimOrEmpty(request.poliza_codigo),
+                        PolizaId = request.poliza_id,
+                        Cedula = TrimOrEmpty(request.cedula),
+                        Apellido1 = TrimOrEmpty(request.apellido1),
+                        Apellido2 = TrimOrEmpty(request.apellido2),
+                        Nombre = TrimOrEmpty(request.nombre),
+                        Sexo = TrimOrEmpty(request.sexo),
+                        FechaNac = request.fecha_nac,
+                        Edad = request.edad,
+                        Finca = TrimOrEmpty(request.finca),
+                        SiniestroId = request.siniestro_id,
+                        CausaId = request.causa_id,
+                        MotivoId = request.motivo_id,
+                        EnfermedadId = request.enfermedad_id,
+                        DesembolsoId = request.desembolso_id,
+                        PagoId = request.pago_id,
+                        Observaciones = TrimOrEmpty(request.observaciones),
+                        Usuario = TrimOrEmpty(request.usuario)
+                    });
+
+                Func<dynamic, PolizaReclamoAddResponse> mapResponse = x => new PolizaReclamoAddResponse
+                {
+                    reclamo_id = x.ReclamoId ?? request.reclamo_id,
+                    mensaje = x.Mensaje?.ToString() ?? "Reclamo registrado satisfactoriamente."
+                };
+
+                return ValidarResultadoOperacion(
+                    row,
+                    "No se obtuvo respuesta al registrar el reclamo.",
+                    "No fue posible registrar el reclamo.",
+                    mapResponse);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<PolizaReclamoAddResponse>(
+                    $"Error al registrar el reclamo: {ex.Message}");
+            }
+        }
+
+
+        /// <summary>
+        /// Obtiene el disponible actual del fondo del reclamo.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="reclamoId">Id del reclamo.</param>
+        /// <param name="plan">Código de plan.</param>
+        /// <param name="contrato">Código de contrato/fondo.</param>
+        /// <returns>Disponible actual del fondo.</returns>
+        public ErrorDto<PolizaReclamoFondoDisponibleResponse> Poliza_Reclamo_Fondo_Disponible(
+            int codEmpresa,
+            int reclamoId,
+            string plan,
+            int contrato)
+        {
+            if (reclamoId <= 0)
+                return DbHelper.CreateErrorResponse<PolizaReclamoFondoDisponibleResponse>("Debe indicar el reclamo.");
+
+            if (string.IsNullOrWhiteSpace(plan))
+                return DbHelper.CreateErrorResponse<PolizaReclamoFondoDisponibleResponse>(PolizaReclamoConstFrm.valPlan);
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                const string sql = @"EXEC spPoliza_Reclamo_Fondo_Disponible @ReclamoId, @Plan, @Contrato";
+
+                return conn.QueryFirstOrDefault<PolizaReclamoFondoDisponibleResponse>(
+                    sql,
+                    new
+                    {
+                        ReclamoId = reclamoId,
+                        Plan = plan.Trim(),
+                        Contrato = contrato
+                    }
+                ) ?? new PolizaReclamoFondoDisponibleResponse();
+            });
+        }
+
+
+        //Helpers para validaciones comunes
+        private static string TrimOrEmpty(string? value) => value?.Trim() ?? string.Empty;
+
+        private static ErrorDto ValidarRequestBasico(int? reclamoId, string? usuario)
+        {
+            if (!reclamoId.HasValue || reclamoId.Value <= 0)
+                return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
+
+            if (string.IsNullOrWhiteSpace(usuario))
+                return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        private static ErrorDto<T> ValidarRequestBasico<T>(int? reclamoId, string? usuario)
+        {
+            if (!reclamoId.HasValue || reclamoId.Value <= 0)
+                return DbHelper.CreateErrorResponse<T>(PolizaReclamoConstFrm.valReclamo);
+
+            if (string.IsNullOrWhiteSpace(usuario))
+                return DbHelper.CreateErrorResponse<T>(PolizaReclamoConstFrm.valUsuario);
+
+            return DbHelper.CreateOkResponse<T>();
+        }
+
+        private static ErrorDto ValidarResultadoOperacion(
+            dynamic? row,
+            string mensajeNull,
+            string mensajeDefault)
+        {
+            if (row == null)
+                return DbHelper.ErrorResponse(mensajeNull);
+
+            return (row.Pass ?? 0) == 1
+                ? DbHelper.OkResponse(row.Mensaje?.ToString() ?? mensajeDefault)
+                : DbHelper.ErrorResponse(row.Mensaje?.ToString() ?? mensajeDefault);
+        }
+
+        private static ErrorDto<T> ValidarResultadoOperacion<T>(
+            dynamic? row,
+            string mensajeNull,
+            string mensajeDefault,
+            Func<dynamic, T> mapResponse)
+        {
+            if (row == null)
+                return DbHelper.CreateErrorResponse<T>(mensajeNull);
+
+            if ((row.Pass ?? 0) != 1)
+                return DbHelper.CreateErrorResponse<T>(row.Mensaje?.ToString() ?? mensajeDefault);
+
+            return DbHelper.CreateOkResponse(mapResponse(row));
+        }
     }
 }

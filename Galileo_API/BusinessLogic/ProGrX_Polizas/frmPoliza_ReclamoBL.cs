@@ -144,5 +144,21 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         {
             return _db.Poliza_Reclamo_Etiqueta_Manual_Add(codEmpresa, request);
         }
+
+        public ErrorDto<PolizaReclamoAddResponse> Poliza_Reclamo_Add(
+            int codEmpresa,
+            PolizaReclamoAddRequest request)
+        {
+            return _db.Poliza_Reclamo_Add(codEmpresa, request);
+        }
+
+        public ErrorDto<PolizaReclamoFondoDisponibleResponse> Poliza_Reclamo_Fondo_Disponible(
+                int codEmpresa,
+                int reclamoId,
+                string plan,
+                int contrato)
+        {
+            return _db.Poliza_Reclamo_Fondo_Disponible(codEmpresa, reclamoId, plan, contrato);
+        }
     }
 }

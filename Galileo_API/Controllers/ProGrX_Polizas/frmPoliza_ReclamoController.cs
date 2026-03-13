@@ -58,8 +58,8 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Cuentas_Lista(codEmpresa, cedula, bancoId);
         }
 
-        [HttpGet("Poliza_Reclamo_Load")]
-        public ErrorDto<PolizaReclamoFormularioResponse> Poliza_Reclamo_Load(
+        [HttpGet("Poliza_Reclamo_Obtener")]
+        public ErrorDto<PolizaReclamoFormularioResponse> Poliza_Reclamo_Obtener(
            int codEmpresa,
            int reclamoId)
         {
@@ -133,8 +133,8 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Actualiza_Recepcion(codEmpresa, request);
         }
 
-        [HttpPost("Poliza_Reclamo_Seguimiento_Manual_Add")]
-        public ErrorDto Poliza_Reclamo_Seguimiento_Manual_Add(
+        [HttpPost("Poliza_Reclamo_Seguimiento_Manual_Guardar")]
+        public ErrorDto Poliza_Reclamo_Seguimiento_Manual_Guardar(
             int codEmpresa,
             [FromBody] PolizaReclamoSeguimientoManualAddRequest request)
         {
@@ -164,12 +164,31 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Desembolsos_Aplica(codEmpresa, request);
         }
 
-        [HttpPost("Poliza_Reclamo_Etiqueta_Manual_Add")]
-        public ErrorDto Poliza_Reclamo_Etiqueta_Manual_Add(
+        [HttpPost("Poliza_Reclamo_Etiqueta_Manual_Guardar")]
+        public ErrorDto Poliza_Reclamo_Etiqueta_Manual_Guardar(
             int codEmpresa,
             [FromBody] PolizaReclamoEtiquetaManualAddRequest request)
         {
             return _bl.Poliza_Reclamo_Etiqueta_Manual_Add(codEmpresa, request);
         }
+
+        [HttpPost("Poliza_Reclamo_Guardar")]
+        public ErrorDto<PolizaReclamoAddResponse> Poliza_Reclamo_Guardar(
+                int codEmpresa,
+                [FromBody] PolizaReclamoAddRequest request)
+        {
+            return _bl.Poliza_Reclamo_Add(codEmpresa, request);
+        }
+
+        [HttpGet("Poliza_Reclamo_Fondo_Disponible")]
+        public ErrorDto<PolizaReclamoFondoDisponibleResponse> Poliza_Reclamo_Fondo_Disponible(
+            int codEmpresa,
+            int reclamoId,
+            string plan,
+            int contrato)
+        {
+            return _bl.Poliza_Reclamo_Fondo_Disponible(codEmpresa, reclamoId, plan, contrato);
+        }
+
     }
 }
