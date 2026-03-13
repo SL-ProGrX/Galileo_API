@@ -16,6 +16,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = portalDb;
         }
 
+        /// <summary>
+        /// Realiza la conciliacion de movimientos para una cuenta especifica en un periodo determinado.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXConciliacionResult> CntXConciliacionMov_Conciliar(int codEmpresa, CntXConciliacionMovRequest request)
         {
             try
@@ -72,6 +78,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Inicializa el proceso de conciliacion para una cuenta especifica, preparando los datos necesarios para el procesamiento posterior.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXConciliacionMov_Inicializar(int codEmpresa, CntXConciliacionMovRequest request)
         {
             string query = @"exec spCntX_Concilia_Inicializa @Usuario, @CodConta, @Cuenta, @FechaInicio, @FechaCorte";
@@ -86,6 +98,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Procesa la conciliacion de movimientos para una cuenta especifica, filtrando por un numero maximo de registros.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="top"></param>
+        /// <returns></returns>
         public ErrorDto<CntXConciliacionProcesoData?> CntXConciliacionMov_Procesar(int codEmpresa, CntXConciliacionMovRequest request, int top)
         {
             string query = @"exec spCntX_Concilia_Procesa @Usuario, @CodConta, @Cuenta, @Top";
@@ -99,6 +118,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Obtiene los resultados de la conciliacion para una cuenta especifica, filtrando por tipo (DB, CR o CON).
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXConciliacionMovData>> CntXConciliacionResultados_Obtener(int codEmpresa, CntXConciliacionMovRequest request, string tipo)
         {
             string query = @"exec spCntX_Concilia_Resultados @Usuario, @CodConta, @Cuenta, @Tipo";
@@ -112,6 +138,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Metodo auxiliar para generar un resultado de error consistente.
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns></returns>
         private ErrorDto<CntXConciliacionResult> ErrorResult(string? description)
         {
             return new ErrorDto<CntXConciliacionResult>
