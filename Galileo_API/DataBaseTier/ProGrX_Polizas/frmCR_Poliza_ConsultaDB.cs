@@ -71,5 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var result = conn.Query<PolizaPersonaReclamoDto>(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
             return DbHelper.CreateOkResponse(result.AsList());
         }
+
+        
     }
 }

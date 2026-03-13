@@ -195,6 +195,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             });
         }
 
+
         /// <summary>
         /// Obtiene una lista de gestiones de bitacora sin paginación y filtros.
         /// </summary>

@@ -156,6 +156,58 @@ namespace Galileo.DataBaseTier
             return new SqlConnection(cs);
         }
 
+        public static ErrorDto<List<T>> ExecuteStoredProcedureList<T>(
+        string connectionString,
+        string procedureName,
+        object? parameters = null)
+        {
+            var result = CreateOkResponse(new List<T>());
+
+            try
+            {
+                using var connection = new SqlConnection(connectionString);
+                result.Result = connection.Query<T>(
+                    procedureName,
+                    parameters,
+                    commandType: CommandType.StoredProcedure).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new List<T>();
+            }
+
+            return result;
+        }
+
+        public static ErrorDto<T?> ExecuteStoredProcedureSingle<T>(
+            string connectionString,
+            string procedureName,
+            T? defaultValue = default,
+            object? parameters = null)
+        {
+            var result = CreateOkResponse(defaultValue);
+
+            try
+            {
+                using var connection = new SqlConnection(connectionString);
+                result.Result = connection.QueryFirstOrDefault<T>(
+                    procedureName,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = defaultValue;
+            }
+
+            return result;
+        }
+
+        
         // ====== Helpers de TES_SolicitudesPendientes_Obtener ======
         public static T DeserializeOrNew<T>(string? json) where T : new()
         {
