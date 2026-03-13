@@ -282,7 +282,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFormularioResponse>("Request inválido.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFormularioResponse>(PolizaReclamoConstFrm.valRequest);
 
                 if (string.IsNullOrWhiteSpace(request.cedula))
                     return DbHelper.CreateErrorResponse<PolizaReclamoFormularioResponse>("Debe indicar la cédula.");
@@ -510,10 +510,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request inválido.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse("Debe indicar el reclamo.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Actualiza_Datos_Vida
                        @ReclamoId, @MotivoId, @Enfermedad, @Edad, @Usuario";
@@ -547,10 +547,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request inválido.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse("Debe indicar el reclamo.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Actualiza_Datos_Incendio
             @ReclamoId, @SiniestroId, @Causa, @Finca, @Usuario";
@@ -590,16 +590,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request inválido.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse("Debe indicar el reclamo.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
 
                 if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 5)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse("Debe indicar el usuario.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Actualiza_Recepcion
             @ReclamoId, @Fecha, @Observaciones, @Usuario";
@@ -642,10 +642,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request inválido.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse("Debe indicar el reclamo.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
 
                 if (request.estado_id <= 0)
                     return DbHelper.ErrorResponse("Debe indicar el estado.");
@@ -657,7 +657,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     return DbHelper.ErrorResponse("No ha indicado destinatarios válidos.");
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse("Debe indicar el usuario.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Seguimiento_Manual_Add
             @ReclamoId, @EstadoId, @Observaciones, @ICorreo, @Destinatarios, @Usuario";
@@ -702,13 +702,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>("Request inválido.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>("Debe indicar el reclamo.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valReclamo);
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>("Debe indicar el usuario.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoCrearResponse>(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Fondo_Creacion @ReclamoId, @Usuario";
 
@@ -759,13 +759,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>("Request inválido.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>("Debe indicar el reclamo.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valReclamo);
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>("Debe indicar el usuario.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Fondo_Aportacion @ReclamoId, @Usuario";
 
@@ -815,10 +815,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Request inválido.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar el reclamo.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valReclamo);
 
                 if (request.monto <= 0)
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar un monto superior a 0.");
@@ -836,7 +836,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar la cuenta.");
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>("Debe indicar el usuario.");
+                    return DbHelper.CreateErrorResponse<PolizaReclamoDesembolsoAplicaResponse>(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Desembolsos_Aplica
             @ReclamoId, @Monto, @Plan, @Contrato, @BancoId, @Cuenta, @Usuario";
@@ -890,10 +890,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request inválido.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest);
 
                 if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse("Debe indicar el reclamo.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo);
 
                 if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 10)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
@@ -902,7 +902,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     return DbHelper.ErrorResponse("No ha indicado destinatarios válidos.");
 
                 if (string.IsNullOrWhiteSpace(request.usuario))
-                    return DbHelper.ErrorResponse("Debe indicar el usuario.");
+                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valUsuario);
 
                 const string sql = @"EXEC spPoliza_Reclamo_Etiqueta_Manual_Add
             @ReclamoId, @Observaciones, @ICorreo, @Destinatarios, @Usuario";

@@ -283,4 +283,11 @@
         public string destinatarios { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
+
+    public static class PolizaReclamoConstFrm
+    {
+        public const string valRequest = "Request inválido.";
+        public const string valReclamo = "Debe indicar el reclamo.";
+        public const string valUsuario = "Debe indicar el usuario.";
+    }
 }
