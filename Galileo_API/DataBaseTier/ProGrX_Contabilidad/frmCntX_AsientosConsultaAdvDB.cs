@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             return Ejecutar(codEmpresa, cn =>
             {
-                var sql = ObtenerSqlBase();
+                var sql = SqlBase;
 
                 sql += ConstruirFiltros(f);
 
@@ -79,43 +79,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-                    private static string ObtenerSqlBase()
-                    {
-                        return @"
-                                        SELECT TOP (@lineas)
+                            private const string SqlBase = @"
+                        SELECT TOP (@lineas)
 
-                                Asi.tipo_asiento,
-                                Asi.num_asiento,
-                                Asi.fecha_asiento,
+                            Asi.tipo_asiento,
+                            Asi.num_asiento,
+                            Asi.fecha_asiento,
 
-                                Det.cod_cuenta,
+                            Det.cod_cuenta,
 
-                                Det.cod_unidad,
-                                Det.cod_centro_costo,
+                            Det.cod_unidad,
+                            Det.cod_centro_costo,
 
-                                Det.cod_divisa,
-                                Det.tipo_cambio,
+                            Det.cod_divisa,
+                            Det.tipo_cambio,
 
-                                Det.documento,
-                                Det.detalle,
+                            Det.documento,
+                            Det.detalle,
 
-                                Det.monto_credito,
-                                Det.monto_debito
+                            Det.monto_credito,
+                            Det.monto_debito
 
-                            FROM CntX_Cuentas Cta
+                        FROM CntX_Cuentas Cta
 
-                            INNER JOIN CntX_Asientos_Detalle Det
-                                ON Cta.cod_contabilidad = Det.cod_contabilidad
-                                AND Cta.cod_cuenta = Det.cod_cuenta
+                        INNER JOIN CntX_Asientos_Detalle Det
+                            ON Cta.cod_contabilidad = Det.cod_contabilidad
+                            AND Cta.cod_cuenta = Det.cod_cuenta
 
-                            INNER JOIN CntX_Asientos Asi
-                                ON Det.cod_contabilidad = Asi.cod_contabilidad
-                                AND Det.tipo_asiento = Asi.tipo_asiento
-                                AND Det.num_asiento = Asi.num_asiento
+                        INNER JOIN CntX_Asientos Asi
+                            ON Det.cod_contabilidad = Asi.cod_contabilidad
+                            AND Det.tipo_asiento = Asi.tipo_asiento
+                            AND Det.num_asiento = Asi.num_asiento
 
-                            WHERE Cta.cod_contabilidad = @codContabilidad
-                        ";
-                            }
+                        WHERE Cta.cod_contabilidad = @codContabilidad
+                    ";
 
         private static string ConstruirFiltros(CntxMovimientosFiltroDto f)
         {
@@ -148,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (!string.IsNullOrWhiteSpace(f.cuenta))
                 sql += " AND Det.cod_cuenta = @cuenta";
 
-            if (!f.todas && f.fecha_desde.HasValue && f.fecha_hasta.HasValue)
+            if (f.todas != true && f.fecha_desde.HasValue && f.fecha_hasta.HasValue)
                 sql += " AND Asi.fecha_asiento BETWEEN @fecha_desde AND @fecha_hasta";
 
             return sql;

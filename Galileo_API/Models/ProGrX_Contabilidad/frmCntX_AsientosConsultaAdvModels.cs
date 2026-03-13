@@ -16,7 +16,7 @@
             public DateTime? fecha_desde { get; set; }
             public DateTime? fecha_hasta { get; set; }
 
-            public bool todas { get; set; }
+            public bool? todas { get; set; }
 
             public int lineas { get; set; } = 1000;
     }
