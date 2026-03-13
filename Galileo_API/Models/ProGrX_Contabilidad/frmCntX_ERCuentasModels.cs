@@ -15,7 +15,7 @@
         public required int Anio { get; set; }
         public required int Mes { get; set; }
         public string CodCuenta { get; set; } = string.Empty;
-        public decimal SaldoFinal { get; set; }
+        public required decimal SaldoFinal { get; set; }
         public string RegistroUsuario { get; set; } = string.Empty;
     }
 
