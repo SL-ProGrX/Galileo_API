@@ -120,5 +120,9 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 Mes = mes,
                 Unidad = unidad
             });
+
+        [HttpPut("CntXRazonFinanciera_ActualizarFormula")]
+        public ActionResult<ErrorDto<bool>> CntXRazonFinanciera_ActualizarFormula([FromQuery] int codEmpresa, [FromBody] CntXRazonFormulaUpdateParams param)
+            => _bl.CntXRazonFinanciera_ActualizarFormula(codEmpresa, param);
     }
 }
