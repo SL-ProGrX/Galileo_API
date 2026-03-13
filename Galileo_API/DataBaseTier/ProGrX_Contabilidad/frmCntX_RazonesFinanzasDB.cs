@@ -490,5 +490,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteSingleQuery<CntXRazonMontoDto>(_portalDb, codEmpresa, sql, default, param);
         }
 
+        /// <summary>
+        /// Actualiza solo la fórmula de una razón financiera.
+        /// </summary>
+        public ErrorDto<bool> CntXRazonFinanciera_ActualizarFormula(int codEmpresa, CntXRazonFormulaUpdateParams param)
+        {
+            var sql = @"
+                update CntX_Razones
+                set formula = @Formula
+                where cod_razon = @CodRazon
+                  and cod_contabilidad = @CodContabilidad";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
     }
 }
