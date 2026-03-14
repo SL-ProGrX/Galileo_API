@@ -18,7 +18,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
-        [HttpGet("Sys_Gestiones_Bitacoras_Lista_Obtener")]
+        [HttpPost("Sys_Gestiones_Bitacoras_Lista_Obtener")]
         public ErrorDto<SysGestionesBitacorasLista> Sys_Gestiones_Bitacoras_Lista_Obtener(int CodEmpresa,SysGestionesBitacoraFiltro filtros)
         {
             return _bl.Sys_Gestiones_Bitacoras_Lista_Obtener(
@@ -26,7 +26,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
-        [HttpGet("Sys_Gestiones_Bitacoras_Obtener")]
+        [HttpPost("Sys_Gestiones_Bitacoras_Obtener")]
         public ErrorDto<List<SysGestionesBitacorasData>> Sys_Gestiones_Bitacoras_Obtener(int CodEmpresa,SysGestionesBitacoraFiltro filtros)
         {
             return _bl.Sys_Gestiones_Bitacoras_Obtener(
