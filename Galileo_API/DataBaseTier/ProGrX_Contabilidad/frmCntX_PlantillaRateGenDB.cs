@@ -110,6 +110,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtener informacion de una planilla en especifico
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXPlantillaRateData?> CntXPlantillaRate_Obtener(int codEmpresa, CntXPlantillaRateGenerarRequest request)
         {
             string query = @"
@@ -134,6 +140,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Actualiza el consecutivo de la plantilla
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="consecutivo"></param>
+        /// <returns></returns>
         public ErrorDto CntXPlantillaRate_ActualizarConsecutivo(int codEmpresa, CntXPlantillaRateGenerarRequest request, int consecutivo)
         {
             string query = @"
@@ -154,6 +167,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Crea el maestro del asiento con la informacion de la plantilla 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsiento_CrearMaestro(int codEmpresa, CntXPlantillaRateGenerarRequest request, string tipoAsiento, string numAsiento)
         {
             DateTime fechaAsiento = new DateTime(request.periodo_anio, request.periodo_mes, 1, 0, 0, 0, DateTimeKind.Local);
@@ -207,6 +228,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Crea el detalle del asiento 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <param name="item"></param>
+        /// <param name="montoDebito"></param>
+        /// <param name="montoCredito"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsiento_CrearDetalle(int codEmpresa, CntXPlantillaRateGenerarRequest request, 
             string tipoAsiento, string numAsiento, CntXPlantillaRateDetalleData item, decimal montoDebito, decimal montoCredito)
         {
@@ -265,6 +297,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Auxiliar para mensaje de error
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns></returns>
         private ErrorDto ErrorResultPlantilla(string? description)
         {
             return new ErrorDto
