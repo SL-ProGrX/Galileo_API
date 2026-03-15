@@ -3,7 +3,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Org.BouncyCastle.Ocsp;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
