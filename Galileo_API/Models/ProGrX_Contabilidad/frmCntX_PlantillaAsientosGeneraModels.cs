@@ -17,7 +17,7 @@
     {
         public required int CodContabilidad { get; set; }
         public string CodPlantilla { get; set; } = string.Empty;
-        public int Consecutivo { get; set; }
+        public required int Consecutivo { get; set; }
     }
 
     public class CntxAsientosInsertParams
