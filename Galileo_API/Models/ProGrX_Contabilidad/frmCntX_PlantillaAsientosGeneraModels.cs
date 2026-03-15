@@ -27,8 +27,8 @@
         public string NumAsiento { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string FechaAsiento { get; set; } = string.Empty;
-        public int Anio { get; set; }
-        public int Mes { get; set; }
+        public int? Anio { get; set; }
+        public int? Mes { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
     }
@@ -54,14 +54,14 @@
         public string TipoAsiento { get; set; } = string.Empty;
         public string NumAsiento { get; set; } = string.Empty;
         public string CodCuenta { get; set; } = string.Empty;
-        public decimal MontoDebito { get; set; }
-        public decimal MontoCredito { get; set; }
+        public decimal? MontoDebito { get; set; }
+        public decimal? MontoCredito { get; set; }
         public string Documento { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
-        public int NumLinea { get; set; }
+        public int? NumLinea { get; set; }
         public string CodUnidad { get; set; } = string.Empty;
         public string CodDivisa { get; set; } = string.Empty;
-        public decimal TipoCambio { get; set; }
+        public decimal? TipoCambio { get; set; }
         public string CodCentroCosto { get; set; } = string.Empty;
     }
 }
