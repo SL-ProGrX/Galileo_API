@@ -38,7 +38,8 @@ namespace Galileo.DataBaseTier
             {
                 var mainPath = _paths.CombineUnderRoot(basePath, subName);
                 var subPath = _paths.ResolveReportPath(mainPath);
-                if (subPath == null) continue;
+                if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
+                    continue;
 
                 using var fs = File.OpenRead(subPath);
                 report.LoadSubreportDefinition(subName, fs);
@@ -75,7 +76,9 @@ namespace Galileo.DataBaseTier
 
             var mainPath = _paths.CombineUnderRoot(basePath, subName);
             var childPath = _paths.ResolveReportPath(mainPath);
-            if (childPath == null) return alias;
+
+            if (string.IsNullOrWhiteSpace(childPath) || !File.Exists(childPath))
+                return alias;
 
             var childDoc = XDocument.Load(childPath);
             var expected = ReadExpectedChildParams(childDoc).ToList();
@@ -232,6 +235,9 @@ namespace Galileo.DataBaseTier
 
         private static Dictionary<string, List<string>> ReadParentSubreportParamNames(string parentRdlcPath)
         {
+            if (string.IsNullOrWhiteSpace(parentRdlcPath) || !File.Exists(parentRdlcPath))
+                return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
             var x  = XDocument.Load(parentRdlcPath);
             var ns = x.Root!.GetDefaultNamespace();
             var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);

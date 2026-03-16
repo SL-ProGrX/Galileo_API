@@ -12,6 +12,9 @@ namespace Galileo.DataBaseTier
 
         public MemoryStream PatchReportCode(string rdlcPath, string? codeSection)
         {
+            if (string.IsNullOrWhiteSpace(rdlcPath) || !File.Exists(rdlcPath))
+                throw new FileNotFoundException("No se encontró el archivo RDLC.");
+
             var xdoc   = XDocument.Load(rdlcPath);
             var ns     = xdoc.Root!.GetDefaultNamespace();
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
