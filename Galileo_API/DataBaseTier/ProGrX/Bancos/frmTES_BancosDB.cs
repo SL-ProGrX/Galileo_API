@@ -804,47 +804,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         // Resuelve qué archivo devolver (SIN exponerlo al cliente)
         public ErrorDto<ArchivoDto> ResolverDocumento(int codEmpresa, int codBanco, string documento)
         {
-             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             var error = new ErrorDto<ArchivoDto> { Code = 0, Description = "Ok" };
 
-
-
-            string docNameOld = "";
-
-            docNameOld =  conn.QueryFirstOrDefault<string>(
+            string docNameOld = conn.QueryFirstOrDefault<string>(
                 "dbo.spTES_W_BancosArchivos_ObtenerNombreAnterior",
                 new { IdBanco = codBanco, DocumentoCol = documento },
                 commandType: CommandType.StoredProcedure) ?? string.Empty;
 
-            // 2) Armar ruta primaria o defaults
-            string ruta = !string.IsNullOrWhiteSpace(docNameOld)
-                ? Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, $"{codBanco}_{docNameOld}")
-                : documento switch
-                {
-                    "archivo_especial_ck" => Path.Combine(dirRDLC, "Banking_DocFormat.rdl"),
-                    "archivo_cheques_firmas" => Path.Combine(dirRDLC, "Banking_DocFormat01.rdl"),
-                    _ => Path.Combine(dirRDLC, "Banking_DocFormat02.rdl"),
-                };
+            string? ruta = ObtenerRutaDocumento(codEmpresa, codBanco, documento, docNameOld);
 
-            // 3) Fallback a carpeta de empresa si la ruta no existe
-            if (!File.Exists(ruta))
-            {
-                ruta = documento switch
-                {
-                    "archivo_especial_ck" => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat.rdl"),
-                    "archivo_cheques_firmas" => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat01.rdl"),
-                    _ => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat02.rdl"),
-                };
-                if (!File.Exists(ruta)) return new ErrorDto<ArchivoDto>();
-            }
+            if (string.IsNullOrWhiteSpace(ruta))
+                return new ErrorDto<ArchivoDto>();
 
-            // 4) Nombre “bonito” (sin prefijo CodBanco_)
-            var fileName = Path.GetFileName(ruta);
-            var prefix = codBanco + "_";
-            if (fileName.StartsWith(prefix, StringComparison.Ordinal))
-                fileName = fileName[(fileName.IndexOf('_') + 1)..];
-
+            var fileName = ObtenerNombreArchivo(codBanco, ruta);
             var bytes = File.ReadAllBytes(ruta);
+
             error.Result = new ArchivoDto
             {
                 FileName = fileName,
@@ -853,6 +828,82 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             };
 
             return error;
+        }
+
+        /// <summary>
+        /// Resuelve la ruta final del documento bancario validando que permanezca bajo la raíz configurada.
+        /// </summary>
+        private string? ObtenerRutaDocumento(int codEmpresa, int codBanco, string documento, string docNameOld)
+        {
+            string rootDir = Path.GetFullPath(dirRDLC);
+            string? ruta = null;
+
+            if (!string.IsNullOrWhiteSpace(docNameOld))
+            {
+                ruta = Path.GetFullPath(Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, $"{codBanco}_{docNameOld}"));
+
+                if (EsRutaValida(rootDir, ruta) && File.Exists(ruta))
+                    return ruta;
+            }
+
+            ruta = ObtenerRutaDefault(rootDir, documento);
+            if (EsRutaValida(rootDir, ruta) && File.Exists(ruta))
+                return ruta;
+
+            ruta = ObtenerRutaEmpresa(rootDir, codEmpresa, documento);
+            if (EsRutaValida(rootDir, ruta) && File.Exists(ruta))
+                return ruta;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Obtiene la ruta por defecto del documento bancario.
+        /// </summary>
+        private string ObtenerRutaDefault(string rootDir, string documento)
+        {
+            return documento switch
+            {
+                "archivo_especial_ck" => Path.GetFullPath(Path.Combine(rootDir, "Banking_DocFormat.rdl")),
+                "archivo_cheques_firmas" => Path.GetFullPath(Path.Combine(rootDir, "Banking_DocFormat01.rdl")),
+                _ => Path.GetFullPath(Path.Combine(rootDir, "Banking_DocFormat02.rdl"))
+            };
+        }
+
+        /// <summary>
+        /// Obtiene la ruta del documento dentro de la carpeta de la empresa y banco.
+        /// </summary>
+        private string ObtenerRutaEmpresa(string rootDir, int codEmpresa, string documento)
+        {
+            return documento switch
+            {
+                "archivo_especial_ck" => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat.rdl")),
+                "archivo_cheques_firmas" => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat01.rdl")),
+                _ => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat02.rdl"))
+            };
+        }
+
+        /// <summary>
+        /// Valida que la ruta permanezca dentro de la raíz configurada.
+        /// </summary>
+        private static bool EsRutaValida(string rootDir, string ruta)
+        {
+            string rootDirWithSep = rootDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return ruta.StartsWith(rootDirWithSep, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Obtiene el nombre público del archivo removiendo el prefijo del banco cuando aplica.
+        /// </summary>
+        private static string ObtenerNombreArchivo(int codBanco, string ruta)
+        {
+            var fileName = Path.GetFileName(ruta);
+            var prefix = codBanco + "_";
+
+            if (fileName.StartsWith(prefix, StringComparison.Ordinal))
+                fileName = fileName[(fileName.IndexOf('_') + 1)..];
+
+            return fileName;
         }
 
     }
