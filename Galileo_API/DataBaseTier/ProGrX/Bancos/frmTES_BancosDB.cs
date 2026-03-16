@@ -840,7 +840,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             if (!string.IsNullOrWhiteSpace(docNameOld))
             {
-                ruta = Path.GetFullPath(Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, $"{codBanco}_{docNameOld}"));
+                string safeDocName = Path.GetFileName(docNameOld);
+                ruta = Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, $"{codBanco}_{safeDocName}"));
 
                 if (EsRutaValida(rootDir, ruta) && File.Exists(ruta))
                     return ruta;
