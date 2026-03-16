@@ -876,11 +876,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         private string ObtenerRutaEmpresa(string rootDir, int codEmpresa, string documento)
         {
+            var empresaBancoDir = Path.Combine(rootDir, codEmpresa.ToString(), vBanco);
+
             return documento switch
             {
-                "archivo_especial_ck" => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat.rdl")),
-                "archivo_cheques_firmas" => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat01.rdl")),
-                _ => Path.GetFullPath(Path.Combine(rootDir, codEmpresa.ToString(), vBanco, "Banking_DocFormat02.rdl"))
+                "archivo_especial_ck" => Path.GetFullPath(Path.Combine(empresaBancoDir, "Banking_DocFormat.rdl")),
+                "archivo_cheques_firmas" => Path.GetFullPath(Path.Combine(empresaBancoDir, "Banking_DocFormat01.rdl")),
+                _ => Path.GetFullPath(Path.Combine(empresaBancoDir, "Banking_DocFormat02.rdl"))
             };
         }
 
