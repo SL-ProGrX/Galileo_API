@@ -861,7 +861,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Obtiene la ruta por defecto del documento bancario.
         /// </summary>
-        private string ObtenerRutaDefault(string rootDir, string documento)
+        private static string ObtenerRutaDefault(string rootDir, string documento)
         {
             return documento switch
             {
