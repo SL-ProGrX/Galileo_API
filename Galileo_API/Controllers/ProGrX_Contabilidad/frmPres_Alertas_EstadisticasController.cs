@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PgxAPI.Models.ProGrX_Contabilidad;
 
-namespace Galileo.Controllers.ProGrX_Contabilidad
+namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -43,7 +43,7 @@ namespace Galileo.Controllers.ProGrX_Contabilidad
         [Authorize]
         [HttpGet("PresAlertaJustificacionBitacora_Obtener")]
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
-           PresAlertaJustificacionBitRequest resquest)
+          [FromQuery] PresAlertaJustificacionBitRequest resquest)
         {
             return _BL.PresAlertaJustificacionBitacora_Obtener(resquest);
         }
