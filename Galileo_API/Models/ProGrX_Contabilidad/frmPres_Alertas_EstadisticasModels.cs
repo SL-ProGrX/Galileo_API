@@ -38,6 +38,11 @@
         public decimal presupuesto { get; set; } = 0;
         public string alerta_tipo { get; set; } = string.Empty;
         public string alerta_descripcion { get; set; } = string.Empty;
+
+        public bool justificada { get; set; } = false;
+        public string justificacion_actual { get; set; } = string.Empty;
+        public DateTime? justificacion_fecha { get; set; }
+        public string justificacion_usuario { get; set; } = string.Empty;
     }
 
 
