@@ -101,11 +101,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(ex.Message);
             }
-            catch (Exception ex)
-            {
-                string message = $"Error inesperado al obtener traslado de deuda: {ex.GetType().Name}: {ex.Message}";
-                return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(message);
-            }
         }
         /// <summary>
         /// Se realiza el calculo de la couta de los rows que hay en la grilla
@@ -135,8 +130,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>(ex.Message);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError(
+                    "Error inesperado en CO_TrasladoDeuda_Calcular: {0}", ex);
+
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>(
                     "Se produjo un error inesperado al calcular la cuota.");
             }
@@ -201,7 +199,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RollbackTransaction(tx);
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(ex.Message);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
+            {
+                RollbackTransaction(tx);
+                string message = $"Error inesperado al aplicar traslado de deuda: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(message);
+            }
+            catch (ArgumentException ex)
+            {
+                RollbackTransaction(tx);
+                string message = $"Error inesperado al aplicar traslado de deuda: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(message);
+            }
+            catch (FormatException ex)
             {
                 RollbackTransaction(tx);
                 string message = $"Error inesperado al aplicar traslado de deuda: {ex.Message}";
@@ -263,7 +273,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(ex.Message);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
+            {
+                string message = $"Error inesperado al exportar traslado de deuda: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(message);
+            }
+            catch (ArgumentNullException ex)
             {
                 string message = $"Error inesperado al exportar traslado de deuda: {ex.Message}";
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(message);
