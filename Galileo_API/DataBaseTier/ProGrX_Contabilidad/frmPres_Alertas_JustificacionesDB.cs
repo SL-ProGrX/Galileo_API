@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 
@@ -21,18 +22,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBit_Obtener(
             PresAlertaJustificacionBitRequest resquest)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, resquest.codEmpresa);
-
-            var result = new ErrorDto<List<PresAlertaJustificacionBitacoraData>>
+            return DbHelper.WithConn(_portalDb, resquest.codEmpresa, conn =>
             {
-                Code = 0,
-                Description = "OK",
-                Result = new List<PresAlertaJustificacionBitacoraData>()
-            };
-
-            try
-            {
-                const string sql = @"
+                const string query = @"
                         SELECT
                               *
                         FROM dbo.PRES_ALERTAS_JUSTIFICACIONES_BIT
@@ -43,30 +35,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                           AND mes = @mes
                         ORDER BY id_bitacora DESC;";
 
-                result.Result = connection.Query<PresAlertaJustificacionBitacoraData>(
-                    sql,
-                    new
-                    {
-                        resquest.codEmpresa,
-                        resquest.codConta,
-                        resquest.codModelo,
-                        resquest.codUnidad,
-                        resquest.codCentroCosto,
-                        resquest.codCuenta,
-                        resquest.anio,
-                        resquest.mes,
-                        resquest.tipoAlerta
-                    }
+                return conn.Query<PresAlertaJustificacionBitacoraData>(
+                    query,
+                     new
+                     {
+                         resquest.codEmpresa,
+                         resquest.codConta,
+                         resquest.codModelo,
+                         resquest.codUnidad,
+                         resquest.codCentroCosto,
+                         resquest.codCuenta,
+                         resquest.anio,
+                         resquest.mes,
+                         resquest.tipoAlerta
+                     }
                 ).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = new List<PresAlertaJustificacionBitacoraData>();
-            }
 
-            return result;
+            });
         }
 
     }
