@@ -43,19 +43,9 @@ namespace Galileo.Controllers.ProGrX_Contabilidad
         [Authorize]
         [HttpGet("PresAlertaJustificacionBitacora_Obtener")]
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
-            int CodEmpresa,
-            int codConta,
-            string codModelo,
-            string codUnidad,
-            string codCentroCosto,
-            string codCuenta,
-            int anio,
-            int mes,
-            string tipoAlerta)
+           PresAlertaJustificacionBitRequest resquest)
         {
-            return _BL.PresAlertaJustificacionBitacora_Obtener(
-                CodEmpresa, codConta, codModelo, codUnidad, codCentroCosto, codCuenta, anio, mes, tipoAlerta
-            );
+            return _BL.PresAlertaJustificacionBitacora_Obtener(resquest);
         }
 
     }

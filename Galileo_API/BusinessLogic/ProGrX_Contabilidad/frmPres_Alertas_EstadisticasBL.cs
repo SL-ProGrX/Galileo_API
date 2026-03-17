@@ -32,19 +32,9 @@ namespace Galileo.BusinessLogic.ProGrX_Contabilidad
         }
 
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
-            int codEmpresa,
-            int codConta,
-            string codModelo,
-            string codUnidad,
-            string codCentroCosto,
-            string codCuenta,
-            int anio,
-            int mes,
-            string tipoAlerta)
+          PresAlertaJustificacionBitRequest resquest )
         {
-            return _DB.PresAlertaJustificacionBitacora_Obtener(
-                codEmpresa, codConta, codModelo, codUnidad, codCentroCosto, codCuenta, anio, mes, tipoAlerta
-            );
+            return _DB.PresAlertaJustificacionBitacora_Obtener(resquest);
         }
     }
 }

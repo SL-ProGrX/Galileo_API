@@ -295,17 +295,9 @@ VALUES
         /// <param name="tipoAlerta">Tipo de alerta.</param>
         /// <returns>Lista de movimientos de bitácora.</returns>
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
-            int codEmpresa,
-            int codConta,
-            string codModelo,
-            string codUnidad,
-            string codCentroCosto,
-            string codCuenta,
-            int anio,
-            int mes,
-            string tipoAlerta)
+            PresAlertaJustificacionBitRequest resquest)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDb, resquest.codEmpresa);
 
             var result = new ErrorDto<List<PresAlertaJustificacionBitacoraData>>
             {
@@ -340,15 +332,15 @@ ORDER BY id_bitacora DESC;";
                     sql,
                     new
                     {
-                        codEmpresa,
-                        codConta,
-                        codModelo,
-                        codUnidad,
-                        codCentroCosto,
-                        codCuenta,
-                        anio,
-                        mes,
-                        tipoAlerta
+                        resquest.codEmpresa,
+                        resquest.codConta,
+                        resquest.codModelo,
+                        resquest.codUnidad,
+                        resquest.codCentroCosto,
+                        resquest.codCuenta,
+                        resquest.anio,
+                        resquest.mes,
+                        resquest.tipoAlerta
                     }
                 ).ToList();
             }
