@@ -1107,51 +1107,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             var cuentasBase = ObtenerCuentasOperacionBase(conn, ctx.baseDto.linea, ctx.baseDto.opex);
 
-            if (ctx.baseDto.saldo > 0m)
-            {
-                RegistrarAsiento(conn, null, new AsientoArgs
-                {
-                    tipo = ctx.documento.tipo_documento,
-                    transaccion = ctx.documento.documento,
-                    monto = ctx.baseDto.saldo,
-                    movimiento = "C",
-                    divisa = ctx.oficina.cod_divisa,
-                    tipoCambio = 1m,
-                    contabilidad = ctx.contabilidad,
-                    unidad = ctx.oficina.cod_unidad,
-                    centroCosto = "",
-                    cuenta = cuentasBase.cta_amortiza,
-                    referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                    referencia2 = ctx.baseDto.linea,
-                    referencia3 = ctx.documento.deposito
-                });
-            }
+            RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.saldo, cuentasBase.cta_amortiza);
 
             if (ctx.baseDto.cargos_registrados > 0m)
             {
                 string cuentaCargos = _mCobroDb.fxCBRParametro(codEmpresa, "23");
-
-                RegistrarAsiento(conn, null, new AsientoArgs
-                {
-                    tipo = ctx.documento.tipo_documento,
-                    transaccion = ctx.documento.documento,
-                    monto = ctx.baseDto.cargos_registrados,
-                    movimiento = "C",
-                    divisa = ctx.oficina.cod_divisa,
-                    tipoCambio = 1m,
-                    contabilidad = ctx.contabilidad,
-                    unidad = ctx.oficina.cod_unidad,
-                    centroCosto = "",
-                    cuenta = cuentaCargos,
-                    referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                    referencia2 = ctx.baseDto.linea,
-                    referencia3 = ctx.documento.deposito
-                });
+                RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.cargos_registrados, cuentaCargos);
             }
 
             if (ctx.baseDto.cargos_registrados != 0m)
             {
-                var cargos = conn.Query<CargoAfectacionRow>(
+                var cargos = conn.Query<AfectacionRow>(
                     "exec spCrdDocumentoAfectacionCargos @Tipo, @Transaccion",
                     new
                     {
@@ -1165,28 +1131,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         ? ctx.baseDto.cargos_registrados
                         : item.mov_monto * item.tipo_cambio_aplicado;
 
-                    RegistrarAsiento(conn, null, new AsientoArgs
+                    RegistrarAsientoAfectacion(conn, ctx, movMonto, new AsientoAfectacionData
                     {
-                        tipo = ctx.documento.tipo_documento,
-                        transaccion = ctx.documento.documento,
-                        monto = movMonto,
-                        movimiento = "C",
                         divisa = item.cod_divisa,
                         tipoCambio = item.tipo_cambio_aplicado,
-                        contabilidad = ctx.contabilidad,
                         unidad = item.cod_unidad,
                         centroCosto = item.cod_centro_costo,
                         cuenta = item.cod_cuenta,
                         referencia1 = item.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                        referencia2 = item.codigo,
-                        referencia3 = ctx.documento.deposito
+                        referencia2 = item.codigo
                     });
                 }
             }
 
             if (ctx.baseDto.polizas_atrasadas != 0m)
             {
-                var polizas = conn.Query<PolizaAfectacionRow>(
+                var polizas = conn.Query<AfectacionRow>(
                     "exec spCrdDocumentoAfectacionPolizas @Tipo, @Transaccion",
                     new
                     {
@@ -1198,84 +1158,76 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 {
                     decimal movMonto = item.mov_monto * item.tipo_cambio_aplicado;
 
-                    RegistrarAsiento(conn, null, new AsientoArgs
+                    RegistrarAsientoAfectacion(conn, ctx, movMonto, new AsientoAfectacionData
                     {
-                        tipo = ctx.documento.tipo_documento,
-                        transaccion = ctx.documento.documento,
-                        monto = movMonto,
-                        movimiento = "C",
                         divisa = item.cod_divisa,
                         tipoCambio = item.tipo_cambio_aplicado,
-                        contabilidad = ctx.contabilidad,
                         unidad = item.cod_unidad,
                         centroCosto = item.cod_centro_costo,
                         cuenta = item.cod_cuenta,
                         referencia1 = item.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                        referencia2 = item.codigo,
-                        referencia3 = ctx.documento.deposito
+                        referencia2 = item.codigo
                     });
                 }
             }
 
-            if (ctx.baseDto.interes_corriente > 0m)
-            {
-                RegistrarAsiento(conn, null, new AsientoArgs
-                {
-                    tipo = ctx.documento.tipo_documento,
-                    transaccion = ctx.documento.documento,
-                    monto = ctx.baseDto.interes_corriente,
-                    movimiento = "C",
-                    divisa = ctx.oficina.cod_divisa,
-                    tipoCambio = 1m,
-                    contabilidad = ctx.contabilidad,
-                    unidad = ctx.oficina.cod_unidad,
-                    centroCosto = "",
-                    cuenta = cuentasBase.cta_intc,
-                    referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                    referencia2 = ctx.baseDto.linea,
-                    referencia3 = ctx.documento.deposito
-                });
-            }
+            RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.interes_corriente, cuentasBase.cta_intc);
+            RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.interes_pendiente, cuentasBase.cta_intc);
+            RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.interes_moratorio, cuentasBase.cta_intm);
+        }
+        private static void RegistrarAsientoCreditoBase(SqlConnection conn,AplicacionContexto ctx,decimal monto,string cuenta)
+        {
+            if (monto <= 0m || string.IsNullOrWhiteSpace(cuenta))
+                return;
 
-            if (ctx.baseDto.interes_pendiente > 0m)
+            RegistrarAsiento(conn, null, new AsientoArgs
             {
-                RegistrarAsiento(conn, null, new AsientoArgs
-                {
-                    tipo = ctx.documento.tipo_documento,
-                    transaccion = ctx.documento.documento,
-                    monto = ctx.baseDto.interes_pendiente,
-                    movimiento = "C",
-                    divisa = ctx.oficina.cod_divisa,
-                    tipoCambio = 1m,
-                    contabilidad = ctx.contabilidad,
-                    unidad = ctx.oficina.cod_unidad,
-                    centroCosto = "",
-                    cuenta = cuentasBase.cta_intc,
-                    referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                    referencia2 = ctx.baseDto.linea,
-                    referencia3 = ctx.documento.deposito
-                });
-            }
+                tipo = ctx.documento.tipo_documento,
+                transaccion = ctx.documento.documento,
+                monto = monto,
+                movimiento = "C",
+                divisa = ctx.oficina.cod_divisa,
+                tipoCambio = 1m,
+                contabilidad = ctx.contabilidad,
+                unidad = ctx.oficina.cod_unidad,
+                centroCosto = "",
+                cuenta = cuenta,
+                referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
+                referencia2 = ctx.baseDto.linea,
+                referencia3 = ctx.documento.deposito
+            });
+        }
+        private static void RegistrarAsientoAfectacion(SqlConnection conn,AplicacionContexto ctx,decimal monto,AsientoAfectacionData data)
+        {
+            if (monto == 0m || string.IsNullOrWhiteSpace(data.cuenta))
+                return;
 
-            if (ctx.baseDto.interes_moratorio > 0m)
+            RegistrarAsiento(conn, null, new AsientoArgs
             {
-                RegistrarAsiento(conn, null, new AsientoArgs
-                {
-                    tipo = ctx.documento.tipo_documento,
-                    transaccion = ctx.documento.documento,
-                    monto = ctx.baseDto.interes_moratorio,
-                    movimiento = "C",
-                    divisa = ctx.oficina.cod_divisa,
-                    tipoCambio = 1m,
-                    contabilidad = ctx.contabilidad,
-                    unidad = ctx.oficina.cod_unidad,
-                    centroCosto = "",
-                    cuenta = cuentasBase.cta_intm,
-                    referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
-                    referencia2 = ctx.baseDto.linea,
-                    referencia3 = ctx.documento.deposito
-                });
-            }
+                tipo = ctx.documento.tipo_documento,
+                transaccion = ctx.documento.documento,
+                monto = monto,
+                movimiento = "C",
+                divisa = data.divisa,
+                tipoCambio = data.tipoCambio,
+                contabilidad = ctx.contabilidad,
+                unidad = data.unidad,
+                centroCosto = data.centroCosto,
+                cuenta = data.cuenta,
+                referencia1 = data.referencia1,
+                referencia2 = data.referencia2,
+                referencia3 = ctx.documento.deposito
+            });
+        }
+        private sealed class AsientoAfectacionData
+        {
+            public string divisa { get; set; } = "COL";
+            public decimal tipoCambio { get; set; } = 1m;
+            public string unidad { get; set; } = "";
+            public string centroCosto { get; set; } = "";
+            public string cuenta { get; set; } = "";
+            public string referencia1 { get; set; } = "";
+            public string referencia2 { get; set; } = "";
         }
         private static CuentasOperacionBaseRow ObtenerCuentasOperacionBase(SqlConnection conn, string linea, string opexTexto)
         {
@@ -1410,20 +1362,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             public string cta_intm { get; set; } = "";
             public string cta_amortiza { get; set; } = "";
         }
-        private sealed class CargoAfectacionRow
-        {
-            public long id_solicitud { get; set; }
-            public string codigo { get; set; } = "";
-            public decimal mov_monto { get; set; }
-            public string cod_divisa { get; set; } = "COL";
-            public decimal tipo_cambio { get; set; } = 1m;
-            public string cod_unidad { get; set; } = "";
-            public string cod_centro_costo { get; set; } = "";
-            public string cod_cuenta { get; set; } = "";
-
-            public decimal tipo_cambio_aplicado => tipo_cambio <= 0m ? 1m : tipo_cambio;
-        }
-        private sealed class PolizaAfectacionRow
+        private sealed class AfectacionRow
         {
             public long id_solicitud { get; set; }
             public string codigo { get; set; } = "";
