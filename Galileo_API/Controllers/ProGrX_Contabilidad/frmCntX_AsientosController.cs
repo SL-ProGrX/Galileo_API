@@ -30,10 +30,15 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("CntXAsientos_Scroll_Obtener")]
-        public ErrorDto<CntXAsientoData?> CntXAsientos_Scroll_Obtener(
-            int codEmpresa, int codConta, int anio, int mes, string tipoAsiento, string numAsiento, int scrollCode)
+        public ErrorDto<CntXAsientoData?> CntXAsientos_Scroll_Obtener(int codEmpresa, string request, int scrollCode)
         {
-            return _bl.CntXAsientos_Scroll_Obtener(codEmpresa, codConta, anio, mes, tipoAsiento, numAsiento, scrollCode);
+            return _bl.CntXAsientos_Scroll_Obtener(codEmpresa, request, scrollCode);
+        }
+
+        [HttpGet("CntXAsientos_Lista_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXAsientos_Lista_Obtener(int codEmpresa, int codConta, string tipoAsiento, bool periodoActual, int anio, int mes)
+        {
+            return _bl.CntXAsientos_Lista_Obtener(codEmpresa, codConta, tipoAsiento, periodoActual, anio, mes);
         }
 
         [HttpGet("CntXTiposAsientos_Lista_Obtener")]
@@ -48,5 +53,40 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXTiposAsientos_Descripcion_Obtener(codEmpresa, codConta, tipoAsiento);
         }
 
+        [HttpGet("CntXCentroCostosporUnidad_Lista_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXCentroCostosporUnidad_Lista_Obtener(int codEmpresa, int codConta, string codUnidad)
+        {
+            return _bl.CntXCentroCostosporUnidad_Lista_Obtener(codEmpresa, codConta, codUnidad);
+        }
+
+        [HttpGet("CntXAsientos_Consecutivo_Obtener")]
+        public ErrorDto<string?> CntXAsientos_Consecutivo_Obtener(int codEmpresa, int codConta, string tipoAsiento)
+        {
+            return _bl.CntXAsientos_Consecutivo_Obtener(codEmpresa, codConta, tipoAsiento);
+        }
+
+        [HttpPost("CntXAsientos_Guardar")]
+        public ErrorDto CntXAsientos_Guardar(int codEmpresa, string usuario, bool edita, CntXAsientoGuardarRequest request)
+        {
+            return _bl.CntXAsientos_Guardar(codEmpresa, usuario, edita, request);
+        }
+
+        [HttpDelete("CntXAsientos_Eliminar")]
+        public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, byte[] ts, string usuario)
+        {
+            return _bl.CntXAsientos_Eliminar(codEmpresa, codConta, tipoAsiento, numAsiento, ts, usuario);
+        }
+
+        [HttpPost("CntXAsientos_Autorizar")]
+        public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
+        {
+            return _bl.CntXAsientos_Autorizar(codEmpresa, codConta, tipoAsiento, numAsiento, usuario);
+        }
+
+        [HttpPost("CntXAsientos_Copiar")]
+        public ErrorDto CntXAsientos_Copiar(int codEmpresa, string usuario, CntXAsientoCopiarRequest request)
+        {
+            return _bl.CntXAsientos_Copiar(codEmpresa, usuario, request);
+        }
     }
 }

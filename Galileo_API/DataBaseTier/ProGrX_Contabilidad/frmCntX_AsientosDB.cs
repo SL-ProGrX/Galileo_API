@@ -10,19 +10,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _Bitacora;
+        private readonly MCntXCalculosDb _mCalculos;
         private readonly int vModulo = 20;
 
         public FrmCntXAsientosDb(IConfiguration config)
            : this(
                  new PortalDB(config),
-                 new MSecurityMainDb(config))
+                 new MSecurityMainDb(config),
+                 new MCntXCalculosDb(config))
         {
         }
 
-        public FrmCntXAsientosDb(PortalDB portalDB, MSecurityMainDb dbBitacora)
+        public FrmCntXAsientosDb(PortalDB portalDB, MSecurityMainDb dbBitacora, MCntXCalculosDb mCalculos)
         {
             _portalDb = portalDB;
             _Bitacora = dbBitacora;
+            _mCalculos = mCalculos;
         }
 
         public ErrorDto<CntXAsientoData?> CntXAsientos_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
@@ -32,20 +35,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                   and tipo_asiento = @tipoAsiento
                   and num_asiento = @numAsiento;";
 
-            var result = DbHelper.ExecuteSingleQuery<CntXAsientoData>(
+            return DbHelper.ExecuteSingleQuery<CntXAsientoData>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new CntXAsientoData(),
+                null,
                 new { codConta, tipoAsiento, numAsiento }
             );
-
-            if (result.Result == null)
-            {
-                result.Result = new CntXAsientoData();
-            }
-
-            return result;
         }
 
         public ErrorDto<List<CntXAsientoDetalleData>> CntXAsientos_Detalle_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
@@ -75,8 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
-        public ErrorDto<CntXAsientoData?> CntXAsientos_Scroll_Obtener(
-            int codEmpresa, int codConta, int anio, int mes, string tipoAsiento, string numAsiento, int scrollCode)
+        public ErrorDto<CntXAsientoData?> CntXAsientos_Scroll_Obtener(int codEmpresa, CntXAsientoData request, int scrollCode)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -99,19 +94,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var asientoDestino = conn.QueryFirstOrDefault<string>(query, new
                 {
-                    codConta,
-                    tipoAsiento,
-                    anio,
-                    mes,
-                    numAsiento,
+                    codConta = request.cod_contabilidad,
+                    tipoAsiento = request.tipo_asiento,
+                    anio = request.anio,
+                    mes = request.mes,
+                    numAsiento = request.num_asiento,
                     scrollCode
                 });
 
                 var numeroObjetivo = string.IsNullOrWhiteSpace(asientoDestino)
-                    ? numAsiento
+                    ? request.num_asiento
                     : asientoDestino;
 
-                return CntXAsientos_Obtener(codEmpresa, codConta, tipoAsiento, numeroObjetivo);
+                return CntXAsientos_Obtener(codEmpresa, request.cod_contabilidad, request.tipo_asiento, numeroObjetivo);
             }
             catch (Exception ex)
             {
@@ -119,23 +114,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CntXAsientos_Lista_Obtener(int codEmpresa, int codConta, string tipoAsiento)
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXAsientos_Lista_Obtener(int codEmpresa, int codConta, string tipoAsiento, bool periodoActual, int anio, int mes)
         {
-            const string query = @"select Num_asiento as item, descripcion
-                from Cntx_Asientos where cod_contabilidad = @codConta and tipo_asiento = @tipoAsiento";
+            string query = @"select Num_asiento as item, descripcion 
+                from Cntx_Asientos 
+                where cod_contabilidad = @codConta 
+                  and tipo_asiento = @tipoAsiento ";
+
+            if (periodoActual)
+            {
+                query += " and anio = @anio and mes = @mes";
+            }
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
                 query,
-                new { codConta, tipoAsiento }
+                new { codConta, tipoAsiento, anio, mes }
             );
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> CntXTiposAsientos_Lista_Obtener(int codEmpresa, int codConta)
         {
             const string query = @"select rtrim(tipo_asiento) as item, rtrim(descripcion) as descripcion 
-                from CntX_Tipos_Asientos where cod_contabilidad = @codConta 
+                from CntX_Tipos_Asientos 
+                where cod_contabilidad = @codConta 
                 order by tipo_asiento;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
@@ -148,27 +151,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         public ErrorDto<string?> CntXTiposAsientos_Descripcion_Obtener(int codEmpresa, int codConta, string tipoAsiento)
         {
-            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            const string query = @"select top 1 rtrim(descripcion) 
+                from CntX_Tipos_Asientos 
+                where cod_contabilidad = @codConta
+                  and tipo_asiento = @tipoAsiento;";
 
-            try
-            {
-                const string query = @"select top 1 rtrim(descripcion) 
-                    from CntX_Tipos_Asientos 
-                    where cod_contabilidad = @codConta
-                      and tipo_asiento = @tipoAsiento;";
+            return DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, query, null, new { codConta, tipoAsiento });
+        }
 
-                var descripcion = conn.QueryFirstOrDefault<string>(query, new { codConta, tipoAsiento });
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXCentroCostosporUnidad_Lista_Obtener(int codEmpresa, int codConta, string codUnidad)
+        {
+            const string query = @"select cod_centro_costo as item, descripcion 
+                from CntX_Centro_Costos 
+                where cod_contabilidad = @codConta 
+                  and cod_centro_costo in (
+                        select cod_centro_costo 
+                        from cntX_unidades_cc 
+                        where cod_unidad = @codUnidad 
+                          and cod_contabilidad = @codConta
+                  );";
 
-                return new ErrorDto<string?>
-                {
-                    Code = 0,
-                    Result = descripcion ?? string.Empty
-                };
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<string?>(ex.Message);
-            }
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new { codConta, codUnidad }
+            );
         }
 
         public ErrorDto<string?> CntXAsientos_Consecutivo_Obtener(int codEmpresa, int codConta, string tipoAsiento)
@@ -206,31 +214,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        public ErrorDto<byte[]?> CntXAsientos_Concurrencia_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-
-            try
-            {
-                const string query = @"select top 1 ts from Cntx_Asientos 
-                    where cod_contabilidad = @codConta
-                      and tipo_asiento = @tipoAsiento
-                      and num_asiento = @numAsiento;";
-
-                var ts = conn.QueryFirstOrDefault<byte[]>(query, new { codConta, tipoAsiento, numAsiento });
-
-                return new ErrorDto<byte[]?>
-                {
-                    Code = 0,
-                    Result = ts
-                };
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<byte[]?>(ex.Message);
-            }
-        }
-
         public ErrorDto CntXAsientos_Guardar(int codEmpresa, string usuario, bool edita, CntXAsientoGuardarRequest request)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -238,13 +221,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
+                var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
+                    codEmpresa,
+                    request.asiento.cod_contabilidad,
+                    request.asiento.anio,
+                    request.asiento.mes
+                );
+
+                if (!periodoAbierto)
+                {
+                    tran.Rollback();
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "El período indicado se encuentra cerrado o no se ha creado."
+                    };
+                }
+
                 if (edita)
                 {
+                    var concurrencia = _mCalculos.FxCntX_AsientoConcurrencia(
+                        codEmpresa,
+                        request.asiento.cod_contabilidad,
+                        request.asiento.num_asiento,
+                        request.asiento.tipo_asiento
+                    );
+
+                    if (!TsSonIguales(concurrencia, request.asiento.ts))
+                    {
+                        tran.Rollback();
+                        return new ErrorDto
+                        {
+                            Code = -1,
+                            Description = "El asiento actual ha sido modificado por otro usuario o proceso."
+                        };
+                    }
+
                     var updateRows = ActualizarAsiento(conn, tran, usuario, request);
                     if (updateRows == 0)
                     {
                         tran.Rollback();
-                        return new ErrorDto { Code = -1, Description = "El asiento fue modificado por otro usuario o proceso." };
+                        return new ErrorDto
+                        {
+                            Code = -1,
+                            Description = "El asiento fue modificado por otro usuario o proceso."
+                        };
                     }
                 }
                 else
@@ -267,13 +288,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     if (existe > 0)
                     {
                         tran.Rollback();
-                        return new ErrorDto { Code = -1, Description = "El asiento a registrar ya existe." };
+                        return new ErrorDto
+                        {
+                            Code = -1,
+                            Description = "El asiento a registrar ya existe."
+                        };
                     }
 
                     InsertarAsiento(conn, tran, usuario, request);
                 }
 
-                EliminarDetalle(conn, tran, request.asiento.cod_contabilidad, request.asiento.tipo_asiento, request.asiento.num_asiento);
+                EliminarDetalle(
+                    conn,
+                    tran,
+                    request.asiento.cod_contabilidad,
+                    request.asiento.tipo_asiento,
+                    request.asiento.num_asiento
+                );
+
                 InsertarDetalle(conn, tran, request);
 
                 tran.Commit();
@@ -306,6 +338,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
+                var concurrencia = _mCalculos.FxCntX_AsientoConcurrencia(
+                    codEmpresa,
+                    codConta,
+                    numAsiento,
+                    tipoAsiento
+                );
+
+                if (!TsSonIguales(concurrencia, ts))
+                {
+                    tran.Rollback();
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "El asiento actual ha sido modificado por otro usuario o proceso."
+                    };
+                }
+
                 conn.Execute(
                     @"delete from Cntx_Asientos_detalle
                       where cod_contabilidad = @codConta
@@ -328,7 +377,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 if (rows == 0)
                 {
                     tran.Rollback();
-                    return new ErrorDto { Code = -1, Description = "El asiento fue modificado por otro usuario o proceso." };
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "El asiento fue modificado por otro usuario o proceso."
+                    };
                 }
 
                 tran.Commit();
@@ -349,12 +402,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             catch (Exception ex)
             {
                 tran.Rollback();
-                return new ErrorDto { Code = -1, Description = ex.Message }; 
+                return new ErrorDto { Code = -1, Description = ex.Message };
             }
         }
 
-
-        public ErrorDto<bool> CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
+        public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
         {
             const string sql = @"update Cntx_Asientos
                 set user_autoriza = @usuario,
@@ -373,7 +425,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
 
             if (resp.Code < 0)
-                return DbHelper.CreateErrorResponse<bool>(resp.Description);
+                return resp;
 
             RegistrarBitacora(
                 codEmpresa,
@@ -382,11 +434,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 $"Asiento foráneo : {tipoAsiento}-{numAsiento} Conta.{codConta}"
             );
 
-            return new ErrorDto<bool>
-            {
-                Code = 0,
-                Result = true
-            };
+            return resp;
         }
 
         public ErrorDto CntXAsientos_Copiar(int codEmpresa, string usuario, CntXAsientoCopiarRequest request)
@@ -567,6 +615,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
 
             conn.Execute(sql, lineas, tran);
+        }
+
+        private bool TsSonIguales(byte[]? tsActual, byte[]? tsOriginal)
+        {
+            if (tsActual == null && tsOriginal == null)
+                return true;
+
+            if (tsActual == null || tsOriginal == null)
+                return false;
+
+            if (tsActual.Length != tsOriginal.Length)
+                return false;
+
+            for (int i = 0; i < tsActual.Length; i++)
+            {
+                if (tsActual[i] != tsOriginal[i])
+                    return false;
+            }
+
+            return true;
         }
 
         private string LimitarTexto(string? valor, int max)

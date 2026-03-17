@@ -16,7 +16,7 @@
         public string? user_modifica { get; set; }
         public string? user_aplica { get; set; }
         public string? user_autoriza { get; set; }
-        public int modulo { get; set; }
+        public int modulo { get; set; } = 0;
         public byte[]? ts { get; set; }
     }
 

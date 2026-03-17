@@ -20,5 +20,13 @@ namespace Galileo_API.DataBaseTier
             int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, sql, 0, parametros).Result;
             return existe > 0;
         }
+
+        public byte[]? FxCntX_AsientoConcurrencia(int CodEmpresa, int codConta, string numAsiento, string tipoAsiento)
+        {
+            string sql = @"select ts from Cntx_Asientos where cod_contabilidad = @codConta 
+                and num_asiento = @numAsiento and Tipo_Asiento = @tipoAsiento";
+            var parametros = new { codConta, numAsiento, tipoAsiento };
+            return DbHelper.ExecuteSingleQuery<byte[]?>(_portalDB, CodEmpresa, sql, null, parametros).Result;
+        }
     }
 }
