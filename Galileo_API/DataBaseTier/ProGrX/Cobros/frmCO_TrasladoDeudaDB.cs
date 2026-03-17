@@ -130,7 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not SqlException)
             {
                 System.Diagnostics.Trace.TraceError(
                     "Error inesperado en CO_TrasladoDeuda_Calcular: {0}", ex);
