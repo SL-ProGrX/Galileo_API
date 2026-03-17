@@ -7,6 +7,9 @@ namespace Galileo.DataBaseTier
     {
         public (List<RdlcDataSetMeta> dataSets, List<string> subreportNames) ReadRdlcMeta(string rdlcPath)
         {
+            if (string.IsNullOrWhiteSpace(rdlcPath) || !File.Exists(rdlcPath))
+                return (new List<RdlcDataSetMeta>(), new List<string>());
+
             var xdoc = XDocument.Load(rdlcPath);
             var ns = xdoc.Root!.GetDefaultNamespace();
 
