@@ -53,10 +53,10 @@
 
     public class CoTrasladoDeudaCalcularRequest
     {
-        public long id_solicitud { get; set; }
-        public int plazo { get; set; }
-        public decimal tasa { get; set; }
-        public decimal total_deuda { get; set; }
+        public long? id_solicitud { get; set; }
+        public int? plazo { get; set; }
+        public decimal? tasa { get; set; }
+        public decimal? total_deuda { get; set; }
         public List<CoTrasladoDeudaDetalleDto> detalle { get; set; } = new();
     }
 
@@ -70,9 +70,9 @@
 
     public class CoTrasladoDeudaAplicarRequest
     {
-        public long id_solicitud { get; set; }
-        public int plazo { get; set; }
-        public decimal tasa { get; set; }
+        public long? id_solicitud { get; set; }
+        public int? plazo { get; set; }
+        public decimal? tasa { get; set; }
         public string? notas { get; set; }
         public string? usuario { get; set; }
         public List<CoTrasladoDeudaDetalleDto> detalle { get; set; } = new();
@@ -89,10 +89,10 @@
 
     public class CoTrasladoDeudaExportRequest
     {
-        public long id_solicitud { get; set; }
-        public int plazo { get; set; }
-        public decimal tasa { get; set; }
-        public decimal total_deuda { get; set; }
+        public long? id_solicitud { get; set; }
+        public int? plazo { get; set; }
+        public decimal? tasa { get; set; }
+        public decimal? total_deuda { get; set; }
         public List<CoTrasladoDeudaDetalleDto> detalle { get; set; } = new();
     }
 

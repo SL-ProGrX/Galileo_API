@@ -16,6 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly MSeguimientoDB _mSeguimientoDb;
         private readonly MRecibos _mRecibosDb;
         private readonly int vModulo = 4;
+        private const string FECHA = "yyyy/MM/dd";
 
         public FrmCOTrasladoDeudaDB(IConfiguration config)
         {
@@ -134,16 +135,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<CoTrasladoDeudaAplicarResponse> CO_TrasladoDeuda_Aplicar(int CodEmpresa, CoTrasladoDeudaAplicarRequest data)
         {
+            if (data == null)
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Datos requeridos.");
+
+            if (!data.id_solicitud.HasValue)
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Operación requerida.");
+
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             var response = DbHelper.CreateOkResponse(new CoTrasladoDeudaAplicarResponse
             {
-                id_solicitud = data.id_solicitud
+                id_solicitud = data.id_solicitud.Value
             });
 
             response.Result ??= new CoTrasladoDeudaAplicarResponse
             {
-                id_solicitud = data.id_solicitud
+                id_solicitud = data.id_solicitud.Value
             };
 
             SqlTransaction? tx = null;
@@ -154,162 +161,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 if (validacion != null)
                     return validacion;
 
-                var obtener = CO_TrasladoDeuda_Obtener(CodEmpresa, data.id_solicitud);
-                if (obtener.Code != 0 || obtener.Result == null)
-                {
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
-                        obtener.Description ?? "No fue posible obtener la información de la operación.");
-                }
-
-                var baseDto = obtener.Result;
-
-                var detalleCalculado = RecalcularDetalleInterno(new CoTrasladoDeudaCalcularRequest
-                {
-                    id_solicitud = data.id_solicitud,
-                    plazo = data.plazo,
-                    tasa = data.tasa,
-                    total_deuda = baseDto.total_deuda,
-                    detalle = data.detalle ?? new List<CoTrasladoDeudaDetalleDto>()
-                });
-
-                if (Math.Round(detalleCalculado.porcentaje_asignado, 2) != 100m)
-                {
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
-                        "El porcentaje de asignación tiene que ser 100%.");
-                }
-
-                var ctx = CrearContextoAplicacion(conn, CodEmpresa, data, baseDto, detalleCalculado);
+                var preparacion = PrepararAplicacion(conn, CodEmpresa, data);
+                if (preparacion.Error != null)
+                    return preparacion.Error;
 
                 tx = conn.BeginTransaction();
 
-                foreach (var item in ctx.detalle.detalle.Where(x => x.porcentaje > 0m))
-                {
-                    int opexItem = ResolverOpexItem(item);
-
-                    long nuevaOperacion = InsertarNuevaOperacion(
-                        conn,
-                        tx,
-                        new InsertNuevaOperacionArgs
-                        {
-                            lineaNueva = ctx.baseDto.linea_cobro,
-                            identificacion = item.identificacion,
-                            monto = item.monto,
-                            plazo = ctx.data.plazo,
-                            tasa = ctx.data.tasa,
-                            priDeduc = ctx.priDeduc,
-                            referencia = ctx.data.id_solicitud,
-                            usuario = ctx.usuario,
-                            fecha = ctx.fecha,
-                            opex = opexItem,
-                            fechaProceso = ObtenerFechaProcesoActual(conn),
-                            notas = ctx.notas,
-                            tbpPuntosAdd = ctx.baseDto.tbp_puntos_add,
-                            liqTasa = ctx.baseDto.liq_tasa,
-                            codOficinaR = ctx.oficina.cod_oficina,
-                            codOficinaF = ctx.oficina.oficina_titular,
-                            baseCalculo = ctx.oficina.base_calculo,
-                            codDivisa = ctx.oficina.cod_divisa,
-                            diaPago = ctx.oficina.dia_pago,
-                            cuota = item.cuota
-                        });
-
-                    if (ctx.sysPlanPagos == 1)
-                    {
-                        conn.Execute(
-                            "exec spCrdPlanPagos @Operacion",
-                            new { Operacion = nuevaOperacion },
-                            tx);
-                    }
-
-                    string cuentaNueva = opexItem == 1
-                        ? ctx.cuentasNuevaLinea.cta_o_amort
-                        : ctx.cuentasNuevaLinea.cta_n_amort;
-
-                    RegistrarAsiento(
-                        conn,
-                        tx,
-                        new AsientoArgs
-                        {
-                            tipo = ctx.documento.tipo_documento,
-                            transaccion = ctx.documento.documento,
-                            monto = item.monto,
-                            movimiento = "D",
-                            divisa = ctx.oficina.cod_divisa,
-                            tipoCambio = 1m,
-                            contabilidad = ctx.contabilidad,
-                            unidad = ctx.oficina.cod_unidad,
-                            centroCosto = "",
-                            cuenta = cuentaNueva,
-                            referencia1 = nuevaOperacion.ToString(CultureInfo.InvariantCulture),
-                            referencia2 = ctx.baseDto.linea_cobro,
-                            referencia3 = ctx.documento.deposito
-                        });
-                }
-
-                if (ctx.sysPlanPagos == 1)
-                {
-                    EjecutarFlujoPlanPagos(conn, tx, ctx);
-                }
-                else
-                {
-                    EjecutarFlujoSinPlanPagos(conn, tx, ctx);
-                }
+                ProcesarAplicacion(conn, tx, preparacion.Contexto!);
 
                 tx.Commit();
                 tx.Dispose();
                 tx = null;
 
-                EjecutarAsientosPostCommit(conn, CodEmpresa, ctx);
-                RegistrarHistorialCobro(conn, ctx);
+                EjecutarPostAplicacion(conn, CodEmpresa, preparacion.Contexto!);
 
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = ctx.usuario,
-                    DetalleMovimiento = $"Traspaso de Deudas de la Operación: {ctx.data.id_solicitud}",
-                    Movimiento = "Aplica - WEB",
-                    Modulo = vModulo
-                });
+                var errorRecibo = ValidarRecibo(CodEmpresa, preparacion.Contexto!);
+                if (errorRecibo != null)
+                    return errorRecibo;
 
-                var recibo = _mRecibosDb.sbImprimeRecibo(
-                    CodEmpresa,
-                    ctx.documento.documento,
-                    ctx.documento.tipo_documento,
-                    ctx.usuario
-                );
-
-                if (recibo.Code == -1)
-                {
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
-                        recibo.Description ?? "Error al generar el recibo.");
-                }
-
-                response.Result.tipo_documento = ctx.documento.tipo_documento;
-                response.Result.documento = ctx.documento.documento;
-                response.Result.total_aplicado = ctx.detalle.total_deuda;
-                response.Result.mensaje =
-                    $"Traspaso de Deudas realizado satisfactoriamente. Nota de cobro: {ctx.documento.tipo_documento}-{ctx.documento.documento}";
-
+                CompletarRespuestaAplicacion(response.Result!, preparacion.Contexto!);
                 return response;
             }
             catch (SqlException ex)
             {
-                if (tx != null)
-                {
-                    tx.Rollback();
-                    tx.Dispose();
-                }
-
+                RollbackTransaction(tx);
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(ex.Message);
             }
             catch (Exception ex)
             {
-                if (tx != null)
-                {
-                    tx.Rollback();
-                    tx.Dispose();
-                }
-
+                RollbackTransaction(tx);
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(ex.Message);
             }
         }
@@ -323,7 +203,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             try
             {
-                var obtener = CO_TrasladoDeuda_Obtener(CodEmpresa, data.id_solicitud);
+                if (data == null)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("Datos requeridos.");
+
+                if (!data.id_solicitud.HasValue)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("Operación requerida.");
+
+                if (!data.plazo.HasValue)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("El plazo es requerido.");
+
+                if (!data.tasa.HasValue)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("La tasa es requerida.");
+
+                if (!data.total_deuda.HasValue)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("El total de deuda es requerido.");
+
+                var obtener = CO_TrasladoDeuda_Obtener(CodEmpresa, data.id_solicitud.Value);
                 if (obtener.Code != 0 || obtener.Result == null)
                 {
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(
@@ -332,16 +227,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var calc = RecalcularDetalleInterno(new CoTrasladoDeudaCalcularRequest
                 {
-                    id_solicitud = data.id_solicitud,
-                    plazo = data.plazo,
-                    tasa = data.tasa,
-                    total_deuda = data.total_deuda,
+                    id_solicitud = data.id_solicitud.Value,
+                    plazo = data.plazo.Value,
+                    tasa = data.tasa.Value,
+                    total_deuda = data.total_deuda.Value,
                     detalle = data.detalle ?? new List<CoTrasladoDeudaDetalleDto>()
                 });
 
                 return DbHelper.CreateOkResponse(new CoTrasladoDeudaExportResponse
                 {
-                    id_solicitud = data.id_solicitud,
+                    id_solicitud = data.id_solicitud.Value,
                     operacion = obtener.Result.operacion,
                     linea = obtener.Result.linea,
                     identificacion = obtener.Result.identificacion,
@@ -359,6 +254,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static CoTrasladoDeudaCalcularResponse RecalcularDetalleInterno(CoTrasladoDeudaCalcularRequest data)
         {
+            decimal totalDeuda = data.total_deuda ?? 0m;
+            int plazo = data.plazo ?? 0;
+            decimal tasa = data.tasa ?? 0m;
+
             var detalle = (data.detalle ?? new List<CoTrasladoDeudaDetalleDto>())
                 .Select(x => new CoTrasladoDeudaDetalleDto
                 {
@@ -390,8 +289,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 totalPorcentaje += item.porcentaje;
                 decimal factor = item.porcentaje / 100m;
-                item.monto = Math.Round(data.total_deuda * factor, 2);
-                item.cuota = MCobroDb.fxCalcula_Cuota(item.monto, data.plazo, data.tasa);
+                item.monto = Math.Round(totalDeuda * factor, 2);
+                item.cuota = MCobroDb.fxCalcula_Cuota(item.monto, plazo, tasa);
                 item.recuperado = item.monto;
                 totalRecuperado += item.monto;
             }
@@ -399,7 +298,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return new CoTrasladoDeudaCalcularResponse
             {
                 porcentaje_asignado = Math.Round(totalPorcentaje, 2),
-                total_deuda = Math.Round(data.total_deuda, 2),
+                total_deuda = Math.Round(totalDeuda, 2),
                 total_recuperado = Math.Round(totalRecuperado, 2),
                 detalle = detalle
             };
@@ -414,13 +313,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private ErrorDto<CoTrasladoDeudaAplicarResponse>? ValidarAplicacion(int CodEmpresa, SqlConnection conn, CoTrasladoDeudaAplicarRequest data)
         {
-            if (data.id_solicitud <= 0)
+            if (!data.id_solicitud.HasValue || data.id_solicitud.Value <= 0)
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Operación requerida.");
 
-            if (data.plazo < 1 || data.plazo > 300)
+            if (!data.plazo.HasValue || data.plazo.Value < 1 || data.plazo.Value > 300)
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("El plazo es incorrecto verifique.");
 
-            if (data.tasa < 0m || data.tasa > 100m)
+            if (!data.tasa.HasValue || data.tasa.Value < 0m || data.tasa.Value > 100m)
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("La Tasa es incorrecta verifique.");
 
             if (string.IsNullOrWhiteSpace(data.notas))
@@ -439,7 +338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("La Línea para Traslado de Deudas No Existe.");
 
             const string sqlOperacion = @"select isnull(count(*),0) from reg_creditos where proceso = 'N' and id_solicitud = @id_solicitud;";
-            int existeOpNormal = conn.QueryFirstOrDefault<int>(sqlOperacion, new { id_solicitud = data.id_solicitud });
+            int existeOpNormal = conn.QueryFirstOrDefault<int>(sqlOperacion, new { id_solicitud = data.id_solicitud.Value });
             if (existeOpNormal <= 0)
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
@@ -455,7 +354,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var fecha = ObtenerFechaServidor(conn);
             var contabilidad = ObtenerContabilidadEnlace(conn);
             var sysPlanPagos = ObtenerSysPlanPagos(conn);
-            var oficina = ObtenerOficinaContexto(conn, data.id_solicitud, contabilidad);
+            var oficina = ObtenerOficinaContexto(conn, data.id_solicitud ?? 0, contabilidad);
             var documento = ConstruirDocumentoInicial(conn, codEmpresa, baseDto, detalle, notas, usuario);
             var cuentasNuevaLinea = ObtenerCuentasNuevaLinea(conn, baseDto.linea_cobro);
             long priDeduc = ObtenerPrimeraDeduccion(conn, codEmpresa, baseDto.identificacion);
@@ -499,7 +398,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return conn.QueryFirstOrDefault<int>(
                 "select isnull(SysCrdPlanPago,0) from SIF_EMPRESA;");
         }
-        private CabeceraOperacionRow? ObtenerCabeceraOperacion(SqlConnection conn, long id_solicitud, int sysPlanPagos)
+        private static CabeceraOperacionRow? ObtenerCabeceraOperacion(SqlConnection conn, long id_solicitud, int sysPlanPagos)
         {
             string sql = sysPlanPagos == 1
                 ? @"
@@ -571,7 +470,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     new
                     {
                         Operacion = id_solicitud,
-                        Fecha = fechaServidor.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture)
+                        Fecha = fechaServidor.ToString(FECHA, CultureInfo.InvariantCulture)
                     }) ?? new PlanPagoCancelacionRow();
 
                 return new ResumenDeudaRow
@@ -889,21 +788,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 codigo = a.lineaNueva,
                 cedula = a.identificacion,
                 montosol = a.monto,
-                fechares = a.fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
+                fechares = a.fecha.ToString(FECHA, CultureInfo.InvariantCulture),
                 plazo = a.plazo,
                 @int = a.tasa,
                 interesv = a.tasa,
                 montoapr = a.monto,
                 prideduc = a.priDeduc,
-                fechaforp = a.fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
-                fechaforf = a.fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
+                fechaforp = a.fecha.ToString(FECHA, CultureInfo.InvariantCulture),
+                fechaforf = a.fecha.ToString(FECHA, CultureInfo.InvariantCulture),
                 saldo = a.monto,
                 cuota = a.cuota,
                 referencia = a.referencia,
                 userrec = a.usuario,
                 userres = a.usuario,
                 userfor = a.usuario,
-                tesoreria = a.fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
+                tesoreria = a.fecha.ToString(FECHA, CultureInfo.InvariantCulture),
                 opex = a.opex,
                 fecult = a.fechaProceso,
                 observacion = a.notas,
@@ -961,7 +860,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new
                 {
                     Operacion = ctx.data.id_solicitud,
-                    Fecha = ctx.fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture)
+                    Fecha = ctx.fecha.ToString(FECHA, CultureInfo.InvariantCulture)
                 },
                 tx);
 
@@ -1175,10 +1074,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.interes_pendiente, cuentasBase.cta_intc);
             RegistrarAsientoCreditoBase(conn, ctx, ctx.baseDto.interes_moratorio, cuentasBase.cta_intm);
         }
-        private static void RegistrarAsientoCreditoBase(SqlConnection conn,AplicacionContexto ctx,decimal monto,string cuenta)
+        private static void RegistrarAsientoCreditoBase(SqlConnection conn, AplicacionContexto ctx, decimal monto, string cuenta)
         {
             if (monto <= 0m || string.IsNullOrWhiteSpace(cuenta))
                 return;
+
+            var idSolicitud = ctx.data.id_solicitud ?? throw new InvalidOperationException("id_solicitud no puede ser null");
 
             RegistrarAsiento(conn, null, new AsientoArgs
             {
@@ -1192,7 +1093,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 unidad = ctx.oficina.cod_unidad,
                 centroCosto = "",
                 cuenta = cuenta,
-                referencia1 = ctx.data.id_solicitud.ToString(CultureInfo.InvariantCulture),
+                referencia1 = idSolicitud.ToString(CultureInfo.InvariantCulture),
                 referencia2 = ctx.baseDto.linea,
                 referencia3 = ctx.documento.deposito
             });
@@ -1260,28 +1161,205 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Usuario = ctx.usuario
                 });
         }
+        private PrepararAplicacionResult PrepararAplicacion(SqlConnection conn, int codEmpresa, CoTrasladoDeudaAplicarRequest data)
+        {
+            long idSolicitud = data.id_solicitud ?? throw new InvalidOperationException("id_solicitud no puede ser null");
+
+            var obtener = CO_TrasladoDeuda_Obtener(codEmpresa, idSolicitud);
+            if (obtener.Code != 0 || obtener.Result == null)
+            {
+                return new PrepararAplicacionResult
+                {
+                    Error = DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
+                        obtener.Description ?? "No fue posible obtener la información de la operación.")
+                };
+            }
+
+            var baseDto = obtener.Result;
+
+            var detalleCalculado = RecalcularDetalleInterno(new CoTrasladoDeudaCalcularRequest
+            {
+                id_solicitud = idSolicitud,
+                plazo = data.plazo,
+                tasa = data.tasa,
+                total_deuda = baseDto.total_deuda,
+                detalle = data.detalle ?? new List<CoTrasladoDeudaDetalleDto>()
+            });
+
+            if (Math.Round(detalleCalculado.porcentaje_asignado, 2) != 100m)
+            {
+                return new PrepararAplicacionResult
+                {
+                    Error = DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
+                        "El porcentaje de asignación tiene que ser 100%.")
+                };
+            }
+
+            return new PrepararAplicacionResult
+            {
+                Contexto = CrearContextoAplicacion(conn, codEmpresa, data, baseDto, detalleCalculado)
+            };
+        }
+        private void ProcesarAplicacion(SqlConnection conn, SqlTransaction tx, AplicacionContexto ctx)
+        {
+            foreach (var item in ctx.detalle.detalle.Where(x => x.porcentaje > 0m))
+            {
+                ProcesarDetalleAplicacion(conn, tx, ctx, item);
+            }
+
+            if (ctx.sysPlanPagos == 1)
+            {
+                EjecutarFlujoPlanPagos(conn, tx, ctx);
+                return;
+            }
+
+            EjecutarFlujoSinPlanPagos(conn, tx, ctx);
+        }
+        private void ProcesarDetalleAplicacion(SqlConnection conn, SqlTransaction tx, AplicacionContexto ctx, CoTrasladoDeudaDetalleDto item)
+        {
+            int plazo = ctx.data.plazo ?? throw new InvalidOperationException("plazo no puede ser null");
+            decimal tasa = ctx.data.tasa ?? throw new InvalidOperationException("tasa no puede ser null");
+            long idSolicitud = ctx.data.id_solicitud ?? throw new InvalidOperationException("id_solicitud no puede ser null");
+
+            int opexItem = ResolverOpexItem(item);
+
+            long nuevaOperacion = InsertarNuevaOperacion(
+                conn,
+                tx,
+                new InsertNuevaOperacionArgs
+                {
+                    lineaNueva = ctx.baseDto.linea_cobro,
+                    identificacion = item.identificacion,
+                    monto = item.monto,
+                    plazo = plazo,
+                    tasa = tasa,
+                    priDeduc = ctx.priDeduc,
+                    referencia = idSolicitud,
+                    usuario = ctx.usuario,
+                    fecha = ctx.fecha,
+                    opex = opexItem,
+                    fechaProceso = ObtenerFechaProcesoActual(conn),
+                    notas = ctx.notas,
+                    tbpPuntosAdd = ctx.baseDto.tbp_puntos_add,
+                    liqTasa = ctx.baseDto.liq_tasa,
+                    codOficinaR = ctx.oficina.cod_oficina,
+                    codOficinaF = ctx.oficina.oficina_titular,
+                    baseCalculo = ctx.oficina.base_calculo,
+                    codDivisa = ctx.oficina.cod_divisa,
+                    diaPago = ctx.oficina.dia_pago,
+                    cuota = item.cuota
+                });
+
+            RegistrarPlanPagosOperacion(conn, tx, ctx, nuevaOperacion);
+
+            string cuentaNueva = opexItem == 1
+                ? ctx.cuentasNuevaLinea.cta_o_amort
+                : ctx.cuentasNuevaLinea.cta_n_amort;
+
+            RegistrarAsiento(
+                conn,
+                tx,
+                new AsientoArgs
+                {
+                    tipo = ctx.documento.tipo_documento,
+                    transaccion = ctx.documento.documento,
+                    monto = item.monto,
+                    movimiento = "D",
+                    divisa = ctx.oficina.cod_divisa,
+                    tipoCambio = 1m,
+                    contabilidad = ctx.contabilidad,
+                    unidad = ctx.oficina.cod_unidad,
+                    centroCosto = "",
+                    cuenta = cuentaNueva,
+                    referencia1 = nuevaOperacion.ToString(CultureInfo.InvariantCulture),
+                    referencia2 = ctx.baseDto.linea_cobro,
+                    referencia3 = ctx.documento.deposito
+                });
+        }
+        private static void RegistrarPlanPagosOperacion(SqlConnection conn,SqlTransaction tx,AplicacionContexto ctx,long nuevaOperacion)
+        {
+            if (ctx.sysPlanPagos != 1)
+                return;
+
+            conn.Execute(
+                "exec spCrdPlanPagos @Operacion",
+                new { Operacion = nuevaOperacion },
+                tx);
+        }
+        private void EjecutarPostAplicacion(SqlConnection conn, int codEmpresa, AplicacionContexto ctx)
+        {
+            EjecutarAsientosPostCommit(conn, codEmpresa, ctx);
+            RegistrarHistorialCobro(conn, ctx);
+
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = ctx.usuario,
+                DetalleMovimiento = $"Traspaso de Deudas de la Operación: {ctx.data.id_solicitud}",
+                Movimiento = "Aplica - WEB",
+                Modulo = vModulo
+            });
+        }
+        private ErrorDto<CoTrasladoDeudaAplicarResponse>? ValidarRecibo(int codEmpresa, AplicacionContexto ctx)
+        {
+            var recibo = _mRecibosDb.sbImprimeRecibo(
+                codEmpresa,
+                ctx.documento.documento,
+                ctx.documento.tipo_documento,
+                ctx.usuario
+            );
+
+            if (recibo.Code == -1)
+            {
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
+                    recibo.Description ?? "Error al generar el recibo.");
+            }
+
+            return null;
+        }
+        private static void CompletarRespuestaAplicacion(CoTrasladoDeudaAplicarResponse response,AplicacionContexto ctx)
+        {
+            response.tipo_documento = ctx.documento.tipo_documento;
+            response.documento = ctx.documento.documento;
+            response.total_aplicado = ctx.detalle.total_deuda;
+            response.mensaje =
+                $"Traspaso de Deudas realizado satisfactoriamente. Nota de cobro: {ctx.documento.tipo_documento}-{ctx.documento.documento}";
+        }
+        private static void RollbackTransaction(SqlTransaction? tx)
+        {
+            if (tx == null)
+                return;
+
+            tx.Rollback();
+            tx.Dispose();
+        }
+        private sealed class PrepararAplicacionResult
+        {
+            public AplicacionContexto? Contexto { get; set; }
+            public ErrorDto<CoTrasladoDeudaAplicarResponse>? Error { get; set; }
+        }
         private sealed class CabeceraOperacionRow
         {
             public string cedula { get; set; } = "";
             public string nombre { get; set; } = "";
-            public decimal saldo { get; set; }
+            public decimal saldo { get; set; } = 0m;
             public string proceso { get; set; } = "";
-            public decimal tasa { get; set; }
-            public int plazo { get; set; }
-            public decimal tasa_original { get; set; }
+            public decimal tasa { get; set; } = 0m;
+            public int plazo { get; set; } = 0;
+            public decimal tasa_original { get; set; } = 0m;
             public string codigo { get; set; } = "";
             public string descripcion { get; set; } = "";
-            public int liq_tasa { get; set; }
-            public int opex { get; set; }
+            public int liq_tasa { get; set; } = 0;
+            public int opex { get; set; } = 0;
             public string divisa { get; set; } = "";
-            public int num_fiadores { get; set; }
-            public decimal tbp_puntos_add { get; set; }
-            public decimal mora_intc { get; set; }
-            public decimal mora_intm { get; set; }
-            public decimal mora_amortiza { get; set; }
-            public decimal cargos { get; set; }
-            public decimal interes_total { get; set; }
-            public decimal poliza { get; set; }
+            public int num_fiadores { get; set; } = 0;
+            public decimal tbp_puntos_add { get; set; } = 0m;
+            public decimal mora_intc { get; set; } = 0m;
+            public decimal mora_intm { get; set; } = 0m;
+            public decimal mora_amortiza { get; set; } = 0m;
+            public decimal cargos { get; set; } = 0m;
+            public decimal interes_total { get; set; } = 0m;
+            public decimal poliza { get; set; } = 0m;
         }
         private sealed class ResumenDeudaRow
         {
@@ -1294,10 +1372,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private sealed class PlanPagoCancelacionRow
         {
-            public decimal int_cor { get; set; }
-            public decimal int_mor { get; set; }
-            public decimal cargos { get; set; }
-            public decimal poliza { get; set; }
+            public decimal int_cor { get; set; } = 0m;
+            public decimal int_mor { get; set; } = 0m;
+            public decimal cargos { get; set; } = 0m;
+            public decimal poliza { get; set; } = 0m;
         }
         private sealed class OficinaContexto
         {
@@ -1325,8 +1403,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private sealed class PriDeducRow
         {
-            public long pri_deduc { get; set; }
-            public long cod_deductora { get; set; }
+            public long pri_deduc { get; set; } = 0;
+            public long cod_deductora { get; set; } = 0;
         }
         private sealed class CuentasNuevaLineaRow
         {
@@ -1364,9 +1442,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private sealed class AfectacionRow
         {
-            public long id_solicitud { get; set; }
+            public long id_solicitud { get; set; } = 0;
             public string codigo { get; set; } = "";
-            public decimal mov_monto { get; set; }
+            public decimal mov_monto { get; set; } = 0m;
             public string cod_divisa { get; set; } = "COL";
             public decimal tipo_cambio { get; set; } = 1m;
             public string cod_unidad { get; set; } = "";

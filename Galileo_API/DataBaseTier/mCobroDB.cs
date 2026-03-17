@@ -225,8 +225,8 @@ namespace Galileo_API.DataBaseTier
 
         private sealed class CbrPlazoRestanteRow
         {
-            public int Plazo { get; set; }
-            public decimal PriDeduc { get; set; }
+            public int Plazo { get; set; } = 0;
+            public decimal PriDeduc { get; set; } = 0m;
         }
     }
 }
