@@ -17,6 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly MRecibos _mRecibosDb;
         private readonly int vModulo = 4;
         private const string FECHA = "yyyy/MM/dd";
+        private const string OPERACION = "Operación requerida.";
 
         public FrmCOTrasladoDeudaDB(IConfiguration config)
         {
@@ -56,7 +57,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             try
             {
                 if (id_solicitud <= 0)
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>("Operación requerida.");
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(OPERACION);
 
                 int sysPlanPagos = ObtenerSysPlanPagos(conn);
                 DateTime fechaServidor = ObtenerFechaServidor(conn);
@@ -96,9 +97,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(ex.Message);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                string message = $"Error inesperado al obtener traslado de deuda: {ex.GetType().Name}: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaObtenerDto>(message);
             }
         }
         /// <summary>
@@ -114,17 +120,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 if (data == null)
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>("Datos requeridos.");
 
-                if (data.plazo < 1)
+                if (!data.plazo.HasValue || data.plazo.Value < 1)
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>("El plazo es incorrecto.");
 
-                if (data.tasa < 0m || data.tasa > 100m)
+                if (!data.tasa.HasValue || data.tasa.Value < 0m || data.tasa.Value > 100m)
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>("La tasa es incorrecta.");
+
+                if (!data.total_deuda.HasValue || data.total_deuda.Value == 0m)
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>("No existe un monto a trasladar.");
 
                 return DbHelper.CreateOkResponse(RecalcularDetalleInterno(data));
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaCalcularResponse>(
+                    "Se produjo un error inesperado al calcular la cuota.");
             }
         }
         /// <summary>
@@ -139,7 +153,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Datos requeridos.");
 
             if (!data.id_solicitud.HasValue)
-                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Operación requerida.");
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(OPERACION);
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -190,7 +204,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             catch (Exception ex)
             {
                 RollbackTransaction(tx);
-                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(ex.Message);
+                string message = $"Error inesperado al aplicar traslado de deuda: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(message);
             }
         }
         /// <summary>
@@ -207,16 +222,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("Datos requeridos.");
 
                 if (!data.id_solicitud.HasValue)
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("Operación requerida.");
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(OPERACION);
 
                 if (!data.plazo.HasValue)
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("El plazo es requerido.");
 
                 if (!data.tasa.HasValue)
                     return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("La tasa es requerida.");
-
-                if (!data.total_deuda.HasValue)
-                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>("El total de deuda es requerido.");
 
                 var obtener = CO_TrasladoDeuda_Obtener(CodEmpresa, data.id_solicitud.Value);
                 if (obtener.Code != 0 || obtener.Result == null)
@@ -230,7 +242,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     id_solicitud = data.id_solicitud.Value,
                     plazo = data.plazo.Value,
                     tasa = data.tasa.Value,
-                    total_deuda = data.total_deuda.Value,
+                    total_deuda = obtener.Result.total_deuda,
                     detalle = data.detalle ?? new List<CoTrasladoDeudaDetalleDto>()
                 });
 
@@ -247,12 +259,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     detalle = calc.detalle
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(ex.Message);
             }
+            catch (Exception ex)
+            {
+                string message = $"Error inesperado al exportar traslado de deuda: {ex.Message}";
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaExportResponse>(message);
+            }
         }
-        private static CoTrasladoDeudaCalcularResponse RecalcularDetalleInterno(CoTrasladoDeudaCalcularRequest data)
+        private CoTrasladoDeudaCalcularResponse RecalcularDetalleInterno(CoTrasladoDeudaCalcularRequest data)
         {
             decimal totalDeuda = data.total_deuda ?? 0m;
             int plazo = data.plazo ?? 0;
@@ -314,7 +331,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private ErrorDto<CoTrasladoDeudaAplicarResponse>? ValidarAplicacion(int CodEmpresa, SqlConnection conn, CoTrasladoDeudaAplicarRequest data)
         {
             if (!data.id_solicitud.HasValue || data.id_solicitud.Value <= 0)
-                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("Operación requerida.");
+                return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(OPERACION);
 
             if (!data.plazo.HasValue || data.plazo.Value < 1 || data.plazo.Value > 300)
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("El plazo es incorrecto verifique.");
