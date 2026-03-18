@@ -56,5 +56,17 @@
         public short procesado { get; set; }
     }
 
-    
+    public abstract class PolizaEnvioConsultaRequestBase
+    {
+        public string Poliza { get; set; } = string.Empty;
+        public DateTime Corte { get; set; } = DateTime.Now;
+        public short Beneficiarios { get; set; } = 1;
+        public string TipoMovimiento { get; set; } = "T";
+    }
+
+    public abstract class PolizaBeneficiariosRowBase : PolizaBeneficiariosB1B6Base
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+    }
 }

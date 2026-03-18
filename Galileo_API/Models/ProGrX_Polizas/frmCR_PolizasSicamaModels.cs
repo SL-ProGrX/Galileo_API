@@ -1,23 +1,8 @@
 ﻿namespace Galileo_API.Models.ProGrX_Polizas
 {
-    public class CrPolizasSicamaEnvioConsultaRequest
+    public class CrPolizasSicamaEnvioConsultaRequest: PolizaEnvioConsultaRequestBase
     {
-        public string Poliza { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Fecha del corte (en VB6 se selecciona mes/año, pero el SP recibe datetime).
-        /// </summary>
-        public DateTime Corte { get; set; } = DateTime.Now;
-
-        /// <summary>
-        /// En VB6 se manda 1.
-        /// </summary>
-        public short Beneficiarios { get; set; } = 1;
-
-        /// <summary>
-        /// En VB6 para Envío siempre es 'T'.
-        /// </summary>
-        public string TipoMovimiento { get; set; } = "T";
     }
 
     public class CrPolizasSicamaEnvioRow : BeneficiariosB1B6
@@ -86,10 +71,8 @@
         public string? dir_completa { get; set; }
     }
 
-    public class CrPolizasSicamaBeneficiariosRowDto : BeneficiariosB1B6
+    public class CrPolizasSicamaBeneficiariosRowDto : PolizaBeneficiariosB1B6Base
     {
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
     }
 
     public class CrFndPlanillaDirectaSubeRequest
