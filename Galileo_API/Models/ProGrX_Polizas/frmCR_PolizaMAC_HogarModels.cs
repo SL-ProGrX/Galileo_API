@@ -39,6 +39,14 @@
         public decimal? b6_porcentaje { get; set; }
     }
 
+    public abstract class CrPolizaMacHogarRecepcionRequestBase
+    {
+        public string Poliza { get; set; } = string.Empty;
+        public DateTime Corte { get; set; } = DateTime.Now;
+        public DateTime? Factura { get; set; }
+        public List<CrPolizaMacHogarRecepcionRowDto> Filas { get; set; } = new();
+    }
+
     public class CrPolizaMacHogarEnvioConsultaRequest
     {
         public string Poliza { get; set; } = string.Empty;
@@ -118,19 +126,11 @@
         public short procesado { get; set; }
     }
 
-    public class CrPolizaMacHogarRecepcionValidarRequest
+    public class CrPolizaMacHogarRecepcionValidarRequest : CrPolizaMacHogarRecepcionRequestBase
     {
-        public string Poliza { get; set; } = string.Empty;
-        public DateTime Corte { get; set; } = DateTime.Now;
-        public DateTime? Factura { get; set; }
-        public List<CrPolizaMacHogarRecepcionRowDto> Filas { get; set; } = new();
     }
 
-    public class CrPolizaMacHogarRecepcionProcesarRequest
+    public class CrPolizaMacHogarRecepcionProcesarRequest : CrPolizaMacHogarRecepcionRequestBase
     {
-        public string Poliza { get; set; } = string.Empty;
-        public DateTime Corte { get; set; } = DateTime.Now;
-        public DateTime? Factura { get; set; }
-        public List<CrPolizaMacHogarRecepcionRowDto> Filas { get; set; } = new();
     }
 }
