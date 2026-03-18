@@ -288,70 +288,59 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var sysPlanPagos = globalesDto?.Result?.SysPlanPagos ?? 0;
 
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                const string selectBase = @"
+            SELECT
+                @IdSolicitud AS IdSolicitud,
+                @CodIncobrable AS CodIncobrable,
+                RTRIM(R.cedula) AS Cedula,
+                RTRIM(S.nombre) AS Nombre,
+                ISNULL(R.saldo, 0) AS Saldo,
+                ISNULL(R.proceso, '') AS Proceso,
+                ISNULL(R.prideduc, 0) AS PriDeduc,
+                R.fecult AS FecUlt,
+                dbo.MyGetdate() AS FechaActual,
+                ISNULL(R.interesv, 0) AS InteresV,
+                RTRIM(ISNULL(R.cod_Divisa, '')) AS Divisa,
+                RTRIM(R.codigo) AS Codigo,
+                RTRIM(C.descripcion) AS Descripcion,
+                CASE WHEN ISNULL(R.Opex, 0) = 1 THEN 'SI' ELSE 'NO' END AS Opex,
+                RTRIM(ISNULL(R.garantia, '')) AS Garantia,";
+
+                const string fromBase = @"
+            FROM Socios S
+            INNER JOIN reg_creditos R ON S.cedula = R.cedula
+            INNER JOIN Catalogo C ON R.codigo = C.codigo";
+
+                const string groupByBase = @"
+            GROUP BY
+                R.cedula, S.nombre, R.saldo, R.proceso, R.prideduc, R.fecult,
+                R.interesv, R.cod_Divisa, R.codigo, C.descripcion, R.Opex, R.garantia;";
 
                 string sql = sysPlanPagos == 1
-                    ? @"
-                        SELECT
-                            @IdSolicitud AS IdSolicitud,
-                            @CodIncobrable AS CodIncobrable,
-                            RTRIM(R.cedula) AS Cedula,
-                            RTRIM(S.nombre) AS Nombre,
-                            ISNULL(R.saldo, 0) AS Saldo,
-                            ISNULL(R.proceso, '') AS Proceso,
-                            ISNULL(R.prideduc, 0) AS PriDeduc,
-                            R.fecult AS FecUlt,
-                            dbo.MyGetdate() AS FechaActual,
-                            ISNULL(R.interesv, 0) AS InteresV,
-                            RTRIM(ISNULL(R.cod_Divisa, '')) AS Divisa,
-                            RTRIM(R.codigo) AS Codigo,
-                            RTRIM(C.descripcion) AS Descripcion,
-                            CASE WHEN ISNULL(R.Opex, 0) = 1 THEN 'SI' ELSE 'NO' END AS Opex,
-                            RTRIM(ISNULL(R.garantia, '')) AS Garantia,
-                            ISNULL(SUM(V.Principal), 0) AS Amortizacion,
-                            dbo.MyGetdate() AS FechaServer
-                        FROM Socios S
-                        INNER JOIN reg_creditos R ON S.cedula = R.cedula
-                        INNER JOIN Catalogo C ON R.codigo = C.codigo
+                    ? $@"
+                        {selectBase}
+                        ISNULL(SUM(V.Principal), 0) AS Amortizacion,
+                        dbo.MyGetdate() AS FechaServer
+                        {fromBase}
                         LEFT JOIN crd_operacion_Transac V
                             ON R.id_solicitud = V.id_solicitud
                            AND V.estado = 'A'
                            AND V.mora_dias > 0
                         WHERE R.id_solicitud = @IdSolicitud
-                        GROUP BY
-                            R.cedula, S.nombre, R.saldo, R.proceso, R.prideduc, R.fecult,
-                            R.interesv, R.cod_Divisa, R.codigo, C.descripcion, R.Opex, R.garantia;"
-                    : @"
-                        SELECT
-                            @IdSolicitud AS IdSolicitud,
-                            @CodIncobrable AS CodIncobrable,
-                            RTRIM(R.cedula) AS Cedula,
-                            RTRIM(S.nombre) AS Nombre,
-                            ISNULL(R.saldo, 0) AS Saldo,
-                            ISNULL(R.proceso, '') AS Proceso,
-                            ISNULL(R.prideduc, 0) AS PriDeduc,
-                            R.fecult AS FecUlt,
-                            dbo.MyGetdate() AS FechaActual,
-                            ISNULL(R.interesv, 0) AS InteresV,
-                            RTRIM(ISNULL(R.cod_Divisa, '')) AS Divisa,
-                            RTRIM(R.codigo) AS Codigo,
-                            RTRIM(C.descripcion) AS Descripcion,
-                            CASE WHEN ISNULL(R.Opex, 0) = 1 THEN 'SI' ELSE 'NO' END AS Opex,
-                            RTRIM(ISNULL(R.garantia, '')) AS Garantia,
-                            ISNULL(SUM(V.intc), 0) AS MoraIntC,
-                            ISNULL(SUM(V.intm), 0) AS MoraIntM,
-                            ISNULL(SUM(V.amortiza), 0) AS Amortizacion,
-                            ISNULL(SUM(V.Cargo), 0) AS Cargos,
-                            CAST(0 AS DECIMAL(18,2)) AS Poliza
-                        FROM Socios S
-                        INNER JOIN reg_creditos R ON S.cedula = R.cedula
-                        INNER JOIN Catalogo C ON R.codigo = C.codigo
+                        {groupByBase}"
+                            : $@"
+                        {selectBase}
+                        ISNULL(SUM(V.intc), 0) AS IntCor,
+                        ISNULL(SUM(V.intm), 0) AS IntMor,
+                        ISNULL(SUM(V.amortiza), 0) AS Amortizacion,
+                        ISNULL(SUM(V.Cargo), 0) AS Cargos,
+                        CAST(0 AS DECIMAL(18,2)) AS Poliza
+                        {fromBase}
                         LEFT JOIN morosidad V
                             ON R.id_solicitud = V.id_solicitud
                            AND V.estado = 'A'
                         WHERE R.id_solicitud = @IdSolicitud
-                        GROUP BY
-                            R.cedula, S.nombre, R.saldo, R.proceso, R.prideduc, R.fecult,
-                            R.interesv, R.cod_Divisa, R.codigo, C.descripcion, R.Opex, R.garantia;";
+                        {groupByBase}";
 
                 var data = connection.QueryFirstOrDefault<CrdIncobrableDetalleResponse>(
                     sql,
@@ -625,42 +614,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 };
             }
 
-            const string sql = @"
-                    EXEC spCBR_Incobrables_Traslado @IdSolicitud, @Usuario, @Notas;";
+            const string sql = @"EXEC spCBR_Incobrables_Traslado @IdSolicitud, @Usuario, @Notas;";
 
-            var result = DbHelper.ExecuteSingleQuery<CrdIncobrableDocumentoDbModel>(
-                _portalDb,
+            return EjecutarProcesoIncobrable(
                 codEmpresa,
                 sql,
-                defaultValue: null,
-                parameters: new
+                new
                 {
                     request.IdSolicitud,
                     request.Usuario,
                     Notas = request.Notas.Trim()
-                });
-
-            if (result.Code != 0 || result.Result is null)
-            {
-                return new ErrorDto<object>
-                {
-                    Code = -1,
-                    Description = result.Description ?? "Error al aplicar incobrable.",
-                    Result = null
-                };
-            }
-
-            string tipoDoc = result.Result.TipoDoc ?? "";
-            string numDoc = result.Result.NumDoc ?? "";
-
-            var resultado = ImprimeRecibo(codEmpresa, request.Usuario, tipoDoc.Trim(), numDoc.Trim());
-
-            return new ErrorDto<object>
-            {
-                Code = resultado.Code,
-                Description = resultado.Description,
-                Result = resultado.Result
-            };
+                },
+                request.Usuario,
+                "Error al aplicar incobrable.");
         }
 
         /// <summary>
@@ -706,7 +672,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<object> Crd_Incobrables_Reversar(int codEmpresa, CrdIncobrableReversaRequest request)
         {
-
             var validacion = ValidarReversion(request.Notas, request.Recargo);
             if (validacion.Code != 0)
             {
@@ -718,45 +683,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 };
             }
 
-            const string sql = @"
-                    EXEC spCBR_Incobrables_Reversa @IdSolicitud, @Recargo, @Usuario, @Notas;";
+            const string sql = @"EXEC spCBR_Incobrables_Reversa @IdSolicitud, @Recargo, @Usuario, @Notas;";
 
-            var result = DbHelper.ExecuteSingleQuery<CrdIncobrableDocumentoDbModel>(
-                _portalDb,
+            return EjecutarProcesoIncobrable(
                 codEmpresa,
                 sql,
-                defaultValue: null,
-                parameters: new
+                new
                 {
                     request.IdSolicitud,
                     request.Recargo,
                     request.Usuario,
                     Notas = request.Notas.Trim()
-                });
-
-            if (result.Code != 0 || result.Result is null)
-            {
-                return new ErrorDto<object>
-                {
-                    Code = -1,
-                    Description = result.Description ?? "Error al reversar incobrable.",
-                    Result = null
-                };
-            }
-
-
-
-            string tipoDoc = result.Result.TipoDoc ?? "";
-            string numDoc = result.Result.NumDoc ?? "";
-
-            var resultado = ImprimeRecibo(codEmpresa, request.Usuario, tipoDoc.Trim(), numDoc.Trim());
-
-            return new ErrorDto<object>
-            {
-                Code = resultado.Code,
-                Description = resultado.Description,
-                Result = resultado.Result
-            };
+                },
+                request.Usuario,
+                "Error al reversar incobrable.");
         }
 
         /// <summary>
@@ -855,6 +795,44 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 "M" => "MOROSO",
                 "N" => "NORMAL",
                 _ => valor
+            };
+        }
+
+
+        private ErrorDto<object> EjecutarProcesoIncobrable(
+        int codEmpresa,
+        string sql,
+        object parameters,
+        string usuario,
+        string mensajeError)
+        {
+            var result = DbHelper.ExecuteSingleQuery<CrdIncobrableDocumentoDbModel>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                defaultValue: null,
+                parameters: parameters);
+
+            if (result.Code != 0 || result.Result is null)
+            {
+                return new ErrorDto<object>
+                {
+                    Code = -1,
+                    Description = result.Description ?? mensajeError,
+                    Result = null
+                };
+            }
+
+            string tipoDoc = result.Result.TipoDoc ?? string.Empty;
+            string numDoc = result.Result.NumDoc ?? string.Empty;
+
+            var resultado = ImprimeRecibo(codEmpresa, usuario, tipoDoc.Trim(), numDoc.Trim());
+
+            return new ErrorDto<object>
+            {
+                Code = resultado.Code,
+                Description = resultado.Description,
+                Result = resultado.Result
             };
         }
     }
