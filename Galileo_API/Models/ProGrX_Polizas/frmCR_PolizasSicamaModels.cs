@@ -2,16 +2,17 @@
 {
     public class CrPolizasSicamaEnvioConsultaRequest: PolizaEnvioConsultaRequestBase
     {
-
+        public string pSicama1 { get; set; } = string.Empty;
     }
 
     public class CrPolizasSicamaEnvioRow : PolizaEnvioRow
     {
-
+        public string pSicama2 { get; set; } = string.Empty;
     }
 
     public class CrPolizasSicamaBeneficiariosRowDto : PolizaBeneficiariosB1B6Base
     {
+        public string pSicama3 { get; set; } = string.Empty;
     }
 
     public class CrFndPlanillaDirectaSubeRequest
@@ -40,9 +41,11 @@
 
     public abstract class BeneficiariosB1B6 : PolizaBeneficiariosB1B6Base
     {
+        public string pSicama4 { get; set; } = string.Empty;
     }
 
     public class CrFndPlanillaDirectaConsultaRowDto : PolizaRecepcionRowBase
     {
+        public string pSicama5 { get; set; } = string.Empty;
     }
 }
