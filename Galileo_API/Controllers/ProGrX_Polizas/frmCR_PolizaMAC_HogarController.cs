@@ -55,12 +55,12 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [HttpPost("Cr_PolizaMacHogar_Recepcion_Procesar")]
-        public ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
+        public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
             int codEmpresa,
             string usuario,
             CrPolizaMacHogarRecepcionProcesarRequest request)
         {
-            return _bl.Cr_PolizaMacHogar_Recepcion_Procesar(codEmpresa, usuario, request);
+            return FrmCrPolizaMacHogarBL.Cr_PolizaMacHogar_Recepcion_Procesar(codEmpresa, usuario, request);
         }
         #endregion
 

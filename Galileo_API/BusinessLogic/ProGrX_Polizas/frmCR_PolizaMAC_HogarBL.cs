@@ -45,12 +45,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return _db.Cr_PolizaMacHogar_Recepcion_Validar(codEmpresa, usuario, request);
         }
 
-        public ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
+        public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
             int codEmpresa,
             string usuario,
             CrPolizaMacHogarRecepcionProcesarRequest request)
         {
-            return _db.Cr_PolizaMacHogar_Recepcion_Procesar(codEmpresa, usuario, request);
+            return FrmCrPolizaMacHogarDB.Cr_PolizaMacHogar_Recepcion_Procesar(codEmpresa, usuario, request);
         }
         #endregion
 

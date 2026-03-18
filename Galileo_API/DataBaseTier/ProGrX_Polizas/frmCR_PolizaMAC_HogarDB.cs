@@ -168,7 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// Método para procesar la recepción de MAC Hogar.
         /// El proceso final no está definido en VB6, por lo que se responde de forma controlada.
         /// </summary>
-        public ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
+        public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
             int codEmpresa,
             string usuario,
             CrPolizaMacHogarRecepcionProcesarRequest request)
@@ -260,7 +260,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 const string sql = @"
                     EXEC dbo.spPoliza_Beneficiarios_Lista 'PC'";
-                ;
 
                 var parametros = new
                 {
