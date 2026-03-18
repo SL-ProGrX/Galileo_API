@@ -330,21 +330,39 @@ namespace Galileo.DataBaseTier
 
                 var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(Sql.TesBancosArchivosEspeciales, new { banco });
 
-                if (archivosData != null)
-                {
-                    string archivoFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_firmas) ?? "";
-                    string archivoSinFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_sin_firmas) ?? "";
+                string baseDir = Path.GetFullPath(Path.Combine(dirRDLC, CodEmpresa.ToString()));
 
-                    if (archivosData.utiliza_formato_especial == 1)
-                    {
-                        response.Result.chequesFirmas = File.Exists(archivoFirmas) ? archivosData.archivo_cheques_firmas : "Banking_DocFormat01";
-                        response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? archivosData.archivo_cheques_sin_firmas : "Banking_DocFormat02";
-                    }
-                    else
-                    {
-                        response.Result.chequesFirmas = "Banking_DocFormat01";
-                        response.Result.chequesSinFirmas = "Banking_DocFormat02";
-                    }
+                string nombreFirmas = Path.GetFileName(archivosData!.archivo_cheques_firmas ?? string.Empty);
+                string nombreSinFirmas = Path.GetFileName(archivosData.archivo_cheques_sin_firmas ?? string.Empty);
+
+                string archivoFirmas = Path.GetFullPath(Path.Combine(baseDir, nombreFirmas));
+                string archivoSinFirmas = Path.GetFullPath(Path.Combine(baseDir, nombreSinFirmas));
+
+                string baseDirWithSep = baseDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+                bool existeFirmas =
+                    archivoFirmas.StartsWith(baseDirWithSep, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(archivoFirmas);
+
+                bool existeSinFirmas =
+                    archivoSinFirmas.StartsWith(baseDirWithSep, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(archivoSinFirmas);
+
+                if (!existeSinFirmas || !existeFirmas)
+                {
+                    response.Code = -1;
+                    response.Description += $"Archivo no encontrado en ruta segura: {archivoSinFirmas}. ";
+                }
+
+                if (archivosData.utiliza_formato_especial == 1)
+                {
+                    response.Result.chequesFirmas = File.Exists(archivoFirmas) ? archivosData.archivo_cheques_firmas! : "Banking_DocFormat01";
+                    response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? archivosData.archivo_cheques_sin_firmas! : "Banking_DocFormat02";
+                }
+                else
+                {
+                    response.Result.chequesFirmas = "Banking_DocFormat01";
+                    response.Result.chequesSinFirmas = "Banking_DocFormat02";
                 }
             }
             catch (Exception ex)

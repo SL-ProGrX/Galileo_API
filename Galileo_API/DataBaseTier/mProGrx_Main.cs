@@ -3,10 +3,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
-using System.Linq;
-using System.ServiceModel.Channels;
+using System.Security;
 using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
@@ -395,16 +393,23 @@ namespace Galileo.DataBaseTier
         public static ErrorDto SbToolBarRead()
         {
             ErrorDto result = new ErrorDto();
-            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "meToolBar.ini");
+            string baseDir = Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+            string filePath = Path.GetFullPath(Path.Combine(baseDir, "meToolBar.ini"));
             string toolBarValue = "00";
+            string baseDirWithSep = baseDir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
             try
             {
+                if (!filePath.StartsWith(baseDirWithSep, StringComparison.OrdinalIgnoreCase))
+                    throw new SecurityException("Ruta inválida.");
+
                 if (!File.Exists(filePath))
                 {
                     File.WriteAllText(filePath, toolBarValue);
                 }
-                File.ReadAllText(filePath);
+
+                _ = File.ReadAllText(filePath);
+
                 result.Code = 1;
                 result.Description = "ok";
             }
@@ -413,7 +418,6 @@ namespace Galileo.DataBaseTier
                 result.Code = -1;
                 result.Description = ex.Message;
             }
-
             return result;
         }
 
