@@ -53,7 +53,7 @@
     {
         public CntXAsientoData asiento { get; set; } = new();
         public List<CntXAsientoDetalleData> detalle { get; set; } = new();
-        public bool balanceado { get; set; }
+        public bool balanceado { get; set; } = false;
     }
 
     public class CntXAsientoCopiarRequest

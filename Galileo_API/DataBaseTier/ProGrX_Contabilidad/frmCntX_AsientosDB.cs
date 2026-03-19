@@ -182,7 +182,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto<string?> CntXAsientos_Consecutivo_Obtener(int codEmpresa, int codConta, string tipoAsiento)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            using var tran = conn.BeginTransaction();
 
             try
             {
@@ -191,15 +190,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     where cod_contabilidad = @codConta 
                       and tipo_asiento = @tipoAsiento;";
 
-                var consecutivo = conn.QueryFirstOrDefault<int>(querySelect, new { codConta, tipoAsiento }, tran);
+                var consecutivo = conn.QueryFirstOrDefault<int>(querySelect, new { codConta, tipoAsiento });
 
                 const string queryUpdate = @"update CntX_Tipos_Asientos
                     set consecutivo = isnull(consecutivo,0) + 1
                     where cod_contabilidad = @codConta
                       and tipo_asiento = @tipoAsiento;";
 
-                conn.Execute(queryUpdate, new { codConta, tipoAsiento }, tran);
-                tran.Commit();
+                conn.Execute(queryUpdate, new { codConta, tipoAsiento });
 
                 return new ErrorDto<string?>
                 {
@@ -209,7 +207,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                tran.Rollback();
                 return DbHelper.CreateErrorResponse<string?>(ex.Message);
             }
         }
