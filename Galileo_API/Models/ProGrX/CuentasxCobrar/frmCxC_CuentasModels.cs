@@ -205,4 +205,13 @@
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
     }
+
+    public static class CxCCuentasConstantes
+    {
+        public const string scrollValido = "El tipo de scroll no es válido.";
+        public const string paginacionSql = @"
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;";
+    }
+
 }

@@ -112,9 +112,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                        OFFSET @offset ROWS
-                        FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var parametros = new
@@ -204,7 +202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (tipo is not (0 or 1))
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasBusquedaOperacionItem>("El tipo de scroll no es válido.");
+                return DbHelper.CreateErrorResponse<CxCCuentasBusquedaOperacionItem>(CxCCuentasConstantes.scrollValido);
             }
 
             try
@@ -592,9 +590,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var param = new
@@ -732,7 +728,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (tipo is not (0 or 1))
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasConceptosFiltroItem>("El tipo de scroll no es válido.");
+                return DbHelper.CreateErrorResponse<CxCCuentasConceptosFiltroItem>(CxCCuentasConstantes.scrollValido);
             }
 
             var sql = tipo == 1
@@ -834,9 +830,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var param = new
@@ -920,7 +914,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -950,7 +944,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (tipo is not (0 or 1))
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasContratosFiltroItem>("El tipo de scroll no es válido.");
+                return DbHelper.CreateErrorResponse<CxCCuentasContratosFiltroItem>(CxCCuentasConstantes.scrollValido);
             }
 
             var sql = tipo == 1
@@ -1004,7 +998,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -1091,9 +1085,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var param = new
@@ -1179,7 +1171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -1209,7 +1201,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (tipo is not (0 or 1))
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasPagadoresFiltroItem>("El tipo de scroll no es válido.");
+                return DbHelper.CreateErrorResponse<CxCCuentasPagadoresFiltroItem>(CxCCuentasConstantes.scrollValido);
             }
 
             var sql = tipo == 1
@@ -1255,7 +1247,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -1338,9 +1330,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var param = new
@@ -1418,7 +1408,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -1445,7 +1435,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (tipo is not (0 or 1))
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasAutorizadosFiltroItem>("El tipo de scroll no es válido.");
+                return DbHelper.CreateErrorResponse<CxCCuentasAutorizadosFiltroItem>(CxCCuentasConstantes.scrollValido);
             }
 
             var sql = tipo == 1
@@ -1486,7 +1476,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return DbHelper.CreateOkResponse(data);
             });
 
-            return response.Result;
+            return response.Result!;
         }
 
         /// <summary>
@@ -1564,9 +1554,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (usarPaginacion)
                 {
-                    sqlLista += @"
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    sqlLista += CxCCuentasConstantes.paginacionSql;
                 }
 
                 var param = new
