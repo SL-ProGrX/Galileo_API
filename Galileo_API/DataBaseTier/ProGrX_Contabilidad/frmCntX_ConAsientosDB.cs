@@ -231,10 +231,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         public ErrorDto<bool> GuardarAsiento(CntxConAsientoGuardarDto request)
         {
-            return EjecutarTransaccion(request.cod_empresa, (cn, trx) =>
+            return EjecutarTransaccion(request.cod_empresa ?? 0, (cn, trx) =>
             {
 
-                if (request.es_edicion)
+                if (request.es_edicion == true)
                 {
                     const string update = @"
                         UPDATE con_asientos
@@ -321,9 +321,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 );
 
                 if (aplicado == "S")
-                    throw new Exception("Este asiento ya fue aplicado y no se puede eliminar");
+                    throw new InvalidOperationException("Este asiento ya fue aplicado y no se puede eliminar");
 
- 
+
 
                 const string deleteDetalle = @"
                     DELETE con_asientos_detalle
