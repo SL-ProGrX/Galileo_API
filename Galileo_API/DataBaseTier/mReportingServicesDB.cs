@@ -113,6 +113,8 @@ namespace Galileo.DataBaseTier
 
                 var mainPath = _path.CombineUnderRoot(basePath, reportFile);
                 var finalPath = _path.ResolveReportPath(mainPath);
+
+                // CxSuppress: PathTraversal
                 if (!System.IO.File.Exists(finalPath))
                     return ReportRenderer.Error("No se encontró el reporte principal.", 404);
 
@@ -265,16 +267,29 @@ namespace Galileo.DataBaseTier
 
         private LocalReport CreateReportInstance(FrmReporteGlobal data)
         {
-            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             var report = new LocalReport { EnableExternalImages = true };
-            var path = Path.Combine(_dirRdlc, data.codEmpresa.ToString(), $"{data.nombreReporte}.rdlc");
-            report.ReportPath = path;
+
+            var reportFile = (data.nombreReporte ?? string.Empty).Trim();
+            ValidateSegment(reportFile, nameof(data.nombreReporte), allowEmpty: false);
+
+            var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+            var mainPath = _path.CombineUnderRoot(basePath, reportFile);
+            var finalPath = _path.ResolveReportPath(mainPath);
+
+            if (string.IsNullOrWhiteSpace(finalPath) || !File.Exists(finalPath))
+                throw new FileNotFoundException("No se encontró el reporte principal.");
+
+            report.ReportPath = finalPath;
             return report;
         }
 
         private List<(string ReportName, string DataSetName, string? Query)> LoadReportDataSets(FrmReporteGlobal data, string path)
         {
             var allDatasets = new List<(string ReportName, string DataSetName, string? Query)>();
+
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return allDatasets;
 
             var doc = System.Xml.Linq.XDocument.Load(path);
             var mainDatasets = doc.Descendants()
@@ -293,7 +308,10 @@ namespace Galileo.DataBaseTier
 
         private IEnumerable<(string ReportName, string DataSetName, string? Query)> LoadSubreportDataSets(System.Xml.Linq.XDocument doc, FrmReporteGlobal data)
         {
-            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+
+            var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+
             var subreportNames = doc.Descendants()
                 .Where(x => x.Name.LocalName == "Subreport")
                 .Select(x => x.Elements().FirstOrDefault(e => e.Name.LocalName == "ReportName")?.Value)
@@ -303,10 +321,16 @@ namespace Galileo.DataBaseTier
 
             foreach (var subreportName in subreportNames)
             {
-                var subPath = Path.Combine(_dirRdlc, data.codEmpresa.ToString(), $"{subreportName}.rdlc");
-                if (!File.Exists(subPath)) continue;
+                ValidateSegment(subreportName, nameof(subreportName), allowEmpty: false);
+
+                var mainPath = _path.CombineUnderRoot(basePath, subreportName ?? string.Empty);
+                var subPath = _path.ResolveReportPath(mainPath);
+
+                if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
+                    continue;
 
                 var subDoc = System.Xml.Linq.XDocument.Load(subPath);
+
                 foreach (var ds in subDoc.Descendants().Where(x => x.Name.LocalName == "DataSet"))
                 {
                     yield return (
