@@ -9,7 +9,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+   
     public class FrmCntXConAsientosController : ControllerBase
     {
         private readonly FrmCntXConAsientosBl _bl;
@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         /// <summary>
         /// Lista consolidaciones
         /// </summary>
+        [Authorize]
         [HttpGet("Consolidaciones_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Consolidaciones_Listar(
             int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         /// <summary>
         /// Buscar asientos por consolidación
         /// </summary>
+        [Authorize]
         [HttpGet("Asientos_Buscar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Asientos_Buscar(int codEmpresa, int codContabilidad, int? codConsolida)
         {
