@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
+﻿using Galileo.Models;
+
+namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
     public class CxCCuentasBusquedaOperacionLista
     {
@@ -212,6 +214,30 @@
         public const string paginacionSql = @"
                 OFFSET @offset ROWS
                 FETCH NEXT @fetch ROWS ONLY;";
+    }
+
+    public class EjecutarConsultaScrollRequest
+    {
+        public int codEmpresa { get; set; } = 0;
+        public int tipo { get; set; } = 0; // 0 = siguiente, 1 = anterior
+        public string sqlAnterior { get; set; } = string.Empty;
+        public string sqlSiguiente { get; set; } = string.Empty;
+        public object? parametros { get; set; } 
+        public string mensajeNoEncontrado { get; set; } = string.Empty;
+        public string mensajeDb { get; set; } = string.Empty;
+        public string mensajeGeneral { get; set; } = string.Empty;
+    }
+
+    public class EjecutarListaLazyLoadRequest
+    {
+        public int codEmpresa { get; set; } = 0;
+        public FiltrosLazyLoadData filtros { get; set; } = new FiltrosLazyLoadData();
+        public bool esExportar { get; set; } = false;
+        public string sqlCount { get; set; } = string.Empty;
+        public string sqlLista { get; set; } = string.Empty;
+        public string mensajeDb { get; set; } = string.Empty;
+        public string mensajeGeneral { get; set; } = string.Empty;
+        public object? parametrosAdicionales { get; set; }
     }
 
 }

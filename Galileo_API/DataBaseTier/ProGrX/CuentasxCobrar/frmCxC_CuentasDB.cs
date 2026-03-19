@@ -524,6 +524,126 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return response;
         }
 
+
+        private static string NormalizarTexto(string? valor)
+        {
+            return (valor ?? string.Empty).Trim();
+        }
+
+        private static bool EsTipoScrollValido(int tipo)
+        {
+            return tipo is 0 or 1;
+        }
+
+        private static DynamicParameters CrearParametrosLazy(FiltrosLazyLoadData filtros, object? parametrosAdicionales = null)
+        {
+            filtros ??= new FiltrosLazyLoadData();
+
+            var texto = NormalizarTexto(filtros.filtro);
+            var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
+
+            var parametros = new DynamicParameters(parametrosAdicionales);
+            parametros.Add("filtro", string.IsNullOrWhiteSpace(texto) ? null : texto);
+            parametros.Add("like", like);
+            parametros.Add("offset", filtros.pagina);
+            parametros.Add("fetch", filtros.paginacion);
+
+            return parametros;
+        }
+
+        private ErrorDto<TItem> EjecutarConsultaUnica<TItem>(
+            int codEmpresa,
+            string sql,
+            object parametros,
+            string mensajeNoEncontrado,
+            string mensajeDb,
+            string mensajeGeneral)
+            where TItem : class
+        {
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var data = conn.QueryFirstOrDefault<TItem>(sql, parametros);
+
+                if (data is null)
+                {
+                    return DbHelper.CreateErrorResponse<TItem>(mensajeNoEncontrado);
+                }
+
+                return DbHelper.CreateOkResponse(data);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<TItem>($"{mensajeDb} {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<TItem>($"{mensajeGeneral} {ex.Message}");
+            }
+        }
+
+        private ErrorDto<TItem> EjecutarConsultaScroll<TItem>(
+            EjecutarConsultaScrollRequest request)
+            where TItem : class
+        {
+            if (!EsTipoScrollValido(request.tipo))
+            {
+                return DbHelper.CreateErrorResponse<TItem>(CxCCuentasConstantes.scrollValido);
+            }
+
+            var sql = request.tipo == 1 ? request.sqlAnterior : request.sqlSiguiente;
+
+            return EjecutarConsultaUnica<TItem>(
+                request.codEmpresa,
+                sql,
+                request.parametros!,
+                request.mensajeNoEncontrado,
+                request.mensajeDb,
+                request.mensajeGeneral);
+        }
+
+        private ErrorDto<CxCCuentasBusquedaGenericaLista<TItem>> EjecutarListaLazy<TItem>(
+          EjecutarListaLazyLoadRequest request )
+        {
+            request.filtros ??= new FiltrosLazyLoadData();
+
+            var response = new ErrorDto<CxCCuentasBusquedaGenericaLista<TItem>>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasBusquedaGenericaLista<TItem>()
+            };
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, request.codEmpresa);
+
+                var parametros = CrearParametrosLazy(request.filtros, request.parametrosAdicionales);
+                var usarPaginacion = request.filtros.paginacion > 0 && !request.esExportar;
+                var sqlListaFinal = usarPaginacion
+                    ? $"{request.sqlLista}{CxCCuentasConstantes.paginacionSql}"
+                    : request.sqlLista;
+
+                response.Result.total = conn.QuerySingle<int>(request.sqlCount, parametros);
+                response.Result.lista = conn.Query<TItem>(sqlListaFinal, parametros).ToList();
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"{request.mensajeDb} {ex.Message}";
+                response.Result = new CxCCuentasBusquedaGenericaLista<TItem>();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"{request.mensajeGeneral} {ex.Message}";
+                response.Result = new CxCCuentasBusquedaGenericaLista<TItem>();
+            }
+
+            return response;
+        }
+
         #region Recepcion
         /// <summary>
         /// Obtiene la lista lazy de personas para búsqueda de cédula en CxC.
@@ -539,87 +659,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             filtros ??= new FiltrosLazyLoadData();
 
-            var response = new ErrorDto<CxCCuentasPersonasFiltroLista>
+            var sortField = NormalizarTexto(filtros.sortField).ToLowerInvariant();
+            var orderByField = sortField switch
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasPersonasFiltroLista()
+                "cedula" => "Cedula",
+                "nombre" => "Nombre",
+                "categoria" => "Categoria",
+                _ => "Cedula"
             };
 
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
 
-                var texto = (filtros.filtro ?? string.Empty).Trim();
-                var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0 && !esExportar;
-
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var orderByField = sortField switch
-                {
-                    "cedula" => "Cedula",
-                    "nombre" => "Nombre",
-                    "categoria" => "Categoria",
-                    _ => "Cedula"
-                };
-
-                var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
-
-                const string where = @"
+            const string where = @"
             WHERE
                 (@filtro IS NULL)
                 OR (ISNULL(Cedula, '') LIKE @like)
                 OR (ISNULL(Nombre, '') LIKE @like)
                 OR (ISNULL(Categoria, '') LIKE @like)";
 
-                var sqlCount = $@"
+            var sqlCount = $@"
             SELECT COUNT(1)
             FROM vCxC_Personas_Filtro
             {where};";
 
-                var sqlLista = $@"
+            var sqlLista = $@"
             SELECT
                 ISNULL(Cedula, '') AS cedula,
                 ISNULL(Nombre, '') AS nombre,
                 ISNULL(Categoria, '') AS categoria
             FROM vCxC_Personas_Filtro
             {where}
-            ORDER BY {orderByField} {direction}";
+            ORDER BY {orderByField} {direction}
+            ";
 
-                if (usarPaginacion)
-                {
-                    sqlLista += CxCCuentasConstantes.paginacionSql;
-                }
+            var listaResponse = EjecutarListaLazy<CxCCuentasPersonasFiltroItem>(
+                    new EjecutarListaLazyLoadRequest
+                    {
+                        codEmpresa = codEmpresa,
+                        filtros = filtros,
+                        esExportar = esExportar,
+                        sqlCount = sqlCount,
+                        sqlLista = sqlLista,
+                        mensajeDb = "No fue posible consultar las personas de CxC.",
+                        mensajeGeneral = "Error inesperado al consultar las personas de CxC."
+                    });
 
-                var param = new
+            if (listaResponse.Code == -1)
+            {
+                return new ErrorDto<CxCCuentasPersonasFiltroLista>
                 {
-                    filtro = string.IsNullOrWhiteSpace(texto) ? null : texto,
-                    like,
-                    offset,
-                    fetch
+                    Code = -1,
+                    Description = listaResponse.Description,
+                    Result = new CxCCuentasPersonasFiltroLista()
                 };
-
-                response.Result.total = conn.QuerySingle<int>(sqlCount, param);
-                response.Result.lista = conn.Query<CxCCuentasPersonasFiltroItem>(sqlLista, param).ToList();
-            }
-            catch (DbException ex)
-            {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar las personas de CxC. {ex.Message}";
-                response.Result = new CxCCuentasPersonasFiltroLista();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar las personas de CxC. {ex.Message}";
-                response.Result = new CxCCuentasPersonasFiltroLista();
             }
 
-            return response;
+            return DbHelper.CreateOkResponse(new CxCCuentasPersonasFiltroLista
+            {
+                total = listaResponse.Result?.total ?? 0,
+                lista = listaResponse.Result?.lista ?? new List<CxCCuentasPersonasFiltroItem>()
+            });
         }
-
 
         /// <summary>
         /// Obtiene una persona de CxC por cédula desde la vista de búsqueda.
@@ -629,7 +729,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Registro encontrado de la vista vCxC_Personas_Filtro.</returns>
         public ErrorDto<CxCCuentasPersonasFiltroItem> CxCCuentasPersonaFiltroPorCedula_Obtener(int codEmpresa, string cedula)
         {
-            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
+            var cedulaNormalizada = NormalizarTexto(cedula);
 
             if (string.IsNullOrWhiteSpace(cedulaNormalizada))
             {
@@ -637,31 +737,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             const string sql = @"
-                    SELECT TOP 1
-                        ISNULL(Cedula, '') AS cedula,
-                        ISNULL(Nombre, '') AS nombre,
-                        ISNULL(Categoria, '') AS categoria
-                    FROM vCxC_Personas_Filtro
-                    WHERE Cedula = @cedula;";
+            SELECT TOP 1
+                ISNULL(Cedula, '') AS cedula,
+                ISNULL(Nombre, '') AS nombre,
+                ISNULL(Categoria, '') AS categoria
+            FROM vCxC_Personas_Filtro
+            WHERE Cedula = @cedula;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasPersonasFiltroItem>(sql, new
-                {
-                    cedula = cedulaNormalizada
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasPersonasFiltroItem>("No se encontró la cédula.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result ?? new ErrorDto<CxCCuentasPersonasFiltroItem>();
+            return EjecutarConsultaUnica<CxCCuentasPersonasFiltroItem>(
+                codEmpresa,
+                sql,
+                new { cedula = cedulaNormalizada },
+                "No se encontró la cédula.",
+                "No fue posible consultar la cédula.",
+                "Error inesperado al consultar la cédula.");
         }
-
 
         /// <summary>
         /// Obtiene un concepto de CxC por código.
@@ -671,7 +761,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Datos del concepto.</returns>
         public ErrorDto<CxCCuentasConceptoData> CxCCuentasConcepto_Obtener(int codEmpresa, string codConcepto)
         {
-            var codigoNormalizado = (codConcepto ?? string.Empty).Trim();
+            var codigoNormalizado = NormalizarTexto(codConcepto);
 
             if (string.IsNullOrWhiteSpace(codigoNormalizado))
             {
@@ -679,35 +769,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             const string sql = @"
-        SELECT TOP 1
-            ISNULL(C.cod_Concepto, '') AS cod_concepto,
-            ISNULL(C.Descripcion, '') AS descripcion,
-            ISNULL(C.Requiere_Contrato, 0) AS requiere_contrato,
-            ISNULL(C.Proceso_Descuento, 0) AS proceso_descuento,
-            ISNULL(C.PAGADOR_DEFAULT, '') AS pagadorid,
-            ISNULL(P.Nombre, '') AS pagadordesc,
-            ISNULL(C.Genera_Desembolso, 0) AS genera_desembolso
-        FROM CxC_Conceptos C
-        LEFT JOIN CxC_Personas P
-            ON C.PAGADOR_DEFAULT = P.cedula
-        WHERE C.cod_Concepto = @codConcepto;";
+            SELECT TOP 1
+                ISNULL(C.cod_Concepto, '') AS cod_concepto,
+                ISNULL(C.Descripcion, '') AS descripcion,
+                ISNULL(C.Requiere_Contrato, 0) AS requiere_contrato,
+                ISNULL(C.Proceso_Descuento, 0) AS proceso_descuento,
+                ISNULL(C.PAGADOR_DEFAULT, '') AS pagadorid,
+                ISNULL(P.Nombre, '') AS pagadordesc,
+                ISNULL(C.Genera_Desembolso, 0) AS genera_desembolso
+            FROM CxC_Conceptos C
+            LEFT JOIN CxC_Personas P
+                ON C.PAGADOR_DEFAULT = P.cedula
+            WHERE C.cod_Concepto = @codConcepto;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasConceptoData>(sql, new
-                {
-                    codConcepto = codigoNormalizado
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasConceptoData>("No se encontró el concepto.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result ?? new ErrorDto<CxCCuentasConceptoData>();
+            return EjecutarConsultaUnica<CxCCuentasConceptoData>(
+                codEmpresa,
+                sql,
+                new { codConcepto = codigoNormalizado },
+                "No se encontró el concepto.",
+                "No fue posible consultar el concepto.",
+                "Error inesperado al consultar el concepto.");
         }
 
         /// <summary>
@@ -719,28 +800,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Concepto encontrado para navegación.</returns>
         public ErrorDto<CxCCuentasConceptosFiltroItem> CxCCuentasConceptoScroll_Obtener(int codEmpresa, string codConcepto, int tipo)
         {
-            var codigoNormalizado = (codConcepto ?? string.Empty).Trim();
+            var codigoNormalizado = NormalizarTexto(codConcepto);
 
             if (string.IsNullOrWhiteSpace(codigoNormalizado))
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasConceptosFiltroItem>("El concepto es requerido.");
             }
 
-            if (tipo is not (0 or 1))
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasConceptosFiltroItem>(CxCCuentasConstantes.scrollValido);
-            }
-
-            var sql = tipo == 1
-                ? @"
+            const string sqlAnterior = @"
             SELECT TOP 1
                 ISNULL(cod_Concepto, '') AS cod_concepto,
                 ISNULL(Descripcion, '') AS descripcion
             FROM CxC_Conceptos
             WHERE Activo = 1
               AND cod_Concepto < @codConcepto
-            ORDER BY cod_Concepto DESC;"
-                : @"
+            ORDER BY cod_Concepto DESC;";
+
+            const string sqlSiguiente = @"
             SELECT TOP 1
                 ISNULL(cod_Concepto, '') AS cod_concepto,
                 ISNULL(Descripcion, '') AS descripcion
@@ -749,22 +825,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND cod_Concepto > @codConcepto
             ORDER BY cod_Concepto ASC;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasConceptosFiltroItem>(sql, new
-                {
-                    codConcepto = codigoNormalizado
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasConceptosFiltroItem>("No hay más conceptos para navegar.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result ?? new ErrorDto<CxCCuentasConceptosFiltroItem>();
+            return EjecutarConsultaScroll<CxCCuentasConceptosFiltroItem>(
+                 new EjecutarConsultaScrollRequest
+                 {
+                     codEmpresa = codEmpresa,
+                     tipo = tipo,
+                     sqlAnterior = sqlAnterior,
+                     sqlSiguiente = sqlSiguiente,
+                     parametros = new { codConcepto = codigoNormalizado },
+                     mensajeNoEncontrado = "No hay más conceptos para navegar.",
+                     mensajeDb = "No fue posible navegar conceptos.",
+                     mensajeGeneral = "Error inesperado al navegar conceptos."
+                 });
         }
 
         /// <summary>
@@ -781,33 +853,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             filtros ??= new FiltrosLazyLoadData();
 
-            var response = new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasConceptosFiltroItem>>
+            var sortField = NormalizarTexto(filtros.sortField).ToLowerInvariant();
+            var orderByField = sortField switch
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasConceptosFiltroItem>()
+                "descripcion" => "Descripcion",
+                _ => "cod_Concepto"
             };
 
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
 
-                var texto = (filtros.filtro ?? string.Empty).Trim();
-                var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0 && !esExportar;
-
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var orderByField = sortField switch
-                {
-                    "descripcion" => "Descripcion",
-                    _ => "cod_Concepto"
-                };
-
-                var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
-
-                const string where = @"
+            const string where = @"
             WHERE Activo = 1
               AND (
                     @filtro IS NULL
@@ -815,49 +870,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     OR ISNULL(Descripcion, '') LIKE @like
                   )";
 
-                var sqlCount = $@"
+            var sqlCount = $@"
             SELECT COUNT(1)
             FROM CxC_Conceptos
             {where};";
 
-                var sqlLista = $@"
+            var sqlLista = $@"
             SELECT
                 ISNULL(cod_Concepto, '') AS cod_concepto,
                 ISNULL(Descripcion, '') AS descripcion
             FROM CxC_Conceptos
             {where}
-            ORDER BY {orderByField} {direction}";
+            ORDER BY {orderByField} {direction}
+            ";
 
-                if (usarPaginacion)
-                {
-                    sqlLista += CxCCuentasConstantes.paginacionSql;
-                }
-
-                var param = new
-                {
-                    filtro = string.IsNullOrWhiteSpace(texto) ? null : texto,
-                    like,
-                    offset,
-                    fetch
-                };
-
-                response.Result.total = conn.QuerySingle<int>(sqlCount, param);
-                response.Result.lista = conn.Query<CxCCuentasConceptosFiltroItem>(sqlLista, param).ToList();
-            }
-            catch (DbException ex)
-            {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar conceptos. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasConceptosFiltroItem>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar conceptos. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasConceptosFiltroItem>();
-            }
-
-            return response;
+            return EjecutarListaLazy<CxCCuentasConceptosFiltroItem>(
+                 new EjecutarListaLazyLoadRequest
+                 {
+                     codEmpresa = codEmpresa,
+                     filtros = filtros,
+                     esExportar = esExportar,
+                     sqlCount = sqlCount,
+                     sqlLista = sqlLista,
+                     mensajeDb = "No fue posible consultar conceptos.",
+                     mensajeGeneral = "Error inesperado al consultar conceptos."
+                 });
         }
 
         /// <summary>
@@ -869,8 +906,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Detalle del contrato.</returns>
         public ErrorDto<CxCCuentasContratoData> CxCCuentasContratoDetalle_Obtener(int codEmpresa, string codContrato, string cedula)
         {
-            var contratoNormalizado = (codContrato ?? string.Empty).Trim();
-            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
+            var contratoNormalizado = NormalizarTexto(codContrato);
+            var cedulaNormalizada = NormalizarTexto(cedula);
 
             if (string.IsNullOrWhiteSpace(contratoNormalizado))
             {
@@ -883,38 +920,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             const string sql = @"
-        SELECT TOP 1
-            ISNULL(Cnt.Cod_Contrato, '') AS cod_contrato,
-            ISNULL(Cnt.Descripcion, '') AS descripcion,
-            ISNULL(Cnt.PAGADORES_ABIERTO, 0) AS pagadores_abierto,
-            ISNULL(Per.Tasa_Corriente, Cnt.Tasa_Corriente) AS tasa_corriente,
-            ISNULL(Per.Tasa_Mora, Cnt.Tasa_Mora) AS tasa_mora,
-            ISNULL(Per.Plazo, Cnt.Plazo) AS plazo
-        FROM CxC_Contratos Cnt
-        LEFT JOIN CxC_Personas_Contratos Per
-            ON Cnt.Cod_Contrato = Per.cod_contrato
-           AND Per.Activo = 1
-           AND Per.Cedula = @cedula
-        WHERE Cnt.cod_Contrato = @codContrato
-          AND (Per.Cedula IS NOT NULL OR Cnt.Suscripcion_Abierta = 1);";
+            SELECT TOP 1
+                ISNULL(Cnt.Cod_Contrato, '') AS cod_contrato,
+                ISNULL(Cnt.Descripcion, '') AS descripcion,
+                ISNULL(Cnt.PAGADORES_ABIERTO, 0) AS pagadores_abierto,
+                ISNULL(Per.Tasa_Corriente, Cnt.Tasa_Corriente) AS tasa_corriente,
+                ISNULL(Per.Tasa_Mora, Cnt.Tasa_Mora) AS tasa_mora,
+                ISNULL(Per.Plazo, Cnt.Plazo) AS plazo
+            FROM CxC_Contratos Cnt
+            LEFT JOIN CxC_Personas_Contratos Per
+                ON Cnt.Cod_Contrato = Per.cod_contrato
+               AND Per.Activo = 1
+               AND Per.Cedula = @cedula
+            WHERE Cnt.cod_Contrato = @codContrato
+              AND (Per.Cedula IS NOT NULL OR Cnt.Suscripcion_Abierta = 1);";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasContratoData>(sql, new
+            return EjecutarConsultaUnica<CxCCuentasContratoData>(
+                codEmpresa,
+                sql,
+                new
                 {
                     codContrato = contratoNormalizado,
                     cedula = cedulaNormalizada
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasContratoData>("No se encontró el contrato.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
+                },
+                "No se encontró el contrato.",
+                "No fue posible consultar el contrato.",
+                "Error inesperado al consultar el contrato.");
         }
 
         /// <summary>
@@ -933,22 +964,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string codContrato,
             int tipo)
         {
-            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
-            var conceptoNormalizado = (codConcepto ?? string.Empty).Trim();
-            var contratoNormalizado = (codContrato ?? string.Empty).Trim();
+            var cedulaNormalizada = NormalizarTexto(cedula);
+            var conceptoNormalizado = NormalizarTexto(codConcepto);
+            var contratoNormalizado = NormalizarTexto(codContrato);
 
             if (string.IsNullOrWhiteSpace(cedulaNormalizada) || string.IsNullOrWhiteSpace(conceptoNormalizado))
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasContratosFiltroItem>("La cédula y el concepto son requeridos.");
             }
 
-            if (tipo is not (0 or 1))
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasContratosFiltroItem>(CxCCuentasConstantes.scrollValido);
-            }
-
-            var sql = tipo == 1
-                ? @"
+            const string sqlAnterior = @"
             SELECT TOP 1
                 ISNULL(Cn.Cod_Contrato, '') AS cod_contrato,
                 ISNULL(Cn.Descripcion, '') AS descripcion
@@ -963,8 +988,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND Cnt.Cod_Concepto = @codConcepto
               AND (Pc.Cedula IS NOT NULL OR Cn.Suscripcion_Abierta = 1)
               AND Cn.cod_contrato < @codContrato
-            ORDER BY Cn.cod_contrato DESC;"
-                : @"
+            ORDER BY Cn.cod_contrato DESC;";
+
+            const string sqlSiguiente = @"
             SELECT TOP 1
                 ISNULL(Cn.Cod_Contrato, '') AS cod_contrato,
                 ISNULL(Cn.Descripcion, '') AS descripcion
@@ -981,24 +1007,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND Cn.cod_contrato > @codContrato
             ORDER BY Cn.cod_contrato ASC;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasContratosFiltroItem>(sql, new
-                {
-                    cedula = cedulaNormalizada,
-                    codConcepto = conceptoNormalizado,
-                    codContrato = contratoNormalizado
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasContratosFiltroItem>("No hay más contratos para navegar.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
+            return EjecutarConsultaScroll<CxCCuentasContratosFiltroItem>(
+                 new EjecutarConsultaScrollRequest
+                 {
+                     codEmpresa = codEmpresa,
+                     tipo = tipo,
+                     sqlAnterior = sqlAnterior,
+                     sqlSiguiente = sqlSiguiente,
+                     parametros = new
+                     {
+                         cedula = cedulaNormalizada,
+                         codConcepto = conceptoNormalizado,
+                         codContrato = contratoNormalizado
+                     },
+                     mensajeNoEncontrado = "No hay más contratos para navegar.",
+                     mensajeDb = "No fue posible navegar contratos.",
+                     mensajeGeneral = "Error inesperado al navegar contratos."
+                 });
         }
 
         /// <summary>
@@ -1019,43 +1044,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             filtros ??= new FiltrosLazyLoadData();
 
-            var response = new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>()
-            };
-
-            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
-            var conceptoNormalizado = (codConcepto ?? string.Empty).Trim();
+            var cedulaNormalizada = NormalizarTexto(cedula);
+            var conceptoNormalizado = NormalizarTexto(codConcepto);
 
             if (string.IsNullOrWhiteSpace(cedulaNormalizada) || string.IsNullOrWhiteSpace(conceptoNormalizado))
             {
-                response.Code = -1;
-                response.Description = "La cédula y el concepto son requeridos.";
-                return response;
+                return new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>>
+                {
+                    Code = -1,
+                    Description = "La cédula y el concepto son requeridos.",
+                    Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>()
+                };
             }
 
-            try
+            var sortField = NormalizarTexto(filtros.sortField).ToLowerInvariant();
+            var orderByField = sortField switch
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                "descripcion" => "Cnt.Descripcion",
+                _ => "Cnt.cod_Contrato"
+            };
 
-                var texto = (filtros.filtro ?? string.Empty).Trim();
-                var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0 && !esExportar;
+            var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
 
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var orderByField = sortField switch
-                {
-                    "descripcion" => "Cnt.Descripcion",
-                    _ => "Cnt.cod_Contrato"
-                };
-
-                var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
-
-                const string fromWhere = @"
+            const string fromWhere = @"
             FROM CxC_Personas_Contratos Con
             INNER JOIN CxC_Contratos Cnt
                 ON Con.Cod_Contrato = Cnt.cod_contrato
@@ -1072,49 +1083,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     OR ISNULL(Cnt.Descripcion, '') LIKE @like
                   )";
 
-                var sqlCount = $@"
+            var sqlCount = $@"
             SELECT COUNT(1)
             {fromWhere};";
 
-                var sqlLista = $@"
+            var sqlLista = $@"
             SELECT
                 ISNULL(Cnt.cod_Contrato, '') AS cod_contrato,
                 ISNULL(Cnt.Descripcion, '') AS descripcion
             {fromWhere}
-            ORDER BY {orderByField} {direction}";
+            ORDER BY {orderByField} {direction}
+            ";
 
-                if (usarPaginacion)
-                {
-                    sqlLista += CxCCuentasConstantes.paginacionSql;
-                }
-
-                var param = new
-                {
-                    cedula = cedulaNormalizada,
-                    codConcepto = conceptoNormalizado,
-                    filtro = string.IsNullOrWhiteSpace(texto) ? null : texto,
-                    like,
-                    offset,
-                    fetch
-                };
-
-                response.Result.total = conn.QuerySingle<int>(sqlCount, param);
-                response.Result.lista = conn.Query<CxCCuentasContratosFiltroItem>(sqlLista, param).ToList();
-            }
-            catch (DbException ex)
-            {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar contratos. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar contratos. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasContratosFiltroItem>();
-            }
-
-            return response;
+            return EjecutarListaLazy<CxCCuentasContratosFiltroItem>(
+                    new EjecutarListaLazyLoadRequest
+                    {
+                        codEmpresa = codEmpresa,
+                        filtros = filtros,
+                        esExportar = esExportar,
+                        sqlCount = sqlCount,
+                        sqlLista = sqlLista,
+                        parametrosAdicionales = new
+                        {
+                            cedula = cedulaNormalizada,
+                            codConcepto = conceptoNormalizado
+                        },
+                        mensajeDb = "No fue posible consultar contratos.",
+                        mensajeGeneral = "Error inesperado al consultar contratos."
+                    });
         }
 
         /// <summary>
@@ -1131,9 +1127,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string codContrato,
             string cedulaPagador)
         {
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
-            var contratoNormalizado = (codContrato ?? string.Empty).Trim();
-            var pagadorNormalizado = (cedulaPagador ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
+            var contratoNormalizado = NormalizarTexto(codContrato);
+            var pagadorNormalizado = NormalizarTexto(cedulaPagador);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado) ||
                 string.IsNullOrWhiteSpace(contratoNormalizado) ||
@@ -1143,35 +1139,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             const string sql = @"
-        SELECT TOP 1
-            ISNULL(P.cedula, '') AS cedula,
-            ISNULL(P.nombre, '') AS nombre
-        FROM CxC_Personas P
-        INNER JOIN CxC_Personas_Contratos_Pagadores Pg
-            ON P.Cedula = Pg.Cedula_Pagador
-        WHERE Pg.Cedula = @cedulaCliente
-          AND Pg.Cod_Contrato = @codContrato
-          AND Pg.Cedula_Pagador = @cedulaPagador
-          AND ISNULL(Pg.Activo, 1) = 1;";
+            SELECT TOP 1
+                ISNULL(P.cedula, '') AS cedula,
+                ISNULL(P.nombre, '') AS nombre
+            FROM CxC_Personas P
+            INNER JOIN CxC_Personas_Contratos_Pagadores Pg
+                ON P.Cedula = Pg.Cedula_Pagador
+            WHERE Pg.Cedula = @cedulaCliente
+              AND Pg.Cod_Contrato = @codContrato
+              AND Pg.Cedula_Pagador = @cedulaPagador
+              AND ISNULL(Pg.Activo, 1) = 1;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasPagadorData>(sql, new
+            return EjecutarConsultaUnica<CxCCuentasPagadorData>(
+                codEmpresa,
+                sql,
+                new
                 {
                     cedulaCliente = clienteNormalizado,
                     codContrato = contratoNormalizado,
                     cedulaPagador = pagadorNormalizado
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasPagadorData>("No se encontró el pagador.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
+                },
+                "No se encontró el pagador.",
+                "No fue posible consultar el pagador.",
+                "Error inesperado al consultar el pagador.");
         }
 
         /// <summary>
@@ -1190,22 +1180,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string cedulaPagador,
             int tipo)
         {
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
-            var contratoNormalizado = (codContrato ?? string.Empty).Trim();
-            var pagadorNormalizado = (cedulaPagador ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
+            var contratoNormalizado = NormalizarTexto(codContrato);
+            var pagadorNormalizado = NormalizarTexto(cedulaPagador);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado) || string.IsNullOrWhiteSpace(contratoNormalizado))
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasPagadoresFiltroItem>("Cliente y contrato son requeridos.");
             }
 
-            if (tipo is not (0 or 1))
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasPagadoresFiltroItem>(CxCCuentasConstantes.scrollValido);
-            }
-
-            var sql = tipo == 1
-                ? @"
+            const string sqlAnterior = @"
             SELECT TOP 1
                 ISNULL(P.Cedula, '') AS cedula,
                 ISNULL(P.Nombre, '') AS nombre
@@ -1216,8 +1200,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND Pg.Cod_Contrato = @codContrato
               AND Pg.Cedula_Pagador < @cedulaPagador
               AND ISNULL(Pg.Activo, 1) = 1
-            ORDER BY Pg.Cedula_Pagador DESC;"
-                : @"
+            ORDER BY Pg.Cedula_Pagador DESC;";
+
+            const string sqlSiguiente = @"
             SELECT TOP 1
                 ISNULL(P.Cedula, '') AS cedula,
                 ISNULL(P.Nombre, '') AS nombre
@@ -1230,24 +1215,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND ISNULL(Pg.Activo, 1) = 1
             ORDER BY Pg.Cedula_Pagador ASC;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasPagadoresFiltroItem>(sql, new
+            return EjecutarConsultaScroll<CxCCuentasPagadoresFiltroItem>(
+                new EjecutarConsultaScrollRequest
                 {
-                    cedulaCliente = clienteNormalizado,
-                    codContrato = contratoNormalizado,
-                    cedulaPagador = pagadorNormalizado
+                    codEmpresa = codEmpresa,
+                    tipo = tipo,
+                    sqlAnterior = sqlAnterior,
+                    sqlSiguiente = sqlSiguiente,
+                    parametros = new
+                    {
+                        cedulaCliente = clienteNormalizado,
+                        codContrato = contratoNormalizado,
+                        cedulaPagador = pagadorNormalizado
+                    },
+                    mensajeNoEncontrado = "No hay más pagadores para navegar.",
+                    mensajeDb = "No fue posible navegar pagadores.",
+                    mensajeGeneral = "Error inesperado al navegar pagadores."
                 });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasPagadoresFiltroItem>("No hay más pagadores para navegar.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
         }
 
         /// <summary>
@@ -1268,43 +1252,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             filtros ??= new FiltrosLazyLoadData();
 
-            var response = new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>()
-            };
-
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
-            var contratoNormalizado = (codContrato ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
+            var contratoNormalizado = NormalizarTexto(codContrato);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado) || string.IsNullOrWhiteSpace(contratoNormalizado))
             {
-                response.Code = -1;
-                response.Description = "Cliente y contrato son requeridos.";
-                return response;
+                return new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>>
+                {
+                    Code = -1,
+                    Description = "Cliente y contrato son requeridos.",
+                    Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>()
+                };
             }
 
-            try
+            var sortField = NormalizarTexto(filtros.sortField).ToLowerInvariant();
+            var orderByField = sortField switch
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                "nombre" => "P.Nombre",
+                _ => "P.Cedula"
+            };
 
-                var texto = (filtros.filtro ?? string.Empty).Trim();
-                var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0 && !esExportar;
+            var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
 
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var orderByField = sortField switch
-                {
-                    "nombre" => "P.Nombre",
-                    _ => "P.Cedula"
-                };
-
-                var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
-
-                const string fromWhere = @"
+            const string fromWhere = @"
             FROM CxC_Personas P
             INNER JOIN CxC_Personas_Contratos_Pagadores Pg
                 ON P.Cedula = Pg.Cedula_Pagador
@@ -1317,49 +1287,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     OR ISNULL(P.Nombre, '') LIKE @like
                   )";
 
-                var sqlCount = $@"
+            var sqlCount = $@"
             SELECT COUNT(1)
             {fromWhere};";
 
-                var sqlLista = $@"
+            var sqlLista = $@"
             SELECT
                 ISNULL(P.Cedula, '') AS cedula,
                 ISNULL(P.Nombre, '') AS nombre
             {fromWhere}
-            ORDER BY {orderByField} {direction}";
+            ORDER BY {orderByField} {direction}
+            ";
 
-                if (usarPaginacion)
-                {
-                    sqlLista += CxCCuentasConstantes.paginacionSql;
-                }
-
-                var param = new
-                {
-                    cedulaCliente = clienteNormalizado,
-                    codContrato = contratoNormalizado,
-                    filtro = string.IsNullOrWhiteSpace(texto) ? null : texto,
-                    like,
-                    offset,
-                    fetch
-                };
-
-                response.Result.total = conn.QuerySingle<int>(sqlCount, param);
-                response.Result.lista = conn.Query<CxCCuentasPagadoresFiltroItem>(sqlLista, param).ToList();
-            }
-            catch (DbException ex)
-            {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar pagadores. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar pagadores. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasPagadoresFiltroItem>();
-            }
-
-            return response;
+            return EjecutarListaLazy<CxCCuentasPagadoresFiltroItem>(
+                    new EjecutarListaLazyLoadRequest
+                    {
+                        codEmpresa = codEmpresa,
+                        filtros = filtros,
+                        esExportar = esExportar,
+                        sqlCount = sqlCount,
+                        sqlLista = sqlLista,
+                        parametrosAdicionales = new
+                        {
+                            cedulaCliente = clienteNormalizado,
+                            codContrato = contratoNormalizado
+                        },
+                        mensajeDb = "No fue posible consultar pagadores.",
+                        mensajeGeneral = "Error inesperado al consultar pagadores."
+                    });
         }
 
         /// <summary>
@@ -1374,8 +1329,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string cedulaCliente,
             string cedulaAutorizado)
         {
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
-            var autorizadoNormalizado = (cedulaAutorizado ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
+            var autorizadoNormalizado = NormalizarTexto(cedulaAutorizado);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado) || string.IsNullOrWhiteSpace(autorizadoNormalizado))
             {
@@ -1383,32 +1338,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             const string sql = @"
-        SELECT TOP 1
-            ISNULL(Per.Cedula, '') AS cedula,
-            ISNULL(Per.Nombre, '') AS nombre
-        FROM CxC_Personas Per
-        INNER JOIN CXC_PERSONAS_AUTORIZADOS Pa
-            ON Per.Cedula = Pa.Cedula_Autorizado
-        WHERE Pa.cedula = @cedulaCliente
-          AND Pa.Cedula_Autorizado = @cedulaAutorizado;";
+            SELECT TOP 1
+                ISNULL(Per.Cedula, '') AS cedula,
+                ISNULL(Per.Nombre, '') AS nombre
+            FROM CxC_Personas Per
+            INNER JOIN CXC_PERSONAS_AUTORIZADOS Pa
+                ON Per.Cedula = Pa.Cedula_Autorizado
+            WHERE Pa.cedula = @cedulaCliente
+              AND Pa.Cedula_Autorizado = @cedulaAutorizado;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasAutorizadoData>(sql, new
+            return EjecutarConsultaUnica<CxCCuentasAutorizadoData>(
+                codEmpresa,
+                sql,
+                new
                 {
                     cedulaCliente = clienteNormalizado,
                     cedulaAutorizado = autorizadoNormalizado
-                });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasAutorizadoData>("No se encontró el autorizado.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
+                },
+                "No se encontró el autorizado.",
+                "No fue posible consultar el autorizado.",
+                "Error inesperado al consultar el autorizado.");
         }
 
         /// <summary>
@@ -1425,21 +1374,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string cedulaAutorizado,
             int tipo)
         {
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
-            var autorizadoNormalizado = (cedulaAutorizado ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
+            var autorizadoNormalizado = NormalizarTexto(cedulaAutorizado);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado))
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasAutorizadosFiltroItem>("El cliente es requerido.");
             }
 
-            if (tipo is not (0 or 1))
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasAutorizadosFiltroItem>(CxCCuentasConstantes.scrollValido);
-            }
-
-            var sql = tipo == 1
-                ? @"
+            const string sqlAnterior = @"
             SELECT TOP 1
                 ISNULL(Per.Cedula, '') AS cedula,
                 ISNULL(Per.Nombre, '') AS nombre
@@ -1448,8 +1391,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 ON Per.Cedula = Pa.Cedula_Autorizado
             WHERE Pa.cedula = @cedulaCliente
               AND Pa.Cedula_Autorizado < @cedulaAutorizado
-            ORDER BY Pa.Cedula_Autorizado DESC;"
-                : @"
+            ORDER BY Pa.Cedula_Autorizado DESC;";
+
+            const string sqlSiguiente = @"
             SELECT TOP 1
                 ISNULL(Per.Cedula, '') AS cedula,
                 ISNULL(Per.Nombre, '') AS nombre
@@ -1460,23 +1404,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               AND Pa.Cedula_Autorizado > @cedulaAutorizado
             ORDER BY Pa.Cedula_Autorizado ASC;";
 
-            var response = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                var data = conn.QueryFirstOrDefault<CxCCuentasAutorizadosFiltroItem>(sql, new
+            return EjecutarConsultaScroll<CxCCuentasAutorizadosFiltroItem>(
+                new EjecutarConsultaScrollRequest
                 {
-                    cedulaCliente = clienteNormalizado,
-                    cedulaAutorizado = autorizadoNormalizado
+                    codEmpresa = codEmpresa,
+                    tipo = tipo,
+                    sqlAnterior = sqlAnterior,
+                    sqlSiguiente = sqlSiguiente,
+                    parametros = new
+                    {
+                        cedulaCliente = clienteNormalizado,
+                        cedulaAutorizado = autorizadoNormalizado
+                    },
+                    mensajeNoEncontrado = "No hay más autorizados para navegar.",
+                    mensajeDb = "No fue posible navegar autorizados.",
+                    mensajeGeneral = "Error inesperado al navegar autorizados."
                 });
-
-                if (data is null)
-                {
-                    return DbHelper.CreateErrorResponse<CxCCuentasAutorizadosFiltroItem>("No hay más autorizados para navegar.");
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            });
-
-            return response.Result!;
         }
 
         /// <summary>
@@ -1495,42 +1438,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             filtros ??= new FiltrosLazyLoadData();
 
-            var response = new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>()
-            };
-
-            var clienteNormalizado = (cedulaCliente ?? string.Empty).Trim();
+            var clienteNormalizado = NormalizarTexto(cedulaCliente);
 
             if (string.IsNullOrWhiteSpace(clienteNormalizado))
             {
-                response.Code = -1;
-                response.Description = "El cliente es requerido.";
-                return response;
+                return new ErrorDto<CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>>
+                {
+                    Code = -1,
+                    Description = "El cliente es requerido.",
+                    Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>()
+                };
             }
 
-            try
+            var sortField = NormalizarTexto(filtros.sortField).ToLowerInvariant();
+            var orderByField = sortField switch
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                "nombre" => "Per.Nombre",
+                _ => "Per.Cedula"
+            };
 
-                var texto = (filtros.filtro ?? string.Empty).Trim();
-                var like = string.IsNullOrWhiteSpace(texto) ? null : $"%{texto}%";
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0 && !esExportar;
+            var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
 
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var orderByField = sortField switch
-                {
-                    "nombre" => "Per.Nombre",
-                    _ => "Per.Cedula"
-                };
-
-                var direction = filtros.sortOrder == 1 ? "ASC" : "DESC";
-
-                const string fromWhere = @"
+            const string fromWhere = @"
             FROM CxC_Personas Per
             INNER JOIN CXC_PERSONAS_AUTORIZADOS Pa
                 ON Per.Cedula = Pa.Cedula_Autorizado
@@ -1541,48 +1470,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     OR ISNULL(Per.Nombre, '') LIKE @like
                   )";
 
-                var sqlCount = $@"
+            var sqlCount = $@"
             SELECT COUNT(1)
             {fromWhere};";
 
-                var sqlLista = $@"
+            var sqlLista = $@"
             SELECT
                 ISNULL(Per.Cedula, '') AS cedula,
                 ISNULL(Per.Nombre, '') AS nombre
             {fromWhere}
-            ORDER BY {orderByField} {direction}";
+            ORDER BY {orderByField} {direction}
+            ";
 
-                if (usarPaginacion)
+            return EjecutarListaLazy<CxCCuentasAutorizadosFiltroItem>(
+                new EjecutarListaLazyLoadRequest
                 {
-                    sqlLista += CxCCuentasConstantes.paginacionSql;
-                }
-
-                var param = new
-                {
-                    cedulaCliente = clienteNormalizado,
-                    filtro = string.IsNullOrWhiteSpace(texto) ? null : texto,
-                    like,
-                    offset,
-                    fetch
-                };
-
-                response.Result.total = conn.QuerySingle<int>(sqlCount, param);
-                response.Result.lista = conn.Query<CxCCuentasAutorizadosFiltroItem>(sqlLista, param).ToList();
-            }
-            catch (DbException ex)
-            {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar autorizados. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar autorizados. {ex.Message}";
-                response.Result = new CxCCuentasBusquedaGenericaLista<CxCCuentasAutorizadosFiltroItem>();
-            }
-
-            return response;
+                    codEmpresa = codEmpresa,
+                    filtros = filtros,
+                    esExportar = esExportar,
+                    sqlCount = sqlCount,
+                    sqlLista = sqlLista,
+                    mensajeDb = "No fue posible consultar autorizados.",
+                    mensajeGeneral = "Error inesperado al consultar autorizados.",
+                    parametrosAdicionales = new
+                    {
+                        cedulaCliente = clienteNormalizado
+                    }
+                });
         }
 
         /// <summary>
@@ -1594,8 +1508,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Lista de cuentas bancarias.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CxCCuentasCuentasBancarias_Obtener(int codEmpresa, string cedula, string banco)
         {
-            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
-            var bancoNormalizado = (banco ?? string.Empty).Trim();
+            var cedulaNormalizada = NormalizarTexto(cedula);
+            var bancoNormalizado = NormalizarTexto(banco);
 
             if (string.IsNullOrWhiteSpace(cedulaNormalizada) || string.IsNullOrWhiteSpace(bancoNormalizado))
             {
@@ -1604,18 +1518,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             const string sql = @"exec spSys_Cuentas_Bancarias @Identificacion, @BancoId, 1;";
 
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            try
             {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
                 var lista = conn.Query<DropDownListaGenericaModel>(sql, new
                 {
                     Identificacion = cedulaNormalizada,
                     BancoId = bancoNormalizado
                 }).ToList();
 
-                return lista;
-            });
+                return DbHelper.CreateOkResponse(lista);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>($"No fue posible consultar las cuentas bancarias. {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>($"Error inesperado al consultar las cuentas bancarias. {ex.Message}");
+            }
         }
 
         #endregion
+
+      
     }
 }
