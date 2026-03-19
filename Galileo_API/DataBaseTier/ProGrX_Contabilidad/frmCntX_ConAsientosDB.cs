@@ -25,9 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = mProGrxMain;
         }
 
-        // ============================
-        // HELPERS 🔥
-        // ============================
+
 
         /// <summary>
         /// Ejecuta una consulta segura sin transacción
@@ -265,9 +263,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     cn.Execute(insert, request, trx);
                 }
 
-                // ============================
-                // DETALLE
-                // ============================
 
                 const string insertDetalle = @"
                     INSERT INTO con_asientos_detalle
