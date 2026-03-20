@@ -61,12 +61,17 @@ namespace Galileo.DataBaseTier
         /// </summary>
         private static void ValidarClientePortal(PgxClienteDto cliente, int codEmpresa)
         {
-            if (cliente == null && codEmpresa> 0)
+            if (cliente == null)
             {
                 throw new SecurityException("No fue posible resolver una empresa válida.");
             }
 
-            var clienteSeguro = cliente!;
+            if (codEmpresa > 0)
+            {
+                throw new SecurityException("No fue posible resolver una empresa válida.");
+            }
+
+            var clienteSeguro = cliente;
 
             if (string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_SERVER) ||
                 string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_DB) ||
