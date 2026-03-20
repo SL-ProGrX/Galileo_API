@@ -201,7 +201,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             var response = DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
 
             //agregar opcion TODOS al inicio
-            response.Result.Insert(0, new DropDownListaGenericaModel
+            response.Result!.Insert(0, new DropDownListaGenericaModel
             {
                 item = "T",
                 descripcion = ConstanteLiquidacionAsientos.todos

@@ -1,11 +1,12 @@
 ﻿using Galileo.BusinessLogic.ProGrX_Contabilidad;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PgxAPI.Models.ProGrX_Contabilidad;
 
-namespace Galileo.Controllers.ProGrX_Contabilidad
+namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -30,6 +31,21 @@ namespace Galileo.Controllers.ProGrX_Contabilidad
         public ErrorDto<List<PresVistaPresupuestoAlertasData>> PresPlanning_Obtener(int CodCliente, string datos)
         {
             return _BL.PresPlanning_Obtener(CodCliente, datos);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertaJustificacion_Guardar")]
+        public ErrorDto PresAlertaJustificacion_Guardar(int CodEmpresa, [FromBody] PresAlertaJustificacionGuardarRequest data)
+        {
+            return _BL.PresAlertaJustificacion_Guardar(CodEmpresa, data);
+        }
+
+        [Authorize]
+        [HttpGet("PresAlertaJustificacionBitacora_Obtener")]
+        public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
+          [FromQuery] PresAlertaJustificacionBitRequest resquest)
+        {
+            return _BL.PresAlertaJustificacionBitacora_Obtener(resquest);
         }
 
     }
