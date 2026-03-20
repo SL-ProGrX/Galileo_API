@@ -5,8 +5,8 @@
 
         public class CrdReversionCobroJudicialConsultaResponse
         {
-            public int Operacion { get; set; }
-            public int PlazoRestante { get; set; }
+            public int? Operacion { get; set; }
+            public int? PlazoRestante { get; set; }
 
             public string Cedula { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
@@ -53,7 +53,7 @@
             public decimal Intereses { get; set; }
             public string Codigo { get; set; } = string.Empty;
             public string Descripcion { get; set; } = string.Empty;
-            public int Opex { get; set; }
+            public int? Opex { get; set; }
             public decimal MoraIntC { get; set; }
             public decimal MoraIntM { get; set; }
             public decimal MoraAmortiza { get; set; }
@@ -70,7 +70,7 @@
 
         public class CrdReversionCobroJudicialReversaRequest
         {
-            public int Operacion { get; set; }
+            public int? Operacion { get; set; }
             public string Notas { get; set; } = string.Empty;
             public string Usuario { get; set; } = string.Empty;
         }
@@ -84,7 +84,7 @@
 
         public class CrdReversionCobroJudicialReversaDbModel
         {
-            public int Pass { get; set; }
+            public int? Pass { get; set; }
             public string NumDoc { get; set; } = string.Empty;
             public string TipoDoc { get; set; } = string.Empty;
             public string Mensaje { get; set; } = string.Empty;
