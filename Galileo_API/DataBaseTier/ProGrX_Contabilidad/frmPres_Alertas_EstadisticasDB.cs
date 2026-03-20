@@ -68,6 +68,7 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
                     TIPO_VISTA = filtros.tipo_vista,
                     CtaMov = filtros.ctaMov ? (short?)1 : null,
                     Tipo_Alerta = string.IsNullOrEmpty(filtros.tipo_alerta) ? "T" : filtros.tipo_alerta,
+                    Justificacion = string.IsNullOrWhiteSpace(filtros.justificacion) ? "T" : filtros.justificacion
                 };
 
                 info.Result = connection.Query<PresVistaPresupuestoAlertasData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();

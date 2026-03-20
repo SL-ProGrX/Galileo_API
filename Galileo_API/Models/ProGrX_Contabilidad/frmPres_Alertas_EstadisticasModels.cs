@@ -12,6 +12,7 @@
         public bool ctaMov { get; set; }= false;
         public bool traReal { get; set; } = false;
         public string tipo_alerta { get; set; } = string.Empty;
+        public string justificacion { get; set; } = "T";
     }
 
     public class PresVistaPresupuestoAlertasData

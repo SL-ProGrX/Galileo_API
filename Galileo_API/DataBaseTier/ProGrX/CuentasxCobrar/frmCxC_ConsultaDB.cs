@@ -66,7 +66,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="cedula"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<List<CxCCuentaDto>> ConsultarCuentas(int codEmpresa, string cedula, int tipo)
+        public ErrorDto<List<CxCCuentaDto>> ConsultarCuentas(int codEmpresa, string cedula, string estado)
         {
             var response = new ErrorDto<List<CxCCuentaDto>>();
 
@@ -77,7 +77,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 response.Result = cn.Query<CxCCuentaDto>(
                     "spCxC_PersonasCuentas",
-                    new { cedula, tipo },
+                    new { cedula, estado},
                     commandType: System.Data.CommandType.StoredProcedure
                 ).ToList();
             }
@@ -161,7 +161,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="cedula"></param>
         /// <returns></returns>
         public ErrorDto<List<CxCMensajeDto>> ConsultarMensajes(int codEmpresa, string cedula)
-            => EjecutarSP<List<CxCMensajeDto>>(codEmpresa, "CxC_Personas_Mensajes_Consulta", new { cedula });
+        {
+            var response = new ErrorDto<List<CxCMensajeDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                response.Result = cn.Query<CxCMensajeDto>(
+                    @"SELECT 
+                fecha,
+                cedula,
+                usuario,
+                vencimiento,
+                mensaje
+              FROM CxC_Personas_Mensajes
+              WHERE cedula = @cedula
+              AND DATEDIFF(DAY, dbo.MyGetdate(), vencimiento) >= 0",
+                    new { cedula }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
 
         /// <summary>
         /// Guarda mensajes
@@ -327,6 +355,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         filtro.fecha_corte,
                         filtro.estado
                     }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Consutla facturas por giro
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="idGiro"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CxCDesembolsoFacturaDto>> ConsultarFacturasPorGiro(int codEmpresa,int operacion,int idGiro)
+        {
+            var response = new ErrorDto<List<CxCDesembolsoFacturaDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                response.Result = cn.Query<CxCDesembolsoFacturaDto>(
+                    @"SELECT 
+                OPERACION       AS operacion,
+                COD_FACTURA     AS cod_factura,
+                MONTO           AS monto,
+                ADELANTO_MONTO  AS adelanto_monto,
+                LIBERADO        AS liberado,
+                COD_DIVISA      AS cod_divisa,
+                TIPO_CAMBIO     AS tipo_cambio,
+                OPERACION_ORIGEN AS operacion_origen
+              FROM CXC_CUENTAS_FACTURAS
+              WHERE OPERACION = @operacion
+              AND @idGiro IN (ID_GIRO, ID_GIRO_PENDIENTE)",
+                    new { operacion, idGiro }
                 ).ToList();
             }
             catch (Exception ex)
