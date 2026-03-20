@@ -1,8 +1,10 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Security;
+using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
 {
@@ -46,39 +48,56 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        /// <summary>
+        /// Inserta un registro en bitácora usando valores validados y normalizados.
+        /// </summary>
         public ErrorDto Bitacora(BitacoraInsertarDto req)
         {
             ErrorDto resp = new ErrorDto();
+
             try
             {
+                var empresaIdSeguro = NormalizarCodEmpresa((int)req.EmpresaId);
+                var usuarioSeguro = NormalizarTextoCorto(req.Usuario, 50, "Usuario");
+                var moduloSeguro = NormalizarTextoCorto(req.Modulo.ToString(), 5, "Modulo");
+                var movimientoSeguro = NormalizarTextoCorto(req.Movimiento, 100, "Movimiento").ToUpperInvariant();
+                var detalleSeguro = NormalizarDetalleMovimiento(req.DetalleMovimiento, 500);
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     connection.Open();
 
-                    var strSQL = @"INSERT INTO US_Bitacora (Cod_Empresa, Usuario, Fecha_Hora, Modulo, Movimiento, Detalle, APP_NOMBRE)
-                                 VALUES (@Cod_Empresa, @Usuario, @Fecha_Hora, @Modulo, @Movimiento, @Detalle, @APP_NOMBRE)";
+                    var strSQL = @"INSERT INTO US_Bitacora
+                           (Cod_Empresa, Usuario, Fecha_Hora, Modulo, Movimiento, Detalle, APP_NOMBRE)
+                           VALUES
+                           (@Cod_Empresa, @Usuario, @Fecha_Hora, @Modulo, @Movimiento, @Detalle, @APP_NOMBRE)";
 
                     var parameters = new
                     {
-                        Cod_Empresa = req.EmpresaId,
-                        Usuario = req.Usuario,
+                        Cod_Empresa = empresaIdSeguro,
+                        Usuario = usuarioSeguro,
                         Fecha_Hora = DateTime.Now,
-                        Modulo = req.Modulo,
-                        Movimiento = req.Movimiento.ToUpper(),
-                        Detalle = req.DetalleMovimiento.Substring(0, Math.Min(500, req.DetalleMovimiento.Length)),
+                        Modulo = moduloSeguro,
+                        Movimiento = movimientoSeguro,
+                        Detalle = detalleSeguro,
                         APP_NOMBRE = "ProGrX_WEB"
                     };
 
-                    resp.Code = connection.Query<int>(strSQL, parameters).FirstOrDefault();
+                    resp.Code = connection.Execute(strSQL, parameters);
                     resp.Description = "Ok";
                 }
+            }
+            catch (SecurityException ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
@@ -140,6 +159,71 @@ namespace Galileo.DataBaseTier
                 resp = -1;
             }
             return resp;
+        }
+
+        private static readonly Regex SafeTextRegex = new(
+    @"^[\p{L}\p{N}\s_\-\.@:/#(),]+$",
+    RegexOptions.Compiled,
+    TimeSpan.FromMilliseconds(250));
+
+        /// <summary>
+        /// Valida y normaliza el código de empresa antes de usarlo en operaciones de bitácora.
+        /// </summary>
+        private static int NormalizarCodEmpresa(int empresaId)
+        {
+            if (empresaId <= 0 || empresaId > 999999)
+            {
+                throw new SecurityException("El código de empresa no es válido.");
+            }
+
+            return empresaId;
+        }
+
+        /// <summary>
+        /// Valida y normaliza textos cortos de entrada para bitácora.
+        /// </summary>
+        private static string NormalizarTextoCorto(string? valor, int longitudMaxima, string nombreCampo)
+        {
+            var texto = (valor ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                throw new SecurityException($"El campo {nombreCampo} es requerido.");
+            }
+
+            if (texto.Length > longitudMaxima)
+            {
+                texto = texto.Substring(0, longitudMaxima);
+            }
+
+            if (!SafeTextRegex.IsMatch(texto))
+            {
+                throw new SecurityException($"El campo {nombreCampo} contiene caracteres no permitidos.");
+            }
+
+            return texto;
+        }
+
+        /// <summary>
+        /// Normaliza texto libre para detalle de bitácora, limita longitud y elimina caracteres de control.
+        /// </summary>
+        private static string NormalizarDetalleMovimiento(string? detalleMovimiento, int longitudMaxima)
+        {
+            var texto = (detalleMovimiento ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                return string.Empty;
+            }
+
+            texto = texto.Replace("\r", " ").Replace("\n", " ").Trim();
+
+            if (texto.Length > longitudMaxima)
+            {
+                texto = texto.Substring(0, longitudMaxima);
+            }
+
+            return texto;
         }
 
     }
