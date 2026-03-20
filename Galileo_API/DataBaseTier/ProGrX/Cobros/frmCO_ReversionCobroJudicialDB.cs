@@ -218,40 +218,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="sysPlanPagos"></param>
         /// <returns></returns>
         private static CrdReversionCobroJudicialConsultaDbModel? ObtenerDatosOperacion(
-         IDbConnection connection,
-         int operacion,
-         int sysPlanPagos)
+       IDbConnection connection,
+       int operacion,
+       int sysPlanPagos)
         {
-            var usaPlanPagos = sysPlanPagos == 1;
-
-            var interesesTotalSql = usaPlanPagos
-                ? "ISNULL(SUM(V.intCor + V.intMor), 0)"
-                : "ISNULL(SUM(V.intc + V.intm), 0)";
-
-            var moraIntCSql = usaPlanPagos
-                ? "ISNULL(SUM(V.intCor), 0)"
-                : "ISNULL(SUM(V.intc), 0)";
-
-            var moraIntMSql = usaPlanPagos
-                ? "ISNULL(SUM(V.intMor), 0)"
-                : "ISNULL(SUM(V.intm), 0)";
-
-            var moraAmortizaSql = usaPlanPagos
-                ? "ISNULL(SUM(V.Principal), 0)"
-                : "ISNULL(SUM(V.amortiza), 0)";
-
-            var cargosSql = usaPlanPagos
-                ? "ISNULL(SUM(V.Cargos), 0)"
-                : "ISNULL(SUM(V.Cargo), 0)";
-
-            var polizaSql = usaPlanPagos
-                ? "ISNULL(SUM(V.Poliza), 0)"
-                : "CAST(0 AS DECIMAL(18,2))";
-
-            var tablaDetalleSql = usaPlanPagos
-                ? "crd_operacion_Transac"
-                : "morosidad";
-
             var query = $@"
         SELECT
             R.cedula,
@@ -261,20 +231,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             R.Interesv AS Tasa,
             R.plazo,
             R.Int AS TasaOriginal,
-            {interesesTotalSql} AS Intereses,
+            {ObtenerInteresesTotalSql(sysPlanPagos)} AS Intereses,
             R.codigo,
             C.descripcion,
             R.Opex,
-            {moraIntCSql} AS MoraIntC,
-            {moraIntMSql} AS MoraIntM,
-            {moraAmortizaSql} AS MoraAmortiza,
-            {cargosSql} AS Cargos,
-            {polizaSql} AS Poliza,
+            {ObtenerMoraIntCSql(sysPlanPagos)} AS MoraIntC,
+            {ObtenerMoraIntMSql(sysPlanPagos)} AS MoraIntM,
+            {ObtenerMoraAmortizaSql(sysPlanPagos)} AS MoraAmortiza,
+            {ObtenerCargosSql(sysPlanPagos)} AS Cargos,
+            {ObtenerPolizaSql(sysPlanPagos)} AS Poliza,
             R.COD_DIVISA AS Cod_Divisa
         FROM Socios S
         INNER JOIN reg_creditos R ON S.cedula = R.cedula
         INNER JOIN Catalogo C ON R.codigo = C.codigo
-        LEFT JOIN {tablaDetalleSql} V
+        LEFT JOIN {ObtenerTablaDetalleSql(sysPlanPagos)} V
             ON R.id_solicitud = V.id_solicitud
            AND V.estado = 'A'
         WHERE R.id_solicitud = @Operacion
@@ -294,6 +264,69 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return connection.QueryFirstOrDefault<CrdReversionCobroJudicialConsultaDbModel>(
                 query,
                 new { Operacion = operacion });
+        }
+
+        private static string ObtenerTablaDetalleSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "crd_operacion_Transac",
+                _ => "morosidad"
+            };
+        }
+
+        private static string ObtenerInteresesTotalSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.intCor + V.intMor), 0)",
+                _ => "ISNULL(SUM(V.intc + V.intm), 0)"
+            };
+        }
+
+        private static string ObtenerMoraIntCSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.intCor), 0)",
+                _ => "ISNULL(SUM(V.intc), 0)"
+            };
+        }
+
+        private static string ObtenerMoraIntMSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.intMor), 0)",
+                _ => "ISNULL(SUM(V.intm), 0)"
+            };
+        }
+
+        private static string ObtenerMoraAmortizaSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.Principal), 0)",
+                _ => "ISNULL(SUM(V.amortiza), 0)"
+            };
+        }
+
+        private static string ObtenerCargosSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.Cargos), 0)",
+                _ => "ISNULL(SUM(V.Cargo), 0)"
+            };
+        }
+
+        private static string ObtenerPolizaSql(int sysPlanPagos)
+        {
+            return sysPlanPagos switch
+            {
+                1 => "ISNULL(SUM(V.Poliza), 0)",
+                _ => "CAST(0 AS DECIMAL(18, 2))"
+            };
         }
 
         /// <summary>
