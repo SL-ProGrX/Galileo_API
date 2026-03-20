@@ -72,7 +72,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpDelete("CntXAsientos_Eliminar")]
-        public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, byte[] ts, string usuario)
+        public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string ts, string usuario)
         {
             return _bl.CntXAsientos_Eliminar(codEmpresa, codConta, tipoAsiento, numAsiento, ts, usuario);
         }

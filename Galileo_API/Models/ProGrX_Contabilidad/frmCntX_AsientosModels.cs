@@ -45,7 +45,7 @@
         public decimal tc { get; set; } = 0;
         public decimal tc_ajuste { get; set; } = 0;
 
-        public string? cod_centro_costo { get; set; }
+        public string cod_centro_costo { get; set; } = string.Empty;
         public string? centrocosto { get; set; }
     }
 

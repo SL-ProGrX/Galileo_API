@@ -59,9 +59,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXAsientos_Guardar(codEmpresa, usuario, edita, request);
         }
 
-        public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, byte[] ts, string usuario)
+        public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string ts, string usuario)
         {
-            return _db.CntXAsientos_Eliminar(codEmpresa, codConta, tipoAsiento, numAsiento, ts, usuario);
+            byte[] tsBytes = Array.Empty<byte>();
+
+            if (!string.IsNullOrWhiteSpace(ts))
+            {
+                tsBytes = Convert.FromBase64String(ts);
+            }
+            return _db.CntXAsientos_Eliminar(codEmpresa, codConta, tipoAsiento, numAsiento, tsBytes, usuario);
         }
 
         public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
