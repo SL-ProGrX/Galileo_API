@@ -164,16 +164,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Mov
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -194,16 +191,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Mov
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -225,16 +219,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Mov
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -255,16 +246,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Mov
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -286,18 +274,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Usuario
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
 
+        /// <summary>
+        /// Elimina un rol de acceso usando el SP spCntX_AC_Rol_Delete.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros para eliminar el rol.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         /// <summary>
         /// Elimina un rol de acceso usando el SP spCntX_AC_Rol_Delete.
         /// </summary>
@@ -314,16 +305,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Usuario
             };
 
-            try
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(true);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<bool>(ex.Message);
-            }
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result;
         }
     }
 }
