@@ -87,8 +87,8 @@
         public required int Codigo { get; set; }
         public string Rol { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public short Control { get; set; }
-        public short Activo { get; set; }
+        public short? Control { get; set; }
+        public short? Activo { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
