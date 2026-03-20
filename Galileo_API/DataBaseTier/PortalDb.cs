@@ -66,7 +66,7 @@ namespace Galileo.DataBaseTier
                 throw new SecurityException("No fue posible resolver una empresa válida.");
             }
 
-            if (codEmpresa > 0)
+            if (codEmpresa < 0)
             {
                 throw new SecurityException("No fue posible resolver una empresa válida.");
             }
