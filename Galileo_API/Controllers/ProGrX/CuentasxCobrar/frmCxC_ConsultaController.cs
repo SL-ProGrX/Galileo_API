@@ -26,9 +26,9 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpGet("ConsultarCuentas")]
-        public ErrorDto<List<CxCCuentaDto>> ConsultarCuentas(int codEmpresa,string cedula,int tipo)
+        public ErrorDto<List<CxCCuentaDto>> ConsultarCuentas(int codEmpresa,string cedula,string estado)
         {
-            return _bl.ConsultarCuentas(codEmpresa, cedula, tipo);
+            return _bl.ConsultarCuentas(codEmpresa, cedula, estado);
         }
 
         [Authorize]
@@ -53,7 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
-        [HttpGet("ConsultarFacturas")]
+        [HttpPost("ConsultarFacturas")]
         public ErrorDto<List<CxCFacturaDto>> ConsultarFacturas(int codEmpresa,CxCFacturaFiltroDto filtro)
         {
             return _bl.ConsultarFacturas(codEmpresa, filtro);
@@ -85,6 +85,13 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         public ErrorDto<bool> EliminarMensaje(int codEmpresa,CxCMensajeDeleteDto dto)
         {
             return _bl.EliminarMensaje(codEmpresa, dto);
+        }
+
+        [Authorize]
+        [HttpGet("ConsultarFacturasPorGiro")]
+        public ErrorDto<List<CxCDesembolsoFacturaDto>> ConsultarFacturasPorGiro(int codEmpresa,int operacion,int idGiro)
+        {
+            return _bl.ConsultarFacturasPorGiro(codEmpresa, operacion, idGiro);
         }
     }
 
