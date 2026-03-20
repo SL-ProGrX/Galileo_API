@@ -66,17 +66,19 @@ namespace Galileo.DataBaseTier
                 throw new SecurityException("No fue posible resolver una empresa válida.");
             }
 
-            if (string.IsNullOrWhiteSpace(cliente!.PGX_CORE_SERVER) ||
-                string.IsNullOrWhiteSpace(cliente.PGX_CORE_DB) ||
-                string.IsNullOrWhiteSpace(cliente.PGX_CORE_USER) ||
-                string.IsNullOrWhiteSpace(cliente.PGX_CORE_KEY))
+            var clienteSeguro = cliente!;
+
+            if (string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_SERVER) ||
+                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_DB) ||
+                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_USER) ||
+                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_KEY))
             {
                 throw new SecurityException("La configuración de conexión de la empresa está incompleta.");
             }
 
-            if (!SafeSqlNameRegex.IsMatch(cliente.PGX_CORE_SERVER) ||
-                !SafeSqlNameRegex.IsMatch(cliente.PGX_CORE_DB)
-                // || !SafeSqlNameRegex.IsMatch(cliente.PGX_CORE_USER) revisar esta validacion
+            if (!SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_SERVER) ||
+                !SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_DB)
+                // || !SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_USER) revisar esta validacion
                 )
             {
                 throw new SecurityException("La configuración de conexión contiene caracteres no permitidos.");
