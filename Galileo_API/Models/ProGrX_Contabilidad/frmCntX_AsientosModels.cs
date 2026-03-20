@@ -3,11 +3,11 @@
     public class CntXAsientoData
     {
         public string tipo_asiento { get; set; } = "";
-        public int cod_contabilidad { get; set; }
+        public int cod_contabilidad { get; set; } = 0;
         public string num_asiento { get; set; } = "";
         public int anio { get; set; } = 0;
         public int mes { get; set; } = 0;
-        public DateTime fecha_asiento { get; set; }
+        public DateTime? fecha_asiento { get; set; } 
         public DateTime? fecha_aplicado { get; set; }
         public string descripcion { get; set; } = "";
         public string notas { get; set; } = "";
@@ -58,17 +58,17 @@
 
     public class CntXAsientoCopiarRequest
     {
-        public int cod_contabilidad { get; set; }
+        public int cod_contabilidad { get; set; } = 0;
         public string tipo_asiento { get; set; } = string.Empty;
         public string num_asiento { get; set; } = string.Empty;
         public string nuevo_num_asiento { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public string notas { get; set; } = string.Empty;
-        public bool copiar_detalles { get; set; }
+        public bool copiar_detalles { get; set; } = false;
         public string documento { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
         public string referencia { get; set; } = string.Empty;
-        public bool as_reversion { get; set; }
+        public bool as_reversion { get; set; } = false;
     }
 }

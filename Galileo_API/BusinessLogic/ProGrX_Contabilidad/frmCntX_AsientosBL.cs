@@ -73,5 +73,20 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         {
             return _db.CntXAsientos_Copiar(codEmpresa, usuario, request);
         }
+
+        public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
+        {
+            return _db.CntXAsientos_Reversar(codEmpresa, request);
+        }
+
+        public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
+        {
+            return _db.CntXAsientos_Mayorizar(codEmpresa, request);
+        }
+
+        public ErrorDto CntXAsientos_FxNotaCuenta_Obtener(int codEmpresa, int codConta, string vCuenta, int anio, int mes)
+        {
+            return _db.CntXAsientos_FxNotaCuenta_Obtener(codEmpresa, codConta, vCuenta, anio, mes);
+        }
     }
 }

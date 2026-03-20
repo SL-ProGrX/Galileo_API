@@ -88,5 +88,23 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         {
             return _bl.CntXAsientos_Copiar(codEmpresa, usuario, request);
         }
+
+        [HttpPost("CntXAsientos_Reversar")]
+        public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
+        {
+            return _bl.CntXAsientos_Reversar(codEmpresa, request);
+        }
+
+        [HttpPost("CntXAsientos_Mayorizar")]
+        public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
+        {
+            return _bl.CntXAsientos_Mayorizar(codEmpresa, request);
+        }
+
+        [HttpGet("CntXAsientos_FxNotaCuenta_Obtener")]
+        public ErrorDto CntXAsientos_FxNotaCuenta_Obtener(int codEmpresa, int codConta, string vCuenta, int anio, int mes)
+        {
+            return _bl.CntXAsientos_FxNotaCuenta_Obtener(codEmpresa, codConta, vCuenta, anio, mes);
+        }
     }
 }
