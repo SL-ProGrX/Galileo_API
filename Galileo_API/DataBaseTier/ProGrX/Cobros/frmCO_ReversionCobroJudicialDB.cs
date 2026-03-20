@@ -222,38 +222,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
        int operacion,
        int sysPlanPagos)
         {
-            const string tablaPlanPagos = "crd_operacion_Transac";
-            const string tablaMorosidad = "morosidad";
-
-            const string interesesPlanPagos = "ISNULL(SUM(V.intCor + V.intMor), 0)";
-            const string interesesMorosidad = "ISNULL(SUM(V.intc + V.intm), 0)";
-
-            const string moraIntCPlanPagos = "ISNULL(SUM(V.intCor), 0)";
-            const string moraIntCMorosidad = "ISNULL(SUM(V.intc), 0)";
-
-            const string moraIntMPlanPagos = "ISNULL(SUM(V.intMor), 0)";
-            const string moraIntMMorosidad = "ISNULL(SUM(V.intm), 0)";
-
-            const string moraAmortizaPlanPagos = "ISNULL(SUM(V.Principal), 0)";
-            const string moraAmortizaMorosidad = "ISNULL(SUM(V.amortiza), 0)";
-
-            const string cargosPlanPagos = "ISNULL(SUM(V.Cargos), 0)";
-            const string cargosMorosidad = "ISNULL(SUM(V.Cargo), 0)";
-
-            const string polizaPlanPagos = "ISNULL(SUM(V.Poliza), 0)";
-            const string polizaMorosidad = "CAST(0 AS DECIMAL(18, 2))";
-
-            var usaPlanPagos = sysPlanPagos == 1;
-
-            var tablaDetalle = usaPlanPagos ? tablaPlanPagos : tablaMorosidad;
-            var interesesTotal = usaPlanPagos ? interesesPlanPagos : interesesMorosidad;
-            var moraIntC = usaPlanPagos ? moraIntCPlanPagos : moraIntCMorosidad;
-            var moraIntM = usaPlanPagos ? moraIntMPlanPagos : moraIntMMorosidad;
-            var moraAmortiza = usaPlanPagos ? moraAmortizaPlanPagos : moraAmortizaMorosidad;
-            var cargos = usaPlanPagos ? cargosPlanPagos : cargosMorosidad;
-            var poliza = usaPlanPagos ? polizaPlanPagos : polizaMorosidad;
-
-            var query = $@"
+            const string queryPlanPagos = @"
         SELECT
             R.cedula,
             S.nombre,
@@ -262,20 +231,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             R.Interesv AS Tasa,
             R.plazo,
             R.Int AS TasaOriginal,
-            {interesesTotal} AS Intereses,
+            ISNULL(SUM(V.intCor + V.intMor), 0) AS Intereses,
             R.codigo,
             C.descripcion,
             R.Opex,
-            {moraIntC} AS MoraIntC,
-            {moraIntM} AS MoraIntM,
-            {moraAmortiza} AS MoraAmortiza,
-            {cargos} AS Cargos,
-            {poliza} AS Poliza,
+            ISNULL(SUM(V.intCor), 0) AS MoraIntC,
+            ISNULL(SUM(V.intMor), 0) AS MoraIntM,
+            ISNULL(SUM(V.Principal), 0) AS MoraAmortiza,
+            ISNULL(SUM(V.Cargos), 0) AS Cargos,
+            ISNULL(SUM(V.Poliza), 0) AS Poliza,
             R.COD_DIVISA AS Cod_Divisa
         FROM Socios S
         INNER JOIN reg_creditos R ON S.cedula = R.cedula
         INNER JOIN Catalogo C ON R.codigo = C.codigo
-        LEFT JOIN " + tablaDetalle + @" V
+        LEFT JOIN crd_operacion_Transac V
             ON R.id_solicitud = V.id_solicitud
            AND V.estado = 'A'
         WHERE R.id_solicitud = @Operacion
@@ -291,6 +260,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             C.descripcion,
             R.Opex,
             R.COD_DIVISA;";
+
+            const string queryMorosidad = @"
+        SELECT
+            R.cedula,
+            S.nombre,
+            R.saldo,
+            R.proceso,
+            R.Interesv AS Tasa,
+            R.plazo,
+            R.Int AS TasaOriginal,
+            ISNULL(SUM(V.intc + V.intm), 0) AS Intereses,
+            R.codigo,
+            C.descripcion,
+            R.Opex,
+            ISNULL(SUM(V.intc), 0) AS MoraIntC,
+            ISNULL(SUM(V.intm), 0) AS MoraIntM,
+            ISNULL(SUM(V.amortiza), 0) AS MoraAmortiza,
+            ISNULL(SUM(V.Cargo), 0) AS Cargos,
+            CAST(0 AS DECIMAL(18, 2)) AS Poliza,
+            R.COD_DIVISA AS Cod_Divisa
+        FROM Socios S
+        INNER JOIN reg_creditos R ON S.cedula = R.cedula
+        INNER JOIN Catalogo C ON R.codigo = C.codigo
+        LEFT JOIN morosidad V
+            ON R.id_solicitud = V.id_solicitud
+           AND V.estado = 'A'
+        WHERE R.id_solicitud = @Operacion
+        GROUP BY
+            R.cedula,
+            S.nombre,
+            R.saldo,
+            R.proceso,
+            R.Interesv,
+            R.plazo,
+            R.Int,
+            R.codigo,
+            C.descripcion,
+            R.Opex,
+            R.COD_DIVISA;";
+
+            var query = sysPlanPagos == 1 ? queryPlanPagos : queryMorosidad;
 
             return connection.QueryFirstOrDefault<CrdReversionCobroJudicialConsultaDbModel>(
                 query,
