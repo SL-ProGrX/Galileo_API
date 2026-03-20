@@ -4,8 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!--<UserSecretsId>74f74bfc-15ce-496b-8e2a-8b80043c6e9e</UserSecretsId>-->
-    <UserSecretsId>aseccss</UserSecretsId>
+    <UserSecretsId>74f74bfc-15ce-496b-8e2a-8b80043c6e9e</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
