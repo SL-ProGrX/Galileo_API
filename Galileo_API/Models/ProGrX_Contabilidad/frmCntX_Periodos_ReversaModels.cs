@@ -18,7 +18,7 @@
 
     public class ReversaPeriodoRequest
     {
-        public int codigo_contabilidad { get; set; } = 0;
+        public int codigo_contabilidad { get; set; } = 0; 
         public DateTime cierre { get; set; } = DateTime.Now;
         public string notas { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
