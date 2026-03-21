@@ -755,7 +755,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 balanceado = request.balanceado ? "S" : "N",
                 usuario = usuario.Trim().ToUpper(),
                 notas = (request.asiento.notas ?? string.Empty).Trim(),
-                referencia = Tuncar(request.asiento.referencia, 200),
+                referencia = FxTruncar(request.asiento.referencia, 200),
                 codConta = request.asiento.cod_contabilidad,
                 tipoAsiento = request.asiento.tipo_asiento.ToUpper(),
                 numAsiento = request.asiento.num_asiento,
