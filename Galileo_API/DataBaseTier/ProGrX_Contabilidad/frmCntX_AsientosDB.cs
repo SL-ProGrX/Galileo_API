@@ -290,14 +290,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     return validacion;
                 }
 
-                var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
+                var periodoAbiert = _mCalculos.FxCntX_PeriodoVerifica(
                     codEmpresa,
                     request.asiento.cod_contabilidad,
                     request.asiento.anio,
                     request.asiento.mes
                 );
 
-                if (!periodoAbierto)
+                if (!periodoAbiert)
                 {
                     return new ErrorDto
                     {
@@ -394,15 +394,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                var concurrencia = _mCalculos.FxCntX_AsientoConcurrencia(
+                var concurrenc = _mCalculos.FxCntX_AsientoConcurrencia(
                     codEmpresa,
                     codConta,
                     numAsiento,
                     tipoAsiento
                 );
 
-                bool concurrenciaResult = TsSonIguales(concurrencia, ts);
-                if (!concurrenciaResult)
+                bool concurrencResult = TsSonIguales(concurrenc, ts);
+                if (!concurrencResult)
                 {
                     return new ErrorDto
                     {
@@ -567,13 +567,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
         {
-            var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
+            var periodoAbi = _mCalculos.FxCntX_PeriodoVerifica(
                     codEmpresa,
                     request.cod_contabilidad,
                     request.anio,
                     request.mes
                 );
-            if (!periodoAbierto)
+            if (!periodoAbi)
             {
                 return new ErrorDto
                 {
@@ -582,15 +582,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 };
             }
 
-            var concurrencia = _mCalculos.FxCntX_AsientoConcurrencia(
+            var concurren = _mCalculos.FxCntX_AsientoConcurrencia(
                     codEmpresa,
                     request.cod_contabilidad,
                     request.num_asiento,
                     request.tipo_asiento
                 );
 
-            bool concurrenciaResult = TsSonIguales(concurrencia, request.ts);
-            if (!concurrenciaResult)
+            bool concurrenResult = TsSonIguales(concurren, request.ts);
+            if (!concurrenResult)
             {
                 return new ErrorDto
                 {
@@ -616,13 +616,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
         {
-            var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
+            var periodoAb = _mCalculos.FxCntX_PeriodoVerifica(
                     codEmpresa,
                     request.cod_contabilidad,
                     request.anio,
                     request.mes
                 );
-            if (!periodoAbierto)
+            if (!periodoAb)
             {
                 return new ErrorDto
                 {
@@ -631,15 +631,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 };
             }
 
-            var concurrencia = _mCalculos.FxCntX_AsientoConcurrencia(
+            var concur = _mCalculos.FxCntX_AsientoConcurrencia(
                     codEmpresa,
                     request.cod_contabilidad,
                     request.num_asiento,
                     request.tipo_asiento
                 );
 
-            bool concurrenciaResult = TsSonIguales(concurrencia, request.ts);
-            if (!concurrenciaResult)
+            bool concurResult = TsSonIguales(concur, request.ts);
+            if (!concurResult)
             {
                 return new ErrorDto
                 {
