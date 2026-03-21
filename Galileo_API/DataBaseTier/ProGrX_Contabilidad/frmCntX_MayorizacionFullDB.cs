@@ -80,7 +80,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     "FECHAS" => "spCntX_AsientosAplicacionLote_Fechas",
                     "TIPO" => "spCntX_AsientosAplicacionLote_TipoAsiento",
                     "TIPO_FECHAS" => "spCntX_AsientosAplicacionLote_TipoAsientoFechas",
-                    _ => throw new Exception("Tipo filtro inválido")
+                    _ => throw new ArgumentException("Tipo filtro inválido", nameof(request.tipo_filtro))
                 };
 
                 var param = new
