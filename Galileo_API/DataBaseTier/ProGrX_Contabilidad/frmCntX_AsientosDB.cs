@@ -535,9 +535,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     usuario,
                     notas = request.notas,
                     copiarDetalles = request.copiar_detalles ? 1 : 0,
-                    documento = Truncar(request.documento, 35),
-                    detalle = Truncar(request.detalle, 100),
-                    referencia = Truncar(request.referencia, 200),
+                    documento = FxTruncar(request.documento, 35),
+                    detalle = FxTruncar(request.detalle, 100),
+                    referencia = FxTruncar(request.referencia, 200),
                     asReversion = request.as_reversion ? 1 : 0
                 }
             );
@@ -792,7 +792,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 usuario = usuario.Trim().ToUpper(),
                 modulo = vModulo,
                 notas = (request.asiento.notas ?? string.Empty).Trim(),
-                referencia = Truncar(request.asiento.referencia, 200)
+                referencia = FxTruncar(request.asiento.referencia, 200)
             });
         }
 
@@ -1158,7 +1158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="valor"></param>
         /// <param name="maxLength"></param>
         /// <returns></returns>
-        private static string Truncar(string? valor, int maxLength)
+        private static string FxTruncar(string? valor, int maxLength)
         {
             if (string.IsNullOrEmpty(valor))
                 return string.Empty;
