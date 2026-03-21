@@ -29,6 +29,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mCalculos = mCalculos;
         }
 
+        /// <summary>
+        /// Obtiene un asiento contable 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<CntXAsientoData?> CntXAsientos_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
         {
             const string sql = @"select * from Cntx_Asientos 
@@ -45,6 +53,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene el detalle de un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXAsientoDetalleData>> CntXAsientos_Detalle_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
         {
             const string query = @"select A.cod_cuenta,B.descripcion,A.documento,A.detalle,A.monto_debito,A.monto_credito,A.num_linea
@@ -72,6 +88,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Navegacion por scroll en asientos contables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="scrollCode"></param>
+        /// <returns></returns>
         public ErrorDto<CntXAsientoData?> CntXAsientos_Scroll_Obtener(int codEmpresa, CntXAsientoData request, int scrollCode)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -115,6 +138,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtiene la lista de asientos contables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="periodoActual"></param>
+        /// <param name="anio"></param>
+        /// <param name="mes"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXAsientos_Lista_Obtener(int codEmpresa, int codConta, string tipoAsiento, bool periodoActual, int anio, int mes)
         {
             string query = @"select Num_asiento as item, descripcion 
@@ -135,6 +168,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de tipos de asientos contables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXTiposAsientos_Lista_Obtener(int codEmpresa, int codConta)
         {
             const string query = @"select rtrim(tipo_asiento) as item, rtrim(descripcion) as descripcion 
@@ -150,6 +189,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene la descripcion de un tipo de asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<string?> CntXTiposAsientos_Descripcion_Obtener(int codEmpresa, int codConta, string tipoAsiento)
         {
             const string query = @"select top 1 rtrim(descripcion) 
@@ -160,6 +206,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, query, null, new { codConta, tipoAsiento });
         }
 
+        /// <summary>
+        /// Obtiene la lista de centros de costo por unidad para asientos contables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCentroCostosporUnidad_Lista_Obtener(int codEmpresa, int codConta, string codUnidad)
         {
             const string query = @"select cod_centro_costo as item, descripcion 
@@ -180,6 +233,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Obtiene el consecutivo para un nuevo asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<string?> CntXAsientos_Consecutivo_Obtener(int codEmpresa, int codConta, string tipoAsiento)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -212,6 +272,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Guarda un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="edita"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Guardar(int codEmpresa, string usuario, bool edita, CntXAsientoGuardarRequest request)
         {
             try
@@ -309,6 +377,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Elimina un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <param name="ts"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Eliminar(
             int codEmpresa, int codConta, string tipoAsiento, string numAsiento, byte[] ts, string usuario)
         {
@@ -378,6 +456,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Autoriza un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
         {
             const string sql = @"update Cntx_Asientos
@@ -409,6 +496,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return resp;
         }
 
+        /// <summary>
+        /// Copia un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Copiar(int codEmpresa, string usuario, CntXAsientoCopiarRequest request)
         {
             const string sql = @"exec spCntX_Asiento_Copia
@@ -465,6 +559,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
+        /// <summary>
+        /// Reversa un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
         {
             var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
@@ -508,6 +608,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     tipoAsiento = request.tipo_asiento });
         }
 
+        /// <summary>
+        /// Mayoriza un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
         {
             var periodoAbierto = _mCalculos.FxCntX_PeriodoVerifica(
@@ -553,6 +659,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 });
         }
 
+        /// <summary>
+        /// Obtiene la nota de cuenta para un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="vCuenta"></param>
+        /// <param name="anio"></param>
+        /// <param name="mes"></param>
+        /// <returns></returns>
         public ErrorDto CntXAsientos_FxNotaCuenta_Obtener(int codEmpresa, int codConta, string vCuenta, int anio, int mes)
         {
             const string query = @"
@@ -608,6 +723,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
+        /// <summary>
+        /// Actualiza un asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto ActualizarAsiento(int codEmpresa,  string usuario, CntXAsientoGuardarRequest request)
         {
             const string sql = @"update Cntx_Asientos
@@ -633,7 +755,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 balanceado = request.balanceado ? "S" : "N",
                 usuario = usuario.Trim().ToUpper(),
                 notas = (request.asiento.notas ?? string.Empty).Trim(),
-                referencia = LimitarTexto(request.asiento.referencia, 200),
+                referencia = Tuncar(request.asiento.referencia, 200),
                 codConta = request.asiento.cod_contabilidad,
                 tipoAsiento = request.asiento.tipo_asiento.ToUpper(),
                 numAsiento = request.asiento.num_asiento,
@@ -641,6 +763,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
+        /// <summary>
+        /// Inserta un nuevo asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto InsertarAsiento(int codEmpresa,  string usuario, CntXAsientoGuardarRequest request)
         {
             const string sql = @"insert into Cntx_Asientos
@@ -663,10 +792,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 usuario = usuario.Trim().ToUpper(),
                 modulo = vModulo,
                 notas = (request.asiento.notas ?? string.Empty).Trim(),
-                referencia = LimitarTexto(request.asiento.referencia, 200)
+                referencia = Truncar(request.asiento.referencia, 200)
             });
         }
 
+        /// <summary>
+        /// Elimina el detalle de un asiento contable para luego insertar el nuevo detalle actualizado
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="tipoAsiento"></param>
+        /// <param name="numAsiento"></param>
+        /// <returns></returns>
         private ErrorDto EliminarDetalle(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
         {
             const string sql = @"delete from Cntx_Asientos_detalle
@@ -677,6 +814,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new { codConta, tipoAsiento, numAsiento });
         }
 
+        /// <summary>
+        /// Inserta el detalle de un asiento contable, eliminando previamente el detalle existente en caso de edicion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto InsertarDetalle(int codEmpresa, CntXAsientoGuardarRequest request)
         {
             const string sql = @"insert into Cntx_Asientos_detalle
@@ -710,6 +853,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, lineas);
         }
 
+        /// <summary>
+        /// Verifica que la cuenta contable exista y acepte movimientos para poder ser utilizada en el detalle del asiento contable
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="strCuenta"></param>
+        /// <returns></returns>
         public bool FxVerificaCuenta(int codEmpresa, int codContabilidad, string strCuenta)
         {
             const string query = @"select isnull(count(*), 0)
@@ -728,6 +878,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return existe > 0;
         }
 
+        /// <summary>
+        /// Verifica que el asiento contable cumpla con las reglas de negocio para su creacion o modificacion, validando tanto la informacion del asiento como de sus lineas de detalle
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="edita"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto FxVerificarAsiento(int codEmpresa, bool edita, CntXAsientoGuardarRequest request)
         {
             try
@@ -788,6 +945,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que el tipo de asiento 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="errores"></param>
         private void VerificarTipoAsiento(int codEmpresa, CntXAsientoGuardarRequest request, List<string> errores)
         {
             var existeTipoAsiento = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa,
@@ -806,6 +969,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Obtiene la divisa local 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         private string ObtenerDivisaLocal(int codEmpresa, int codConta)
         {
             var divisaLocal = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa,
@@ -817,6 +986,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return (divisaLocal ?? string.Empty).Trim().ToUpperInvariant();
         }
 
+        /// <summary>
+        /// Verifica que no exista un asiento contable con el mismo número, tipo y contabilidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="errores"></param>
         private void VerificarExistenciaAsiento(int codEmpresa, CntXAsientoGuardarRequest request, List<string> errores)
         {
             var existeAsiento = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa,
@@ -836,6 +1011,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que las líneas de detalle del asiento
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="divisaLocal"></param>
+        /// <param name="errores"></param>
         private void VerificarDetalleAsiento(int codEmpresa, CntXAsientoGuardarRequest request, string divisaLocal, List<string> errores)
         {
             if (request.detalle == null || request.detalle.Count == 0)
@@ -863,6 +1045,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que la cuenta contable 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="linea"></param>
+        /// <param name="errores"></param>
         private void VerificarCuentaLinea(int codEmpresa, CntXAsientoGuardarRequest request, CntXAsientoDetalleData linea, List<string> errores)
         {
             var existeCuenta = FxVerificaCuenta(
@@ -876,6 +1065,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que la unidad de negocio sea valido
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="linea"></param>
+        /// <param name="errores"></param>
         private void VerificarUnidadLinea(int codEmpresa, CntXAsientoGuardarRequest request, CntXAsientoDetalleData linea, List<string> errores)
         {
             var unidadExiste = _mCalculos.FxCntX_UnidadVerifica(
@@ -889,6 +1085,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que el centro de costo sea valido
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="linea"></param>
+        /// <param name="errores"></param>
         private void VerificarCentroCostoLinea(int codEmpresa, CntXAsientoGuardarRequest request, CntXAsientoDetalleData linea, List<string> errores)
         {
             var ccExiste = _mCalculos.FxCntX_CentroCostoVerifica(
@@ -903,6 +1106,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica que la divisa sea valida
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="codDivisaLinea"></param>
+        /// <param name="errores"></param>
         private void VerificarDivisaLinea(int codEmpresa, CntXAsientoGuardarRequest request, string codDivisaLinea, List<string> errores)
         {
             var divisaExiste = _mCalculos.FxCntX_DivisaVerifica(
@@ -916,6 +1126,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Verifica si los timestamp son iguales
+        /// </summary>
+        /// <param name="tsActual"></param>
+        /// <param name="tsOriginal"></param>
+        /// <returns></returns>
         private static bool TsSonIguales(byte[]? tsActual, byte[]? tsOriginal)
         {
             if (tsActual == null && tsOriginal == null)
@@ -936,15 +1152,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return true;
         }
 
-        private static string LimitarTexto(string? valor, int max)
-        {
-            if (string.IsNullOrWhiteSpace(valor))
-                return string.Empty;
-
-            return valor.Length > max ? valor.Substring(0, max) : valor;
-        }
-
-        private static string Truncar(string valor, int maxLength)
+        /// <summary>
+        /// Trunca un string al maximo de caracteres permitido por la base de datos 
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="maxLength"></param>
+        /// <returns></returns>
+        private static string Truncar(string? valor, int maxLength)
         {
             if (string.IsNullOrEmpty(valor))
                 return string.Empty;
@@ -954,6 +1168,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 : valor;
         }
 
+        /// <summary>
+        /// Registra un movimiento en la bitacora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="movimiento"></param>
+        /// <param name="detalle"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
             _Bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
