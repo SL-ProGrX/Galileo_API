@@ -26,7 +26,7 @@
         public string? cedula_pagador { get; set; }
         public string? cod_contrato { get; set; }
         public string? contrato_desc { get; set; }
-        public string? oficina_desc { get; set; }
+        public string? oficinadesc { get; set; }
 
         public int? mora_dias { get; set; }
         public decimal? mora_monto { get; set; }
@@ -138,6 +138,18 @@
         public string? usuario { get; set; }
         public DateTime? vencimiento { get; set; }
         public string? mensaje_prefijo { get; set; }
+    }
+
+    public class CxCDesembolsoFacturaDto
+    {
+        public int operacion { get; set; }
+        public string? cod_factura { get; set; }
+        public decimal monto { get; set; }
+        public decimal adelanto_monto { get; set; }
+        public decimal liberado { get; set; }
+        public string? cod_divisa { get; set; }
+        public decimal tipo_cambio { get; set; }
+        public int operacion_origen { get; set; }
     }
 
 }
