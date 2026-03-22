@@ -240,4 +240,61 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public object? parametrosAdicionales { get; set; }
     }
 
+    public class CxCCuentasFacturaRegistraRequest
+    {
+        public long operacion { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public string autoriza_estado { get; set; } = string.Empty;
+        public string factura { get; set; } = string.Empty;
+        public string divisa { get; set; } = string.Empty;
+        public string factura_estado { get; set; } = string.Empty;
+        public decimal importe { get; set; }
+        public decimal tipo_cambio { get; set; }
+        public decimal monto { get; set; }
+        public bool adelanta { get; set; }
+        public string adelanto_tipo { get; set; } = string.Empty;
+        public decimal adelanto { get; set; }
+        public DateTime? fecha_emision { get; set; }
+        public DateTime? fecha_pago { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CxCCuentasFacturaMantenimientoResult
+    {
+        public decimal total { get; set; } = 0;
+        public int facturas { get; set; } = 0;
+        public decimal adelanto { get; set; } = 0;
+        public decimal pendiente { get; set; } = 0;
+    }
+
+    public class CxCCuentasFacturaEliminaRequest
+    {
+        public long operacion { get; set; } = 0;
+        public string estado { get; set; } = string.Empty;
+        public string autoriza_estado { get; set; } = string.Empty;
+        public string factura { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CxCCuentasFacturaVincularItem
+    {
+        public string factura { get; set; } = string.Empty;
+        public long operacion_origen { get; set; }
+        public string divisa { get; set; } = string.Empty;
+        public decimal importe { get; set; }
+        public decimal tipo_cambio { get; set; }
+        public decimal monto { get; set; }
+        public DateTime? fecha_emision { get; set; }
+        public DateTime? fecha_pago { get; set; }
+        public decimal adelanto { get; set; }
+    }
+
+    public class CxCCuentasFacturaVincularRequest
+    {
+        public long operacion { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public string autoriza_estado { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public List<CxCCuentasFacturaVincularItem> facturas { get; set; } = new();
+    }
 }

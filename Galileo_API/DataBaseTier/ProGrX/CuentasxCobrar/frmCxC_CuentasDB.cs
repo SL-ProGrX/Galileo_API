@@ -1542,6 +1542,433 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #endregion
 
-      
+        #region Facturas
+
+        /// <summary>
+        /// Registra una factura en la operación de CxC y recalcula sus totales.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos de la factura a registrar.</param>
+        /// <returns>Totales actualizados de la operación.</returns>
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Registra(
+            int codEmpresa,
+            CxCCuentasFacturaRegistraRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasFacturaMantenimientoResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasFacturaMantenimientoResult()
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = "La solicitud es requerida.";
+                return response;
+            }
+
+            var estado = (request.estado ?? string.Empty).Trim().ToUpperInvariant();
+            var autorizaEstado = (request.autoriza_estado ?? string.Empty).Trim().ToUpperInvariant();
+            var factura = (request.factura ?? string.Empty).Trim();
+            var divisa = (request.divisa ?? string.Empty).Trim();
+            var facturaEstado = (request.factura_estado ?? string.Empty).Trim().ToUpperInvariant();
+            var adelantoTipo = (request.adelanto_tipo ?? string.Empty).Trim().ToUpperInvariant();
+            var usuario = (request.usuario ?? string.Empty).Trim();
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = "La operación es requerida.";
+                return response;
+            }
+
+            if (estado is "A" or "D")
+            {
+                response.Code = -1;
+                response.Description = "La operación no está pendiente o recibida, no pueden realizarse los cambios.";
+                return response;
+            }
+
+            if (autorizaEstado != "P")
+            {
+                response.Code = -1;
+                response.Description = "La operación ya fue autorizada o denegada.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(factura) || request.importe <= 0)
+            {
+                response.Code = -1;
+                response.Description = "El número de factura o el importe no es válido.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(divisa) || string.IsNullOrWhiteSpace(facturaEstado) || string.IsNullOrWhiteSpace(usuario))
+            {
+                response.Code = -1;
+                response.Description = "Faltan datos requeridos para registrar la factura.";
+                return response;
+            }
+
+            if (request.tipo_cambio <= 0 || request.monto <= 0)
+            {
+                response.Code = -1;
+                response.Description = "El tipo de cambio o el monto no es válido.";
+                return response;
+            }
+
+            if (adelantoTipo is not ("P" or "M"))
+            {
+                response.Code = -1;
+                response.Description = "El tipo de adelanto no es válido.";
+                return response;
+            }
+
+            if (request.fecha_emision is null || request.fecha_pago is null)
+            {
+                response.Code = -1;
+                response.Description = "Las fechas de emisión y pago son requeridas.";
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sqlValida = @"
+            SELECT dbo.fxCxC_FacturaValida(@operacion, @factura) AS pass;";
+
+                var pass = conn.QueryFirstOrDefault<int>(sqlValida, new
+                {
+                    operacion = request.operacion,
+                    factura
+                });
+
+                if (pass == 0)
+                {
+                    response.Code = -1;
+                    response.Description = "Esta factura ya ha sido utilizada anteriormente con este cliente.";
+                    return response;
+                }
+
+                const string sqlRegistra = @"
+            exec spCxC_Operacion_Factura_Registra
+                @operacion,
+                @factura,
+                @divisa,
+                @factura_estado,
+                @importe,
+                @tipo_cambio,
+                @monto,
+                @adelanta,
+                @adelanto_tipo,
+                @adelanto,
+                @fecha_emision,
+                @fecha_pago,
+                @usuario,
+                'I',
+                1,
+                1,
+                0;";
+
+                var data = conn.QueryFirstOrDefault<CxCCuentasFacturaMantenimientoResult>(sqlRegistra, new
+                {
+                    operacion = request.operacion,
+                    factura,
+                    divisa,
+                    factura_estado = facturaEstado,
+                    importe = request.importe,
+                    tipo_cambio = request.tipo_cambio,
+                    monto = request.monto,
+                    adelanta = request.adelanta ? 1 : 0,
+                    adelanto_tipo = adelantoTipo,
+                    adelanto = request.adelanta ? request.adelanto : 0,
+                    fecha_emision = request.fecha_emision.Value.ToString("yyyy/MM/dd"),
+                    fecha_pago = request.fecha_pago.Value.ToString("yyyy/MM/dd"),
+                    usuario
+                });
+
+                response.Result = data ?? new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible registrar la factura. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al registrar la factura. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Elimina una factura de la operación de CxC y recalcula sus totales.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos mínimos de la factura a eliminar.</param>
+        /// <returns>Totales actualizados de la operación.</returns>
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Elimina(
+            int codEmpresa,
+            CxCCuentasFacturaEliminaRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasFacturaMantenimientoResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasFacturaMantenimientoResult()
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = "La solicitud es requerida.";
+                return response;
+            }
+
+            var estado = (request.estado ?? string.Empty).Trim().ToUpperInvariant();
+            var autorizaEstado = (request.autoriza_estado ?? string.Empty).Trim().ToUpperInvariant();
+            var factura = (request.factura ?? string.Empty).Trim();
+            var usuario = (request.usuario ?? string.Empty).Trim();
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = "La operación es requerida.";
+                return response;
+            }
+
+            if (estado is "A" or "D")
+            {
+                response.Code = -1;
+                response.Description = "La operación no está pendiente o recibida, no pueden realizarse los cambios.";
+                return response;
+            }
+
+            if (autorizaEstado != "P")
+            {
+                response.Code = -1;
+                response.Description = "La operación ya fue autorizada o denegada.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(factura))
+            {
+                response.Code = -1;
+                response.Description = "La factura es requerida.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                response.Code = -1;
+                response.Description = "El usuario es requerido.";
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sql = @"
+            exec spCxC_Operacion_Factura_Registra
+                @operacion,
+                @factura,
+                '',
+                '',
+                0,
+                0,
+                0,
+                0,
+                'M',
+                0,
+                null,
+                null,
+                @usuario,
+                'E',
+                1,
+                1,
+                0;";
+
+                var data = conn.QueryFirstOrDefault<CxCCuentasFacturaMantenimientoResult>(sql, new
+                {
+                    operacion = request.operacion,
+                    factura,
+                    usuario
+                });
+
+                response.Result = data ?? new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible eliminar la factura. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al eliminar la factura. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Vincula facturas adelantadas a una operación de CxC y recalcula sus totales.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos de las facturas a vincular.</param>
+        /// <returns>Totales actualizados de la operación.</returns>
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Vincular(
+            int codEmpresa,
+            CxCCuentasFacturaVincularRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasFacturaMantenimientoResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasFacturaMantenimientoResult()
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = "La solicitud es requerida.";
+                return response;
+            }
+
+            var estado = (request.estado ?? string.Empty).Trim().ToUpperInvariant();
+            var autorizaEstado = (request.autoriza_estado ?? string.Empty).Trim().ToUpperInvariant();
+            var usuario = (request.usuario ?? string.Empty).Trim();
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = "La operación es requerida.";
+                return response;
+            }
+
+            if (estado is "A" or "D")
+            {
+                response.Code = -1;
+                response.Description = "La operación no está pendiente o recibida, no pueden realizarse los cambios.";
+                return response;
+            }
+
+            if (autorizaEstado != "P")
+            {
+                response.Code = -1;
+                response.Description = "La operación ya fue autorizada o denegada.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                response.Code = -1;
+                response.Description = "El usuario es requerido.";
+                return response;
+            }
+
+            if (request.facturas is null || request.facturas.Count == 0)
+            {
+                response.Code = -1;
+                response.Description = "Debe seleccionar al menos una factura.";
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                foreach (var item in request.facturas)
+                {
+                    var factura = (item.factura ?? string.Empty).Trim();
+                    var divisa = (item.divisa ?? string.Empty).Trim();
+
+                    if (string.IsNullOrWhiteSpace(factura) || string.IsNullOrWhiteSpace(divisa))
+                    {
+                        response.Code = -1;
+                        response.Description = "Hay facturas seleccionadas con datos incompletos.";
+                        return response;
+                    }
+
+                    if (item.importe <= 0 || item.tipo_cambio <= 0 || item.monto <= 0)
+                    {
+                        response.Code = -1;
+                        response.Description = "Hay facturas seleccionadas con importes inválidos.";
+                        return response;
+                    }
+
+                    const string sqlRegistra = @"
+                exec spCxC_Operacion_Factura_Registra
+                    @operacion,
+                    @factura,
+                    @divisa,
+                    'T',
+                    @importe,
+                    @tipo_cambio,
+                    @monto,
+                    0,
+                    'M',
+                    @adelanto,
+                    @fecha_emision,
+                    @fecha_pago,
+                    @usuario,
+                    'I',
+                    1,
+                    0,
+                    @operacion_origen;";
+
+                    conn.Execute(sqlRegistra, new
+                    {
+                        operacion = request.operacion,
+                        factura,
+                        divisa,
+                        importe = item.importe,
+                        tipo_cambio = item.tipo_cambio,
+                        monto = item.monto,
+                        adelanto = item.adelanto,
+                        fecha_emision = item.fecha_emision?.ToString("yyyy/MM/dd"),
+                        fecha_pago = item.fecha_pago?.ToString("yyyy/MM/dd"),
+                        usuario,
+                        operacion_origen = item.operacion_origen
+                    });
+                }
+
+                const string sqlActualiza = @"
+            exec spCxC_Operacion_Facturas_Actualiza @operacion, 1, @usuario;";
+
+                var data = conn.QueryFirstOrDefault<CxCCuentasFacturaMantenimientoResult>(sqlActualiza, new
+                {
+                    operacion = request.operacion,
+                    usuario
+                });
+
+                response.Result = data ?? new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible vincular las facturas. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al vincular las facturas. {ex.Message}";
+                response.Result = new CxCCuentasFacturaMantenimientoResult();
+            }
+
+            return response;
+        }
+
+        #endregion
     }
 }
