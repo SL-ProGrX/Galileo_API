@@ -644,6 +644,871 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return response;
         }
 
+
+        /// <summary>
+        /// Guarda una operación de CxC en modo inserción o actualización.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="param">Datos de la operación.</param>
+        /// <returns>Número de operación guardada.</returns>
+        public ErrorDto<long> CxCCuentas_Guardar(int codEmpresa, CxCCuentasSaveParams param)
+        {
+            var response = new ErrorDto<long>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = 0
+            };
+
+            if (param is null)
+            {
+                response.Code = -1;
+                response.Description = "Los datos de la operación son requeridos.";
+                return response;
+            }
+
+            var usuario = NormalizarTexto(param.usuario);
+            var cedula = NormalizarTexto(param.cedula);
+            var codConcepto = NormalizarTexto(param.cod_concepto);
+            var codOficina = NormalizarTexto(param.cod_oficina);
+            var emitirTipo = NormalizarTexto(param.emitir_tipo);
+            var estado = string.IsNullOrWhiteSpace(param.estado) ? "R" : NormalizarMayusculas(param.estado);
+            var cedulaPagador = string.IsNullOrWhiteSpace(param.cedula_pagador) ? null : NormalizarTexto(param.cedula_pagador);
+            var cedulaAutorizado = string.IsNullOrWhiteSpace(param.cedula_autorizado) ? null : NormalizarTexto(param.cedula_autorizado);
+            var notas = string.IsNullOrWhiteSpace(param.notas) ? null : param.notas.Trim();
+            var emitirBanco = string.IsNullOrWhiteSpace(param.emitir_banco) ? null : NormalizarTexto(param.emitir_banco);
+            var emitirCuenta = string.IsNullOrWhiteSpace(param.emitir_cuenta) ? null : NormalizarTexto(param.emitir_cuenta);
+            var numDocumento = string.IsNullOrWhiteSpace(param.num_documento) ? null : param.num_documento.Trim();
+            var codContrato = string.IsNullOrWhiteSpace(param.cod_contrato) ? null : NormalizarTexto(param.cod_contrato);
+
+            if (string.IsNullOrWhiteSpace(usuario) ||
+                string.IsNullOrWhiteSpace(cedula) ||
+                string.IsNullOrWhiteSpace(codConcepto) ||
+                string.IsNullOrWhiteSpace(codOficina) ||
+                string.IsNullOrWhiteSpace(emitirTipo))
+            {
+                response.Code = -1;
+                response.Description = "Faltan datos requeridos para guardar la operación.";
+                return response;
+            }
+
+            if (param.monto <= 0)
+            {
+                response.Code = -1;
+                response.Description = "El monto debe ser mayor a cero.";
+                return response;
+            }
+
+            if (param.plazo <= 0)
+            {
+                response.Code = -1;
+                response.Description = "El plazo debe ser mayor a cero.";
+                return response;
+            }
+
+            if (param.cuota <= 0)
+            {
+                response.Code = -1;
+                response.Description = "La cuota debe ser mayor a cero.";
+                return response;
+            }
+
+            if (param.chk_cta_apl && param.fecha_inicio is null)
+            {
+                response.Code = -1;
+                response.Description = "La fecha de inicio es requerida cuando aplica cuenta.";
+                return response;
+            }
+
+            var plazoDias = param.plazo * 30;
+            var frecuenciaPago = param.chk_cta_apl ? 30 : 0;
+            var fechaInicio = param.chk_cta_apl ? param.fecha_inicio : null;
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var existeOperacion = param.operacion > 0
+                    ? conn.QuerySingleOrDefault<int>(
+                        @"SELECT COUNT(1)
+                  FROM CxC_Cuentas
+                  WHERE Operacion = @operacion;",
+                        new { operacion = param.operacion })
+                    : 0;
+
+                var operacion = param.operacion;
+
+                if (existeOperacion == 0)
+                {
+                    operacion = conn.QuerySingle<long>(
+                        @"SELECT ISNULL(MAX(Operacion), 0) + 1
+                  FROM CxC_Cuentas;");
+
+                    const string sqlInsert = @"
+                INSERT INTO CxC_Cuentas
+                (
+                    OPERACION,
+                    CEDULA,
+                    CEDULA_PAGADOR,
+                    COD_CONCEPTO,
+                    COD_OFICINA,
+                    NOTAS,
+                    MONTO,
+                    SALDO,
+                    REBAJOS_TOTAL,
+                    EMITIR_TIPO,
+                    EMITIR_BANCO,
+                    EMITIR_CUENTA,
+                    DESEMBOLSO_MONTO,
+                    TIPO_PLAZO,
+                    TASA_CORRIENTE,
+                    TASA_MORA,
+                    CUOTA,
+                    DIAS_PLAZO,
+                    PLAZO,
+                    AMORTIZA,
+                    INTERESC,
+                    ESTADO,
+                    NUM_DOCUMENTO,
+                    COD_CONTRATO,
+                    REGISTRO_FECHA,
+                    REGISTRO_USUARIO,
+                    FECHA_ULTMOV,
+                    AUTORIZA_ESTADO,
+                    ADELANTO_MONTO,
+                    ADELANTO_PORCENTAJE,
+                    DESEMBOLSO_REALIZADO,
+                    DESEMBOLSO_PENDIENTE,
+                    CEDULA_AUTORIZADO,
+                    ADELANTO_COMISION_APL,
+                    ADELANTO_COMISION,
+                    ADELANTO_COMISION_DIAS,
+                    FREQ_PAGO,
+                    FECHA_INICIO
+                )
+                VALUES
+                (
+                    @operacion,
+                    @cedula,
+                    @cedula_pagador,
+                    @cod_concepto,
+                    @cod_oficina,
+                    @notas,
+                    @monto,
+                    @monto,
+                    0,
+                    @emitir_tipo,
+                    @emitir_banco,
+                    @emitir_cuenta,
+                    @monto,
+                    'M',
+                    @tasa_corriente,
+                    @tasa_mora,
+                    @cuota,
+                    @plazo_dias,
+                    @plazo,
+                    0,
+                    0,
+                    'R',
+                    @num_documento,
+                    @cod_contrato,
+                    dbo.MyGetdate(),
+                    @usuario,
+                    dbo.MyGetdate(),
+                    'P',
+                    @adelanto_monto,
+                    @adelanto_porcentaje,
+                    0,
+                    0,
+                    @cedula_autorizado,
+                    @adelanto_comision_apl,
+                    @adelanto_comision,
+                    @adelanto_comision_dias,
+                    @freq_pago,
+                    @fecha_inicio
+                );";
+
+                    conn.Execute(sqlInsert, new
+                    {
+                        operacion,
+                        cedula,
+                        cedula_pagador = cedulaPagador,
+                        cod_concepto = codConcepto,
+                        cod_oficina = codOficina,
+                        notas,
+                        monto = param.monto,
+                        emitir_tipo = emitirTipo,
+                        emitir_banco = emitirBanco,
+                        emitir_cuenta = emitirCuenta,
+                        tasa_corriente = param.tasa_corriente,
+                        tasa_mora = param.tasa_mora,
+                        cuota = param.cuota,
+                        plazo_dias = plazoDias,
+                        plazo = param.plazo,
+                        num_documento = numDocumento,
+                        cod_contrato = codContrato,
+                        usuario,
+                        adelanto_monto = param.adelanto_monto,
+                        adelanto_porcentaje = param.adelanto_porcentaje,
+                        cedula_autorizado = cedulaAutorizado,
+                        adelanto_comision_apl = param.adelanto_comision_apl ? 1 : 0,
+                        adelanto_comision = param.adelanto_comision,
+                        adelanto_comision_dias = param.adelanto_comision_dias,
+                        freq_pago = frecuenciaPago,
+                        fecha_inicio = fechaInicio
+                    });
+
+                    conn.Execute(
+                        @"exec spCxC_CuentaCargosActualiza @operacion, @monto;",
+                        new
+                        {
+                            operacion,
+                            monto = param.monto
+                        });
+                }
+                else
+                {
+                    const string sqlUpdate = @"
+                UPDATE CxC_Cuentas
+                SET
+                    CEDULA_PAGADOR = @cedula_pagador,
+                    CEDULA_AUTORIZADO = @cedula_autorizado,
+                    COD_CONCEPTO = @cod_concepto,
+                    COD_OFICINA = @cod_oficina,
+                    NOTAS = @notas,
+                    MONTO = @monto,
+                    EMITIR_TIPO = @emitir_tipo,
+                    EMITIR_BANCO = @emitir_banco,
+                    EMITIR_CUENTA = @emitir_cuenta,
+                    TASA_CORRIENTE = @tasa_corriente,
+                    TASA_MORA = @tasa_mora,
+                    CUOTA = @cuota,
+                    COD_CONTRATO = @cod_contrato,
+                    ESTADO = @estado,
+                    NUM_DOCUMENTO = @num_documento,
+                    DESEMBOLSO_MONTO = @monto,
+                    DIAS_PLAZO = @plazo_dias,
+                    PLAZO = @plazo,
+                    ADELANTO_MONTO = @adelanto_monto,
+                    ADELANTO_PORCENTAJE = @adelanto_porcentaje,
+                    ADELANTO_COMISION_APL = @adelanto_comision_apl,
+                    ADELANTO_COMISION = @adelanto_comision,
+                    ADELANTO_COMISION_DIAS = @adelanto_comision_dias,
+                    FREQ_PAGO = @freq_pago,
+                    FECHA_INICIO = @fecha_inicio
+                WHERE Operacion = @operacion;";
+
+                    conn.Execute(sqlUpdate, new
+                    {
+                        operacion,
+                        cedula_pagador = cedulaPagador,
+                        cedula_autorizado = cedulaAutorizado,
+                        cod_concepto = codConcepto,
+                        cod_oficina = codOficina,
+                        notas,
+                        monto = param.monto,
+                        emitir_tipo = emitirTipo,
+                        emitir_banco = emitirBanco,
+                        emitir_cuenta = emitirCuenta,
+                        tasa_corriente = param.tasa_corriente,
+                        tasa_mora = param.tasa_mora,
+                        cuota = param.cuota,
+                        cod_contrato = codContrato,
+                        estado,
+                        num_documento = numDocumento,
+                        plazo_dias = plazoDias,
+                        plazo = param.plazo,
+                        adelanto_monto = param.adelanto_monto,
+                        adelanto_porcentaje = param.adelanto_porcentaje,
+                        adelanto_comision_apl = param.adelanto_comision_apl ? 1 : 0,
+                        adelanto_comision = param.adelanto_comision,
+                        adelanto_comision_dias = param.adelanto_comision_dias,
+                        freq_pago = frecuenciaPago,
+                        fecha_inicio = fechaInicio
+                    });
+
+                    var facturasRegistradas = conn.QuerySingleOrDefault<int>(
+                        @"SELECT COUNT(1)
+                  FROM CxC_Operacion_Facturas
+                  WHERE Operacion = @operacion;",
+                        new { operacion });
+
+                    if (facturasRegistradas > 0)
+                    {
+                        conn.Execute(
+                            @"exec spCxC_Operacion_Facturas_Actualiza @operacion, 0, @usuario;",
+                            new
+                            {
+                                operacion,
+                                usuario
+                            });
+                    }
+                    else
+                    {
+                        conn.Execute(
+                            @"exec spCxC_CuentaCargosActualiza @operacion, @monto;",
+                            new
+                            {
+                                operacion,
+                                monto = param.monto
+                            });
+                    }
+                }
+
+                response.Result = operacion;
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible guardar la operación. {ex.Message}";
+                response.Result = 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al guardar la operación. {ex.Message}";
+                response.Result = 0;
+            }
+
+            return response;
+        }
+
+
+        #region Activar
+
+        /// <summary>
+        /// Verifica si una operación de CxC puede activarse.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos mínimos requeridos para validar la activación.</param>
+        /// <returns>Resultado de validación de activación.</returns>
+        public ErrorDto<CxCCuentasActivacionVerificaResult> CxCCuentasActivacion_Verifica(
+            int codEmpresa,
+            CxCCuentasActivacionRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasActivacionVerificaResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = true,
+                    mensaje = string.Empty
+                }
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.solicitudRequerida;
+                response.Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = CxCCuentasConstantes.solicitudRequerida
+                };
+                return response;
+            }
+
+            var emitirTipo = NormalizarMayusculas(request.emitir_tipo);
+            var emitirCuenta = string.IsNullOrWhiteSpace(request.emitir_cuenta) ? string.Empty : NormalizarTexto(request.emitir_cuenta);
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.operacionRequerida;
+                response.Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = CxCCuentasConstantes.operacionRequerida
+                };
+                return response;
+            }
+
+            var mensajes = new List<string>();
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                if (emitirTipo == "TE" && string.IsNullOrWhiteSpace(emitirCuenta))
+                {
+                    mensajes.Add("- No se ha especificado una cuenta de ahorros para realizarle la transferencia...");
+                }
+
+                const string sqlMontos = @"
+            SELECT
+                Monto,
+                dbo.fxCxC_CuentaRebajos(@operacion, 'TOT') AS Rebajos,
+                ISNULL(dbo.fxCxC_CuentaIngresos(@operacion), 0) AS Ingresos
+            FROM CxC_Cuentas
+            WHERE Operacion = @operacion;";
+
+                var montos = conn.QueryFirstOrDefault(sqlMontos, new
+                {
+                    operacion = request.operacion
+                });
+
+                if (montos is null)
+                {
+                    mensajes.Add("- No existe la operación indicada.");
+                }
+                else
+                {
+                    decimal monto = montos.Monto ?? 0m;
+                    decimal rebajos = montos.Rebajos ?? 0m;
+                    decimal ingresos = montos.Ingresos ?? 0m;
+
+                    if (rebajos > (monto + ingresos))
+                    {
+                        mensajes.Add("- El monto de los rebajos es mayor que el monto de la operación más otros ingresos.");
+                    }
+                }
+
+                const string sqlFacturas = @"exec spCxC_Operacion_Facturas_Verifica @operacion;";
+
+                var facturas = conn.Query(sqlFacturas, new
+                {
+                    operacion = request.operacion
+                });
+
+                foreach (var item in facturas)
+                {
+                    mensajes.Add($"- Factura No.: {item.cod_Factura}, se encuentra registrada en la Operación: {item.Operacion}");
+                }
+
+                response.Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = mensajes.Count == 0,
+                    mensaje = string.Join(Environment.NewLine, mensajes)
+                };
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible verificar la activación. {ex.Message}";
+                response.Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = response.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al verificar la activación. {ex.Message}";
+                response.Result = new CxCCuentasActivacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = response.Description
+                };
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Activa una operación de CxC aplicando rebajos, ingresos y estado de tesorería.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos requeridos para activar la operación.</param>
+        /// <returns>Resultado del proceso de activación.</returns>
+        public ErrorDto<bool> CxCCuentasActivacion_Activar(
+            int codEmpresa,
+            CxCCuentasActivacionRequest request)
+        {
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.solicitudRequerida;
+                response.Result = false;
+                return response;
+            }
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.operacionRequerida;
+                response.Result = false;
+                return response;
+            }
+
+            var usuario = NormalizarTexto(request.usuario);
+            var emitirTipo = NormalizarMayusculas(request.emitir_tipo);
+            var numDocumento = string.IsNullOrWhiteSpace(request.num_documento) ? null : request.num_documento.Trim();
+
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(emitirTipo))
+            {
+                response.Code = -1;
+                response.Description = "Faltan datos requeridos para activar la operación.";
+                response.Result = false;
+                return response;
+            }
+
+            var verifica = CxCCuentasActivacion_Verifica(codEmpresa, request);
+            if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
+            {
+                response.Code = -1;
+                response.Description = verifica.Result?.mensaje ?? verifica.Description;
+                response.Result = false;
+                return response;
+            }
+
+            DbTransaction? transaction = null;
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                transaction = conn.BeginTransaction();
+
+                const string sqlContexto = @"
+            SELECT
+                C.Monto,
+                dbo.fxCxC_CuentaRebajos(C.Operacion, 'TOT') AS Rebajos,
+                ISNULL(dbo.fxCxC_CuentaIngresos(C.Operacion), 0) AS Ingresos,
+                ISNULL(P.Genera_Desembolso, 0) AS Genera_Desembolso,
+                dbo.MyGetdate() AS Fecha_Server
+            FROM CxC_Cuentas C
+            INNER JOIN CxC_Conceptos P
+                ON C.cod_concepto = P.cod_concepto
+            WHERE C.Operacion = @operacion;";
+
+                var contexto = conn.QueryFirstOrDefault(sqlContexto, new
+                {
+                    operacion = request.operacion
+                }, transaction);
+
+                if (contexto is null)
+                {
+                    transaction.Rollback();
+                    response.Code = -1;
+                    response.Description = "No se encontró la operación para activar.";
+                    response.Result = false;
+                    return response;
+                }
+
+                decimal monto = contexto.Monto ?? 0m;
+                decimal rebajos = contexto.Rebajos ?? 0m;
+                decimal ingresos = contexto.Ingresos ?? 0m;
+                int generaDesembolso = contexto.Genera_Desembolso ?? 0;
+                DateTime fechaServer = contexto.Fecha_Server ?? DateTime.Now;
+
+                const string sqlActiva = @"
+            UPDATE CxC_Cuentas
+            SET
+                Estado = 'A',
+                Activa_Fecha = dbo.MyGetdate(),
+                Activa_Usuario = @usuario,
+                Rebajos_Total = @rebajos,
+                Ingresos_Total = @ingresos,
+                Desembolso_Monto = Monto + @ingresos - @rebajos,
+                Num_Documento = @num_documento
+            WHERE Operacion = @operacion;";
+
+                conn.Execute(sqlActiva, new
+                {
+                    operacion = request.operacion,
+                    usuario,
+                    rebajos,
+                    ingresos,
+                    num_documento = numDocumento
+                }, transaction);
+
+                if (request.es_factoreo)
+                {
+                    const string sqlPendienteFactoreo = @"
+                UPDATE CxC_Cuentas
+                SET Desembolso_Pendiente =
+                    CASE
+                        WHEN (Desembolso_Realizado + Desembolso_Pendiente) > Desembolso_Monto
+                            THEN Desembolso_Monto - Desembolso_Realizado
+                        ELSE Desembolso_Pendiente
+                    END
+                WHERE Operacion = @operacion;";
+
+                    conn.Execute(sqlPendienteFactoreo, new
+                    {
+                        operacion = request.operacion
+                    }, transaction);
+                }
+                else
+                {
+                    const string sqlPendiente = @"
+                UPDATE CxC_Cuentas
+                SET Desembolso_Pendiente = Desembolso_Monto - Desembolso_Realizado
+                WHERE Operacion = @operacion;";
+
+                    conn.Execute(sqlPendiente, new
+                    {
+                        operacion = request.operacion
+                    }, transaction);
+                }
+
+                if ((monto + ingresos) <= rebajos || generaDesembolso == 0)
+                {
+                    const string sqlTesoreriaC = @"
+                UPDATE CxC_Cuentas
+                SET
+                    Tesoreria_Fecha = dbo.MyGetdate(),
+                    Tesoreria_Solicitud = 0,
+                    Tesoreria_Estado = 'C',
+                    Tesoreria_Usuario = @usuario
+                WHERE Operacion = @operacion;";
+
+                    conn.Execute(sqlTesoreriaC, new
+                    {
+                        operacion = request.operacion,
+                        usuario
+                    }, transaction);
+                }
+                else
+                {
+                    const string sqlTesoreriaP = @"
+                UPDATE CxC_Cuentas
+                SET Tesoreria_Estado = 'P'
+                WHERE Operacion = @operacion;";
+
+                    conn.Execute(sqlTesoreriaP, new
+                    {
+                        operacion = request.operacion
+                    }, transaction);
+                }
+
+                const string sqlDetalle = @"
+            exec spCxC_CuentaActivaDetalle @operacion, @fecha, @usuario;";
+
+                conn.Execute(sqlDetalle, new
+                {
+                    operacion = request.operacion,
+                    fecha = fechaServer.ToString(CxCCuentasConstantes.fechaFormat),
+                    usuario
+                }, transaction);
+
+                transaction.Commit();
+            }
+            catch (DbException ex)
+            {
+                transaction?.Rollback();
+                response.Code = -1;
+                response.Description = $"No fue posible activar la operación. {ex.Message}";
+                response.Result = false;
+            }
+            catch (Exception ex)
+            {
+                transaction?.Rollback();
+                response.Code = -1;
+                response.Description = $"Error inesperado al activar la operación. {ex.Message}";
+                response.Result = false;
+            }
+
+            return response;
+        }
+
+        #endregion
+
+        #region Anular
+
+        /// <summary>
+        /// Verifica si una operación de CxC puede anularse.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos mínimos requeridos para validar la anulación.</param>
+        /// <returns>Resultado de validación de anulación.</returns>
+        public ErrorDto<CxCCuentasAnulacionVerificaResult> CxCCuentasAnulacion_Verifica(
+            int codEmpresa,
+            CxCCuentasAnulacionRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasAnulacionVerificaResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasAnulacionVerificaResult
+                {
+                    pass = true,
+                    mensaje = string.Empty
+                }
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.solicitudRequerida;
+                response.Result = new CxCCuentasAnulacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = CxCCuentasConstantes.solicitudRequerida
+                };
+                return response;
+            }
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.operacionRequerida;
+                response.Result = new CxCCuentasAnulacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = CxCCuentasConstantes.operacionRequerida
+                };
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sql = @"
+            SELECT TOP 1
+                ISNULL(Estado, '') AS estado
+            FROM CxC_Cuentas
+            WHERE Operacion = @operacion;";
+
+                var estado = conn.QueryFirstOrDefault<string>(sql, new
+                {
+                    operacion = request.operacion
+                });
+
+                if (string.IsNullOrWhiteSpace(estado))
+                {
+                    response.Code = -1;
+                    response.Description = "No se encontró la operación indicada.";
+                    response.Result = new CxCCuentasAnulacionVerificaResult
+                    {
+                        pass = false,
+                        mensaje = "No se encontró la operación indicada."
+                    };
+                    return response;
+                }
+
+                estado = estado.Trim().ToUpperInvariant();
+
+                if (estado != "A")
+                {
+                    response.Result = new CxCCuentasAnulacionVerificaResult
+                    {
+                        pass = false,
+                        mensaje = "Solo pueden anularse operaciones activas."
+                    };
+                    return response;
+                }
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible verificar la anulación. {ex.Message}";
+                response.Result = new CxCCuentasAnulacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = response.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al verificar la anulación. {ex.Message}";
+                response.Result = new CxCCuentasAnulacionVerificaResult
+                {
+                    pass = false,
+                    mensaje = response.Description
+                };
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Anula una operación de CxC.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos requeridos para anular la operación.</param>
+        /// <returns>Resultado del proceso de anulación.</returns>
+        public ErrorDto<bool> CxCCuentasAnulacion_Anular(
+            int codEmpresa,
+            CxCCuentasAnulacionRequest request)
+        {
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+
+            if (request is null)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.solicitudRequerida;
+                response.Result = false;
+                return response;
+            }
+
+            if (request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.operacionRequerida;
+                response.Result = false;
+                return response;
+            }
+
+            var usuario = NormalizarTexto(request.usuario);
+            var notas = string.IsNullOrWhiteSpace(request.notas) ? string.Empty : request.notas.Trim();
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                response.Code = -1;
+                response.Description = "El usuario es requerido.";
+                response.Result = false;
+                return response;
+            }
+
+            var verifica = CxCCuentasAnulacion_Verifica(codEmpresa, request);
+            if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
+            {
+                response.Code = -1;
+                response.Description = verifica.Result?.mensaje ?? verifica.Description;
+                response.Result = false;
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sql = @"
+            exec spCxC_Cuenta_Anulacion @operacion, @usuario, @notas;";
+
+                conn.Execute(sql, new
+                {
+                    operacion = request.operacion,
+                    usuario,
+                    notas
+                });
+
+                response.Result = true;
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible anular la operación. {ex.Message}";
+                response.Result = false;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al anular la operación. {ex.Message}";
+                response.Result = false;
+            }
+
+            return response;
+        }
+
+        #endregion
+
         #region Recepcion
         /// <summary>
         /// Obtiene la lista lazy de personas para búsqueda de cédula en CxC.
@@ -1721,7 +2586,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (request is null)
             {
-                return CrearErrorFacturaMantenimiento("La solicitud es requerida.");
+                return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
             }
 
             var estado = NormalizarMayusculas(request.estado);
@@ -1802,7 +2667,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (request is null)
             {
-                return CrearErrorFacturaMantenimiento("La solicitud es requerida.");
+                return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
             }
 
             var estado = NormalizarMayusculas(request.estado);
@@ -1865,7 +2730,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (request is null)
             {
-                return CrearErrorFacturaMantenimiento("La solicitud es requerida.");
+                return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
             }
 
             var estado = NormalizarMayusculas(request.estado);
@@ -1944,6 +2809,317 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 });
         }
 
+        /// <summary>
+        /// Procesa un lote de facturas leído desde archivo y recalcula los totales de la operación.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos del lote de facturas.</param>
+        /// <returns>Totales actualizados de la operación.</returns>
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_CargarArchivo(
+            int codEmpresa,
+            CxCCuentasFacturaCargaRequest request)
+        {
+            try
+            {
+                if (request is null)
+                {
+                    return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
+                }
+
+                var estado = NormalizarMayusculas(request.estado);
+                var autorizaEstado = NormalizarMayusculas(request.autoriza_estado);
+                var usuario = NormalizarTexto(request.usuario);
+
+                var mensajeValidacion = ValidarOperacionFactura(request.operacion, estado, autorizaEstado)
+                    ?? ValidarVinculacionFactura(
+                        new CxCCuentasFacturaVincularRequest
+                        {
+                            operacion = request.operacion,
+                            estado = request.estado,
+                            autoriza_estado = request.autoriza_estado,
+                            usuario = request.usuario,
+                            facturas = request.facturas.Select(x => new CxCCuentasFacturaVincularItem
+                            {
+                                factura = x.factura,
+                                divisa = x.divisa,
+                                importe = x.importe,
+                                tipo_cambio = x.tipo_cambio,
+                                monto = x.monto,
+                                fecha_emision = DateTime.TryParse(x.fecha_emite, out var fe) ? fe : null,
+                                fecha_pago = DateTime.TryParse(x.fecha_pago, out var fp) ? fp : null,
+                                adelanto = x.adelanto!
+                            }).ToList()
+                        },
+                        usuario);
+
+                if (!string.IsNullOrWhiteSpace(mensajeValidacion))
+                {
+                    return CrearErrorFacturaMantenimiento(mensajeValidacion);
+                }
+
+                return EjecutarFacturaMantenimiento(
+                    codEmpresa,
+                    "No fue posible cargar el archivo de facturas.",
+                    "Error inesperado al cargar el archivo de facturas.",
+                    conn =>
+                    {
+                        const string sqlRegistra = @"
+                                exec spCxC_Operacion_Factura_Registra
+                                    @Operacion,
+                                    @Factura,
+                                    @Divisa,
+                                    @Estado,
+                                    @Importe,
+                                    @TipoCambio,
+                                    @Monto,
+                                    @Adelanta,
+                                    @AdelantaTipo,
+                                    @AdelantaMonto,
+                                    @FechaEmite,
+                                    @FechaPago,
+                                    @Usuario,
+                                    'I',
+                                    0,
+                                    0,
+                                    0;";
+
+                        foreach (var item in request.facturas)
+                        {
+                            var factura = NormalizarTexto(item.factura);
+                            var divisa = NormalizarTexto(item.divisa);
+                            var facturaEstado = NormalizarMayusculas(item.estado);
+
+                            if (string.IsNullOrWhiteSpace(factura) || string.IsNullOrWhiteSpace(divisa))
+                            {
+                                return CrearErrorFacturaMantenimiento("Hay filas del archivo con datos incompletos.");
+                            }
+
+                            if (item.importe <= 0 || item.tipo_cambio <= 0)
+                            {
+                                return CrearErrorFacturaMantenimiento("Hay filas del archivo con importes inválidos.");
+                            }
+
+                            var monto = item.importe * item.tipo_cambio;
+                            if (item.adelanto > monto)
+                            {
+                                item.adelanto = monto;
+                            }
+
+                            var adelanta = item.adelanto > 0 || facturaEstado == "A";
+                            var adelantoTipo = facturaEstado == "A" && item.adelanto == 0 ? "P" : "M";
+
+                            conn.Execute(sqlRegistra, new
+                            {
+                                Operacion = request.operacion,
+                                Factura = factura,
+                                Divisa = divisa,
+                                Estado = facturaEstado,
+                                Importe = item.importe,
+                                TipoCambio = item.tipo_cambio,
+                                Monto = monto,
+                                Adelanta = adelanta ? 1 : 0,
+                                AdelantaTipo = adelantoTipo,
+                                AdelantaMonto = item.adelanto,
+                                FechaEmite = item.fecha_emite,
+                                FechaPago = item.fecha_pago,
+                                Usuario = usuario
+                            });
+                        }
+
+                        const string sqlActualiza = @"
+                exec spCxC_Operacion_Facturas_Actualiza @operacion, 1;";
+
+                        return EjecutarConsultaFacturaMantenimiento(conn, sqlActualiza, new
+                        {
+                            operacion = request.operacion
+                        });
+                    });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturaMantenimientoResult>(ex.Message);
+            }
+            
+        }
+
         #endregion
+
+        #region Activacion
+
+        /// <summary>
+        /// Obtiene el detalle o resumen de activación de una operación de CxC según la opción seleccionada.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="request">Datos de consulta del detalle de activación.</param>
+        /// <returns>Detalle de activación y estado de tesorería.</returns>
+        public ErrorDto<CxCCuentasActivacionDetalleResult> CxCCuentasActivacionDetalle_Obtener(
+            int codEmpresa,
+            CxCCuentasActivacionDetalleRequest request)
+        {
+            var response = new ErrorDto<CxCCuentasActivacionDetalleResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CxCCuentasActivacionDetalleResult()
+            };
+
+            if (request is null || request.operacion <= 0)
+            {
+                response.Code = -1;
+                response.Description = CxCCuentasConstantes.operacionRequerida;
+                response.Result = new CxCCuentasActivacionDetalleResult();
+                return response;
+            }
+
+            var opcion = (request.opcion ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(opcion))
+            {
+                opcion = "RSM";
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sqlTesoreria = @"
+            SELECT TOP 1
+                ISNULL(C.Genera_Desembolso, 0) AS procesa_tesoreria
+            FROM CxC_Cuentas R
+            INNER JOIN CxC_Conceptos C
+                ON R.cod_concepto = C.cod_concepto
+            WHERE R.Operacion = @operacion;";
+
+                response.Result.procesa_tesoreria = conn.QueryFirstOrDefault<bool>(sqlTesoreria, new
+                {
+                    operacion = request.operacion
+                });
+
+                switch (opcion)
+                {
+                    case "ING":
+                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                    SELECT
+                        ISNULL(R.cod_cargo, '') AS descripcion,
+                        ISNULL(A.monto, 0) AS monto,
+                        CONCAT(ISNULL(R.descripcion, ''), ' | ',
+                               CASE WHEN ISNULL(A.tipo, '') = 'P' THEN 'Porcentual' ELSE 'Monto' END,
+                               ' | Valor: ', CONVERT(varchar(50), ISNULL(A.valor, 0))) AS detalle
+                    FROM CxC_Cargos R
+                    INNER JOIN CxC_Cuentas_Ingresos A
+                        ON R.cod_cargo = A.cod_cargo
+                    WHERE A.Operacion = @operacion;", new
+                        {
+                            operacion = request.operacion
+                        }).ToList();
+                        break;
+
+                    case "CRD":
+                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                    SELECT
+                        CONVERT(varchar(50), Reb.id_solicitud) AS descripcion,
+                        ISNULL(Reb.monto, 0) AS monto,
+                        CONCAT(ISNULL(Cat.codigo, ''), ' | ', ISNULL(Cat.descripcion, '')) AS detalle
+                    FROM CxC_Cuentas_Rebajos_Crd Reb
+                    INNER JOIN Reg_Creditos Crd
+                        ON Reb.id_solicitud = Crd.id_Solicitud
+                    INNER JOIN catalogo Cat
+                        ON Crd.codigo = Cat.codigo
+                    WHERE Reb.Operacion = @operacion;", new
+                        {
+                            operacion = request.operacion
+                        }).ToList();
+                        break;
+
+                    case "CXC":
+                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                    SELECT
+                        CONVERT(varchar(50), R.Operacion_Aplicada) AS descripcion,
+                        ISNULL(R.Monto, 0) AS monto,
+                        CONCAT(ISNULL(Cta.cod_concepto, ''), ' | ', ISNULL(C.Descripcion, '')) AS detalle
+                    FROM CxC_Cuentas_Rebajos R
+                    INNER JOIN CxC_Cuentas Cta
+                        ON R.Operacion_Aplicada = Cta.Operacion
+                    INNER JOIN CxC_Conceptos C
+                        ON Cta.cod_concepto = C.cod_concepto
+                    WHERE R.Operacion = @operacion;", new
+                        {
+                            operacion = request.operacion
+                        }).ToList();
+                        break;
+
+                    case "CAR":
+                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                    SELECT
+                        ISNULL(R.cod_cargo, '') AS descripcion,
+                        ISNULL(A.monto, 0) AS monto,
+                        CONCAT(ISNULL(R.descripcion, ''), ' | ',
+                               CASE WHEN ISNULL(A.tipo, '') = 'P' THEN 'Porcentual' ELSE 'Monto' END,
+                               ' | Valor: ', CONVERT(varchar(50), ISNULL(A.valor, 0))) AS detalle
+                    FROM CxC_Cargos R
+                    INNER JOIN CxC_Cuentas_Rebajos_Cargos A
+                        ON R.cod_cargo = A.cod_cargo
+                    WHERE A.Operacion = @operacion;", new
+                        {
+                            operacion = request.operacion
+                        }).ToList();
+                        break;
+
+                    default:
+                        var resumen = conn.QueryFirstOrDefault(@"
+                    SELECT
+                        C.Monto,
+                        ISNULL(dbo.fxCxC_CuentaRebajos(@operacion, 'CRD'), 0) AS Crd,
+                        ISNULL(dbo.fxCxC_CuentaRebajos(@operacion, 'CxC'), 0) AS CxC,
+                        ISNULL(dbo.fxCxC_CuentaRebajos(@operacion, 'CAR'), 0) AS Car,
+                        ISNULL(dbo.fxCxC_CuentaRebajos(@operacion, 'ADL'), 0) AS Adl,
+                        ISNULL(dbo.fxCxC_CuentaIngresos(@operacion), 0) AS Ing
+                    FROM CxC_Cuentas C
+                    WHERE C.Operacion = @operacion;", new
+                        {
+                            operacion = request.operacion
+                        });
+
+                        if (resumen is not null)
+                        {
+                            decimal monto = resumen.Monto ?? 0m;
+                            decimal ing = resumen.Ing ?? 0m;
+                            decimal crd = resumen.Crd ?? 0m;
+                            decimal cxc = resumen.CxC ?? 0m;
+                            decimal car = resumen.Car ?? 0m;
+                            decimal adl = resumen.Adl ?? 0m;
+                            decimal desembolsar = monto + ing - (crd + cxc + car + adl);
+
+                            response.Result.lista = new List<CxCCuentasActivacionDetalleItem>
+                    {
+                        new() { descripcion = "Monto Aprobado", monto = monto, detalle = string.Empty },
+                        new() { descripcion = "(+) Otros Ingresos", monto = ing, detalle = string.Empty },
+                        new() { descripcion = "(-) Abonos a Créditos", monto = crd, detalle = string.Empty },
+                        new() { descripcion = "(-) Abonos a CxC Pendientes", monto = cxc, detalle = string.Empty },
+                        new() { descripcion = "(-) Cargos Registrados", monto = car, detalle = string.Empty },
+                        new() { descripcion = "(-) Adelantos", monto = adl, detalle = string.Empty },
+                        new() { descripcion = "Monto a Desembolsar", monto = desembolsar, detalle = string.Empty }
+                    };
+                        }
+                        break;
+                }
+            }
+            catch (DbException ex)
+            {
+                response.Code = -1;
+                response.Description = $"No fue posible consultar el detalle de activación. {ex.Message}";
+                response.Result = new CxCCuentasActivacionDetalleResult();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error inesperado al consultar el detalle de activación. {ex.Message}";
+                response.Result = new CxCCuentasActivacionDetalleResult();
+            }
+
+            return response;
+        }
+
+        #endregion
+
     }
 }

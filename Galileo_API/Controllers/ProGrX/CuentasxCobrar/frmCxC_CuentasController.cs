@@ -248,5 +248,59 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _BL.CxCCuentasFactura_Vincular(CodEmpresa, request);
         }
+
+        [HttpPost("CxCCuentasFactura_CargarArchivo")]
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_CargarArchivo(
+            int CodEmpresa,
+            [FromBody] CxCCuentasFacturaCargaRequest request)
+        {
+            return _BL.CxCCuentasFactura_CargarArchivo(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentas_Guardar")]
+        public ErrorDto<long> CxCCuentas_Guardar(int CodEmpresa, [FromBody] CxCCuentasSaveParams param)
+        {
+            return _BL.CxCCuentas_Guardar(CodEmpresa, param);
+        }
+
+        [HttpPost("CxCCuentasActivacion_Verifica")]
+        public ErrorDto<CxCCuentasActivacionVerificaResult> CxCCuentasActivacion_Verifica(
+    int CodEmpresa,
+    [FromBody] CxCCuentasActivacionRequest request)
+        {
+            return _BL.CxCCuentasActivacion_Verifica(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasActivacion_Activar")]
+        public ErrorDto<bool> CxCCuentasActivacion_Activar(
+            int CodEmpresa,
+            [FromBody] CxCCuentasActivacionRequest request)
+        {
+            return _BL.CxCCuentasActivacion_Activar(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasAnulacion_Verifica")]
+        public ErrorDto<CxCCuentasAnulacionVerificaResult> CxCCuentasAnulacion_Verifica(
+    int CodEmpresa,
+    [FromBody] CxCCuentasAnulacionRequest request)
+        {
+            return _BL.CxCCuentasAnulacion_Verifica(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasAnulacion_Anular")]
+        public ErrorDto<bool> CxCCuentasAnulacion_Anular(
+            int CodEmpresa,
+            [FromBody] CxCCuentasAnulacionRequest request)
+        {
+            return _BL.CxCCuentasAnulacion_Anular(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasActivacionDetalle_Obtener")]
+        public ErrorDto<CxCCuentasActivacionDetalleResult> CxCCuentasActivacionDetalle_Obtener(
+    int CodEmpresa,
+    [FromBody] CxCCuentasActivacionDetalleRequest request)
+        {
+            return _BL.CxCCuentasActivacionDetalle_Obtener(CodEmpresa, request);
+        }
     }
 }
