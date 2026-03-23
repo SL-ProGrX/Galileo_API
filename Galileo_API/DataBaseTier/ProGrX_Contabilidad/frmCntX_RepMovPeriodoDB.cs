@@ -257,35 +257,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     });
 
                     //----------------------------------------
-                    // VALIDAR COLUMNA (SONAR SAFE)
+                    // SQL SEGURO (SIN DINÁMICO)
                     //----------------------------------------
-                    string campoMes = i switch
-                    {
-                        1 => "movimiento_01",
-                        2 => "movimiento_02",
-                        3 => "movimiento_03",
-                        4 => "movimiento_04",
-                        5 => "movimiento_05",
-                        6 => "movimiento_06",
-                        7 => "movimiento_07",
-                        8 => "movimiento_08",
-                        9 => "movimiento_09",
-                        10 => "movimiento_10",
-                        11 => "movimiento_11",
-                        12 => "movimiento_12",
-                        _ => throw new Exception("Mes inválido")
-                    };
-
-                    //----------------------------------------
-                    // SQL SIN INTERPOLACIÓN (CLAVE PARA SONAR)
-                    //----------------------------------------
-                    string sqlUpdate = @"
-                UPDATE CntX_Rep_Periodos_mov
-                SET " + campoMes + @" = @movimiento
-                WHERE cod_cuenta = @cod_cuenta
-                AND usuario = @usuario
-                AND cod_contabilidad = @cod_contabilidad
-            ";
+                    string sqlUpdate = ObtenerSqlUpdate(i);
 
                     //----------------------------------------
                     // UPDATE
@@ -329,6 +303,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
 
             return response;
+        }
+
+        private string ObtenerSqlUpdate(int i)
+        {
+            return i switch
+            {
+                1 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_01 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                2 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_02 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                3 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_03 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                4 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_04 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                5 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_05 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                6 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_06 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                7 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_07 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                8 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_08 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                9 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_09 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                10 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_10 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                11 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_11 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                12 => @"UPDATE CntX_Rep_Periodos_mov SET movimiento_12 = @movimiento WHERE cod_cuenta = @cod_cuenta AND usuario = @usuario AND cod_contabilidad = @cod_contabilidad",
+                _ => throw new Exception("Mes inválido")
+            };
         }
     }
 }
