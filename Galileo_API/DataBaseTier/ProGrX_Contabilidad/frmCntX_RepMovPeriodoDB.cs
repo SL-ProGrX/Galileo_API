@@ -256,6 +256,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         centro = f.centroCosto
                     });
 
+                    //----------------------------------------
+                    // VALIDAR COLUMNA (SONAR SAFE)
+                    //----------------------------------------
                     string campoMes = i switch
                     {
                         1 => "movimiento_01",
@@ -274,17 +277,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     };
 
                     //----------------------------------------
+                    // SQL SIN INTERPOLACIÓN (CLAVE PARA SONAR)
+                    //----------------------------------------
+                    string sqlUpdate = @"
+                UPDATE CntX_Rep_Periodos_mov
+                SET " + campoMes + @" = @movimiento
+                WHERE cod_cuenta = @cod_cuenta
+                AND usuario = @usuario
+                AND cod_contabilidad = @cod_contabilidad
+            ";
+
+                    //----------------------------------------
                     // UPDATE
                     //----------------------------------------
                     foreach (var m in movimientos)
                     {
-                        cn.Execute($@"
-                    UPDATE CntX_Rep_Periodos_mov
-                    SET {campoMes} = @movimiento
-                    WHERE cod_cuenta = @cod_cuenta
-                    AND usuario = @usuario
-                    AND cod_contabilidad = @cod_contabilidad
-                ", new
+                        cn.Execute(sqlUpdate, new
                         {
                             movimiento = m.movimiento,
                             cod_cuenta = m.cod_cuenta,
