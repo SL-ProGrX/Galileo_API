@@ -256,9 +256,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         centro = f.centroCosto
                     });
 
-                    //----------------------------------------
-                    // VALIDAR COLUMNA (SONAR SAFE)
-                    //----------------------------------------
                     string campoMes = i switch
                     {
                         1 => "movimiento_01",
