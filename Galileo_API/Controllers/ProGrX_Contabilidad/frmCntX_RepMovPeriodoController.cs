@@ -19,31 +19,31 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _bl = new FrmCntXRepMovPeriodoBl(config);
         }
 
-        [HttpGet("CntX_Periodos_Listar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Periodos_Listar(int codEmpresa, int codContabilidad)
+        [HttpGet("CntX_PeriodosRepmov_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
         {
-            return _bl.CntX_Periodos_Listar(codEmpresa, codContabilidad);
+            return _bl.CntX_PeriodosRepMov_Listar(codEmpresa, codContabilidad);
         }
 
-        [HttpGet("CntX_Unidades_Listar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Unidades_Listar(int codEmpresa, int codContabilidad)
+        [HttpGet("CntX_UnidadesRepmov_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_UnidadesRepMov_Listar(int codEmpresa, int codContabilidad)
         {
-            return _bl.CntX_Unidades_Listar(codEmpresa, codContabilidad);
+            return _bl.CntX_UnidadesRepMov_Listar(codEmpresa, codContabilidad);
         }
 
-        [HttpGet("CntX_CentroCostos_Listar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostos_Listar(int codEmpresa, int codContabilidad, string unidad)
+        [HttpGet("CntX_CentroCostosRepmov_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostosRepMov_Listar(int codEmpresa, int codContabilidad, string unidad)
         {
-            return _bl.CntX_CentroCostos_Listar(codEmpresa, codContabilidad, unidad);
+            return _bl.CntX_CentroCostosRepMov_Listar(codEmpresa, codContabilidad, unidad);
         }
 
-        [HttpGet("CntX_Areas_Listar")]
+        [HttpGet("CntX_AreasRepmov_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> CntX_Areas_Listar(int codEmpresa, int codContabilidad)
         {
             return _bl.CntX_Areas_Listar(codEmpresa, codContabilidad);
         }
 
-        [HttpPost("GenerarReporte")]
+        [HttpPost("GenerarReporteRepmov")]
         public ErrorDto<bool> GenerarReporte(int codEmpresa, int codContabilidad, CntxRepMovPeriodoFiltroDto filtros)
         {
             return _bl.GenerarReporte(codEmpresa, codContabilidad, filtros);

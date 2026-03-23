@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Periodos_Listar(int codEmpresa, int codContabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
                 SELECT 
@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Unidades_Listar(int codEmpresa, int codContabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_UnidadesRepMov_Listar(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
                 SELECT 
@@ -77,7 +77,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codContabilidad"></param>
         /// <param name="unidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostos_Listar(int codEmpresa, int codContabilidad, string unidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostosRepMov_Listar(int codEmpresa, int codContabilidad, string unidad)
         {
             var sql = @"
                 SELECT 
@@ -134,13 +134,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
-       /// <summary>
-       /// Genera reporte
-       /// </summary>
-       /// <param name="codEmpresa"></param>
-       /// <param name="codContabilidad"></param>
-       /// <param name="f"></param>
-       /// <returns></returns>
+        /// <summary>
+        /// Genera reporte
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="f"></param>
+        /// <returns></returns>
         public ErrorDto<bool> GenerarReporte(int codEmpresa, int codContabilidad, CntxRepMovPeriodoFiltroDto f)
         {
             var response = new ErrorDto<bool>();
@@ -155,65 +155,65 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 //----------------------------------------
                 // 1. LIMPIAR
                 //----------------------------------------
-                        cn.Execute(@"
-                    DELETE CntX_Rep_Periodos_mov
-                    WHERE usuario = @usuario
-                ", new { usuario = f.usuario });
+                cn.Execute(@"
+            DELETE CntX_Rep_Periodos_mov
+            WHERE usuario = @usuario
+        ", new { usuario = f.usuario });
 
                 //----------------------------------------
                 // 2. INSERT BASE
                 //----------------------------------------
-                        cn.Execute(@"
-                    INSERT INTO CntX_Rep_Periodos_mov
-                    (
-                        cod_cuenta,
-                        usuario,
-                        cod_contabilidad,
-                        movimiento_01,
-                        movimiento_02,
-                        movimiento_03,
-                        movimiento_04,
-                        movimiento_05,
-                        movimiento_06,
-                        movimiento_07,
-                        movimiento_08,
-                        movimiento_09,
-                        movimiento_10,
-                        movimiento_11,
-                        movimiento_12
-                    )
-                    SELECT 
-                        cod_cuenta,
-                        @usuario,
-                        @cod_contabilidad,
-                        0,0,0,0,0,0,0,0,0,0,0,0
-                    FROM CntX_Cuentas
-                    WHERE cod_contabilidad = @cod_contabilidad
-                ", new
-                        {
-                            usuario = f.usuario,
-                            cod_contabilidad = codContabilidad
-                        });
+                cn.Execute(@"
+            INSERT INTO CntX_Rep_Periodos_mov
+            (
+                cod_cuenta,
+                usuario,
+                cod_contabilidad,
+                movimiento_01,
+                movimiento_02,
+                movimiento_03,
+                movimiento_04,
+                movimiento_05,
+                movimiento_06,
+                movimiento_07,
+                movimiento_08,
+                movimiento_09,
+                movimiento_10,
+                movimiento_11,
+                movimiento_12
+            )
+            SELECT 
+                cod_cuenta,
+                @usuario,
+                @cod_contabilidad,
+                0,0,0,0,0,0,0,0,0,0,0,0
+            FROM CntX_Cuentas
+            WHERE cod_contabilidad = @cod_contabilidad
+        ", new
+                {
+                    usuario = f.usuario,
+                    cod_contabilidad = codContabilidad
+                });
 
                 //----------------------------------------
                 // 3. OBTENER PERIODO
                 //----------------------------------------
                 var periodo = cn.QueryFirstOrDefault<dynamic>(@"
-                        SELECT inicio_mes, inicio_anio
-                        FROM CntX_Cierres
-                        WHERE id_cierre = @periodo
-                        AND cod_contabilidad = @cod_contabilidad
-                    ", new
-                            {
-                                periodo = f.periodo,
-                                cod_contabilidad = codContabilidad
-                            });
+            SELECT inicio_mes, inicio_anio
+            FROM CntX_Cierres
+            WHERE id_cierre = @periodo
+            AND cod_contabilidad = @cod_contabilidad
+        ", new
+                {
+                    periodo = f.periodo,
+                    cod_contabilidad = codContabilidad
+                });
 
-                            if (periodo == null)
-                                throw new Exception("No se encontró el periodo");
+                if (periodo == null)
+                    throw new Exception("No se encontró el periodo");
 
-                            int mes = periodo.inicio_mes;
-                            int anio = periodo.inicio_anio;
+                int mes = periodo.inicio_mes;
+                int anio = periodo.inicio_anio;
 
                 //----------------------------------------
                 // 4. LOOP 12 MESES 
@@ -239,14 +239,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     // FILTROS DINÁMICOS
                     //----------------------------------------
                     if (!string.IsNullOrEmpty(f.unidad) && f.unidad != "C")
-                    {
                         sqlMovimiento += " AND cod_unidad = @unidad";
-                    }
 
                     if (!string.IsNullOrEmpty(f.centroCosto) && f.centroCosto != "T")
-                    {
                         sqlMovimiento += " AND cod_centro_costo = @centro";
-                    }
 
                     //----------------------------------------
                     // EJECUTAR QUERY
@@ -261,19 +257,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     });
 
                     //----------------------------------------
-                    // UPDATE MASIVO
+                    // VALIDAR COLUMNA (SONAR SAFE)
                     //----------------------------------------
-                    string campoMes = $"movimiento_{i:00}";
+                    string campoMes = i switch
+                    {
+                        1 => "movimiento_01",
+                        2 => "movimiento_02",
+                        3 => "movimiento_03",
+                        4 => "movimiento_04",
+                        5 => "movimiento_05",
+                        6 => "movimiento_06",
+                        7 => "movimiento_07",
+                        8 => "movimiento_08",
+                        9 => "movimiento_09",
+                        10 => "movimiento_10",
+                        11 => "movimiento_11",
+                        12 => "movimiento_12",
+                        _ => throw new Exception("Mes inválido")
+                    };
 
+                    //----------------------------------------
+                    // UPDATE
+                    //----------------------------------------
                     foreach (var m in movimientos)
                     {
                         cn.Execute($@"
-                                UPDATE CntX_Rep_Periodos_mov
-                                SET {campoMes} = @movimiento
-                                WHERE cod_cuenta = @cod_cuenta
-                                AND usuario = @usuario
-                                AND cod_contabilidad = @cod_contabilidad
-                            ", new
+                    UPDATE CntX_Rep_Periodos_mov
+                    SET {campoMes} = @movimiento
+                    WHERE cod_cuenta = @cod_cuenta
+                    AND usuario = @usuario
+                    AND cod_contabilidad = @cod_contabilidad
+                ", new
                         {
                             movimiento = m.movimiento,
                             cod_cuenta = m.cod_cuenta,
