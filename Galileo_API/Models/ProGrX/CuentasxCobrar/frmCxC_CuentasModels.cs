@@ -214,6 +214,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public const string paginacionSql = @"
                 OFFSET @offset ROWS
                 FETCH NEXT @fetch ROWS ONLY;";
+        public const string operacionRequerida = "La operación es requerida.";
+        public const string fechaFormat = "yyyy/MM/dd";
     }
 
     public class EjecutarConsultaScrollRequest
@@ -242,18 +244,18 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class CxCCuentasFacturaRegistraRequest
     {
-        public long operacion { get; set; }
+        public long operacion { get; set; } = 0;
         public string estado { get; set; } = string.Empty;
         public string autoriza_estado { get; set; } = string.Empty;
         public string factura { get; set; } = string.Empty;
         public string divisa { get; set; } = string.Empty;
         public string factura_estado { get; set; } = string.Empty;
-        public decimal importe { get; set; }
-        public decimal tipo_cambio { get; set; }
-        public decimal monto { get; set; }
-        public bool adelanta { get; set; }
+        public decimal importe { get; set; } = 0;
+        public decimal tipo_cambio { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
+        public bool adelanta { get; set; } = false;
         public string adelanto_tipo { get; set; } = string.Empty;
-        public decimal adelanto { get; set; }
+        public decimal adelanto { get; set; } = 0;
         public DateTime? fecha_emision { get; set; }
         public DateTime? fecha_pago { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -291,7 +293,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class CxCCuentasFacturaVincularRequest
     {
-        public long operacion { get; set; }
+        public long operacion { get; set; } = 0;
         public string estado { get; set; } = string.Empty;
         public string autoriza_estado { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;

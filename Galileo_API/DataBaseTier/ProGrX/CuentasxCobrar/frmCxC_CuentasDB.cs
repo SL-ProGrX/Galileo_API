@@ -154,7 +154,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasBusquedaOperacionItem>("La operación es requerida.");
+                return DbHelper.CreateErrorResponse<CxCCuentasBusquedaOperacionItem>(CxCCuentasConstantes.operacionRequerida);
             }
 
             try
@@ -376,7 +376,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasConsultaData>("La operación es requerida.");
+                return DbHelper.CreateErrorResponse<CxCCuentasConsultaData>(CxCCuentasConstantes.operacionRequerida);
             }
 
             try
@@ -425,7 +425,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (operacion <= 0)
             {
                 response.Code = -1;
-                response.Description = "La operación es requerida.";
+                response.Description = CxCCuentasConstantes.operacionRequerida;
                 return response;
             }
 
@@ -1579,7 +1579,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (request.operacion <= 0)
             {
                 response.Code = -1;
-                response.Description = "La operación es requerida.";
+                response.Description = CxCCuentasConstantes.operacionRequerida;
                 return response;
             }
 
@@ -1684,8 +1684,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     adelanta = request.adelanta ? 1 : 0,
                     adelanto_tipo = adelantoTipo,
                     adelanto = request.adelanta ? request.adelanto : 0,
-                    fecha_emision = request.fecha_emision.Value.ToString("yyyy/MM/dd"),
-                    fecha_pago = request.fecha_pago.Value.ToString("yyyy/MM/dd"),
+                    fecha_emision = request.fecha_emision.Value.ToString(CxCCuentasConstantes.fechaFormat),
+                    fecha_pago = request.fecha_pago.Value.ToString(CxCCuentasConstantes.fechaFormat),
                     usuario
                 });
 
@@ -1739,7 +1739,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (request.operacion <= 0)
             {
                 response.Code = -1;
-                response.Description = "La operación es requerida.";
+                response.Description = CxCCuentasConstantes.operacionRequerida;
                 return response;
             }
 
@@ -1851,7 +1851,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (request.operacion <= 0)
             {
                 response.Code = -1;
-                response.Description = "La operación es requerida.";
+                response.Description = CxCCuentasConstantes.operacionRequerida;
                 return response;
             }
 
@@ -1935,8 +1935,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         tipo_cambio = item.tipo_cambio,
                         monto = item.monto,
                         adelanto = item.adelanto,
-                        fecha_emision = item.fecha_emision?.ToString("yyyy/MM/dd"),
-                        fecha_pago = item.fecha_pago?.ToString("yyyy/MM/dd"),
+                        fecha_emision = item.fecha_emision?.ToString(CxCCuentasConstantes.fechaFormat),
+                        fecha_pago = item.fecha_pago?.ToString(CxCCuentasConstantes.fechaFormat),
                         usuario,
                         operacion_origen = item.operacion_origen
                     });
