@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        private void Limpiar(SqlConnection cn, string usuario)
+        private static void Limpiar(SqlConnection cn, string usuario)
         {
             cn.Execute(@"
         DELETE CntX_Rep_Periodos_mov
@@ -240,7 +240,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-        private string ConstruirSqlMovimiento(CntxRepMovPeriodoFiltroDto f)
+        private static string ConstruirSqlMovimiento(CntxRepMovPeriodoFiltroDto f)
         {
             return f.mostrar == "A"
                 ? @"SELECT 
@@ -255,7 +255,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
            WHERE anio = @anio AND mes = @mes AND cod_contabilidad = @cod_contabilidad";
         }
 
-        private string AplicarFiltros(string sql, CntxRepMovPeriodoFiltroDto f)
+        private static string AplicarFiltros(string sql, CntxRepMovPeriodoFiltroDto f)
         {
             if (!string.IsNullOrEmpty(f.unidad) && f.unidad != "C")
                 sql += " AND cod_unidad = @unidad";
@@ -284,7 +284,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             transaction.Commit();
         }
 
-        private (int mes, int anio) SiguienteMes(int mes, int anio)
+        private static (int mes, int anio) SiguienteMes(int mes, int anio)
         {
             if (mes == 12)
                 return (1, anio + 1);
@@ -292,7 +292,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return (mes + 1, anio);
         }
 
-        private string ObtenerSqlUpdate(int i)
+        private static string ObtenerSqlUpdate(int i)
         {
             return i switch
             {
