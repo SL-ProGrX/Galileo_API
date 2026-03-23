@@ -290,15 +290,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     //----------------------------------------
                     // UPDATE
                     //----------------------------------------
-                    foreach (var m in movimientos)
+                    using (var transaction = cn.BeginTransaction())
                     {
-                        cn.Execute(sqlUpdate, new
+                        foreach (var m in movimientos)
                         {
-                            movimiento = m.movimiento,
-                            cod_cuenta = m.cod_cuenta,
-                            usuario = f.usuario,
-                            cod_contabilidad = codContabilidad
-                        });
+                            cn.Execute(sqlUpdate, new
+                            {
+                                movimiento = m.movimiento,
+                                cod_cuenta = m.cod_cuenta,
+                                usuario = f.usuario,
+                                cod_contabilidad = codContabilidad
+                            }, transaction: transaction);
+                        }
+                        transaction.Commit();
                     }
 
                     //----------------------------------------
