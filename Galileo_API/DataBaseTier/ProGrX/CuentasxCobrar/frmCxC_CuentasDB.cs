@@ -21,33 +21,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #region Helpers Comunes
 
-        private static ErrorDto<T> CrearRespuestaVerificacion<T>()
-            where T : CxCCuentasProcesoVerificaResult, new()
-        {
-            return new ErrorDto<T>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new T
-                {
-                    pass = true,
-                    mensaje = string.Empty
-                }
-            };
-        }
-
-        private static void AsignarErrorVerificacion<T>(ErrorDto<T> response, string descripcion)
-            where T : CxCCuentasProcesoVerificaResult, new()
-        {
-            response.Code = -1;
-            response.Description = descripcion;
-            response.Result = new T
-            {
-                pass = false,
-                mensaje = descripcion
-            };
-        }
-
         private static void AsignarResultadoVerificacion<T>(ErrorDto<T> response, bool pass, string mensaje)
             where T : CxCCuentasProcesoVerificaResult, new()
         {
@@ -1040,18 +1013,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasActivacionRequest request)
         {
-            var response = CrearRespuestaVerificacion<CxCCuentasActivacionVerificaResult>();
+            var response = DbHelper.CreateOkResponse<CxCCuentasActivacionVerificaResult>();
 
             if (request is null)
             {
-                AsignarErrorVerificacion(response, CxCCuentasConstantes.solicitudRequerida);
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionVerificaResult>(CxCCuentasConstantes.solicitudRequerida);
             }
 
             if (request.operacion <= 0)
             {
-                AsignarErrorVerificacion(response, CxCCuentasConstantes.operacionRequerida);
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionVerificaResult>(CxCCuentasConstantes.operacionRequerida);
             }
 
             var emitirTipo = NormalizarMayusculas(request.emitir_tipo);
@@ -1112,13 +1083,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     mensajes.Count == 0,
                     string.Join(Environment.NewLine, mensajes));
             }
-            catch (DbException ex)
-            {
-                AsignarErrorVerificacion(response, $"No fue posible verificar la activación. {ex.Message}");
-            }
             catch (Exception ex)
             {
-                AsignarErrorVerificacion(response, $"Error inesperado al verificar la activación. {ex.Message}");
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionVerificaResult>($"Error inesperado al verificar la activación. {ex.Message}");
             }
 
             return response;
@@ -1342,18 +1309,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasAnulacionRequest request)
         {
-            var response = CrearRespuestaVerificacion<CxCCuentasAnulacionVerificaResult>();
+            var response = DbHelper.CreateOkResponse<CxCCuentasAnulacionVerificaResult>();
 
             if (request is null)
             {
-                AsignarErrorVerificacion(response, CxCCuentasConstantes.solicitudRequerida);
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasAnulacionVerificaResult>(CxCCuentasConstantes.solicitudRequerida);
             }
 
             if (request.operacion <= 0)
             {
-                AsignarErrorVerificacion(response, CxCCuentasConstantes.operacionRequerida);
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasAnulacionVerificaResult>(CxCCuentasConstantes.operacionRequerida);
             }
 
             try
@@ -1373,8 +1338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (string.IsNullOrWhiteSpace(estado))
                 {
-                    AsignarErrorVerificacion(response, "No se encontró la operación indicada.");
-                    return response;
+                    return DbHelper.CreateErrorResponse<CxCCuentasAnulacionVerificaResult>("No se encontró la operación indicada.");
                 }
 
                 var pass = estado.Trim().ToUpperInvariant() == "A";
@@ -1384,13 +1348,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     pass,
                     pass ? string.Empty : "Solo pueden anularse operaciones activas.");
             }
-            catch (DbException ex)
-            {
-                AsignarErrorVerificacion(response, $"No fue posible verificar la anulación. {ex.Message}");
-            }
             catch (Exception ex)
             {
-                AsignarErrorVerificacion(response, $"Error inesperado al verificar la anulación. {ex.Message}");
+                return DbHelper.CreateErrorResponse<CxCCuentasAnulacionVerificaResult>($"Error inesperado al verificar la anulación. {ex.Message}");
             }
 
             return response;
