@@ -13,7 +13,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
         private readonly int vModulo = 31;
-
+        private const string MENSAJEOPERACION = "La operación indicada no existe.";
         public FrmCxCCuentasCargosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -44,7 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 var contexto = ObtenerContextoOperacion(conn, operacion);
                 if (contexto == null)
-                    return DbHelper.CreateErrorResponse<CxCCuentasCargoOperacionDto>("La operación indicada no existe.", -2);
+                    return DbHelper.CreateErrorResponse<CxCCuentasCargoOperacionDto>(MENSAJEOPERACION, -2);
 
                 var lista = ObtenerCargosOperacion(conn, operacion);
 
@@ -72,7 +72,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             try
             {
                 if (!OperacionExiste(conn, operacion))
-                    return DbHelper.CreateErrorResponse<CxCCuentasCargosListaResult>("La operación indicada no existe.", -2);
+                    return DbHelper.CreateErrorResponse<CxCCuentasCargosListaResult>(MENSAJEOPERACION, -2);
 
                 var lista = ObtenerCargosOperacion(conn, operacion);
 
@@ -102,31 +102,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             try
             {
                 if (!OperacionExiste(conn, operacion))
-                    return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("La operación indicada no existe.", -2);
+                    return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(MENSAJEOPERACION, -2);
 
                 var texto = (filtro ?? string.Empty).Trim();
                 var like = texto.Length > 0 ? $"%{texto}%" : string.Empty;
 
                 const string sql = @"
-SELECT
-    RTRIM(c.cod_cargo) AS item,
-    RTRIM(c.descripcion) AS descripcion
-FROM CxC_Cargos c
-WHERE c.activo = 1
-  AND c.tipo = 'C'
-  AND NOT EXISTS
-  (
-      SELECT 1
-      FROM CxC_Cuentas_Rebajos_Cargos r
-      WHERE r.operacion = @operacion
-        AND r.cod_cargo = c.cod_cargo
-  )
-  AND (
-        @texto = ''
-        OR c.cod_cargo LIKE @like
-        OR c.descripcion LIKE @like
-      )
-ORDER BY c.cod_cargo;";
+                    SELECT
+                        RTRIM(c.cod_cargo) AS item,
+                        RTRIM(c.descripcion) AS descripcion
+                    FROM CxC_Cargos c
+                    WHERE c.activo = 1
+                      AND c.tipo = 'C'
+                      AND NOT EXISTS
+                      (
+                          SELECT 1
+                          FROM CxC_Cuentas_Rebajos_Cargos r
+                          WHERE r.operacion = @operacion
+                            AND r.cod_cargo = c.cod_cargo
+                      )
+                      AND (
+                            @texto = ''
+                            OR c.cod_cargo LIKE @like
+                            OR c.descripcion LIKE @like
+                          )
+                    ORDER BY c.cod_cargo;";
 
                 var lista = conn.Query<DropDownListaGenericaModel>(sql, new
                 {
@@ -161,27 +161,27 @@ ORDER BY c.cod_cargo;";
             try
             {
                 if (!OperacionExiste(conn, operacion))
-                    return DbHelper.CreateErrorResponse<CxCCuentasCargoDisponibleDto>("La operación indicada no existe.", -2);
+                    return DbHelper.CreateErrorResponse<CxCCuentasCargoDisponibleDto>(MENSAJEOPERACION, -2);
 
                 string? cargoObjetivo;
 
                 if (string.IsNullOrWhiteSpace(actual))
                 {
                     const string sqlPrimero = @"
-SELECT TOP 1 c.cod_cargo
-FROM CxC_Cargos c
-WHERE c.activo = 1
-  AND c.tipo = 'C'
-  AND NOT EXISTS
-  (
-      SELECT 1
-      FROM CxC_Cuentas_Rebajos_Cargos r
-      WHERE r.operacion = @operacion
-        AND r.cod_cargo = c.cod_cargo
-  )
-ORDER BY
-    CASE WHEN @scroll = 1 THEN c.cod_cargo END ASC,
-    CASE WHEN @scroll <> 1 THEN c.cod_cargo END DESC;";
+                    SELECT TOP 1 c.cod_cargo
+                    FROM CxC_Cargos c
+                    WHERE c.activo = 1
+                      AND c.tipo = 'C'
+                      AND NOT EXISTS
+                      (
+                          SELECT 1
+                          FROM CxC_Cuentas_Rebajos_Cargos r
+                          WHERE r.operacion = @operacion
+                            AND r.cod_cargo = c.cod_cargo
+                      )
+                    ORDER BY
+                        CASE WHEN @scroll = 1 THEN c.cod_cargo END ASC,
+                        CASE WHEN @scroll <> 1 THEN c.cod_cargo END DESC;";
 
                     cargoObjetivo = conn.QueryFirstOrDefault<string>(sqlPrimero, new
                     {
@@ -270,8 +270,10 @@ WHERE cod_cargo = @codCargo;";
                 if (validacion.Code != 0)
                     return validacion;
 
-                var existe = CargoOperacionExiste(conn, cargo.operacion, cargo.cod_cargo);
-                if (cargo.isNew)
+                var operacion = cargo.operacion ?? 0;
+                var isNew = cargo.isNew ?? false;
+                var existe = CargoOperacionExiste(conn, operacion, cargo.cod_cargo);
+                if (cargo.isNew == true)
                 {
                     if (existe)
                         return DbHelper.ErrorResponse($"El cargo {cargo.cod_cargo.Trim()} ya existe en la operación {cargo.operacion}.", -2);
@@ -313,15 +315,15 @@ WHERE cod_cargo = @codCargo;";
                     return DbHelper.ErrorResponse("El código de cargo es requerido.", -2);
 
                 if (!OperacionExiste(conn, operacion))
-                    return DbHelper.ErrorResponse("La operación indicada no existe.", -2);
+                    return DbHelper.ErrorResponse(MENSAJEOPERACION, -2);
 
                 if (!CargoOperacionExiste(conn, operacion, cargo))
                     return DbHelper.ErrorResponse($"El cargo {cargo} no existe en la operación {operacion}.", -2);
 
                 const string sql = @"
-DELETE FROM CxC_Cuentas_Rebajos_Cargos
-WHERE operacion = @operacion
-  AND cod_cargo = @codCargo;";
+                    DELETE FROM CxC_Cuentas_Rebajos_Cargos
+                    WHERE operacion = @operacion
+                      AND cod_cargo = @codCargo;";
 
                 var afectados = conn.Execute(sql, new
                 {
@@ -342,99 +344,99 @@ WHERE operacion = @operacion
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         private ErrorDto CxC_Cuentas_Cargos_Insertar(int CodEmpresa, string usuario, CxCCuentasCargoData cargo)
             => UpsertCargo(CodEmpresa, usuario, cargo, isInsert: true);
-
         private ErrorDto CxC_Cuentas_Cargos_Actualizar(int CodEmpresa, string usuario, CxCCuentasCargoData cargo)
             => UpsertCargo(CodEmpresa, usuario, cargo, isInsert: false);
-
         private ErrorDto UpsertCargo(int CodEmpresa, string usuario, CxCCuentasCargoData cargo, bool isInsert)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                var contexto = ObtenerContextoOperacion(conn, cargo.operacion);
+                var operacion = cargo.operacion ?? 0;
+                var valor = cargo.valor ?? 0m;
+
+                var contexto = ObtenerContextoOperacion(conn, operacion);
                 if (contexto == null)
-                    return DbHelper.ErrorResponse("La operación indicada no existe.", -2);
+                    return DbHelper.ErrorResponse(MENSAJEOPERACION, -2);
 
                 var codCargo = cargo.cod_cargo.Trim();
                 var tipo = ObtenerTipoNormalizado(cargo.tipo);
                 var detalle = (cargo.detalle ?? string.Empty).Trim();
-                var montoCalculado = CalcularMontoCargo(contexto.monto_operacion, tipo, cargo.valor);
+                var montoCalculado = CalcularMontoCargo(contexto.monto_operacion, tipo, valor);
 
                 if (isInsert)
                 {
                     const string sqlInsert = @"
-INSERT INTO CxC_Cuentas_Rebajos_Cargos
-(
-    cod_cargo,
-    operacion,
-    tipo,
-    monto,
-    valor,
-    modifica,
-    detalle,
-    registro_usuario,
-    registro_fecha
-)
-VALUES
-(
-    @codCargo,
-    @operacion,
-    @tipo,
-    @monto,
-    @valor,
-    1,
-    @detalle,
-    @usuario,
-    dbo.MyGetdate()
-);";
+                INSERT INTO CxC_Cuentas_Rebajos_Cargos
+                (
+                    cod_cargo,
+                    operacion,
+                    tipo,
+                    monto,
+                    valor,
+                    modifica,
+                    detalle,
+                    registro_usuario,
+                    registro_fecha
+                )
+                VALUES
+                (
+                    @codCargo,
+                    @operacion,
+                    @tipo,
+                    @monto,
+                    @valor,
+                    1,
+                    @detalle,
+                    @usuario,
+                    dbo.MyGetdate()
+                );";
 
                     conn.Execute(sqlInsert, new
                     {
                         codCargo,
-                        operacion = cargo.operacion,
+                        operacion,
                         tipo,
                         monto = montoCalculado,
-                        valor = cargo.valor,
+                        valor,
                         detalle,
                         usuario
                     });
 
-                    var bitacoraInsert = CrearBitacora(CodEmpresa, usuario, $"Registra - Cargo {codCargo} en operación CxC #{cargo.operacion}");
+                    var bitacoraInsert = CrearBitacora(CodEmpresa, usuario, $"Registra - Cargo {codCargo} en operación CxC #{operacion}");
                     _ = Bitacora(bitacoraInsert);
 
                     return DbHelper.OkResponse("Cargo registrado satisfactoriamente.");
                 }
 
                 const string sqlUpdate = @"
-UPDATE CxC_Cuentas_Rebajos_Cargos
-SET tipo = @tipo,
-    monto = @monto,
-    valor = @valor,
-    detalle = @detalle,
-    registro_usuario = @usuario,
-    registro_fecha = dbo.MyGetdate()
-WHERE operacion = @operacion
-  AND cod_cargo = @codCargo;";
+            UPDATE CxC_Cuentas_Rebajos_Cargos
+            SET tipo = @tipo,
+                monto = @monto,
+                valor = @valor,
+                detalle = @detalle,
+                registro_usuario = @usuario,
+                registro_fecha = dbo.MyGetdate()
+            WHERE operacion = @operacion
+              AND cod_cargo = @codCargo;";
 
                 var rows = conn.Execute(sqlUpdate, new
                 {
                     tipo,
                     monto = montoCalculado,
-                    valor = cargo.valor,
+                    valor,
                     detalle,
                     usuario,
-                    operacion = cargo.operacion,
+                    operacion,
                     codCargo
                 });
 
                 if (rows <= 0)
                     return DbHelper.ErrorResponse("No se pudo actualizar el cargo indicado.", -2);
 
-                var bitacoraUpdate = CrearBitacora(CodEmpresa, usuario, $"Modifica - Cargo {codCargo} en operación CxC #{cargo.operacion}");
+                var bitacoraUpdate = CrearBitacora(CodEmpresa, usuario, $"Modifica - Cargo {codCargo} en operación CxC #{operacion}");
                 _ = Bitacora(bitacoraUpdate);
 
                 return DbHelper.OkResponse("Cargo actualizado satisfactoriamente.");
@@ -444,26 +446,25 @@ WHERE operacion = @operacion
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         private static string ObtenerTipoNormalizado(string? tipo)
         {
             var tipoTrim = (tipo ?? string.Empty).Trim().ToUpperInvariant();
             return tipoTrim.StartsWith('P') ? "P" : "M";
         }
-
         private static decimal CalcularMontoCargo(decimal montoOperacion, string tipo, decimal valor)
         {
             return tipo == "P"
                 ? Math.Round(montoOperacion * valor / 100m, 2, MidpointRounding.AwayFromZero)
                 : Math.Round(valor, 2, MidpointRounding.AwayFromZero);
         }
-
-        private ErrorDto ValidarCargoGuardar(SqlConnection conn, CxCCuentasCargoData cargo)
+        private static ErrorDto ValidarCargoGuardar(SqlConnection conn, CxCCuentasCargoData cargo)
         {
+            var operacion = cargo.operacion ?? 0;
+            var valor = cargo.valor ?? 0m;
             var codCargo = (cargo.cod_cargo ?? string.Empty).Trim();
             var tipo = (cargo.tipo ?? string.Empty).Trim();
 
-            if (cargo.operacion <= 0)
+            if (operacion <= 0)
                 return DbHelper.ErrorResponse("La operación es requerida.", -2);
 
             if (string.IsNullOrWhiteSpace(codCargo))
@@ -472,18 +473,17 @@ WHERE operacion = @operacion
             if (string.IsNullOrWhiteSpace(tipo))
                 return DbHelper.ErrorResponse("El tipo de cargo es requerido.", -2);
 
-            if (cargo.valor < 0)
+            if (valor < 0)
                 return DbHelper.ErrorResponse("El valor del cargo no puede ser negativo.", -2);
 
-            if (!OperacionExiste(conn, cargo.operacion))
-                return DbHelper.ErrorResponse("La operación indicada no existe.", -2);
+            if (!OperacionExiste(conn, operacion))
+                return DbHelper.ErrorResponse(MENSAJEOPERACION, -2);
 
             if (!CargoCatalogoValido(conn, codCargo))
                 return DbHelper.ErrorResponse($"El cargo {codCargo} no existe, no está activo o no es de tipo 'C'.", -2);
 
             return DbHelper.OkResponse(string.Empty);
         }
-
         private static bool OperacionExiste(SqlConnection conn, int operacion)
         {
             const string sql = @"
@@ -493,7 +493,6 @@ WHERE operacion = @operacion;";
 
             return conn.QueryFirstOrDefault<int>(sql, new { operacion }) > 0;
         }
-
         private static bool CargoCatalogoValido(SqlConnection conn, string codCargo)
         {
             const string sql = @"
@@ -505,7 +504,6 @@ WHERE cod_cargo = @codCargo
 
             return conn.QueryFirstOrDefault<int>(sql, new { codCargo }) > 0;
         }
-
         private static bool CargoOperacionExiste(SqlConnection conn, int operacion, string codCargo)
         {
             const string sql = @"
@@ -520,7 +518,6 @@ WHERE operacion = @operacion
                 codCargo
             }) > 0;
         }
-
         private static CxCCuentasCargoOperacionDto? ObtenerContextoOperacion(SqlConnection conn, int operacion)
         {
             const string sql = @"
@@ -535,7 +532,6 @@ WHERE c.operacion = @operacion;";
 
             return conn.QueryFirstOrDefault<CxCCuentasCargoOperacionDto>(sql, new { operacion });
         }
-
         private static List<CxCCuentasCargoData> ObtenerCargosOperacion(SqlConnection conn, int operacion)
         {
             const string sql = @"
@@ -559,7 +555,6 @@ ORDER BY r.cod_cargo;";
 
             return conn.Query<CxCCuentasCargoData>(sql, new { operacion }).ToList();
         }
-
         private BitacoraInsertarDto CrearBitacora(int codEmpresa, string usuario, string detalle)
         {
             return new BitacoraInsertarDto

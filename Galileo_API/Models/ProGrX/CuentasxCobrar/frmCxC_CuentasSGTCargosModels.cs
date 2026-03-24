@@ -4,17 +4,17 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
     public class CxCCuentasCargoData
     {
-        public int operacion { get; set; }
+        public int? operacion { get; set; }
         public string cod_cargo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public string tipo { get; set; } = string.Empty;
-        public decimal valor { get; set; }
+        public decimal? valor { get; set; }
         public short modifica { get; set; }
         public string detalle { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
-        public bool isNew { get; set; }
+        public bool? isNew { get; set; }
     }
 
     public class CxCCuentasCargoOperacionDto
@@ -47,7 +47,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class CxCCuentasCargoEliminarRequest
     {
-        public int operacion { get; set; }
+        public int? operacion { get; set; }
         public string cod_cargo { get; set; } = string.Empty;
     }
 }

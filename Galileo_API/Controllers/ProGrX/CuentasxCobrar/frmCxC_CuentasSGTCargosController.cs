@@ -52,12 +52,12 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return BL.CxC_Cuentas_Cargos_Guardar(CodEmpresa, usuario, req.cargo);
         }
-
         [Authorize]
         [HttpPost("CxC_Cuentas_Cargos_Eliminar")]
         public ErrorDto CxC_Cuentas_Cargos_Eliminar(int CodEmpresa, string usuario, [FromBody] CxCCuentasCargoEliminarRequest req)
         {
-            return BL.CxC_Cuentas_Cargos_Eliminar(CodEmpresa, usuario, req.operacion, req.cod_cargo);
+            var operacion = req.operacion ?? 0;
+            return BL.CxC_Cuentas_Cargos_Eliminar(CodEmpresa, usuario, operacion, req.cod_cargo);
         }
     }
 }
