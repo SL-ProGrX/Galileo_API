@@ -8,7 +8,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public List<CxCCuentasBusquedaOperacionItem> lista { get; set; } = new();
     }
 
-    public class CxCCuentasBusquedaOperacionRequest: CxCCuentasBusquedaOperacionItem
+    public class CxCCuentasBusquedaOperacionRequest : CxCCuentasBusquedaOperacionItem
     {
         public int skip { get; set; }
         public int take { get; set; }
@@ -83,12 +83,17 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public DateTime? fechaserver { get; set; }
     }
 
-    public class CxCCuentasFacturasLista
+    public class CxCCuentasFacturasListaBase<T>
     {
         public int casos { get; set; }
         public decimal total { get; set; }
         public decimal adelanto { get; set; }
-        public List<CxCCuentasFacturasData> lista { get; set; } = new();
+        public List<T> lista { get; set; } = new();
+    }
+
+    public class CxCCuentasFacturasLista : CxCCuentasFacturasListaBase<CxCCuentasFacturasData>
+    {
+        public bool flistado { get; set; } = false;
     }
 
     public class CxCCuentasFacturasData
@@ -110,12 +115,9 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public long operacion_origen { get; set; }
     }
 
-    public class CxCCuentasFacturasAdelantadasLista
+    public class CxCCuentasFacturasAdelantadasLista : CxCCuentasFacturasListaBase<CxCCuentasFacturasAdelantadasData>
     {
-        public int casos { get; set; }
-        public decimal total { get; set; }
-        public decimal adelanto { get; set; }
-        public List<CxCCuentasFacturasAdelantadasData> lista { get; set; } = new();
+        public bool adelantoListado { get; set; } = false;
     }
 
     public class CxCCuentasFacturasAdelantadasData
@@ -184,28 +186,30 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class CxCCuentasPagadorData
+    public class CxCCuentasPersonaSimple
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
     }
 
-    public class CxCCuentasPagadoresFiltroItem
+    public class CxCCuentasPagadorData : CxCCuentasPersonaSimple
     {
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
+        public bool pagadoDto { get; set; } = false;
     }
 
-    public class CxCCuentasAutorizadoData
+    public class CxCCuentasPagadoresFiltroItem : CxCCuentasPersonaSimple
     {
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
+        public bool pagadoresDto { get; set; } = false;
     }
 
-    public class CxCCuentasAutorizadosFiltroItem
+    public class CxCCuentasAutorizadoData : CxCCuentasPersonaSimple
     {
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
+        public bool authDto { get; set; } = false;
+    }
+
+    public class CxCCuentasAutorizadosFiltroItem : CxCCuentasPersonaSimple
+    {
+        public bool auth { get; set; } = false;
     }
 
     public static class CxCCuentasConstantes
@@ -216,16 +220,17 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
                 FETCH NEXT @fetch ROWS ONLY;";
         public const string operacionRequerida = "La operación es requerida.";
         public const string solicitudRequerida = "La solicitud es requerida.";
+        public const string usuarioRequerido = "El Usuario es requerido";
         public const string fechaFormat = "yyyy/MM/dd";
     }
 
     public class EjecutarConsultaScrollRequest
     {
         public int codEmpresa { get; set; } = 0;
-        public int tipo { get; set; } = 0; // 0 = siguiente, 1 = anterior
+        public int tipo { get; set; } = 0;
         public string sqlAnterior { get; set; } = string.Empty;
         public string sqlSiguiente { get; set; } = string.Empty;
-        public object? parametros { get; set; } 
+        public object? parametros { get; set; }
         public string mensajeNoEncontrado { get; set; } = string.Empty;
         public string mensajeDb { get; set; } = string.Empty;
         public string mensajeGeneral { get; set; } = string.Empty;
@@ -353,32 +358,38 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public DateTime? fecha_inicio { get; set; }
     }
 
-    public class CxCCuentasActivacionVerificaResult
+    public class CxCCuentasProcesoRequest
+    {
+        public long operacion { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CxCCuentasProcesoVerificaResult
     {
         public bool pass { get; set; }
         public string mensaje { get; set; } = string.Empty;
     }
 
-    public class CxCCuentasActivacionRequest
+    public class CxCCuentasActivacionVerificaResult : CxCCuentasProcesoVerificaResult
     {
-        public long operacion { get; set; } = 0;
-        public string usuario { get; set; } = string.Empty;
+        public bool activaVeri { get; set; } = false;
+    }
+
+    public class CxCCuentasActivacionRequest : CxCCuentasProcesoRequest
+    {
         public string emitir_tipo { get; set; } = string.Empty;
         public string? emitir_cuenta { get; set; }
         public string? num_documento { get; set; }
         public bool es_factoreo { get; set; } = false;
     }
 
-    public class CxCCuentasAnulacionVerificaResult
+    public class CxCCuentasAnulacionVerificaResult : CxCCuentasProcesoVerificaResult
     {
-        public bool pass { get; set; }
-        public string mensaje { get; set; } = string.Empty;
+        public bool anulaVeri { get; set; } = false;
     }
 
-    public class CxCCuentasAnulacionRequest
+    public class CxCCuentasAnulacionRequest : CxCCuentasProcesoRequest
     {
-        public long operacion { get; set; } = 0;
-        public string usuario { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
     }
 
@@ -400,6 +411,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public bool procesa_tesoreria { get; set; }
         public List<CxCCuentasActivacionDetalleItem> lista { get; set; } = new();
     }
-    
+
 
 }

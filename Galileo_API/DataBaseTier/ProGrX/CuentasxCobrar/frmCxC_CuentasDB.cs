@@ -18,6 +18,84 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             _portalDb = new PortalDB(config);
             _proGrxMain = new MProGrxMain(config);
         }
+
+        #region Helpers Comunes
+
+        private static void AsignarErrorResponse<T>(ErrorDto<T> response, string descripcion) where T : new()
+        {
+            response.Code = -1;
+            response.Description = descripcion;
+            response.Result = new T();
+        }
+
+        private static ErrorDto<bool> CrearRespuestaProceso()
+        {
+            return new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+        }
+
+        private static void AsignarErrorProceso(ErrorDto<bool> response, string descripcion)
+        {
+            response.Code = -1;
+            response.Description = descripcion;
+            response.Result = false;
+        }
+
+        private static ErrorDto<T> CrearRespuestaVerificacion<T>()
+            where T : CxCCuentasProcesoVerificaResult, new()
+        {
+            return new ErrorDto<T>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new T
+                {
+                    pass = true,
+                    mensaje = string.Empty
+                }
+            };
+        }
+
+        private static void AsignarErrorVerificacion<T>(ErrorDto<T> response, string descripcion)
+            where T : CxCCuentasProcesoVerificaResult, new()
+        {
+            response.Code = -1;
+            response.Description = descripcion;
+            response.Result = new T
+            {
+                pass = false,
+                mensaje = descripcion
+            };
+        }
+
+        private static void AsignarResultadoVerificacion<T>(ErrorDto<T> response, bool pass, string mensaje)
+            where T : CxCCuentasProcesoVerificaResult, new()
+        {
+            response.Result = new T
+            {
+                pass = pass,
+                mensaje = mensaje
+            };
+        }
+
+        private static void AsignarTotalesFacturas<TItem>(
+            CxCCuentasFacturasListaBase<TItem> result,
+            List<TItem> lista,
+            Func<TItem, decimal> selectorMonto,
+            Func<TItem, decimal> selectorAdelanto)
+        {
+            result.lista = lista;
+            result.casos = lista.Count;
+            result.total = lista.Sum(selectorMonto);
+            result.adelanto = lista.Sum(selectorAdelanto);
+        }
+
+        #endregion
+
         /// <summary>
         /// Obtiene la fecha del servidor.
         /// </summary>
@@ -415,17 +493,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Lista de facturas y totales.</returns>
         public ErrorDto<CxCCuentasFacturasLista> CxCCuentasFacturas_Obtener(int codEmpresa, long operacion)
         {
-            var response = new ErrorDto<CxCCuentasFacturasLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasFacturasLista()
-            };
+            var response = CrearRespuestaOk<CxCCuentasFacturasLista>();
 
             if (operacion <= 0)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
+                AsignarErrorResponse(response, CxCCuentasConstantes.operacionRequerida);
                 return response;
             }
 
@@ -434,7 +506,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 const string sql = @"exec spCxC_Operacion_Facturas @Operacion, 0;";
-
                 var lista = conn.Query<CxCCuentasFacturasData>(sql, new { Operacion = operacion }).ToList();
 
                 foreach (var item in lista)
@@ -444,22 +515,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         : "Monto";
                 }
 
-                response.Result.lista = lista;
-                response.Result.casos = lista.Count;
-                response.Result.total = lista.Sum(x => x.monto);
-                response.Result.adelanto = lista.Sum(x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar las facturas de la operación. {ex.Message}";
-                response.Result = new CxCCuentasFacturasLista();
+                AsignarErrorResponse(response, $"No fue posible consultar las facturas de la operación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar las facturas de la operación. {ex.Message}";
-                response.Result = new CxCCuentasFacturasLista();
+                AsignarErrorResponse(response, $"Error inesperado al consultar las facturas de la operación. {ex.Message}");
             }
 
             return response;
@@ -477,17 +541,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             string cedula,
             string cedulaPagador)
         {
-            var response = new ErrorDto<CxCCuentasFacturasAdelantadasLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasFacturasAdelantadasLista()
-            };
+            var response = DbHelper.CreateOkResponse<CxCCuentasFacturasAdelantadasLista>();
+            var cedulaNormalizada = NormalizarTexto(cedula);
 
-            if (string.IsNullOrWhiteSpace(cedula))
+            if (string.IsNullOrWhiteSpace(cedulaNormalizada))
             {
-                response.Code = -1;
-                response.Description = "La cédula es requerida.";
+                AsignarErrorResponse(response, "La cédula es requerida.");
                 return response;
             }
 
@@ -496,29 +555,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 const string sql = @"exec spCxC_Facturas_Adelantadas_Pendientes @Cedula, @Pagador;";
-
                 var lista = conn.Query<CxCCuentasFacturasAdelantadasData>(sql, new
                 {
-                    Cedula = cedula.Trim(),
-                    Pagador = (cedulaPagador ?? string.Empty).Trim()
+                    Cedula = cedulaNormalizada,
+                    Pagador = NormalizarTexto(cedulaPagador)
                 }).ToList();
 
-                response.Result.lista = lista;
-                response.Result.casos = lista.Count;
-                response.Result.total = lista.Sum(x => x.monto);
-                response.Result.adelanto = lista.Sum(x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar las facturas adelantadas. {ex.Message}";
-                response.Result = new CxCCuentasFacturasAdelantadasLista();
+                AsignarErrorResponse(response, $"No fue posible consultar las facturas adelantadas. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar las facturas adelantadas. {ex.Message}";
-                response.Result = new CxCCuentasFacturasAdelantadasLista();
+                AsignarErrorResponse(response, $"Error inesperado al consultar las facturas adelantadas. {ex.Message}");
             }
 
             return response;
@@ -1015,44 +1066,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasActivacionRequest request)
         {
-            var response = new ErrorDto<CxCCuentasActivacionVerificaResult>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = true,
-                    mensaje = string.Empty
-                }
-            };
+            var response = CrearRespuestaVerificacion<CxCCuentasActivacionVerificaResult>();
 
             if (request is null)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.solicitudRequerida;
-                response.Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = CxCCuentasConstantes.solicitudRequerida
-                };
+                AsignarErrorVerificacion(response, CxCCuentasConstantes.solicitudRequerida);
+                return response;
+            }
+
+            if (request.operacion <= 0)
+            {
+                AsignarErrorVerificacion(response, CxCCuentasConstantes.operacionRequerida);
                 return response;
             }
 
             var emitirTipo = NormalizarMayusculas(request.emitir_tipo);
-            var emitirCuenta = string.IsNullOrWhiteSpace(request.emitir_cuenta) ? string.Empty : NormalizarTexto(request.emitir_cuenta);
-
-            if (request.operacion <= 0)
-            {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
-                response.Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = CxCCuentasConstantes.operacionRequerida
-                };
-                return response;
-            }
-
+            var emitirCuenta = NormalizarTexto(request.emitir_cuenta);
             var mensajes = new List<string>();
 
             try
@@ -1065,12 +1094,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }
 
                 const string sqlMontos = @"
-            SELECT
-                Monto,
-                dbo.fxCxC_CuentaRebajos(@operacion, 'TOT') AS Rebajos,
-                ISNULL(dbo.fxCxC_CuentaIngresos(@operacion), 0) AS Ingresos
-            FROM CxC_Cuentas
-            WHERE Operacion = @operacion;";
+                    SELECT
+                        Monto,
+                        dbo.fxCxC_CuentaRebajos(@operacion, 'TOT') AS Rebajos,
+                        ISNULL(dbo.fxCxC_CuentaIngresos(@operacion), 0) AS Ingresos
+                    FROM CxC_Cuentas
+                    WHERE Operacion = @operacion;";
 
                 var montos = conn.QueryFirstOrDefault(sqlMontos, new
                 {
@@ -1094,7 +1123,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }
 
                 const string sqlFacturas = @"exec spCxC_Operacion_Facturas_Verifica @operacion;";
-
                 var facturas = conn.Query(sqlFacturas, new
                 {
                     operacion = request.operacion
@@ -1105,31 +1133,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     mensajes.Add($"- Factura No.: {item.cod_Factura}, se encuentra registrada en la Operación: {item.Operacion}");
                 }
 
-                response.Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = mensajes.Count == 0,
-                    mensaje = string.Join(Environment.NewLine, mensajes)
-                };
+                AsignarResultadoVerificacion(
+                    response,
+                    mensajes.Count == 0,
+                    string.Join(Environment.NewLine, mensajes));
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible verificar la activación. {ex.Message}";
-                response.Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = response.Description
-                };
+                AsignarErrorVerificacion(response, $"No fue posible verificar la activación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al verificar la activación. {ex.Message}";
-                response.Result = new CxCCuentasActivacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = response.Description
-                };
+                AsignarErrorVerificacion(response, $"Error inesperado al verificar la activación. {ex.Message}");
             }
 
             return response;
@@ -1353,38 +1368,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasAnulacionRequest request)
         {
-            var response = new ErrorDto<CxCCuentasAnulacionVerificaResult>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasAnulacionVerificaResult
-                {
-                    pass = true,
-                    mensaje = string.Empty
-                }
-            };
+            var response = CrearRespuestaVerificacion<CxCCuentasAnulacionVerificaResult>();
 
             if (request is null)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.solicitudRequerida;
-                response.Result = new CxCCuentasAnulacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = CxCCuentasConstantes.solicitudRequerida
-                };
+                AsignarErrorVerificacion(response, CxCCuentasConstantes.solicitudRequerida);
                 return response;
             }
 
             if (request.operacion <= 0)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
-                response.Result = new CxCCuentasAnulacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = CxCCuentasConstantes.operacionRequerida
-                };
+                AsignarErrorVerificacion(response, CxCCuentasConstantes.operacionRequerida);
                 return response;
             }
 
@@ -1393,10 +1387,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 const string sql = @"
-            SELECT TOP 1
-                ISNULL(Estado, '') AS estado
-            FROM CxC_Cuentas
-            WHERE Operacion = @operacion;";
+                    SELECT TOP 1
+                        ISNULL(Estado, '') AS estado
+                    FROM CxC_Cuentas
+                    WHERE Operacion = @operacion;";
 
                 var estado = conn.QueryFirstOrDefault<string>(sql, new
                 {
@@ -1405,47 +1399,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (string.IsNullOrWhiteSpace(estado))
                 {
-                    response.Code = -1;
-                    response.Description = "No se encontró la operación indicada.";
-                    response.Result = new CxCCuentasAnulacionVerificaResult
-                    {
-                        pass = false,
-                        mensaje = "No se encontró la operación indicada."
-                    };
+                    AsignarErrorVerificacion(response, "No se encontró la operación indicada.");
                     return response;
                 }
 
-                estado = estado.Trim().ToUpperInvariant();
+                var pass = estado.Trim().ToUpperInvariant() == "A";
 
-                if (estado != "A")
-                {
-                    response.Result = new CxCCuentasAnulacionVerificaResult
-                    {
-                        pass = false,
-                        mensaje = "Solo pueden anularse operaciones activas."
-                    };
-                    return response;
-                }
+                AsignarResultadoVerificacion(
+                    response,
+                    pass,
+                    pass ? string.Empty : "Solo pueden anularse operaciones activas.");
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible verificar la anulación. {ex.Message}";
-                response.Result = new CxCCuentasAnulacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = response.Description
-                };
+                AsignarErrorVerificacion(response, $"No fue posible verificar la anulación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al verificar la anulación. {ex.Message}";
-                response.Result = new CxCCuentasAnulacionVerificaResult
-                {
-                    pass = false,
-                    mensaje = response.Description
-                };
+                AsignarErrorVerificacion(response, $"Error inesperado al verificar la anulación. {ex.Message}");
             }
 
             return response;
@@ -1461,26 +1432,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasAnulacionRequest request)
         {
-            var response = new ErrorDto<bool>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
+            var response = CrearRespuestaProceso();
 
             if (request is null)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.solicitudRequerida;
-                response.Result = false;
+                AsignarErrorProceso(response, CxCCuentasConstantes.solicitudRequerida);
                 return response;
             }
 
             if (request.operacion <= 0)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
-                response.Result = false;
+                AsignarErrorProceso(response, CxCCuentasConstantes.operacionRequerida);
                 return response;
             }
 
@@ -1489,18 +1451,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                response.Code = -1;
-                response.Description = "El usuario es requerido.";
-                response.Result = false;
+                AsignarErrorProceso(response, CxCCuentasConstantes.usuarioRequerido);
                 return response;
             }
 
             var verifica = CxCCuentasAnulacion_Verifica(codEmpresa, request);
             if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
             {
-                response.Code = -1;
-                response.Description = verifica.Result?.mensaje ?? verifica.Description;
-                response.Result = false;
+                AsignarErrorProceso(response, verifica.Result?.mensaje ?? verifica.Description);
                 return response;
             }
 
@@ -1509,7 +1467,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 const string sql = @"
-            exec spCxC_Cuenta_Anulacion @operacion, @usuario, @notas;";
+                    exec spCxC_Cuenta_Anulacion @operacion, @usuario, @notas;";
 
                 conn.Execute(sql, new
                 {
@@ -1517,20 +1475,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     usuario,
                     notas
                 });
-
-                response.Result = true;
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible anular la operación. {ex.Message}";
-                response.Result = false;
+                AsignarErrorProceso(response, $"No fue posible anular la operación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al anular la operación. {ex.Message}";
-                response.Result = false;
+                AsignarErrorProceso(response, $"Error inesperado al anular la operación. {ex.Message}");
             }
 
             return response;
@@ -2519,7 +2471,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return "El usuario es requerido.";
+                return CxCCuentasConstantes.usuarioRequerido;
             }
 
             return null;
@@ -2529,7 +2481,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return "El usuario es requerido.";
+                return CxCCuentasConstantes.usuarioRequerido;
             }
 
             if (request.facturas is null || request.facturas.Count == 0)
@@ -2859,7 +2811,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return "El usuario es requerido.";
+                return CxCCuentasConstantes.usuarioRequerido;
             }
 
             if (request.facturas is null || request.facturas.Count == 0)
