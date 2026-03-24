@@ -28,8 +28,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
         /// <summary>
-        /// Ejecuta una consulta segura sin transacción
+        /// Ejecuta las listas
         /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="codEmpresa"></param>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private ErrorDto<T> EjecutarSafe<T>(int codEmpresa, Func<SqlConnection, T> accion)
         {
             var response = new ErrorDto<T>();
@@ -52,8 +56,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Ejecuta una operación dentro de una transacción
+        /// Ejecuta transacciones
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private ErrorDto<bool> EjecutarTransaccion(
             int codEmpresa,
             Func<SqlConnection, SqlTransaction, bool> accion)
@@ -88,7 +95,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Lista las consolidaciones
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Consolidaciones_Listar(int codEmpresa, int codContabilidad)
+        
         {
             const string sql = @"
                 SELECT
@@ -107,8 +118,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Busca asientos
+        /// Busca los asientos
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codConsolida"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Asientos_Buscar(int codEmpresa, int codContabilidad, int? codConsolida)
         {
             const string sql = @"
@@ -131,6 +146,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las unidades
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa, int cod_contabilidad)
         {
             return EjecutarSafe(codEmpresa, cn =>
@@ -149,6 +167,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las divisas
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa, int cod_contabilidad)
         {
             return EjecutarSafe(codEmpresa, cn =>
@@ -167,6 +188,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los centros de costo
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, int cod_contabilidad, string codUnidad)
         {
             return EjecutarSafe(codEmpresa, cn =>
@@ -189,6 +214,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los asientos detalle
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codConsolida"></param>
+        /// <param name="codAsiento"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntxConAsientoDetalleDto>> AsientoDetalle_Obtener(
             int codEmpresa,
             int codContabilidad,
@@ -229,6 +259,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Guarda el asiento
         /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> GuardarAsiento(CntxConAsientoGuardarDto request)
         {
             return EjecutarTransaccion(request.cod_empresa ?? 0, (cn, trx) =>
@@ -298,11 +330,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina el asiento
         /// </summary>
-        public ErrorDto<bool> EliminarAsiento(
-            int cod_empresa,
-            int cod_contabilidad,
-            int cod_consolida,
-            string cod_asiento,
+        /// <param name="cod_empresa"></param>
+        /// <param name="cod_contabilidad"></param>
+        /// <param name="cod_consolida"></param>
+        /// <param name="cod_asiento"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public ErrorDto<bool> EliminarAsiento(int cod_empresa,int cod_contabilidad,int cod_consolida,string cod_asiento,
             string usuario)
         {
             return EjecutarTransaccion(cod_empresa, (cn, trx) =>

@@ -192,9 +192,9 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [HttpGet("CxCCuentasAutorizado_Obtener")]
         public ErrorDto<CxCCuentasAutorizadoData> CxCCuentasAutorizado_Obtener(
-    int CodEmpresa,
-    string cedulaCliente,
-    string cedulaAutorizado)
+            int CodEmpresa,
+            string cedulaCliente,
+            string cedulaAutorizado)
         {
             return _BL.CxCCuentasAutorizado_Obtener(CodEmpresa, cedulaCliente, cedulaAutorizado);
         }
@@ -223,6 +223,30 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         public ErrorDto<List<DropDownListaGenericaModel>> CxCCuentasCuentasBancarias_Obtener(int CodEmpresa, string cedula, string banco)
         {
             return _BL.CxCCuentasCuentasBancarias_Obtener(CodEmpresa, cedula, banco);
+        }
+
+        [HttpPost("CxCCuentasFactura_Registra")]
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Registra(
+            int CodEmpresa,
+            [FromBody] CxCCuentasFacturaRegistraRequest request)
+        {
+            return _BL.CxCCuentasFactura_Registra(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasFactura_Elimina")]
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Elimina(
+            int CodEmpresa,
+            [FromBody] CxCCuentasFacturaEliminaRequest request)
+        {
+            return _BL.CxCCuentasFactura_Elimina(CodEmpresa, request);
+        }
+
+        [HttpPost("CxCCuentasFactura_Vincular")]
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Vincular(
+            int CodEmpresa,
+            [FromBody] CxCCuentasFacturaVincularRequest request)
+        {
+            return _BL.CxCCuentasFactura_Vincular(CodEmpresa, request);
         }
     }
 }

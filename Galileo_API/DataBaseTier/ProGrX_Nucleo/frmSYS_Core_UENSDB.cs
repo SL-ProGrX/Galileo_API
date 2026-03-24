@@ -97,7 +97,6 @@ namespace Galileo.DataBaseTier
             var fetch = vfiltro?.paginacion ?? 0;
             if (fetch <= 0) fetch = int.MaxValue;
 
-            // Evita SQL dinámico (Sonar S2077): usa un parámetro para filtrar principales
             const string countSql = @"SELECT COUNT(*)
                                       FROM CORE_UENS
                                       WHERE (@onlyPrincipales = 0 OR UNIDAD_PRINCIPAL IS NULL)
@@ -146,7 +145,8 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
-            var okMsg = request?.cod_unidad == null || request.cod_unidad == ""
+            var esNuevo = string.IsNullOrWhiteSpace(request?.cod_unidad);
+            var okMsg = esNuevo
                 ? "Registro agregado satisfactoriamente"
                 : RegistroActualizadoMsg;
 
@@ -154,27 +154,59 @@ namespace Galileo.DataBaseTier
             {
                 var activa = ToActivaBit(request?.activa);
 
-                const string existsSql = @"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = @cod_unidad";
-                int existe = connection.Query<int>(existsSql, new { cod_unidad = request?.cod_unidad }).FirstOrDefault();
-
-                if (existe == 0)
+                if (esNuevo)
                 {
-                    string nuevoCodigo = GetNextNumericCodUnidad(connection);
+                    const string nextCodeSql = @"
+                SELECT RIGHT('00' + CAST(ISNULL(MAX(CAST(COD_UNIDAD AS INT)), 0) + 1 AS VARCHAR(10)), 2)
+                FROM CORE_UENS WITH (UPDLOCK, HOLDLOCK)
+                WHERE ISNUMERIC(COD_UNIDAD) = 1;";
 
-                    const string insertSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, Activa, Registro_Fecha, Registro_Usuario)
-                                              values(@cod_unidad, @descripcion, @activa, Getdate(), @usuario);";
+                    var nuevoCodigo = connection.ExecuteScalar<string>(nextCodeSql);
 
-                    return connection.Execute(insertSql, new { cod_unidad = nuevoCodigo, descripcion = request?.descripcion, activa, usuario });
+                    const string insertSql = @"
+                INSERT INTO CORE_UENS
+                    (COD_UNIDAD, descripcion, Activa, Registro_Fecha, Registro_Usuario)
+                VALUES
+                    (@cod_unidad, @descripcion, @activa, GETDATE(), @usuario);";
+
+                    return connection.Execute(insertSql, new
+                    {
+                        cod_unidad = nuevoCodigo,
+                        descripcion = request?.descripcion,
+                        activa,
+                        usuario
+                    });
                 }
 
-                const string updateSql = @"update CORE_UENS
-                                             set descripcion = @descripcion,
-                                                 Activa = @activa,
-                                                 Modifica_Fecha = Getdate(),
-                                                 Modifica_Usuario = @usuario
-                                             where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad;";
+                const string existsSql = @"
+            SELECT ISNULL(COUNT(*), 0)
+            FROM CORE_UENS
+            WHERE COD_UNIDAD = @cod_unidad;";
 
-                return connection.Execute(updateSql, new { cod_unidad = request?.cod_unidad, descripcion = request?.descripcion, activa, usuario });
+                int existe = connection.QueryFirstOrDefault<int>(existsSql, new
+                {
+                    cod_unidad = request!.cod_unidad
+                });
+
+                if (existe == 0)
+                    return 0;
+
+                const string updateSql = @"
+            UPDATE CORE_UENS
+               SET descripcion = @descripcion,
+                   Activa = @activa,
+                   Modifica_Fecha = GETDATE(),
+                   Modifica_Usuario = @usuario
+             WHERE COD_UNIDAD = @cod_unidad
+                OR UNIDAD_PRINCIPAL = @cod_unidad;";
+
+                return connection.Execute(updateSql, new
+                {
+                    cod_unidad = request.cod_unidad,
+                    descripcion = request.descripcion,
+                    activa,
+                    usuario
+                });
             });
 
             return MapDbNonQuery(db, okMsg);
@@ -417,11 +449,29 @@ namespace Galileo.DataBaseTier
         {
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                const string query = @"select DISTINCT @cod_unidad AS COD_UNIDAD, C.CNTX_UNIDAD, @cod_unidad as UNIDAD_PRINCIPAL,
-                    (select TOP 1 DESCRIPCION from CNTX_UNIDADES WHERE COD_UNIDAD = C.CNTX_UNIDAD) AS DESCRIPCION
-                    from CORE_UENS C
-                    WHERE C.UNIDAD_PRINCIPAL = @cod_unidad OR C.COD_UNIDAD = @cod_unidad
-                    order by C.CNTX_UNIDAD desc";
+                const string query = @"SELECT
+                                    @cod_unidad AS COD_UNIDAD,
+                                    C.CNTX_UNIDAD,
+                                    @cod_unidad AS UNIDAD_PRINCIPAL,
+                                    U.DESCRIPCION
+                                FROM CORE_UENS C
+                                LEFT JOIN CNTX_UNIDADES U
+                                    ON U.COD_UNIDAD = C.CNTX_UNIDAD
+                                WHERE C.UNIDAD_PRINCIPAL = @cod_unidad
+
+                                UNION
+
+                                SELECT
+                                    @cod_unidad AS COD_UNIDAD,
+                                    C.CNTX_UNIDAD,
+                                    @cod_unidad AS UNIDAD_PRINCIPAL,
+                                    U.DESCRIPCION
+                                FROM CORE_UENS C
+                                LEFT JOIN CNTX_UNIDADES U
+                                    ON U.COD_UNIDAD = C.CNTX_UNIDAD
+                                WHERE C.COD_UNIDAD = @cod_unidad
+
+                                ORDER BY CNTX_UNIDAD DESC";
 
                 var dto = EmptyUensList();
                 dto.Total = 0;
@@ -488,8 +538,8 @@ namespace Galileo.DataBaseTier
 
             return MapDb(db, () => new List<CoreUsuariosDto>());
         }
-        
-        
+
+
         /// <summary>
         /// Registra los miembros
         /// </summary>

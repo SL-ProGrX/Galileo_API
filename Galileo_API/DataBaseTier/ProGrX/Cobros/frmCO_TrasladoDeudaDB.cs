@@ -145,6 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
+        /// <summary>
         public ErrorDto<CoTrasladoDeudaAplicarResponse> CO_TrasladoDeuda_Aplicar(int CodEmpresa, CoTrasladoDeudaAplicarRequest data)
         {
             if (data == null)
@@ -154,6 +155,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(OPERACION);
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
 
             var response = DbHelper.CreateOkResponse(new CoTrasladoDeudaAplicarResponse
             {
@@ -177,6 +179,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 if (preparacion.Error != null)
                     return preparacion.Error;
 
+                EnsureConnectionOpen(conn);
                 tx = conn.BeginTransaction();
 
                 ProcesarAplicacion(conn, tx, preparacion.Contexto!);
@@ -185,6 +188,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 tx.Dispose();
                 tx = null;
 
+                EnsureConnectionOpen(conn);
                 EjecutarPostAplicacion(conn, CodEmpresa, preparacion.Contexto!);
 
                 var errorRecibo = ValidarRecibo(CodEmpresa, preparacion.Contexto!);
@@ -859,9 +863,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 codigo = a.lineaNueva
             }, tx);
         }
-        private static decimal ObtenerFechaProcesoActual(SqlConnection conn)
+        private static decimal ObtenerFechaProcesoActual(SqlConnection conn, SqlTransaction tx)
         {
-            return conn.QueryFirstOrDefault<decimal>("select dbo.fxSIFDateTimeToProceso(dbo.MyGetdate());");
+            return conn.QueryFirstOrDefault<decimal>(
+                "select dbo.fxSIFDateTimeToProceso(dbo.MyGetdate());",
+                transaction: tx);
         }
         private static void RegistrarAsiento(SqlConnection conn, SqlTransaction? tx, AsientoArgs args)
         {
@@ -953,7 +959,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (ctx.baseDto.interes_pendiente > 0m)
             {
-                decimal proceso = ObtenerFechaProcesoActual(conn);
+                decimal proceso = ObtenerFechaProcesoActual(conn, tx);
 
                 conn.Execute(@"
                     insert into MOROSIDAD
@@ -1007,7 +1013,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     ID_SOLICITUD = ctx.data.id_solicitud,
                     ABONO = diferenciaSaldo,
                     AMORTIZA = diferenciaSaldo,
-                    FECHAP = ObtenerFechaProcesoActual(conn),
+                    FECHAP = ObtenerFechaProcesoActual(conn, tx),
                     TCON = ctx.documento.tipo_documento,
                     NCON = ctx.documento.documento,
                     COD_CONCEPTO = ctx.documento.concepto,
@@ -1270,7 +1276,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     usuario = ctx.usuario,
                     fecha = ctx.fecha,
                     opex = opexItem,
-                    fechaProceso = ObtenerFechaProcesoActual(conn),
+                    fechaProceso = ObtenerFechaProcesoActual(conn, tx),
                     notas = ctx.notas,
                     tbpPuntosAdd = ctx.baseDto.tbp_puntos_add,
                     liqTasa = ctx.baseDto.liq_tasa,
@@ -1320,6 +1326,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private void EjecutarPostAplicacion(SqlConnection conn, int codEmpresa, AplicacionContexto ctx)
         {
+            EnsureConnectionOpen(conn);
+
             EjecutarAsientosPostCommit(conn, codEmpresa, ctx);
             RegistrarHistorialCobro(conn, ctx);
 
@@ -1331,6 +1339,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Movimiento = "Aplica - WEB",
                 Modulo = vModulo
             });
+        }
+        private static void EnsureConnectionOpen(SqlConnection conn)
+        {
+            if (conn.State != System.Data.ConnectionState.Open)
+                conn.Open();
         }
         private ErrorDto<CoTrasladoDeudaAplicarResponse>? ValidarRecibo(int codEmpresa, AplicacionContexto ctx)
         {
