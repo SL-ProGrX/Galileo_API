@@ -60,11 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
 
             return DbHelper.ExecuteSingleQuery<CntXDiferidoAsientoResult>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                default,
-                parameters
+                _portalDb,codEmpresa, sql, default, parameters
             );
         }
 
