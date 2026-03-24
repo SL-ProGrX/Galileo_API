@@ -493,7 +493,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Lista de facturas y totales.</returns>
         public ErrorDto<CxCCuentasFacturasLista> CxCCuentasFacturas_Obtener(int codEmpresa, long operacion)
         {
-            var response = CrearRespuestaOk<CxCCuentasFacturasLista>();
+            var response = DbHelper.CreateOkResponse<CxCCuentasFacturasLista>();
 
             if (operacion <= 0)
             {
@@ -515,7 +515,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         : "Monto";
                 }
 
-                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
             }
             catch (DbException ex)
             {
@@ -1458,7 +1458,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var verifica = CxCCuentasAnulacion_Verifica(codEmpresa, request);
             if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
             {
-                AsignarErrorProceso(response, verifica.Result?.mensaje ?? verifica.Description);
+                AsignarErrorProceso(response, verifica.Result?.mensaje ?? verifica.Description!);
                 return response;
             }
 
