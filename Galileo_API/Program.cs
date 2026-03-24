@@ -3,11 +3,12 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Galileo_API;
 using System.Text.Json;
 using System.Globalization;
 using Galileo.DataBaseTier;
+using Microsoft.OpenApi.Models;
 
 // ✅ Asegúrate que este using apunte al namespace real donde está tu filtro
 var builder = WebApplication.CreateBuilder(args);
