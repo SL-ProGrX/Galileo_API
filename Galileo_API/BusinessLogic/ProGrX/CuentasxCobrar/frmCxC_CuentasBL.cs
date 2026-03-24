@@ -209,5 +209,26 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxCCuentasCuentasBancarias_Obtener(codEmpresa, cedula, banco);
         }
+
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Registra(
+                int codEmpresa,
+                CxCCuentasFacturaRegistraRequest request)
+        {
+            return _db.CxCCuentasFactura_Registra(codEmpresa, request);
+        }
+
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Elimina(
+            int codEmpresa,
+            CxCCuentasFacturaEliminaRequest request)
+        {
+            return _db.CxCCuentasFactura_Elimina(codEmpresa, request);
+        }
+
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Vincular(
+            int codEmpresa,
+            CxCCuentasFacturaVincularRequest request)
+        {
+            return _db.CxCCuentasFactura_Vincular(codEmpresa, request);
+        }
     }
 }

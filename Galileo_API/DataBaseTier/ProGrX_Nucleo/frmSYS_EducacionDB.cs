@@ -265,8 +265,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 const string sp = "spSys_Educacion_Asigna_Consulta";
                 return connection.Query<SysEducacionDetalleData>(sp, new
                 {
-                    cod_Educ = (cod_Educ ?? string.Empty).Trim(),
-                    tipoDetalleEduc
+                    Codigo = (cod_Educ ?? string.Empty).Trim(),
+                    Tipo = tipoDetalleEduc
                 }, commandType: CommandType.StoredProcedure).ToList();
             });
 
