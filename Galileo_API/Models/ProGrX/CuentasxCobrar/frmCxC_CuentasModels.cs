@@ -400,4 +400,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public bool procesa_tesoreria { get; set; }
         public List<CxCCuentasActivacionDetalleItem> lista { get; set; } = new();
     }
+    
+
 }

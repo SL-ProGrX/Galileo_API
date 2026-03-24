@@ -644,107 +644,148 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return response;
         }
 
-
-        /// <summary>
-        /// Guarda una operación de CxC en modo inserción o actualización.
-        /// </summary>
-        /// <param name="codEmpresa">Empresa activa.</param>
-        /// <param name="param">Datos de la operación.</param>
-        /// <returns>Número de operación guardada.</returns>
-        public ErrorDto<long> CxCCuentas_Guardar(int codEmpresa, CxCCuentasSaveParams param)
+        #region Guardar
+        private sealed class CxCCuentasGuardarContext
         {
-            var response = new ErrorDto<long>
+            public string usuario { get; init; } = string.Empty;
+            public string cedula { get; init; } = string.Empty;
+            public string cod_concepto { get; init; } = string.Empty;
+            public string cod_oficina { get; init; } = string.Empty;
+            public string emitir_tipo { get; init; } = string.Empty;
+            public string estado { get; init; } = "R";
+            public string? cedula_pagador { get; init; }
+            public string? cedula_autorizado { get; init; }
+            public string? notas { get; init; }
+            public string? emitir_banco { get; init; }
+            public string? emitir_cuenta { get; init; }
+            public string? num_documento { get; init; }
+            public string? cod_contrato { get; init; }
+            public int plazo_dias { get; init; }
+            public int freq_pago { get; init; }
+            public DateTime? fecha_inicio { get; init; }
+            public int adelanto_comision_apl { get; init; }
+        }
+
+        private static CxCCuentasGuardarContext CrearGuardarContext(CxCCuentasSaveParams param)
+        {
+            return new CxCCuentasGuardarContext
             {
-                Code = 0,
-                Description = "Ok",
-                Result = 0
+                usuario = NormalizarTexto(param.usuario),
+                cedula = NormalizarTexto(param.cedula),
+                cod_concepto = NormalizarTexto(param.cod_concepto),
+                cod_oficina = NormalizarTexto(param.cod_oficina),
+                emitir_tipo = NormalizarTexto(param.emitir_tipo),
+                estado = string.IsNullOrWhiteSpace(param.estado) ? "R" : NormalizarMayusculas(param.estado),
+                cedula_pagador = string.IsNullOrWhiteSpace(param.cedula_pagador) ? null : NormalizarTexto(param.cedula_pagador),
+                cedula_autorizado = string.IsNullOrWhiteSpace(param.cedula_autorizado) ? null : NormalizarTexto(param.cedula_autorizado),
+                notas = string.IsNullOrWhiteSpace(param.notas) ? null : param.notas.Trim(),
+                emitir_banco = string.IsNullOrWhiteSpace(param.emitir_banco) ? null : NormalizarTexto(param.emitir_banco),
+                emitir_cuenta = string.IsNullOrWhiteSpace(param.emitir_cuenta) ? null : NormalizarTexto(param.emitir_cuenta),
+                num_documento = string.IsNullOrWhiteSpace(param.num_documento) ? null : param.num_documento.Trim(),
+                cod_contrato = string.IsNullOrWhiteSpace(param.cod_contrato) ? null : NormalizarTexto(param.cod_contrato),
+                plazo_dias = param.plazo * 30,
+                freq_pago = param.chk_cta_apl ? 30 : 0,
+                fecha_inicio = param.chk_cta_apl ? param.fecha_inicio : null,
+                adelanto_comision_apl = param.adelanto_comision_apl ? 1 : 0
             };
+        }
 
-            if (param is null)
+        private static string? ValidarGuardarRequest(CxCCuentasSaveParams param, CxCCuentasGuardarContext context)
+        {
+            if (string.IsNullOrWhiteSpace(context.usuario) ||
+                string.IsNullOrWhiteSpace(context.cedula) ||
+                string.IsNullOrWhiteSpace(context.cod_concepto) ||
+                string.IsNullOrWhiteSpace(context.cod_oficina) ||
+                string.IsNullOrWhiteSpace(context.emitir_tipo))
             {
-                response.Code = -1;
-                response.Description = "Los datos de la operación son requeridos.";
-                return response;
-            }
-
-            var usuario = NormalizarTexto(param.usuario);
-            var cedula = NormalizarTexto(param.cedula);
-            var codConcepto = NormalizarTexto(param.cod_concepto);
-            var codOficina = NormalizarTexto(param.cod_oficina);
-            var emitirTipo = NormalizarTexto(param.emitir_tipo);
-            var estado = string.IsNullOrWhiteSpace(param.estado) ? "R" : NormalizarMayusculas(param.estado);
-            var cedulaPagador = string.IsNullOrWhiteSpace(param.cedula_pagador) ? null : NormalizarTexto(param.cedula_pagador);
-            var cedulaAutorizado = string.IsNullOrWhiteSpace(param.cedula_autorizado) ? null : NormalizarTexto(param.cedula_autorizado);
-            var notas = string.IsNullOrWhiteSpace(param.notas) ? null : param.notas.Trim();
-            var emitirBanco = string.IsNullOrWhiteSpace(param.emitir_banco) ? null : NormalizarTexto(param.emitir_banco);
-            var emitirCuenta = string.IsNullOrWhiteSpace(param.emitir_cuenta) ? null : NormalizarTexto(param.emitir_cuenta);
-            var numDocumento = string.IsNullOrWhiteSpace(param.num_documento) ? null : param.num_documento.Trim();
-            var codContrato = string.IsNullOrWhiteSpace(param.cod_contrato) ? null : NormalizarTexto(param.cod_contrato);
-
-            if (string.IsNullOrWhiteSpace(usuario) ||
-                string.IsNullOrWhiteSpace(cedula) ||
-                string.IsNullOrWhiteSpace(codConcepto) ||
-                string.IsNullOrWhiteSpace(codOficina) ||
-                string.IsNullOrWhiteSpace(emitirTipo))
-            {
-                response.Code = -1;
-                response.Description = "Faltan datos requeridos para guardar la operación.";
-                return response;
+                return "Faltan datos requeridos para guardar la operación.";
             }
 
             if (param.monto <= 0)
             {
-                response.Code = -1;
-                response.Description = "El monto debe ser mayor a cero.";
-                return response;
+                return "El monto debe ser mayor a cero.";
             }
 
             if (param.plazo <= 0)
             {
-                response.Code = -1;
-                response.Description = "El plazo debe ser mayor a cero.";
-                return response;
+                return "El plazo debe ser mayor a cero.";
             }
 
             if (param.cuota <= 0)
             {
-                response.Code = -1;
-                response.Description = "La cuota debe ser mayor a cero.";
-                return response;
+                return "La cuota debe ser mayor a cero.";
             }
 
             if (param.chk_cta_apl && param.fecha_inicio is null)
             {
-                response.Code = -1;
-                response.Description = "La fecha de inicio es requerida cuando aplica cuenta.";
-                return response;
+                return "La fecha de inicio es requerida cuando aplica cuenta.";
             }
 
-            var plazoDias = param.plazo * 30;
-            var frecuenciaPago = param.chk_cta_apl ? 30 : 0;
-            var fechaInicio = param.chk_cta_apl ? param.fecha_inicio : null;
+            return null;
+        }
 
-            try
+        private static bool ExisteOperacionGuardar(SqlConnection conn, long operacion)
+        {
+            if (operacion <= 0)
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                return false;
+            }
 
-                var existeOperacion = param.operacion > 0
-                    ? conn.QuerySingleOrDefault<int>(
-                        @"SELECT COUNT(1)
+            return conn.QuerySingleOrDefault<int>(
+                @"SELECT COUNT(1)
                   FROM CxC_Cuentas
                   WHERE Operacion = @operacion;",
-                        new { operacion = param.operacion })
-                    : 0;
+                new { operacion }) > 0;
+        }
 
-                var operacion = param.operacion;
-
-                if (existeOperacion == 0)
-                {
-                    operacion = conn.QuerySingle<long>(
-                        @"SELECT ISNULL(MAX(Operacion), 0) + 1
+        private static long ObtenerNuevaOperacionGuardar(SqlConnection conn)
+        {
+            return conn.QuerySingle<long>(
+                @"SELECT ISNULL(MAX(Operacion), 0) + 1
                   FROM CxC_Cuentas;");
+        }
 
-                    const string sqlInsert = @"
+        private static DynamicParameters CrearParametrosGuardar(
+            long operacion,
+            CxCCuentasSaveParams param,
+            CxCCuentasGuardarContext context)
+        {
+            var parametros = new DynamicParameters();
+
+            parametros.Add("operacion", operacion);
+            parametros.Add("cedula", context.cedula);
+            parametros.Add("cedula_pagador", context.cedula_pagador);
+            parametros.Add("cedula_autorizado", context.cedula_autorizado);
+            parametros.Add("cod_concepto", context.cod_concepto);
+            parametros.Add("cod_oficina", context.cod_oficina);
+            parametros.Add("notas", context.notas);
+            parametros.Add("monto", param.monto);
+            parametros.Add("emitir_tipo", context.emitir_tipo);
+            parametros.Add("emitir_banco", context.emitir_banco);
+            parametros.Add("emitir_cuenta", context.emitir_cuenta);
+            parametros.Add("tasa_corriente", param.tasa_corriente);
+            parametros.Add("tasa_mora", param.tasa_mora);
+            parametros.Add("cuota", param.cuota);
+            parametros.Add("plazo_dias", context.plazo_dias);
+            parametros.Add("plazo", param.plazo);
+            parametros.Add("estado", context.estado);
+            parametros.Add("num_documento", context.num_documento);
+            parametros.Add("cod_contrato", context.cod_contrato);
+            parametros.Add("usuario", context.usuario);
+            parametros.Add("adelanto_monto", param.adelanto_monto);
+            parametros.Add("adelanto_porcentaje", param.adelanto_porcentaje);
+            parametros.Add("adelanto_comision_apl", context.adelanto_comision_apl);
+            parametros.Add("adelanto_comision", param.adelanto_comision);
+            parametros.Add("adelanto_comision_dias", param.adelanto_comision_dias);
+            parametros.Add("freq_pago", context.freq_pago);
+            parametros.Add("fecha_inicio", context.fecha_inicio);
+
+            return parametros;
+        }
+
+        private static void InsertarOperacionGuardar(SqlConnection conn, DynamicParameters parametros)
+        {
+            const string sqlInsert = @"
                 INSERT INTO CxC_Cuentas
                 (
                     OPERACION,
@@ -828,47 +869,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     @fecha_inicio
                 );";
 
-                    conn.Execute(sqlInsert, new
-                    {
-                        operacion,
-                        cedula,
-                        cedula_pagador = cedulaPagador,
-                        cod_concepto = codConcepto,
-                        cod_oficina = codOficina,
-                        notas,
-                        monto = param.monto,
-                        emitir_tipo = emitirTipo,
-                        emitir_banco = emitirBanco,
-                        emitir_cuenta = emitirCuenta,
-                        tasa_corriente = param.tasa_corriente,
-                        tasa_mora = param.tasa_mora,
-                        cuota = param.cuota,
-                        plazo_dias = plazoDias,
-                        plazo = param.plazo,
-                        num_documento = numDocumento,
-                        cod_contrato = codContrato,
-                        usuario,
-                        adelanto_monto = param.adelanto_monto,
-                        adelanto_porcentaje = param.adelanto_porcentaje,
-                        cedula_autorizado = cedulaAutorizado,
-                        adelanto_comision_apl = param.adelanto_comision_apl ? 1 : 0,
-                        adelanto_comision = param.adelanto_comision,
-                        adelanto_comision_dias = param.adelanto_comision_dias,
-                        freq_pago = frecuenciaPago,
-                        fecha_inicio = fechaInicio
-                    });
+            conn.Execute(sqlInsert, parametros);
+        }
 
-                    conn.Execute(
-                        @"exec spCxC_CuentaCargosActualiza @operacion, @monto;",
-                        new
-                        {
-                            operacion,
-                            monto = param.monto
-                        });
-                }
-                else
-                {
-                    const string sqlUpdate = @"
+        private static void ActualizarOperacionGuardar(SqlConnection conn, DynamicParameters parametros)
+        {
+            const string sqlUpdate = @"
                 UPDATE CxC_Cuentas
                 SET
                     CEDULA_PAGADOR = @cedula_pagador,
@@ -898,63 +904,85 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     FECHA_INICIO = @fecha_inicio
                 WHERE Operacion = @operacion;";
 
-                    conn.Execute(sqlUpdate, new
-                    {
-                        operacion,
-                        cedula_pagador = cedulaPagador,
-                        cedula_autorizado = cedulaAutorizado,
-                        cod_concepto = codConcepto,
-                        cod_oficina = codOficina,
-                        notas,
-                        monto = param.monto,
-                        emitir_tipo = emitirTipo,
-                        emitir_banco = emitirBanco,
-                        emitir_cuenta = emitirCuenta,
-                        tasa_corriente = param.tasa_corriente,
-                        tasa_mora = param.tasa_mora,
-                        cuota = param.cuota,
-                        cod_contrato = codContrato,
-                        estado,
-                        num_documento = numDocumento,
-                        plazo_dias = plazoDias,
-                        plazo = param.plazo,
-                        adelanto_monto = param.adelanto_monto,
-                        adelanto_porcentaje = param.adelanto_porcentaje,
-                        adelanto_comision_apl = param.adelanto_comision_apl ? 1 : 0,
-                        adelanto_comision = param.adelanto_comision,
-                        adelanto_comision_dias = param.adelanto_comision_dias,
-                        freq_pago = frecuenciaPago,
-                        fecha_inicio = fechaInicio
-                    });
+            conn.Execute(sqlUpdate, parametros);
+        }
 
-                    var facturasRegistradas = conn.QuerySingleOrDefault<int>(
-                        @"SELECT COUNT(1)
+        private static void RecalcularOperacionGuardada(
+            SqlConnection conn,
+            long operacion,
+            string usuario,
+            decimal monto)
+        {
+            var facturasRegistradas = conn.QuerySingleOrDefault<int>(
+                @"SELECT COUNT(1)
                   FROM CxC_Operacion_Facturas
                   WHERE Operacion = @operacion;",
-                        new { operacion });
+                new { operacion });
 
-                    if (facturasRegistradas > 0)
-                    {
-                        conn.Execute(
-                            @"exec spCxC_Operacion_Facturas_Actualiza @operacion, 0, @usuario;",
-                            new
-                            {
-                                operacion,
-                                usuario
-                            });
-                    }
-                    else
-                    {
-                        conn.Execute(
-                            @"exec spCxC_CuentaCargosActualiza @operacion, @monto;",
-                            new
-                            {
-                                operacion,
-                                monto = param.monto
-                            });
-                    }
+            if (facturasRegistradas > 0)
+            {
+                conn.Execute(
+                    @"exec spCxC_Operacion_Facturas_Actualiza @operacion, 0, @usuario;",
+                    new { operacion, usuario });
+
+                return;
+            }
+
+            conn.Execute(
+                @"exec spCxC_CuentaCargosActualiza @operacion, @monto;",
+                new { operacion, monto });
+        }
+
+        /// <summary>
+        /// Guarda una operación de CxC en modo inserción o actualización.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa activa.</param>
+        /// <param name="param">Datos de la operación.</param>
+        /// <returns>Número de operación guardada.</returns>
+        public ErrorDto<long> CxCCuentas_Guardar(int codEmpresa, CxCCuentasSaveParams param)
+        {
+            var response = new ErrorDto<long>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = 0
+            };
+
+            if (param is null)
+            {
+                response.Code = -1;
+                response.Description = "Los datos de la operación son requeridos.";
+                return response;
+            }
+
+            var context = CrearGuardarContext(param);
+            var mensajeValidacion = ValidarGuardarRequest(param, context);
+
+            if (!string.IsNullOrWhiteSpace(mensajeValidacion))
+            {
+                response.Code = -1;
+                response.Description = mensajeValidacion;
+                return response;
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var existeOperacion = ExisteOperacionGuardar(conn, param.operacion);
+                var operacion = existeOperacion ? param.operacion : ObtenerNuevaOperacionGuardar(conn);
+                var parametros = CrearParametrosGuardar(operacion, param, context);
+
+                if (existeOperacion)
+                {
+                    ActualizarOperacionGuardar(conn, parametros);
+                }
+                else
+                {
+                    InsertarOperacionGuardar(conn, parametros);
                 }
 
+                RecalcularOperacionGuardada(conn, operacion, context.usuario, param.monto);
                 response.Result = operacion;
             }
             catch (DbException ex)
@@ -973,6 +1001,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return response;
         }
 
+        #endregion
 
         #region Activar
 
@@ -2809,6 +2838,133 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 });
         }
 
+        private sealed class CxCCuentasFacturaCargaFilaNormalizada
+        {
+            public string factura { get; init; } = string.Empty;
+            public string divisa { get; init; } = string.Empty;
+            public string factura_estado { get; init; } = string.Empty;
+            public decimal importe { get; init; }
+            public decimal tipo_cambio { get; init; }
+            public decimal monto { get; init; }
+            public int adelanta { get; init; }
+            public string adelanto_tipo { get; init; } = "M";
+            public decimal adelanto_monto { get; init; }
+            public string fecha_emite { get; init; } = string.Empty;
+            public string fecha_pago { get; init; } = string.Empty;
+        }
+
+        private static string? ValidarCargaArchivoFactura(
+            CxCCuentasFacturaCargaRequest request,
+            string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            if (request.facturas is null || request.facturas.Count == 0)
+            {
+                return "Debe seleccionar al menos una factura.";
+            }
+
+            return null;
+        }
+
+        private static string? ValidarFilaFacturaCarga(
+            CxCCuentasFacturaCargaItem item,
+            string factura,
+            string divisa)
+        {
+            if (string.IsNullOrWhiteSpace(factura) || string.IsNullOrWhiteSpace(divisa))
+            {
+                return "Hay filas del archivo con datos incompletos.";
+            }
+
+            if (item.importe <= 0 || item.tipo_cambio <= 0)
+            {
+                return "Hay filas del archivo con importes inválidos.";
+            }
+
+            return null;
+        }
+
+        private static CxCCuentasFacturaCargaFilaNormalizada NormalizarFilaFacturaCarga(CxCCuentasFacturaCargaItem item)
+        {
+            var factura = NormalizarTexto(item.factura);
+            var divisa = NormalizarTexto(item.divisa);
+            var facturaEstado = NormalizarMayusculas(item.estado);
+            var adelantoBase = facturaEstado == "A" ? item.monto : 0;
+            var adelantoMonto = item.adelanto > 0 ? item.adelanto : adelantoBase;
+            var monto = item.importe * item.tipo_cambio;
+
+            if (adelantoMonto > monto)
+            {
+                adelantoMonto = monto;
+            }
+
+            var adelanta = adelantoMonto > 0 || facturaEstado == "A";
+            var adelantoTipo = facturaEstado == "A" && adelantoMonto == 0 ? "P" : "M";
+
+            return new CxCCuentasFacturaCargaFilaNormalizada
+            {
+                factura = factura,
+                divisa = divisa,
+                factura_estado = facturaEstado,
+                importe = item.importe,
+                tipo_cambio = item.tipo_cambio,
+                monto = monto,
+                adelanta = adelanta ? 1 : 0,
+                adelanto_tipo = adelantoTipo,
+                adelanto_monto = adelantoMonto,
+                fecha_emite = item.fecha_emite,
+                fecha_pago = item.fecha_pago
+            };
+        }
+
+        private static void RegistrarFilaFacturaCarga(
+            SqlConnection conn,
+            long operacion,
+            string usuario,
+            CxCCuentasFacturaCargaFilaNormalizada fila)
+        {
+            const string sqlRegistra = @"
+                exec spCxC_Operacion_Factura_Registra
+                    @Operacion,
+                    @Factura,
+                    @Divisa,
+                    @Estado,
+                    @Importe,
+                    @TipoCambio,
+                    @Monto,
+                    @Adelanta,
+                    @AdelantaTipo,
+                    @AdelantaMonto,
+                    @FechaEmite,
+                    @FechaPago,
+                    @Usuario,
+                    'I',
+                    0,
+                    0,
+                    0;";
+
+            conn.Execute(sqlRegistra, new
+            {
+                Operacion = operacion,
+                Factura = fila.factura,
+                Divisa = fila.divisa,
+                Estado = fila.factura_estado,
+                Importe = fila.importe,
+                TipoCambio = fila.tipo_cambio,
+                Monto = fila.monto,
+                Adelanta = fila.adelanta,
+                AdelantaTipo = fila.adelanto_tipo,
+                AdelantaMonto = fila.adelanto_monto,
+                FechaEmite = fila.fecha_emite,
+                FechaPago = fila.fecha_pago,
+                Usuario = usuario
+            });
+        }
+
         /// <summary>
         /// Procesa un lote de facturas leído desde archivo y recalcula los totales de la operación.
         /// </summary>
@@ -2819,129 +2975,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasFacturaCargaRequest request)
         {
-            try
+            if (request is null)
             {
-                if (request is null)
+                return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
+            }
+
+            var estado = NormalizarMayusculas(request.estado);
+            var autorizaEstado = NormalizarMayusculas(request.autoriza_estado);
+            var usuario = NormalizarTexto(request.usuario);
+
+            var mensajeValidacion = ValidarOperacionFactura(request.operacion, estado, autorizaEstado)
+                ?? ValidarCargaArchivoFactura(request, usuario);
+
+            if (!string.IsNullOrWhiteSpace(mensajeValidacion))
+            {
+                return CrearErrorFacturaMantenimiento(mensajeValidacion);
+            }
+
+            return EjecutarFacturaMantenimiento(
+                codEmpresa,
+                "No fue posible cargar el archivo de facturas.",
+                "Error inesperado al cargar el archivo de facturas.",
+                conn =>
                 {
-                    return CrearErrorFacturaMantenimiento(CxCCuentasConstantes.solicitudRequerida);
-                }
-
-                var estado = NormalizarMayusculas(request.estado);
-                var autorizaEstado = NormalizarMayusculas(request.autoriza_estado);
-                var usuario = NormalizarTexto(request.usuario);
-
-                var mensajeValidacion = ValidarOperacionFactura(request.operacion, estado, autorizaEstado)
-                    ?? ValidarVinculacionFactura(
-                        new CxCCuentasFacturaVincularRequest
-                        {
-                            operacion = request.operacion,
-                            estado = request.estado,
-                            autoriza_estado = request.autoriza_estado,
-                            usuario = request.usuario,
-                            facturas = request.facturas.Select(x => new CxCCuentasFacturaVincularItem
-                            {
-                                factura = x.factura,
-                                divisa = x.divisa,
-                                importe = x.importe,
-                                tipo_cambio = x.tipo_cambio,
-                                monto = x.monto,
-                                fecha_emision = DateTime.TryParse(x.fecha_emite, out var fe) ? fe : null,
-                                fecha_pago = DateTime.TryParse(x.fecha_pago, out var fp) ? fp : null,
-                                adelanto = x.adelanto!
-                            }).ToList()
-                        },
-                        usuario);
-
-                if (!string.IsNullOrWhiteSpace(mensajeValidacion))
-                {
-                    return CrearErrorFacturaMantenimiento(mensajeValidacion);
-                }
-
-                return EjecutarFacturaMantenimiento(
-                    codEmpresa,
-                    "No fue posible cargar el archivo de facturas.",
-                    "Error inesperado al cargar el archivo de facturas.",
-                    conn =>
+                    foreach (var item in request.facturas)
                     {
-                        const string sqlRegistra = @"
-                                exec spCxC_Operacion_Factura_Registra
-                                    @Operacion,
-                                    @Factura,
-                                    @Divisa,
-                                    @Estado,
-                                    @Importe,
-                                    @TipoCambio,
-                                    @Monto,
-                                    @Adelanta,
-                                    @AdelantaTipo,
-                                    @AdelantaMonto,
-                                    @FechaEmite,
-                                    @FechaPago,
-                                    @Usuario,
-                                    'I',
-                                    0,
-                                    0,
-                                    0;";
+                        var factura = NormalizarTexto(item.factura);
+                        var divisa = NormalizarTexto(item.divisa);
+                        var mensajeFila = ValidarFilaFacturaCarga(item, factura, divisa);
 
-                        foreach (var item in request.facturas)
+                        if (!string.IsNullOrWhiteSpace(mensajeFila))
                         {
-                            var factura = NormalizarTexto(item.factura);
-                            var divisa = NormalizarTexto(item.divisa);
-                            var facturaEstado = NormalizarMayusculas(item.estado);
-
-                            if (string.IsNullOrWhiteSpace(factura) || string.IsNullOrWhiteSpace(divisa))
-                            {
-                                return CrearErrorFacturaMantenimiento("Hay filas del archivo con datos incompletos.");
-                            }
-
-                            if (item.importe <= 0 || item.tipo_cambio <= 0)
-                            {
-                                return CrearErrorFacturaMantenimiento("Hay filas del archivo con importes inválidos.");
-                            }
-
-                            var monto = item.importe * item.tipo_cambio;
-                            if (item.adelanto > monto)
-                            {
-                                item.adelanto = monto;
-                            }
-
-                            var adelanta = item.adelanto > 0 || facturaEstado == "A";
-                            var adelantoTipo = facturaEstado == "A" && item.adelanto == 0 ? "P" : "M";
-
-                            conn.Execute(sqlRegistra, new
-                            {
-                                Operacion = request.operacion,
-                                Factura = factura,
-                                Divisa = divisa,
-                                Estado = facturaEstado,
-                                Importe = item.importe,
-                                TipoCambio = item.tipo_cambio,
-                                Monto = monto,
-                                Adelanta = adelanta ? 1 : 0,
-                                AdelantaTipo = adelantoTipo,
-                                AdelantaMonto = item.adelanto,
-                                FechaEmite = item.fecha_emite,
-                                FechaPago = item.fecha_pago,
-                                Usuario = usuario
-                            });
+                            return CrearErrorFacturaMantenimiento(mensajeFila);
                         }
 
-                        const string sqlActualiza = @"
-                exec spCxC_Operacion_Facturas_Actualiza @operacion, 1;";
+                        var fila = NormalizarFilaFacturaCarga(item);
+                        RegistrarFilaFacturaCarga(conn, request.operacion, usuario, fila);
+                    }
 
-                        return EjecutarConsultaFacturaMantenimiento(conn, sqlActualiza, new
-                        {
-                            operacion = request.operacion
-                        });
+                    const string sqlActualiza = @"
+                        exec spCxC_Operacion_Facturas_Actualiza @operacion, 1;";
+
+                    return EjecutarConsultaFacturaMantenimiento(conn, sqlActualiza, new
+                    {
+                        operacion = request.operacion
                     });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasFacturaMantenimientoResult>(ex.Message);
-            }
-            
+                });
         }
-
         #endregion
 
         #region Activacion
