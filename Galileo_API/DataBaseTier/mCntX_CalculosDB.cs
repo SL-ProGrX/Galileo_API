@@ -100,7 +100,7 @@ namespace Galileo_API.DataBaseTier
             var parametros = new { codConta, numAsiento, tipoAsiento };
             return DbHelper.ExecuteSingleQuery<byte[]?>(_portalDB, CodEmpresa, sql, null, parametros).Result;
         }
-        public string FxCntX_PeriodoDesc(int pAnio, int pMes)
+        public static string FxCntX_PeriodoDesc(int pAnio, int pMes)
         {
             return pMes switch
             {
