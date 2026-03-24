@@ -21,23 +21,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #region Helpers Comunes
 
-        private static void AsignarErrorResponse<T>(ErrorDto<T> response, string descripcion) where T : new()
-        {
-            response.Code = -1;
-            response.Description = descripcion;
-            response.Result = new T();
-        }
-
-        private static ErrorDto<bool> CrearRespuestaProceso()
-        {
-            return new ErrorDto<bool>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-        }
-
         private static void AsignarErrorProceso(ErrorDto<bool> response, string descripcion)
         {
             response.Code = -1;
@@ -497,8 +480,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (operacion <= 0)
             {
-                AsignarErrorResponse(response, CxCCuentasConstantes.operacionRequerida);
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>(CxCCuentasConstantes.operacionRequerida);
             }
 
             try
@@ -519,11 +501,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
             catch (DbException ex)
             {
-                AsignarErrorResponse(response, $"No fue posible consultar las facturas de la operación. {ex.Message}");
+                DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>($"No fue posible consultar las facturas de la operación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                AsignarErrorResponse(response, $"Error inesperado al consultar las facturas de la operación. {ex.Message}");
+                DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>($"Error inesperado al consultar las facturas de la operación. {ex.Message}");
             }
 
             return response;
@@ -546,8 +528,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (string.IsNullOrWhiteSpace(cedulaNormalizada))
             {
-                AsignarErrorResponse(response, "La cédula es requerida.");
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturasAdelantadasLista>("La cédula es requerida.");
             }
 
             try
@@ -565,11 +546,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
             catch (DbException ex)
             {
-                AsignarErrorResponse(response, $"No fue posible consultar las facturas adelantadas. {ex.Message}");
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturasAdelantadasLista>($"No fue posible consultar las facturas adelantadas. {ex.Message}");
             }
             catch (Exception ex)
             {
-                AsignarErrorResponse(response, $"Error inesperado al consultar las facturas adelantadas. {ex.Message}");
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturasAdelantadasLista>($"Error inesperado al consultar las facturas adelantadas. {ex.Message}");
             }
 
             return response;
@@ -1432,7 +1413,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasAnulacionRequest request)
         {
-            var response = CrearRespuestaProceso();
+            var response = DbHelper.CreateOkResponse<bool>();
 
             if (request is null)
             {
