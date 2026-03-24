@@ -27,9 +27,18 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var root = Path.GetFullPath(dirRdlc);
 
-            var basePath = string.IsNullOrWhiteSpace(folder)
+            string? normalizedFolder = null;
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                // Evita que una ruta absoluta en 'folder' haga que Path.Combine ignore 'root' y 'codEmpresa'.
+                normalizedFolder = Path.IsPathRooted(folder)
+                    ? Path.GetFileName(folder)
+                    : folder;
+            }
+
+            var basePath = string.IsNullOrWhiteSpace(normalizedFolder)
                 ? Path.Combine(root, codEmpresa.ToString())
-                : Path.Combine(root, codEmpresa.ToString(), folder);
+                : Path.Combine(root, codEmpresa.ToString(), normalizedFolder);
 
             return Path.GetFullPath(basePath);
         }
