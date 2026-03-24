@@ -69,7 +69,8 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             foreach (var extension in AllowedExtensions)
             {
-                var candidatePath = Path.GetFullPath(Path.Combine(directory, reportName + extension));
+                var candidateBase = Path.Combine(directory, reportName);
+                var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
 
                 if (!IsUnderDirectory(directory, candidatePath))
                 {
