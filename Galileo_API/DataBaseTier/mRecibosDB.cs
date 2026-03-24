@@ -61,59 +61,46 @@ namespace Galileo_API.DataBaseTier
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            try
+            const string qSys = "SELECT ISNULL(SysDocVersion,0) FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa;";
+            int sysDocVersion = conn.QueryFirstOrDefault<int>(qSys, new { codEmpresa });
+
+            string tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(tipo))
+                throw new InvalidOperationException("El tipo de documento es requerido.");
+
+            if (sysDocVersion == 1)
             {
-                const string qSys = "SELECT SysDocVersion FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa;";
-                var sysDocVersion = conn.QueryFirstOrDefault<int>(qSys, new { codEmpresa });
-
-                var tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
-
-                if (sysDocVersion == 1)
+                string strCampo = tipo switch
                 {
-                    string strCampo;
-                    string strUpdate;
+                    "RE" => "CS_RECIBO",
+                    "DP" => "CS_DEPOSITO",
+                    "ND" => "CS_NOTA_DEBITO",
+                    "NC" => "CS_NOTA_CREDITO",
+                    _ => throw new InvalidOperationException($"Tipo de documento no válido para SysDocVersion 1: {tipo}.")
+                };
 
-                    switch (tipo)
-                    {
-                        case "RE":
-                            strCampo = "select CS_RECIBO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_RECIBO = CS_RECIBO + 1";
-                            break;
-                        case "DP":
-                            strCampo = "select CS_DEPOSITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_DEPOSITO = CS_DEPOSITO + 1";
-                            break;
-                        case "ND":
-                            strCampo = "select CS_NOTA_DEBITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_NOTA_DEBITO = CS_NOTA_DEBITO + 1";
-                            break;
-                        case "NC":
-                            strCampo = "select CS_NOTA_CREDITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_NOTA_CREDITO = CS_NOTA_CREDITO + 1";
-                            break;
-                        default:
-                            return 0;
-                    }
+                string strSelect = $"select isnull({strCampo},0) as Consecutivo from ase_consecutivos";
+                long consecutivo = conn.QueryFirstOrDefault<long>(strSelect);
 
-                    var consecutivo = conn.QueryFirstOrDefault<long>(strCampo);
-                    if (consecutivo <= 0) return 0;
+                if (consecutivo <= 0)
+                    throw new InvalidOperationException($"No existe consecutivo configurado en ASE_CONSECUTIVOS para el tipo {tipo}.");
 
-                    conn.Execute(strUpdate);
-                    return consecutivo;
-                }
-                const string sp = "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;";
-                var cons = conn.QueryFirstOrDefault<long>(sp, new
-                {
-                    Tipo = tipo,
-                    Usuario = "ADMIN"
-                });
+                string strUpdate = $"update ase_consecutivos set {strCampo} = isnull({strCampo},0) + 1";
+                conn.Execute(strUpdate);
 
-                return cons <= 0 ? 0 : cons;
+                return consecutivo;
             }
-            catch
+
+            const string sp = "exec dbo.spSIFDocsConsecutivo @Tipo;";
+            long cons = conn.QueryFirstOrDefault<long>(sp, new
             {
-                return 0;
-            }
+                Tipo = tipo
+            });
+
+            if (cons <= 0)
+                throw new InvalidOperationException($"No se obtuvo consecutivo para el tipo de documento {tipo}.");
+
+            return cons;
         }
 
 
