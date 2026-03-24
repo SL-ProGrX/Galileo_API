@@ -67,9 +67,12 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException("El nombre del reporte no es válido.");
             }
 
+            // Asegura que el nombre del reporte no pueda ser tratado como una ruta absoluta.
+            var safeReportName = Path.GetFileName(reportName);
+
             foreach (var extension in AllowedExtensions)
             {
-                var candidateBase = Path.Combine(directory, reportName);
+                var candidateBase = Path.Combine(directory, safeReportName);
                 var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
 
                 if (!IsUnderDirectory(directory, candidatePath))
