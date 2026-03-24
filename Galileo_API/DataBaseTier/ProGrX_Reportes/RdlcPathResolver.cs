@@ -20,11 +20,25 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException("El código de empresa no es válido.");
             }
 
+            if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
+            {
+                throw new SecurityException("La carpeta especificada no es válida.");
+            }
+
             var root = Path.GetFullPath(dirRdlc);
 
-            var basePath = string.IsNullOrWhiteSpace(folder)
+            string? normalizedFolder = null;
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                // Evita que una ruta absoluta en 'folder' haga que Path.Combine ignore 'root' y 'codEmpresa'.
+                normalizedFolder = Path.IsPathRooted(folder)
+                    ? Path.GetFileName(folder)
+                    : folder;
+            }
+
+            var basePath = string.IsNullOrWhiteSpace(normalizedFolder)
                 ? Path.Combine(root, codEmpresa.ToString())
-                : Path.Combine(root, codEmpresa.ToString(), folder);
+                : Path.Combine(root, codEmpresa.ToString(), normalizedFolder);
 
             return Path.GetFullPath(basePath);
         }
@@ -53,9 +67,13 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException("El nombre del reporte no es válido.");
             }
 
+            // Asegura que el nombre del reporte no pueda ser tratado como una ruta absoluta.
+            var safeReportName = Path.GetFileName(reportName);
+
             foreach (var extension in AllowedExtensions)
             {
-                var candidatePath = Path.GetFullPath(Path.Combine(directory, reportName + extension));
+                var candidateBase = Path.Combine(directory, safeReportName);
+                var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
 
                 if (!IsUnderDirectory(directory, candidatePath))
                 {
