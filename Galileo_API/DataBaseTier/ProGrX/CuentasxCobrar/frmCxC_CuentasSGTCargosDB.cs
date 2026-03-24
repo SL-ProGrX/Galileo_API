@@ -273,7 +273,7 @@ WHERE cod_cargo = @codCargo;";
                 var operacion = cargo.operacion ?? 0;
                 var isNew = cargo.isNew ?? false;
                 var existe = CargoOperacionExiste(conn, operacion, cargo.cod_cargo);
-                if (cargo.isNew == true)
+                if (isNew)
                 {
                     if (existe)
                         return DbHelper.ErrorResponse($"El cargo {cargo.cod_cargo.Trim()} ya existe en la operación {cargo.operacion}.", -2);

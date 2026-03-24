@@ -10,7 +10,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public decimal? monto { get; set; }
         public string tipo { get; set; } = string.Empty;
         public decimal? valor { get; set; }
-        public short modifica { get; set; }
+        public short? modifica { get; set; }
         public string detalle { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
