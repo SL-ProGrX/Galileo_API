@@ -359,7 +359,7 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
                     oficina,
                     filtro = (filtro ?? string.Empty).Trim(),
                     apoyo,
-                    usuariosEstado
+                    pendiente = usuariosEstado, // Si usuariosEstado es 0, busco pendientes (no aprobados), si es 1 busco aprobados
                 }, commandType: CommandType.StoredProcedure).ToList();
             });
         }
