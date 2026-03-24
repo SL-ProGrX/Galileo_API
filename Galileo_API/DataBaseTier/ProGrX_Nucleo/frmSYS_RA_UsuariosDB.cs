@@ -86,8 +86,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     new
                     {
                         ra_usuario = (ra_usuario ?? string.Empty).Trim(),
-                        usuario = usuario,
-                        check = check
+                        activo = check,
+                        usuario = usuario
                     },
                     commandType: CommandType.StoredProcedure
                 );

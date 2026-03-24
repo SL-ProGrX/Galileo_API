@@ -10,7 +10,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
     [Route("api/[controller]")]
     [ApiController]
 
-    public class FrmCOIncobrablesController
+    public class FrmCOIncobrablesController : ControllerBase
     {
         private readonly FrmCOIncobrablesBL _bl;
 
