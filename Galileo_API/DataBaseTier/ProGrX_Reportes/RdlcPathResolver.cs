@@ -20,6 +20,11 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException("El código de empresa no es válido.");
             }
 
+            if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
+            {
+                throw new SecurityException("La carpeta especificada no es válida.");
+            }
+
             var root = Path.GetFullPath(dirRdlc);
 
             var basePath = string.IsNullOrWhiteSpace(folder)
