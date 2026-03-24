@@ -61,59 +61,74 @@ namespace Galileo_API.DataBaseTier
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            try
+            const string qSys = "SELECT ISNULL(SysDocVersion,0) FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa;";
+            int sysDocVersion = conn.QueryFirstOrDefault<int>(qSys, new { codEmpresa });
+
+            string tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(tipo))
             {
-                const string qSys = "SELECT SysDocVersion FROM SIF_EMPRESA WHERE PORTAL_ID = @codEmpresa;";
-                var sysDocVersion = conn.QueryFirstOrDefault<int>(qSys, new { codEmpresa });
+                throw new InvalidOperationException("El tipo de documento es requerido.");
+            }
 
-                var tipo = (vTipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (sysDocVersion == 1)
+            {
+                long consecutivo = ObtenerConsecutivoAse(conn, tipo);
 
-                if (sysDocVersion == 1)
+                if (consecutivo <= 0)
                 {
-                    string strCampo;
-                    string strUpdate;
-
-                    switch (tipo)
-                    {
-                        case "RE":
-                            strCampo = "select CS_RECIBO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_RECIBO = CS_RECIBO + 1";
-                            break;
-                        case "DP":
-                            strCampo = "select CS_DEPOSITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_DEPOSITO = CS_DEPOSITO + 1";
-                            break;
-                        case "ND":
-                            strCampo = "select CS_NOTA_DEBITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_NOTA_DEBITO = CS_NOTA_DEBITO + 1";
-                            break;
-                        case "NC":
-                            strCampo = "select CS_NOTA_CREDITO as Consecutivo from ase_consecutivos";
-                            strUpdate = "update ase_consecutivos set CS_NOTA_CREDITO = CS_NOTA_CREDITO + 1";
-                            break;
-                        default:
-                            return 0;
-                    }
-
-                    var consecutivo = conn.QueryFirstOrDefault<long>(strCampo);
-                    if (consecutivo <= 0) return 0;
-
-                    conn.Execute(strUpdate);
-                    return consecutivo;
+                    throw new InvalidOperationException(
+                        $"No existe consecutivo configurado en ASE_CONSECUTIVOS para el tipo {tipo}.");
                 }
-                const string sp = "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;";
-                var cons = conn.QueryFirstOrDefault<long>(sp, new
-                {
-                    Tipo = tipo,
-                    Usuario = "ADMIN"
-                });
 
-                return cons <= 0 ? 0 : cons;
+                IncrementarConsecutivoAse(conn, tipo);
+                return consecutivo;
             }
-            catch
+
+            const string sp = "exec dbo.spSIFDocsConsecutivo @Tipo;";
+            long cons = conn.QueryFirstOrDefault<long>(sp, new
             {
-                return 0;
+                Tipo = tipo
+            });
+
+            if (cons <= 0)
+            {
+                throw new InvalidOperationException(
+                    $"No se obtuvo consecutivo para el tipo de documento {tipo}.");
             }
+
+            return cons;
+        }
+
+        private static long ObtenerConsecutivoAse(SqlConnection conn, string tipo)
+        {
+            return tipo switch
+            {
+                "RE" => conn.QueryFirstOrDefault<long>(
+                    "select isnull(CS_RECIBO,0) as Consecutivo from ASE_CONSECUTIVOS"),
+                "DP" => conn.QueryFirstOrDefault<long>(
+                    "select isnull(CS_DEPOSITO,0) as Consecutivo from ASE_CONSECUTIVOS"),
+                "ND" => conn.QueryFirstOrDefault<long>(
+                    "select isnull(CS_NOTA_DEBITO,0) as Consecutivo from ASE_CONSECUTIVOS"),
+                "NC" => conn.QueryFirstOrDefault<long>(
+                    "select isnull(CS_NOTA_CREDITO,0) as Consecutivo from ASE_CONSECUTIVOS"),
+                _ => throw new InvalidOperationException(
+                    $"Tipo de documento no válido para SysDocVersion 1: {tipo}.")
+            };
+        }
+
+        private static void IncrementarConsecutivoAse(SqlConnection conn, string tipo)
+        {
+            string sql = tipo switch
+            {
+                "RE" => "update ASE_CONSECUTIVOS set CS_RECIBO = isnull(CS_RECIBO,0) + 1",
+                "DP" => "update ASE_CONSECUTIVOS set CS_DEPOSITO = isnull(CS_DEPOSITO,0) + 1",
+                "ND" => "update ASE_CONSECUTIVOS set CS_NOTA_DEBITO = isnull(CS_NOTA_DEBITO,0) + 1",
+                "NC" => "update ASE_CONSECUTIVOS set CS_NOTA_CREDITO = isnull(CS_NOTA_CREDITO,0) + 1",
+                _ => throw new InvalidOperationException(
+                    $"Tipo de documento no válido para SysDocVersion 1: {tipo}.")
+            };
+
+            conn.Execute(sql);
         }
 
 
