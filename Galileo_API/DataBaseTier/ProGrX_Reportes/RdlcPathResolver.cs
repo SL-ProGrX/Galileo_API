@@ -37,6 +37,12 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 safeFolder = Path.GetFileName(folder);
             }
 
+            // Asegura que el segmento de carpeta opcional nunca sea tratado como ruta absoluta.
+            if (!string.IsNullOrWhiteSpace(safeFolder) && Path.IsPathRooted(safeFolder))
+            {
+                safeFolder = Path.GetFileName(safeFolder);
+            }
+
             var basePath = string.IsNullOrWhiteSpace(safeFolder)
                 ? Path.Combine(root, empresaSegment)
                 : Path.Combine(root, empresaSegment, safeFolder);
