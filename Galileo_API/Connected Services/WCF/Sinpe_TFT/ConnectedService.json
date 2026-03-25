@@ -1,7 +1,7 @@
 {
   "ExtendedData": {
     "inputs": [
-      "http://172.16.70.55/Servicios/SINPE_TFT.svc"
+      "http://172.16.70.55:8080/Servicios/SINPE_TFT.svc"
     ],
     "collectionTypes": [
       "System.Array",
