@@ -27,22 +27,11 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var root = Path.GetFullPath(dirRdlc);
 
-            string? normalizedFolder = null;
+            // Normaliza la carpeta opcional para que nunca sea una ruta absoluta ni contenga segmentos de ruta.
+            string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
             {
-                // Evita que una ruta absoluta en 'folder' haga que Path.Combine ignore 'root' y 'codEmpresa'.
-                normalizedFolder = Path.IsPathRooted(folder)
-                    ? Path.GetFileName(folder)
-                    : folder;
-            }
-
-            // Asegura que el segmento de carpeta nunca sea una ruta absoluta al combinarla.
-            string? safeFolder = null;
-            if (!string.IsNullOrWhiteSpace(normalizedFolder))
-            {
-                safeFolder = Path.IsPathRooted(normalizedFolder)
-                    ? Path.GetFileName(normalizedFolder)
-                    : normalizedFolder;
+                safeFolder = Path.GetFileName(folder);
             }
 
             var basePath = string.IsNullOrWhiteSpace(safeFolder)
