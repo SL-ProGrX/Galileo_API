@@ -19,32 +19,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             _proGrxMain = new MProGrxMain(config);
         }
 
-        #region Helpers Comunes
-
-        private static void AsignarResultadoVerificacion<T>(ErrorDto<T> response, bool pass, string mensaje)
-            where T : CxCCuentasProcesoVerificaResult, new()
-        {
-            response.Result = new T
-            {
-                pass = pass,
-                mensaje = mensaje
-            };
-        }
-
-        private static void AsignarTotalesFacturas<TItem>(
-            CxCCuentasFacturasListaBase<TItem> result,
-            List<TItem> lista,
-            Func<TItem, decimal> selectorMonto,
-            Func<TItem, decimal> selectorAdelanto)
-        {
-            result.lista = lista;
-            result.casos = lista.Count;
-            result.total = lista.Sum(selectorMonto);
-            result.adelanto = lista.Sum(selectorAdelanto);
-        }
-
-        #endregion
-
         /// <summary>
         /// Obtiene la fecha del servidor.
         /// </summary>
@@ -442,8 +416,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Lista de facturas y totales.</returns>
         public ErrorDto<CxCCuentasFacturasLista> CxCCuentasFacturas_Obtener(int codEmpresa, long operacion)
         {
-            var response = DbHelper.CreateOkResponse<CxCCuentasFacturasLista>();
-
             if (operacion <= 0)
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>(CxCCuentasConstantes.operacionRequerida);
@@ -463,18 +435,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         : "Monto";
                 }
 
-                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
-            }
-            catch (DbException ex)
-            {
-                DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>($"No fue posible consultar las facturas de la operación. {ex.Message}");
+                return DbHelper.CreateOkResponse<CxCCuentasFacturasLista>(
+                     new CxCCuentasFacturasLista
+                     {
+                         lista = lista,
+                         casos = lista.Count,
+                         total = lista.Sum(x => x.monto),
+                         adelanto = lista.Sum(x => x.adelanto_monto)
+                     });
+               
             }
             catch (Exception ex)
             {
-                DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>($"Error inesperado al consultar las facturas de la operación. {ex.Message}");
+                return DbHelper.CreateErrorResponse<CxCCuentasFacturasLista>($"Error inesperado al consultar las facturas de la operación. {ex.Message}");
             }
 
-            return response;
         }
 
         /// <summary>
@@ -508,18 +483,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     Pagador = NormalizarTexto(cedulaPagador)
                 }).ToList();
 
-                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
-            }
-            catch (DbException ex)
-            {
-                return DbHelper.CreateErrorResponse<CxCCuentasFacturasAdelantadasLista>($"No fue posible consultar las facturas adelantadas. {ex.Message}");
+                return DbHelper.CreateOkResponse<CxCCuentasFacturasAdelantadasLista>(
+                        new CxCCuentasFacturasAdelantadasLista
+                        {
+                            lista = lista,
+                            casos = lista.Count,
+                            total = lista.Sum(x => x.monto),
+                            adelanto = lista.Sum(x => x.adelanto_monto),
+                            adelantoListado = true
+                        }
+                    );
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasFacturasAdelantadasLista>($"Error inesperado al consultar las facturas adelantadas. {ex.Message}");
             }
-
-            return response;
         }
 
 
@@ -1078,17 +1056,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     mensajes.Add($"- Factura No.: {item.cod_Factura}, se encuentra registrada en la Operación: {item.Operacion}");
                 }
 
-                AsignarResultadoVerificacion(
-                    response,
-                    mensajes.Count == 0,
-                    string.Join(Environment.NewLine, mensajes));
+                response.Result!.pass = mensajes.Count == 0;
+                response.Result!.mensaje = string.Join(Environment.NewLine, mensajes);
+
+                return DbHelper.CreateOkResponse<CxCCuentasActivacionVerificaResult>();
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasActivacionVerificaResult>($"Error inesperado al verificar la activación. {ex.Message}");
             }
 
-            return response;
         }
 
         /// <summary>
@@ -1343,17 +1320,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 var pass = estado.Trim().ToUpperInvariant() == "A";
 
-                AsignarResultadoVerificacion(
-                    response,
-                    pass,
-                    pass ? string.Empty : "Solo pueden anularse operaciones activas.");
+                response.Result!.pass = pass;
+                response.Result!.mensaje = pass ? string.Empty : "Solo pueden anularse operaciones activas.";
+
+                return DbHelper.CreateOkResponse<CxCCuentasAnulacionVerificaResult>(response.Result);
+
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<CxCCuentasAnulacionVerificaResult>($"Error inesperado al verificar la anulación. {ex.Message}");
             }
 
-            return response;
         }
 
         /// <summary>
