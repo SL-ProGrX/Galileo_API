@@ -8,16 +8,16 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_CxC
 {
-    public class FrmAF_CD_ControlDB
+    public class FrmAfCdControlDb
     {
         private readonly PortalDB _portalDb;
 
-        public FrmAF_CD_ControlDB(IConfiguration config)
+        public FrmAfCdControlDb(IConfiguration config)
             : this(new PortalDB(config))
         {
         }
 
-        public FrmAF_CD_ControlDB(PortalDB portalDb)
+        public FrmAfCdControlDb(PortalDB portalDb)
         {
             _portalDb = portalDb;
         }
@@ -37,16 +37,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var fechaInicio = filtro.todas
-                    ? DateTime.Parse("1900-01-01")
+                var fechaInicio = filtro.todas == true
+                    ? new DateTime(1900, 1, 1)
                     : filtro.fecha_inicio;
 
-                var fechaFin = filtro.todas
-                    ? DateTime.Parse("2300-01-01")
+                var fechaFin = filtro.todas == true
+                    ? new DateTime(2300, 1, 1)
                     : filtro.fecha_fin;
 
-                
-                    var result = cn.Query<AFCDCuentaDto>(
+
+                var result = cn.Query<AFCDCuentaDto>(
                         "spAFI_CD_Cuenta_List",
                         new
                         {

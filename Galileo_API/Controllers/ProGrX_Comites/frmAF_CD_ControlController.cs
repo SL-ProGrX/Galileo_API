@@ -10,13 +10,13 @@ namespace Galileo_API.Controllers.ProGrX_CxC
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmAF_CD_ControlController : ControllerBase
+    public class FrmAfCdControlController : ControllerBase
     {
-        private readonly FrmAF_CD_ControlBL _bl;
+        private readonly FrmAfCdControlBl _bl;
 
-        public FrmAF_CD_ControlController(IConfiguration config)
+        public FrmAfCdControlController(IConfiguration config)
         {
-            _bl = new FrmAF_CD_ControlBL(config);
+            _bl = new FrmAfCdControlBl(config);
         }
 
         [HttpPost("Listar")]

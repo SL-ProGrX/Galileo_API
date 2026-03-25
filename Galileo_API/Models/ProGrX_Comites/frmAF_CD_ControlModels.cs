@@ -19,8 +19,8 @@
         public string? proceso { get; set; }
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_fin { get; set; }
-        public bool todas { get; set; }
-        public int tesoreria_id { get; set; }
+        public bool? todas { get; set; }
+        public int? tesoreria_id { get; set; }
     }
 
 

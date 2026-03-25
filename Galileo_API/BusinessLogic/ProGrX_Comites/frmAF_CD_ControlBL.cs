@@ -5,13 +5,13 @@ using Galileo_API.Models.ProGrX_Comites;
 
 namespace Galileo_API.BusinessLogic.ProGrX_CxC
 {
-    public class FrmAF_CD_ControlBL
+    public class FrmAfCdControlBl
     {
-        private readonly FrmAF_CD_ControlDB _db;
+        private readonly FrmAfCdControlDb _db;
 
-        public FrmAF_CD_ControlBL(IConfiguration config)
+        public FrmAfCdControlBl(IConfiguration config)
         {
-            _db = new FrmAF_CD_ControlDB(config);
+            _db = new FrmAfCdControlDb(config);
         }
 
         public ErrorDto<List<AFCDCuentaDto>> Listar(int codEmpresa, AFCDCuentaFiltroDto filtro)
