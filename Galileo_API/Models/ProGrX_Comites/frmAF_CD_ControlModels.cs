@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX_Comites
 {
-    public class AFCDCuentaDto
+    public class AfcdCuentaDto
     {
         public int noperacion { get; set; }
         public string? comite_desc { get; set; }
@@ -11,7 +11,7 @@
         public string? registro_usuario { get; set; }
     }
 
-    public class AFCDCuentaFiltroDto
+    public class AfcdCuentaFiltroDto
     {
         public string? comite { get; set; }
         public string? tipo { get; set; }

@@ -14,7 +14,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_CxC
             _db = new FrmAfCdControlDb(config);
         }
 
-        public ErrorDto<List<AFCDCuentaDto>> Listar(int codEmpresa, AFCDCuentaFiltroDto filtro)
+        public ErrorDto<List<AfcdCuentaDto>> Listar(int codEmpresa, AfcdCuentaFiltroDto filtro)
         {
             return _db.Listar(codEmpresa, filtro);
         }

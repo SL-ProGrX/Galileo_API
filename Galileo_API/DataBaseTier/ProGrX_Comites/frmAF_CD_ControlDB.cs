@@ -28,9 +28,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
         /// <param name="codEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AFCDCuentaDto>> Listar(int codEmpresa, AFCDCuentaFiltroDto filtro)
+        public ErrorDto<List<AfcdCuentaDto>> Listar(int codEmpresa, AfcdCuentaFiltroDto filtro)
         {
-            var response = new ErrorDto<List<AFCDCuentaDto>>();
+            var response = new ErrorDto<List<AfcdCuentaDto>>();
 
             try
             {
@@ -38,15 +38,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 var fechaInicio = filtro.todas == true
-                    ? new DateTime(1900, 1, 1)
-                    : filtro.fecha_inicio;
+                 ? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified)
+                 : filtro.fecha_inicio;
 
                 var fechaFin = filtro.todas == true
-                    ? new DateTime(2300, 1, 1)
+                    ? new DateTime(2300, 1, 1, 0, 0, 0, DateTimeKind.Unspecified)
                     : filtro.fecha_fin;
 
 
-                var result = cn.Query<AFCDCuentaDto>(
+                var result = cn.Query<AfcdCuentaDto>(
                         "spAFI_CD_Cuenta_List",
                         new
                         {

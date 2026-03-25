@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_CxC
         }
 
         [HttpPost("Listar")]
-        public ErrorDto<List<AFCDCuentaDto>> Listar(int codEmpresa, AFCDCuentaFiltroDto filtro)
+        public ErrorDto<List<AfcdCuentaDto>> Listar(int codEmpresa, AfcdCuentaFiltroDto filtro)
         {
             return _bl.Listar(codEmpresa, filtro);
         }
