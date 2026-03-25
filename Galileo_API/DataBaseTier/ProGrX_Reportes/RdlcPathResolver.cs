@@ -36,9 +36,18 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                     : folder;
             }
 
-            var basePath = string.IsNullOrWhiteSpace(normalizedFolder)
+            // Asegura que el segmento de carpeta nunca sea una ruta absoluta al combinarla.
+            string? safeFolder = null;
+            if (!string.IsNullOrWhiteSpace(normalizedFolder))
+            {
+                safeFolder = Path.IsPathRooted(normalizedFolder)
+                    ? Path.GetFileName(normalizedFolder)
+                    : normalizedFolder;
+            }
+
+            var basePath = string.IsNullOrWhiteSpace(safeFolder)
                 ? Path.Combine(root, codEmpresa.ToString())
-                : Path.Combine(root, codEmpresa.ToString(), normalizedFolder);
+                : Path.Combine(root, codEmpresa.ToString(), safeFolder);
 
             return Path.GetFullPath(basePath);
         }
