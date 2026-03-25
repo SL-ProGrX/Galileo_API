@@ -30,17 +30,11 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             // Normaliza el código de empresa para que solo se use como segmento de ruta.
             var empresaSegment = Path.GetFileName(codEmpresa.ToString());
 
-            // Normaliza la carpeta opcional para que nunca sea una ruta absoluta ni contenga segmentos de ruta.
+            // Normaliza la carpeta opcional para que se use solo como segmento de ruta.
             string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
             {
                 safeFolder = Path.GetFileName(folder);
-            }
-
-            // Asegura que el segmento de carpeta opcional nunca sea tratado como ruta absoluta.
-            if (!string.IsNullOrWhiteSpace(safeFolder) && Path.IsPathRooted(safeFolder))
-            {
-                safeFolder = Path.GetFileName(safeFolder);
             }
 
             var basePath = string.IsNullOrWhiteSpace(safeFolder)
