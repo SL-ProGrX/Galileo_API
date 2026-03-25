@@ -1,7 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Creditos;
-using Galileo_API.Models.ProGrX.Credito;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 {

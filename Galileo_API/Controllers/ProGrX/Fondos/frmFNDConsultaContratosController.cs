@@ -1,8 +1,8 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Credito;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo_API.BusinessLogic.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

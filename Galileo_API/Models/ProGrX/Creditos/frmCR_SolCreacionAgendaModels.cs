@@ -1,12 +1,12 @@
-﻿namespace Galileo.Models.ProGrX.Credito
+﻿namespace Galileo_API.Models.ProGrX.Creditos
 {
     public class CrSolCreacionAgendaActaData
     {
         public int? acta { get; set; }
         public int? id_comite { get; set; }
         public int? validaActa { get; set; }
-        public Nullable<DateTime> fechaInicio { get; set; }
-        public Nullable<DateTime> fechaCorte { get; set; }
+        public DateTime? fechaInicio { get; set; }
+        public DateTime? fechaCorte { get; set; }
         public bool chkPreAnalisis { get; set; }
     }
 

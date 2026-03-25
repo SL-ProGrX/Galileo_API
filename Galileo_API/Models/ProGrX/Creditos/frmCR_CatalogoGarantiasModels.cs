@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.Credito
+﻿namespace Galileo_API.Models.ProGrX.Creditos
 {
     public class CrGarantiaTiposData
     {

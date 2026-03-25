@@ -1,4 +1,4 @@
-﻿namespace Galileo.Models.ProGrX.Credito
+﻿namespace Galileo_API.Models.ProGrX.Creditos
 {
     public class FrmCRSeguimientoDocData
     {
