@@ -109,27 +109,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasActivacionRequest request)
         {
-            var response = new ErrorDto<bool>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
 
             if (request is null)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.solicitudRequerida;
-                response.Result = false;
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(CxCCuentasConstantes.solicitudRequerida,-1, false);
             }
 
             if (request.operacion <= 0)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
-                response.Result = false;
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(CxCCuentasConstantes.operacionRequerida,-1, false);
             }
 
             var usuario = NormalizarTexto(request.usuario);
@@ -138,19 +126,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(emitirTipo))
             {
-                response.Code = -1;
-                response.Description = "Faltan datos requeridos para activar la operación.";
-                response.Result = false;
-                return response;
+                return DbHelper.CreateErrorResponse<bool>("Faltan datos requeridos para activar la operación.", -1, false);
             }
 
             var verifica = CxCCuentasActivacion_Verifica(codEmpresa, request);
             if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
             {
-                response.Code = -1;
-                response.Description = verifica.Result?.mensaje ?? verifica.Description;
-                response.Result = false;
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(verifica.Result?.mensaje ?? verifica.Description, -1, false);
             }
 
             DbTransaction? transaction = null;
@@ -180,10 +162,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 if (contexto is null)
                 {
                     transaction.Rollback();
-                    response.Code = -1;
-                    response.Description = "No se encontró la operación para activar.";
-                    response.Result = false;
-                    return response;
+                    return DbHelper.CreateErrorResponse<bool>("No se encontró la operación para activar.", -1, false);
                 }
 
                 decimal monto = contexto.Monto ?? 0m;
@@ -284,23 +263,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }, transaction);
 
                 transaction.Commit();
-            }
-            catch (DbException ex)
-            {
-                transaction?.Rollback();
-                response.Code = -1;
-                response.Description = $"No fue posible activar la operación. {ex.Message}";
-                response.Result = false;
+
+                return DbHelper.CreateOkResponse<bool>(true);
             }
             catch (Exception ex)
             {
                 transaction?.Rollback();
-                response.Code = -1;
-                response.Description = $"Error inesperado al activar la operación. {ex.Message}";
-                response.Result = false;
+                return DbHelper.CreateErrorResponse<bool>($"Error inesperado al activar la operación. {ex.Message}", -1, false);
             }
-
-            return response;
         }
 
         /// <summary>
@@ -313,19 +283,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             int codEmpresa,
             CxCCuentasActivacionDetalleRequest request)
         {
-            var response = new ErrorDto<CxCCuentasActivacionDetalleResult>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCCuentasActivacionDetalleResult()
-            };
 
             if (request is null || request.operacion <= 0)
             {
-                response.Code = -1;
-                response.Description = CxCCuentasConstantes.operacionRequerida;
-                response.Result = new CxCCuentasActivacionDetalleResult();
-                return response;
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionDetalleResult>(CxCCuentasConstantes.operacionRequerida);
             }
 
             var opcion = (request.opcion ?? string.Empty).Trim().ToUpperInvariant();
@@ -346,15 +307,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         ON R.cod_concepto = C.cod_concepto
                     WHERE R.Operacion = @operacion;";
 
-                response.Result.procesa_tesoreria = conn.QueryFirstOrDefault<bool>(sqlTesoreria, new
+                var procesa_tesoreria = conn.QueryFirstOrDefault<bool>(sqlTesoreria, new
                 {
                     operacion = request.operacion
                 });
 
+                var lista = new List<CxCCuentasActivacionDetalleItem>();
+
                 switch (opcion)
                 {
                     case "ING":
-                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                         lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
                             SELECT
                                 ISNULL(R.cod_cargo, '') AS descripcion,
                                 ISNULL(A.monto, 0) AS monto,
@@ -375,7 +338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         break;
 
                     case "CRD":
-                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                         lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
                             SELECT
                                 CONVERT(varchar(50), Reb.id_solicitud) AS descripcion,
                                 ISNULL(Reb.monto, 0) AS monto,
@@ -392,7 +355,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         break;
 
                     case "CXC":
-                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                        lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
                             SELECT
                                 CONVERT(varchar(50), R.Operacion_Aplicada) AS descripcion,
                                 ISNULL(R.Monto, 0) AS monto,
@@ -409,7 +372,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         break;
 
                     case "CAR":
-                        response.Result.lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
+                        lista = conn.Query<CxCCuentasActivacionDetalleItem>(@"
                             SELECT
                                 ISNULL(R.cod_cargo, '') AS descripcion,
                                 ISNULL(A.monto, 0) AS monto,
@@ -454,7 +417,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                             decimal adl = resumen.Adl ?? 0m;
                             decimal desembolsar = monto + ing - (crd + cxc + car + adl);
 
-                            response.Result.lista = new List<CxCCuentasActivacionDetalleItem>
+                            lista = new List<CxCCuentasActivacionDetalleItem>
                             {
                                 new() { descripcion = "Monto Aprobado", monto = monto, detalle = string.Empty },
                                 new() { descripcion = "(+) Otros Ingresos", monto = ing, detalle = string.Empty },
@@ -467,21 +430,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         }
                         break;
                 }
+
+                return DbHelper.CreateOkResponse(new CxCCuentasActivacionDetalleResult
+                {
+                    procesa_tesoreria = procesa_tesoreria,
+                    lista = lista
+                });
             }
             catch (DbException ex)
             {
-                response.Code = -1;
-                response.Description = $"No fue posible consultar el detalle de activación. {ex.Message}";
-                response.Result = new CxCCuentasActivacionDetalleResult();
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionDetalleResult>($"Error de base de datos al consultar el detalle de activación. {ex.Message}");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = $"Error inesperado al consultar el detalle de activación. {ex.Message}";
-                response.Result = new CxCCuentasActivacionDetalleResult();
+                return DbHelper.CreateErrorResponse<CxCCuentasActivacionDetalleResult>($"Error inesperado al consultar el detalle de activación. {ex.Message}");
             }
-
-            return response;
         }
 
         #endregion
