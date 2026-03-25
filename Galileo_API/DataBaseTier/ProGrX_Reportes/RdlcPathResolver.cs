@@ -37,9 +37,17 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 safeFolder = Path.GetFileName(folder);
             }
 
-            var basePath = string.IsNullOrWhiteSpace(safeFolder)
-                ? Path.Combine(root, empresaSegment)
-                : Path.Combine(root, empresaSegment, safeFolder);
+            var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string basePath;
+            if (string.IsNullOrWhiteSpace(safeFolder))
+            {
+                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
+            }
+            else
+            {
+                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
+                    + Path.DirectorySeparatorChar + safeFolder;
+            }
 
             return Path.GetFullPath(basePath);
         }
