@@ -17,7 +17,7 @@ namespace Galileo.DataBaseTier
         {
             _config = config;
         }
-
+        
         public int Derecho(ParametrosAccesoDto req)
         {
             int resp = 0;
