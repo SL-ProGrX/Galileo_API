@@ -62,8 +62,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var normalizedBasePath = Path.GetFullPath(basePath);
             var directory = Path.GetDirectoryName(normalizedBasePath);
+            var normalizedDirectory = directory is null ? null : Path.GetFullPath(directory);
 
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            if (string.IsNullOrWhiteSpace(normalizedDirectory) || !Directory.Exists(normalizedDirectory))
             {
                 return string.Empty;
             }
@@ -90,10 +91,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             foreach (var extension in AllowedExtensions)
             {
-                var candidateBase = Path.Combine(directory, safeReportName);
+                var candidateBase = Path.Combine(normalizedDirectory!, safeReportName);
                 var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
 
-                if (!IsUnderDirectory(directory, candidatePath))
+                if (!IsUnderDirectory(normalizedDirectory!, candidatePath))
                 {
                     throw new SecurityException("La ruta del reporte no es válida.");
                 }
