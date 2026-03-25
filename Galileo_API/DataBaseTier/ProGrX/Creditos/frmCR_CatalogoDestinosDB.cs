@@ -24,6 +24,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             _Bitacora = dbBitacora;
         }
 
+        /// <summary>
+        /// Obtiene la lista de catalogo destinos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrCatalogoDestinoData>> CrCatalogoDestinos_Obtener(int codEmpresa)
         {
             string query = @"select cod_destino,descripcion,tasa,tbp,int_form,
@@ -33,14 +38,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.ExecuteListQuery<CrCatalogoDestinoData>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene la lista de catalogos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogos_Obtener(int codEmpresa, string tipo)
         {
-            string query = @"select codigo as item,descripcion 
-                from catalogo where (Retencion = @tipo and Poliza = @tipo)
-                order by codigo";
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { tipo });
+            string query = @"select codigo as item,descripcion from catalogo";
+            if (tipo == "N") { 
+                query += @" where (Retencion = 'N' and Poliza = 'N') order by codigo";
+            } else {
+                query += @" where (Retencion = 'S' or Poliza = 'S') order by codigo";
+            }
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene la lista de destinos asignados a un catalogo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrCatalogoDestinoData>> CrCatalogoDestinos_Asignados_Obtener(int codEmpresa, string codigo)
         {
             string query = @"SELECT R.*, 
@@ -56,6 +76,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.ExecuteListQuery<CrCatalogoDestinoData>(_portalDb, codEmpresa, query, new { codigo });
         }
 
+        /// <summary>
+        /// Asigna o desasigna un destino a un catalogo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDestino"></param>
+        /// <param name="catalogo"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoDestinos_Asignar(int codEmpresa, string codDestino, string catalogo, bool isChecked)
         {
             string sql;
@@ -86,6 +114,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );
         }
 
+        /// <summary>
+        /// Guarda un destino, actualiza o agrega dependiendo si existe
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoDestinos_Guardar(int codEmpresa, string usuario, CrCatalogoDestinoData request)
         {
             request.cod_destino = request.cod_destino.Trim();
@@ -108,6 +143,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Elimina un destino del catalogo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDestino"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoDestinos_Eliminar(int codEmpresa, string codDestino, string usuario)
         {
             const string sqlDelete = @"DELETE FROM Catalogo_Destinos
@@ -136,6 +178,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respDelete;
         }
 
+        /// <summary>
+        /// Actualiza datos de un destino
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto ActualizarDestino(int codEmpresa, string usuario, CrCatalogoDestinoData request)
         {
             const string sqlUpdate = @"
@@ -182,6 +231,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respUpdate;
         }
 
+        /// <summary>
+        /// Inserta un nuevo destino
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto InsertarDestino(int codEmpresa, string usuario, CrCatalogoDestinoData request)
         {
             const string sqlInsert = @"
@@ -241,6 +297,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respInsert;
         }
 
+        /// <summary>
+        /// Valida si el destino existe
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDestino"></param>
+        /// <returns></returns>
         private bool ExisteDestino(int codEmpresa, string codDestino)
         {
             const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) 
@@ -256,6 +318,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return resp.Result > 0;
         }
 
+        /// <summary>
+        /// Registra en bitacora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="movimiento"></param>
+        /// <param name="detalle"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
             _Bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
