@@ -45,18 +45,19 @@ namespace Galileo.DataBaseTier
                 return upd;
 
             // 2) Bitácora
+             string detalleBitacora = $"Parametro: {parametros.cod_parametro} - {parametros.valor}";
             var bit = _securityDb.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = CodEmpresa,
                 Usuario = usuario,
                 Modulo = vModulo,
-                Movimiento = $"Parametro del SIF : {parametros.cod_parametro} - {parametros.valor}",
+                Movimiento = detalleBitacora,
                 Detalle = "Modifica - WEB",
                 AppNombre = "Galileo_API"
             });
 
             if ((bit.Code ?? -1) != 0)
-                return DbHelper.ErrorResponse(bit.Description ?? "Error al registrar bitácora", bit.Code ?? -1);
+                return DbHelper.ErrorResponse("Error al registrar bitácora: " + (bit.Description ?? "Error al registrar bitácora"), bit.Code ?? -1);
 
             return DbHelper.OkResponse("Registro actualizado satisfactoriamente");
         }

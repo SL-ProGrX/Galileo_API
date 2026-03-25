@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
 
         // ===================== GENERAL =====================
 
-        public ErrorDto<SysContactoServicioGeneralData> SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
+        public ErrorDto<SysContactoServicioGeneralData?> SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
         {
             return _db.SysContactoServicio_General_Obtener(CodEmpresa, identificacion, codPais);
         }
