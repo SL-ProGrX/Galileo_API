@@ -34,5 +34,14 @@ namespace Galileo.BusinessLogic
         {
             return _db.AlertasTipos_Eliminar(CodCliente, tipoalerta);
         }
+
+        public ErrorDto<AlertasTiposJustificacionLista> AlertasTiposJustificacion_Obtener(int CodCliente, string id_justificacion, string? filtro)
+    => _db.AlertasTiposJustificacion_Obtener(CodCliente, id_justificacion, filtro);
+
+        public ErrorDto AlertasTiposJustificacion_Guardar(int CodCliente, AlertasTiposJustificacionDto request)
+            => _db.AlertasTiposJustificacion_Guardar(CodCliente, request);
+
+        public ErrorDto AlertasTiposJustificacion_Eliminar(int CodCliente, AlertasTiposJustificacionEliminarRequest request)
+            => _db.AlertasTiposJustificacion_Eliminar(CodCliente, request);
     }
 }
