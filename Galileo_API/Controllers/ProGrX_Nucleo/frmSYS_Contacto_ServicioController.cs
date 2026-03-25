@@ -20,7 +20,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
 
         [Authorize]
         [HttpGet("SysContactoServicio_General_Obtener")]
-        public ErrorDto<SysContactoServicioGeneralData> SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
+        public ErrorDto<SysContactoServicioGeneralData?> SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
         {
             return _bl.SysContactoServicio_General_Obtener(CodEmpresa, identificacion, codPais);
         }
