@@ -208,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 if (request.edita)
                 {
-                    if (d == null || d.cod_DifPlantilla <= 0 || d.cod_diferido <= 0)
+                    if (d.cod_DifPlantilla <= 0 || d.cod_diferido <= 0)
                         return new ErrorDto { Code = -2, Description = "Código inválido para modificar." };
 
                     var sql = @"
@@ -269,7 +269,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 }
                 else
                 {
-                    if (d == null || d.cod_diferido <= 0)
+                    if (d.cod_diferido <= 0)
                         return new ErrorDto { Code = -2, Description = "Debe indicar la plantilla (cod_diferido)." };
 
                     int vCodigo = ObtenerConsecutivoPlantilla(conn, codConta, d.cod_diferido);

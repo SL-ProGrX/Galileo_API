@@ -3,9 +3,9 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Credito;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
-using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 

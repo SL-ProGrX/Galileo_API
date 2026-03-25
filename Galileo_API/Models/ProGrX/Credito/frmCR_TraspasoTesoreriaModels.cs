@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.Creditos
+﻿namespace Galileo.Models.ProGrX.Credito
 {
     public class TraspasoModel
     {
