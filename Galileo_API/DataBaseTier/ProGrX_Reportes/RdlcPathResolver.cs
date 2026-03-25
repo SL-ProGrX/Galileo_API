@@ -27,6 +27,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var root = Path.GetFullPath(dirRdlc);
 
+            // Normaliza el código de empresa para que solo se use como segmento de ruta.
+            var empresaSegment = Path.GetFileName(codEmpresa.ToString());
+
             // Normaliza la carpeta opcional para que nunca sea una ruta absoluta ni contenga segmentos de ruta.
             string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
@@ -35,8 +38,8 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             }
 
             var basePath = string.IsNullOrWhiteSpace(safeFolder)
-                ? Path.Combine(root, codEmpresa.ToString())
-                : Path.Combine(root, codEmpresa.ToString(), safeFolder);
+                ? Path.Combine(root, empresaSegment)
+                : Path.Combine(root, empresaSegment, safeFolder);
 
             return Path.GetFullPath(basePath);
         }
