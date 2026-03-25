@@ -624,7 +624,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public List<AfDireccionDto>? Localizaciones { get; set; }
         public List<AfPersonaIngresoDto> Ingresos { get; set; } = new();
         public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
-        public List<CRPersonaLiquidacionDto> Liquidaciones { get; set; } = new();
+        public List<CRliquidacionDto> Liquidaciones { get; set; } = new();
         public List<AfPersonaNombramientoDto> Nombramientos { get; set; } = new();
         public List<AfPersonaSalarioDto> Salarios { get; set; } = new();
         public List<AfPersonaEmailDto> Emails { get; set; } = new();
@@ -691,7 +691,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? idx { get; set; }
     }
 
-    public class CrLiquidacionBaseDto
+    public class CRliquidacionDto
     {
         public string? estadoactliq { get; set; }
         public string? estadoactliqdesc { get; set; }
@@ -705,17 +705,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? tneto_format { get; set; }
         public string? estado { get; set; }
         public string? estadodesc { get; set; }
-    }
-
-    public class CRliquidacionDto : CrLiquidacionBaseDto
-    {
         public int consec { get; set; }
         public DateTime fecliq { get; set; }
-    }
-
-    public class CRPersonaLiquidacionDto : CrLiquidacionBaseDto
-    {
-        public int Consec { get; set; }
-        public DateTime? Fecliq { get; set; }
     }
 }
