@@ -1,6 +1,5 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ProGrX.Clientes;
-using System.Text.Json.Serialization;
 
 namespace Galileo_API.Models.ProGrX.Creditos
 {
@@ -21,6 +20,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public bool? bloqueo { get; set; }
         public string? nota_user { get; set; }
         public DateTime? nota_fecha { get; set; }
+
         // Montos / saldos
         public decimal? obrero { get; set; } = 0;
         public decimal? patronal { get; set; } = 0;
@@ -30,15 +30,18 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public decimal? ahorro { get; set; } = 0;
         public decimal? aporte { get; set; } = 0;
         public decimal? extra { get; set; } = 0;
+
         // Fechas de movimientos
         public DateTime? fecextra { get; set; }
         public DateTime? fecahorro { get; set; }
         public DateTime? fecaporte { get; set; }
         public DateTime? feccustodia { get; set; }
         public DateTime? feccapitaliza { get; set; }
+
         public string? clasificacion { get; set; }
         public string? clasificacionCaption { get; set; }
         public string? rating { get; set; }
+
         // Indicadores
         public int? indmensajes { get; set; }
         public int? indcobro { get; set; }
@@ -49,6 +52,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? estadoMensajesCaption { get; set; }
         public string? estadoCobrosCaption { get; set; }
         public string? estadoAdvertenciaCaption { get; set; }
+
         // Patronal / cajas
         public decimal? cajas_saldo_favor { get; set; }
         public decimal? pat_garantia_total { get; set; }
@@ -56,10 +60,12 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? pat_advertencia { get; set; }
         public decimal? pat_aporte_manual { get; set; }
         public string? pat_tipoSaldo { get; set; }
+
         // Otros datos
         public string? institucionx { get; set; }
         public string? estadox { get; set; }
         public string? deductora { get; set; }
+
         // Beneficiarios / consentimiento
         public DateTime? ben_update_fecha { get; set; }
         public string? ben_update_usuario { get; set; }
@@ -68,6 +74,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? estadoConsentimientoToolTip { get; set; }
         public DateTime? consentimientoFecha { get; set; }
         public string? consentimientoUsuario { get; set; }
+
         // Bancarios / nómina
         public string? tarjeta_numero { get; set; }
         public string? iban { get; set; }
@@ -76,7 +83,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? salarioTrasladaCaption { get; set; }
         public string? tarjetaCaption { get; set; }
         public bool? insolvente { get; set; }
-        //Membrecia
+
+        // Membresía
         public string? membresiaCaption { get; set; } = string.Empty;
         public string? membresiaToolTip { get; set; } = string.Empty;
         public string? membresiaLabel { get; set; } = string.Empty;
@@ -87,7 +95,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? tipo { get; set; } = string.Empty;
         public string? descripcion { get; set; } = string.Empty;
         public decimal? patrimonio { get; set; } = 0;
-        //Mensajes
+
+        // Mensajes
         public int? pendientes { get; set; }
         public string? pendientesCaption { get; set; }
         public int? advertencias { get; set; }
@@ -178,11 +187,12 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? salida_tipo { get; set; }
         public string? salida_desc { get; set; }
         public int? alerta_pago { get; set; }
-
-
     }
 
-    public sealed class CrConsultaCrdSolicitudData
+    // =========================
+    // BASE COMÚN PARA EVITAR DUPLICACIÓN
+    // =========================
+    public abstract class CrConsultaSolicitudBaseData
     {
         public int? id_solicitud { get; set; }
         public string? codigo { get; set; }
@@ -193,16 +203,25 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? estado { get; set; }
         public string? proceso { get; set; }
         public string? observacion { get; set; }
-        public string? lineax { get; set; }
         public string? userrec { get; set; }
         public string? cod_oficina_r { get; set; }
-        public string? oficinax { get; set; }
+        public string? oficinaX { get; set; }
         public string? garantia { get; set; }
         public int? indicadorcbr { get; set; }
         public string? garantiadetalle { get; set; }
         public string? cod_divisa { get; set; }
         public string? divisa_desc { get; set; }
         public string? currency_sim { get; set; }
+    }
+
+    public sealed class CrConsultaCrdSolicitudData : CrConsultaSolicitudBaseData
+    {
+        public string? lineax { get; set; }
+    }
+
+    public sealed class CrConsultaCreditosData : CrConsultaSolicitudBaseData
+    {
+        public string? linea_x { get; set; }
     }
 
     public sealed class CrConsultaCrdPreanalisisData
@@ -229,7 +248,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string? estado { get; set; }
         public string? modifica_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
-        public decimal? reactivacion_recargo { get; set; }   // si fuese texto, cámbiala a string?
+        public decimal? reactivacion_recargo { get; set; }
         public string? genera_documento { get; set; }
         public string? reversa_documento { get; set; }
         public string? notas_registro { get; set; }
@@ -639,29 +658,6 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public List<AFPersonaBenePolizaDto> BenePolizas { get; set; } = new();
     }
 
-    public class CrConsultaCreditosData
-    {
-        public int id_solicitud { get; set; }
-        public string? codigo { get; set; }
-        public string? cedula { get; set; }
-        public DateTime fechasol { get; set; }
-        public decimal montoSol { get; set; }
-        public string? estadosol { get; set; }
-        public string? estado { get; set; }
-        public string? proceso { get; set; }
-        public string? observacion { get; set; }
-        public string? linea_x { get; set; }
-        public string? userrec { get; set; }
-        public string? cod_oficina_r { get; set; }
-        public string? oficinaX { get; set; }
-        public string? garantia { get; set; }
-        public int indicador_cbr { get; set; }
-        public string? garantia_detalle { get; set; }
-        public string? cod_divisa { get; set; }
-        public string? divisa_desc { get; set; }
-        public string? currency_sim { get; set; }
-    }
-
     public class CRPreferenciaDto
     {
         public string Cedula { get; set; } = default!;
@@ -682,7 +678,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class SocioCierresData
     {
         public string email { get; set; } = string.Empty;
-        public List<DropDownListaGenericaModel> periodos { get; set; } = new List<DropDownListaGenericaModel>();
+        public List<DropDownListaGenericaModel> periodos { get; set; } = new();
     }
 
     public class SociosPeriodoData
