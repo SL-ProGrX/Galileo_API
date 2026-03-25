@@ -49,8 +49,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Result.lista = connection.Query<SifOficinasMetaData>(sp, new
                 {
                     oficina,
-                    anio_inicio = anio,
-                    anio_corte = anio + 1,
+                    anioinicio = anio,
+                    aniocorte = anio + 1,
                     usuario
                 }, commandType: CommandType.StoredProcedure).ToList();
 
