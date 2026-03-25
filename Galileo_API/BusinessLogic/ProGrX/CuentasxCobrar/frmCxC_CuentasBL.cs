@@ -272,8 +272,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         }
 
         public ErrorDto<CxCCuentasActivacionDetalleResult> CxCCuentasActivacionDetalle_Obtener(
-    int codEmpresa,
-    CxCCuentasActivacionDetalleRequest request)
+                int codEmpresa,
+                CxCCuentasActivacionDetalleRequest request)
         {
             return _db.CxCCuentasActivacionDetalle_Obtener(codEmpresa, request);
         }
