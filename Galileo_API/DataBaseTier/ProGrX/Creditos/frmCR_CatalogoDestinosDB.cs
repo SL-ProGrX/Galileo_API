@@ -86,21 +86,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto CrCatalogoDestinos_Asignar(int codEmpresa, string codDestino, string catalogo, bool isChecked)
         {
-            string sql;
-
-            if (isChecked)
-            {
-                sql = @"
+            string sql = isChecked
+                ? @"
             INSERT INTO Catalogo_DestinosAsg (cod_destino, codigo)
-            VALUES (@CodDestino, @Codigo);";
-            }
-            else
-            {
-                sql = @"
+            VALUES (@CodDestino, @Codigo);"
+                : @"
             DELETE FROM Catalogo_DestinosAsg
             WHERE cod_destino = @CodDestino
               AND codigo = @Codigo;";
-            }
 
             return DbHelper.ExecuteNonQuery(
                 _portalDb,
