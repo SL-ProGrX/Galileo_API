@@ -209,11 +209,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodDestino = request.cod_destino,
                     Descripcion = request.descripcion,
                     Tasa = request.tasa,
-                    TBP = request.tbp,
-                    IntForm = request.int_form,
-                    TipoCbrInt = request.tipocbrint,
-                    PrimerCuota = request.primer_cuota,
-                    EnvioTesoreria = request.envio_tesoreria,
+                    TBP = request.tbp ? 1 : 0,
+                    IntForm = request.int_form ? 1 : 0,
+                    TipoCbrInt = request.tipocbrint.First(),
+                    PrimerCuota = request.primer_cuota ? 1 : 0,
+                    EnvioTesoreria = request.envio_tesoreria ? 1 : 0,
                     Prioridad = request.prioridad
                 }
             );
@@ -275,11 +275,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodDestino = request.cod_destino,
                     Descripcion = request.descripcion,
                     Tasa = request.tasa,
-                    TBP = request.tbp,
-                    IntForm = request.int_form,
-                    TipoCbrInt = request.tipocbrint,
-                    PrimerCuota = request.primer_cuota,
-                    EnvioTesoreria = request.envio_tesoreria,
+                    TBP = request.tbp ? 1 : 0,
+                    IntForm = request.int_form ? 1 : 0,
+                    TipoCbrInt = request.tipocbrint.First(),
+                    PrimerCuota = request.primer_cuota ? 1 : 0,
+                    EnvioTesoreria = request.envio_tesoreria ? 1 : 0,
                     Prioridad = request.prioridad
                 }
             );

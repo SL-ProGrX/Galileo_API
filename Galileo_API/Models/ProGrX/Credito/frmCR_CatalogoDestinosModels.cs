@@ -5,11 +5,11 @@
         public string cod_destino { get; set; } = string.Empty; 
         public string descripcion { get; set; } = string.Empty;
         public decimal tasa { get; set; } = 0;
-        public int tbp { get; set; } = 0;
-        public int int_form { get; set; } = 0;
+        public bool tbp { get; set; } = false;
+        public bool int_form { get; set; } = false;
         public string tipocbrint { get; set; } = string.Empty;
-        public int primer_cuota { get; set; } = 0;
-        public int envio_tesoreria { get; set; } = 0;
+        public bool primer_cuota { get; set; } = false;
+        public bool envio_tesoreria { get; set; } = false;
         public int prioridad { get; set; } = 0;
         public bool existe { get; set; } = false;
     }
