@@ -19,8 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             PortalDB portalDb,
             MSecurityMainDb mSecurityMainDb)
         {
-            _portalDb = portalDb;
-            _mSecurityMainDb = mSecurityMainDb;
+            (_portalDb, _mSecurityMainDb) = (portalDb, mSecurityMainDb);
         }
 
         /// <summary>
@@ -40,12 +39,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                response.Result = cn.Query<DropDownListaGenericaModel>(
-                    @"SELECT tipo_asiento as item,
-                    RTRIM(tipo_asiento) + ' - ' + RTRIM(descripcion) AS descripcion
-                      FROM CntX_Tipos_Asientos
-                      WHERE cod_contabilidad = @cod_contabilidad",
-                    new { cod_contabilidad }).ToList();
+                response.Result = [
+                    ..cn.Query<DropDownListaGenericaModel>(
+                        @"SELECT tipo_asiento as item,
+                        RTRIM(tipo_asiento) + ' - ' + RTRIM(descripcion) AS descripcion
+                          FROM CntX_Tipos_Asientos
+                          WHERE cod_contabilidad = @cod_contabilidad",
+                        new { cod_contabilidad })
+                ];
             }
             catch (Exception ex)
             {
