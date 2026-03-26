@@ -569,24 +569,6 @@ namespace Galileo.Models.ProGrX.Credito
         public string? estadodesc { get; set; }
     }
 
-    public class CRliquidacionDto
-    {
-        public int consec { get; set; }
-        public DateTime fecliq { get; set; }
-        public string? estadoactliq { get; set; }
-        public string? estadoactliqdesc { get; set; }
-        public string? estadoactual { get; set; }
-        public string? estadoactualdesc { get; set; }
-        public string? estadopersona { get; set; }
-        public string? tdocumento { get; set; }
-        public string? ubicacion { get; set; }
-        public string? ubicaciondesc { get; set; }
-        public decimal tneto { get; set; }
-        public string? tneto_format { get; set; }
-        public string? estado { get; set; }
-        public string? estadodesc { get; set; }
-    }
-
     public class AFPersonaDetalleDto
     {
         public string? direccion { get; set; }
@@ -632,24 +614,6 @@ namespace Galileo.Models.ProGrX.Credito
         public string? poliza_desc { get; set; }
     }
 
-    public class CRPersonaLiquidacionDto
-    {
-        public int Consec { get; set; }
-        public DateTime? Fecliq { get; set; }
-        public string? estadoactliq { get; set; }
-        public string? estadoactliqdesc { get; set; }
-        public string? estadoactual { get; set; }
-        public string? estadoactualdesc { get; set; }
-        public string? estadopersona { get; set; }
-        public string? tdocumento { get; set; }
-        public string? ubicacion { get; set; }
-        public string? ubicaciondesc { get; set; }
-        public decimal tneto { get; set; }
-        public string? tneto_format { get; set; }
-        public string? estado { get; set; }
-        public string? estadodesc { get; set; }
-    }
-
     public class CRConsultaInfoDto
     {
         public List<AfTelefonoDto>? Telefonos { get; set; }
@@ -659,7 +623,7 @@ namespace Galileo.Models.ProGrX.Credito
         public List<AfDireccionDto>? Localizaciones { get; set; }
         public List<AfPersonaIngresoDto> Ingresos { get; set; } = new();
         public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
-        public List<CRPersonaLiquidacionDto> Liquidaciones { get; set; } = new();
+        public List<CRliquidacionDto> Liquidaciones { get; set; } = new();
         public List<AfPersonaNombramientoDto> Nombramientos { get; set; } = new();
         public List<AfPersonaSalarioDto> Salarios { get; set; } = new();
         public List<AfPersonaEmailDto> Emails { get; set; } = new();
@@ -724,5 +688,23 @@ namespace Galileo.Models.ProGrX.Credito
     {
         public string? itmx { get; set; }
         public string? idx { get; set; }
+    }
+
+    public class CRliquidacionDto
+    {
+        public string? estadoactliq { get; set; }
+        public string? estadoactliqdesc { get; set; }
+        public string? estadoactual { get; set; }
+        public string? estadoactualdesc { get; set; }
+        public string? estadopersona { get; set; }
+        public string? tdocumento { get; set; }
+        public string? ubicacion { get; set; }
+        public string? ubicaciondesc { get; set; }
+        public decimal tneto { get; set; }
+        public string? tneto_format { get; set; }
+        public string? estado { get; set; }
+        public string? estadodesc { get; set; }
+        public int consec { get; set; }
+        public DateTime fecliq { get; set; }
     }
 }
