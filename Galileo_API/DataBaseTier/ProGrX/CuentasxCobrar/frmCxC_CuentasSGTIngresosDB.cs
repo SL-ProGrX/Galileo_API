@@ -6,16 +6,16 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_CxC
 {
-    public class FrmCxCCuentasSGTIngresosDb
+    public class FrmCxCCuentasSgtIngresosDb
     {
         private readonly PortalDB _portalDb;
 
-        public FrmCxCCuentasSGTIngresosDb(IConfiguration config)
+        public FrmCxCCuentasSgtIngresosDb(IConfiguration config)
             : this(new PortalDB(config))
         {
         }
 
-        public FrmCxCCuentasSGTIngresosDb(PortalDB portalDb)
+        public FrmCxCCuentasSgtIngresosDb(PortalDB portalDb)
         {
             _portalDb = portalDb;
         }
@@ -66,14 +66,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
             return response;
         }
 
-      /// <summary>
-      /// Obtiene el centro de costo y la unidad asignada
-      /// </summary>
-      /// <param name="cn"></param>
-      /// <param name="usuario"></param>
-      /// <returns></returns>
-      /// <exception cref="Exception"></exception>
-        private (string codUnidad, string codCentroCosto) ObtenerOficina(SqlConnection cn, string usuario)
+        /// <summary>
+        /// Obtiene el centro de costo y la unidad asignada
+        /// </summary>
+        /// <param name="cn"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        private static (string codUnidad, string codCentroCosto) ObtenerOficina(SqlConnection cn, string usuario)
         {
             var result = cn.QueryFirstOrDefault<dynamic>(
                 "sbSIFOficinasUsuario",
@@ -82,13 +82,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
             );
 
             if (result == null)
-                throw new Exception("No se pudo obtener oficina del usuario");
+                throw new InvalidOperationException("No se pudo obtener oficina del usuario");
 
             if (result.Inconsistencia == 1)
-                throw new Exception("No existen oficinas creadas");
+                throw new InvalidOperationException("No existen oficinas creadas");
 
             if (result.Inconsistencia == 2)
-                throw new Exception("Usuario no asignado a oficina");
+                throw new InvalidOperationException("Usuario no asignado a oficina");
 
             return (result.Cod_Unidad, result.Cod_Centro_Costo);
         }

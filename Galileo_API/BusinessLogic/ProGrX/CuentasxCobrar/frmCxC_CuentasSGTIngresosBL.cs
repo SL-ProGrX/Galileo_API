@@ -4,26 +4,34 @@ using Galileo_API.Models.ProGrX.CuentasxCobrar;
 
 namespace Galileo_API.BusinessLogic.ProGrX_CxC
 {
-    public class FrmCxCCuentasSGTIngresosBl
+    public class FrmCxCCuentasSgtIngresosBl
     {
-        private readonly FrmCxCCuentasSGTIngresosDb _db;
+        private readonly FrmCxCCuentasSgtIngresosDb _db;
 
-        public FrmCxCCuentasSGTIngresosBl(IConfiguration config)
+        public FrmCxCCuentasSgtIngresosBl(IConfiguration config)
         {
-            _db = new FrmCxCCuentasSGTIngresosDb(config);
+            _db = new FrmCxCCuentasSgtIngresosDb(config);
         }
 
         public ErrorDto<List<CxCIngresoDto>> ListarRegistrosIngresos(int codEmpresa, int operacion)
-            => _db.ListarRegistrosIngresos(codEmpresa, operacion);
+        {
+            return _db.ListarRegistrosIngresos(codEmpresa, operacion);
+        }
 
         public ErrorDto<bool> GuardarRegistrosIngresos(int codEmpresa, CxCIngresoGuardarDto dto)
-            => _db.GuardarRegistrosIngresos(codEmpresa, dto);
+        {
+            return _db.GuardarRegistrosIngresos(codEmpresa, dto);
+        }
 
         public ErrorDto<bool> EliminarRegistroIngresos(int codEmpresa, int operacion, int linea, string codCargo)
-            => _db.EliminarRegistroIngresos(codEmpresa, operacion, linea, codCargo);
+        {
+            return _db.EliminarRegistroIngresos(codEmpresa, operacion, linea, codCargo);
+        }
 
         public ErrorDto<bool> ActualizarRegistroingreso(int codEmpresa, int operacion, string usuario)
-            => _db.ActualizarRegistroingreso(codEmpresa, operacion, usuario);
+        {
+            return _db.ActualizarRegistroingreso(codEmpresa, operacion, usuario);
+        }
 
         public ErrorDto<CxCIngresoDto> Scroll(int codEmpresa, int operacion, string? codCargo, string direccion)
         {

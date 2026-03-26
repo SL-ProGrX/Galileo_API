@@ -9,13 +9,13 @@ namespace Galileo_API.Controllers.ProGrX_CxC
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmCxCCuentasSGTIngresosController : ControllerBase
+    public class FrmCxCCuentasSgtIngresosController : ControllerBase
     {
-        private readonly FrmCxCCuentasSGTIngresosBl _bl;
+        private readonly FrmCxCCuentasSgtIngresosBl _bl;
 
-        public FrmCxCCuentasSGTIngresosController(IConfiguration config)
+        public FrmCxCCuentasSgtIngresosController(IConfiguration config)
         {
-            _bl = new FrmCxCCuentasSGTIngresosBl(config);
+            _bl = new FrmCxCCuentasSgtIngresosBl(config);
         }
 
         [HttpGet("ListarRegistrosIngresos")]

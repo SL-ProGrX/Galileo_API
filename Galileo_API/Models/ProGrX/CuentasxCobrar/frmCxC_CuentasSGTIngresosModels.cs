@@ -18,7 +18,7 @@
 
     public class CxCIngresoGuardarDto
     {
-        public int operacion { get; set; }
+        public int? operacion { get; set; }
 
         public int? linea { get; set; } // null = insert
 
@@ -26,9 +26,9 @@
 
         public string tipo { get; set; } = string.Empty; // "M" o "P"
 
-        public decimal valor { get; set; }
+        public decimal? valor { get; set; }
 
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
 
         public string? detalle { get; set; }
 
