@@ -92,6 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return;
 
             if (filtros.usar_fechas == true)
+
                 return;
 
             string campoFecha = ObtenerCampoFecha(filtros.tipo_fecha!);
