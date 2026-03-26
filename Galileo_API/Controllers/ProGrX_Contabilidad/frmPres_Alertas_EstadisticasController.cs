@@ -48,5 +48,65 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _BL.PresAlertaJustificacionBitacora_Obtener(resquest);
         }
 
+        [Authorize]
+        [HttpGet("PresAlertaTipoJustificacion_Obtener")]
+        public ErrorDto<List<PresAlertaTipoJustificacionData>> PresAlertaTipoJustificacion_Obtener(int CodEmpresa, string tipoAlerta)
+        {
+            return _BL.PresAlertaTipoJustificacion_Obtener(CodEmpresa, tipoAlerta);
+        }
+
+        #region Control de Justificaciones
+
+        [Authorize]
+        [HttpPost("PresAlertasControlExclusion_Guardar")]
+        public ErrorDto PresAlertasControlExclusion_Guardar(int CodEmpresa, [FromBody] PresAlertasControlExclusionGuardarRequest request)
+        {
+            return _BL.PresAlertasControlExclusion_Guardar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasControlExclusion_Obtener")]
+        public ErrorDto<List<PresAlertasControlExclusionData>> PresAlertasControlExclusion_Obtener(int CodEmpresa, [FromBody] PresAlertasControlExclusionFiltroRequest request)
+        {
+            return _BL.PresAlertasControlExclusion_Obtener(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasControlExclusion_Eliminar")]
+        public ErrorDto PresAlertasControlExclusion_Eliminar(int CodEmpresa, [FromBody] PresAlertasControlExclusionEliminarRequest request)
+        {
+            return _BL.PresAlertasControlExclusion_Eliminar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasJustificaPeriodo_Validar")]
+        public ErrorDto<PresAlertasJustificaPeriodoData> PresAlertasJustificaPeriodo_Validar(int CodEmpresa, [FromBody] PresAlertasJustificaPeriodoRequest request)
+        {
+            return _BL.PresAlertasJustificaPeriodo_Validar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasJustificaPeriodo_Abrir")]
+        public ErrorDto PresAlertasJustificaPeriodo_Abrir(int CodEmpresa, [FromBody] PresAlertasJustificaPeriodoRequest request)
+        {
+            return _BL.PresAlertasJustificaPeriodo_Abrir(CodEmpresa, request);
+        }
+
+        #endregion
+
+        [Authorize]
+        [HttpPost("PresAlertasControlPeriodo_Validar")]
+        public ErrorDto<PresAlertasControlPeriodoEstadoData> PresAlertasControlPeriodo_Validar(int CodEmpresa, [FromBody] PresAlertasControlPeriodoConfigRequest request)
+        {
+            return _BL.PresAlertasControlPeriodo_Validar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasControlPeriodo_Registrar")]
+        public ErrorDto PresAlertasControlPeriodo_Registrar(int CodEmpresa, [FromBody] PresAlertasControlPeriodoConfigRequest request)
+        {
+            return _BL.PresAlertasControlPeriodo_Registrar(CodEmpresa, request);
+        }
+
     }
 }
