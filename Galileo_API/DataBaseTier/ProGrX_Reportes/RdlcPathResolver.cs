@@ -27,16 +27,27 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var root = Path.GetFullPath(dirRdlc);
 
-            // Normaliza la carpeta opcional para que nunca sea una ruta absoluta ni contenga segmentos de ruta.
+            // Normaliza el código de empresa para que solo se use como segmento de ruta.
+            var empresaSegment = Path.GetFileName(codEmpresa.ToString());
+
+            // Normaliza la carpeta opcional para que se use solo como segmento de ruta.
             string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
             {
                 safeFolder = Path.GetFileName(folder);
             }
 
-            var basePath = string.IsNullOrWhiteSpace(safeFolder)
-                ? Path.Combine(root, codEmpresa.ToString())
-                : Path.Combine(root, codEmpresa.ToString(), safeFolder);
+            var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string basePath;
+            if (string.IsNullOrWhiteSpace(safeFolder))
+            {
+                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
+            }
+            else
+            {
+                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
+                    + Path.DirectorySeparatorChar + safeFolder;
+            }
 
             return Path.GetFullPath(basePath);
         }
@@ -53,8 +64,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var normalizedBasePath = Path.GetFullPath(basePath);
             var directory = Path.GetDirectoryName(normalizedBasePath);
+            var normalizedDirectory = directory is null ? null : Path.GetFullPath(directory);
 
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            if (string.IsNullOrWhiteSpace(normalizedDirectory) || !Directory.Exists(normalizedDirectory))
             {
                 return string.Empty;
             }
@@ -65,15 +77,28 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException("El nombre del reporte no es válido.");
             }
 
-            // Asegura que el nombre del reporte no pueda ser tratado como una ruta absoluta.
+            // Valida que el nombre del reporte no pueda ser tratado como una ruta absoluta ni contenga separadores.
+            if (Path.IsPathRooted(reportName)
+                || reportName.Contains(Path.DirectorySeparatorChar)
+                || reportName.Contains(Path.AltDirectorySeparatorChar))
+            {
+                throw new SecurityException("El nombre del reporte no es válido.");
+            }
+
             var safeReportName = Path.GetFileName(reportName);
+            if (string.IsNullOrWhiteSpace(safeReportName))
+            {
+                throw new SecurityException("El nombre del reporte no es válido.");
+            }
 
             foreach (var extension in AllowedExtensions)
             {
-                var candidateBase = Path.Combine(directory, safeReportName);
+                var candidateBase = normalizedDirectory!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar
+                    + safeReportName;
                 var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
 
-                if (!IsUnderDirectory(directory, candidatePath))
+                if (!IsUnderDirectory(normalizedDirectory!, candidatePath))
                 {
                     throw new SecurityException("La ruta del reporte no es válida.");
                 }
