@@ -70,7 +70,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var existe = DbHelper.ExecuteSingleQuery<int>(
                 _portalDb, codEmpresa,
                 "SELECT COUNT(1) FROM CxC_Personas_Contratos WHERE cedula = @Cedula AND cod_contrato = @Cod_Contrato",
-                default, new { param.Contrato.Cedula, param.Contrato.Cod_Contrato }
+                default, new { param.Contrato?.Cedula, param.Contrato?.Cod_Contrato }
             ).Result;
 
             if (existe == 0)
