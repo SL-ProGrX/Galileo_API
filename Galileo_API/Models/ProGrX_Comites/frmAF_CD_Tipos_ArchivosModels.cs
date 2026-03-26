@@ -2,11 +2,11 @@
 {
     public class TipoArchivoData
     {
-        public int id_tipo_archivo { get; set; }
+        public int? id_tipo_archivo { get; set; }
         public string nombre_tipo_archivo { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool? activo { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public bool? isNew { get; set; }
     }
 
     public class TipoArchivoLista

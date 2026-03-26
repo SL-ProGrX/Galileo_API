@@ -105,7 +105,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 if (string.IsNullOrWhiteSpace(data.nombre_tipo_archivo))
                     return DbHelper.ErrorResponse("Nombre requerido.", -2);
 
-                if (data.isNew)
+                if (data.isNew == true)
                 {
                     const string insert = @"
                     INSERT INTO AFI_CD_TIPO_ARCHIVO
