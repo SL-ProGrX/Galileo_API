@@ -91,7 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
                 return;
 
-            if (filtros.usar_fechas == true)
+            if (filtros.usar_fechas)
                 return;
 
             string campoFecha = ObtenerCampoFecha(filtros.tipo_fecha!);
