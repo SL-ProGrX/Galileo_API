@@ -15,16 +15,16 @@
 
     public class AlertasTiposLista
     {
-        public int total { get; set; }
+        public int total { get; set; } = 0;
         public List<AlertasTiposDto> lista { get; set; } = new List<AlertasTiposDto>();
     }
 
     public class AlertasTiposDetalleDto
     {
-        public int id_condicion { get; set; }
+        public int id_condicion { get; set; } = 0;
         public string cod_desviacion { get; set; } = string.Empty;
-        public int grupo_condicion { get; set; }
-        public int orden_condicion { get; set; }
+        public int grupo_condicion { get; set; } = 0; 
+        public int orden_condicion { get; set; } = 0;
         public string campo_consulta { get; set; } = string.Empty;
         public string operador { get; set; } = string.Empty;
         public decimal? valor_inicial { get; set; }
@@ -38,13 +38,13 @@
 
     public class AlertasTiposDetalleLista
     {
-        public int total { get; set; }
+        public int total { get; set; } = 0;
         public List<AlertasTiposDetalleDto> lista { get; set; } = new();
     }
 
     public class AlertasTiposDetalleEliminarRequest
     {
-        public int id_condicion { get; set; }
+        public int id_condicion { get; set; } = 0;
         public string cod_desviacion { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
@@ -63,7 +63,7 @@
 
     public class AlertasTiposJustificacionLista
     {
-        public int total { get; set; }
+        public int total { get; set; } = 0;
         public List<AlertasTiposJustificacionDto> lista { get; set; } = new();
     }
 
