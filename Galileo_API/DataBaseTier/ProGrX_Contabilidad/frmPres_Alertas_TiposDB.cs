@@ -48,18 +48,17 @@ namespace Galileo.DataBaseTier
                 FROM PRES_TIPOS_DESVIACIONES";
 
             const string sqlBaseSelect = @"
-                SELECT 
-                    cod_desviacion,
-                    descripcion,
-                    activa,
-                    requiere_justificacion,
-                    tipo,
-                    valor_desviacion,
-                    registro_usuario,
-                    registro_fecha,
-                    modifica_fecha,
-                    modifica_usuario
-                FROM PRES_TIPOS_DESVIACIONES";
+                 SELECT 
+                        cod_desviacion,
+                        descripcion,
+                        activa,
+                        requiere_justificacion,
+                        orden_evaluacion,
+                        registro_usuario,
+                        registro_fecha,
+                        modifica_fecha,
+                        modifica_usuario
+                    FROM PRES_TIPOS_DESVIACIONES";
 
             try
             {
@@ -128,33 +127,50 @@ namespace Galileo.DataBaseTier
         {
             var resp = new ErrorDto();
 
+            if (string.IsNullOrWhiteSpace(alertatipo.cod_desviacion) ||
+                string.IsNullOrWhiteSpace(alertatipo.descripcion))
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Debe indicar código y descripción."
+                };
+            }
+
+            if (!alertatipo.orden_evaluacion.HasValue || alertatipo.orden_evaluacion.Value <= 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Debe indicar un orden de evaluación mayor a 0."
+                };
+            }
+
             const string insertSql = @"
-                INSERT INTO PRES_TIPOS_DESVIACIONES
-                (
-                    [COD_DESVIACION],
-                    [DESCRIPCION],
-                    [ACTIVA],
-                    [REQUIERE_JUSTIFICACION],
-                    [TIPO],
-                    [VALOR_DESVIACION],
-                    [REGISTRO_USUARIO],
-                    [REGISTRO_FECHA],
-                    [MODIFICA_USUARIO],
-                    [MODIFICA_FECHA]
-                )
-                VALUES
-                (
-                    @CodDesviacion,
-                    @Descripcion,
-                    @Activa,
-                    @RequiereJustificacion,
-                    @Tipo,
-                    @ValorDesviacion,
-                    @RegistroUsuario,
-                    GETDATE(),
-                    @ModificaUsuario,
-                    @ModificaFecha
-                );";
+        INSERT INTO PRES_TIPOS_DESVIACIONES
+        (
+            [COD_DESVIACION],
+            [DESCRIPCION],
+            [ACTIVA],
+            [REQUIERE_JUSTIFICACION],
+            [ORDEN_EVALUACION],
+            [REGISTRO_USUARIO],
+            [REGISTRO_FECHA],
+            [MODIFICA_USUARIO],
+            [MODIFICA_FECHA]
+        )
+        VALUES
+        (
+            @CodDesviacion,
+            @Descripcion,
+            @Activa,
+            @RequiereJustificacion,
+            @OrdenEvaluacion,
+            @RegistroUsuario,
+            GETDATE(),
+            @ModificaUsuario,
+            @ModificaFecha
+        );";
 
             try
             {
@@ -162,14 +178,13 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new
                 {
-                    CodDesviacion = alertatipo.cod_desviacion,
-                    Descripcion = alertatipo.descripcion,
-                    Activa = alertatipo.activa,
-                    RequiereJustificacion = alertatipo.requiere_justificacion,
-                    Tipo = alertatipo.tipo,
-                    ValorDesviacion = alertatipo.valor_desviacion,
-                    RegistroUsuario = alertatipo.registro_usuario,
-                    ModificaUsuario = alertatipo.modifica_usuario,
+                    CodDesviacion = NormalizeCode(alertatipo.cod_desviacion),
+                    Descripcion = NormalizeText(alertatipo.descripcion),
+                    Activa = alertatipo.activa ?? true,
+                    RequiereJustificacion = alertatipo.requiere_justificacion ?? false,
+                    OrdenEvaluacion = alertatipo.orden_evaluacion,
+                    RegistroUsuario = NormalizeCode(alertatipo.registro_usuario),
+                    ModificaUsuario = string.IsNullOrWhiteSpace(alertatipo.modifica_usuario) ? null : NormalizeCode(alertatipo.modifica_usuario),
                     ModificaFecha = alertatipo.modifica_fecha
                 };
 
@@ -192,17 +207,35 @@ namespace Galileo.DataBaseTier
         {
             var resp = new ErrorDto();
 
+            if (string.IsNullOrWhiteSpace(alertatipo.cod_desviacion) ||
+                string.IsNullOrWhiteSpace(alertatipo.descripcion))
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Debe indicar código y descripción."
+                };
+            }
+
+            if (!alertatipo.orden_evaluacion.HasValue || alertatipo.orden_evaluacion.Value <= 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Debe indicar un orden de evaluación mayor a 0."
+                };
+            }
+
             const string updateSql = @"
-                UPDATE PRES_TIPOS_DESVIACIONES
-                SET 
-                    DESCRIPCION = @Descripcion,
-                    ACTIVA = @Activa,
-                    REQUIERE_JUSTIFICACION = @RequiereJustificacion,
-                    TIPO = @Tipo,
-                    VALOR_DESVIACION = @ValorDesviacion,
-                    MODIFICA_USUARIO = @ModificaUsuario,
-                    MODIFICA_FECHA = @ModificaFecha
-                WHERE COD_DESVIACION = @CodDesviacion;";
+        UPDATE PRES_TIPOS_DESVIACIONES
+        SET 
+            DESCRIPCION = @Descripcion,
+            ACTIVA = @Activa,
+            REQUIERE_JUSTIFICACION = @RequiereJustificacion,
+            ORDEN_EVALUACION = @OrdenEvaluacion,
+            MODIFICA_USUARIO = @ModificaUsuario,
+            MODIFICA_FECHA = @ModificaFecha
+        WHERE COD_DESVIACION = @CodDesviacion;";
 
             try
             {
@@ -210,19 +243,18 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new
                 {
-                    CodDesviacion = alertatipo.cod_desviacion,
-                    Descripcion = alertatipo.descripcion,
-                    Activa = alertatipo.activa,
-                    RequiereJustificacion = alertatipo.requiere_justificacion,
-                    Tipo = alertatipo.tipo,
-                    ValorDesviacion = alertatipo.valor_desviacion,
-                    ModificaUsuario = alertatipo.modifica_usuario,
+                    CodDesviacion = NormalizeCode(alertatipo.cod_desviacion),
+                    Descripcion = NormalizeText(alertatipo.descripcion),
+                    Activa = alertatipo.activa ?? true,
+                    RequiereJustificacion = alertatipo.requiere_justificacion ?? false,
+                    OrdenEvaluacion = alertatipo.orden_evaluacion,
+                    ModificaUsuario = NormalizeCode(alertatipo.modifica_usuario),
                     ModificaFecha = DateTime.Now
                 };
 
                 int filas = connection.Execute(updateSql, parameters);
                 resp.Code = filas;
-                resp.Description = filas > 0 ? "OK" : "No existe el registro.";
+                resp.Description = filas > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
             }
             catch (Exception ex)
             {
@@ -252,7 +284,7 @@ namespace Galileo.DataBaseTier
 
                 int filas = connection.Execute(deleteSql, parameters);
                 resp.Code = filas;
-                resp.Description = filas > 0 ? "OK" : "No existe el registro.";
+                resp.Description = filas > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
             }
             catch (Exception ex)
             {
@@ -378,7 +410,7 @@ namespace Galileo.DataBaseTier
                     id_justificacion = NormalizeCode(request.id_justificacion),
                     cod_tp_justificacion = NormalizeCode(request.cod_tp_justificacion)
                 });
-                resp.Description = resp.Code > 0 ? "OK" : "No existe el registro.";
+                resp.Description = resp.Code > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
             }
             catch (Exception ex)
             {
@@ -389,5 +421,256 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        /// <summary>Obtiene el detalle de condiciones asociado a un tipo de alerta.</summary>
+        public ErrorDto<AlertasTiposDetalleLista> AlertasTiposDetalle_Obtener(int codCliente, string cod_desviacion, string? filtro)
+        {
+            var response = new ErrorDto<AlertasTiposDetalleLista> { Result = new AlertasTiposDetalleLista() };
+
+            const string sql = @"
+    SELECT
+          ID_CONDICION AS id_condicion
+        , RTRIM(COD_DESVIACION) AS cod_desviacion
+        , GRUPO_CONDICION AS grupo_condicion
+        , ORDEN_CONDICION AS orden_condicion
+        , RTRIM(CAMPO_CONSULTA) AS campo_consulta
+        , RTRIM(OPERADOR) AS operador
+        , VALOR_INICIAL AS valor_inicial
+        , VALOR_FINAL AS valor_final
+        , CAST(ISNULL(ACTIVA, 0) AS bit) AS activa
+        , RTRIM(REGISTRO_USUARIO) AS registro_usuario
+        , REGISTRO_FECHA AS registro_fecha
+        , RTRIM(MODIFICA_USUARIO) AS modifica_usuario
+        , MODIFICA_FECHA AS modifica_fecha
+    FROM PRES_TIPOS_DESVIACIONES_DET
+    WHERE COD_DESVIACION = @cod_desviacion
+      AND (@filtro = '' OR CAMPO_CONSULTA LIKE @likeFiltro OR OPERADOR LIKE @likeFiltro)
+    ORDER BY GRUPO_CONDICION, ORDEN_CONDICION, ID_CONDICION;";
+
+            try
+            {
+                using var connection = CreateConnection(codCliente);
+
+                var lista = connection.Query<AlertasTiposDetalleDto>(sql, new
+                {
+                    cod_desviacion = NormalizeCode(cod_desviacion),
+                    filtro = NormalizeText(filtro),
+                    likeFiltro = $"%{NormalizeText(filtro)}%"
+                }).ToList();
+
+                response.Result.lista = lista;
+                response.Result.total = lista.Count;
+                response.Code = 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = "AlertasTiposDetalle_Obtener: " + ex.Message;
+                response.Result = null;
+            }
+
+            return response;
+        }
+
+        /// <summary>Guarda o actualiza una condición de detalle de tipo de alerta.</summary>
+        public ErrorDto AlertasTiposDetalle_Guardar(int codCliente, AlertasTiposDetalleDto request)
+        {
+            var resp = new ErrorDto();
+
+            var codDesviacion = NormalizeCode(request.cod_desviacion);
+            var campoConsulta = NormalizeCode(request.campo_consulta);
+            var operador = NormalizeCode(request.operador);
+            var usuario = NormalizeCode(string.IsNullOrWhiteSpace(request.modifica_usuario) ? request.registro_usuario : request.modifica_usuario);
+
+            var validationError = ValidarAlertasTiposDetalle(request, codDesviacion, campoConsulta, operador);
+            if (!string.IsNullOrWhiteSpace(validationError))
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = validationError
+                };
+            }
+
+            const string sqlPadre = @"SELECT COUNT(*) FROM PRES_TIPOS_DESVIACIONES WHERE COD_DESVIACION = @cod_desviacion;";
+            const string sqlExiste = @"SELECT COUNT(*) FROM PRES_TIPOS_DESVIACIONES_DET WHERE ID_CONDICION = @id_condicion;";
+
+            const string sqlInsert = @"
+INSERT INTO PRES_TIPOS_DESVIACIONES_DET
+(
+      COD_DESVIACION
+    , GRUPO_CONDICION
+    , ORDEN_CONDICION
+    , CAMPO_CONSULTA
+    , OPERADOR
+    , VALOR_INICIAL
+    , VALOR_FINAL
+    , ACTIVA
+    , REGISTRO_FECHA
+    , REGISTRO_USUARIO
+    , MODIFICA_FECHA
+    , MODIFICA_USUARIO
+)
+VALUES
+(
+      @cod_desviacion
+    , @grupo_condicion
+    , @orden_condicion
+    , @campo_consulta
+    , @operador
+    , @valor_inicial
+    , @valor_final
+    , @activa
+    , GETDATE()
+    , @usuario
+    , NULL
+    , NULL
+);";
+
+            const string sqlUpdate = @"
+UPDATE PRES_TIPOS_DESVIACIONES_DET
+SET
+      GRUPO_CONDICION = @grupo_condicion
+    , ORDEN_CONDICION = @orden_condicion
+    , CAMPO_CONSULTA = @campo_consulta
+    , OPERADOR = @operador
+    , VALOR_INICIAL = @valor_inicial
+    , VALOR_FINAL = @valor_final
+    , ACTIVA = @activa
+    , MODIFICA_FECHA = GETDATE()
+    , MODIFICA_USUARIO = @usuario
+WHERE ID_CONDICION = @id_condicion;";
+
+            try
+            {
+                using var connection = CreateConnection(codCliente);
+
+                if (!ExisteTipoDesviacion(connection, sqlPadre, codDesviacion))
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = $"No existe el tipo de alerta {codDesviacion}."
+                    };
+                }
+
+                var param = CrearParametrosAlertasTiposDetalle(request, codDesviacion, campoConsulta, operador, usuario);
+                var existe = request.id_condicion > 0 &&
+                             connection.ExecuteScalar<int>(sqlExiste, new { id_condicion = request.id_condicion }) > 0;
+
+                resp.Code = connection.Execute(existe ? sqlUpdate : sqlInsert, param);
+                resp.Description = resp.Code > 0 ? "OK" : "No se guardó ningún registro.";
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "AlertasTiposDetalle_Guardar: " + ex.Message;
+            }
+
+            return resp;
+        }
+
+        private static string ValidarAlertasTiposDetalle(
+    AlertasTiposDetalleDto request,
+    string codDesviacion,
+    string campoConsulta,
+    string operador)
+        {
+            if (string.IsNullOrWhiteSpace(codDesviacion) ||
+                string.IsNullOrWhiteSpace(campoConsulta) ||
+                string.IsNullOrWhiteSpace(operador))
+            {
+                return "Debe indicar tipo de alerta, campo de consulta y operador.";
+            }
+
+            if (request.grupo_condicion <= 0 || request.orden_condicion <= 0)
+            {
+                return "Grupo y orden de condición deben ser mayores a 0.";
+            }
+
+            return ValidarValoresOperador(request, operador);
+        }
+
+        private static string ValidarValoresOperador(AlertasTiposDetalleDto request, string operador)
+        {
+            if (operador == "BETWEEN")
+            {
+                if (!request.valor_inicial.HasValue || !request.valor_final.HasValue)
+                {
+                    return "Cuando el operador es BETWEEN debe indicar valor inicial y valor final.";
+                }
+
+                if (request.valor_inicial.Value > request.valor_final.Value)
+                {
+                    return "El valor inicial no puede ser mayor al valor final.";
+                }
+
+                return string.Empty;
+            }
+
+            if (!request.valor_inicial.HasValue)
+            {
+                return "Debe indicar el valor inicial.";
+            }
+
+            return string.Empty;
+        }
+
+        private static bool ExisteTipoDesviacion(IDbConnection connection, string sqlPadre, string codDesviacion)
+        {
+            return connection.ExecuteScalar<int>(sqlPadre, new { cod_desviacion = codDesviacion }) > 0;
+        }
+
+        private static object CrearParametrosAlertasTiposDetalle(
+            AlertasTiposDetalleDto request,
+            string codDesviacion,
+            string campoConsulta,
+            string operador,
+            string usuario)
+        {
+            return new
+            {
+                id_condicion = request.id_condicion,
+                cod_desviacion = codDesviacion,
+                grupo_condicion = request.grupo_condicion,
+                orden_condicion = request.orden_condicion,
+                campo_consulta = campoConsulta,
+                operador,
+                valor_inicial = request.valor_inicial,
+                valor_final = operador == "BETWEEN" ? request.valor_final : null,
+                activa = request.activa ?? true,
+                usuario
+            };
+        }
+
+        /// <summary>Elimina una condición de detalle asociada a un tipo de alerta.</summary>
+        public ErrorDto AlertasTiposDetalle_Eliminar(int codCliente, AlertasTiposDetalleEliminarRequest request)
+        {
+            var resp = new ErrorDto();
+
+            const string sql = @"
+    DELETE FROM PRES_TIPOS_DESVIACIONES_DET
+    WHERE ID_CONDICION = @id_condicion
+      AND COD_DESVIACION = @cod_desviacion;";
+
+            try
+            {
+                using var connection = CreateConnection(codCliente);
+
+                resp.Code = connection.Execute(sql, new
+                {
+                    id_condicion = request.id_condicion,
+                    cod_desviacion = NormalizeCode(request.cod_desviacion)
+                });
+
+                resp.Description = resp.Code > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "AlertasTiposDetalle_Eliminar: " + ex.Message;
+            }
+
+            return resp;
+        }
     }
 }
