@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.DataBaseTier
 {
-    public static class mProcesoMensualDB
+    public static class MProcesoMensualDb
     {
         public static string FxPlanillaTipoTransac(string? pTransaccion)
         {
