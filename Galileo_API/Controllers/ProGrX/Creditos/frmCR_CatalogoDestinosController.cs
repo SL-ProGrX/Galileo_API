@@ -5,7 +5,7 @@ using Galileo_API.Models.ProGrX.Credito;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Galileo_API.Controllers.ProGrX.Credito
+namespace Galileo_API.Controllers.ProGrX.Creditos
 {
     [Route("api/[controller]")]
     [ApiController]

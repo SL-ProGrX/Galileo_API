@@ -132,7 +132,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var verifica = CxCCuentasActivacion_Verifica(codEmpresa, request);
             if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
             {
-                return DbHelper.CreateErrorResponse<bool>(verifica.Result?.mensaje ?? verifica.Description, -1, false);
+                var mensajeError = verifica.Result?.mensaje ?? verifica.Description ?? "Error desconocido al verificar la activación.";
+                return DbHelper.CreateErrorResponse<bool>(mensajeError, -1, false);
             }
 
             DbTransaction? transaction = null;

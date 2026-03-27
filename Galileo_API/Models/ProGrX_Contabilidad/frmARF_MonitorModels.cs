@@ -8,6 +8,8 @@
         public string? cod_unidad { get; set; }
         public string? cod_arrendador { get; set; }
         public string? corte { get; set; }
+
+        public bool? usar_fechas { get; set; }
     }
 
     public class ArfMonitorTablaDto
