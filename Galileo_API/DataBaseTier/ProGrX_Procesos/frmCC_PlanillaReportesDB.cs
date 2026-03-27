@@ -278,60 +278,48 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             return opcion switch
             {
                 "01" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen"),
-                    CrearTipo(opcion, "02", "Detalle"),
-                    CrearTipo(opcion, "03", "Línea"),
-                    CrearTipo(opcion, "04", "Línea Detalle"),
-                    CrearTipo(opcion, "05", "Base Actual")
-                },
+            {
+                CrearTipo(opcion, "01", "Resumen"),
+                CrearTipo(opcion, "02", "Detalle"),
+                CrearTipo(opcion, "03", "Línea"),
+                CrearTipo(opcion, "04", "Línea Detalle"),
+                CrearTipo(opcion, "05", "Base Actual")
+            },
 
-                "02" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen"),
-                    CrearTipo(opcion, "02", "Detalle"),
-                    CrearTipo(opcion, "03", "No Localizados")
-                },
+                "02" => AgregarTipos(
+                    TiposBasicos(opcion),
+                    CrearTipo(opcion, "03", "No Localizados")),
 
-                "03" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen"),
-                    CrearTipo(opcion, "02", "Detalle"),
+                "03" => AgregarTipos(
+                    TiposBasicos(opcion),
                     CrearTipo(opcion, "03", "Agrupado: Línea"),
-                    CrearTipo(opcion, "04", "Agrupado: Persona")
-                },
+                    CrearTipo(opcion, "04", "Agrupado: Persona")),
 
                 "07" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Fechas"),
-                    CrearTipo(opcion, "02", "Proceso + Fechas"),
-                    CrearTipo(opcion, "03", "Proceso + Institución")
-                },
+            {
+                CrearTipo(opcion, "01", "Fechas"),
+                CrearTipo(opcion, "02", "Proceso + Fechas"),
+                CrearTipo(opcion, "03", "Proceso + Institución")
+            },
 
                 "08" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen"),
-                    CrearTipo(opcion, "02", "Detalle"),
-                    CrearTipo(opcion, "03", "Tipo"),
-                    CrearTipo(opcion, "04", "Estadística"),
-                    CrearTipo(opcion, "05", "Línea"),
-                    CrearTipo(opcion, "06", "Línea Resumen"),
-                    CrearTipo(opcion, "07", "Persona"),
-                    CrearTipo(opcion, "08", "Persona Resumen")
-                },
+            {
+                CrearTipo(opcion, "01", "Resumen"),
+                CrearTipo(opcion, "02", "Detalle"),
+                CrearTipo(opcion, "03", "Tipo"),
+                CrearTipo(opcion, "04", "Estadística"),
+                CrearTipo(opcion, "05", "Línea"),
+                CrearTipo(opcion, "06", "Línea Resumen"),
+                CrearTipo(opcion, "07", "Persona"),
+                CrearTipo(opcion, "08", "Persona Resumen")
+            },
 
-                "09" => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen"),
-                    CrearTipo(opcion, "02", "Detalle"),
-                    CrearTipo(opcion, "03", "Línea Resumen"),
-                    CrearTipo(opcion, "04", "Persona Resumen")
-                },
+                "09" => TiposBasicosConResumen(opcion),
 
                 _ => new List<CcPlanillaReporteTipoDto>
-                {
-                    CrearTipo(opcion, "01", "Resumen")
-                }
+            {
+                CrearTipo(opcion, "01", "Resumen")
+            }
             };
         }
         private static CcPlanillaReporteTipoDto CrearTipo(string opcion, string codigoReporte, string descripcion)
@@ -354,6 +342,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 new() { item = "4", descripcion = "Cobro Apl. NC." },
                 new() { item = "5", descripcion = "Sobrante Enviado a Fondo" }
             };
+        }
+        private static List<CcPlanillaReporteTipoDto> TiposBasicos(string opcion)
+        {
+            return new List<CcPlanillaReporteTipoDto>
+    {
+        CrearTipo(opcion, "01", "Resumen"),
+        CrearTipo(opcion, "02", "Detalle")
+    };
+        }
+        private static List<CcPlanillaReporteTipoDto> TiposBasicosConResumen(string opcion)
+        {
+            return new List<CcPlanillaReporteTipoDto>
+    {
+        CrearTipo(opcion, "01", "Resumen"),
+        CrearTipo(opcion, "02", "Detalle"),
+        CrearTipo(opcion, "03", "Línea Resumen"),
+        CrearTipo(opcion, "04", "Persona Resumen")
+    };
+        }
+        private static List<CcPlanillaReporteTipoDto> AgregarTipos(List<CcPlanillaReporteTipoDto> baseList,params CcPlanillaReporteTipoDto[] extras)
+        {
+            baseList.AddRange(extras);
+            return baseList;
         }
     }
 }
