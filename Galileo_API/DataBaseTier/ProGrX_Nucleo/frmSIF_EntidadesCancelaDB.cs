@@ -35,7 +35,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             var p = new DynamicParameters();
             p.Add("@cod_entidad_pago", NormalizeUpper(entidad.cod_entidad_pago), DbType.String);
             p.Add("@descripcion", NormalizeUpper(entidad.descripcion), DbType.String);
-            p.Add("@activa", entidad.activa, DbType.String);
+            p.Add("@activa", entidad.activa ? 1 : 0, DbType.Int16);
             p.Add("@registro_usuario", usuario, DbType.String);
             return p;
         }
@@ -295,8 +295,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 $"Entidad Pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
                 "Modifica - WEB");
         }
-        
-        
+
+
         /// <summary>
         /// Inserta un nuevo parentesco.
         /// </summary>
@@ -312,8 +312,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 $"Entidad pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
                 "Registra - WEB");
         }
-        
-        
+
+
         /// <summary>
         /// Valida si un código de entidad pagadora ya existe en la base de datos.
         /// </summary>

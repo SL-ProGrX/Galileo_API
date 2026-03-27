@@ -230,5 +230,52 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxCCuentasFactura_Vincular(codEmpresa, request);
         }
+
+        public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_CargarArchivo(
+            int codEmpresa,
+            CxCCuentasFacturaCargaRequest request)
+        {
+            return _db.CxCCuentasFactura_CargarArchivo(codEmpresa, request);
+        }
+
+        public ErrorDto<long> CxCCuentas_Guardar(int codEmpresa, CxCCuentasSaveParams param)
+        {
+            return _db.CxCCuentas_Guardar(codEmpresa, param);
+        }
+
+        public ErrorDto<CxCCuentasActivacionVerificaResult> CxCCuentasActivacion_Verifica(
+    int codEmpresa,
+    CxCCuentasActivacionRequest request)
+        {
+            return _db.CxCCuentasActivacion_Verifica(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CxCCuentasActivacion_Activar(
+            int codEmpresa,
+            CxCCuentasActivacionRequest request)
+        {
+            return _db.CxCCuentasActivacion_Activar(codEmpresa, request);
+        }
+
+        public ErrorDto<CxCCuentasAnulacionVerificaResult> CxCCuentasAnulacion_Verifica(
+    int codEmpresa,
+    CxCCuentasAnulacionRequest request)
+        {
+            return _db.CxCCuentasAnulacion_Verifica(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CxCCuentasAnulacion_Anular(
+            int codEmpresa,
+            CxCCuentasAnulacionRequest request)
+        {
+            return _db.CxCCuentasAnulacion_Anular(codEmpresa, request);
+        }
+
+        public ErrorDto<CxCCuentasActivacionDetalleResult> CxCCuentasActivacionDetalle_Obtener(
+                int codEmpresa,
+                CxCCuentasActivacionDetalleRequest request)
+        {
+            return _db.CxCCuentasActivacionDetalle_Obtener(codEmpresa, request);
+        }
     }
 }

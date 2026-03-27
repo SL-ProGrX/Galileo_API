@@ -4,25 +4,61 @@ using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
+using System.Security;
 
 namespace Galileo.DataBaseTier
 {
     public static class DbHelper
     {
+
+        /// <summary>
+        /// Valida y normaliza el código de empresa antes de abrir conexiones a bases de datos de cliente.
+        /// </summary>
+        private static int NormalizarCodEmpresa(int codEmpresa)
+        {
+            if (codEmpresa <= 0 || codEmpresa > 999999)
+            {
+                throw new SecurityException("El código de empresa no es válido.");
+            }
+
+            return codEmpresa;
+        }
+
+        /// <summary>
+        /// Valida que el texto SQL no esté vacío antes de ejecutarlo.
+        /// </summary>
+        private static string ValidarSql(string sql)
+        {
+            var sqlSeguro = (sql ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(sqlSeguro))
+            {
+                throw new SecurityException("La instrucción SQL es requerida.");
+            }
+
+            return sqlSeguro;
+        }
+
         public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default!)
             => new() { Code = 0, Description = "Ok", Result = initialResult };
 
         public static ErrorDto CreateOkResponse()
             => new() { Code = 0, Description = "OK" };
 
+        /// <summary>
+        /// Ejecuta una consulta que retorna una lista usando una empresa previamente validada.
+        /// </summary>
         public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
             var result = CreateOkResponse(new List<T>());
 
             try
             {
-                using var connection = portalDb.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).ToList();
+                var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+                var sqlSeguro = ValidarSql(sql);
+
+                using var connection = portalDb.CreateConnection(codEmpresaSeguro);
+                result.Result = connection.Query<T>(sqlSeguro, parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -34,14 +70,20 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
+        /// <summary>
+        /// Ejecuta una consulta que retorna un único registro usando una empresa previamente validada.
+        /// </summary>
         public static ErrorDto<T?> ExecuteSingleQuery<T>(PortalDB portalDb, int codEmpresa, string sql, T? defaultValue = default, object? parameters = null)
         {
             var result = CreateOkResponse(defaultValue);
 
             try
             {
-                using var connection = portalDb.CreateConnection(codEmpresa);
-                result.Result = connection.QueryFirstOrDefault<T>(sql, parameters);
+                var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+                var sqlSeguro = ValidarSql(sql);
+
+                using var connection = portalDb.CreateConnection(codEmpresaSeguro);
+                result.Result = connection.QueryFirstOrDefault<T>(sqlSeguro, parameters);
             }
             catch (Exception ex)
             {
@@ -72,14 +114,20 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
+        /// <summary>
+        /// Ejecuta una instrucción sin retorno usando una empresa previamente validada.
+        /// </summary>
         public static ErrorDto ExecuteNonQuery(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
             var result = CreateOkResponse();
 
             try
             {
-                using var connection = portalDb.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters);
+                var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+                var sqlSeguro = ValidarSql(sql);
+
+                using var connection = portalDb.CreateConnection(codEmpresaSeguro);
+                connection.Execute(sqlSeguro, parameters);
             }
             catch (Exception ex)
             {
@@ -107,15 +155,21 @@ namespace Galileo.DataBaseTier
 
             return result;
         }
-    
+
+        /// <summary>
+        /// Ejecuta una instrucción y retorna la cantidad de filas afectadas usando una empresa previamente validada.
+        /// </summary>
         public static ErrorDto<int> ExecuteNonQueryWithResult(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
             var result = CreateOkResponse(0);
 
             try
             {
-                using var connection = portalDb.CreateConnection(codEmpresa);
-                result.Result = connection.Execute(sql, parameters);
+                var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+                var sqlSeguro = ValidarSql(sql);
+
+                using var connection = portalDb.CreateConnection(codEmpresaSeguro);
+                result.Result = connection.Execute(sqlSeguro, parameters);
             }
             catch (Exception ex)
             {
@@ -127,12 +181,18 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        public static ErrorDto<T> WithConn<T>(PortalDB portalDb,int codEmpresa, Func<SqlConnection, T> action)
+        /// <summary>
+        /// Ejecuta una acción con conexión abierta usando una empresa previamente validada.
+        /// </summary>
+        public static ErrorDto<T> WithConn<T>(PortalDB portalDb, int codEmpresa, Func<SqlConnection, T> action)
         {
             try
             {
-                using var conn = portalDb.CreateConnection(codEmpresa);
+                var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+
+                using var conn = portalDb.CreateConnection(codEmpresaSeguro);
                 var result = action(conn);
+
                 return new ErrorDto<T> { Code = 0, Description = "Ok", Result = result };
             }
             catch (Exception ex)
@@ -140,7 +200,7 @@ namespace Galileo.DataBaseTier
                 return new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default };
             }
         }
-        
+
         public static ErrorDto<T> CreateErrorResponse<T>(string msg, int code = -1, T result = default!) =>
             new ErrorDto<T> { Code = code, Description = msg, Result = result };
 
@@ -150,9 +210,13 @@ namespace Galileo.DataBaseTier
         public static ErrorDto ErrorResponse(string msg, int code = -1) =>
             new ErrorDto { Code = code, Description = msg };
 
-        public static SqlConnection OpenConnection(PortalDB portalDb,int codEmpresa)
+        /// <summary>
+        /// Abre una conexión de cliente usando un código de empresa validado.
+        /// </summary>
+        public static SqlConnection OpenConnection(PortalDB portalDb, int codEmpresa)
         {
-            var cs = portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
+            var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
+            var cs = portalDb.ObtenerDbConnStringEmpresa(codEmpresaSeguro);
             return new SqlConnection(cs);
         }
 

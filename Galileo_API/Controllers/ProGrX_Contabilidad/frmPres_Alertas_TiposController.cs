@@ -50,5 +50,26 @@ namespace Galileo.Controllers
             return _bl.AlertasTipos_Eliminar(CodCliente, tipoalerta);
         }
 
+        [Authorize]
+        [HttpGet("AlertasTiposJustificacion_Obtener")]
+        public ErrorDto<AlertasTiposJustificacionLista> AlertasTiposJustificacion_Obtener(int CodCliente, string id_justificacion, string? filtro)
+        {
+            return _bl.AlertasTiposJustificacion_Obtener(CodCliente, id_justificacion, filtro);
+        }
+
+        [Authorize]
+        [HttpPost("AlertasTiposJustificacion_Guardar")]
+        public ErrorDto AlertasTiposJustificacion_Guardar(int CodCliente, [FromBody] AlertasTiposJustificacionDto request)
+        {
+            return _bl.AlertasTiposJustificacion_Guardar(CodCliente, request);
+        }
+
+        [Authorize]
+        [HttpPost("AlertasTiposJustificacion_Eliminar")]
+        public ErrorDto AlertasTiposJustificacion_Eliminar(int CodCliente, [FromBody] AlertasTiposJustificacionEliminarRequest request)
+        {
+            return _bl.AlertasTiposJustificacion_Eliminar(CodCliente, request);
+        }
+
     }
 }
