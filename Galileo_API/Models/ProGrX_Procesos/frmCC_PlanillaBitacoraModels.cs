@@ -16,7 +16,7 @@
         public List<CcPlanillaBitacoraData> lista { get; set; } = new();
     }
 
-    public class CcPlanillaProcesoScrollDto
+    public class CcPlanillaProcesosScrollDto
     {
         public decimal proceso { get; set; }
         public string proceso_format { get; set; } = string.Empty;

@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="scrollCode"></param>
         /// <param name="procesoActual"></param>
         /// <returns></returns>
-        public ErrorDto<CcPlanillaProcesoScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa, int scrollCode, decimal procesoActual)
+        public ErrorDto<CcPlanillaProcesosScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa, int scrollCode, decimal procesoActual)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     return DbHelper.CreateErrorResponse(
                         MensajeProcesoInvalido,
                         -2,
-                        new CcPlanillaProcesoScrollDto());
+                        new CcPlanillaProcesosScrollDto());
                 }
 
                 decimal proceso = scrollCode switch
@@ -71,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     _ => procesoActual
                 };
 
-                var result = new CcPlanillaProcesoScrollDto
+                var result = new CcPlanillaProcesosScrollDto
                 {
                     proceso = proceso,
                     proceso_format = MCobroDb.fxFechaProcesoFormat(proceso)
@@ -84,7 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
                     -1,
-                    new CcPlanillaProcesoScrollDto());
+                    new CcPlanillaProcesosScrollDto());
             }
         }
         /// <summary>

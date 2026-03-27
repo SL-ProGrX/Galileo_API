@@ -23,12 +23,12 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         {
             return BL.CC_Instituciones_Dropdown_Obtener(CodEmpresa);
         }
-        //[Authorize]
-        //[HttpGet("CC_PlanillaBitacora_Proceso_Scroll_Obtener")]
-        //public ErrorDto<CcPlanillaProcesoScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa, int scrollCode, decimal procesoActual)
-        //{
-        //    return BL.CC_PlanillaBitacora_Proceso_Scroll_Obtener(CodEmpresa, scrollCode, procesoActual);
-        //}
+        [Authorize]
+        [HttpGet("CC_PlanillaBitacora_Proceso_Scroll_Obtener")]
+        public ErrorDto<CcPlanillaProcesosScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa,int scrollCode,decimal procesoActual)
+        {
+            return BL.CC_PlanillaBitacora_Proceso_Scroll_Obtener(CodEmpresa, scrollCode, procesoActual);
+        }
         [Authorize]
         [HttpGet("CC_PlanillaBitacora_Lista_Obtener")]
         public ErrorDto<CcPlanillaBitacoraListaResult> CC_PlanillaBitacora_Lista_Obtener(int CodEmpresa, decimal proceso, string parametros)
