@@ -454,7 +454,7 @@ ORDER BY id_bitacora DESC;";
                     };
                 }
 
-                var primera = request.lineas.First();
+                var primera = request.lineas[0];
 
                 const string sqlDeletePrevio = @"
 DELETE FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION
@@ -1019,17 +1019,17 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                //if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                //{
-                //    result.Code = -1;
-                //    result.Result.periodo_registrado = false;
-                //    result.Result.puede_guardar_seleccion = true;
-                //    result.Result.requiere_configuracion = false;
-                //    result.Result.fuera_de_plazo = true;
-                //    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                //    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                //    return result;
-                //}
+                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
+                {
+                    result.Code = -1;
+                    result.Result.periodo_registrado = false;
+                    result.Result.puede_guardar_seleccion = true;
+                    result.Result.requiere_configuracion = false;
+                    result.Result.fuera_de_plazo = true;
+                    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
+                    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
+                    return result;
+                }
 
                 const string sqlJustifica = @"
 SELECT TOP (1)
