@@ -14,6 +14,8 @@
         public string justificacion { get; set; } = string.Empty;
         public bool justificada { get; set; } = false;
         public string usuario { get; set; } = string.Empty;
+        public string cod_tp_justificacion { get; set; } = string.Empty;
+        public string justificacion_detalle { get; set; } = string.Empty;
     }
 
     public class PresAlertaJustificacionBitacoraData
