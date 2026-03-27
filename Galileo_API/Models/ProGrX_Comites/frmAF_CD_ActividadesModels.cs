@@ -2,12 +2,12 @@
 {
     public class AfCdActividadDto
     {
-        public int Cod_Actividad { get; set; }
+        public int? Cod_Actividad { get; set; }
         public string? Descripcion { get; set; }
         public string? Cod_Cuenta { get; set; }
         public DateTime? FechaPeriocidad { get; set; }
         public DateTime? FechaLiq { get; set; }
-        public bool Activa { get; set; }
+        public bool? Activa { get; set; }
         public string? CuentaX { get; set; }
         public string? Tipo { get; set; }
     }
@@ -27,9 +27,9 @@
 
     public class AfCdActividadRangoDto
     {
-        public int Cod_Monto { get; set; }
-        public decimal Monto { get; set; }
-        public decimal Minimo { get; set; }
-        public decimal Maximo { get; set; }
+        public int? Cod_Monto { get; set; }
+        public decimal? Monto { get; set; }
+        public decimal? Minimo { get; set; }
+        public decimal? Maximo { get; set; }
     }
 }
