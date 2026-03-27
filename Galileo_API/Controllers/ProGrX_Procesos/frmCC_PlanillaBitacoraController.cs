@@ -25,7 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
         [Authorize]
         [HttpGet("CC_PlanillaBitacora_Proceso_Scroll_Obtener")]
-        public ErrorDto<CcPlanillaProcesoScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa,int scrollCode,decimal procesoActual)
+        public ErrorDto<CcPlanillaProcesosScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa,int scrollCode,decimal procesoActual)
         {
             return BL.CC_PlanillaBitacora_Proceso_Scroll_Obtener(CodEmpresa, scrollCode, procesoActual);
         }
