@@ -46,5 +46,11 @@
         public string justificacion_usuario { get; set; } = string.Empty;
     }
 
+    public class PresAlertaTipoJustificacionData
+    {
+        public string cod_tp_justificacion { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+    }
+
 
 }
