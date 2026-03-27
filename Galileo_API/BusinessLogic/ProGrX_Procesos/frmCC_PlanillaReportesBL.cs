@@ -17,7 +17,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         {
             return Db.CC_PlanillaReportes_Catalogo_Obtener(CodEmpresa);
         }
-        public ErrorDto<List<CcPlanillaReporteTipoDto>> CC_PlanillaReportes_TiposReporte_Obtener(int CodEmpresa, string? codigoOpcion)
+        public static ErrorDto<List<CcPlanillaReporteTipoDto>> CC_PlanillaReportes_TiposReporte_Obtener(int CodEmpresa, string? codigoOpcion)
         {
             return FrmCCPlanillaReportesDB.CC_PlanillaReportes_TiposReporte_Obtener(CodEmpresa, codigoOpcion);
         }
@@ -41,7 +41,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         {
             return Db.CC_PlanillaReportes_Lineas_Dropdown_Obtener(CodEmpresa, proceso, codInstitucion, todasInstituciones);
         }
-        public ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
+        public static ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
         {
             return FrmCCPlanillaReportesDB.CC_PlanillaReportes_TiposCobro_Obtener(CodEmpresa);
         }

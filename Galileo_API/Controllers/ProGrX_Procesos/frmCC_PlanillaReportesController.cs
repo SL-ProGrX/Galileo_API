@@ -27,7 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasCorrientes
         [HttpGet("CC_PlanillaReportes_TiposReporte_Obtener")]
         public ErrorDto<List<CcPlanillaReporteTipoDto>> CC_PlanillaReportes_TiposReporte_Obtener(int CodEmpresa, string? codigoOpcion)
         {
-            return BL.CC_PlanillaReportes_TiposReporte_Obtener(CodEmpresa, codigoOpcion);
+            return FrmCCPlanillaReportesBL.CC_PlanillaReportes_TiposReporte_Obtener(CodEmpresa, codigoOpcion);
         }
         [Authorize]
         [HttpGet("CC_PlanillaReportes_ParametrosIniciales_Obtener")]
@@ -67,9 +67,9 @@ namespace Galileo_API.Controllers.ProGrX.CuentasCorrientes
         }
         [Authorize]
         [HttpGet("CC_PlanillaReportes_TiposCobro_Obtener")]
-        public ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
+        public  ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
         {
-            return BL.CC_PlanillaReportes_TiposCobro_Obtener(CodEmpresa);
+            return FrmCCPlanillaReportesBL.CC_PlanillaReportes_TiposCobro_Obtener(CodEmpresa);
         }
     }
 }
