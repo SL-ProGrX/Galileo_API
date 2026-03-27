@@ -228,5 +228,25 @@ namespace Galileo_API.DataBaseTier
             public int Plazo { get; set; } = 0;
             public decimal PriDeduc { get; set; } = 0m;
         }
+        public static string fxFechaProcesoFormat(decimal pProceso)
+        {
+            long procesoBase = Convert.ToInt64(decimal.Truncate(pProceso));
+            string procesoTexto = procesoBase.ToString("000000", CultureInfo.InvariantCulture);
+            string resultado = $"{procesoTexto.Substring(0, 4)}-{procesoTexto.Substring(4, 2)}";
+
+            decimal diferencia = Math.Round(pProceso - decimal.Truncate(pProceso), 1, MidpointRounding.AwayFromZero);
+
+            if (diferencia == 0.1m)
+            {
+                resultado += "_Q1";
+            }
+
+            if (diferencia == 0.2m)
+            {
+                resultado += "_Q2";
+            }
+
+            return resultado;
+        }
     }
 }
