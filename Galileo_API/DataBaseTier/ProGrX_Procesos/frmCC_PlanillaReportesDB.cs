@@ -16,6 +16,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         private const int ScrollAnterior = 2;
         private const string MensajeProcesoInvalido = "El proceso indicado no es válido.";
         private const string MensajeInstitucionInvalida = "La institución indicada no existe.";
+        private const string RESUMEN = "Resumen";
+        private const string DETALLE = "Detalle";
 
         public FrmCCPlanillaReportesDB(IConfiguration config)
         {
@@ -53,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="CodEmpresa"></param>
         /// <param name="codigoOpcion"></param>
         /// <returns></returns>
-        public ErrorDto<List<CcPlanillaReporteTipoDto>> CC_PlanillaReportes_TiposReporte_Obtener(int CodEmpresa, string? codigoOpcion)
+        public static ErrorDto<List<CcPlanillaReporteTipoDto>> CC_PlanillaReportes_TiposReporte_Obtener(int CodEmpresa, string? codigoOpcion)
         {
             _ = CodEmpresa;
 
@@ -268,7 +270,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
+        public static ErrorDto<List<CcPlanillaTipoCobroDto>> CC_PlanillaReportes_TiposCobro_Obtener(int CodEmpresa)
         {
             _ = CodEmpresa;
             return DbHelper.CreateOkResponse(CrearTiposCobro());
@@ -279,8 +281,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 "01" => new List<CcPlanillaReporteTipoDto>
             {
-                CrearTipo(opcion, "01", "Resumen"),
-                CrearTipo(opcion, "02", "Detalle"),
+                CrearTipo(opcion, "01", RESUMEN),
+                CrearTipo(opcion, "02", DETALLE),
                 CrearTipo(opcion, "03", "Línea"),
                 CrearTipo(opcion, "04", "Línea Detalle"),
                 CrearTipo(opcion, "05", "Base Actual")
@@ -304,8 +306,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
                 "08" => new List<CcPlanillaReporteTipoDto>
             {
-                CrearTipo(opcion, "01", "Resumen"),
-                CrearTipo(opcion, "02", "Detalle"),
+                CrearTipo(opcion, "01", RESUMEN),
+                CrearTipo(opcion, "02", DETALLE),
                 CrearTipo(opcion, "03", "Tipo"),
                 CrearTipo(opcion, "04", "Estadística"),
                 CrearTipo(opcion, "05", "Línea"),
@@ -318,7 +320,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
                 _ => new List<CcPlanillaReporteTipoDto>
             {
-                CrearTipo(opcion, "01", "Resumen")
+                CrearTipo(opcion, "01", RESUMEN)
             }
             };
         }
@@ -347,16 +349,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         {
             return new List<CcPlanillaReporteTipoDto>
     {
-        CrearTipo(opcion, "01", "Resumen"),
-        CrearTipo(opcion, "02", "Detalle")
+        CrearTipo(opcion, "01", RESUMEN),
+        CrearTipo(opcion, "02", DETALLE)
     };
         }
         private static List<CcPlanillaReporteTipoDto> TiposBasicosConResumen(string opcion)
         {
             return new List<CcPlanillaReporteTipoDto>
     {
-        CrearTipo(opcion, "01", "Resumen"),
-        CrearTipo(opcion, "02", "Detalle"),
+        CrearTipo(opcion, "01", RESUMEN),
+        CrearTipo(opcion, "02", DETALLE),
         CrearTipo(opcion, "03", "Línea Resumen"),
         CrearTipo(opcion, "04", "Persona Resumen")
     };
