@@ -17,7 +17,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         {
             return Db.CC_Instituciones_Dropdown_Obtener(CodEmpresa);
         }
-        public ErrorDto<CcPlanillaProcesoScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa,int scrollCode,decimal procesoActual)
+        public ErrorDto<CcPlanillaProcesosScrollDto> CC_PlanillaBitacora_Proceso_Scroll_Obtener(int CodEmpresa,int scrollCode,decimal procesoActual)
         {
             return Db.CC_PlanillaBitacora_Proceso_Scroll_Obtener(CodEmpresa, scrollCode, procesoActual);
         }
