@@ -63,7 +63,7 @@
         public int anio { get; set; } = 1900;
         public int mes { get; set; } = 1;
         public string usuario { get; set; } = string.Empty;
-        public bool bloqueo_visualizacion { get; set; }
+        public bool bloqueo_visualizacion { get; set; } = false;
     }
 
     public class PresAlertasJustificaPeriodoData
@@ -83,11 +83,11 @@
     public class PresAlertasControlPeriodoConfigRequest
     {
         public string cod_modelo { get; set; } = string.Empty;
-        public int cod_contabilidad { get; set; }
+        public int cod_contabilidad { get; set; } = 0;
         public int anio { get; set; } = 1900;
         public int mes { get; set; } = 1;
         public string usuario { get; set; } = string.Empty;
-        public bool bloqueo_visualizacion { get; set; }
+        public bool bloqueo_visualizacion { get; set; } = false;
     }
 
     public class PresAlertasControlPeriodoEstadoData

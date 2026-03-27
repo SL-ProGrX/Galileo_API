@@ -885,7 +885,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     request.mes
                 });
 
-                if (periodo == null || (periodo.ESTADO ?? string.Empty) != "C")
+                if (periodo == null || (periodo!.ESTADO ?? string.Empty) != "C")
                 {
                     return new ErrorDto
                     {
@@ -894,7 +894,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     };
                 }
 
-                DateTime? cierreFecha = periodo.CIERRE_FECHA;
+                DateTime? cierreFecha = periodo!.CIERRE_FECHA;
                 if (!cierreFecha.HasValue || (DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
                 {
                     return new ErrorDto
@@ -930,8 +930,8 @@ VALUES
                 {
                     request.cod_modelo,
                     request.cod_contabilidad,
-                    inicio = new DateTime(request.anio, request.mes, 1),
-                    corte = new DateTime(request.anio, request.mes, 1).AddMonths(1).AddDays(-1),
+                    inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
+                    corte = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local).AddMonths(1).AddDays(-1),
                     request.usuario,
                     bloqueo_visualizacion = request.bloqueo_visualizacion
                 });
@@ -1103,7 +1103,7 @@ ORDER BY FECHA DESC;";
                 };
             }
 
-            if (validacion.Result.periodo_registrado)
+            if (validacion.Result!.periodo_registrado)
             {
                 return new ErrorDto
                 {
@@ -1157,8 +1157,8 @@ VALUES
                 {
                     request.cod_modelo,
                     request.cod_contabilidad,
-                    inicio = new DateTime(request.anio, request.mes, 1),
-                    corte = new DateTime(request.anio, request.mes, 1).AddMonths(1).AddDays(-1),
+                    inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
+                    corte = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local).AddMonths(1).AddDays(-1),
                     request.usuario,
                     request.bloqueo_visualizacion
                 });

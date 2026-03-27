@@ -74,4 +74,8 @@
         public string usuario { get; set; } = string.Empty;
     }
 
+    public static class AlertasTiposConst
+    {
+        public const string noExisteUsuario = "No existe el registro.";
+    }
 }
