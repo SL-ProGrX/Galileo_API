@@ -644,7 +644,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private static void AjustarTipoCedOrigen(TesTransaccionDto t)
         {
             var idOrigen = t.tipo_beneficiario - 1;
-            t.tipo_ced_origen = idOrigen.HasValue ? idOrigen.Value : default;
+            var ced_origen = MKindoServiceDb.Inferir(t.cedula_origen);
+            t.tipo_ced_origen = Convert.ToInt32(ced_origen.Codigo);
         }
 
         private void ProcesarRegAutorizacion(int CodEmpresa, string usuario, TesTransaccionDto t)
@@ -698,16 +699,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                string fechaAutoriza = string.Empty;
-                if (transaccion.user_autoriza == null)
-                {
-                    fechaAutoriza = string.Empty;
-                }
-                else
-                {
-                    fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
-                }
-                    using var connection = OpenConnection(CodEmpresa);
+                
+                using var connection = OpenConnection(CodEmpresa);
 
                 var query = @"
                     INSERT INTO Tes_Transacciones (
@@ -747,7 +740,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     op = transaccion.op,
                     entregado = transaccion.entregado,
                     autoriza = transaccion.autoriza,
-                    fecha_autorizacion = fechaAutoriza,
+                    fecha_autorizacion = transaccion.fecha_autorizacion,
                     user_autoriza = transaccion.user_autoriza,
                     ndocumento = transaccion.ndocumento,
                     tipo_cambio = transaccion.tipo_cambio,

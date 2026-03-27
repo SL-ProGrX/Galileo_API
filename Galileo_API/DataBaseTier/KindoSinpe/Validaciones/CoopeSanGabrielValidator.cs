@@ -94,6 +94,12 @@ namespace Galileo_API.DataBaseTier
                 // Estados 0/1: OK; otros: rechazo con motivo
                 var estado = (cuenta.Account?.State ?? 0);
 
+                if(cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
+                {
+                    return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
+                }
+
+
                 if (estado == 0 || estado == 1)
                 {
                     var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a

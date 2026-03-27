@@ -96,6 +96,7 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
+
                             if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
                                 LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
                                 LaInformacionDeLaCuentaPIN.Account.State != "1")
@@ -155,7 +156,6 @@ namespace Galileo_API.DataBaseTier
             }
             return response;
         }
-
         private ErrorDto<bool> ConsultarIsPINEntity(string AccountNumber)
         {
             var Elresutado = new ResPINEntity();
@@ -699,7 +699,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta!.MotivoError).Result!;
                         }
                         else
                         {

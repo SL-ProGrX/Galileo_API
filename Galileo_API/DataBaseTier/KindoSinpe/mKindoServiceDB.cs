@@ -1261,7 +1261,12 @@ FROM dbo.fxSinpe_ValidaCredito(
             switch (tipo)
             {
                 case 0:
-                    digits = digits.Insert(0, "0");
+                    //si no tiene zero adelante le asigno uno
+                    // Solo asignar un '0' delante si no lo tiene ya
+                    if (!digits.StartsWith("0"))
+                    {
+                        digits = digits.Insert(0, "0");
+                    }
                     return digits.Length == 10 ? Group(digits, 2, 4, 4) : digits;
 
                 case 1:
@@ -1283,7 +1288,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 default:
                     return digits;
             }
-        }
+         }
 
         #endregion
 
@@ -1882,6 +1887,44 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 FROM SINPE_MOV_TRANSITO";
 
             return DbHelper.ExecuteSingleQuery<long>(_portalDB, CodEmpresa, Query, 0, null).Result;
+        }
+
+        public ErrorDto ValidaOrigenDestinoIBAN(int CodEmpresa, string Nsolicitud, vInfoSinpe SinpeVal)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                var solicitud = fxTesConsultaSolicitud(CodEmpresa,Convert.ToInt32(Nsolicitud)).Result;
+
+                //1) Consulto Cod Divisa Origen
+                const string qryDivisa = "SELECT COD_DIVISA FROM TES_BANCOS WHERE ESTADO = 'A' AND ID_BANCO = @id_banco";
+                var cod_divisa_origen = connection.Query<string>(qryDivisa, solicitud.id_banco).FirstOrDefault();
+                string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen);
+
+                if(divisaOrigen != SinpeVal.cod_divisa)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = $"La divisa del banco origen ({divisaOrigen}) no coincide con la divisa Destino ({SinpeVal.cod_divisa})."
+                    };
+                }
+
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = $"Error al validar divisas: {ex.Message}"
+                };
+            }
         }
 
         #endregion
