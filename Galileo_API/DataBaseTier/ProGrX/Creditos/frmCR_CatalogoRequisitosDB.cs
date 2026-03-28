@@ -7,8 +7,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public class FrmCrCatalogoRequisitosDb
     {
-        private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _Bitacora;
+        private readonly PortalDB _portalDB;
+        private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 3;
 
         public FrmCrCatalogoRequisitosDb(IConfiguration config)
@@ -20,8 +20,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         public FrmCrCatalogoRequisitosDb(PortalDB portalDB, MSecurityMainDb dbBitacora)
         {
-            _portalDb = portalDB;
-            _Bitacora = dbBitacora;
+            _portalDB = portalDB;
+            _bitacora = dbBitacora;
         }
 
         /// <summary>
@@ -31,9 +31,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<CrRequisitosData>> CrCatalogoRequisitos_Obtener(int codEmpresa)
         {
-            string query = @"select cod_requisito,descripcion,visible 
+            string sqlQuery = @"select cod_requisito,descripcion,visible 
             from requisitos_adicionales order by cod_requisito";
-            return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDb, codEmpresa, query);
+            return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDB, codEmpresa, sqlQuery);
         }
 
         /// <summary>
@@ -44,17 +44,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogosTipos_Obtener(int codEmpresa, string nivel)
         {
-            string query = "";
+            string sqlQuery;
             if (nivel == "L")
             {
-                query = @"select codigo as item,descripcion from catalogo where retencion = 'N' and poliza = 'N' 
+                sqlQuery = @"select codigo as item,descripcion from catalogo where retencion = 'N' and poliza = 'N' 
                     and requisitos_tipo = 'L' order by codigo";
             }
             else
             {
-                query = @"select garantia as item,descripcion from Crd_Garantia_Tipos order by Garantia";
+                sqlQuery = @"select garantia as item,descripcion from Crd_Garantia_Tipos order by Garantia";
             }
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, codEmpresa, sqlQuery);
         }
 
         /// <summary>
@@ -66,10 +66,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<CrRequisitosData>> CrRequisitos_Asignados_Obtener(int codEmpresa, string nivel, string codigo)
         {
-            string query = "";
+            string sqlQuery;
             if (nivel == "L")
             {
-                query = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
+                sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
                     WHEN A.codigo IS NOT NULL THEN 1
                     ELSE 0
@@ -80,7 +80,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
             else
             {
-                query = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
+                sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
                     WHEN A.Garantia  IS NOT NULL THEN 1
                     ELSE 0
@@ -89,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 on R.cod_requisito = A.cod_requisito and A.Garantia = @codigo  
                 order by existe desc,R.cod_requisito";
             }
-            return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDb, codEmpresa, query, new { codigo });
+            return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDB, codEmpresa, sqlQuery, new { codigo });
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             WHERE cod_requisito = @Codigo;";
 
             var respDelete = DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlDelete,
                 new
@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             WHERE cod_requisito = @CodRequisito;";
 
             var respUpdate = DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlUpdate,
                 new
@@ -240,7 +240,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );";
 
             var respInsert = DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlInsert,
                 new
@@ -276,7 +276,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             FROM requisitos_adicionales WHERE cod_requisito = @CodRequisito;";
 
             var resp = DbHelper.ExecuteSingleQuery<int>(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlExiste,
                 0,
@@ -460,7 +460,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 END";
 
                 return DbHelper.ExecuteNonQuery(
-                    _portalDb,
+                    _portalDB,
                     codEmpresa,
                     sqlInsert,
                     new
@@ -478,7 +478,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
               AND cod_requisito = @CodRequisito;";
 
             return DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlDelete,
                 new
@@ -518,7 +518,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 END";
 
                 return DbHelper.ExecuteNonQuery(
-                    _portalDb,
+                    _portalDB,
                     codEmpresa,
                     sqlInsert,
                     new
@@ -536,7 +536,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
               AND cod_requisito = @CodRequisito;";
 
             return DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlDelete,
                 new
@@ -564,7 +564,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
               AND cod_requisito = @CodRequisito;";
 
             return DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlUpdate,
                 new
@@ -593,7 +593,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
               AND cod_requisito = @CodRequisito;";
 
             return DbHelper.ExecuteNonQuery(
-                _portalDb,
+                _portalDB,
                 codEmpresa,
                 sqlUpdate,
                 new
@@ -614,7 +614,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="detalle"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
-            _Bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            _bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
