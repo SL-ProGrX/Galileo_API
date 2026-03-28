@@ -54,7 +54,7 @@ namespace Galileo_API.Models.ProGrX_Polizas
         public class CrdPolizasReportesRequest
         {
             public string CodigoReporte { get; set; } = string.Empty; // R001, R002, R003
-            public bool Resumen { get; set; }
+            public bool Resumen { get; set; } = false;
 
             public string PolizaCodigo { get; set; } = "TODOS";
             public string? LineaCodigo { get; set; }
@@ -69,14 +69,14 @@ namespace Galileo_API.Models.ProGrX_Polizas
             public DateTime? FechaNacimientoInicio { get; set; }
             public DateTime? FechaNacimientoFin { get; set; }
 
-            public bool FiltrarProceso { get; set; }
-            public bool FiltrarFechasMovimiento { get; set; }
-            public bool FiltrarCoberturaVence { get; set; }
-            public bool FiltrarNacimiento { get; set; }
-            public bool FiltrarOperacion { get; set; }
-            public bool FiltrarProvincia { get; set; }
-            public bool FiltrarCanton { get; set; }
-            public bool FiltrarDistrito { get; set; }
+            public bool FiltrarProceso { get; set; } = true;
+            public bool FiltrarFechasMovimiento { get; set; } = true;
+            public bool FiltrarCoberturaVence { get; set; } = true;
+            public bool FiltrarNacimiento { get; set; } = true;
+            public bool FiltrarOperacion { get; set; } = true;
+            public bool FiltrarProvincia { get; set; } = true;
+            public bool FiltrarCanton { get; set; } = true;
+            public bool FiltrarDistrito { get; set; } = true;
 
             public string? EstadoPersona { get; set; }
             public string? EstadoCivil { get; set; }
@@ -94,7 +94,7 @@ namespace Galileo_API.Models.ProGrX_Polizas
             public string? Canton { get; set; }
             public string? Distrito { get; set; }
 
-            public bool EsAseVersion { get; set; }
+            public bool EsAseVersion { get; set; } = true;
         }
 
         public class CrdPolizasReporteConfigResponse
@@ -110,7 +110,7 @@ namespace Galileo_API.Models.ProGrX_Polizas
             public string FormulaTitulo { get; set; } = string.Empty;
             public string FormulaSubTitulo { get; set; } = string.Empty;
 
-            public bool EsResumen { get; set; }
+            public bool EsResumen { get; set; } = false;
         }
 
     }
