@@ -64,21 +64,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<CrRequisitosData>> CrRequisitos_Asignados_Obtener(int codEmpresa, string nivel, string codigo)
         {
-            string sqlQuery;
-            if (nivel == NivelLinea)
-            {
-                sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
+            string sqlQuery = nivel == NivelLinea
+                ? @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
                     WHEN A.codigo IS NOT NULL THEN 1
                     ELSE 0
                 END AS Existe 
                 from Requisitos_Adicionales R left Join Requisitos_asignacion A 
                 on R.cod_requisito = A.cod_requisito and A.codigo = @codigo 
-                order by existe desc,R.cod_requisito";
-            }
-            else
-            {
-                sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
+                order by existe desc,R.cod_requisito"
+                : @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
                     WHEN A.Garantia IS NOT NULL THEN 1
                     ELSE 0
@@ -86,7 +81,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 from Requisitos_Adicionales R left Join CRD_GARANTIA_REQUISITOS A 
                 on R.cod_requisito = A.cod_requisito and A.Garantia = @codigo  
                 order by existe desc,R.cod_requisito";
-            }
 
             return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDB, codEmpresa, sqlQuery, new { codigo });
         }
