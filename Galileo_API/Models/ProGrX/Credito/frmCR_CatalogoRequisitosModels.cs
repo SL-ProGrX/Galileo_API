@@ -19,4 +19,18 @@
         public bool isChecked { get; set; } = false;
         public int columna { get; set; } = 4;
     }
+
+    public sealed class RequisitoNivelConfig
+    {
+        public string Tabla { get; }
+        public string CampoCatalogo { get; }
+        public string DescripcionBitacora { get; }
+
+        public RequisitoNivelConfig(string tabla, string campoCatalogo, string descripcionBitacora)
+        {
+            Tabla = tabla;
+            CampoCatalogo = campoCatalogo;
+            DescripcionBitacora = descripcionBitacora;
+        }
+    }
 }

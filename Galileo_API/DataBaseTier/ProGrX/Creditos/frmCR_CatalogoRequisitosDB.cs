@@ -11,6 +11,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 3;
 
+        private const string NivelLinea = "L";
+        private const string NivelGarantia = "G";
+
         public FrmCrCatalogoRequisitosDb(IConfiguration config)
            : this(
                  new PortalDB(config),
@@ -45,7 +48,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogosTipos_Obtener(int codEmpresa, string nivel)
         {
             string sqlQuery;
-            if (nivel == "L")
+            if (nivel == NivelLinea)
             {
                 sqlQuery = @"select codigo as item,descripcion from catalogo where retencion = 'N' and poliza = 'N' 
                     and requisitos_tipo = 'L' order by codigo";
@@ -54,6 +57,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 sqlQuery = @"select garantia as item,descripcion from Crd_Garantia_Tipos order by Garantia";
             }
+
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, codEmpresa, sqlQuery);
         }
 
@@ -67,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         public ErrorDto<List<CrRequisitosData>> CrRequisitos_Asignados_Obtener(int codEmpresa, string nivel, string codigo)
         {
             string sqlQuery;
-            if (nivel == "L")
+            if (nivel == NivelLinea)
             {
                 sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
@@ -82,13 +86,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 sqlQuery = @"select R.*,isnull(A.opcional,0) as 'opcionalX', 
                 CASE 
-                    WHEN A.Garantia  IS NOT NULL THEN 1
+                    WHEN A.Garantia IS NOT NULL THEN 1
                     ELSE 0
                 END AS Existe 
                 from Requisitos_Adicionales R left Join CRD_GARANTIA_REQUISITOS A 
                 on R.cod_requisito = A.cod_requisito and A.Garantia = @codigo  
                 order by existe desc,R.cod_requisito";
             }
+
             return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDB, codEmpresa, sqlQuery, new { codigo });
         }
 
@@ -136,8 +141,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new
                 {
                     Codigo = codigo.Trim()
-                }
-            );
+                });
+
             if (respDelete.Code < 0)
                 return respDelete;
 
@@ -147,6 +152,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 movimiento: "Elimina - WEB",
                 detalle: $"Requisito Adicional Cod: {codigo}"
             );
+
             return respDelete;
         }
 
@@ -158,20 +164,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto CrCatalogoRequisitos_Asignar(int codEmpresa, CrRequisitoAsignacionRequest request)
         {
-            if (request.nivel == "L")
+            return request.nivel switch
             {
-                return ProcesarRequisitoLinea(codEmpresa, request);
-            }
-
-            if (request.nivel == "G")
-            {
-                return ProcesarRequisitoGarantia(codEmpresa, request);
-            }
-
-            return new ErrorDto
-            {
-                Code = -1,
-                Description = "El nivel de aplicacion no es valido."
+                NivelLinea => ProcesarRequisito(codEmpresa, request, ObtenerConfigNivel(request.nivel)),
+                NivelGarantia => ProcesarRequisito(codEmpresa, request, ObtenerConfigNivel(request.nivel)),
+                _ => new ErrorDto
+                {
+                    Code = -1,
+                    Description = "El nivel de aplicacion no es valido."
+                }
             };
         }
 
@@ -200,8 +201,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodRequisito = request.cod_requisito,
                     Descripcion = request.descripcion,
                     Visible = request.visible ? 1 : 0
-                }
-            );
+                });
 
             if (respUpdate.Code < 0)
                 return respUpdate;
@@ -248,8 +248,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodRequisito = request.cod_requisito,
                     Descripcion = request.descripcion,
                     Visible = request.visible ? 1 : 0
-                }
-            );
+                });
 
             if (respInsert.Code < 0)
                 return respInsert;
@@ -265,7 +264,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Valida existencia de requisito
+        /// Verifica si un requisito existe en el catalogo
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codRequisito"></param>
@@ -283,30 +282,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new
                 {
                     CodRequisito = codRequisito.Trim()
-                }
-            );
+                });
 
             return resp.Result > 0;
         }
 
         /// <summary>
-        /// Procesa requisito por linea, valida si requiere asignar o desasignar
+        /// Procesa requisito
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
+        /// <param name="config"></param>
         /// <returns></returns>
-        private ErrorDto ProcesarRequisitoLinea(int codEmpresa, CrRequisitoAsignacionRequest request)
+        private ErrorDto ProcesarRequisito(int codEmpresa, CrRequisitoAsignacionRequest request, RequisitoNivelConfig config)
         {
             ErrorDto resp;
 
             if (request.columna == 4)
             {
-                resp = AsignarRequisitoLinea(
+                resp = AsignarRequisito(
                     codEmpresa,
                     request.codigo,
                     request.codRequisito,
                     request.opcional,
-                    request.isChecked
+                    request.isChecked,
+                    config
                 );
 
                 if (resp.Code >= 0)
@@ -315,7 +315,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         codEmpresa,
                         request.usuario,
                         movimiento: request.isChecked ? "Registra - WEB" : "Borrar - WEB",
-                        detalle: $"Requisito : {request.codRequisito} a la Línea: {request.codigo}"
+                        detalle: $"Requisito : {request.codRequisito} a la {config.DescripcionBitacora}: {request.codigo}"
                     );
                 }
 
@@ -333,82 +333,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     };
                 }
 
-                resp = ActualizarOpcionalLinea(
-                    codEmpresa,
-                    request.codigo,
-                    request.codRequisito,
-                    request.opcional
-                );
-
-                if (resp.Code >= 0)
-                {
-                    RegistrarBitacora(
-                        codEmpresa,
-                        request.usuario,
-                        movimiento: "Modifica - WEB",
-                        detalle: $"Requisito : {request.codRequisito} a la Línea: {request.codigo}"
-                    );
-                }
-
-                return resp;
-            }
-
-            return new ErrorDto
-            {
-                Code = -1,
-                Description = "La columna enviada no es válida."
-            };
-        }
-
-        /// <summary>
-        /// Procesa requisito por garantia, valida si requiere asignar o desasignar
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        private ErrorDto ProcesarRequisitoGarantia(int codEmpresa, CrRequisitoAsignacionRequest request)
-        {
-            ErrorDto resp;
-
-            if (request.columna == 4)
-            {
-                resp = AsignarRequisitoGarantia(
+                resp = ActualizarOpcional(
                     codEmpresa,
                     request.codigo,
                     request.codRequisito,
                     request.opcional,
-                    request.isChecked
-                );
-
-                if (resp.Code >= 0)
-                {
-                    RegistrarBitacora(
-                        codEmpresa,
-                        request.usuario,
-                        movimiento: request.isChecked ? "Registra - WEB" : "Borrar - WEB",
-                        detalle: $"Requisito : {request.codRequisito} a la Garantía: {request.codigo}"
-                    );
-                }
-
-                return resp;
-            }
-
-            if (request.columna == 3)
-            {
-                if (!request.isChecked)
-                {
-                    return new ErrorDto
-                    {
-                        Code = 0,
-                        Description = "No aplica actualizar opcional porque el requisito no está asignado."
-                    };
-                }
-
-                resp = ActualizarOpcionalGarantia(
-                    codEmpresa,
-                    request.codigo,
-                    request.codRequisito,
-                    request.opcional
+                    config
                 );
 
                 if (resp.Code >= 0)
@@ -417,7 +347,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         codEmpresa,
                         request.usuario,
                         movimiento: "Modifica - WEB",
-                        detalle: $"Requisito : {request.codRequisito} a la Garantía: {request.codigo}"
+                        detalle: $"Requisito : {request.codRequisito} a la {config.DescripcionBitacora}: {request.codigo}"
                     );
                 }
 
@@ -432,31 +362,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Asigna requisito a catalogo por linea
+        /// Asigna requisito
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="codigo"></param>
+        /// <param name="valorCatalogo"></param>
         /// <param name="codRequisito"></param>
         /// <param name="opcional"></param>
         /// <param name="isChecked"></param>
+        /// <param name="config"></param>
         /// <returns></returns>
-        private ErrorDto AsignarRequisitoLinea(int codEmpresa, string codigo, string codRequisito, bool opcional, bool isChecked)
+        private ErrorDto AsignarRequisito(
+            int codEmpresa,
+            string valorCatalogo,
+            string codRequisito,
+            bool opcional,
+            bool isChecked,
+            RequisitoNivelConfig config)
         {
-            codigo = codigo?.Trim() ?? string.Empty;
+            valorCatalogo = valorCatalogo?.Trim() ?? string.Empty;
             codRequisito = codRequisito?.Trim() ?? string.Empty;
 
             if (isChecked)
             {
-                const string sqlInsert = @"
+                string sqlInsert = $@"
                 IF NOT EXISTS (
                     SELECT 1
-                    FROM requisitos_asignacion
-                    WHERE codigo = @Codigo
+                    FROM {config.Tabla}
+                    WHERE {config.CampoCatalogo} = @ValorCatalogo
                       AND cod_requisito = @CodRequisito
                 )
                 BEGIN
-                    INSERT INTO requisitos_asignacion (codigo, cod_requisito, opcional)
-                    VALUES (@Codigo, @CodRequisito, @Opcional)
+                    INSERT INTO {config.Tabla} ({config.CampoCatalogo}, cod_requisito, opcional)
+                    VALUES (@ValorCatalogo, @CodRequisito, @Opcional)
                 END";
 
                 return DbHelper.ExecuteNonQuery(
@@ -465,16 +402,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     sqlInsert,
                     new
                     {
-                        Codigo = codigo,
+                        ValorCatalogo = valorCatalogo,
                         CodRequisito = codRequisito,
                         Opcional = opcional ? 1 : 0
-                    }
-                );
+                    });
             }
 
-            const string sqlDelete = @"
-            DELETE FROM requisitos_asignacion
-            WHERE codigo = @Codigo
+            string sqlDelete = $@"
+            DELETE FROM {config.Tabla}
+            WHERE {config.CampoCatalogo} = @ValorCatalogo
               AND cod_requisito = @CodRequisito;";
 
             return DbHelper.ExecuteNonQuery(
@@ -483,126 +419,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 sqlDelete,
                 new
                 {
-                    Codigo = codigo,
+                    ValorCatalogo = valorCatalogo,
                     CodRequisito = codRequisito
-                }
-            );
+                });
         }
 
         /// <summary>
-        /// Asigna requisito a catalago por garantia
+        /// Actualiza opcional de requisito
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="garantia"></param>
+        /// <param name="valorCatalogo"></param>
         /// <param name="codRequisito"></param>
         /// <param name="opcional"></param>
-        /// <param name="isChecked"></param>
+        /// <param name="config"></param>
         /// <returns></returns>
-        private ErrorDto AsignarRequisitoGarantia(int codEmpresa, string garantia, string codRequisito, bool opcional, bool isChecked)
+        private ErrorDto ActualizarOpcional(
+            int codEmpresa,
+            string valorCatalogo,
+            string codRequisito,
+            bool opcional,
+            RequisitoNivelConfig config)
         {
-            garantia = garantia?.Trim() ?? string.Empty;
-            codRequisito = codRequisito?.Trim() ?? string.Empty;
+            const string parametroCatalogo = "ValorCatalogo";
 
-            if (isChecked)
+            string sqlUpdate = $@"
+            UPDATE {config.Tabla}
+            SET opcional = @Opcional
+            WHERE {config.CampoCatalogo} = @{parametroCatalogo}
+              AND cod_requisito = @CodRequisito;";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    ValorCatalogo = valorCatalogo.Trim(),
+                    CodRequisito = codRequisito.Trim(),
+                    Opcional = opcional ? 1 : 0
+                });
+        }
+
+        /// <summary>
+        /// Obtiene nivel de aplicacion
+        /// </summary>
+        /// <param name="nivel"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        private RequisitoNivelConfig ObtenerConfigNivel(string nivel)
+        {
+            return nivel switch
             {
-                const string sqlInsert = @"
-                IF NOT EXISTS (
-                    SELECT 1
-                    FROM CRD_GARANTIA_REQUISITOS
-                    WHERE garantia = @Garantia
-                      AND cod_requisito = @CodRequisito
-                )
-                BEGIN
-                    INSERT INTO CRD_GARANTIA_REQUISITOS (garantia, cod_requisito, opcional)
-                    VALUES (@Garantia, @CodRequisito, @Opcional)
-                END";
-
-                return DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    codEmpresa,
-                    sqlInsert,
-                    new
-                    {
-                        Garantia = garantia,
-                        CodRequisito = codRequisito,
-                        Opcional = opcional ? 1 : 0
-                    }
-                );
-            }
-
-            const string sqlDelete = @"
-            DELETE FROM CRD_GARANTIA_REQUISITOS
-            WHERE garantia = @Garantia
-              AND cod_requisito = @CodRequisito;";
-
-            return DbHelper.ExecuteNonQuery(
-                _portalDB,
-                codEmpresa,
-                sqlDelete,
-                new
-                {
-                    Garantia = garantia,
-                    CodRequisito = codRequisito
-                }
-            );
-        }
-
-        /// <summary>
-        /// Actualiza opcional de requisito por linea
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codigo"></param>
-        /// <param name="codRequisito"></param>
-        /// <param name="opcional"></param>
-        /// <returns></returns>
-        private ErrorDto ActualizarOpcionalLinea(int codEmpresa, string codigo, string codRequisito, bool opcional)
-        {
-            const string sqlUpdate = @"
-            UPDATE requisitos_asignacion
-            SET opcional = @Opcional
-            WHERE codigo = @Codigo
-              AND cod_requisito = @CodRequisito;";
-
-            return DbHelper.ExecuteNonQuery(
-                _portalDB,
-                codEmpresa,
-                sqlUpdate,
-                new
-                {
-                    Codigo = codigo.Trim(),
-                    CodRequisito = codRequisito.Trim(),
-                    Opcional = opcional ? 1 : 0
-                }
-            );
-        }
-
-        /// <summary>
-        /// Actualiza opcional de requisito por garantia
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="garantia"></param>
-        /// <param name="codRequisito"></param>
-        /// <param name="opcional"></param>
-        /// <returns></returns>
-        private ErrorDto ActualizarOpcionalGarantia(int codEmpresa, string garantia, string codRequisito, bool opcional)
-        {
-            const string sqlUpdate = @"
-            UPDATE CRD_GARANTIA_REQUISITOS
-            SET opcional = @Opcional
-            WHERE garantia = @Garantia
-              AND cod_requisito = @CodRequisito;";
-
-            return DbHelper.ExecuteNonQuery(
-                _portalDB,
-                codEmpresa,
-                sqlUpdate,
-                new
-                {
-                    Garantia = garantia.Trim(),
-                    CodRequisito = codRequisito.Trim(),
-                    Opcional = opcional ? 1 : 0
-                }
-            );
+                NivelLinea => new RequisitoNivelConfig("requisitos_asignacion", "codigo", "Línea"),
+                NivelGarantia => new RequisitoNivelConfig("CRD_GARANTIA_REQUISITOS", "garantia", "Garantía"),
+                _ => throw new ArgumentException("Nivel no válido.", nameof(nivel))
+            };
         }
 
         /// <summary>
