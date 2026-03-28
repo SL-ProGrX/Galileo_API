@@ -2,7 +2,7 @@
 
 namespace Galileo_API.Models.ProGrX_Polizas
 {
-    public class frmCR_PolizasReportesModels
+    public class FrmCRPolizasReportesModels
     {
         public class ReporteListaModel
         {
