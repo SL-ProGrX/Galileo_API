@@ -24,6 +24,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             _Bitacora = dbBitacora;
         }
 
+        /// <summary>
+        /// Obtiene el catalogo de requisitos 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrRequisitosData>> CrCatalogoRequisitos_Obtener(int codEmpresa)
         {
             string query = @"select cod_requisito,descripcion,visible 
@@ -31,6 +36,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene los tipos de catalogos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="nivel"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogosTipos_Obtener(int codEmpresa, string nivel)
         {
             string query = "";
@@ -46,6 +57,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene los requisitos asignados a un catalogo especifico
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="nivel"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrRequisitosData>> CrRequisitos_Asignados_Obtener(int codEmpresa, string nivel, string codigo)
         {
             string query = "";
@@ -74,6 +92,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.ExecuteListQuery<CrRequisitosData>(_portalDb, codEmpresa, query, new { codigo });
         }
 
+        /// <summary>
+        /// Guarda un requisito en el catalogo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoRequisitos_Guardar(int codEmpresa, string usuario, CrRequisitosData request)
         {
             var existe = ExisteRequisito(codEmpresa, request.cod_requisito);
@@ -92,6 +117,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Elimina un requisito del catalogo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoRequisitos_Eliminar(int codEmpresa, string codigo, string usuario)
         {
             const string sqlDelete = @"DELETE FROM requisitos_adicionales 
@@ -118,6 +150,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respDelete;
         }
 
+        /// <summary>
+        /// Asigna o desasigna un requisito a un catalogo especifico
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CrCatalogoRequisitos_Asignar(int codEmpresa, CrRequisitoAsignacionRequest request)
         {
             if (request.nivel == "L")
@@ -137,6 +175,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Actualiza requisito
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto ActualizarRequisito(int codEmpresa, string usuario, CrRequisitosData request)
         {
             const string sqlUpdate = @"
@@ -171,6 +216,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respUpdate;
         }
 
+        /// <summary>
+        /// Inserta requisito
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto InsertarRequisito(int codEmpresa, string usuario, CrRequisitosData request)
         {
             const string sqlInsert = @"
@@ -212,6 +264,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respInsert;
         }
 
+        /// <summary>
+        /// Valida existencia de requisito
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codRequisito"></param>
+        /// <returns></returns>
         private bool ExisteRequisito(int codEmpresa, string codRequisito)
         {
             const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) 
@@ -231,6 +289,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return resp.Result > 0;
         }
 
+        /// <summary>
+        /// Procesa requisito por linea, valida si requiere asignar o desasignar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto ProcesarRequisitoLinea(int codEmpresa, CrRequisitoAsignacionRequest request)
         {
             ErrorDto resp;
@@ -296,6 +360,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Procesa requisito por garantia, valida si requiere asignar o desasignar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private ErrorDto ProcesarRequisitoGarantia(int codEmpresa, CrRequisitoAsignacionRequest request)
         {
             ErrorDto resp;
@@ -361,6 +431,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Asigna requisito a catalogo por linea
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="codRequisito"></param>
+        /// <param name="opcional"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
         private ErrorDto AsignarRequisitoLinea(int codEmpresa, string codigo, string codRequisito, bool opcional, bool isChecked)
         {
             codigo = codigo?.Trim() ?? string.Empty;
@@ -410,6 +489,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );
         }
 
+        /// <summary>
+        /// Asigna requisito a catalago por garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="garantia"></param>
+        /// <param name="codRequisito"></param>
+        /// <param name="opcional"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
         private ErrorDto AsignarRequisitoGarantia(int codEmpresa, string garantia, string codRequisito, bool opcional, bool isChecked)
         {
             garantia = garantia?.Trim() ?? string.Empty;
@@ -459,6 +547,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );
         }
 
+        /// <summary>
+        /// Actualiza opcional de requisito por linea
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="codRequisito"></param>
+        /// <param name="opcional"></param>
+        /// <returns></returns>
         private ErrorDto ActualizarOpcionalLinea(int codEmpresa, string codigo, string codRequisito, bool opcional)
         {
             const string sqlUpdate = @"
@@ -480,6 +576,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );
         }
 
+        /// <summary>
+        /// Actualiza opcional de requisito por garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="garantia"></param>
+        /// <param name="codRequisito"></param>
+        /// <param name="opcional"></param>
+        /// <returns></returns>
         private ErrorDto ActualizarOpcionalGarantia(int codEmpresa, string garantia, string codRequisito, bool opcional)
         {
             const string sqlUpdate = @"
@@ -501,6 +605,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             );
         }
 
+        /// <summary>
+        /// Registra en bitacora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="movimiento"></param>
+        /// <param name="detalle"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
             _Bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
