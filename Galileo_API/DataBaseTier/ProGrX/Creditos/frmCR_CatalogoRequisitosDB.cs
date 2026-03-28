@@ -466,7 +466,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="nivel"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        private RequisitoNivelConfig ObtenerConfigNivel(string nivel)
+        private static RequisitoNivelConfig ObtenerConfigNivel(string nivel)
         {
             return nivel switch
             {
