@@ -47,16 +47,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogosTipos_Obtener(int codEmpresa, string nivel)
         {
-            string sqlQuery;
-            if (nivel == NivelLinea)
-            {
-                sqlQuery = @"select codigo as item,descripcion from catalogo where retencion = 'N' and poliza = 'N' 
-                    and requisitos_tipo = 'L' order by codigo";
-            }
-            else
-            {
-                sqlQuery = @"select garantia as item,descripcion from Crd_Garantia_Tipos order by Garantia";
-            }
+            string sqlQuery = nivel == NivelLinea
+                ? @"select codigo as item,descripcion from catalogo where retencion = 'N' and poliza = 'N' 
+                    and requisitos_tipo = 'L' order by codigo"
+                : @"select garantia as item,descripcion from Crd_Garantia_Tipos order by Garantia";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, codEmpresa, sqlQuery);
         }
