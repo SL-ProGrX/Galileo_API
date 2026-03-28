@@ -1,7 +1,7 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo.Models;
 using Galileo_API.DataBaseTier.ProGrX_Polizas;
-using static Galileo_API.Models.ProGrX_Polizas.frmCR_PolizasReportesModels;
+using static Galileo_API.Models.ProGrX_Polizas.FrmCRPolizasReportesModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 {

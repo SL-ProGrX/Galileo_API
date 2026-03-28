@@ -3,7 +3,7 @@ using Galileo.Models;
 using Galileo_API.BusinessLogic.ProGrX_Polizas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Galileo_API.Models.ProGrX_Polizas.frmCR_PolizasReportesModels;
+using static Galileo_API.Models.ProGrX_Polizas.FrmCRPolizasReportesModels;
 
 namespace Galileo_API.Controllers.ProGrX_Polizas
 {

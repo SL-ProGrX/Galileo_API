@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
 using System.Text;
-using static Galileo_API.Models.ProGrX_Polizas.frmCR_PolizasReportesModels;
+using static Galileo_API.Models.ProGrX_Polizas.FrmCRPolizasReportesModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
