@@ -64,9 +64,8 @@ namespace Galileo_API.DataBaseTier
 
                 var uriConn = GetServiceUri(parametrosSinpe, sinpeTipo);
 
-                var servicio = tipo == "PIN"
-                    ? _sinpePIN.IsServiceAvailable(uriConn, context)
-                    : _sinpeDTR.IsServiceAvailable(uriConn, context);
+                var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
+
                 if (!servicio.ServiceAvailable)
                     return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
