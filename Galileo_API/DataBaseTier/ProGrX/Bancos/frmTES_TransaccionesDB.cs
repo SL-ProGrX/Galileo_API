@@ -805,7 +805,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         TIPO_CED_ORIGEN = @tipo_ced_origen, 
                         CTA_IBAN_ORIGEN= @cta_iban_origen,
                         CEDULA_ORIGEN= @cedula_origen, 
-                        tipo_ced_destino = @tipo_ced_destino
+                        tipo_ced_destino = @tipo_ced_destino,
+                        NOMBRE_ORIGEN = @nombre_origen
                     where nsolicitud = @nsolicitud ";
 
                 var rows = connection.Execute(query, new
@@ -833,7 +834,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     tipo_ced_origen = transaccion.tipo_ced_origen,
                     cta_iban_origen = transaccion.cta_iban_origen,
                     cedula_origen = transaccion.cedula_origen,
-                    tipo_ced_destino = transaccion.tipo_ced_destino
+                    tipo_ced_destino = transaccion.tipo_ced_destino,
+                    nombre_origen = transaccion.banco
                 });
 
                 if (rows == 0)

@@ -96,44 +96,50 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
-
-                            if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
-                                LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
-                                LaInformacionDeLaCuentaPIN.Account.State != "1")
+                            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(CodEmpresa, solicitud, LaInformacionDeLaCuentaPIN.Account!.CurrencyCode ?? "X");
+                            if(valOrigen.Code == -1)
                             {
-                                if (LaInformacionDeLaCuentaPIN.Errors.Length > 0)
-                                {
-                                    response.Code = -1;
-                                    response.Description = LaInformacionDeLaCuentaPIN.Errors[0].Message;
-                                }
-                                else
-                                {
-                                    response.Code = -1;
-                                    response.Description = "Error de estado " + LaInformacionDeLaCuentaPIN.Account.State;
-                                }
-
-                                if (!string.IsNullOrEmpty(response.Description))
-                                {
-                                    response.Code = -1;
-                                    response.Description = solicitud.ToString() + " - " + response.Description;
-                                }
+                                response = valOrigen;
                             }
                             else
                             {
-                                var cedulaFormateada = fxFormatoIdentificacionSinpe(info.Cedula.Trim(), info.tipoID).Result;
-                                if (cedulaFormateada != LaInformacionDeLaCuentaPIN.Account.HolderId)
+                                if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
+                                LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
+                                LaInformacionDeLaCuentaPIN.Account.State != "1")
                                 {
-                                    response.Code = -1;
-                                    response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                                    if (LaInformacionDeLaCuentaPIN.Errors.Length > 0)
+                                    {
+                                        response.Code = -1;
+                                        response.Description = LaInformacionDeLaCuentaPIN.Errors[0].Message;
+                                    }
+                                    else
+                                    {
+                                        response.Code = -1;
+                                        response.Description = "Error de estado " + LaInformacionDeLaCuentaPIN.Account.State;
+                                    }
+
+                                    if (!string.IsNullOrEmpty(response.Description))
+                                    {
+                                        response.Code = -1;
+                                        response.Description = solicitud.ToString() + " - " + response.Description;
+                                    }
                                 }
                                 else
                                 {
-                                    response.Code = 0;
-                                    response.Description = $@"La cuenta IBAN {info.CuentaIBAN} registrada a 
+                                    var cedulaFormateada = fxFormatoIdentificacionSinpe(info.Cedula.Trim(), info.tipoID).Result;
+                                    if (cedulaFormateada != LaInformacionDeLaCuentaPIN.Account.HolderId)
+                                    {
+                                        response.Code = -1;
+                                        response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                                    }
+                                    else
+                                    {
+                                        response.Code = 0;
+                                        response.Description = $@"La cuenta IBAN {info.CuentaIBAN} registrada a 
                                         nombre de {LaInformacionDeLaCuentaPIN.Account.Holder} cédula: {LaInformacionDeLaCuentaPIN.Account.HolderId} Tipo Id: {info.tipoID} Tipo de Moneda: @moneda";
+                                    }
                                 }
                             }
-
                         }
                     }
                     else
@@ -704,34 +710,36 @@ namespace Galileo_API.DataBaseTier
                         else
                         {
                             estadoSinpe = true;
+
+                            //Guardar la respuesta en la transacción
+                            datos.NumeroSolicitud = Nsolicitud;
+                            datos.FechaEmision = vfecha;
+                            datos.FechaTraslado = vfecha;
+                            datos.UsuarioGenera = vUsuario;
+                            datos.estadoSinpe = estadoSinpe;
+                            datos.IdMotivoRechazo = idRechazo;
+                            datos.CodigoReferencia = respuesta.CodigoReferencia;
+                            datos.DocumentoBase = doc_base.ToString();
+                            datos.contador = contador.ToString();
+
+                            if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
+                            }
+
+                            if (estadoSinpe == true)
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
+                            }
+                            else
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
+                            }
                         }
 
                     }
 
-                    //Guardar la respuesta en la transacción
-                    datos.NumeroSolicitud = Nsolicitud;
-                    datos.FechaEmision = vfecha;
-                    datos.FechaTraslado = vfecha;
-                    datos.UsuarioGenera = vUsuario;
-                    datos.estadoSinpe = estadoSinpe;
-                    datos.IdMotivoRechazo = idRechazo;
-                    datos.CodigoReferencia = respuesta.CodigoReferencia;
-                    datos.DocumentoBase = doc_base.ToString();
-                    datos.contador = contador.ToString();
-
-                    if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
-                    }
-
-                    if (estadoSinpe == true)
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
-                    }
-                    else
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
-                    }
+                    
                 }
                 else
                 {
@@ -843,6 +851,8 @@ namespace Galileo_API.DataBaseTier
                                                     : Sinpe_CCD.E_Monedas.Colones;
 
                 // Monto
+                /**
+                Se comenta este codigo porque ProGrX puede pasar montos en dolares.
                 if (solicitud.Divisa == "DOL")
                 {
                     transaccion.DatosTransaccion.Monto = solicitud.tipoCambio > 0
@@ -853,7 +863,9 @@ namespace Galileo_API.DataBaseTier
                 else
                 {
                     transaccion.DatosTransaccion.Monto = solicitud.Monto;
-                }
+                }**/
+
+                transaccion.DatosTransaccion.Monto = solicitud.Monto;
 
                 // Otros campos
                 transaccion.DatosTransaccion.Descripcion = detalle.Replace("\r\n", "");
@@ -999,33 +1011,37 @@ namespace Galileo_API.DataBaseTier
                                 break;
                         }
 
-                        datos.NumeroSolicitud = Nsolicitud;
-                        datos.FechaEmision = vfecha;
-                        datos.FechaTraslado = vfecha;
-                        datos.UsuarioGenera = vUsuario;
-                        datos.estadoSinpe = estadoSinpe;
-                        datos.IdMotivoRechazo = idRechazo;
-                        datos.CodigoReferencia = ElResultadoDeSendTransfer.PINSendingResult.SINPERefNumber;
-                        datos.DocumentoBase = doc_base.ToString();
-                        datos.contador = contador.ToString();
-
-                        if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                        if (estadoSinpe)
                         {
-                            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
-                        }
+                            datos.NumeroSolicitud = Nsolicitud;
+                            datos.FechaEmision = vfecha;
+                            datos.FechaTraslado = vfecha;
+                            datos.UsuarioGenera = vUsuario;
+                            datos.estadoSinpe = estadoSinpe;
+                            datos.IdMotivoRechazo = idRechazo;
+                            datos.CodigoReferencia = ElResultadoDeSendTransfer.PINSendingResult.SINPERefNumber;
+                            datos.DocumentoBase = doc_base.ToString();
+                            datos.contador = contador.ToString();
 
-                        //'Actualización nueva
-                        if (estadoSinpe == true)
-                        {
-                            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
+                            if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
+                            }
 
-                            //Se agrega proceso para realizar el envio de notificaciones
-                            EnviaNotificacionesCajas(CodEmpresa, datos.CodigoReferencia);
+                            //'Actualización nueva
+                            if (estadoSinpe == true)
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
+
+                                //Se agrega proceso para realizar el envio de notificaciones
+                                EnviaNotificacionesCajas(CodEmpresa, datos.CodigoReferencia);
+                            }
+                            else
+                            {
+                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
+                            }
                         }
-                        else
-                        {
-                            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
-                        }
+                        
                     }
                     else //Uso de canal CanalTFT
                     {

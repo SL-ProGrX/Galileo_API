@@ -1889,7 +1889,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return DbHelper.ExecuteSingleQuery<long>(_portalDB, CodEmpresa, Query, 0, null).Result;
         }
 
-        public ErrorDto ValidaOrigenDestinoIBAN(int CodEmpresa, string Nsolicitud, vInfoSinpe SinpeVal)
+        public ErrorDto ValidaOrigenDestinoIBAN(int CodEmpresa, string Nsolicitud, string cod_divisa)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1899,15 +1899,16 @@ FROM dbo.fxSinpe_ValidaCredito(
 
                 //1) Consulto Cod Divisa Origen
                 const string qryDivisa = "SELECT COD_DIVISA FROM TES_BANCOS WHERE ESTADO = 'A' AND ID_BANCO = @id_banco";
-                var cod_divisa_origen = connection.Query<string>(qryDivisa, solicitud.id_banco).FirstOrDefault();
-                string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen);
+                var cod_divisa_origen = connection.Query<string>(qryDivisa, 
+                    new { id_banco = solicitud!.id_banco }).FirstOrDefault();
+                string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen!);
 
-                if(divisaOrigen != SinpeVal.cod_divisa)
+                if(divisaOrigen != cod_divisa)
                 {
                     return new ErrorDto
                     {
                         Code = -1,
-                        Description = $"La divisa del banco origen ({divisaOrigen}) no coincide con la divisa Destino ({SinpeVal.cod_divisa})."
+                        Description = $"La divisa del banco origen ({divisaOrigen}) no coincide con la divisa Destino ({cod_divisa})."
                     };
                 }
 
