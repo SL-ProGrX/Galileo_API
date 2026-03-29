@@ -1263,7 +1263,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 case 0:
                     //si no tiene zero adelante le asigno uno
                     // Solo asignar un '0' delante si no lo tiene ya
-                    if (!digits.StartsWith("0"))
+                    if (!digits.StartsWith('0'))
                     {
                         digits = digits.Insert(0, "0");
                     }
