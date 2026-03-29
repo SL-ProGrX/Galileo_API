@@ -727,7 +727,7 @@ namespace Galileo_API.DataBaseTier
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
                             }
 
-                            if (estadoSinpe == true)
+                            if (estadoSinpe)
                             {
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
                             }
