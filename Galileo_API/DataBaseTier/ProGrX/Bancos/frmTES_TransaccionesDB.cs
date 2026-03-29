@@ -643,7 +643,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static void AjustarTipoCedOrigen(TesTransaccionDto t)
         {
-            var idOrigen = t.tipo_beneficiario - 1;
             var ced_origen = MKindoServiceDb.Inferir(t.cedula_origen!);
             t.tipo_ced_origen = Convert.ToInt32(ced_origen.Codigo);
         }
