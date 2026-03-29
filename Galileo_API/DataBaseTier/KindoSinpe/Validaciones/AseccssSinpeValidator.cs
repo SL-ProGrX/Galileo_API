@@ -1029,7 +1029,7 @@ namespace Galileo_API.DataBaseTier
                             }
 
                             //'Actualización nueva
-                            if (estadoSinpe == true)
+                            if (estadoSinpe)
                             {
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
 
