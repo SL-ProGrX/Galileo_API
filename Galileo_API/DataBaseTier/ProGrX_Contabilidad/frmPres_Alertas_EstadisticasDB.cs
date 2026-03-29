@@ -1019,17 +1019,20 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                //if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                //{
-                //    result.Code = -1;
-                //    result.Result.periodo_registrado = false;
-                //    result.Result.puede_guardar_seleccion = true;
-                //    result.Result.requiere_configuracion = false;
-                //    result.Result.fuera_de_plazo = true;
-                //    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                //    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                //    return result;
-                //}
+                /**
+                Se comenta temporalmente para revisar casos de periodos sin fecha de cierre, pero se deja la validación para futuros ajustes en la regla de negocio.
+                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
+                {
+                    result.Code = -1;
+                    result.Result.periodo_registrado = false;
+                    result.Result.puede_guardar_seleccion = true;
+                    result.Result.requiere_configuracion = false;
+                    result.Result.fuera_de_plazo = true;
+                    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
+                    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
+                    return result;
+                }
+                **/
 
                 const string sqlJustifica = @"
 SELECT TOP (1)
@@ -1189,7 +1192,7 @@ ORDER BY FECHA DESC;";
                 {
                     request.cod_modelo,
                     request.cod_contabilidad,
-                    inicio = new DateTime(request.anio, request.mes, 1),
+                    inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
                     corte = request.corte?.Date,
                     fecha = request.fecha?.Date,
                     request.usuario,
