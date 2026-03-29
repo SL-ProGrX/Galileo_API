@@ -1023,13 +1023,13 @@ namespace Galileo_API.DataBaseTier
                             datos.DocumentoBase = doc_base.ToString();
                             datos.contador = contador.ToString();
 
-                            if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                            if (!fxTesRespuestaSinpe(CodEmpresa, datos).Result)
                             {
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
                             }
 
                             //'Actualización nueva
-                            if (estadoSinpe == true)
+                            if (estadoSinpe)
                             {
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
 
