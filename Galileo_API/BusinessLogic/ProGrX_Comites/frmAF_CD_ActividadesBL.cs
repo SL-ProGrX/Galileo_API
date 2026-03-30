@@ -1,6 +1,7 @@
-﻿using Galileo_API.DataBaseTier.ProGrX_Comites;
-using Galileo_API.Models.ProGrX_Comites;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.DataBaseTier.ProGrX_Comites;
+using Galileo_API.Models.ProGrX_Comites;
 using System.Collections.Generic;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Comites
@@ -37,5 +38,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
 
         public ErrorDto<bool> AfCdActividades_RangoDelete(int codEmpresa, int codActividad, int codMonto)
             => _db.AfCdActividades_RangoDelete(codEmpresa, codActividad, codMonto);
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AfCdActividades_DropDownLista(int codEmpresa)
+            => _db.AfCdActividades_DropDownLista(codEmpresa);
+
+        public ErrorDto<List<AfCdCuentaConsultaDto>> AfCdCuentas_Consulta(int codEmpresa, DateTime fechaInicio, DateTime fechaFin, string codActividad)
+            => _db.AfCdCuentas_Consulta(codEmpresa, fechaInicio, fechaFin, codActividad);
     }
 }
