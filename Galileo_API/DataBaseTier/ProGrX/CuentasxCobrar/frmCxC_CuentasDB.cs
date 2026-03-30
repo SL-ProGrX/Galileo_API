@@ -12,11 +12,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
     {
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _proGrxMain;
+        private readonly MRecibos _mRecibos;
 
         public FrmCxcCuentasDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _proGrxMain = new MProGrxMain(config);
+            _mRecibos = new MRecibos(config);
         }
 
         /// <summary>
@@ -540,6 +542,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             return response;
-        }   
+        }
+
+        public ErrorDto<int> ParametrosInicializa(int codEmpresa, string usuario, long contabilidad)
+        {
+            var parametros = _proGrxMain.sbSifParametrosInicializa(codEmpresa, usuario, contabilidad);
+            return parametros.Result!.SysDocVersion switch
+            {
+                0 => DbHelper.CreateErrorResponse<int>("No se pudo obtener la versión del sistema."),
+                _ => DbHelper.CreateOkResponse(parametros.Result.SysDocVersion)
+            };
+        }
+
+        public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
+        {
+            return _mRecibos.sbImprimeRecibo(CodEmpresa, pDocumento, pTipo, Usuario, pReImprime);
+        }
+
+
     }
 }

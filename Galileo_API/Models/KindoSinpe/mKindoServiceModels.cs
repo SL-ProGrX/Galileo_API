@@ -1114,7 +1114,9 @@
             public string? NDocumento { get; set; } = null;
 
             public string? referencia_sinpe { get; set; } = null;
-    }
+
+            public int? id_banco { get; set; } = 0;
+         }
 
         public class vInfoSinpe
         {
