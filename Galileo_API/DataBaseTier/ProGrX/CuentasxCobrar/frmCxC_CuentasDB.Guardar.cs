@@ -26,16 +26,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             public string? emitir_cuenta { get; init; }
             public string? num_documento { get; init; }
             public string? cod_contrato { get; init; }
-            public int plazo_dias { get; init; }
-            public int freq_pago { get; init; }
+            public int plazo_dias { get; init; } = 0;
+            public int freq_pago { get; init; } = 0;
             public DateTime? fecha_inicio { get; init; }
-            public int adelanto_comision_apl { get; init; }
+            public int adelanto_comision_apl { get; init; } = 0;
         }
 
         private sealed class CxCCuentasConceptoGuardarData
         {
-            public int requiere_contrato { get; init; }
-            public int proceso_descuento { get; init; }
+            public int requiere_contrato { get; init; } = 0;
+            public int proceso_descuento { get; init; } = 0;
         }
 
         private static CxCCuentasGuardarContext CrearGuardarContext(CxCCuentasSaveParams param)
@@ -218,13 +218,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             var concepto = ObtenerConceptoGuardar(conn, context.cod_concepto);
 
-            if (concepto is null)
-            {
-                return "No existe o no está activo el código de concepto de CxC a utilizar.";
-            }
-
             var requiereContrato =
-                concepto.requiere_contrato == 1 || concepto.proceso_descuento == 1;
+                concepto!.requiere_contrato == 1 || concepto.proceso_descuento == 1;
 
             if (requiereContrato && string.IsNullOrWhiteSpace(context.cod_contrato))
             {
@@ -240,25 +235,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (concepto.proceso_descuento == 1)
             {
-                if (string.IsNullOrWhiteSpace(context.cedula_pagador))
+                var mensajeContext = validaContext(conn, context);
+                if (!string.IsNullOrWhiteSpace(mensajeContext))
                 {
-                    return "El pagador no está registrado bajo el contrato individual (x Persona).";
-                }
-
-                if (string.IsNullOrWhiteSpace(context.cod_contrato) ||
-                    !ExistePagadorValidoGuardar(conn, context.cod_contrato, context.cedula, context.cedula_pagador))
-                {
-                    return "El pagador no está registrado bajo el contrato individual (x Persona).";
-                }
-
-                if (string.IsNullOrWhiteSpace(context.cedula_autorizado))
-                {
-                    return "No se localizó al autorizador de la cesión.";
-                }
-
-                if (!ExisteAutorizadorValidoGuardar(conn, context.cedula, context.cedula_autorizado))
-                {
-                    return "El autorizador no está registrado.";
+                    return mensajeContext;
                 }
             }
 
@@ -271,6 +251,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (!string.IsNullOrWhiteSpace(mensajeDisponible))
             {
                 return mensajeDisponible.Trim();
+            }
+
+            return null;
+        }
+
+        private static string? validaContext(SqlConnection conn, CxCCuentasGuardarContext context)
+        {
+            if (string.IsNullOrWhiteSpace(context.cedula_pagador))
+            {
+                return "El pagador no está registrado bajo el contrato individual (x Persona).";
+            }
+
+            if (string.IsNullOrWhiteSpace(context.cod_contrato) ||
+                !ExistePagadorValidoGuardar(conn, context.cod_contrato, context.cedula, context.cedula_pagador))
+            {
+                return "El pagador no está registrado bajo el contrato individual (x Persona).";
+            }
+
+            if (string.IsNullOrWhiteSpace(context.cedula_autorizado))
+            {
+                return "No se localizó al autorizador de la cesión.";
+            }
+
+            if (!ExisteAutorizadorValidoGuardar(conn, context.cedula, context.cedula_autorizado))
+            {
+                return "El autorizador no está registrado.";
             }
 
             return null;
