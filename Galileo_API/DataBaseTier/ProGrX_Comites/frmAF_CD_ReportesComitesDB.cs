@@ -238,15 +238,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 "MB_CMT" => new AfCdReporteDefinicionDto
                 {
                     codigo_opcion = codigo,
-                    requiere_comite = true,
                     requiere_estado = true,
                     requiere_fecha_inicio = true,
                     requiere_fecha_corte = true
                 },
                 "ACT_ASG" => new AfCdReporteDefinicionDto
                 {
-                    codigo_opcion = codigo,
-                    requiere_comite = true
+                    codigo_opcion = codigo
                 },
                 "CMT_PRM" => new AfCdReporteDefinicionDto
                 {
@@ -257,7 +255,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 "HIST" => new AfCdReporteDefinicionDto
                 {
                     codigo_opcion = codigo,
-                    requiere_comite = true,
                     requiere_estado = true
                 },
                 "ACT_LST" => new AfCdReporteDefinicionDto
@@ -269,13 +266,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 {
                     codigo_opcion = codigo,
                     requiere_comite = true,
-                    requiere_fecha_corte = true
+                    requiere_fecha_inicio = true,
+                    requiere_fecha_corte = true,
+                    requiere_tipo_reporte = true
                 },
                 "LIQ_EST" => new AfCdReporteDefinicionDto
                 {
                     codigo_opcion = codigo,
                     requiere_estado = true,
-                    requiere_fecha_corte = true
+                    requiere_fecha_inicio = true,
+                    requiere_fecha_corte = true,
+                    requiere_tipo_reporte = true
                 },
                 "LG_CXC" => new AfCdReporteDefinicionDto
                 {
