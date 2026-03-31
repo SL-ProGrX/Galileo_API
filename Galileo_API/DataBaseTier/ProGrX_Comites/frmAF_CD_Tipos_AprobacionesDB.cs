@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 {
     public class FrmAfCdTiposAprobacionesDB
     {
-        private readonly PortalDB _portalDB;
+        private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityMainDb;
 
         private const string MovRegistra = "REGISTRA - WEB";
@@ -19,21 +19,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private const string MovElimina = "ELIMINAR - WEB";
         private const int ModuloCxC = 40;
 
-        private const string OrderByCodTipoAprobacion = "CodTipoAprobacion";
-        private const string OrderByNombreTipoAprobacion = "NombreTipoAprobacion";
-        private const string OrderByActivo = "Activo";
-        private const string BitacoraDetalleFormato = "Tipos de Aprobación Id: {0}";
+        private const string CampoCodigo = "CodTipoAprobacion";
+        private const string CampoNombre = "NombreTipoAprobacion";
+        private const string CampoActivo = "Activo";
 
-        private const string WhereClause = @"
-            WHERE
-                (@filtro IS NULL)
-                OR (CAST(CodTipoAprobacion AS NVARCHAR(50)) LIKE @like)
-                OR (NombreTipoAprobacion LIKE @like)";
+        private const string ErrorGuardar = "No fue posible guardar el tipo de aprobación.";
+        private const string ErrorEliminar = "No fue posible eliminar el tipo de aprobación.";
+        private const string ErrorUsuarioRequerido = "El usuario es requerido.";
+        private const string ErrorDatosRequeridos = "Datos requeridos.";
+        private const string ErrorCodigoRequerido = "El campo 'CodTipoAprobacion' es requerido.";
+        private const string BitacoraDetalle = "Tipos de Aprobación Id: {0}";
 
         private const string SqlCount = @"
             SELECT COUNT(1)
             FROM dbo.AFI_CD_TIPO_APROBACION
-        " + WhereClause + ";";
+            WHERE
+                (@filtro IS NULL)
+                OR (CAST(CodTipoAprobacion AS NVARCHAR(50)) LIKE @like)
+                OR (NombreTipoAprobacion LIKE @like);";
 
         private const string SqlListBase = @"
             SELECT
@@ -41,166 +44,56 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 NombreTipoAprobacion,
                 Activo
             FROM dbo.AFI_CD_TIPO_APROBACION
-        " + WhereClause;
+            WHERE
+                (@filtro IS NULL)
+                OR (CAST(CodTipoAprobacion AS NVARCHAR(50)) LIKE @like)
+                OR (NombreTipoAprobacion LIKE @like)";
+
+        private const string SqlUpsert = @"
+            DECLARE @accion NVARCHAR(10);
+
+            UPDATE dbo.AFI_CD_TIPO_APROBACION
+            SET
+                NombreTipoAprobacion = @NombreTipoAprobacion,
+                Activo = @Activo
+            WHERE CodTipoAprobacion = @CodTipoAprobacion;
+
+            IF @@ROWCOUNT = 0
+            BEGIN
+                INSERT INTO dbo.AFI_CD_TIPO_APROBACION
+                (
+                    CodTipoAprobacion,
+                    NombreTipoAprobacion,
+                    Activo,
+                    RegistroFecha,
+                    RegistroUsuario
+                )
+                VALUES
+                (
+                    UPPER(@CodTipoAprobacion),
+                    @NombreTipoAprobacion,
+                    @Activo,
+                    dbo.MyGetdate(),
+                    @usuario
+                );
+
+                SET @accion = N'insert';
+            END
+            ELSE
+            BEGIN
+                SET @accion = N'update';
+            END
+
+            SELECT @accion AS accion;";
+
+        private const string SqlDelete = @"
+            DELETE FROM dbo.AFI_CD_TIPO_APROBACION
+            WHERE CodTipoAprobacion = @CodTipoAprobacion;";
 
         public FrmAfCdTiposAprobacionesDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config);
+            _portalDb = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config);
-        }
-
-        private static ErrorDto Ok() => DbHelper.CreateOkResponse();
-
-        private static ErrorDto Error(string message) => DbHelper.ErrorResponse(message);
-
-        private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
-        {
-            _securityMainDb.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = empresaId,
-                Usuario = usuario,
-                DetalleMovimiento = detalle,
-                Movimiento = movimiento,
-                Modulo = ModuloCxC
-            });
-        }
-
-        private void RegistrarBitacoraTipoAprobacion(
-            int codEmpresa,
-            string usuario,
-            string codTipoAprobacion,
-            string movimiento)
-        {
-            if (string.IsNullOrWhiteSpace(movimiento))
-            {
-                return;
-            }
-
-            LogBitacora(
-                codEmpresa,
-                usuario,
-                string.Format(BitacoraDetalleFormato, codTipoAprobacion),
-                movimiento);
-        }
-
-        private static (string OrderBy, string Direction) SanitizeOrderBy(string? sortField, int? sortOrder)
-        {
-            var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
-
-            var orderBy = field switch
-            {
-                "codtipoaprobacion" => OrderByCodTipoAprobacion,
-                "nombretipoaprobacion" => OrderByNombreTipoAprobacion,
-                "activo" => OrderByActivo,
-                _ => OrderByCodTipoAprobacion
-            };
-
-            var direction = sortOrder == 1 ? "DESC" : "ASC";
-            return (orderBy, direction);
-        }
-
-        private static string BuildOrderByClause(string direction)
-        {
-            return $@"
-            ORDER BY
-                CASE WHEN @orderBy = '{OrderByCodTipoAprobacion}' THEN CodTipoAprobacion END {direction},
-                CASE WHEN @orderBy = '{OrderByNombreTipoAprobacion}' THEN NombreTipoAprobacion END {direction},
-                CASE WHEN @orderBy = '{OrderByActivo}' THEN Activo END {direction}";
-        }
-
-        private ErrorDto EjecutarGuardadoTipoAprobacion(
-            int codEmpresa,
-            string usuario,
-            CdTiposAprobacionesData datos,
-            out string movimiento)
-        {
-            movimiento = string.Empty;
-
-            const string sqlUpsert = @"
-                DECLARE @accion NVARCHAR(10);
-
-                UPDATE dbo.AFI_CD_TIPO_APROBACION
-                SET
-                    NombreTipoAprobacion = @NombreTipoAprobacion,
-                    Activo = @Activo
-                WHERE CodTipoAprobacion = @CodTipoAprobacion;
-
-                IF @@ROWCOUNT = 0
-                BEGIN
-                    INSERT INTO dbo.AFI_CD_TIPO_APROBACION
-                    (
-                        CodTipoAprobacion,
-                        NombreTipoAprobacion,
-                        Activo,
-                        RegistroFecha,
-                        RegistroUsuario
-                    )
-                    VALUES
-                    (
-                        UPPER(@CodTipoAprobacion),
-                        @NombreTipoAprobacion,
-                        @Activo,
-                        dbo.MyGetdate(),
-                        @usuario
-                    );
-
-                    SET @accion = N'insert';
-                END
-                ELSE
-                BEGIN
-                    SET @accion = N'update';
-                END
-
-                SELECT @accion AS accion;";
-
-            var upsert = DbHelper.ExecuteSingleQuery<string>(
-                _portalDB,
-                codEmpresa,
-                sqlUpsert,
-                defaultValue: string.Empty,
-                parameters: new
-                {
-                    datos.CodTipoAprobacion,
-                    datos.NombreTipoAprobacion,
-                    datos.Activo,
-                    usuario
-                });
-
-            if (upsert.Code != 0)
-            {
-                return Error("No fue posible guardar el tipo de aprobación.");
-            }
-
-            var accion = (upsert.Result ?? string.Empty).Trim().ToLowerInvariant();
-            movimiento = GetMovimientoByAccion(accion);
-
-            return Ok();
-        }
-
-        private ErrorDto EjecutarEliminacionTipoAprobacion(
-            int codEmpresa,
-            string codTipoAprobacion,
-            out bool eliminado)
-        {
-            eliminado = false;
-
-            const string sql = @"
-                DELETE FROM dbo.AFI_CD_TIPO_APROBACION
-                WHERE CodTipoAprobacion = @CodTipoAprobacion;";
-
-            var result = DbHelper.ExecuteNonQueryWithResult(
-                _portalDB,
-                codEmpresa,
-                sql,
-                new { CodTipoAprobacion = codTipoAprobacion });
-
-            if (result.Code != 0)
-            {
-                return Error("No fue posible eliminar el tipo de aprobación.");
-            }
-
-            eliminado = result.Result > 0;
-            return Ok();
         }
 
         public ErrorDto<CdTiposAprobacionesLista> AfCdTiposAprobacionesLista_Obtener(
@@ -208,37 +101,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             FiltrosLazyLoadData filtros,
             bool esExportar)
         {
-            return DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
+            return DbHelper.WithConn(_portalDb, codEmpresa, (SqlConnection conn) =>
             {
                 filtros ??= new FiltrosLazyLoadData();
 
-                var texto = filtros.filtro?.Trim();
-                var hasFiltro = !string.IsNullOrWhiteSpace(texto);
+                var filtroTexto = filtros.filtro?.Trim();
+                var usarFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
                 var usarPaginacion = filtros.paginacion > 0 && !esExportar;
-
-                var (orderBy, direction) = SanitizeOrderBy(filtros.sortField, filtros.sortOrder);
+                var (orderBy, direction) = ResolveOrder(filtros.sortField, filtros.sortOrder);
 
                 var parameters = new
                 {
-                    filtro = hasFiltro ? texto : null,
-                    like = hasFiltro ? $"%{texto}%" : null,
+                    filtro = usarFiltro ? filtroTexto : null,
+                    like = usarFiltro ? $"%{filtroTexto}%" : null,
                     orderBy,
                     offset = filtros.pagina,
                     fetch = filtros.paginacion
                 };
 
                 var total = conn.QuerySingle<int>(SqlCount, parameters);
-                var sqlList = SqlListBase + BuildOrderByClause(direction);
-
-                if (usarPaginacion)
-                {
-                    sqlList += " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
-                }
-                else
-                {
-                    sqlList += ";";
-                }
-
+                var sqlList = BuildSqlList(direction, usarPaginacion);
                 var lista = conn.Query<CdTiposAprobacionesData>(sqlList, parameters).ToList();
 
                 return new CdTiposAprobacionesLista
@@ -254,40 +136,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             string usuario,
             CdTiposAprobacionesData datos)
         {
-            if (datos == null)
+            var validationError = ValidateGuardar(usuario, datos);
+            if (validationError != null)
             {
-                return Error("Datos requeridos.");
+                return validationError;
             }
 
-            if (string.IsNullOrWhiteSpace(datos.CodTipoAprobacion))
-            {
-                return Error("El campo 'CodTipoAprobacion' es requerido.");
-            }
-
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return Error("El usuario es requerido.");
-            }
-
-            string movimiento;
-            var response = EjecutarGuardadoTipoAprobacion(
+            var upsert = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
                 codEmpresa,
-                usuario,
-                datos,
-                out movimiento);
+                SqlUpsert,
+                defaultValue: string.Empty,
+                parameters: new
+                {
+                    datos.CodTipoAprobacion,
+                    datos.NombreTipoAprobacion,
+                    datos.Activo,
+                    usuario
+                });
 
-            if (response.Code != 0)
+            if (upsert.Code != 0)
             {
-                return response;
+                return Error(ErrorGuardar);
             }
 
-            RegistrarBitacoraTipoAprobacion(
-                codEmpresa,
-                usuario,
-                datos.CodTipoAprobacion,
-                movimiento);
+            var movimiento = ResolveMovimiento((upsert.Result ?? string.Empty).Trim());
 
-            return response;
+            if (!string.IsNullOrWhiteSpace(movimiento))
+            {
+                RegistrarBitacora(codEmpresa, usuario, datos.CodTipoAprobacion, movimiento);
+            }
+
+            return Ok();
         }
 
         public ErrorDto AfCdTiposAprobaciones_Eliminar(
@@ -295,47 +175,120 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             string usuario,
             string codTipoAprobacion)
         {
-            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
+            var validationError = ValidateEliminar(usuario, codTipoAprobacion);
+            if (validationError != null)
             {
-                return Error("El campo 'CodTipoAprobacion' es requerido.");
+                return validationError;
             }
 
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return Error("El usuario es requerido.");
-            }
-
-            bool eliminado;
-            var response = EjecutarEliminacionTipoAprobacion(
+            var result = DbHelper.ExecuteNonQueryWithResult(
+                _portalDb,
                 codEmpresa,
-                codTipoAprobacion,
-                out eliminado);
+                SqlDelete,
+                new { CodTipoAprobacion = codTipoAprobacion });
 
-            if (response.Code != 0)
+            if (result.Code != 0)
             {
-                return response;
+                return Error(ErrorEliminar);
             }
 
-            if (eliminado)
+            if (result.Result > 0)
             {
-                RegistrarBitacoraTipoAprobacion(
-                    codEmpresa,
-                    usuario,
-                    codTipoAprobacion,
-                    MovElimina);
+                RegistrarBitacora(codEmpresa, usuario, codTipoAprobacion, MovElimina);
             }
 
-            return response;
+            return Ok();
         }
 
-        private static string GetMovimientoByAccion(string accion)
+        private void RegistrarBitacora(int empresaId, string usuario, string codigo, string movimiento)
         {
-            return accion switch
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = empresaId,
+                Usuario = usuario,
+                DetalleMovimiento = string.Format(BitacoraDetalle, codigo),
+                Movimiento = movimiento,
+                Modulo = ModuloCxC
+            });
+        }
+
+        private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
+        {
+            var normalizedField = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+
+            var orderBy = normalizedField switch
+            {
+                "codtipoaprobacion" => CampoCodigo,
+                "nombretipoaprobacion" => CampoNombre,
+                "activo" => CampoActivo,
+                _ => CampoCodigo
+            };
+
+            var direction = sortOrder == 1 ? "DESC" : "ASC";
+            return (orderBy, direction);
+        }
+
+        private static string BuildSqlList(string direction, bool usarPaginacion)
+        {
+            var sql = $@"
+{SqlListBase}
+ORDER BY
+    CASE WHEN @orderBy = '{CampoCodigo}' THEN CodTipoAprobacion END {direction},
+    CASE WHEN @orderBy = '{CampoNombre}' THEN NombreTipoAprobacion END {direction},
+    CASE WHEN @orderBy = '{CampoActivo}' THEN Activo END {direction}";
+
+            return usarPaginacion
+                ? sql + " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
+                : sql + ";";
+        }
+
+        private static string ResolveMovimiento(string accion)
+        {
+            return accion.ToLowerInvariant() switch
             {
                 "insert" => MovRegistra,
                 "update" => MovModifica,
                 _ => string.Empty
             };
+        }
+
+        private static ErrorDto? ValidateGuardar(string usuario, CdTiposAprobacionesData datos)
+        {
+            if (datos == null)
+            {
+                return Error(ErrorDatosRequeridos);
+            }
+
+            if (string.IsNullOrWhiteSpace(datos.CodTipoAprobacion))
+            {
+                return Error(ErrorCodigoRequerido);
+            }
+
+            return string.IsNullOrWhiteSpace(usuario)
+                ? Error(ErrorUsuarioRequerido)
+                : null;
+        }
+
+        private static ErrorDto? ValidateEliminar(string usuario, string codTipoAprobacion)
+        {
+            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
+            {
+                return Error(ErrorCodigoRequerido);
+            }
+
+            return string.IsNullOrWhiteSpace(usuario)
+                ? Error(ErrorUsuarioRequerido)
+                : null;
+        }
+
+        private static ErrorDto Ok()
+        {
+            return DbHelper.CreateOkResponse();
+        }
+
+        private static ErrorDto Error(string message)
+        {
+            return DbHelper.ErrorResponse(message);
         }
     }
 }
