@@ -21,29 +21,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private const string OrderByCodTipoAprobacion = "CodTipoAprobacion";
         private const string OrderByNombreTipoAprobacion = "NombreTipoAprobacion";
         private const string OrderByActivo = "Activo";
-
         private const string BitacoraDetalleFormato = "Tipos de Aprobación Id: {0}";
 
-        /// <summary>
-        /// Cláusula WHERE reutilizable para filtrar por código o nombre de tipo de aprobación.
-        /// </summary>
         private const string WhereClause = @"
             WHERE
                 (@filtro IS NULL)
                 OR (CAST(CodTipoAprobacion AS NVARCHAR(50)) LIKE @like)
                 OR (NombreTipoAprobacion LIKE @like)";
 
-        /// <summary>
-        /// Consulta SQL para contar el total de registros que cumplen con el filtro.
-        /// </summary>
         private const string SqlCount = @"
             SELECT COUNT(1)
             FROM dbo.AFI_CD_TIPO_APROBACION
         " + WhereClause + ";";
 
-        /// <summary>
-        /// Consulta SQL base para obtener la lista de tipos de aprobación.
-        /// </summary>
         private const string SqlListBase = @"
             SELECT
                 CodTipoAprobacion,
@@ -62,70 +52,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
         private static ErrorDto Error(string message) => DbHelper.ErrorResponse(message);
 
-
-        /// <summary>
-        /// Valida que un valor de cadena no sea nulo, vacío o solo espacios en blanco, retornando un error con el mensaje especificado si la validación falla.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        private static ErrorDto? ValidateRequired(string? value, string message)
-        {
-            return string.IsNullOrWhiteSpace(value) ? Error(message) : null;
-        }
-
-        /// <summary>
-        /// Valida los datos de entrada para guardar un tipo de aprobación, asegurando que el usuario y el código sean proporcionados, y retornando un error específico si alguna validación falla.
-        /// </summary>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
-        private static ErrorDto? ValidateGuardarRequest(string usuario, CdTiposAprobacionesData? datos)
-        {
-            if (datos is null)
-            {
-                return Error("Datos requeridos.");
-            }
-
-            var codigoValidation = ValidateRequired(
-                datos.CodTipoAprobacion,
-                "El campo 'CodTipoAprobacion' es requerido.");
-
-            if (codigoValidation is not null)
-            {
-                return codigoValidation;
-            }
-
-            return ValidateRequired(usuario, "El usuario es requerido.");
-        }
-
-        /// <summary>
-        /// Valida los datos de entrada para eliminar un tipo de aprobación, asegurando que el usuario y el código sean proporcionados, y retornando un error específico si alguna validación falla.
-        /// </summary>
-        /// <param name="usuario"></param>
-        /// <param name="codTipoAprobacion"></param>
-        /// <returns></returns>
-        private static ErrorDto? ValidateEliminarRequest(string usuario, string? codTipoAprobacion)
-        {
-            var codigoValidation = ValidateRequired(
-                codTipoAprobacion,
-                "El campo 'CodTipoAprobacion' es requerido.");
-
-            if (codigoValidation is not null)
-            {
-                return codigoValidation;
-            }
-
-            return ValidateRequired(usuario, "El usuario es requerido.");
-        }
-                
-        /// <summary>
-        /// Registro de bitacora
-        /// </summary>
-        /// <param name="empresaId"></param>
-        /// <param name="usuario"></param>
-        /// <param name="detalle"></param>
-        /// <param name="movimiento"></param>        
         private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -156,9 +82,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 movimiento);
         }
 
-        /// <summary>
-        /// Valida y normaliza los parámetros de ordenamiento.
-        /// </summary>
         private static (string OrderBy, string Direction) SanitizeOrderBy(string? sortField, int? sortOrder)
         {
             var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
@@ -175,9 +98,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return (orderBy, direction);
         }
 
-        /// <summary>
-        /// Construye la cláusula ORDER BY de forma segura.
-        /// </summary>
         private static string BuildOrderByClause(string direction)
         {
             return $@"
@@ -187,9 +107,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 CASE WHEN @orderBy = '{OrderByActivo}' THEN Activo END {direction}";
         }
 
-        /// <summary>
-        /// Obtiene la lista de tipos de aprobación para filtrado, ordenamiento y paginación.
-        /// </summary>
         public ErrorDto<CdTiposAprobacionesLista> AfCdTiposAprobacionesLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -217,9 +134,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 var total = conn.QuerySingle<int>(SqlCount, parameters);
 
                 var sqlList = SqlListBase + BuildOrderByClause(direction);
-                sqlList += usarPaginacion
-                    ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
-                    : ";";
+
+                if (usarPaginacion)
+                {
+                    sqlList += " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+                }
+                else
+                {
+                    sqlList += ";";
+                }
 
                 var lista = conn.Query<CdTiposAprobacionesData>(sqlList, parameters).ToList();
 
@@ -231,18 +154,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
-        /// <summary>
-        /// Guarda un tipo de aprobación, insertando o actualizando según exista el código.
-        /// </summary>
         public ErrorDto AfCdTiposAprobaciones_Guardar(
             int codEmpresa,
             string usuario,
             CdTiposAprobacionesData datos)
         {
-            var validation = ValidateGuardarRequest(usuario, datos);
-            if (validation is not null)
+            if (datos == null)
             {
-                return validation;
+                return Error("Datos requeridos.");
+            }
+
+            if (string.IsNullOrWhiteSpace(datos.CodTipoAprobacion))
+            {
+                return Error("El campo 'CodTipoAprobacion' es requerido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Error("El usuario es requerido.");
             }
 
             const string sqlUpsert = @"
@@ -312,22 +241,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
-        /// <summary>
-        ///  Elimina un tipo de aprobación por su código.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="codTipoAprobacion"></param>
-        /// <returns></returns>
         public ErrorDto AfCdTiposAprobaciones_Eliminar(
             int codEmpresa,
             string usuario,
             string codTipoAprobacion)
         {
-            var validation = ValidateEliminarRequest(usuario, codTipoAprobacion);
-            if (validation is not null)
+            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
             {
-                return validation;
+                return Error("El campo 'CodTipoAprobacion' es requerido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Error("El usuario es requerido.");
             }
 
             const string sql = @"
@@ -343,7 +269,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             if (result.Code != 0)
             {
                 return Error("No fue posible eliminar el tipo de aprobación.");
-            } 
+            }
 
             if (result.Result > 0)
             {
@@ -357,9 +283,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
-        /// <summary>
-        /// Obtiene el tipo de movimiento para bitácora según la acción realizada.
-        /// </summary>
         private static string GetMovimientoByAccion(string accion)
         {
             return accion switch
