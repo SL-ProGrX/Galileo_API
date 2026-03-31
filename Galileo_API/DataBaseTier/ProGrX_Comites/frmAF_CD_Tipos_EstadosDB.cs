@@ -3,8 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Data.SqlClient; 
 using static Galileo_API.Models.ProGrX_Comites.FrmAfCdTiposEstados;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
@@ -30,17 +29,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private const string MensajeEliminarError = "No fue posible eliminar el tipo de estado.";
         private const string FormatoDetalleBitacora = "Tipos de Estado Id: {0}";
 
+
+        public FrmAfCdTiposEstadosDB(IConfiguration config)
+        {
+            _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
+        }
+
+        /// <summary>
+        /// Obtiene la lista de tipos de estados con filtrado, ordenamiento y paginación.
+        /// </summary>
         private const string SqlWhere = @"
             WHERE
                 (@filtro IS NULL)
                 OR (CAST(CodEstado AS NVARCHAR(50)) LIKE @like)
                 OR (NombreEstado LIKE @like)";
 
+        /// <summary>
+        /// Cuenta el total de registros que cumplen con el filtro para propósitos de paginación.
+        /// </summary>
         private const string SqlCount = @"
             SELECT COUNT(1)
             FROM dbo.AFI_CD_TIPOS_ESTADOS_CUENTAS
         " + SqlWhere + ";";
 
+        /// <summary>
+        /// Selecciona los registros que cumplen con el filtro, ordenados y paginados según los parámetros recibidos.
+        /// </summary>
         private const string SqlListBase = @"
             SELECT
                 CodEstado,
@@ -49,6 +64,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             FROM dbo.AFI_CD_TIPOS_ESTADOS_CUENTAS
         " + SqlWhere;
 
+        /// <summary>
+        /// Realiza un UPSERT: intenta actualizar el registro y si no existe, lo inserta. Devuelve la acción realizada para propósitos de bitácora.
+        /// </summary>
         private const string SqlUpsert = @"
             DECLARE @accion NVARCHAR(10);
 
@@ -88,18 +106,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
             SELECT @accion AS accion;";
 
+        /// <summary>
+        /// Elimina el registro con el código especificado. Se espera que la validación previa garantice que el código existe y que el usuario tiene permisos para eliminarlo.
+        /// </summary>
         private const string SqlDelete = @"
             DELETE FROM dbo.AFI_CD_TIPOS_ESTADOS_CUENTAS
             WHERE CodEstado = @CodEstado;";
 
         // Inicializa dependencias de acceso a datos.
-        public FrmAfCdTiposEstadosDB(IConfiguration config)
-        {
-            _portalDb = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config);
-        }
 
+        /// <summary>
         // Obtiene la lista filtrada, ordenada y paginada.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
+
         public ErrorDto<CdTiposEstadosLista> AfCdTiposEstadosLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -120,7 +143,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
-        // Guarda o actualiza el tipo de estado.
+        /// <summary>
+        // Obtiene la lista filtrada, ordenada y paginada.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
+
         public ErrorDto AfCdTiposEstados_Guardar(int codEmpresa, string usuario, CdTiposEstadosData datos)
         {
             var error = ValidateSave(usuario, datos);
@@ -157,7 +187,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
-        // Elimina el registro y registra bitácora si aplica.
+        /// <summary>
+        /// Elimina el tipo de estado especificado. Se espera que la validación previa garantice que el código existe y que el usuario tiene permisos para eliminarlo.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codEstado"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposEstados_Eliminar(int codEmpresa, string usuario, string codEstado)
         {
             var error = ValidateDelete(usuario, codEstado);
@@ -186,7 +222,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
-        // Registra el movimiento en bitácora.
+
+        /// <summary>
+        /// Registra un movimiento en la bitácora de seguridad con detalles del tipo de estado afectado. Se espera que los parámetros hayan sido validados previamente.
+        /// </summary>
+        /// <param name="empresaId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codigo"></param>
+        /// <param name="movimiento"></param>
         private void RegistrarBitacora(int empresaId, string usuario, string codigo, string movimiento)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -199,7 +242,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
-        // Valida los datos requeridos para guardar.
+        
+        /// <summary>
+        ///  Valida los datos requeridos para guardar.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateSave(string usuario, CdTiposEstadosData datos)
         {
             if (datos == null)
@@ -220,7 +269,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return null;
         }
 
-        // Valida los datos requeridos para eliminar.
+        /// <summary>
+        /// valida los datos requeridos para eliminar.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="codEstado"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateDelete(string usuario, string codEstado)
         {
             if (string.IsNullOrWhiteSpace(codEstado))
@@ -236,7 +290,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return null;
         }
 
-        // Resuelve el campo y dirección de ordenamiento.
+        /// <summary>
+        ///  Resuelve el campo y dirección de ordenamiento.
+        /// </summary>
+        /// <param name="sortField"></param>
+        /// <param name="sortOrder"></param>
+        /// <returns></returns>
         private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
         {
             var normalizedField = (sortField ?? string.Empty).Trim().ToLowerInvariant();
@@ -253,7 +312,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return (orderBy, direction);
         }
 
-        // Construye el SQL final y sus parámetros.
+        /// <summary>
+        ///  Construye el SQL final y sus parámetros.
+        /// </summary>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
         private static ListQuery BuildListQuery(FiltrosLazyLoadData filtros, bool esExportar)
         {
             filtros ??= new FiltrosLazyLoadData();
@@ -280,7 +344,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return new ListQuery(sql, parameters);
         }
 
-        // Genera la cláusula ORDER BY segura.
+        /// <summary>
+        ///  Genera la cláusula ORDER BY segura.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
         private static string BuildOrderByClause(string direction)
         {
             return $@"
@@ -290,7 +358,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 CASE WHEN @orderBy = '{CampoActivo}' THEN Activo END {direction}";
         }
 
-        // Traduce la acción devuelta por SQL al movimiento de bitácora.
+        /// <summary>
+        ///  Traduce la acción devuelta por SQL al movimiento de bitácora.
+        /// </summary>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private static string ResolveMovement(string? accion)
         {
             return (accion ?? string.Empty).Trim().ToLowerInvariant() switch
@@ -301,13 +373,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             };
         }
 
-        // Devuelve una respuesta exitosa estándar.
+        /// <summary>
+        ///  Devuelve una respuesta exitosa estándar.
+        /// </summary>
+        /// <returns></returns>
         private static ErrorDto Ok() => DbHelper.CreateOkResponse();
 
-        // Devuelve una respuesta de error estándar.
+        /// <summary>
+        ///  Devuelve una respuesta de error estándar.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         private static ErrorDto Fail(string message) => DbHelper.ErrorResponse(message);
 
-        // Encapsula el SQL final y sus parámetros.
+        /// <summary>
+        ///  Encapsula el SQL final y sus parámetros.
+        /// </summary>
+        /// <param name="Sql"></param>
+        /// <param name="Parameters"></param>
         private sealed record ListQuery(string Sql, object Parameters);
     }
 }
