@@ -4,7 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
+ 
 using static Galileo_API.Models.ProGrX_Comites.FrmAfCdTiposAprobaciones;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
@@ -96,6 +96,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             _securityMainDb = new MSecurityMainDb(config);
         }
 
+        /// <summary>
+        /// Obtiene la lista de tipos de aprobación con soporte para filtrado, ordenamiento y paginación.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
         public ErrorDto<CdTiposAprobacionesLista> AfCdTiposAprobacionesLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -131,6 +138,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
+        /// <summary>
+        /// Guarda un tipo de aprobación, realizando un upsert y registrando el movimiento en bitácora.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposAprobaciones_Guardar(
             int codEmpresa,
             string usuario,
@@ -170,6 +184,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
+        /// <summary>
+        /// Elimina un tipo de aprobación por su código, validando la entrada y registrando el movimiento en bitácora.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codTipoAprobacion"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposAprobaciones_Eliminar(
             int codEmpresa,
             string usuario,
@@ -200,6 +221,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
+        /// <summary>
+        /// Registra un movimiento en la bitácora de seguridad para auditoría, con detalles del tipo de aprobación afectado.
+        /// </summary>
+        /// <param name="empresaId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codigo"></param>
+        /// <param name="movimiento"></param>
         private void RegistrarBitacora(int empresaId, string usuario, string codigo, string movimiento)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -212,6 +240,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
+        /// <summary>
+        /// Resuelve el campo y dirección de ordenamiento para la consulta SQL basada en los parámetros de entrada, aplicando valores predeterminados si es necesario.
+        /// </summary>
+        /// <param name="sortField"></param>
+        /// <param name="sortOrder"></param>
+        /// <returns></returns>
         private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
         {
             var normalizedField = (sortField ?? string.Empty).Trim().ToLowerInvariant();
@@ -228,6 +262,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return (orderBy, direction);
         }
 
+        /// <summary>
+        /// Construye la consulta SQL para obtener la lista de tipos de aprobación, incluyendo cláusulas de ordenamiento dinámico y paginación opcional según los parámetros de entrada.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="usarPaginacion"></param>
+        /// <returns></returns>
         private static string BuildSqlList(string direction, bool usarPaginacion)
         {
             var sql = $@"
@@ -242,6 +282,11 @@ ORDER BY
                 : sql + ";";
         }
 
+        /// <summary>
+        /// Resuelve el tipo de movimiento para la bitácora basado en la acción realizada (insertar o actualizar), retornando una descripción adecuada para auditoría.
+        /// </summary>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private static string ResolveMovimiento(string accion)
         {
             return accion.ToLowerInvariant() switch
@@ -252,6 +297,12 @@ ORDER BY
             };
         }
 
+        /// <summary>
+        /// Valida los datos de entrada para la operación de guardar, asegurando que se proporcionen los campos requeridos y el usuario, retornando un error descriptivo si la validación falla.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateGuardar(string usuario, CdTiposAprobacionesData datos)
         {
             if (datos == null)
@@ -269,6 +320,12 @@ ORDER BY
                 : null;
         }
 
+        /// <summary>
+        /// Valida los datos de entrada para la operación de eliminar, asegurando que se proporcione el código del tipo de aprobación y el usuario, retornando un error descriptivo si la validación falla.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="codTipoAprobacion"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateEliminar(string usuario, string codTipoAprobacion)
         {
             if (string.IsNullOrWhiteSpace(codTipoAprobacion))
@@ -281,11 +338,20 @@ ORDER BY
                 : null;
         }
 
+        /// <summary>
+        /// Construye una respuesta de éxito genérica para las operaciones de guardar y eliminar, indicando que la operación se realizó correctamente sin necesidad de retornar datos adicionales.
+        /// </summary>
+        /// <returns></returns>
         private static ErrorDto Ok()
         {
             return DbHelper.CreateOkResponse();
         }
 
+        /// <summary>
+        /// Construye una respuesta de error genérica con un mensaje personalizado, utilizada para indicar que ocurrió un problema durante las operaciones de guardar o eliminar, proporcionando información relevante para el consumidor del API.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         private static ErrorDto Error(string message)
         {
             return DbHelper.ErrorResponse(message);

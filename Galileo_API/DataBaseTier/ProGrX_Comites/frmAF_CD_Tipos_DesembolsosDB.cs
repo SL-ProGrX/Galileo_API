@@ -4,7 +4,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using static Galileo_API.Models.ProGrX_Comites.FrmAfCdTiposDesembolsos;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
@@ -97,6 +96,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             _securityMainDb = new MSecurityMainDb(config);
         }
 
+        /// <summary>
+        /// Obtiene una lista de tipos de desembolso desde la base de datos, aplicando filtros de búsqueda, ordenamiento dinámico y paginación según los parámetros proporcionados, y devuelve el resultado junto con el total de registros para su consumo en el cliente.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
         public ErrorDto<CdTiposDesembolsosLista> AfCdTiposDesembolsosLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -122,6 +128,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
+        /// <summary>
+        /// Guarda un tipo de desembolso, realizando una inserción o actualización según corresponda, y registra la acción en bitácora.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposDesembolsos_Guardar(
             int codEmpresa,
             string usuario,
@@ -160,6 +173,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Success();
         }
 
+        /// <summary>
+        /// Elimina un tipo de desembolso por su código, y registra la acción en bitácora.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codTipoCuenta"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposDesembolsos_Eliminar(
             int codEmpresa,
             string usuario,
@@ -193,6 +213,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Success();
         }
 
+        /// <summary>
+        /// Registra un movimiento en la bitácora de seguridad para auditoría de cambios en tipos de desembolso.
+        /// </summary>
+        /// <param name="empresaId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codigo"></param>
+        /// <param name="movimiento"></param>
         private void RegistrarBitacora(int empresaId, string usuario, string codigo, string movimiento)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -205,11 +232,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
+        /// <summary>
+        /// Construye el detalle del movimiento para la bitácora, incluyendo el código del tipo de desembolso afectado.
+        /// </summary>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         private static string BuildLogDetail(string codigo)
         {
             return $"Tipos de Desembolso Id: {codigo}";
         }
 
+        /// <summary>
+        /// Valida los datos de entrada para la operación de guardado, asegurando que se proporcionen los campos requeridos y que el usuario esté presente.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateSaveRequest(string usuario, CdTiposDesembolsosData datos)
         {
             if (datos == null)
@@ -230,6 +268,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return null;
         }
 
+        /// <summary>
+        /// Valida los datos de entrada para la operación de eliminación, asegurando que se proporcione el código del tipo de desembolso a eliminar y que el usuario esté presente.
+        /// </summary>
+        /// <param name="usuario"></param>
+        /// <param name="codTipoCuenta"></param>
+        /// <returns></returns>
         private static ErrorDto? ValidateDeleteRequest(string usuario, string codTipoCuenta)
         {
             if (string.IsNullOrWhiteSpace(codTipoCuenta))
@@ -261,6 +305,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return (orderBy, direction);
         }
 
+        /// <summary>
+        /// Compone la consulta SQL para obtener la lista de tipos de desembolso, incluyendo cláusulas de ordenamiento dinámico y paginación según los parámetros proporcionados.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="usePagination"></param>
+        /// <returns></returns>
         private static string ComposeListSql(string direction, bool usePagination)
         {
             var orderByClause = $@"
@@ -276,6 +326,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return SqlSeleccionBase + orderByClause + pagingClause;
         }
 
+        /// <summary>
+        /// Resuelve el tipo de movimiento para la bitácora basado en la acción realizada (inserción o actualización), utilizando los resultados devueltos por la consulta de guardado.
+        /// </summary>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private static string ResolveMovement(string? accion)
         {
             return (accion ?? string.Empty).Trim().ToLowerInvariant() switch
@@ -286,6 +341,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             };
         }
 
+        /// <summary>
+        /// Construye la respuesta para la lista de tipos de desembolso, incluyendo el total de registros y la lista de datos obtenida, para ser consumida por el cliente.
+        /// </summary>
+        /// <param name="total"></param>
+        /// <param name="registros"></param>
+        /// <returns></returns>
         private static CdTiposDesembolsosLista CreateListResponse(
             int total,
             List<CdTiposDesembolsosData> registros)
@@ -297,6 +358,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             };
         }
 
+        /// <summary>
+        /// Construye los parámetros de consulta para la obtención de la lista de tipos de desembolso.
+        /// </summary>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
         private static ListQueryParameters BuildListParameters(
             FiltrosLazyLoadData filtros,
             bool esExportar)
@@ -318,16 +385,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             };
         }
 
+        /// <summary>
+        /// Construye una respuesta de éxito genérica para operaciones que no requieren devolver datos específicos, indicando que la operación se realizó correctamente.
+        /// </summary>
+        /// <returns></returns>
         private static ErrorDto Success()
         {
             return DbHelper.CreateOkResponse();
         }
 
+        /// <summary>
+        /// Construye una respuesta de error genérica con un mensaje específico, para ser devuelta en caso de que ocurra un error durante las operaciones de guardado o eliminación.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         private static ErrorDto Fail(string message)
         {
             return DbHelper.ErrorResponse(message);
         }
 
+        /// <summary>
+        /// Clase auxiliar para encapsular los parámetros de consulta utilizados en la obtención de la lista de tipos de desembolso, incluyendo filtros, ordenamiento y paginación, para simplificar la construcción de consultas dinámicas.
+        /// </summary>
         private sealed class ListQueryParameters
         {
             public string? Filter { get; init; }
