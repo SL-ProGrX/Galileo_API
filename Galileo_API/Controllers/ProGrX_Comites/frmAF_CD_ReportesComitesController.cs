@@ -9,13 +9,13 @@ namespace Galileo_API.Controllers.ProGrX_Comites
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmAF_CD_ReportesComitesController : ControllerBase
+    public class FrmAfCdReportesComitesController : ControllerBase
     {
-        private readonly FrmAF_CD_ReportesComitesBL _bl;
+        private readonly FrmAfCdReportesComitesBl _bl;
 
-        public FrmAF_CD_ReportesComitesController(IConfiguration config)
+        public FrmAfCdReportesComitesController(IConfiguration config)
         {
-            _bl = new FrmAF_CD_ReportesComitesBL(config);
+            _bl = new FrmAfCdReportesComitesBl(config);
         }
 
         [Authorize]

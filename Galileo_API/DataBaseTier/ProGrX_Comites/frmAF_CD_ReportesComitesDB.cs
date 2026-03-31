@@ -7,12 +7,12 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
 {
-    public class FrmAF_CD_ReportesComitesDB
+    public class FrmAfCdReportesComitesDb
     {
         private readonly PortalDB _portalDB;
         private readonly MProGrxMain _proGrxMain;
 
-        public FrmAF_CD_ReportesComitesDB(IConfiguration config)
+        public FrmAfCdReportesComitesDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _proGrxMain = new MProGrxMain(config);
@@ -23,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfCdReporteCatalogoDto>> AF_CD_ReportesComites_Catalogo_Obtener(int CodEmpresa)
+        public static ErrorDto<List<AfCdReporteCatalogoDto>> AF_CD_ReportesComites_Catalogo_Obtener(int CodEmpresa)
         {
             return DbHelper.CreateOkResponse(BuildCatalogo());
         }
@@ -34,7 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDto<AfCdReporteDefinicionDto> AF_CD_ReportesComites_Definicion_Obtener(int CodEmpresa, string codigo)
+        public static ErrorDto<AfCdReporteDefinicionDto> AF_CD_ReportesComites_Definicion_Obtener(int CodEmpresa, string codigo)
         {
             string codigoNormalizado = NormalizarCodigo(codigo);
             AfCdReporteDefinicionDto definicion = CrearDefinicion(codigoNormalizado);
@@ -56,7 +56,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfCdReporteTipoDto>> AF_CD_ReportesComites_TiposReporte_Obtener(int CodEmpresa, string codigo)
+        public static ErrorDto<List<AfCdReporteTipoDto>> AF_CD_ReportesComites_TiposReporte_Obtener(int CodEmpresa, string codigo)
         {
             string codigoNormalizado = NormalizarCodigo(codigo);
 
