@@ -14,17 +14,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
             _db = new FrmAfCdReportesComitesDb(config);
         }
 
-        public ErrorDto<List<AfCdReporteCatalogoDto>> AF_CD_ReportesComites_Catalogo_Obtener(int CodEmpresa)
+        public static ErrorDto<List<AfCdReporteCatalogoDto>> AF_CD_ReportesComites_Catalogo_Obtener(int CodEmpresa)
         {
             return FrmAfCdReportesComitesDb.AF_CD_ReportesComites_Catalogo_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<AfCdReporteDefinicionDto> AF_CD_ReportesComites_Definicion_Obtener(int CodEmpresa, string codigo)
+        public static ErrorDto<AfCdReporteDefinicionDto> AF_CD_ReportesComites_Definicion_Obtener(int CodEmpresa, string codigo)
         {
             return FrmAfCdReportesComitesDb.AF_CD_ReportesComites_Definicion_Obtener(CodEmpresa, codigo);
         }
 
-        public ErrorDto<List<AfCdReporteTipoDto>> AF_CD_ReportesComites_TiposReporte_Obtener(int CodEmpresa, string codigo)
+        public static ErrorDto<List<AfCdReporteTipoDto>> AF_CD_ReportesComites_TiposReporte_Obtener(int CodEmpresa, string codigo)
         {
             return FrmAfCdReportesComitesDb.AF_CD_ReportesComites_TiposReporte_Obtener(CodEmpresa, codigo);
         }
