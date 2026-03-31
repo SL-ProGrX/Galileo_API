@@ -97,7 +97,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             var direction = sortOrder == 1 ? "DESC" : "ASC";
             return (orderBy, direction);
         }
+        private static string GetValidationMessage(string usuario, string codTipoAprobacion)
+        {
+            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
+            {
+                return "El campo 'CodTipoAprobacion' es requerido.";
+            }
 
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            return string.Empty;
+        }
         private static string BuildOrderByClause(string direction)
         {
             return $@"
@@ -153,7 +166,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 };
             });
         }
-
         public ErrorDto AfCdTiposAprobaciones_Guardar(
             int codEmpresa,
             string usuario,
@@ -164,52 +176,48 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 return Error("Datos requeridos.");
             }
 
-            if (string.IsNullOrWhiteSpace(datos.CodTipoAprobacion))
+            var validationMessage = GetValidationMessage(usuario, datos.CodTipoAprobacion);
+            if (!string.IsNullOrWhiteSpace(validationMessage))
             {
-                return Error("El campo 'CodTipoAprobacion' es requerido.");
-            }
-
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return Error("El usuario es requerido.");
+                return Error(validationMessage);
             }
 
             const string sqlUpsert = @"
-                DECLARE @accion NVARCHAR(10);
+        DECLARE @accion NVARCHAR(10);
 
-                UPDATE dbo.AFI_CD_TIPO_APROBACION
-                SET
-                    NombreTipoAprobacion = @NombreTipoAprobacion,
-                    Activo = @Activo
-                WHERE CodTipoAprobacion = @CodTipoAprobacion;
+        UPDATE dbo.AFI_CD_TIPO_APROBACION
+        SET
+            NombreTipoAprobacion = @NombreTipoAprobacion,
+            Activo = @Activo
+        WHERE CodTipoAprobacion = @CodTipoAprobacion;
 
-                IF @@ROWCOUNT = 0
-                BEGIN
-                    INSERT INTO dbo.AFI_CD_TIPO_APROBACION
-                    (
-                        CodTipoAprobacion,
-                        NombreTipoAprobacion,
-                        Activo,
-                        RegistroFecha,
-                        RegistroUsuario
-                    )
-                    VALUES
-                    (
-                        UPPER(@CodTipoAprobacion),
-                        @NombreTipoAprobacion,
-                        @Activo,
-                        dbo.MyGetdate(),
-                        @usuario
-                    );
+        IF @@ROWCOUNT = 0
+        BEGIN
+            INSERT INTO dbo.AFI_CD_TIPO_APROBACION
+            (
+                CodTipoAprobacion,
+                NombreTipoAprobacion,
+                Activo,
+                RegistroFecha,
+                RegistroUsuario
+            )
+            VALUES
+            (
+                UPPER(@CodTipoAprobacion),
+                @NombreTipoAprobacion,
+                @Activo,
+                dbo.MyGetdate(),
+                @usuario
+            );
 
-                    SET @accion = N'insert';
-                END
-                ELSE
-                BEGIN
-                    SET @accion = N'update';
-                END
+            SET @accion = N'insert';
+        END
+        ELSE
+        BEGIN
+            SET @accion = N'update';
+        END
 
-                SELECT @accion AS accion;";
+        SELECT @accion AS accion;";
 
             var upsert = DbHelper.ExecuteSingleQuery<string>(
                 _portalDB,
@@ -240,25 +248,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
             return Ok();
         }
-
         public ErrorDto AfCdTiposAprobaciones_Eliminar(
-            int codEmpresa,
-            string usuario,
-            string codTipoAprobacion)
+     int codEmpresa,
+     string usuario,
+     string codTipoAprobacion)
         {
-            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
+            var validationMessage = GetValidationMessage(usuario, codTipoAprobacion);
+            if (!string.IsNullOrWhiteSpace(validationMessage))
             {
-                return Error("El campo 'CodTipoAprobacion' es requerido.");
-            }
-
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return Error("El usuario es requerido.");
+                return Error(validationMessage);
             }
 
             const string sql = @"
-                DELETE FROM dbo.AFI_CD_TIPO_APROBACION
-                WHERE CodTipoAprobacion = @CodTipoAprobacion;";
+        DELETE FROM dbo.AFI_CD_TIPO_APROBACION
+        WHERE CodTipoAprobacion = @CodTipoAprobacion;";
 
             var result = DbHelper.ExecuteNonQueryWithResult(
                 _portalDB,
