@@ -22,17 +22,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private const string OrderByNombreTipoActividad = "NombreTipoActividad";
         private const string OrderByActivo = "Activo";
 
+        /// <summary>
+        /// Cláusula WHERE reutilizable para filtrar por código o nombre de tipo de actividad, usando parámetros para evitar SQL injection.
+        /// </summary>
         private const string WhereClause = @"
             WHERE
                 (@filtro IS NULL)
                 OR (CAST(CodTipoActividad AS NVARCHAR(50)) LIKE @like)
                 OR (NombreTipoActividad LIKE @like)";
 
+        /// <summary>
+        /// Consulta SQL para contar el total de registros que cumplen con el filtro, reutilizando la cláusula WHERE para consistencia y seguridad.
+        /// </summary>
         private const string SqlCount = @"
             SELECT COUNT(1)
             FROM dbo.AFI_CD_TIPO_ACTIVIDAD
         " + WhereClause + ";";
 
+        /// <summary>
+        /// Consulta SQL base para obtener la lista de tipos de actividades, reutilizando la cláusula WHERE y dejando espacio para agregar dinámicamente el ORDER BY según los parámetros de ordenamiento.
+        /// </summary>
         private const string SqlListBase = @"
             SELECT
                 CodTipoActividad,
@@ -51,6 +60,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
         private static ErrorDto Error(string message) => DbHelper.ErrorResponse(message);
 
+        /// <summary>
+        /// Registra un movimiento en bitácora utilizando el MSecurityMainDb, asegurando que los datos de entrada estén validados y normalizados antes de la inserción.
+        /// </summary>
+        /// <param name="empresaId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="detalle"></param>
+        /// <param name="movimiento"></param>
         private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -79,6 +95,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return (orderBy, direction);
         }
 
+        /// <summary>
+        /// Construye la cláusula ORDER BY de forma segura utilizando CASE para evitar inyección SQL, permitiendo ordenar por los campos permitidos según los parámetros recibidos.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
         private static string BuildOrderByClause(string direction)
         {
             return $@"
@@ -88,6 +109,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 CASE WHEN @orderBy = '{OrderByActivo}' THEN Activo END {direction}";
         }
 
+        /// <summary>
+        /// Obtiene la lista de tipos de actividades con soporte para filtrado, ordenamiento y paginación, utilizando consultas parametrizadas para garantizar la seguridad y consistencia de los datos. Permite exportar sin paginación cuando se indica.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="esExportar"></param>
+        /// <returns></returns>
         public ErrorDto<CDTiposActividadesLista> AfCdTiposActividadesLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -135,6 +163,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             });
         }
 
+        /// <summary>
+        /// Guarda un tipo de actividad, realizando un UPSERT para insertar o actualizar según la existencia del código. Valida los datos de entrada y registra el movimiento en bitácora con el detalle correspondiente. Utiliza consultas parametrizadas para garantizar la seguridad de la operación.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposActividades_Guardar(int codEmpresa, string usuario, CDTiposActividadesData datos)
         {
             if (datos is null)
@@ -222,6 +257,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
+        /// <summary>
+        /// Elimina un tipo de actividad por su código, validando que el código y el usuario sean proporcionados. Registra el movimiento en bitácora si la eliminación fue exitosa. Utiliza una consulta parametrizada para garantizar la seguridad de la operación.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codTipoActividad"></param>
+        /// <returns></returns>
         public ErrorDto AfCdTiposActividades_Eliminar(int codEmpresa, string usuario, string codTipoActividad)
         {
             if (string.IsNullOrWhiteSpace(codTipoActividad))
@@ -256,6 +298,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return Ok();
         }
 
+        /// <summary>
+        /// Obtiene el tipo de movimiento para bitácora según la acción realizada (insertar o actualizar), permitiendo centralizar la lógica de asignación de movimientos y facilitar su mantenimiento. Retorna una cadena vacía si la acción no es reconocida, lo que puede ser útil para evitar registrar movimientos no definidos.
+        /// </summary>
+        /// <param name="accion"></param>
+        /// <returns></returns>
         private static string GetMovimientoByAccion(string accion)
         {
             return accion switch
