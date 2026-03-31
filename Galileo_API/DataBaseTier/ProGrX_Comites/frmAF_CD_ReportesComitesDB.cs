@@ -105,36 +105,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CD_Comites_Dropdown_Obtener(int CodEmpresa, string? filtro)
         {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            const string sql = @"
+        select
+            rtrim(COD_COMITE) as item,
+            rtrim(DESCRIPCION) as descripcion
+        from AFI_CD_COMITES
+        where @filtro = ''
+           or COD_COMITE like @like
+           or DESCRIPCION like @like
+        order by DESCRIPCION;";
 
-                string filtroNormalizado = (filtro ?? string.Empty).Trim();
-                string like = $"%{filtroNormalizado}%";
-
-                const string sql = @"
-                    select
-                        rtrim(COD_COMITE) as item,
-                        rtrim(DESCRIPCION) as descripcion
-                    from AFI_CD_COMITES
-                    where @filtro = ''
-                       or COD_COMITE like @like
-                       or DESCRIPCION like @like
-                    order by DESCRIPCION;";
-
-                List<DropDownListaGenericaModel> lista = conn
-                    .Query<DropDownListaGenericaModel>(sql, new { filtro = filtroNormalizado, like })
-                    .ToList();
-
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new List<DropDownListaGenericaModel>());
-            }
+            return EjecutarDropdown(CodEmpresa, filtro, sql);
         }
 
         /// <summary>
@@ -145,39 +126,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CD_Actividades_Dropdown_Obtener(int CodEmpresa, string? filtro)
         {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            const string sql = @"
+        select
+            rtrim(COD_ACTIVIDAD) as item,
+            rtrim(DESCRIPCION) as descripcion
+        from AFI_CD_ACTIVIDADES
+        where ACTIVA = 1
+          and (
+                @filtro = ''
+                or COD_ACTIVIDAD like @like
+                or DESCRIPCION like @like
+              )
+        order by DESCRIPCION;";
 
-                string filtroNormalizado = (filtro ?? string.Empty).Trim();
-                string like = $"%{filtroNormalizado}%";
-
-                const string sql = @"
-                    select
-                        rtrim(COD_ACTIVIDAD) as item,
-                        rtrim(DESCRIPCION) as descripcion
-                    from AFI_CD_ACTIVIDADES
-                    where ACTIVA = 1
-                      and (
-                            @filtro = ''
-                            or COD_ACTIVIDAD like @like
-                            or DESCRIPCION like @like
-                          )
-                    order by DESCRIPCION;";
-
-                List<DropDownListaGenericaModel> lista = conn
-                    .Query<DropDownListaGenericaModel>(sql, new { filtro = filtroNormalizado, like })
-                    .ToList();
-
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new List<DropDownListaGenericaModel>());
-            }
+            return EjecutarDropdown(CodEmpresa, filtro, sql);
         }
 
         /// <summary>
@@ -188,25 +150,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CD_Promotores_Dropdown_Obtener(int CodEmpresa, string? filtro)
         {
+            const string sql = @"
+        select
+            rtrim(cast(ID_PROMOTOR as varchar(20))) as item,
+            rtrim(NOMBRE) as descripcion
+        from PROMOTORES
+        where TIPO = 'P'
+          and (
+                @filtro = ''
+                or cast(ID_PROMOTOR as varchar(20)) like @like
+                or NOMBRE like @like
+              )
+        order by NOMBRE;";
+
+            return EjecutarDropdown(CodEmpresa, filtro, sql);
+        }
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropdown(int CodEmpresa,string? filtro,string sql)
+        {
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 string filtroNormalizado = (filtro ?? string.Empty).Trim();
                 string like = $"%{filtroNormalizado}%";
-
-                const string sql = @"
-                    select
-                        rtrim(cast(ID_PROMOTOR as varchar(20))) as item,
-                        rtrim(NOMBRE) as descripcion
-                    from PROMOTORES
-                    where TIPO = 'P'
-                      and (
-                            @filtro = ''
-                            or cast(ID_PROMOTOR as varchar(20)) like @like
-                            or NOMBRE like @like
-                          )
-                    order by NOMBRE;";
 
                 List<DropDownListaGenericaModel> lista = conn
                     .Query<DropDownListaGenericaModel>(sql, new { filtro = filtroNormalizado, like })
@@ -222,7 +188,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     new List<DropDownListaGenericaModel>());
             }
         }
-
         private static string NormalizarCodigo(string? codigo)
         {
             return (codigo ?? string.Empty).Trim().ToUpperInvariant();
