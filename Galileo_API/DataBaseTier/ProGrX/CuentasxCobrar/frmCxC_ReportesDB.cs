@@ -1,6 +1,8 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_CxC
 {
@@ -25,19 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CxC_Clientes_Listar(int codEmpresa)
         {
-            const string sql = @"
-                SELECT 
-                    RTRIM(cedula) AS item,
-                    RTRIM(nombre) AS descripcion
-                FROM CxC_Personas
-                ORDER BY nombre
-            ";
-
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                _portalDb,
-                codEmpresa,
-                sql
-            );
+            return ObtenerPersonas(codEmpresa);
         }
 
         /// <summary>
@@ -47,19 +37,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CxC_Pagadores_Listar(int codEmpresa)
         {
-            const string sql = @"
-                SELECT 
-                    RTRIM(cedula) AS item,
-                    RTRIM(nombre) AS descripcion
-                FROM CxC_Personas
-                ORDER BY nombre
-            ";
-
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                _portalDb,
-                codEmpresa,
-                sql
-            );
+            return ObtenerPersonas(codEmpresa);
         }
 
         /// <summary>
@@ -97,6 +75,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
                     RTRIM(descripcion) AS descripcion
                 FROM CxC_Cargos
                 ORDER BY descripcion
+            ";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                sql
+            );
+        }
+
+        private ErrorDto<List<DropDownListaGenericaModel>> ObtenerPersonas(int codEmpresa)
+        {
+            const string sql = @"
+                SELECT 
+                    RTRIM(cedula) AS item,
+                    RTRIM(nombre) AS descripcion
+                FROM CxC_Personas
+                ORDER BY nombre
             ";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
