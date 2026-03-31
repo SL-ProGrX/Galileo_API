@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using static Galileo_API.Models.ProGrX_Comites.FrmAfCdTiposAprobaciones;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
@@ -97,20 +98,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             var direction = sortOrder == 1 ? "DESC" : "ASC";
             return (orderBy, direction);
         }
-        private static string GetValidationMessage(string usuario, string codTipoAprobacion)
-        {
-            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
-            {
-                return "El campo 'CodTipoAprobacion' es requerido.";
-            }
 
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return "El usuario es requerido.";
-            }
-
-            return string.Empty;
-        }
         private static string BuildOrderByClause(string direction)
         {
             return $@"
@@ -118,6 +106,101 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 CASE WHEN @orderBy = '{OrderByCodTipoAprobacion}' THEN CodTipoAprobacion END {direction},
                 CASE WHEN @orderBy = '{OrderByNombreTipoAprobacion}' THEN NombreTipoAprobacion END {direction},
                 CASE WHEN @orderBy = '{OrderByActivo}' THEN Activo END {direction}";
+        }
+
+        private ErrorDto EjecutarGuardadoTipoAprobacion(
+            int codEmpresa,
+            string usuario,
+            CdTiposAprobacionesData datos,
+            out string movimiento)
+        {
+            movimiento = string.Empty;
+
+            const string sqlUpsert = @"
+                DECLARE @accion NVARCHAR(10);
+
+                UPDATE dbo.AFI_CD_TIPO_APROBACION
+                SET
+                    NombreTipoAprobacion = @NombreTipoAprobacion,
+                    Activo = @Activo
+                WHERE CodTipoAprobacion = @CodTipoAprobacion;
+
+                IF @@ROWCOUNT = 0
+                BEGIN
+                    INSERT INTO dbo.AFI_CD_TIPO_APROBACION
+                    (
+                        CodTipoAprobacion,
+                        NombreTipoAprobacion,
+                        Activo,
+                        RegistroFecha,
+                        RegistroUsuario
+                    )
+                    VALUES
+                    (
+                        UPPER(@CodTipoAprobacion),
+                        @NombreTipoAprobacion,
+                        @Activo,
+                        dbo.MyGetdate(),
+                        @usuario
+                    );
+
+                    SET @accion = N'insert';
+                END
+                ELSE
+                BEGIN
+                    SET @accion = N'update';
+                END
+
+                SELECT @accion AS accion;";
+
+            var upsert = DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                codEmpresa,
+                sqlUpsert,
+                defaultValue: string.Empty,
+                parameters: new
+                {
+                    datos.CodTipoAprobacion,
+                    datos.NombreTipoAprobacion,
+                    datos.Activo,
+                    usuario
+                });
+
+            if (upsert.Code != 0)
+            {
+                return Error("No fue posible guardar el tipo de aprobación.");
+            }
+
+            var accion = (upsert.Result ?? string.Empty).Trim().ToLowerInvariant();
+            movimiento = GetMovimientoByAccion(accion);
+
+            return Ok();
+        }
+
+        private ErrorDto EjecutarEliminacionTipoAprobacion(
+            int codEmpresa,
+            string codTipoAprobacion,
+            out bool eliminado)
+        {
+            eliminado = false;
+
+            const string sql = @"
+                DELETE FROM dbo.AFI_CD_TIPO_APROBACION
+                WHERE CodTipoAprobacion = @CodTipoAprobacion;";
+
+            var result = DbHelper.ExecuteNonQueryWithResult(
+                _portalDB,
+                codEmpresa,
+                sql,
+                new { CodTipoAprobacion = codTipoAprobacion });
+
+            if (result.Code != 0)
+            {
+                return Error("No fue posible eliminar el tipo de aprobación.");
+            }
+
+            eliminado = result.Result > 0;
+            return Ok();
         }
 
         public ErrorDto<CdTiposAprobacionesLista> AfCdTiposAprobacionesLista_Obtener(
@@ -145,7 +228,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 };
 
                 var total = conn.QuerySingle<int>(SqlCount, parameters);
-
                 var sqlList = SqlListBase + BuildOrderByClause(direction);
 
                 if (usarPaginacion)
@@ -166,6 +248,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 };
             });
         }
+
         public ErrorDto AfCdTiposAprobaciones_Guardar(
             int codEmpresa,
             string usuario,
@@ -176,69 +259,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 return Error("Datos requeridos.");
             }
 
-            var validationMessage = GetValidationMessage(usuario, datos.CodTipoAprobacion);
-            if (!string.IsNullOrWhiteSpace(validationMessage))
+            if (string.IsNullOrWhiteSpace(datos.CodTipoAprobacion))
             {
-                return Error(validationMessage);
+                return Error("El campo 'CodTipoAprobacion' es requerido.");
             }
 
-            const string sqlUpsert = @"
-        DECLARE @accion NVARCHAR(10);
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Error("El usuario es requerido.");
+            }
 
-        UPDATE dbo.AFI_CD_TIPO_APROBACION
-        SET
-            NombreTipoAprobacion = @NombreTipoAprobacion,
-            Activo = @Activo
-        WHERE CodTipoAprobacion = @CodTipoAprobacion;
-
-        IF @@ROWCOUNT = 0
-        BEGIN
-            INSERT INTO dbo.AFI_CD_TIPO_APROBACION
-            (
-                CodTipoAprobacion,
-                NombreTipoAprobacion,
-                Activo,
-                RegistroFecha,
-                RegistroUsuario
-            )
-            VALUES
-            (
-                UPPER(@CodTipoAprobacion),
-                @NombreTipoAprobacion,
-                @Activo,
-                dbo.MyGetdate(),
-                @usuario
-            );
-
-            SET @accion = N'insert';
-        END
-        ELSE
-        BEGIN
-            SET @accion = N'update';
-        END
-
-        SELECT @accion AS accion;";
-
-            var upsert = DbHelper.ExecuteSingleQuery<string>(
-                _portalDB,
+            string movimiento;
+            var response = EjecutarGuardadoTipoAprobacion(
                 codEmpresa,
-                sqlUpsert,
-                defaultValue: string.Empty,
-                parameters: new
-                {
-                    datos.CodTipoAprobacion,
-                    datos.NombreTipoAprobacion,
-                    datos.Activo,
-                    usuario
-                });
+                usuario,
+                datos,
+                out movimiento);
 
-            if (upsert.Code != 0)
+            if (response.Code != 0)
             {
-                return Error("No fue posible guardar el tipo de aprobación.");
+                return response;
             }
-
-            var accion = (upsert.Result ?? string.Empty).Trim().ToLowerInvariant();
-            var movimiento = GetMovimientoByAccion(accion);
 
             RegistrarBitacoraTipoAprobacion(
                 codEmpresa,
@@ -246,35 +287,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 datos.CodTipoAprobacion,
                 movimiento);
 
-            return Ok();
+            return response;
         }
+
         public ErrorDto AfCdTiposAprobaciones_Eliminar(
-     int codEmpresa,
-     string usuario,
-     string codTipoAprobacion)
+            int codEmpresa,
+            string usuario,
+            string codTipoAprobacion)
         {
-            var validationMessage = GetValidationMessage(usuario, codTipoAprobacion);
-            if (!string.IsNullOrWhiteSpace(validationMessage))
+            if (string.IsNullOrWhiteSpace(codTipoAprobacion))
             {
-                return Error(validationMessage);
+                return Error("El campo 'CodTipoAprobacion' es requerido.");
             }
 
-            const string sql = @"
-        DELETE FROM dbo.AFI_CD_TIPO_APROBACION
-        WHERE CodTipoAprobacion = @CodTipoAprobacion;";
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Error("El usuario es requerido.");
+            }
 
-            var result = DbHelper.ExecuteNonQueryWithResult(
-                _portalDB,
+            bool eliminado;
+            var response = EjecutarEliminacionTipoAprobacion(
                 codEmpresa,
-                sql,
-                new { CodTipoAprobacion = codTipoAprobacion });
+                codTipoAprobacion,
+                out eliminado);
 
-            if (result.Code != 0)
+            if (response.Code != 0)
             {
-                return Error("No fue posible eliminar el tipo de aprobación.");
+                return response;
             }
 
-            if (result.Result > 0)
+            if (eliminado)
             {
                 RegistrarBitacoraTipoAprobacion(
                     codEmpresa,
@@ -283,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     MovElimina);
             }
 
-            return Ok();
+            return response;
         }
 
         private static string GetMovimientoByAccion(string accion)
