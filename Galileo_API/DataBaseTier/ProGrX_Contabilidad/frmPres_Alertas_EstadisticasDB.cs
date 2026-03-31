@@ -42,51 +42,250 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
 
 
         /// <summary>
-        /// Busca el presupuesto según filtros puestos por el usuario
+        /// Obtiene la información de alertas presupuestarias según el estado del periodo
+        /// y la configuración registrada para justificación.
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PresVistaPresupuestoAlertasData>> PresPlanning_Obtener(int CodCliente, string datos)
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="datos">Filtros serializados.</param>
+        /// <returns>Lista final a mostrar y estado de justificación.</returns>
+        public ErrorDto<PresVistaPresupuestoAlertasResponse> PresPlanning_Obtener(int CodCliente, string datos)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, CodCliente);
             PresVistaPresupuestoAlertasBuscar filtros = JsonConvert.DeserializeObject<PresVistaPresupuestoAlertasBuscar>(datos) ?? new PresVistaPresupuestoAlertasBuscar();
 
-            var info = new ErrorDto<List<PresVistaPresupuestoAlertasData>>
+            var info = new ErrorDto<PresVistaPresupuestoAlertasResponse>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<PresVistaPresupuestoAlertasData>()
+                Result = new PresVistaPresupuestoAlertasResponse()
             };
+
             try
             {
-                var procedure = "[spPres_W_VistaPresupuestoAlertas]";
-                var values = new
+                var periodo = ObtenerPeriodoContable(connection, filtros);
+
+                if (periodo == null)
                 {
-                    COD_EMPRESA = CodCliente,
-                    COD_CONTA = filtros.cod_conta,
-                    COD_MODELO = filtros.cod_modelo,
-                    COD_UNIDAD = filtros.cod_unidad,
-                    CENTRO_COSTO = filtros.centro_costo,
-                    ANIO = filtros.anio,
-                    MES = filtros.mes,
-                    TIPO_VISTA = filtros.tipo_vista,
-                    CtaMov = filtros.ctaMov ? (short?)1 : null,
-                    Tipo_Alerta = string.IsNullOrEmpty(filtros.tipo_alerta) ? "T" : filtros.tipo_alerta,
-                    Justificacion = string.IsNullOrWhiteSpace(filtros.justificacion) ? "T" : filtros.justificacion
-                };
+                    info.Code = -1;
+                    info.Description = "No existe el periodo contable.";
+                    info.Result.mensaje = info.Description;
+                    return info;
+                }
 
-                info.Result = connection.Query<PresVistaPresupuestoAlertasData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
+                bool periodoCerrado = string.Equals(periodo.ESTADO ?? string.Empty, "C", StringComparison.OrdinalIgnoreCase);
+                var justifica = ObtenerConfiguracionJustificacion(connection, filtros);
 
+                if (!periodoCerrado)
+                {
+                    info.Result.lista = ObtenerVistaDesdeStoredProcedure(connection, CodCliente, filtros);
+                    info.Result.permitir_justificar = false;
+                    info.Result.usa_exclusiones = false;
+                    info.Result.mensaje = "El periodo está abierto. Se muestra la vista actual y no se permiten justificaciones.";
+                    return info;
+                }
+
+                if (justifica != null)
+                {
+                    info.Result.lista = ObtenerVistaDesdeExclusiones(connection, CodCliente, filtros);
+                    info.Result.usa_exclusiones = true;
+
+                    if (justifica.corte.HasValue && justifica.corte.Value.Date < DateTime.Now.Date)
+                    {
+                        info.Result.permitir_justificar = false;
+                        info.Result.mensaje = "El periodo de justificación ya venció. Se muestran las exclusiones registradas.";
+                    }
+                    else
+                    {
+                        info.Result.permitir_justificar = true;
+                        info.Result.mensaje = "El periodo está cerrado y configurado para justificación. Se muestran las exclusiones registradas.";
+                    }
+
+                    return info;
+                }
+
+                info.Result.lista = ObtenerVistaDesdeStoredProcedure(connection, CodCliente, filtros);
+                info.Result.permitir_justificar = false;
+                info.Result.usa_exclusiones = false;
+                info.Result.mensaje = "El periodo está cerrado pero no tiene configuración para justificación. Se muestra la vista actual.";
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<PresVistaPresupuestoAlertasData>();
+                info.Result = new PresVistaPresupuestoAlertasResponse();
             }
 
             return info;
+        }
+
+        /// <summary>
+        /// Obtiene el periodo contable según los filtros indicados.
+        /// </summary>
+        private static dynamic? ObtenerPeriodoContable(SqlConnection connection, PresVistaPresupuestoAlertasBuscar filtros)
+        {
+            const string sqlPeriodo = @"
+                    SELECT
+                          ESTADO
+                        , CIERRE_FECHA
+                    FROM dbo.CNTX_PERIODOS
+                    WHERE COD_CONTABILIDAD = @cod_conta
+                      AND ANIO = @anio
+                      AND MES = @mes;";
+
+            return connection.QueryFirstOrDefault(sqlPeriodo, new
+            {
+                cod_conta = filtros.cod_conta,
+                anio = filtros.anio,
+                mes = filtros.mes
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la configuración de justificación del periodo consultado.
+        /// </summary>
+        private static PresAlertasJustificaPeriodoData? ObtenerConfiguracionJustificacion(SqlConnection connection, PresVistaPresupuestoAlertasBuscar filtros)
+        {
+            const string sqlJustifica = @"
+                SELECT TOP (1)
+                      id_periodo
+                    , cod_modelo
+                    , cod_contabilidad
+                    , inicio
+                    , corte
+                    , fecha
+                    , usuario
+                    , bloqueo_visualizacion
+                FROM dbo.PRES_ALERTAS_JUSTICA_PERIODO
+                WHERE cod_modelo = @cod_modelo
+                  AND cod_contabilidad = @cod_conta
+                  AND YEAR(inicio) = @anio
+                  AND MONTH(inicio) = @mes
+                ORDER BY id_periodo DESC;";
+
+            return connection.QueryFirstOrDefault<PresAlertasJustificaPeriodoData>(sqlJustifica, new
+            {
+                cod_modelo = filtros.cod_modelo,
+                cod_conta = filtros.cod_conta,
+                anio = filtros.anio,
+                mes = filtros.mes
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la vista de alertas desde el stored procedure principal.
+        /// </summary>
+        private static List<PresVistaPresupuestoAlertasData> ObtenerVistaDesdeStoredProcedure(
+            SqlConnection connection,
+            int codCliente,
+            PresVistaPresupuestoAlertasBuscar filtros)
+        {
+            const string procedure = "[spPres_W_VistaPresupuestoAlertas]";
+
+            var values = new
+            {
+                COD_EMPRESA = codCliente,
+                COD_CONTA = filtros.cod_conta,
+                COD_MODELO = filtros.cod_modelo,
+                COD_UNIDAD = filtros.cod_unidad,
+                CENTRO_COSTO = filtros.centro_costo,
+                ANIO = filtros.anio,
+                MES = filtros.mes,
+                TIPO_VISTA = filtros.tipo_vista,
+                CtaMov = filtros.ctaMov ? (short?)1 : null,
+                Tipo_Alerta = string.IsNullOrWhiteSpace(filtros.tipo_alerta) ? "T" : filtros.tipo_alerta,
+                Justificacion = string.IsNullOrWhiteSpace(filtros.justificacion) ? "T" : filtros.justificacion
+            };
+
+            return connection.Query<PresVistaPresupuestoAlertasData>(
+                procedure,
+                values,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 600
+            ).ToList();
+        }
+
+        /// <summary>
+        /// Obtiene la vista de alertas desde las exclusiones del control,
+        /// enriquecida con la justificación actual si existe.
+        /// </summary>
+        private static List<PresVistaPresupuestoAlertasData> ObtenerVistaDesdeExclusiones(
+            SqlConnection connection,
+            int codCliente,
+            PresVistaPresupuestoAlertasBuscar filtros)
+        {
+            const string sqlExclusiones = @"
+SELECT
+      e.id_exclusion
+    , e.cod_cuenta
+    , e.cod_unidad
+    , e.cod_centro_costo
+    , e.cuenta
+    , e.descripcion
+    , ISNULL(e.real_mes, 0) AS real_mes
+    , ISNULL(e.mensual, 0) AS mensual
+    , ISNULL(e.diferencia_mes, 0) AS diferencia_mes
+    , ISNULL(e.real_acumulado, 0) AS real_acumulado
+    , ISNULL(e.acumulado, 0) AS acumulado
+    , ISNULL(e.diferencia_acumulada, 0) AS diferencia_acumulada
+    , ISNULL(e.pres_total, 0) AS pres_total
+    , ISNULL(e.diferencia_total, 0) AS diferencia_total
+    , ISNULL(e.ejecutado_mes, 0) AS ejecutado_mes
+    , ISNULL(e.ejecutado_acumulado, 0) AS ejecutado_acumulado
+    , ISNULL(e.ejecutado_total, 0) AS ejecutado_total
+    , CAST(ISNULL(e.acepta_movimientos, 0) AS bit) AS acepta_movimientos
+    , DATEFROMPARTS(e.anio, e.mes, 1) AS periodo
+    , ISNULL(e.mensual, 0) AS pre_mensual_inicial
+    , ISNULL(e.pres_total, 0) AS presupuesto
+    , e.tipo_alerta AS alerta_tipo
+    , e.alerta_descripcion
+    , CAST(COALESCE(j.justificada, e.justificada, 0) AS bit) AS justificada
+    , COALESCE(j.justificacion_actual, e.justificacion_actual, '') AS justificacion_actual
+    , COALESCE(j.modifica_fecha, j.registro_fecha, e.justificacion_fecha) AS justificacion_fecha
+    , COALESCE(j.modifica_usuario, j.registro_usuario, e.justificacion_usuario, '') AS justificacion_usuario
+    , e.registro_fecha
+    , ISNULL(e.registro_usuario, '') AS registro_usuario
+FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION e
+LEFT JOIN dbo.PRES_ALERTAS_JUSTIFICACIONES j
+       ON j.cod_empresa = e.cod_empresa
+      AND j.cod_conta = e.cod_contabilidad
+      AND j.cod_modelo = e.cod_modelo
+      AND j.cod_unidad = e.cod_unidad
+      AND j.cod_centro_costo = e.cod_centro_costo
+      AND j.cod_cuenta = e.cod_cuenta
+      AND j.anio = e.anio
+      AND j.mes = e.mes
+      AND j.tipo_alerta = e.tipo_alerta
+WHERE e.cod_empresa = @cod_empresa
+  AND e.cod_contabilidad = @cod_conta
+  AND e.cod_modelo = @cod_modelo
+  AND e.anio = @anio
+  AND e.mes = @mes
+  AND (@tipo_alerta = 'T' OR e.tipo_alerta = @tipo_alerta)
+  AND (
+        @tipo_vista = 'G'
+        OR (@tipo_vista = 'U' AND e.cod_unidad = @cod_unidad)
+        OR (@tipo_vista = 'C' AND e.cod_unidad = @cod_unidad AND e.cod_centro_costo = @centro_costo)
+      )
+  AND (
+        @justificacion = 'T'
+        OR (@justificacion = 'S' AND COALESCE(j.justificada, e.justificada, 0) = 1)
+        OR (@justificacion = 'N' AND COALESCE(j.justificada, e.justificada, 0) = 0)
+      )
+ORDER BY e.cuenta, e.cod_unidad, e.cod_centro_costo, e.tipo_alerta;";
+
+            return connection.Query<PresVistaPresupuestoAlertasData>(sqlExclusiones, new
+            {
+                cod_empresa = codCliente,
+                cod_conta = filtros.cod_conta,
+                cod_modelo = filtros.cod_modelo,
+                anio = filtros.anio,
+                mes = filtros.mes,
+                tipo_alerta = string.IsNullOrWhiteSpace(filtros.tipo_alerta) ? "T" : filtros.tipo_alerta,
+                justificacion = string.IsNullOrWhiteSpace(filtros.justificacion) ? "T" : filtros.justificacion,
+                tipo_vista = filtros.tipo_vista,
+                cod_unidad = filtros.cod_unidad,
+                centro_costo = filtros.centro_costo
+            }).ToList();
         }
 
         /// <summary>
@@ -1190,24 +1389,16 @@ ORDER BY FECHA DESC;";
 
                 connection.Execute(sqlInsert, new
                 {
-                    request.cod_modelo,
-                    request.cod_contabilidad,
+                    cod_modelo = request.cod_modelo,
+                    cod_contabilidad = request.cod_contabilidad,
                     inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
                     corte = request.corte?.Date,
                     fecha = request.fecha?.Date,
-                    request.usuario,
-                    request.bloqueo_visualizacion
+                    usuario = request.usuario,
+                    bloqueo_visualizacion =request.bloqueo_visualizacion
                 });
 
-                connection.Execute(sqlInsert, new
-                {
-                    request.cod_modelo,
-                    request.cod_contabilidad,
-                    inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
-                    corte = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local).AddMonths(1).AddDays(-1),
-                    request.usuario,
-                    request.bloqueo_visualizacion
-                });
+               
             }
             catch (Exception ex)
             {
@@ -1217,5 +1408,279 @@ ORDER BY FECHA DESC;";
 
             return result;
         }
+
+        /// <summary>
+        /// Obtiene los periodos habilitados para justificar alertas presupuestarias.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro de consulta por contabilidad y modelo.</param>
+        /// <returns>Lista de periodos registrados en PRES_ALERTAS_JUSTICA_PERIODO.</returns>
+        public ErrorDto<List<PresAlertasJustificaPeriodoConsultaData>> PresAlertasJustificaPeriodo_Obtener(
+            int codEmpresa,
+            PresAlertasJustificaPeriodoConsultaRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            var result = new ErrorDto<List<PresAlertasJustificaPeriodoConsultaData>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new List<PresAlertasJustificaPeriodoConsultaData>()
+            };
+
+            try
+            {
+                const string sql = @"
+SELECT
+      id_periodo
+    , RTRIM(cod_modelo) AS cod_modelo
+    , cod_contabilidad
+    , inicio
+    , corte
+    , fecha
+    , RTRIM(usuario) AS usuario
+    , CAST(ISNULL(bloqueo_visualizacion, 0) AS bit) AS bloqueo_visualizacion
+FROM dbo.PRES_ALERTAS_JUSTICA_PERIODO
+WHERE cod_contabilidad = @cod_contabilidad
+  AND (@cod_modelo = '' OR cod_modelo = @cod_modelo)
+ORDER BY inicio DESC, fecha DESC;";
+
+                result.Result = connection.Query<PresAlertasJustificaPeriodoConsultaData>(
+                    sql,
+                    new
+                    {
+                        cod_contabilidad = request.cod_contabilidad,
+                        cod_modelo = (request.cod_modelo ?? string.Empty).Trim()
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new List<PresAlertasJustificaPeriodoConsultaData>();
+            }
+
+            return result;
+        }
+
+
+        #region DashBoard
+
+        /// <summary>
+        /// Obtiene el resumen general del dashboard de alertas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro del dashboard.</param>
+        /// <returns>Totales de exclusiones y justificaciones.</returns>
+        public ErrorDto<PresAlertasDashboardResumenData> PresAlertasDashboardResumen_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            var result = new ErrorDto<PresAlertasDashboardResumenData>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new PresAlertasDashboardResumenData()
+            };
+
+            try
+            {
+                const string sql = @"
+SELECT
+      COUNT(1) AS total_excluidas
+    , SUM(CASE WHEN ISNULL(j.justificada, ISNULL(e.justificada, 0)) = 1 THEN 1 ELSE 0 END) AS total_justificadas
+    , SUM(CASE WHEN ISNULL(j.justificada, ISNULL(e.justificada, 0)) = 0 THEN 1 ELSE 0 END) AS total_pendientes
+FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION e
+LEFT JOIN dbo.PRES_ALERTAS_JUSTIFICACIONES j
+       ON j.cod_empresa = e.cod_empresa
+      AND j.cod_conta = e.cod_contabilidad
+      AND j.cod_modelo = e.cod_modelo
+      AND j.cod_unidad = e.cod_unidad
+      AND j.cod_centro_costo = e.cod_centro_costo
+      AND j.cod_cuenta = e.cod_cuenta
+      AND j.anio = e.anio
+      AND j.mes = e.mes
+      AND j.tipo_alerta = e.tipo_alerta
+WHERE e.cod_empresa = @cod_empresa
+  AND e.cod_contabilidad = @cod_contabilidad
+  AND e.cod_modelo = @cod_modelo
+  AND e.anio = @anio
+  AND e.mes = @mes
+  AND (@tipo_alerta = 'T' OR e.tipo_alerta = @tipo_alerta);";
+
+                var data = connection.QueryFirstOrDefault<PresAlertasDashboardResumenData>(sql, new
+                {
+                    cod_empresa = codEmpresa,
+                    request.cod_contabilidad,
+                    request.cod_modelo,
+                    request.anio,
+                    request.mes,
+                    tipo_alerta = string.IsNullOrWhiteSpace(request.tipo_alerta) ? "T" : request.tipo_alerta
+                }) ?? new PresAlertasDashboardResumenData();
+
+                if (data.total_excluidas > 0)
+                {
+                    data.porcentaje_justificado = Math.Round((decimal)data.total_justificadas * 100m / data.total_excluidas, 2);
+                }
+
+                result.Result = data;
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new PresAlertasDashboardResumenData();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene el resumen de exclusiones y justificaciones por unidad.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro del dashboard.</param>
+        /// <returns>Lista agrupada por unidad.</returns>
+        public ErrorDto<List<PresAlertasDashboardUnidadData>> PresAlertasDashboardUnidad_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            var result = new ErrorDto<List<PresAlertasDashboardUnidadData>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new List<PresAlertasDashboardUnidadData>()
+            };
+
+            try
+            {
+                const string sql = @"
+SELECT
+      ISNULL(e.cod_unidad, 'SIN_UNIDAD') AS cod_unidad
+    , COUNT(1) AS excluidas
+    , SUM(CASE WHEN ISNULL(j.justificada, ISNULL(e.justificada, 0)) = 1 THEN 1 ELSE 0 END) AS justificadas
+    , SUM(CASE WHEN ISNULL(j.justificada, ISNULL(e.justificada, 0)) = 0 THEN 1 ELSE 0 END) AS pendientes
+FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION e
+LEFT JOIN dbo.PRES_ALERTAS_JUSTIFICACIONES j
+       ON j.cod_empresa = e.cod_empresa
+      AND j.cod_conta = e.cod_contabilidad
+      AND j.cod_modelo = e.cod_modelo
+      AND j.cod_unidad = e.cod_unidad
+      AND j.cod_centro_costo = e.cod_centro_costo
+      AND j.cod_cuenta = e.cod_cuenta
+      AND j.anio = e.anio
+      AND j.mes = e.mes
+      AND j.tipo_alerta = e.tipo_alerta
+WHERE e.cod_empresa = @cod_empresa
+  AND e.cod_contabilidad = @cod_contabilidad
+  AND e.cod_modelo = @cod_modelo
+  AND e.anio = @anio
+  AND e.mes = @mes
+  AND (@tipo_alerta = 'T' OR e.tipo_alerta = @tipo_alerta)
+GROUP BY e.cod_unidad
+ORDER BY e.cod_unidad;";
+
+                result.Result = connection.Query<PresAlertasDashboardUnidadData>(sql, new
+                {
+                    cod_empresa = codEmpresa,
+                    request.cod_contabilidad,
+                    request.cod_modelo,
+                    request.anio,
+                    request.mes,
+                    tipo_alerta = string.IsNullOrWhiteSpace(request.tipo_alerta) ? "T" : request.tipo_alerta
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new List<PresAlertasDashboardUnidadData>();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene el resumen por categoría de alerta y tipo de justificación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro del dashboard.</param>
+        /// <returns>Lista resumida por alerta y justificación.</returns>
+        public ErrorDto<List<PresAlertasDashboardJustificacionData>> PresAlertasDashboardJustificacion_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            var result = new ErrorDto<List<PresAlertasDashboardJustificacionData>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new List<PresAlertasDashboardJustificacionData>()
+            };
+
+            try
+            {
+                const string sql = @"
+SELECT
+      e.tipo_alerta
+    , MAX(e.alerta_descripcion) AS alerta_descripcion
+    , LTRIM(RTRIM(
+        CASE
+          WHEN CHARINDEX('|', ISNULL(j.justificacion_actual, e.justificacion_actual)) > 0
+            THEN LEFT(ISNULL(j.justificacion_actual, e.justificacion_actual), CHARINDEX('|', ISNULL(j.justificacion_actual, e.justificacion_actual)) - 1)
+          ELSE ISNULL(j.justificacion_actual, e.justificacion_actual)
+        END
+      )) AS tipo_justificacion
+    , COUNT(1) AS cantidad
+FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION e
+LEFT JOIN dbo.PRES_ALERTAS_JUSTIFICACIONES j
+       ON j.cod_empresa = e.cod_empresa
+      AND j.cod_conta = e.cod_contabilidad
+      AND j.cod_modelo = e.cod_modelo
+      AND j.cod_unidad = e.cod_unidad
+      AND j.cod_centro_costo = e.cod_centro_costo
+      AND j.cod_cuenta = e.cod_cuenta
+      AND j.anio = e.anio
+      AND j.mes = e.mes
+      AND j.tipo_alerta = e.tipo_alerta
+WHERE e.cod_empresa = @cod_empresa
+  AND e.cod_contabilidad = @cod_contabilidad
+  AND e.cod_modelo = @cod_modelo
+  AND e.anio = @anio
+  AND e.mes = @mes
+  AND (@tipo_alerta = 'T' OR e.tipo_alerta = @tipo_alerta)
+  AND ISNULL(j.justificada, ISNULL(e.justificada, 0)) = 1
+GROUP BY
+      e.tipo_alerta
+    , LTRIM(RTRIM(
+        CASE
+          WHEN CHARINDEX('|', ISNULL(j.justificacion_actual, e.justificacion_actual)) > 0
+            THEN LEFT(ISNULL(j.justificacion_actual, e.justificacion_actual), CHARINDEX('|', ISNULL(j.justificacion_actual, e.justificacion_actual)) - 1)
+          ELSE ISNULL(j.justificacion_actual, e.justificacion_actual)
+        END
+      ))
+ORDER BY e.tipo_alerta, tipo_justificacion;";
+
+                result.Result = connection.Query<PresAlertasDashboardJustificacionData>(sql, new
+                {
+                    cod_empresa = codEmpresa,
+                    request.cod_contabilidad,
+                    request.cod_modelo,
+                    request.anio,
+                    request.mes,
+                    tipo_alerta = string.IsNullOrWhiteSpace(request.tipo_alerta) ? "T" : request.tipo_alerta
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new List<PresAlertasDashboardJustificacionData>();
+            }
+
+            return result;
+        }
+
+        #endregion
+
     }
 }

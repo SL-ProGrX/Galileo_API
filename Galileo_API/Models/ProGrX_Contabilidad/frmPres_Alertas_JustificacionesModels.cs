@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX_Contabilidad
+﻿using PgxAPI.Models.ProGrX_Contabilidad;
+
+namespace Galileo_API.Models.ProGrX_Contabilidad
 {
     public class PresAlertaJustificacionGuardarRequest
     {
@@ -39,6 +41,14 @@
         public int anio { get; set; } = 1900;
         public int mes { get; set; } = 1;
         public string tipoAlerta { get; set; } = string.Empty;
+    }
+
+    public class PresVistaPresupuestoAlertasResponse
+    {
+        public List<PresVistaPresupuestoAlertasData> lista { get; set; } = new();
+        public bool permitir_justificar { get; set; } = false;
+        public bool usa_exclusiones { get; set; } = false;
+        public string mensaje { get; set; } = string.Empty;
     }
 
 }
