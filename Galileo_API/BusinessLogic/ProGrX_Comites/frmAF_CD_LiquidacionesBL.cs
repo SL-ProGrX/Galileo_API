@@ -33,5 +33,20 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
         {
             return _db.AfCdOperaciones_Lista_Obtener(codEmpresa , codComite);
         }
+
+        public ErrorDto<List<AfCdOperacionData>> AfCdOperaciones_Detallar_Obtener(int codEmpresa, string codComite)
+        {
+            return _db.AfCdOperaciones_Detallar_Obtener(codEmpresa, codComite);
+        }
+
+        public ErrorDto<List<AfCdOperacionHistoricoData>> AfCdOperaciones_Historico_Obtener(int codEmpresa, string codComite)
+        {
+            return _db.AfCdOperaciones_Historico_Obtener(codEmpresa, codComite);
+        }
+
+        public ErrorDto<List<AfCdFacturaData>> AfCdFacturas_Obtener(int codEmpresa, int operacion)
+        {
+            return _db.AfCdFacturas_Obtener(codEmpresa, operacion);
+        }
     }
 }

@@ -42,6 +42,24 @@ using Microsoft.AspNetCore.Mvc;
             {
                 return _bl.AfCdOperaciones_Lista_Obtener(codEmpresa, codComite);
             }
-    }
+
+            [HttpGet("AfCdOperaciones_Detallar_Obtener")]
+            public ErrorDto<List<AfCdOperacionData>> AfCdOperaciones_Detallar_Obtener(int codEmpresa, string codComite)
+            {
+                return _bl.AfCdOperaciones_Detallar_Obtener(codEmpresa, codComite);
+            }
+
+            [HttpGet("AfCdOperaciones_Historico_Obtener")]
+            public ErrorDto<List<AfCdOperacionHistoricoData>> AfCdOperaciones_Historico_Obtener(int codEmpresa, string codComite)
+            {
+                return _bl.AfCdOperaciones_Historico_Obtener(codEmpresa, codComite);
+            }
+
+            [HttpGet("AfCdFacturas_Obtener")]
+            public ErrorDto<List<AfCdFacturaData>> AfCdFacturas_Obtener(int codEmpresa, int operacion)
+            {
+                return _bl.AfCdFacturas_Obtener(codEmpresa, operacion);
+            }
+        }
     }
 

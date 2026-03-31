@@ -74,6 +74,92 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 new { Comite = codComite });
         }
 
+        public ErrorDto<List<AfCdOperacionData>> AfCdOperaciones_Detallar_Obtener(int codEmpresa, string codComite)
+        {
+            string query = @"select 
+                C.NOPERACION as noperacion,
+                datediff(day, C.REGISTRO_FECHA, getdate()) as dias_pendientes,
+                sum(CA.MONTO) as monto
+            from dbo.AFI_CD_CUENTAS C
+            inner join AFI_CD_CUENTAS_ACTIVIDADES CA 
+                on C.NOPERACION = CA.NOPERACION
+            where C.COD_COMITE = @Comite
+              and C.ESTADO = 'T'
+              and C.PROCESO = 'D'
+            group by C.NOPERACION, C.REGISTRO_FECHA
+            order by C.NOPERACION desc";
 
+            return DbHelper.ExecuteListQuery<AfCdOperacionData>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new { Comite = codComite }
+            );
+        }
+
+        public ErrorDto<List<AfCdOperacionHistoricoData>> AfCdOperaciones_Historico_Obtener(int codEmpresa, string codComite)
+        {
+            string query = @"select 
+                C.NOPERACION as operacion,
+                C.NOTAS as notas,
+                C.LIQUIDA_FECHA as liquida_fecha,
+                C.ACTIVA_FECHA as activa_fecha,
+                Tes.FECHA_EMISION as fecha_emision,
+                CA.MONTO as monto,
+                A.DESCRIPCION as actividad,
+                C.TESORERIA_FECHA as tesoreria_fecha,
+                C.TESORERIA_NSOLICITUD as tesoreria_nsolicitud,
+                case C.ESTADO 
+                    when 'T' then 'Trasladado' 
+                    when 'A' then 'Activo' 
+                    else 'Liquidado' 
+                end as estado,
+                case C.APRUEBA 
+                    when 'J' then 'Junta Directiva' 
+                    when 'O' then 'Oficina Regional' 
+                    else 'Director Zona' 
+                end as aprueba,
+                case C.TIPO 
+                    when 'T' then 'Transferencia' 
+                    else 'Cheque' 
+                end as desembolso,
+                C.REGISTRO_FECHA as registro_fecha,
+                C.REGISTRO_USUARIO as registro_usuario,
+                Tes.Beneficiario as tesoreria_beneficiario,
+                Tes.Codigo as tesoreria_codigo
+            from dbo.AFI_CD_CUENTAS C
+            inner join AFI_CD_CUENTAS_ACTIVIDADES CA 
+                on C.NOPERACION = CA.NOPERACION
+            inner join AFI_CD_ACTIVIDADES A 
+                on CA.COD_ACTIVIDAD = A.COD_ACTIVIDAD
+            left join TES_TRANSACCIONES Tes 
+                on C.TESORERIA_NSOLICITUD = Tes.NSOLICITUD
+            where C.COD_COMITE = @Comite
+            order by C.REGISTRO_FECHA desc";
+
+            return DbHelper.ExecuteListQuery<AfCdOperacionHistoricoData>(
+                _portalDb, codEmpresa, query,
+                new { Comite = codComite }
+            );
+        }
+
+        public ErrorDto<List<AfCdFacturaData>> AfCdFacturas_Obtener(int codEmpresa, int operacion)
+        {
+            string query = @"select 
+                DEPOSITO as deposito,
+                NDOCUMENTO as ndocumento,
+                FECHA_DOCUMENTO as fecha_documento,
+                DETALLE as detalle,
+                MONTO as monto
+            from AFI_CD_DETALLE_LIQUIDACION
+            where NOPERACION = @Operacion";
+
+            return DbHelper.ExecuteListQuery<AfCdFacturaData>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new { Operacion = operacion }
+            );
+        }
     }
 }
