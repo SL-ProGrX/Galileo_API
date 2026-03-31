@@ -105,4 +105,22 @@
         public DateTime? corte { get; set; }
         public bool bloqueo_visualizacion { get; set; } = false;
     }
+
+    public class PresAlertasJustificaPeriodoConsultaRequest
+    {
+        public string cod_modelo { get; set; } = string.Empty;
+        public int cod_contabilidad { get; set; } = 0;
+    }
+
+    public class PresAlertasJustificaPeriodoConsultaData
+    {
+        public int id_periodo { get; set; } = 0;
+        public string cod_modelo { get; set; } = string.Empty;
+        public int cod_contabilidad { get; set; } = 0;
+        public DateTime? inicio { get; set; }
+        public DateTime? corte { get; set; }
+        public DateTime? fecha { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public bool bloqueo_visualizacion { get; set; } = false;
+    }
 }

@@ -44,6 +44,10 @@
         public string justificacion_actual { get; set; } = string.Empty;
         public DateTime? justificacion_fecha { get; set; }
         public string justificacion_usuario { get; set; } = string.Empty;
+
+        public int? id_exclusion { get; set; }
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
     }
 
     public class PresAlertaTipoJustificacionData
@@ -52,5 +56,37 @@
         public string descripcion { get; set; } = string.Empty;
     }
 
+    public class PresAlertasDashboardFiltroRequest
+    {
+        public int cod_contabilidad { get; set; } = 0;
+        public string cod_modelo { get; set; } = string.Empty;
+        public int anio { get; set; } = 1900;
+        public int mes { get; set; } = 1;
+        public string tipo_alerta { get; set; } = "T";
+    }
+
+    public class PresAlertasDashboardResumenData
+    {
+        public int total_excluidas { get; set; } = 0;
+        public int total_justificadas { get; set; } = 0;
+        public int total_pendientes { get; set; } = 0;
+        public decimal porcentaje_justificado { get; set; } = 0;
+    }
+
+    public class PresAlertasDashboardUnidadData
+    {
+        public string cod_unidad { get; set; } = string.Empty;
+        public int excluidas { get; set; } = 0;
+        public int justificadas { get; set; } = 0;
+        public int pendientes { get; set; } = 0;
+    }
+
+    public class PresAlertasDashboardJustificacionData
+    {
+        public string tipo_alerta { get; set; } = string.Empty;
+        public string alerta_descripcion { get; set; } = string.Empty;
+        public string tipo_justificacion { get; set; } = string.Empty;
+        public int cantidad { get; set; } = 0;
+    }
 
 }
