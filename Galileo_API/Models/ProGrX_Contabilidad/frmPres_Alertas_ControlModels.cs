@@ -88,6 +88,8 @@
         public int mes { get; set; } = 1;
         public string usuario { get; set; } = string.Empty;
         public bool bloqueo_visualizacion { get; set; } = false;
+        public DateTime? fecha { get; set; }
+        public DateTime? corte { get; set; }
     }
 
     public class PresAlertasControlPeriodoEstadoData

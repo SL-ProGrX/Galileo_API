@@ -302,5 +302,11 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _BL.CxCCuentasActivacionDetalle_Obtener(CodEmpresa, request);
         }
+
+        [HttpPost("CxCCuentas_sbImprimeRecibo")]
+        public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
+        {
+            return _BL.sbImprimeRecibo(CodEmpresa, pDocumento, pTipo, Usuario, pReImprime);
+        }
     }
 }

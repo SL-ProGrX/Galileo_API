@@ -1019,6 +1019,8 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
+                /**
+                Se comenta temporalmente para revisar casos de periodos sin fecha de cierre, pero se deja la validación para futuros ajustes en la regla de negocio.
                 if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
                 {
                     result.Code = -1;
@@ -1030,6 +1032,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
                     return result;
                 }
+                **/
 
                 const string sqlJustifica = @"
 SELECT TOP (1)
@@ -1129,29 +1132,72 @@ ORDER BY FECHA DESC;";
                 Description = "OK"
             };
 
+            var fecha = request.fecha?.Date;
+            var corte = request.corte?.Date;
+            var hoy = DateTime.Now.Date;
+            var fechaMax = hoy.AddDays(30);
+
+            if (fecha != hoy)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La fecha del registro debe ser la fecha actual."
+                };
+            }
+
+            if (corte < hoy)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La fecha fin no puede ser menor a la fecha actual."
+                };
+            }
+
+            if (corte > fechaMax)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La fecha fin no puede ser mayor a 30 días desde la fecha actual."
+                };
+            }
+
             try
             {
                 const string sqlInsert = @"
-INSERT INTO dbo.PRES_ALERTAS_JUSTICA_PERIODO
-(
-    COD_MODELO,
-    COD_CONTABILIDAD,
-    INICIO,
-    CORTE,
-    FECHA,
-    USUARIO,
-    BLOQUEO_VISUALIZACION
-)
-VALUES
-(
-    @cod_modelo,
-    @cod_contabilidad,
-    @inicio,
-    @corte,
-    GETDATE(),
-    @usuario,
-    @bloqueo_visualizacion
-);";
+                        INSERT INTO dbo.PRES_ALERTAS_JUSTICA_PERIODO
+                        (
+                            COD_MODELO,
+                            COD_CONTABILIDAD,
+                            INICIO,
+                            CORTE,
+                            FECHA,
+                            USUARIO,
+                            BLOQUEO_VISUALIZACION
+                        )
+                        VALUES
+                        (
+                            @cod_modelo,
+                            @cod_contabilidad,
+                            @inicio,
+                            @corte,
+                            @fecha,
+                            @usuario,
+                            @bloqueo_visualizacion
+                        );";
+
+                connection.Execute(sqlInsert, new
+                {
+                    request.cod_modelo,
+                    request.cod_contabilidad,
+                    inicio = new DateTime(request.anio, request.mes, 1, 0, 0, 0, DateTimeKind.Local),
+                    corte = request.corte?.Date,
+                    fecha = request.fecha?.Date,
+                    request.usuario,
+                    request.bloqueo_visualizacion
+                });
 
                 connection.Execute(sqlInsert, new
                 {

@@ -64,9 +64,8 @@ namespace Galileo_API.DataBaseTier
 
                 var uriConn = GetServiceUri(parametrosSinpe, sinpeTipo);
 
-                var servicio = tipo == "PIN"
-                    ? _sinpePIN.IsServiceAvailable(uriConn, context)
-                    : _sinpeDTR.IsServiceAvailable(uriConn, context);
+                var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
+
                 if (!servicio.ServiceAvailable)
                     return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
@@ -93,6 +92,12 @@ namespace Galileo_API.DataBaseTier
 
                 // Estados 0/1: OK; otros: rechazo con motivo
                 var estado = (cuenta.Account?.State ?? 0);
+
+                if(cedula.Replace("-", "") != cuenta.Account!.HolderId!.Replace("-", ""))
+                {
+                    return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
+                }
+
 
                 if (estado == 0 || estado == 1)
                 {

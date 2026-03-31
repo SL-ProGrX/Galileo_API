@@ -141,6 +141,7 @@ select
     when 'Consecutivo' then cast(Consecutivo as varchar(50))
     when 'CONSECUTIVO_DET' then cast(CONSECUTIVO_DET as varchar(50))
     when 'DOC_AUTO' then cast(DOC_AUTO as varchar(50))
+    when 'REG_AUTORIZACION' then REG_AUTORIZACION
     else null
   end as Campo
 from tes_Banco_docs

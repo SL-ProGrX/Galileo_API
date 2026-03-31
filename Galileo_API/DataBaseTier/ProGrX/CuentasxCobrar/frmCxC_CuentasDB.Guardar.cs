@@ -26,10 +26,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             public string? emitir_cuenta { get; init; }
             public string? num_documento { get; init; }
             public string? cod_contrato { get; init; }
-            public int plazo_dias { get; init; }
-            public int freq_pago { get; init; }
+            public int plazo_dias { get; init; } = 0;
+            public int freq_pago { get; init; } = 0;
             public DateTime? fecha_inicio { get; init; }
-            public int adelanto_comision_apl { get; init; }
+            public int adelanto_comision_apl { get; init; } = 0;
+        }
+
+        private sealed class CxCCuentasConceptoGuardarData
+        {
+            public int requiere_contrato { get; init; } = 0;
+            public int proceso_descuento { get; init; } = 0;
         }
 
         private static CxCCuentasGuardarContext CrearGuardarContext(CxCCuentasSaveParams param)
@@ -85,6 +91,192 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (param.chk_cta_apl && param.fecha_inicio is null)
             {
                 return "La fecha de inicio es requerida cuando aplica cuenta.";
+            }
+
+            return null;
+        }
+
+        private static CxCCuentasConceptoGuardarData? ObtenerConceptoGuardar(
+            SqlConnection conn,
+            string codConcepto)
+        {
+            const string sql = @"
+                SELECT TOP 1
+                    ISNULL(Requiere_Contrato, 0) AS requiere_contrato,
+                    ISNULL(Proceso_Descuento, 0) AS proceso_descuento
+                FROM CxC_Conceptos
+                WHERE cod_Concepto = @codConcepto
+                  AND Activo = 1;";
+
+            return conn.QueryFirstOrDefault<CxCCuentasConceptoGuardarData>(
+                sql,
+                new { codConcepto });
+        }
+
+        private static bool ExisteContratoValidoGuardar(
+            SqlConnection conn,
+            string codContrato,
+            string cedula,
+            string codConcepto)
+        {
+            const string sql = @"
+                SELECT COUNT(1)
+                FROM CxC_Contratos Cnt
+                LEFT JOIN CxC_Personas_Contratos Per
+                    ON Cnt.Cod_Contrato = Per.cod_contrato
+                   AND Per.cedula = @cedula
+                INNER JOIN CxC_Conceptos_Contratos Cc
+                    ON Cnt.Cod_Contrato = Cc.cod_Contrato
+                WHERE Cnt.cod_Contrato = @codContrato
+                  AND Cc.cod_concepto = @codConcepto
+                  AND (Per.Cedula IS NOT NULL OR Cnt.Suscripcion_Abierta = 1);";
+
+            return conn.QuerySingleOrDefault<int>(
+                sql,
+                new
+                {
+                    codContrato,
+                    cedula,
+                    codConcepto
+                }) > 0;
+        }
+
+        private static bool ExistePagadorValidoGuardar(
+            SqlConnection conn,
+            string codContrato,
+            string cedula,
+            string cedulaPagador)
+        {
+            const string sql = @"
+                SELECT COUNT(1)
+                FROM CxC_Contratos_Pagadores Cp
+                INNER JOIN CxC_Contratos Cn
+                    ON Cp.Cod_Contrato = Cn.Cod_Contrato
+                INNER JOIN CxC_Personas Per
+                    ON Cp.cedula = Per.cedula
+                LEFT JOIN CxC_Personas_Contratos_Pagadores PcP
+                    ON Cp.Cod_Contrato = PcP.cod_Contrato
+                   AND Cp.Cedula = PcP.cedula_Pagador
+                   AND PcP.cedula = @cedula
+                WHERE Cn.Cod_Contrato = @codContrato
+                  AND (PcP.cedula IS NOT NULL OR Cn.Pagadores_Abierto = 1)
+                  AND Cp.Cedula = @cedulaPagador;";
+
+            return conn.QuerySingleOrDefault<int>(
+                sql,
+                new
+                {
+                    codContrato,
+                    cedula,
+                    cedulaPagador
+                }) > 0;
+        }
+
+        private static bool ExisteAutorizadorValidoGuardar(
+            SqlConnection conn,
+            string cedula,
+            string cedulaAutorizado)
+        {
+            const string sql = @"
+                SELECT COUNT(1)
+                FROM CXC_PERSONAS_AUTORIZADOS
+                WHERE Cedula_Autorizado = @cedulaAutorizado
+                  AND cedula = @cedula;";
+
+            return conn.QuerySingleOrDefault<int>(
+                sql,
+                new
+                {
+                    cedula,
+                    cedulaAutorizado
+                }) > 0;
+        }
+
+        private static string ObtenerValidacionDisponibleGuardar(
+            SqlConnection conn,
+            string cedula,
+            decimal monto,
+            string codConcepto)
+        {
+            const string sql = @"
+                SELECT dbo.fxCxC_Persona_Disponible_Valida(@cedula, @monto, @codConcepto);";
+
+            return conn.QueryFirstOrDefault<string>(
+                       sql,
+                       new
+                       {
+                           cedula,
+                           monto,
+                           codConcepto
+                       }) ?? string.Empty;
+        }
+
+        private static string? ValidarReglasGuardarEnDb(
+            SqlConnection conn,
+            CxCCuentasSaveParams param,
+            CxCCuentasGuardarContext context)
+        {
+            var concepto = ObtenerConceptoGuardar(conn, context.cod_concepto);
+
+            var requiereContrato =
+                concepto!.requiere_contrato == 1 || concepto.proceso_descuento == 1;
+
+            if (requiereContrato && string.IsNullOrWhiteSpace(context.cod_contrato))
+            {
+                return "Es necesario el uso de algún contrato activo para esta cuenta.";
+            }
+
+            if (requiereContrato &&
+                !string.IsNullOrWhiteSpace(context.cod_contrato) &&
+                !ExisteContratoValidoGuardar(conn, context.cod_contrato, context.cedula, context.cod_concepto))
+            {
+                return "El concepto de CxC requiere que exista un contrato registrado a la persona y asociado a este concepto.";
+            }
+
+            if (concepto.proceso_descuento == 1)
+            {
+                var mensajeContext = validaContext(conn, context);
+                if (!string.IsNullOrWhiteSpace(mensajeContext))
+                {
+                    return mensajeContext;
+                }
+            }
+
+            var mensajeDisponible = ObtenerValidacionDisponibleGuardar(
+                conn,
+                context.cedula,
+                param.monto,
+                context.cod_concepto);
+
+            if (!string.IsNullOrWhiteSpace(mensajeDisponible))
+            {
+                return mensajeDisponible.Trim();
+            }
+
+            return null;
+        }
+
+        private static string? validaContext(SqlConnection conn, CxCCuentasGuardarContext context)
+        {
+            if (string.IsNullOrWhiteSpace(context.cedula_pagador))
+            {
+                return "El pagador no está registrado bajo el contrato individual (x Persona).";
+            }
+
+            if (string.IsNullOrWhiteSpace(context.cod_contrato) ||
+                !ExistePagadorValidoGuardar(conn, context.cod_contrato, context.cedula, context.cedula_pagador))
+            {
+                return "El pagador no está registrado bajo el contrato individual (x Persona).";
+            }
+
+            if (string.IsNullOrWhiteSpace(context.cedula_autorizado))
+            {
+                return "No se localizó al autorizador de la cesión.";
+            }
+
+            if (!ExisteAutorizadorValidoGuardar(conn, context.cedula, context.cedula_autorizado))
+            {
+                return "El autorizador no está registrado.";
             }
 
             return null;
@@ -281,7 +473,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             var facturasRegistradas = conn.QuerySingleOrDefault<int>(
                 @"SELECT COUNT(1)
-                  FROM CxC_Operacion_Facturas
+                  FROM CxC_Cuentas
                   WHERE Operacion = @operacion;",
                 new { operacion });
 
@@ -334,6 +526,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var mensajeReglasDb = ValidarReglasGuardarEnDb(conn, param, context);
+
+                if (!string.IsNullOrWhiteSpace(mensajeReglasDb))
+                {
+                    response.Code = -1;
+                    response.Description = mensajeReglasDb;
+                    response.Result = 0;
+                    return response;
+                }
 
                 var existeOperacion = ExisteOperacionGuardar(conn, param.operacion);
                 var operacion = existeOperacion ? param.operacion : ObtenerNuevaOperacionGuardar(conn);
