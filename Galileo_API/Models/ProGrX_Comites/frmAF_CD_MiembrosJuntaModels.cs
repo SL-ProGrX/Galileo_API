@@ -2,10 +2,10 @@
 {
     public class AfCdDirectorDto
     {
-        public int Cod_Director { get; set; }
+        public int? Cod_Director { get; set; }
         public string? Nombre { get; set; }
         public string? Puesto { get; set; }
-        public bool Activo { get; set; }
+        public bool? Activo { get; set; }
     }
 
     public class AfCdComiteDirectorDto
