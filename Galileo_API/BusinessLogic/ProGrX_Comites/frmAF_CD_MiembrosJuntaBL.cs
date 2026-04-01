@@ -1,7 +1,6 @@
 ﻿using Galileo_API.DataBaseTier.ProGrX_Comites;
 using Galileo_API.Models.ProGrX_Comites;
 using Galileo.Models.ERROR;
-using System.Collections.Generic;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Comites
 {

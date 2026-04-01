@@ -2,7 +2,6 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Comites;
-using Galileo.Models;
 using Galileo.Models.Security;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
