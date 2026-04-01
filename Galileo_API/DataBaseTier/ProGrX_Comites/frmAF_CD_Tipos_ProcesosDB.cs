@@ -14,42 +14,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityMainDb;
 
-        private const string MovRegistra = "REGISTRA - WEB";
-        private const string MovModifica = "MODIFICA - WEB";
-        private const string MovElimina = "ELIMINAR - WEB";
-        private const int ModuloCxC = 40;
+        private const string MovimientoRegistro = "REGISTRA - WEB";
+        private const string MovimientoModificacion = "MODIFICA - WEB";
+        private const string MovimientoEliminacion = "ELIMINAR - WEB";
+        private const int ModuloBitacora = 40;
 
-        private const string CampoCodigo = "CodTipoProceso";
-        private const string CampoNombre = "NombreTipoProceso";
-        private const string CampoActivo = "Activo";
+        private const string ColumnaCodigo = "CodTipoProceso";
+        private const string ColumnaNombre = "NombreTipoProceso";
+        private const string ColumnaActivo = "Activo";
 
-        private const string MensajeDatosRequeridos = "Datos requeridos.";
-        private const string MensajeUsuarioRequerido = "El usuario es requerido.";
-        private const string MensajeCodigoRequerido = "El campo 'CodTipoProceso' es requerido.";
-        private const string MensajeGuardarError = "No fue posible guardar el tipo de proceso.";
-        private const string MensajeEliminarError = "No fue posible eliminar el tipo de proceso.";
-        private const string FormatoDetalleBitacora = "Tipos de Proceso Id: {0}";
+        private const string MensajeDatosInvalidos = "Datos requeridos.";
+        private const string MensajeUsuarioInvalido = "El usuario es requerido.";
+        private const string MensajeCodigoInvalido = "El campo 'CodTipoProceso' es requerido.";
+        private const string MensajeGuardarFallido = "No fue posible guardar el tipo de proceso.";
+        private const string MensajeEliminarFallido = "No fue posible eliminar el tipo de proceso.";
 
-        private const string SqlWhere = @"
+        private const string FiltroSql = @"
             WHERE
                 (@filtro IS NULL)
                 OR (CAST(CodTipoProceso AS NVARCHAR(50)) LIKE @like)
                 OR (NombreTipoProceso LIKE @like)";
 
-        private const string SqlCount = @"
+        private const string ConteoSql = @"
             SELECT COUNT(1)
             FROM dbo.AFI_CD_TIPO_PROCESO
-        " + SqlWhere + ";";
+        " + FiltroSql + ";";
 
-        private const string SqlListBase = @"
+        private const string ConsultaBaseSql = @"
             SELECT
                 CodTipoProceso,
                 NombreTipoProceso,
                 Activo
             FROM dbo.AFI_CD_TIPO_PROCESO
-        " + SqlWhere;
+        " + FiltroSql;
 
-        private const string SqlUpsert = @"
+        private const string GuardarSql = @"
             DECLARE @accion NVARCHAR(10);
 
             UPDATE dbo.AFI_CD_TIPO_PROCESO
@@ -88,18 +87,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
             SELECT @accion AS accion;";
 
-        private const string SqlDelete = @"
+        private const string EliminarSql = @"
             DELETE FROM dbo.AFI_CD_TIPO_PROCESO
             WHERE CodTipoProceso = @CodTipoProceso;";
 
-        // Inicializa las dependencias de acceso a datos.
+        // Inicializa el acceso a base de datos y seguridad.
         public FrmAfCdTiposProcesosDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config);
         }
 
-        // Obtiene la lista filtrada, ordenada y paginada.
+        // Devuelve la lista con filtro, orden y paginación.
         public ErrorDto<CdTiposProcesosLista> AfCdTiposProcesosLista_Obtener(
             int codEmpresa,
             FiltrosLazyLoadData filtros,
@@ -107,32 +106,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, (SqlConnection conn) =>
             {
-                var request = CreateListRequest(filtros, esExportar);
-                var total = conn.QuerySingle<int>(SqlCount, request.Parameters);
-                var lista = conn.Query<CdTiposProcesosData>(request.Sql, request.Parameters).ToList();
+                filtros ??= new FiltrosLazyLoadData();
+
+                var filtroTexto = filtros.filtro?.Trim();
+                var usaFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                var campoOrden = GetSortColumn(filtros.sortField);
+                var direccion = filtros.sortOrder == 1 ? "DESC" : "ASC";
+
+                var parametros = new
+                {
+                    filtro = usaFiltro ? filtroTexto : null,
+                    like = usaFiltro ? $"%{filtroTexto}%" : null,
+                    orderBy = campoOrden,
+                    offset = filtros.pagina,
+                    fetch = filtros.paginacion
+                };
+
+                var total = conn.QuerySingle<int>(ConteoSql, parametros);
+                var sql = ArmarConsultaListado(direccion, filtros.paginacion > 0 && !esExportar);
+                var datos = conn.Query<CdTiposProcesosData>(sql, parametros).ToList();
 
                 return new CdTiposProcesosLista
                 {
                     Total = total,
-                    lista = lista
+                    lista = datos
                 };
             });
         }
 
-        // Guarda o actualiza el tipo de proceso.
+        // Inserta o actualiza el tipo de proceso.
         public ErrorDto AfCdTiposProcesos_Guardar(int codEmpresa, string usuario, CdTiposProcesosData datos)
         {
-            var error = ValidateRequiredData(usuario, datos?.CodTipoProceso);
-            if (error != null || datos == null)
+            if (datos == null)
             {
-                return error ?? Fail(MensajeDatosRequeridos);
+                return DbHelper.ErrorResponse(MensajeDatosInvalidos);
+            }
+
+            if (string.IsNullOrWhiteSpace(datos.CodTipoProceso))
+            {
+                return DbHelper.ErrorResponse(MensajeCodigoInvalido);
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse(MensajeUsuarioInvalido);
             }
 
             var codigo = datos.CodTipoProceso.Trim();
-            var response = DbHelper.ExecuteSingleQuery<string>(
+            var ejecucion = DbHelper.ExecuteSingleQuery<string>(
                 _portalDb,
                 codEmpresa,
-                SqlUpsert,
+                GuardarSql,
                 defaultValue: string.Empty,
                 parameters: new
                 {
@@ -142,150 +166,103 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     usuario
                 });
 
-            if (response.Code != 0)
+            if (ejecucion.Code != 0)
             {
-                return Fail(MensajeGuardarError);
+                return DbHelper.ErrorResponse(MensajeGuardarFallido);
             }
 
-            RegisterAuditIfNeeded(
-                codEmpresa,
-                usuario,
-                codigo,
-                ResolveMovement(response.Result));
+            var accion = (ejecucion.Result ?? string.Empty).Trim().ToLowerInvariant();
+            if (accion == "insert")
+            {
+                EscribirBitacora(codEmpresa, usuario, codigo, MovimientoRegistro);
+            }
+            else if (accion == "update")
+            {
+                EscribirBitacora(codEmpresa, usuario, codigo, MovimientoModificacion);
+            }
 
-            return Ok();
+            return DbHelper.CreateOkResponse();
         }
 
-        // Elimina el registro y registra bitácora si aplica.
+        // Elimina el tipo de proceso y registra bitácora.
         public ErrorDto AfCdTiposProcesos_Eliminar(int codEmpresa, string usuario, string codTipoProceso)
         {
-            var error = ValidateRequiredData(usuario, codTipoProceso);
-            if (error != null)
+            if (string.IsNullOrWhiteSpace(codTipoProceso))
             {
-                return error;
+                return DbHelper.ErrorResponse(MensajeCodigoInvalido);
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse(MensajeUsuarioInvalido);
             }
 
             var codigo = codTipoProceso.Trim();
-            var response = DbHelper.ExecuteNonQueryWithResult(
+            var ejecucion = DbHelper.ExecuteNonQueryWithResult(
                 _portalDb,
                 codEmpresa,
-                SqlDelete,
+                EliminarSql,
                 new { CodTipoProceso = codigo });
 
-            if (response.Code != 0)
+            if (ejecucion.Code != 0)
             {
-                return Fail(MensajeEliminarError);
+                return DbHelper.ErrorResponse(MensajeEliminarFallido);
             }
 
-            if (response.Result > 0)
+            if (ejecucion.Result > 0)
             {
-                RegisterAuditIfNeeded(codEmpresa, usuario, codigo, MovElimina);
+                EscribirBitacora(codEmpresa, usuario, codigo, MovimientoEliminacion);
             }
 
-            return Ok();
+            return DbHelper.CreateOkResponse();
         }
 
-        // Registra el movimiento en bitácora cuando corresponde.
-        private void RegisterAuditIfNeeded(int empresaId, string usuario, string codigo, string movimiento)
+        // Registra el detalle del movimiento en bitácora.
+        private void EscribirBitacora(int empresaId, string usuario, string codigo, string movimiento)
         {
-            if (string.IsNullOrWhiteSpace(movimiento))
-            {
-                return;
-            }
-
             _securityMainDb.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = empresaId,
                 Usuario = usuario,
-                DetalleMovimiento = string.Format(FormatoDetalleBitacora, codigo),
+                DetalleMovimiento = $"Tipos de Proceso Id: {codigo}",
                 Movimiento = movimiento,
-                Modulo = ModuloCxC
+                Modulo = ModuloBitacora
             });
         }
 
-        // Valida usuario y código requeridos.
-        private static ErrorDto? ValidateRequiredData(string usuario, string? codigo)
+        // Resuelve la columna válida para ordenar.
+        private static string GetSortColumn(string? sortField)
         {
-            if (string.IsNullOrWhiteSpace(codigo))
+            var valor = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+
+            return valor switch
             {
-                return Fail(MensajeCodigoRequerido);
+                "codtipoproceso" => ColumnaCodigo,
+                "nombretipoproceso" => ColumnaNombre,
+                "activo" => ColumnaActivo,
+                _ => ColumnaCodigo
+            };
+        }
+
+        // Construye el SQL final del listado.
+        private static string ArmarConsultaListado(string direccion, bool usarPaginacion)
+        {
+            var sql = ConsultaBaseSql + $@"
+            ORDER BY
+                CASE WHEN @orderBy = '{ColumnaCodigo}' THEN CodTipoProceso END {direccion},
+                CASE WHEN @orderBy = '{ColumnaNombre}' THEN NombreTipoProceso END {direccion},
+                CASE WHEN @orderBy = '{ColumnaActivo}' THEN Activo END {direccion}";
+
+            if (usarPaginacion)
+            {
+                sql += " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+            }
+            else
+            {
+                sql += ";";
             }
 
-            return string.IsNullOrWhiteSpace(usuario)
-                ? Fail(MensajeUsuarioRequerido)
-                : null;
+            return sql;
         }
-
-        // Resuelve el campo y dirección de ordenamiento.
-        private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
-        {
-            var normalized = (sortField ?? string.Empty).Trim().ToLowerInvariant();
-
-            var orderBy = normalized switch
-            {
-                "codtipoproceso" => CampoCodigo,
-                "nombretipoproceso" => CampoNombre,
-                "activo" => CampoActivo,
-                _ => CampoCodigo
-            };
-
-            return (orderBy, sortOrder == 1 ? "DESC" : "ASC");
-        }
-
-        // Construye el SQL de lista y sus parámetros.
-        private static ListRequest CreateListRequest(FiltrosLazyLoadData filtros, bool esExportar)
-        {
-            filtros ??= new FiltrosLazyLoadData();
-
-            var texto = filtros.filtro?.Trim();
-            var hasFilter = !string.IsNullOrWhiteSpace(texto);
-            var (orderBy, direction) = ResolveOrder(filtros.sortField, filtros.sortOrder);
-
-            var parameters = new
-            {
-                filtro = hasFilter ? texto : null,
-                like = hasFilter ? $"%{texto}%" : null,
-                orderBy,
-                offset = filtros.pagina,
-                fetch = filtros.paginacion
-            };
-
-            var sql = SqlListBase + ComposeOrderBy(direction);
-            sql += filtros.paginacion > 0 && !esExportar
-                ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
-                : ";";
-
-            return new ListRequest(sql, parameters);
-        }
-
-        // Genera la cláusula ORDER BY segura.
-        private static string ComposeOrderBy(string direction)
-        {
-            return $@"
-            ORDER BY
-                CASE WHEN @orderBy = '{CampoCodigo}' THEN CodTipoProceso END {direction},
-                CASE WHEN @orderBy = '{CampoNombre}' THEN NombreTipoProceso END {direction},
-                CASE WHEN @orderBy = '{CampoActivo}' THEN Activo END {direction}";
-        }
-
-        // Traduce la acción SQL a movimiento de bitácora.
-        private static string ResolveMovement(string? accion)
-        {
-            return (accion ?? string.Empty).Trim().ToLowerInvariant() switch
-            {
-                "insert" => MovRegistra,
-                "update" => MovModifica,
-                _ => string.Empty
-            };
-        }
-
-        // Devuelve una respuesta exitosa estándar.
-        private static ErrorDto Ok() => DbHelper.CreateOkResponse();
-
-        // Devuelve una respuesta de error estándar.
-        private static ErrorDto Fail(string message) => DbHelper.ErrorResponse(message);
-
-        // Encapsula el SQL y parámetros de la consulta de lista.
-        private sealed record ListRequest(string Sql, object Parameters);
     }
 }
