@@ -37,6 +37,7 @@
                 "CONSECUTIVO_DET" => "CONSECUTIVO_DET",
                 "DOC_AUTO" => "DOC_AUTO",
                 "Movimiento" => "Movimiento",
+                "REG_AUTORIZACION" => "REG_AUTORIZACION",
                 _ => throw new ArgumentException("Campo inválido", nameof(campo))
             };
 

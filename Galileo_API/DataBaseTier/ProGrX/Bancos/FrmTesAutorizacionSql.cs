@@ -39,7 +39,9 @@ WHERE NOMBRE = @usuario";
                         IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
                     FROM Tes_Transacciones T 
                     INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                    INNER JOIN Socios S ON T.CODIGO = S.CEDULA
+                    INNER JOIN Socios S ON 
+                            REPLACE(T.CODIGO, '-', '') = 
+                            REPLACE(S.CEDULA, '-', '') 
                     WHERE T.estado = 'P'
                       AND B.id_banco = @Banco
                       AND T.Tipo = @TipoDoc

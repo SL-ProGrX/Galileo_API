@@ -31,13 +31,13 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
         [Authorize]
         [HttpGet("CC_PlanillaBitacora_Lista_Obtener")]
-        public ErrorDto<CcPlanillaBitacoraListaResult> CC_PlanillaBitacora_Lista_Obtener(int CodEmpresa,decimal proceso,string parametros)
+        public ErrorDto<CcPlanillaBitacoraListaResult> CC_PlanillaBitacora_Lista_Obtener(int CodEmpresa, decimal proceso, string parametros)
         {
             return BL.CC_PlanillaBitacora_Lista_Obtener(CodEmpresa, proceso, parametros);
         }
         [Authorize]
         [HttpGet("CC_PlanillaBitacora_Lista_Export")]
-        public ErrorDto<CcPlanillaBitacoraListaResult> CC_PlanillaBitacora_Lista_Export(int CodEmpresa,decimal proceso,string parametros)
+        public ErrorDto<CcPlanillaBitacoraListaResult> CC_PlanillaBitacora_Lista_Export(int CodEmpresa, decimal proceso, string parametros)
         {
             return BL.CC_PlanillaBitacora_Lista_Export(CodEmpresa, proceso, parametros);
         }

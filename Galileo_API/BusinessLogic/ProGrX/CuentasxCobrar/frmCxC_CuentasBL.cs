@@ -277,5 +277,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxCCuentasActivacionDetalle_Obtener(codEmpresa, request);
         }
+
+        public ErrorDto<int> ParametrosInicializa(int codEmpresa, string usuario, long contabilidad)
+        {
+            return _db.ParametrosInicializa(codEmpresa, usuario, contabilidad);
+        }
+
+        public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
+        {
+            return _db.sbImprimeRecibo(CodEmpresa, pDocumento, pTipo, Usuario, pReImprime);
+        }
     }
 }
