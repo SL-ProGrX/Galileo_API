@@ -69,7 +69,7 @@ namespace Galileo_API.DataBaseTier
                 }
             };
 
-        private sealed record SinpeResultLite(string? SINPEReference, object? State);
+        private sealed record SinpeResultLite(string? SINPEReference, object? State, object? refNumber);
         // Parámetros compartidos entre INSERT/UPDATE de SINPE_MOV_TRANSITO
         // (reduce duplicidad y evita divergencias accidentales)
         private object BuildMovTransitoParams(
@@ -84,16 +84,8 @@ namespace Galileo_API.DataBaseTier
 
             // Selección explícita del resultado según canal
             SinpeResultLite? sr;
-            if (canal != 24)
-            {
-                sr = (resPIN?.DTRSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.DTRSendingResult.SINPERefNumber!, resPIN.DTRSendingResult.State));
-            }
-            else
-            {
-                sr = (resPIN?.PINSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.PINSendingResult.SINPEReference!, resPIN.PINSendingResult.State));
-            }
+            sr = (resPIN?.PINSendingResult is null ? null :
+                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber!, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber));
 
             return new
             {
@@ -117,7 +109,7 @@ namespace Galileo_API.DataBaseTier
                 ComprobanteInterno = sr?.SINPEReference ?? string.Empty,
                 RechazoCodigo = (resPIN?.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
                 RechazoDesc = string.Empty,
-                Estado = (sr?.SINPEReference == null)? 4 : sr?.State,
+                Estado = sr?.State,
                 FechaActualiza = incluirFechaActualiza ? DateTime.Now : (DateTime?)null,
                 Servicio = Convert.ToInt32(Inferir((solicitud.CedulaOrigen ?? "").Replace("-", "")).Codigo)
             };
@@ -1713,47 +1705,60 @@ FROM dbo.fxSinpe_ValidaCredito(
             };
 
             string nDocumento = "";
-
+            string estado = string.Empty;
             try
             {
-                if (datos.IdMotivoRechazo != 201)
+                
+                var FechaEmite = datos.FechaEmision;
+                var FechaTraslado = datos.FechaTraslado;
+                switch (datos.IdMotivoRechazo)
                 {
-                    string estado = "I";
-                    if(datos.IdMotivoRechazo != 1 && datos.IdMotivoRechazo != 2)
-                    {
+                    case 1: //Registrada = TR
+                    case 128: //Rechazada
+                    case 256: //En Espera: enviar consulta de estado de nuevo
+                    default:
                         estado = "P";
-                    }
+                        FechaEmite = null;
+                        break;
+                    case 32: //Pagada
+                        estado = "I";
+                        break;
+                }
 
-                        nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
+                nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
                                      .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
 
 
-                    var query = $@"Update Tes_Transacciones Set Estado=@Estado,Fecha_Emision= @FECHAEMITE, 
-                                    Ubicacion_Actual='T',FECHA_TRASLADO= @FECHATRASLADO, User_Genera = @USUARIO, 
-                                    Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, 
-                                    Documento_Base = @DOCBASE, NDocumento = CASE WHEN USUARIO_AUTORIZA_ESPECIAL IS 
-                                    NULL THEN @NDOC ELSE @REFERENCIA END where NSolicitud= @SOLICITUD";
-                    var result = connection.Execute(query, new
-                    {
-                        FECHAEMITE = datos.FechaEmision,
-                        FECHATRASLADO = datos.FechaTraslado,
-                        USUARIO = datos.UsuarioGenera,
-                        ESTADOSINPE = datos.estadoSinpe,
-                        RECHAZO = datos.IdMotivoRechazo,
-                        REFERENCIA = datos.CodigoReferencia,
-                        DOCBASE = datos.DocumentoBase,
-                        NDOC = nDocumento,
-                        SOLICITUD = datos.NumeroSolicitud,
-                        Estado = estado
-                    });
-                    if (result > 0)
-                    {
-                        response.Result = true;
-                    }
-                }
-                else
+                var query = $@"Update 
+                    Tes_Transacciones 
+                    Set 
+                    Estado=@Estado,
+                    Fecha_Emision= @FECHAEMITE, 
+                    Ubicacion_Actual='T',
+                    FECHA_TRASLADO= @FECHATRASLADO, 
+                    User_Genera = @USUARIO, 
+                    Estado_Sinpe= @ESTADOSINPE, 
+                    Id_Rechazo= @RECHAZO, 
+                    Documento_Base = @DOCBASE, 
+                    NDocumento = @NDOC,
+                    REFERENCIA_SINPE = @REFERENCIA
+                    where NSolicitud= @SOLICITUD";
+                var result = connection.Execute(query, new
                 {
-                    response.Result = false;
+                    FECHAEMITE = FechaEmite,
+                    FECHATRASLADO = FechaTraslado,
+                    USUARIO = datos.UsuarioGenera,
+                    ESTADOSINPE = datos.estadoSinpe,
+                    RECHAZO = datos.IdMotivoRechazo,
+                    REFERENCIA = datos.CodigoReferencia,
+                    DOCBASE = datos.DocumentoBase,
+                    NDOC = nDocumento,
+                    SOLICITUD = datos.NumeroSolicitud,
+                    Estado = estado
+                });
+                if (result > 0)
+                {
+                    response.Result = true;
                 }
             }
             catch (Exception)
