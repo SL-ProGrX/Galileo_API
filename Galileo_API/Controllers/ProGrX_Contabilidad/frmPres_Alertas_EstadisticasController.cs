@@ -28,7 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpGet("PresPlanning_Obtener")]
-        public ErrorDto<List<PresVistaPresupuestoAlertasData>> PresPlanning_Obtener(int CodCliente, string datos)
+        public ErrorDto<PresVistaPresupuestoAlertasResponse> PresPlanning_Obtener(int CodCliente, string datos)
         {
             return _BL.PresPlanning_Obtener(CodCliente, datos);
         }
@@ -106,6 +106,36 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ErrorDto PresAlertasControlPeriodo_Registrar(int CodEmpresa, [FromBody] PresAlertasControlPeriodoConfigRequest request)
         {
             return _BL.PresAlertasControlPeriodo_Registrar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasJustificaPeriodo_Obtener")]
+        public ErrorDto<List<PresAlertasJustificaPeriodoConsultaData>> PresAlertasJustificaPeriodo_Obtener(
+    int CodEmpresa,
+    [FromBody] PresAlertasJustificaPeriodoConsultaRequest request)
+        {
+            return _BL.PresAlertasJustificaPeriodo_Obtener(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasDashboardResumen_Obtener")]
+        public ErrorDto<PresAlertasDashboardResumenData> PresAlertasDashboardResumen_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
+        {
+            return _BL.PresAlertasDashboardResumen_Obtener(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasDashboardUnidad_Obtener")]
+        public ErrorDto<List<PresAlertasDashboardUnidadData>> PresAlertasDashboardUnidad_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
+        {
+            return _BL.PresAlertasDashboardUnidad_Obtener(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("PresAlertasDashboardJustificacion_Obtener")]
+        public ErrorDto<List<PresAlertasDashboardJustificacionData>> PresAlertasDashboardJustificacion_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
+        {
+            return _BL.PresAlertasDashboardJustificacion_Obtener(CodEmpresa, request);
         }
 
     }
