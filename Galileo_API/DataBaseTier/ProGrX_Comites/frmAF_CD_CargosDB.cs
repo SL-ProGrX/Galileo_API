@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 using System.Data.Common;
 using static Galileo_API.Models.ProGrX_Comites.FrmAfCdCargos;
 
@@ -30,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        private DbConnection OpenConnection(int codEmpresa)
+        private SqlConnection OpenConnection(int codEmpresa)
             => DbHelper.OpenConnection(_portalDB, codEmpresa);
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return new CdCargosLista
             {
                 Total = 0,
-                lista = new List<CdCargosData>()
+                lista = []
             };
         }
 
@@ -199,8 +200,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                     var like = hasFiltro ? $"%{texto}%" : null;
 
-                    var offset = filtros.pagina ?? 0;
-                    var fetch = filtros.paginacion ?? 0;
+                    var offset = filtros.pagina ;
+                    var fetch = filtros.paginacion;
                     var usarPaginacion = fetch > 0 && !esExportar;
 
                     var orderByField = ResolveOrderBy(filtros.sortField);
@@ -311,9 +312,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     conn.Execute(sqlInsert, new
                     {
                         Codigo = nuevoCodigo,
-                        Descripcion = datos.Descripcion,
-                        Cuenta = datos.Cuenta,
-                        Estado = datos.Estado
+                         datos.Descripcion,
+                         datos.Cuenta,
+                         datos.Estado
                     });
 
                     RegistrarBitacora(
@@ -351,10 +352,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
                     conn.Execute(sqlUpdate, new
                     {
-                        Descripcion = datos.Descripcion,
-                        Cuenta = datos.Cuenta,
-                        Estado = datos.Estado,
-                        Codigo = datos.Codigo
+                        datos.Descripcion,
+                        datos.Cuenta,
+                        datos.Estado,
+                        datos.Codigo
                     });
 
                     RegistrarBitacora(
