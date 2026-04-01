@@ -10,7 +10,7 @@
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
         public DateTime? modifica_fecha { get; set; }
-        public string modifica_usuario { get; set; } = string.Empty;
+        public string? modifica_usuario { get; set; } = string.Empty;
     }
 
     public class AlertasTiposLista
