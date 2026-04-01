@@ -21,7 +21,7 @@ namespace Galileo.BusinessLogic.ProGrX_Contabilidad
             return _DB.PresAlertasEstadisticasTipos_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<PresVistaPresupuestoAlertasData>> PresPlanning_Obtener(int CodCliente, string datos)
+        public ErrorDto<PresVistaPresupuestoAlertasResponse> PresPlanning_Obtener(int CodCliente, string datos)
         {
             return _DB.PresPlanning_Obtener(CodCliente, datos);
         }
@@ -80,6 +80,32 @@ namespace Galileo.BusinessLogic.ProGrX_Contabilidad
         {
             return _DB.PresAlertasControlPeriodo_Registrar(codEmpresa, request);
         }
+
+        public ErrorDto<List<PresAlertasJustificaPeriodoConsultaData>> PresAlertasJustificaPeriodo_Obtener(
+    int codEmpresa,
+    PresAlertasJustificaPeriodoConsultaRequest request)
+        {
+            return _DB.PresAlertasJustificaPeriodo_Obtener(codEmpresa, request);
+        }
+
+        #region DashBoard
+
+        public ErrorDto<PresAlertasDashboardResumenData> PresAlertasDashboardResumen_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            return _DB.PresAlertasDashboardResumen_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<List<PresAlertasDashboardUnidadData>> PresAlertasDashboardUnidad_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            return _DB.PresAlertasDashboardUnidad_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<List<PresAlertasDashboardJustificacionData>> PresAlertasDashboardJustificacion_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)
+        {
+            return _DB.PresAlertasDashboardJustificacion_Obtener(codEmpresa, request);
+        }
+
+        #endregion
 
     }
 

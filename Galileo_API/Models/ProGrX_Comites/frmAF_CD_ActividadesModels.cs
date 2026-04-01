@@ -32,4 +32,16 @@
         public decimal? Minimo { get; set; }
         public decimal? Maximo { get; set; }
     }
+
+    public class AfCdCuentaConsultaDto
+    {
+        public string? Descripcion { get; set; }
+        public string? Comite { get; set; }
+        public decimal? Monto { get; set; }
+        public string? NOperacion { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Estado { get; set; }
+        public string? NombreEstado { get; set; }
+    }
 }

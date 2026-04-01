@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Comites;
 using System.Collections.Generic;
@@ -237,6 +238,62 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 return true;
             });
             return new ErrorDto<bool> { Result = true };
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AfCdActividades_DropDownLista(int codEmpresa)
+        {
+            var sql = @"
+                SELECT cod_actividad AS item, descripcion AS descripcion
+                FROM afi_cd_actividades
+                ORDER BY cod_actividad ASC";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null
+            );
+        }
+
+        public ErrorDto<List<AfCdCuentaConsultaDto>> AfCdCuentas_Consulta(int codEmpresa, DateTime fechaInicio, DateTime fechaFin, string codActividad)
+        {
+            var sql = @"
+                select
+                    Act.descripcion AS Descripcion,
+                    S.descripcion AS Comite,
+                    C.monto AS Monto,
+                    C.noperacion AS NOperacion,
+                    C.registro_usuario AS Registro_Usuario,
+                    C.registro_fecha AS Registro_Fecha,
+                    C.estado AS Estado,
+                    Est.NombreEstado AS NombreEstado
+                from afi_cd_cuentas C
+                inner join afi_cd_cuentas_actividades Ca
+                    on C.noperacion = Ca.noperacion
+                inner join afi_cd_actividades Act
+                    on Act.cod_actividad = Ca.cod_actividad
+                inner join afi_cd_comites S
+                    on C.Cod_comite = S.cod_comite
+                inner join AFI_CD_TIPOS_ESTADOS_CUENTAS Est
+                    on C.Estado = Est.CodEstado
+                where C.registro_fecha between @FechaInicio and @FechaFin";
+
+            if (!string.Equals(codActividad, "TODOS", StringComparison.OrdinalIgnoreCase))
+                sql += " and Ca.Cod_Actividad = @Cod_Actividad";
+
+            var parameters = new
+            {
+                FechaInicio = fechaInicio.Date,
+                FechaFin = fechaFin.Date.AddDays(1).AddSeconds(-1),
+                Cod_Actividad = codActividad
+            };
+
+            return DbHelper.ExecuteListQuery<AfCdCuentaConsultaDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                parameters
+            );
         }
     }
 }
