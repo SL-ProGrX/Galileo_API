@@ -13,7 +13,7 @@
 
     public class AfCdParametroUpdateDto
     {
-        public int Cod_Parametro { get; set; }
+        public required int Cod_Parametro { get; set; }
         public string Valor { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
