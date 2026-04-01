@@ -104,27 +104,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <param name="esExportar"></param>
         /// <returns></returns>
         public ErrorDto<CdTiposDesembolsosLista> AfCdTiposDesembolsosLista_Obtener(
-            int codEmpresa,
-            FiltrosLazyLoadData filtros,
-            bool esExportar)
+      int codEmpresa,
+      FiltrosLazyLoadData filtros,
+      bool esExportar)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, (SqlConnection conn) =>
             {
-                var filtrosNormalizados = filtros ?? new FiltrosLazyLoadData();
-                var parametros = BuildListParameters(filtrosNormalizados, esExportar);
-                var total = conn.QuerySingle<int>(SqlContar, parametros);
+                filtros ??= new FiltrosLazyLoadData();
 
-                var sql = ComposeListSql(parametros.Direction, parametros.UsePagination);
-                var registros = conn.Query<CdTiposDesembolsosData>(sql, new
+                var texto = filtros.filtro?.Trim();
+                var hasFiltro = !string.IsNullOrWhiteSpace(texto);
+                var usarPaginacion = filtros.paginacion > 0 && !esExportar;
+                var (orderBy, direction) = ResolveSort(filtros.sortField, filtros.sortOrder);
+
+                var parameters = new
                 {
-                    filtro = parametros.Filter,
-                    like = parametros.Like,
-                    orderBy = parametros.OrderBy,
-                    offset = parametros.Offset,
-                    fetch = parametros.Fetch
-                }).ToList();
+                    filtro = hasFiltro ? texto : null,
+                    like = hasFiltro ? $"%{texto}%" : null,
+                    orderBy,
+                    offset = filtros.pagina,
+                    fetch = filtros.paginacion
+                };
 
-                return CreateListResponse(total, registros);
+                var total = conn.QuerySingle<int>(SqlContar, parameters);
+
+                var sql = ComposeListSql(direction, usarPaginacion);
+                var registros = conn.Query<CdTiposDesembolsosData>(sql, parameters).ToList();
+
+                return new CdTiposDesembolsosLista
+                {
+                    Total = total,
+                    lista = registros
+                };
             });
         }
 
