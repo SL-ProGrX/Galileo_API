@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX_Comites
+﻿using Galileo.Models.ERROR;
+
+namespace Galileo_API.Models.ProGrX_Comites
 {
     public class AfCdOperacionData
     {
@@ -35,10 +37,18 @@
 
     public class AfCdFacturaData
     {
+        public int noperacion { get; set; } = 0;
         public bool deposito { get; set; } = false;
         public string ndocumento { get; set; } = string.Empty;
         public DateTime? fecha_documento { get; set; }
         public string detalle { get; set; } = string.Empty;
         public decimal monto { get; set; } = 0;
+    }
+
+    public class AfCdDetalleLiquidacionMontosData
+    {
+        public decimal total { get; set; }
+        public decimal totalFactura { get; set; }
+        public decimal diferencia { get; set; }
     }
 }

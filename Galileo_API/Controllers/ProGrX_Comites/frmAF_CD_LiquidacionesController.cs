@@ -60,6 +60,42 @@ using Microsoft.AspNetCore.Mvc;
             {
                 return _bl.AfCdFacturas_Obtener(codEmpresa, operacion);
             }
+
+            [HttpPost("AfCdDetalleLiquidacion_Guardar")]
+            public ErrorDto AfCdDetalleLiquidacion_Guardar(int codEmpresa, string usuario, AfCdFacturaData request)
+            {
+                return _bl.AfCdDetalleLiquidacion_Guardar(codEmpresa, usuario, request);
+            }
+            
+            [HttpDelete("AfCdDetalleLiquidacion_Eliminar")]
+            public ErrorDto AfCdDetalleLiquidacion_Eliminar(int codEmpresa, int operacion, string documento, string usuario)
+            {
+                return _bl.AfCdDetalleLiquidacion_Eliminar(codEmpresa, operacion, documento, usuario);
+            }
+
+            [HttpGet("AfCdDetalleLiquidacion_Montos_Obtener")]
+            public ErrorDto<AfCdDetalleLiquidacionMontosData> AfCdDetalleLiquidacion_Montos_Obtener(int codEmpresa, int operacion)
+            {
+                return _bl.AfCdDetalleLiquidacion_Montos_Obtener(codEmpresa, operacion);
+            }
+
+            [HttpPost("AfCdLiquidacion_Detallar")]
+            public ErrorDto AfCdLiquidacion_Detallar(int codEmpresa, int operacion)
+            {
+                return _bl.AfCdLiquidacion_Detallar(codEmpresa, operacion);
+            }
+        
+            [HttpPost("AfCdLiquidacionOperacion_Liquidar")]
+            public ErrorDto<object> AfCdLiquidacionOperacion_Liquidar(int codEmpresa, int operacion, string usuario, string notas)
+            {
+                return _bl.AfCdLiquidacionOperacion_Liquidar(codEmpresa, operacion, usuario, notas);
+            }
+
+            [HttpPost("AfCdLiquidacion_Historico_Imprimir")]
+            public ErrorDto<object> AfCdLiquidacion_Historico_Imprimir(int codEmpresa, int col, string opRef, string codigoComite, string usuario)
+            {
+                return _bl.AfCdLiquidacion_Historico_Imprimir(codEmpresa, col, opRef, codigoComite, usuario);
+            }
         }
     }
 

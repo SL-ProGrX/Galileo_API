@@ -48,5 +48,35 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
         {
             return _db.AfCdFacturas_Obtener(codEmpresa, operacion);
         }
+
+        public ErrorDto AfCdDetalleLiquidacion_Guardar(int codEmpresa, string usuario, AfCdFacturaData request)
+        {
+            return _db.AfCdDetalleLiquidacion_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto AfCdDetalleLiquidacion_Eliminar(int codEmpresa, int operacion, string documento, string usuario)
+        {
+            return _db.AfCdDetalleLiquidacion_Eliminar(codEmpresa, operacion, documento, usuario);
+        }
+
+        public ErrorDto<AfCdDetalleLiquidacionMontosData> AfCdDetalleLiquidacion_Montos_Obtener(int codEmpresa, int operacion)
+        {
+            return _db.AfCdDetalleLiquidacion_Montos_Obtener(codEmpresa, operacion);
+        }
+
+        public ErrorDto AfCdLiquidacion_Detallar(int codEmpresa, int operacion)
+        {
+            return _db.AfCdLiquidacion_Detallar(codEmpresa, operacion);
+        }
+
+        public ErrorDto<object> AfCdLiquidacionOperacion_Liquidar(int codEmpresa, int operacion, string usuario, string notas)
+        {
+            return _db.AfCdLiquidacionOperacion_Liquidar(codEmpresa, operacion, usuario, notas);
+        }
+
+        public ErrorDto<object> AfCdLiquidacion_Historico_Imprimir(int codEmpresa, int col, string opRef, string codigoComite, string usuario)
+        {
+            return _db.AfCdLiquidacion_Historico_Imprimir(codEmpresa, col, opRef, codigoComite, usuario);
+        }
     }
 }
