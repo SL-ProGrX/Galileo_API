@@ -69,7 +69,7 @@ namespace Galileo_API.DataBaseTier
                 }
             };
 
-        private sealed record SinpeResultLite(string? SINPEReference, object? State);
+        private sealed record SinpeResultLite(string? SINPEReference, object? State, object? refNumber);
         // Parámetros compartidos entre INSERT/UPDATE de SINPE_MOV_TRANSITO
         // (reduce duplicidad y evita divergencias accidentales)
         private object BuildMovTransitoParams(
@@ -84,16 +84,8 @@ namespace Galileo_API.DataBaseTier
 
             // Selección explícita del resultado según canal
             SinpeResultLite? sr;
-            if (canal != 24)
-            {
-                sr = (resPIN?.DTRSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.DTRSendingResult.SINPERefNumber!, resPIN.DTRSendingResult.State));
-            }
-            else
-            {
-                sr = (resPIN?.PINSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.PINSendingResult.SINPEReference!, resPIN.PINSendingResult.State));
-            }
+            sr = (resPIN?.PINSendingResult is null ? null :
+                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber!, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber));
 
             return new
             {
@@ -117,7 +109,7 @@ namespace Galileo_API.DataBaseTier
                 ComprobanteInterno = sr?.SINPEReference ?? string.Empty,
                 RechazoCodigo = (resPIN?.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
                 RechazoDesc = string.Empty,
-                Estado = (sr?.SINPEReference == null)? 4 : sr?.State,
+                Estado = sr?.State,
                 FechaActualiza = incluirFechaActualiza ? DateTime.Now : (DateTime?)null,
                 Servicio = Convert.ToInt32(Inferir((solicitud.CedulaOrigen ?? "").Replace("-", "")).Codigo)
             };
@@ -1495,12 +1487,14 @@ FROM dbo.fxSinpe_ValidaCredito(
                                     CEDULA_ORIGEN as 'CedulaOrigen', 
                                     CTA_IBAN_ORIGEN as 'CuentaOrigen', 
                                     TIPO_CED_ORIGEN as 'tipoCedOrigen', 
+                                    TIPO_CED_ORIGEN as 'tipoIdOrigen',
                                     CORREO_NOTIFICA as 'CorreoNotifica', 
                                     ESTADO_SINPE as 'estadoSinpe', 
                                     ID_RECHAZO as 'IdMotivoRechazo', 
                                     TIPO_GIROSINPE, 
                                     ID_DESEMBOLSO, 
-                                    TIPO_CED_DESTINO as 'tipoCedDestino', 
+                                    TIPO_CED_DESTINO as 'tipoCedDestino',
+                                    TIPO_CED_DESTINO as 'tipoIdDestino',
                                     NOMBRE_ORIGEN as 'NombreOrigen', 
                                     REFERENCIA_SINPE, 
                                     ID_BANCO_DESTINO, 
@@ -1713,30 +1707,46 @@ FROM dbo.fxSinpe_ValidaCredito(
             };
 
             string nDocumento = "";
-
+            string estado = string.Empty;
             try
             {
-                if (datos.IdMotivoRechazo != 201)
+                
+                var FechaEmite = datos.FechaEmision;
+                var FechaTraslado = datos.FechaTraslado;
+                //Motivo 32 exitosa para TR y 0 para CCD
+                if(datos.IdMotivoRechazo == 32 || datos.IdMotivoRechazo == 0)
                 {
-                    string estado = "I";
-                    if(datos.IdMotivoRechazo != 1 && datos.IdMotivoRechazo != 2)
-                    {
-                        estado = "P";
-                    }
+                    estado = "I";
+                }
+                else
+                {
+                    estado = "P";
+                    FechaEmite = null;
+                }
+               
 
-                        nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
-                                     .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
+                    nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
+                                         .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
 
 
-                    var query = $@"Update Tes_Transacciones Set Estado=@Estado,Fecha_Emision= @FECHAEMITE, 
-                                    Ubicacion_Actual='T',FECHA_TRASLADO= @FECHATRASLADO, User_Genera = @USUARIO, 
-                                    Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, 
-                                    Documento_Base = @DOCBASE, NDocumento = CASE WHEN USUARIO_AUTORIZA_ESPECIAL IS 
-                                    NULL THEN @NDOC ELSE @REFERENCIA END where NSolicitud= @SOLICITUD";
+                    var query = $@"Update 
+                    Tes_Transacciones 
+                    Set 
+                    Estado=@Estado,
+                    Fecha_Emision= @FECHAEMITE, 
+                    Ubicacion_Actual='T',
+                    FECHA_TRASLADO= @FECHATRASLADO, 
+                    User_Genera = @USUARIO, 
+                    Estado_Sinpe= @ESTADOSINPE, 
+                    Id_Rechazo= @RECHAZO, 
+                    Documento_Base = @DOCBASE, 
+                    NDocumento = @NDOC,
+                    REFERENCIA_SINPE = @REFERENCIA
+                    where NSolicitud= @SOLICITUD";
                     var result = connection.Execute(query, new
                     {
-                        FECHAEMITE = datos.FechaEmision,
-                        FECHATRASLADO = datos.FechaTraslado,
+                        FECHAEMITE = FechaEmite,
+                        FECHATRASLADO = FechaTraslado,
                         USUARIO = datos.UsuarioGenera,
                         ESTADOSINPE = datos.estadoSinpe,
                         RECHAZO = datos.IdMotivoRechazo,
@@ -1751,11 +1761,6 @@ FROM dbo.fxSinpe_ValidaCredito(
                         response.Result = true;
                     }
                 }
-                else
-                {
-                    response.Result = false;
-                }
-            }
             catch (Exception)
             {
                 response.Code = -1;
