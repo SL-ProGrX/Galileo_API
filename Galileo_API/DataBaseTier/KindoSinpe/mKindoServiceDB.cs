@@ -1713,25 +1713,23 @@ FROM dbo.fxSinpe_ValidaCredito(
                 
                 var FechaEmite = datos.FechaEmision;
                 var FechaTraslado = datos.FechaTraslado;
-                switch (datos.IdMotivoRechazo)
+                //Motivo 32 exitosa para TR y 0 para CCD
+                if(datos.IdMotivoRechazo == 32 || datos.IdMotivoRechazo == 0)
                 {
-                    case 1: //Registrada = TR
-                    case 128: //Rechazada
-                    case 256: //En Espera: enviar consulta de estado de nuevo
-                    default:
-                        estado = "P";
-                        FechaEmite = null;
-                        break;
-                    case 32: //Pagada
-                        estado = "I";
-                        break;
+                    estado = "I";
                 }
+                else
+                {
+                    estado = "P";
+                    FechaEmite = null;
+                }
+               
 
-                nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
-                                     .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
+                    nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
+                                         .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
 
 
-                var query = $@"Update 
+                    var query = $@"Update 
                     Tes_Transacciones 
                     Set 
                     Estado=@Estado,
@@ -1745,24 +1743,24 @@ FROM dbo.fxSinpe_ValidaCredito(
                     NDocumento = @NDOC,
                     REFERENCIA_SINPE = @REFERENCIA
                     where NSolicitud= @SOLICITUD";
-                var result = connection.Execute(query, new
-                {
-                    FECHAEMITE = FechaEmite,
-                    FECHATRASLADO = FechaTraslado,
-                    USUARIO = datos.UsuarioGenera,
-                    ESTADOSINPE = datos.estadoSinpe,
-                    RECHAZO = datos.IdMotivoRechazo,
-                    REFERENCIA = datos.CodigoReferencia,
-                    DOCBASE = datos.DocumentoBase,
-                    NDOC = nDocumento,
-                    SOLICITUD = datos.NumeroSolicitud,
-                    Estado = estado
-                });
-                if (result > 0)
-                {
-                    response.Result = true;
+                    var result = connection.Execute(query, new
+                    {
+                        FECHAEMITE = FechaEmite,
+                        FECHATRASLADO = FechaTraslado,
+                        USUARIO = datos.UsuarioGenera,
+                        ESTADOSINPE = datos.estadoSinpe,
+                        RECHAZO = datos.IdMotivoRechazo,
+                        REFERENCIA = datos.CodigoReferencia,
+                        DOCBASE = datos.DocumentoBase,
+                        NDOC = nDocumento,
+                        SOLICITUD = datos.NumeroSolicitud,
+                        Estado = estado
+                    });
+                    if (result > 0)
+                    {
+                        response.Result = true;
+                    }
                 }
-            }
             catch (Exception)
             {
                 response.Code = -1;
