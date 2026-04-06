@@ -1487,12 +1487,14 @@ FROM dbo.fxSinpe_ValidaCredito(
                                     CEDULA_ORIGEN as 'CedulaOrigen', 
                                     CTA_IBAN_ORIGEN as 'CuentaOrigen', 
                                     TIPO_CED_ORIGEN as 'tipoCedOrigen', 
+                                    TIPO_CED_ORIGEN as 'tipoIdOrigen',
                                     CORREO_NOTIFICA as 'CorreoNotifica', 
                                     ESTADO_SINPE as 'estadoSinpe', 
                                     ID_RECHAZO as 'IdMotivoRechazo', 
                                     TIPO_GIROSINPE, 
                                     ID_DESEMBOLSO, 
-                                    TIPO_CED_DESTINO as 'tipoCedDestino', 
+                                    TIPO_CED_DESTINO as 'tipoCedDestino',
+                                    TIPO_CED_DESTINO as 'tipoIdDestino',
                                     NOMBRE_ORIGEN as 'NombreOrigen', 
                                     REFERENCIA_SINPE, 
                                     ID_BANCO_DESTINO, 
@@ -1931,6 +1933,14 @@ FROM dbo.fxSinpe_ValidaCredito(
                     Description = $"Error al validar divisas: {ex.Message}"
                 };
             }
+        }
+
+        private long ConsultaCodigoSugef(int CodEmpresa)
+        {
+            string Query = @"SELECT ISNULL(MAX(COD_TRANSITO), 0) + 1 AS SiguienteConsecutivo
+                                FROM SINPE_MOV_TRANSITO";
+
+            return DbHelper.ExecuteSingleQuery<long>(_portalDB, CodEmpresa, Query, 0, null).Result;
         }
 
         #endregion

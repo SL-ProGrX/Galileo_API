@@ -1110,7 +1110,10 @@
 
             public string? Codigo { get; set; } = null;
             public string? Beneficiario { get; set; } = null;
-            public string? Cuenta { get; set; } = null;
+
+            public int? tipoIdOrigen { get; set; } = null;
+        public int? tipoIdDestino { get; set; } = null;
+        public string? Cuenta { get; set; } = null;
             public E_TipoIdentificacion tipoCedDestino { get; set; }
 
             public string? NDocumento { get; set; } = null;
