@@ -853,21 +853,7 @@ namespace Galileo_API.DataBaseTier
                                                     ? Sinpe_CCD.E_Monedas.Dolares
                                                     : Sinpe_CCD.E_Monedas.Colones;
 
-                // Monto
-                /**
-                Se comenta este codigo porque ProGrX puede pasar montos en dolares.
-                if (solicitud.Divisa == "DOL")
-                {
-                    transaccion.DatosTransaccion.Monto = solicitud.tipoCambio > 0
-                        ? solicitud.Monto / solicitud.tipoCambio
-                        : 0;
-                    transaccion.DatosTransaccion.Monto = Math.Round(transaccion.DatosTransaccion.Monto, 4); // Redondeo para dólares
-                }
-                else
-                {
-                    transaccion.DatosTransaccion.Monto = solicitud.Monto;
-                }**/
-
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
                 transaccion.DatosTransaccion.Monto = solicitud.Monto;
 
                 // Otros campos
@@ -1135,18 +1121,8 @@ namespace Galileo_API.DataBaseTier
                              .Substring(0, Math.Min(255, (detalle.Replace("\r\n", "") + " Transferencia SINPE").Length));
                 }
 
-                //if (solicitud.Divisa == "DOL")
-                //{
-                //    solicitud.Monto = solicitud.tipoCambio > 0
-                //         ? solicitud.Monto / solicitud.tipoCambio
-                //         : 0;
-                    
-                //    solicitud.Divisa = "USD";
-                //}
-                //else
-                //{
-                //    solicitud.Divisa = "CRC";
-                //}
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
+
 
                 solicitud.Monto = Math.Round(solicitud.Monto, 4); // Redondeo para dólares
 
@@ -1319,18 +1295,9 @@ namespace Galileo_API.DataBaseTier
                                                     ? Sinpe_TFT.E_Monedas.Dolares
                                                     : Sinpe_TFT.E_Monedas.Colones;
 
-                // Monto
-                if (solicitud.Divisa == "DOL")
-                {
-                    transaccion.DatosDebito.Monto = solicitud.tipoCambio > 0
-                        ? solicitud.Monto / solicitud.tipoCambio
-                        : 0;
-                    transaccion.DatosDebito.Monto = Math.Round(transaccion.DatosDebito.Monto, 4); // Redondeo para dólares
-                }
-                else
-                {
-                    transaccion.DatosDebito.Monto = solicitud.Monto;
-                }
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
+
+                transaccion.DatosDebito.Monto = solicitud.Monto;
 
                 // Otros campos
                 transaccion.DatosDebito.Descripcion = detalle.Replace("\r\n", "");
