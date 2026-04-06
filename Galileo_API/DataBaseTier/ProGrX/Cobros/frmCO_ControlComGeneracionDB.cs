@@ -1,15 +1,20 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using System.Reflection;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoControlComGeneracionDB
     {
         private readonly PortalDB _portalDB;
+        private readonly MSecurityMainDb DBBitacora;
 
         public FrmCoControlComGeneracionDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            DBBitacora = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -17,11 +22,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa)
+        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa, string usuario)
         {
             try
             {
-                return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, "exec spCbrComision_Actualiza");
+
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                connection.Execute(
+                    sql: "exec spCbrComision_Actualiza",
+                    commandTimeout: 600
+                );
+
+                DBBitacora.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = $"Comisiones: Actualización de Recuperación",
+                    Movimiento = "Aplica - WEB",
+                    Modulo = 4
+                });
+
+                return DbHelper.OkResponse("Proceso de Actualización de comisiones realizado satisfactoriamente!");
             }
             catch (Exception ex)
             {
