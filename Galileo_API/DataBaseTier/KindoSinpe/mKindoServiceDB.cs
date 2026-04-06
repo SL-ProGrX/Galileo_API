@@ -1933,14 +1933,6 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
         }
 
-        private long ConsultaCodigoSugef(int CodEmpresa)
-        {
-            string Query = @"SELECT ISNULL(MAX(COD_TRANSITO), 0) + 1 AS SiguienteConsecutivo
-                                FROM SINPE_MOV_TRANSITO";
-
-            return DbHelper.ExecuteSingleQuery<long>(_portalDB, CodEmpresa, Query, 0, null).Result;
-        }
-
         #endregion
     }
 }
