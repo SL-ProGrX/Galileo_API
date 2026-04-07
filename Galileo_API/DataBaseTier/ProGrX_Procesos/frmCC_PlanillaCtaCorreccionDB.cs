@@ -427,7 +427,7 @@ where d.cod_institucion = @cod_institucion
 
             return acceso > 0;
         }
-        private class LogBitacoraParams
+         private sealed class LogBitacoraParams
         {
             public int EmpresaId { get; set; }
             public string Usuario { get; set; } = string.Empty;
