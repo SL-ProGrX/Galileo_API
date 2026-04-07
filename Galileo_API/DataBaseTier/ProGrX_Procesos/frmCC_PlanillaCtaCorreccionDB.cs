@@ -253,16 +253,18 @@ where d.cod_institucion = @cod_institucion
                     p,
                     commandType: CommandType.StoredProcedure);
 
-                LogBitacora(
-                    CodEmpresa,
-                    usuario,
-                    req.cod_institucion,
-                    proceso,
-                    req.operacion,
-                    req.cedula,
-                    req.referencia,
-                    req.cuota_anterior,
-                    req.cuota);
+                LogBitacora(new LogBitacoraParams
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    Institucion = req.cod_institucion,
+                    Proceso = proceso,
+                    Operacion = req.operacion,
+                    Cedula = req.cedula,
+                    Referencia = req.referencia,
+                    CuotaAnterior = req.cuota_anterior,
+                    CuotaNueva = req.cuota
+                });
 
                 return DbHelper.CreateOkResponse();
             }
@@ -425,24 +427,26 @@ where d.cod_institucion = @cod_institucion
 
             return acceso > 0;
         }
-
-        private void LogBitacora(
-            int empresaId,
-            string usuario,
-            int institucion,
-            int proceso,
-            long operacion,
-            string cedula,
-            string referencia,
-            decimal cuotaAnterior,
-            decimal cuotaNueva)
+        private class LogBitacoraParams
+        {
+            public int EmpresaId { get; set; }
+            public string Usuario { get; set; } = string.Empty;
+            public int Institucion { get; set; }
+            public int Proceso { get; set; }
+            public long Operacion { get; set; }
+            public string Cedula { get; set; } = string.Empty;
+            public string Referencia { get; set; } = string.Empty;
+            public decimal CuotaAnterior { get; set; }
+            public decimal CuotaNueva { get; set; }
+        }
+        private void LogBitacora(LogBitacoraParams p)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId = empresaId,
-                Usuario = usuario,
+                EmpresaId = p.EmpresaId,
+                Usuario = p.Usuario,
                 DetalleMovimiento =
-                    $"Ajuste manual de cuota planilla. Institución: {institucion}, Proceso: {proceso}, Operación: {operacion}, Cédula: {cedula}, Referencia: {referencia}, Cuota anterior: {cuotaAnterior:0.00}, Cuota nueva: {cuotaNueva:0.00}",
+                    $"Ajuste manual de cuota planilla. Institución: {p.Institucion}, Proceso: {p.Proceso}, Operación: {p.Operacion}, Cédula: {p.Cedula}, Referencia: {p.Referencia}, Cuota anterior: {p.CuotaAnterior:0.00}, Cuota nueva: {p.CuotaNueva:0.00}",
                 Movimiento = "Modifica - WEB",
                 Modulo = vModulo
             });
