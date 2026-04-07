@@ -19,5 +19,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         public ErrorDto Crd_CuotaMantenimiento_Ejecutar(int codEmpresa, string usuario, int codContabilidad, int codInstitucion)
                      => _db.Crd_CuotaMantenimiento_Ejecutar(codEmpresa, usuario, codContabilidad, codInstitucion);
 
+        public int Crd_CuotaMantenimiento_Derecho_Obtener(int codEmpresa, string usuario)
+                => _db.CmdAplicar_Derecho_Obtener(codEmpresa, usuario);
+        
     }
 }

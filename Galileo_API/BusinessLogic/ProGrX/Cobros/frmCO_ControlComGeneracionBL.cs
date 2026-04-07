@@ -12,9 +12,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             _db = new FrmCoControlComGeneracionDB(config);
         }
 
-        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa)
+        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa, string usuario)
         {
-            return _db.Co_ControlComGeneracion_Actualizar(CodEmpresa);
+            return _db.Co_ControlComGeneracion_Actualizar(CodEmpresa, usuario);
         }
     }
 }
