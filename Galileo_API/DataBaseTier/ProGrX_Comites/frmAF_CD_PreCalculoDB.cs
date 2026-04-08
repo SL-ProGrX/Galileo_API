@@ -8,14 +8,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 {
     public class FrmAfCdPreCalculoDB
     {
-        private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDb; 
         
 
         public FrmAfCdPreCalculoDB(IConfiguration config)
         {
-            _portalDb = new PortalDB(config);
-            _Security_MainDB = new MSecurityMainDb(config);
+            _portalDb = new PortalDB(config); 
         }
 
         /// <summary>
