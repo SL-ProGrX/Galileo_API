@@ -67,12 +67,17 @@ namespace Galileo_API.DataBaseTier
                 var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
 
                 if (!servicio.ServiceAvailable)
-                    return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
+                    return DbHelper.ErrorResponse("Servicio no disponible: " + servicio!.Errors?[0].Message);
 
                 string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN!, sinpeTipo, cedula);
 
+                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account!.CurrencyCode ?? "X");
+                if (valOrigen.Code == -1)
+                {
+                    return DbHelper.ErrorResponse(valOrigen.Description!);
+                }
                 if (!cuenta.IsSuccessful)
                 {
                     var err = cuenta.Errors;
@@ -80,11 +85,6 @@ namespace Galileo_API.DataBaseTier
                     {
                         ok.Code = err[0].Code;
                         ok.Description = err[0].Message;
-                    }
-                    else
-                    {
-                        ok.Code = -1;
-                        ok.Description = "Error desconocido al consultar la cuenta.";
                     }
 
                     return ok;
@@ -200,7 +200,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
             return ProcesarEmision(parametros,
                 docBase, contador,
-                SinpeTipo.PIN,
                 enviar: (ce, ns, u) => EnviarPinCreditoDirecto(ce, ns, u),
                 bitacoraExito: "Emisión Transferencia Sinpe: Exitosa",
                 bitacoraRechazo: "Transferencia Sinpe rechazada");
@@ -224,7 +223,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             return ProcesarEmision(
                 parametros,
                 docBase, contador,
-                SinpeTipo.TR,
                 enviar: (ce, ns, u) => EnviarTiempoRealDtr(ce, ns, u),
                 bitacoraExito: "Emisión Transferencia Sinpe: Exitosa",
                 bitacoraRechazo: "Transferencia Sinpe rechazada");
@@ -234,7 +232,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             Parametros parametros,
             int docBase,
             int contador,
-            SinpeTipo tipo,
             Func<int, int, string, ErrorDto<RespuestaRegistro>> enviar,
             string bitacoraExito,
             string bitacoraRechazo)
@@ -257,7 +254,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     parametros.codEmpresa,
                     parametros.nSolicitud.ToString(),
                     parametros.usuario!,
-                    tipo == SinpeTipo.PIN ? "PIN" : "TR");
+                    "PIN");
 
                 if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
                 {
@@ -273,40 +270,42 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario!);
                 respuesta = envio.Result;
 
-                if (envio.Code != 0 || (respuesta != null && respuesta.MotivoError != 0))
+                if(envio.Result!.MotivoError! == 32)
                 {
-                    estadoSinpe = false;
+                    // 3) Persistir respuesta
+                    datos.NumeroSolicitud = parametros.nSolicitud;
+                    datos.FechaEmision = parametros.fecha;
+                    datos.FechaTraslado = parametros.fecha;
+                    datos.UsuarioGenera = parametros.usuario;
+                    datos.estadoSinpe = estadoSinpe;
+                    datos.IdMotivoRechazo = envio.Result!.MotivoError;
+                    datos.CodigoReferencia = respuesta?.CodigoReferencia;
+                    datos.DocumentoBase = docBase.ToString();
+                    datos.contador = contador.ToString();
 
+                    if (!_mKindo.fxTesRespuestaSinpe(parametros.codEmpresa, datos).Result)
+                    {
+                        _mTesoreria.sbTesBitacoraEspecial(
+                            parametros.codEmpresa, parametros.nSolicitud, "10",
+                            "Se produjo un error al actualizar la transacción",
+                            parametros.usuario!);
+                    }
+
+                    // 4) Bitácora final
+                    _mTesoreria.sbTesBitacoraEspecial(
+                        parametros.codEmpresa, parametros.nSolicitud, "10",
+                        estadoSinpe ? bitacoraExito : $"{bitacoraRechazo}: {rechazoTexto}",
+                        parametros.usuario!);
+                }
+
+                if (envio.Code != 0 || (respuesta != null && respuesta.MotivoError != 32))
+                {
                     idRechazo = respuesta?.MotivoError ?? envio.Code ?? -1;
                     rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? SinpeRejectionMessage;
 
                     response = DbHelper.ErrorResponse(rechazoTexto, idRechazo);
                 }
 
-                // 3) Persistir respuesta
-                datos.NumeroSolicitud = parametros.nSolicitud;
-                datos.FechaEmision = parametros.fecha;
-                datos.FechaTraslado = parametros.fecha;
-                datos.UsuarioGenera = parametros.usuario;
-                datos.estadoSinpe = estadoSinpe;
-                datos.IdMotivoRechazo = idRechazo;
-                datos.CodigoReferencia = respuesta?.CodigoReferencia;
-                datos.DocumentoBase = docBase.ToString();
-                datos.contador = contador.ToString();
-
-                if (!_mKindo.fxTesRespuestaSinpe(parametros.codEmpresa, datos).Result)
-                {
-                    _mTesoreria.sbTesBitacoraEspecial(
-                        parametros.codEmpresa, parametros.nSolicitud, "10",
-                        "Se produjo un error al actualizar la transacción",
-                        parametros.usuario!);
-                }
-
-                // 4) Bitácora final
-                _mTesoreria.sbTesBitacoraEspecial(
-                    parametros.codEmpresa, parametros.nSolicitud, "10",
-                    estadoSinpe ? bitacoraExito : $"{bitacoraRechazo}: {rechazoTexto}",
-                    parametros.usuario!);
 
                 return response;
             }
@@ -333,7 +332,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 tipo: SinpeTipo.PIN,
                 buildRequest: (ctx, ce, sol, codRef) => BuildPinRequest(ctx, ce, sol, codRef),
                 send: (uri, req) => _sinpePIN.SendPIN(uri, req),
-                getSinpeRef: resp => resp.PINSendingResult?.SINPEReference ?? "",
                 registrarCuenta: (ce, ns, resp) => _mKindo.RegistraCreditoCuenta(ce, ns, resp).Result);
         }
 
@@ -349,8 +347,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 parametros,
                 tipo: SinpeTipo.TR,
                 buildRequest: (ctx, ce, sol, codRef) => BuildDtrRequest(ctx, ce, sol, codRef),
-                send: (uri, req) => _sinpeDTR.SendDebit(uri, req),
-                getSinpeRef: resp => resp.DTRSendingResult?.SINPERefNumber ?? "",
+                send: (uri, req) => _sinpePIN.SendPIN(uri, req),
                 registrarCuenta: (ce, ns, resp) => _mKindo.RegistraDibitoCuenta(ce, ns, resp).Result);
         }
 
@@ -359,7 +356,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             SinpeTipo tipo,
             Func<ReqBase, int, dynamic, string, ReqSendingDynamic> buildRequest,
             Func<string, ReqSendingDynamic, dynamic> send,
-            Func<dynamic, string> getSinpeRef,
             Func<int, int, dynamic, bool> registrarCuenta)
         {
             try
@@ -375,8 +371,8 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var context = CrearContexto(parametrosSinpe);
                 int canal = tipo switch
                 {
-                    SinpeTipo.PIN => 24,
-                    SinpeTipo.TR => 1,
+                    SinpeTipo.PIN => parametrosSinpe.Result.vCanalCGP,
+                    SinpeTipo.TR => 24,
                     _ => 1
                 };
                 var codReferencia = string.IsNullOrWhiteSpace(solicitud.referencia_sinpe)
@@ -424,7 +420,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     {
                         Code = -1,
                         Description = "Error al actualizar el número de solicitud con la respuesta de SINPE.",
-                        Result = new RespuestaRegistro { MotivoError = -1, CodigoReferencia = "" }
+                        Result = new RespuestaRegistro { MotivoError = -1, CodigoReferencia = resp }
                     };
                 }
 
@@ -437,8 +433,8 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     Description = "Ok",
                     Result = new RespuestaRegistro
                     {
-                        MotivoError = 0,
-                        CodigoReferencia = getSinpeRef(resp)
+                        MotivoError = resp!.PINSendingResult.State,
+                        CodigoReferencia = resp.PINSendingResult.SINPERefNumber
                     }
                 };
             }
@@ -525,13 +521,15 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
             req.Transfer = new Galileo.Models.KindoSinpe.PINTransfer
             {
-                ChannelReference = codReferencia,
+                ChannelRefNumber = codReferencia,
                 Amount = solicitud.Monto,
                 CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
                 Description = BuildDescription(solicitud),
                 OriginEntityIBAN = solicitud.CuentaOrigen!,
                 OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
                 DestinationCustomer = BuildDestinationCustomer(solicitud),
+                CustomData = BuildCustomData(),
+                
             };
 
             return req;
@@ -565,7 +563,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 UserCode = context.UserCode,
                 CoreIntegrationPoint = 1,
                 CostCenter = 1,
-                CustomData = BuildCustomData()
             };
         }
 

@@ -26,6 +26,10 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         public ErrorDto Crd_CuotaMantenimiento_Ejecutar(int codEmpresa, string usuario, int codContabilidad, int codInstitucion)
                      => _bl.Crd_CuotaMantenimiento_Ejecutar(codEmpresa, usuario, codContabilidad, codInstitucion);
 
+        [Authorize]
+        [HttpGet("Crd_CuotaMantenimiento_Derecho_Obtener")]
+        public int Crd_CuotaMantenimiento_Derecho_Obtener(int codEmpresa, string usuario)
+            => _bl.Crd_CuotaMantenimiento_Derecho_Obtener(codEmpresa, usuario);
 
     }
 }

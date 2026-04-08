@@ -26,10 +26,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<List<CoAplExcProcInformacionData>> CO_AplExcProc_Informacion_Obtener(int codEmpresa)
         {
-            const string sql = @"exec spCBR_Excedente_Apl_Proceso_Carga_Informacion";
+            using var connection = _portalDB.CreateConnection(codEmpresa);
 
-            return DbHelper.ExecuteListQuery<CoAplExcProcInformacionData>(
-                _portalDB, codEmpresa, sql);
+            var response = connection.Query<CoAplExcProcInformacionData>(
+                sql: "exec spCBR_Excedente_Apl_Proceso_Carga_Informacion",
+                commandTimeout: 0
+            ).ToList();
+
+            return DbHelper.CreateOkResponse(response);
+
         }
 
         /// <summary>
