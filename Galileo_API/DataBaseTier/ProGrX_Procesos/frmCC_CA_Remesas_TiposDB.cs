@@ -178,10 +178,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
         }
 
         private ErrorDto RemesasTipos_Insertar(int CodEmpresa, string usuario, CcCaRemesasTiposData item)
@@ -235,7 +231,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
             {
                 return DbHelper.CreateErrorResponse<CcCaRemesasTiposLista>(ex.Message, -1, response);
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse<CcCaRemesasTiposLista>(ex.Message, -1, response);
+            }
+            catch (ArgumentException ex)
             {
                 return DbHelper.CreateErrorResponse<CcCaRemesasTiposLista>(ex.Message, -1, response);
             }
@@ -270,10 +270,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 return DbHelper.CreateOkResponse(ordenada);
             }
             catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<CcCaRemesasTiposData>>(ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<List<CcCaRemesasTiposData>>(ex.Message);
             }
@@ -315,10 +311,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 return RemesasTipos_Actualizar(CodEmpresa, usuario, item);
             }
             catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -370,10 +362,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
         }
 
         /// <summary>
@@ -399,10 +387,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 return DbHelper.CreateOkResponse(lista);
             }
             catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
