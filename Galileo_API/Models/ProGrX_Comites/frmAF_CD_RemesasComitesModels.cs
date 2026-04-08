@@ -13,7 +13,7 @@
 
     public class AfCdRemesaTesSaveDto
     {
-        public int Cod_Remesa { get; set; } // 0 para insertar, >0 para actualizar
+        public required int Cod_Remesa { get; set; } // 0 para insertar, >0 para actualizar
         public string Usuario { get; set; } = string.Empty;
         public DateTime? Fecha_Inicio { get; set; }
         public DateTime? Fecha_Corte { get; set; }
