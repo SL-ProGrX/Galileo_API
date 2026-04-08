@@ -189,6 +189,7 @@ SELECT
             CxCCuentasSgtRebajosInternosGuardarDto req)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
             using var tran = conn.BeginTransaction();
 
             try
