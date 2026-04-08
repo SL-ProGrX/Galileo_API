@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
-    public class CxCCuentasSGTRebajosInternosPantallaDto
+    public class CxCCuentasSgtRebajosInternosPantallaDto
     {
         public int operacion { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -29,5 +29,26 @@
         public string num_Documento { get; set; } = string.Empty;
         public string contratoDesc { get; set; } = string.Empty;
         public decimal monto { get; set; } = 0;
+    }
+
+    public class CxCCuentasSgtRebajosInternosGuardarDto
+    {
+        public int Operacion { get; set; } = 0;
+        public int Operacion_Aplicada { get; set; } = 0;
+        public decimal Monto { get; set; } = 0;
+        public decimal Saldo { get; set; } = 0;
+        public decimal Principal { get; set; } = 0;
+        public decimal Int_Cor { get; set; } = 0;
+        public decimal Int_Mor { get; set; } = 0;
+        public decimal Cargos { get; set; } = 0;
+        public int Dias { get; set; } = 0;
+        public int Dias_Mora { get; set; } = 0;
+        public bool AplicarCargoReposicion { get; set; } = false;
+    }
+
+    public class CxCCuentasSgtRebajosInternosEliminarDto
+    {
+        public int Operacion { get; set; } = 0;
+        public int Operacion_Aplicada { get; set; } = 0;
     }
 }
