@@ -86,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
         public ErrorDto<List<AfCdCuentaData>> AfCdCuentas_Lista_Obtener(int codEmpresa)
         {
-            string query = @"select NOperacion, Cod_Comite, Cedula, Saldo from afi_cd_Cuentas";
+            string query = @"select NOperacion, Cod_Comite, Cedula, Saldo from afi_cd_Cuentas order by NOperacion desc";
             return DbHelper.ExecuteListQuery<AfCdCuentaData>(_portalDb, codEmpresa, query);
         }
 
@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
         public ErrorDto<List<AfCdCuentaBancariaData>> AfCdCuentasBancarias_Obtener(int codEmpresa, string cedula, int idBanco)
         {
-            string query = @"exec spSys_Cuentas_Bancarias @cedula, @idBanco";
+            string query = @"exec spSys_Cuentas_Bancarias @cedula, @idBanco, 1";
             return DbHelper.ExecuteListQuery<AfCdCuentaBancariaData>(
                 _portalDb, codEmpresa, query, new { cedula, idBanco });
         }
