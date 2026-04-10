@@ -356,7 +356,7 @@ EXEC spCrdSGTListaCreditosPersona @Cedula, 'N', @SGT;";
                 new
                 {
                     Cedula = Cedula,
-                    SGT = Cta_Pendientes
+                    SGT = (Cta_Pendientes == 1) ? 'S': 'N'
                 }
             ).ToList();
         }

@@ -756,19 +756,99 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public CoreInterno.ValidacionPerfilTrx_Response ValidarPerfilTransaccional(int CodEmpresa, CoreInterno.ValidacionPerfilTrx_Request transaccion)
         {
-            return new CoreInterno.ValidacionPerfilTrx_Response
+            try
             {
-                Resultado = true,
-                Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                const string query = @"EXEC dbo.sp_Sinpe_ValidarPerfilTransaccional
+            @IdCliente,
+            @TipoIdCliente,
+            @NombreCliente,
+            @CuentaIBAN,
+            @IdClienteEntContraparte,
+            @TipoIdClienteEntContraparte,
+            @NombreClienteContraparte,
+            @IBANClienteEntContraparte,
+            @Servicio,
+            @Modalidad,
+            @TipoMovimiento,
+            @Monto,
+            @Moneda,
+            @Canal,
+            @IP,
+            @Usuario";
+
+                var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    CodMotivoRechazo = "0",
-                    Estado = 1,
-                    MotivoRechazo = "Transacción Autorizada",
-                    NumRefProcesamiento = Guid.NewGuid().ToString()
-                },
-                Errores = null
-            };
+                    IdCliente = transaccion.IdCliente,
+                    TipoIdCliente = transaccion.TipoIdCliente,
+                    NombreCliente = transaccion.NombreCliente,
+                    CuentaIBAN = transaccion.CuentaIBAN,
+                    IdClienteEntContraparte = transaccion.IdClienteEntContraparte,
+                    TipoIdClienteEntContraparte = transaccion.TipoIdClienteEntContraparte,
+                    NombreClienteContraparte = transaccion.NombreClienteContraparte,
+                    IBANClienteEntContraparte = transaccion.IBANClienteEntContraparte,
+                    Servicio = transaccion.Servicio,
+                    Modalidad = transaccion.Modalidad,
+                    TipoMovimiento = transaccion.TipoMovimiento,
+                    Monto = transaccion.Monto,
+                    Moneda = transaccion.Moneda,
+                    Canal = 3,
+                    IP = "0.0.0.0",
+                    Usuario = "CGPWEB"
+                });
+
+                if (result == null)
+                {
+                    return new CoreInterno.ValidacionPerfilTrx_Response
+                    {
+                        Resultado = false,
+                        Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                        {
+                            Estado = 0,
+                            CodMotivoRechazo = "ERROR",
+                            MotivoRechazo = "No se obtuvo respuesta del validador.",
+                            NumRefProcesamiento = Guid.NewGuid().ToString()
+                        },
+                        Errores = null
+                    };
+                }
+
+                var estado = Convert.ToInt32(result.Estado);
+                var codMotivo = Convert.ToString(result.CodMotivoRechazo) ?? "ERROR";
+                var motivo = Convert.ToString(result.MotivoRechazo) ?? "Error";
+                var numRef = Convert.ToString(result.NumRefProcesamiento) ?? Guid.NewGuid().ToString();
+
+                return new CoreInterno.ValidacionPerfilTrx_Response
+                {
+                    Resultado = estado == 1,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        Estado = estado,
+                        CodMotivoRechazo = codMotivo,
+                        MotivoRechazo = motivo,
+                        NumRefProcesamiento = numRef
+                    },
+                    Errores = null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CoreInterno.ValidacionPerfilTrx_Response
+                {
+                    Resultado = false,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        Estado = 0,
+                        CodMotivoRechazo = "ERROR",
+                        MotivoRechazo = ex.Message,
+                        NumRefProcesamiento = Guid.NewGuid().ToString()
+                    },
+                    Errores = null
+                };
+            }
         }
+
 
         #endregion
 
