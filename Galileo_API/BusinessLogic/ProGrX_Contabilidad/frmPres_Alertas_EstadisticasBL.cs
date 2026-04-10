@@ -88,6 +88,11 @@ namespace Galileo.BusinessLogic.ProGrX_Contabilidad
             return _DB.PresAlertasJustificaPeriodo_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto PresAlertasControlPeriodo_ActualizarBloqueo(int codEmpresa, PresAlertasControlPeriodoBloqueoActualizarRequest request)
+        {
+            return _DB.PresAlertasControlPeriodo_ActualizarBloqueo(codEmpresa, request);
+        }
+
         #region DashBoard
 
         public ErrorDto<PresAlertasDashboardResumenData> PresAlertasDashboardResumen_Obtener(int codEmpresa, PresAlertasDashboardFiltroRequest request)

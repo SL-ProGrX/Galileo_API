@@ -234,8 +234,8 @@ SELECT
                         {
                             Operacion = req.Operacion_Aplicada,
                             Usuario,
-                            OficinaUnidad = globales.GOficinaUnidad,
-                            OficinaCentroCosto = globales.GOficinaCentroCosto
+                            OficinaUnidad = globales!.GOficinaUnidad,
+                            OficinaCentroCosto = globales!.GOficinaCentroCosto
                         },
                         tran
                     );

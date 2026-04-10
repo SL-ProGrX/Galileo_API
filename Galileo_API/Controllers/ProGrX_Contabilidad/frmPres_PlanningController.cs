@@ -81,5 +81,12 @@ namespace Galileo.Controllers
         {
             return BL_frmPres_Planning.Pres_AjusteMasivo_Guardar(CodEmpresa, codContab, codModelo, usuario, periodo, datos);
         }
+
+        [Authorize]
+        [HttpGet("Pres_AjustesCuentasCompensado")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Pres_AjustesCuentasCompensado(int CodEmpresa, int contabilidad, string cuenta)
+        {
+            return BL_frmPres_Planning.Pres_AjustesCuentasCompensado(CodEmpresa, contabilidad, cuenta);
+        }
     }
 }
