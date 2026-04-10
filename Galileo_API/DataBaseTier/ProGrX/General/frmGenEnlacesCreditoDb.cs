@@ -137,14 +137,10 @@ namespace Galileo.DataBaseTier
             SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
-            string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-            string nombreBDCore       = pgxClienteDto.PGX_CORE_DB;
-            string userId             = pgxClienteDto.PGX_CORE_USER;
-            string pass               = pgxClienteDto.PGX_CORE_KEY;
 
-            string connectionString = $"Data Source={nombreServidorCore};" +
-                                      $"Initial Catalog={nombreBDCore};" +
-                                      $"Integrated Security=False;User Id={userId};Password={pass};";
+            string connectionString = $"Data Source={pgxClienteDto.PGX_CORE_SERVER};" +
+                                      $"Initial Catalog={pgxClienteDto.PGX_CORE_DB};" +
+                                      $"Integrated Security=False;User Id={pgxClienteDto.PGX_CORE_USER};Password={pgxClienteDto.PGX_CORE_KEY};";
 
             var resp = new ErrorDto<List<CodigoCreditoDto>>();
 

@@ -76,7 +76,7 @@ namespace Galileo.DataBaseTier
         {
             using var client = new SmtpClient();
             await client.ConnectAsync(cfg.Host, cfg.Port, SecureSocketOptions.Auto, ct).ConfigureAwait(false);
-            await client.AuthenticateAsync(cfg.User, cfg.Password, ct).ConfigureAwait(false);
+            await client.AuthenticateAsync(cfg.User, cfg.Secret, ct).ConfigureAwait(false);
             await client.SendAsync(message, ct).ConfigureAwait(false);
             await client.DisconnectAsync(true, ct).ConfigureAwait(false);
         }
@@ -87,7 +87,7 @@ namespace Galileo.DataBaseTier
 SELECT
     [DESCRIPCION]     AS Providers,
     [USUARIO]         AS [User],
-    [CLAVE]           AS [Password],
+    [CLAVE]           AS [Secret],
     [PUERTO_SMTP]     AS [Port],
     [SERVIDOR_CORREO] AS Host,
     [CERTIFICADO]     AS EnableSsl,
@@ -110,7 +110,7 @@ WHERE [ESTADO] = 1 AND COD_SMTP = @CodSmtp;";
 SELECT
     [DESCRIPCION]     AS Providers,
     [USUARIO]         AS [User],
-    [CLAVE]           AS [Password],
+    [CLAVE]           AS [Secret],
     [PUERTO_SMTP]     AS [Port],
     [SERVIDOR_CORREO] AS Host,
     [CERTIFICADO]     AS EnableSsl,

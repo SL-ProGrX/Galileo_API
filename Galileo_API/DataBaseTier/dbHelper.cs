@@ -25,7 +25,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Valida que el texto SQL no esté vacío antes de ejecutarlo.
+        /// Valida que el texto SQL no esté vacío y que no contenga patrones inseguros evidentes.
         /// </summary>
         private static string ValidarSql(string sql)
         {
@@ -34,6 +34,11 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(sqlSeguro))
             {
                 throw new SecurityException("La instrucción SQL es requerida.");
+            }
+
+            if (sqlSeguro.Contains('\0'))
+            {
+                throw new SecurityException("La instrucción SQL no es válida.");
             }
 
             return sqlSeguro;

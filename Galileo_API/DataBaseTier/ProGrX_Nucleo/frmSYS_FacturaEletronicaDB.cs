@@ -19,10 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private readonly int vModulo = 10;
 
         private const string FE_DATE_FMT = "yyyy-MM-dd";
-        private const string P_CORTE = "@Corte";
-        private const string C_CLIENTE = "@CodCliente";
         private const string TIPO = "@Tipo";
-        private const string EST_TODAS = "T";
         private const string SqlOffsetFetchLower = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
         private const string COD_REQUERIDO = "Código es requerido.";
         private const string INICIO = "@Inicio";
@@ -37,7 +34,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string MENSAJE_COD_CLIENTE = "cod_cliente es requerido.";
         private const string SP_FACTURAS_CONSULTA = "spProGrX_Facturas_Consulta";
         private const string SP_FACTURA_DETALLE = "spProGrX_Factura_Detalle";
-        private const string SP_FACTURAS_RSM = "spProGrX_Facturas_Consulta_Rsm";
         private const string PARAM_NOMBRE = "nombre";
         private const string KEY_TIPO_DOCUMENTO = "Tipo_Documento";
         private const string KEY_NUMERO_CONSECUTIVO = "Numero_Consecutivo";
@@ -99,11 +95,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 rtrim(isnull(ACC_SERVER,'')) as portal_server,
                 rtrim(isnull(ACC_DB,''))     as portal_db,
                 rtrim(isnull(ACC_USR,''))    as portal_user,
-                rtrim(isnull(ACC_KEY,''))    as portal_key
+                rtrim(isnull(ACC_KEY,''))    as portal_secret 
             from SYS_FE_PARAMETROS
             where COD_CLIENTE = @cod_cliente;";
 
-            var cfg = connLocal.QueryFirstOrDefault<dynamic>(sqlCfg, new { cod_cliente });
+            var cfg = connLocal.QueryFirstOrDefault<PortalProveedorConfigRow>(sqlCfg, new { cod_cliente });
 
             if (cfg == null)
                 throw new InvalidOperationException("No se encontró configuración del cliente en SYS_FE_PARAMETROS.");
@@ -111,12 +107,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             string portalServer = (cfg.portal_server ?? "").ToString().Trim();
             string portalDb = (cfg.portal_db ?? "").ToString().Trim();
             string portalUser = (cfg.portal_user ?? "").ToString().Trim();
-            string portalKey = (cfg.portal_key ?? "").ToString().Trim();
+            string portalSecret = (cfg.portal_secret ?? "").ToString().Trim();
 
             if (string.IsNullOrWhiteSpace(portalServer) ||
                 string.IsNullOrWhiteSpace(portalDb) ||
                 string.IsNullOrWhiteSpace(portalUser) ||
-                string.IsNullOrWhiteSpace(portalKey))
+                string.IsNullOrWhiteSpace(portalSecret))
                 throw new InvalidOperationException("Credenciales del portal proveedor incompletas.");
 
             var csb = new SqlConnectionStringBuilder
@@ -124,7 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 DataSource = portalServer,
                 InitialCatalog = portalDb,
                 UserID = portalUser,
-                Password = portalKey,
+                Password = portalSecret,
                 ConnectTimeout = 15,
                 Encrypt = false,
                 TrustServerCertificate = true
@@ -1901,7 +1897,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             var fecha = ReadFechaEmision(r);
 
             var numeroConsecutivo = (ExtractKeyFromParametros(r, KEY_NUMERO_CONSECUTIVO) ?? "").Trim();
-            var clave = (ExtractKeyFromParametros(r, KEY_CLAVE) ?? "").Trim();
+            var claveComprobante = (ExtractKeyFromParametros(r, KEY_CLAVE) ?? "").Trim();
 
             return new FeFacturaItem
             {
@@ -1920,7 +1916,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 total_impuestos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_IMPUESTOS)),
                 total_descuentos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_DESCUENTOS)),
                 total_comprobante = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_COMPROBANTE)),
-                clave = clave,
+                clave = claveComprobante,
 
                 xml_respuesta = ExtractKeyFromParametros(r, KEY_XML_RESPUESTA),
                 observaciones = ExtractKeyFromParametros(r, KEY_OBSERVACIONES),
@@ -2152,11 +2148,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             int count = Math.Min(paginacion, data.Count - start);
             return data.GetRange(start, count);
         }
-        private static string SqlEscape(string s)
-        {
-            s = (s ?? "").Trim();
-            return s.Replace("'", "''");
-        }
         private static (string server, string db, string usr, string key) GetPortalAccesos(SqlConnection conn, string cod_cliente)
         {
             const string sql = @"
@@ -2234,7 +2225,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             from SYS_FE_PARAMETROS
             where COD_CLIENTE = @cod_cliente;";
 
-            var pCfg = connLocal.QueryFirstOrDefault<dynamic>(sqlParams, new { cod_cliente = codCliente });
+            var pCfg = connLocal.QueryFirstOrDefault<CorteCfgRow>(sqlParams, new { cod_cliente = codCliente });
             if (pCfg == null)
                 throw new InvalidOperationException("No se encontró configuración en SYS_FE_PARAMETROS para el cliente.");
 
@@ -2626,10 +2617,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(exDet.Message);
             }
         }
-        private static void AppendNotificaLocal(List<NotificaFacturaItem> buffer, string codCliente, string comprobanteInterno, long idFactura, string usuario)
-        {
-            buffer.Add(new NotificaFacturaItem(codCliente, comprobanteInterno, idFactura, usuario));
-        }
+
         private static void InsertFacturaDetalleProveedor(SqlConnection connProveedor, string codCliente, long idFactura, ref int linea,FacturaDetDto dto)
         {
             if (dto.monto <= 0) return;
@@ -2747,14 +2735,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 commandTimeout: 360
             );
         }
-        private static SqlConnection OpenPortalConn(string server, string db, string usr, string key)
+        private static SqlConnection OpenPortalConn(string server, string db, string usr, string secret)
         {
             var csb = new SqlConnectionStringBuilder
             {
                 DataSource = server,
                 InitialCatalog = db,
                 UserID = usr,
-                Password = key,
+                Password = secret,
                 ConnectTimeout = 15,
                 Encrypt = false,
                 TrustServerCertificate = true
@@ -2851,19 +2839,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (r.CLIENTE_ID_FE != null) clienteIdFe = Convert.ToInt64(r.CLIENTE_ID_FE);
 
             return (clienteId > 0 && clienteIdFe > 0);
-        }
-        private static void AppendInsert(System.Text.StringBuilder sb, string cod_cliente, string usuario, long clienteId, long clienteIdFe, string cedula, string nombre)
-        {
-            sb.AppendLine(" ");
-            sb.Append("IF NOT EXISTS (SELECT 1 FROM SYS_FE_CLIENTES WHERE COD_CLIENTE = '");
-            sb.Append(SqlEscape(cod_cliente));
-            sb.Append("' AND CLIENTE_ID_FE = ");
-            sb.Append(clienteIdFe);
-            sb.AppendLine(")");
-            sb.Append("INSERT SYS_FE_CLIENTES (COD_CLIENTE, CEDULA, NOMBRE, CLIENTE_ID, CLIENTE_ID_FE, REGISTRO_FECHA, REGISTRO_USUARIO) ");
-            sb.Append("VALUES(");
-            sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
-            sb.AppendLine();
         }
 
         private sealed class FacturaProcDto
