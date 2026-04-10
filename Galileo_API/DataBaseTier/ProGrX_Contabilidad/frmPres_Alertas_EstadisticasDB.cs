@@ -1011,14 +1011,17 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                //if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                //{
-                //    result.Code = -1;
-                //    result.Description = "El periodo excede los 30 días permitidos para justificar.";
-                //    result.Result.permitido_justificar = false;
-                //    result.Result.mensaje = result.Description;
-                //    return result;
-                //}
+                /**
+                ** Se comenta temporalmente hasta validar un presupuesto actualizado 
+                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
+                {
+                    result.Code = -1;
+                    result.Description = "El periodo excede los 30 días permitidos para justificar.";
+                    result.Result.permitido_justificar = false;
+                    result.Result.mensaje = result.Description;
+                    return result;
+                }
+                **/
 
                 const string sqlJustifica = @"
 SELECT TOP (1)
