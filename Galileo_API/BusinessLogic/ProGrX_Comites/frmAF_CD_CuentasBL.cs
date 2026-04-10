@@ -19,8 +19,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
             return _db.AfCdCuenta_Obtener(codEmpresa, operacion);
         }
 
+        public ErrorDto<AfCdCuentaData?> AfCdCuentas_Scroll_Obtener(int codEmpresa, int operacion, int scrollCode)
+        {
+            return _db.AfCdCuentas_Scroll_Obtener(codEmpresa, operacion, scrollCode);
+        }
+
         public ErrorDto<List<AfCdActividadData>> AfCdActividades_Lista_Obtener(
-            int codEmpresa, string tipo, int totalAsoc, int operacion, string comite)
+            int codEmpresa, string tipo, int totalAsoc, int operacion, int comite)
         {
             return _db.AfCdActividades_Lista_Obtener(codEmpresa, tipo, totalAsoc, operacion, comite);
         }
@@ -58,6 +63,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
         public ErrorDto<List<DropDownListaGenericaModel>> AfCdMiembros_Obtener(int codEmpresa, int codComite)
         {
             return _db.AfCdMiembros_Obtener(codEmpresa, codComite);
+        }
+
+        public ErrorDto<List<AfCdCuentaData>> AfCdLiquidacionesPendientes_Obtener(int codEmpresa, int codComite)
+        {
+            return _db.AfCdLiquidacionesPendientes_Obtener(codEmpresa, codComite);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AfCdCargos_Lista_Obtener(int codEmpresa)
+        {
+            return _db.AfCdCargos_Lista_Obtener(codEmpresa);
         }
     }
 }

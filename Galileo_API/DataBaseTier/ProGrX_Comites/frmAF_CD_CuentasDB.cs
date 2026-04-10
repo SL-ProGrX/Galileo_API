@@ -1,4 +1,5 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Comites;
@@ -35,8 +36,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             );
         }
 
+        public ErrorDto<AfCdCuentaData?> AfCdCuentas_Scroll_Obtener(int codEmpresa, int operacion, int scrollCode)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            try
+            {
+                const string query = @"
+                select top 1 R.NOperacion
+                from Afi_CD_Cuentas R
+                where (
+                        (@scrollCode = 1 and R.NOperacion > @numOperacion)
+                     or (@scrollCode <> 1 and R.NOperacion < @numOperacion)
+                      )
+                order by
+                    case when @scrollCode = 1 then R.NOperacion end asc,
+                    case when @scrollCode <> 1 then R.NOperacion end desc;";
+
+                var operacionDestino = conn.QueryFirstOrDefault<int?>(query, new
+                {
+                    numOperacion = operacion,
+                    scrollCode
+                });
+
+                var numeroObjetivo = operacionDestino ?? operacion;
+
+                return AfCdCuenta_Obtener(codEmpresa, numeroObjetivo);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<AfCdCuentaData?>(ex.Message);
+            }
+        }
+
         public ErrorDto<List<AfCdActividadData>> AfCdActividades_Lista_Obtener(
-            int codEmpresa, string tipo, int totalAsoc, int operacion, string comite)
+            int codEmpresa, string tipo, int totalAsoc, int operacion, int comite)
         {
             const string query = @"EXEC spAFI_CD_Actividades_List @Tipo, @TotalAsoc, @Operacion, @Comite;";
 
@@ -133,5 +167,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb, codEmpresa, query, new { Comite = codComite });
         }
+
+        public ErrorDto<List<AfCdCuentaData>> AfCdLiquidacionesPendientes_Obtener(int codEmpresa, int codComite)
+        {
+            string query = @"
+            select 
+                A.noperacion as Noperacion,
+                C.notas as Notas,
+                sum(A.monto) as Monto,
+                C.estado as Estado,
+                C.tesoreria_nsolicitud as TesoreriaNSolicitud,
+                C.liquida_fecha as LiquidaFecha
+            from afi_cd_cuentas C
+            inner join afi_cd_cuentas_actividades A 
+                on C.noperacion = A.noperacion
+            where C.cod_comite = @Comite
+              and C.PROCESO = 'T'
+            group by 
+                A.noperacion,
+                C.notas,
+                C.estado,
+                C.tesoreria_nsolicitud,
+                C.liquida_fecha";
+
+            return DbHelper.ExecuteListQuery<AfCdCuentaData>(
+                _portalDb, codEmpresa, query, new { Comite = codComite });
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AfCdCargos_Lista_Obtener(int codEmpresa)
+        {
+            string query = @"Select CODIGO as item, DESCRIPCION from AFI_CD_CARGOS where ESTADO = 1";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
+        }
+
+
     }
 }
