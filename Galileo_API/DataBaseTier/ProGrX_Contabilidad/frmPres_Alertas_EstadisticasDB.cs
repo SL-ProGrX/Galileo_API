@@ -94,10 +94,15 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
                         info.Result.permitir_justificar = false;
                         info.Result.mensaje = "El periodo de justificación ya venció. Se muestran las exclusiones registradas.";
                     }
+                    else if (justifica.bloqueo_visualizacion)
+                    {
+                        info.Result.permitir_justificar = false;
+                        info.Result.mensaje = "El periodo está en bloqueo de visualización. Puede seguir ajustando exclusiones desde Control, pero aún no se permiten justificaciones.";
+                    }
                     else
                     {
                         info.Result.permitir_justificar = true;
-                        info.Result.mensaje = "El periodo está cerrado y configurado para justificación. Se muestran las exclusiones registradas.";
+                        info.Result.mensaje = "El periodo está liberado para justificación. Se muestran las exclusiones registradas.";
                     }
 
                     return info;
@@ -263,6 +268,13 @@ WHERE e.cod_empresa = @cod_empresa
   AND (@tipo_alerta = 'T' OR e.tipo_alerta = @tipo_alerta)
   AND (
         @tipo_vista = 'G'
+        OR (
+             @cod_unidad = 'TODOS'
+             AND (
+                   @tipo_vista = 'U'
+                   OR @tipo_vista = 'C'
+                 )
+           )
         OR (@tipo_vista = 'U' AND e.cod_unidad = @cod_unidad)
         OR (@tipo_vista = 'C' AND e.cod_unidad = @cod_unidad AND e.cod_centro_costo = @centro_costo)
       )
@@ -655,6 +667,30 @@ ORDER BY id_bitacora DESC;";
 
                 var primera = request.lineas[0];
 
+                var estadoPeriodo = PresAlertasControlPeriodo_Validar(codEmpresa, new PresAlertasControlPeriodoConfigRequest
+                {
+                    cod_modelo = primera.cod_modelo,
+                    cod_contabilidad = primera.cod_contabilidad,
+                    anio = primera.anio,
+                    mes = primera.mes,
+                    usuario = request.usuario,
+                    bloqueo_visualizacion = false,
+                    fecha = DateTime.Now.Date,
+                    corte = DateTime.Now.Date
+                });
+
+                if (estadoPeriodo.Code == 0
+                    && estadoPeriodo.Result != null
+                    && estadoPeriodo.Result.periodo_registrado
+                    && !estadoPeriodo.Result.bloqueo_visualizacion)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "El periodo ya fue liberado para justificación. No se permite modificar la selección."
+                    };
+                }
+
                 const string sqlDeletePrevio = @"
 DELETE FROM dbo.PRES_ALERTAS_CONTROL_EXCLUSION
 WHERE cod_empresa = @cod_empresa
@@ -975,6 +1011,8 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
+                /**
+                ** Se comenta temporalmente hasta validar un presupuesto actualizado 
                 if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
                 {
                     result.Code = -1;
@@ -983,6 +1021,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     result.Result.mensaje = result.Description;
                     return result;
                 }
+                **/
 
                 const string sqlJustifica = @"
 SELECT TOP (1)
@@ -1018,6 +1057,26 @@ ORDER BY id_periodo DESC;";
                         permitido_justificar = false,
                         mensaje = result.Description
                     };
+                    return result;
+                }
+
+                if (data.corte.HasValue && data.corte.Value.Date < DateTime.Now.Date)
+                {
+                    result.Code = -1;
+                    result.Description = "El periodo de justificación ya venció.";
+                    data.permitido_justificar = false;
+                    data.mensaje = result.Description;
+                    result.Result = data;
+                    return result;
+                }
+
+                if (data.bloqueo_visualizacion)
+                {
+                    result.Code = -1;
+                    result.Description = "El periodo continúa bloqueado para visualización. Debe liberarlo desde Control antes de justificar.";
+                    data.permitido_justificar = false;
+                    data.mensaje = result.Description;
+                    result.Result = data;
                     return result;
                 }
 
@@ -1263,14 +1322,18 @@ ORDER BY FECHA DESC;";
                     return result;
                 }
 
+                bool bloqueoVisualizacion = justifica.BLOQUEO_VISUALIZACION ?? false;
+
                 result.Result.periodo_registrado = true;
-                result.Result.puede_guardar_seleccion = false;
+                result.Result.puede_guardar_seleccion = bloqueoVisualizacion;
                 result.Result.requiere_configuracion = false;
                 result.Result.fuera_de_plazo = false;
                 result.Result.inicio = justifica.INICIO;
                 result.Result.corte = justifica.CORTE;
-                result.Result.bloqueo_visualizacion = justifica.BLOQUEO_VISUALIZACION ?? false;
-                result.Result.mensaje = "El periodo cerrado ya fue configurado para justificación. No se permite guardar otra selección.";
+                result.Result.bloqueo_visualizacion = bloqueoVisualizacion;
+                result.Result.mensaje = bloqueoVisualizacion
+                    ? "El periodo cerrado ya fue configurado y sigue bloqueado. Puede continuar guardando selección."
+                    : "El periodo cerrado ya fue liberado para justificación. No se permite guardar otra selección.";
 
                 return result;
             }
@@ -1458,6 +1521,89 @@ ORDER BY inicio DESC, fecha DESC;";
                 result.Code = -1;
                 result.Description = ex.Message;
                 result.Result = new List<PresAlertasJustificaPeriodoConsultaData>();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Actualiza el bloqueo de visualización de un periodo registrado.
+        /// Solo permite pasar de bloqueo Sí a bloqueo No.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Periodo a actualizar.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto PresAlertasControlPeriodo_ActualizarBloqueo(int codEmpresa, PresAlertasControlPeriodoBloqueoActualizarRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            var result = new ErrorDto
+            {
+                Code = 0,
+                Description = "OK"
+            };
+
+            try
+            {
+                const string sqlConsulta = @"
+SELECT TOP (1)
+      id_periodo
+    , CAST(ISNULL(bloqueo_visualizacion, 0) AS bit) AS bloqueo_visualizacion
+FROM dbo.PRES_ALERTAS_JUSTICA_PERIODO
+WHERE id_periodo = @id_periodo;";
+
+                var periodo = connection.QueryFirstOrDefault(sqlConsulta, new
+                {
+                    request.id_periodo
+                });
+
+                if (periodo == null)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "No se encontró el periodo indicado."
+                    };
+                }
+
+                bool bloqueoActual = periodo.bloqueo_visualizacion ?? false;
+
+                if (!bloqueoActual)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "El periodo ya está liberado y no permite más cambios."
+                    };
+                }
+
+                if (request.bloqueo_visualizacion)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "Solo se permite liberar el periodo cambiando el bloqueo a No."
+                    };
+                }
+
+                const string sqlUpdate = @"
+UPDATE dbo.PRES_ALERTAS_JUSTICA_PERIODO
+   SET bloqueo_visualizacion = @bloqueo_visualizacion,
+       usuario = @usuario,
+       fecha = GETDATE()
+WHERE id_periodo = @id_periodo;";
+
+                connection.Execute(sqlUpdate, new
+                {
+                    request.id_periodo,
+                    request.usuario,
+                    request.bloqueo_visualizacion
+                });
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
             }
 
             return result;

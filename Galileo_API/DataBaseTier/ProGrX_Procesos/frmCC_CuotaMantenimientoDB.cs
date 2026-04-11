@@ -1,7 +1,8 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models.ERROR;
 using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos
@@ -10,6 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
     {
         private readonly PortalDB _portalDB;
         private readonly MProGrxMain mProGrxDll;
+        private readonly MSecurityMainDb _securityDb;
 
         private const decimal Monto = 500m;
         private const string Codigo = "CMCR";
@@ -18,6 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         {
             _portalDB = new PortalDB(config);
             mProGrxDll = new MProGrxMain(config);
+            _securityDb = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -219,5 +222,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
+        public int CmdAplicar_Derecho_Obtener(int codEmpresa, string usuario)
+        {
+            return _securityDb.Derecho(new ParametrosAccesoDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                Modulo = 10,
+                FormName = "frmCC_CuotaMantenimiento",
+                Boton = "cmdAplicar"
+            });
+        }
+
     }
 }

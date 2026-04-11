@@ -1,4 +1,5 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
 
@@ -58,5 +59,9 @@ namespace Galileo.BusinessLogic
             return _db.Pres_AjusteMasivo_Guardar(CodEmpresa, codContab, codModelo, usuario, periodo, datos);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> Pres_AjustesCuentasCompensado(int CodEmpresa, int contabilidad, string cuenta)
+        {
+            return _db.Pres_AjustesCuentasCompensado(CodEmpresa, contabilidad, cuenta);
+        }
     }
 }
