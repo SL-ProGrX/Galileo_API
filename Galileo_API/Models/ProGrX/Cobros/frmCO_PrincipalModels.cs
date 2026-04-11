@@ -15,6 +15,10 @@
         public string descripcion { get; set; } = string.Empty; // NORMAL
         public string estado { get; set; } = string.Empty;      // NO
 
+        public int codInstitucion { get; set; }
+
+        public string deductora { get; set; }
+
         public string linea { get; set; } = string.Empty;
         public string lineaDescripcion { get; set; } = string.Empty;
 
