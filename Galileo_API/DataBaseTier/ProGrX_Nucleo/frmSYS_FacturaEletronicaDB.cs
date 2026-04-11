@@ -435,6 +435,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             }
         }
 
+
+      
+
         /// <summary>
         /// Lista facturas (Detalle) usando spProGrX_Facturas_Consulta.
         /// </summary>
@@ -2155,18 +2158,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 rtrim(isnull(ACC_SERVER,'')) as server,
                 rtrim(isnull(ACC_DB,''))     as db,
                 rtrim(isnull(ACC_USR,''))    as usr,
-                rtrim(isnull(ACC_KEY,''))    as [key]
+                rtrim(isnull(ACC_KEY,''))    as [secret]
             from SYS_FE_PARAMETROS
             where COD_CLIENTE = @cod_cliente;";
 
-            var row = conn.QueryFirstOrDefault<dynamic>(sql, new { cod_cliente });
-            if (row == null) return ("", "", "", "");
+            var row = conn.QueryFirstOrDefault<PortalSyncConfigRow>(sql, new { cod_cliente });
+            if (row == null)
+                return ("", "", "", "");
 
-            string server = Convert.ToString(row.server) ?? "";
-            string dbn = Convert.ToString(row.db) ?? "";
-            string usr = Convert.ToString(row.usr) ?? "";
-            string key = Convert.ToString(row.key) ?? "";
-            return (server.Trim(), dbn.Trim(), usr.Trim(), key.Trim());
+            return (
+                (row.server ?? string.Empty).Trim(),
+                (row.db ?? string.Empty).Trim(),
+                (row.usr ?? string.Empty).Trim(),
+                (row.secret ?? string.Empty).Trim()
+            );
         }
         private static bool TryParseProcesarCorteInputs(FeProcesarCorteDto dto,out string codCliente,out string usuario,out DateTime fechaCorte,out DateTime fechaFactura,out string err)
         {

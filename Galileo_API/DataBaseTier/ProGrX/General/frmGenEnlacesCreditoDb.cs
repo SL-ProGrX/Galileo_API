@@ -133,27 +133,24 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
         {
-            PgxClienteDto pgxClienteDto;
-            SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
-
-            pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
-
-            string connectionString = $"Data Source={pgxClienteDto.PGX_CORE_SERVER};" +
-                                      $"Initial Catalog={pgxClienteDto.PGX_CORE_DB};" +
-                                      $"Integrated Security=False;User Id={pgxClienteDto.PGX_CORE_USER};Password={pgxClienteDto.PGX_CORE_KEY};";
+            var seguridadPortal = new SeguridadPortalDb(_config);
+            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
+            var codInstitucion = NormalizeRequiredText(cod_institucion, nameof(cod_institucion), 20);
 
             var resp = new ErrorDto<List<CodigoCreditoDto>>();
 
             try
             {
-                using var connectionCore = new SqlConnection(connectionString);
+                using var connectionCore = CreateCoreConnection(pgxClienteDto);
 
                 const string query = "SELECT CODIGO, DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
 
                 var parameters = new DynamicParameters();
-                parameters.Add("cod_institucion", cod_institucion, DbType.String);
+                parameters.Add("cod_institucion", codInstitucion, DbType.String);
 
                 resp.Result = connectionCore.Query<CodigoCreditoDto>(query, parameters).ToList();
+                resp.Code = 0;
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -167,34 +164,27 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
         {
-            PgxClienteDto pgxClienteDto;
-            SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
+            var seguridadPortal = new SeguridadPortalDb(_config);
+            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(request.CodEmpresa);
 
-            pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(request.CodEmpresa);
-            string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-            string nombreBDCore       = pgxClienteDto.PGX_CORE_DB;
-            string userId             = pgxClienteDto.PGX_CORE_USER;
-            string pass               = pgxClienteDto.PGX_CORE_KEY;
-
-            string connectionString = $"Data Source={nombreServidorCore};" +
-                                      $"Initial Catalog={nombreBDCore};" +
-                                      $"Integrated Security=False;User Id={userId};Password={pass};";
-
-            ErrorDto resp = new ErrorDto();
+            var resp = new ErrorDto();
 
             try
             {
-                using var connectionCore = new SqlConnection(connectionString);
+                
+                var codCredito = NormalizeRequiredText(request.CodCredito, nameof(request.CodCredito), 50);
+
+                using var connectionCore = CreateCoreConnection(pgxClienteDto);
+
                 const string query = @"
                     UPDATE PV_PARINSTITUCIONES 
                     SET cod_credito = @cod_credito 
                     WHERE cod_institucion = @cod_institucion";
 
                 var parameters = new DynamicParameters();
-                parameters.Add("cod_credito",     request.CodCredito,    DbType.String);
+                parameters.Add("cod_credito", codCredito, DbType.String);
                 parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
 
-                // Puedes usar Execute en lugar de ExecuteAsync().Result para evitar bloqueo
                 resp.Code = connectionCore.Execute(query, parameters);
                 resp.Description = "Ok";
             }
@@ -203,7 +193,52 @@ namespace Galileo.DataBaseTier
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
+
+        private static string NormalizeRequiredText(string? value, string paramName, int maxLength = 50)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new ArgumentException($"{paramName} es requerido.", paramName);
+
+            if (normalized.Length > maxLength)
+                throw new ArgumentException($"{paramName} no es válido.", paramName);
+
+            return normalized;
+        }
+
+        private static SqlConnection CreateCoreConnection(PgxClienteDto pgxClienteDto)
+        {
+            if (pgxClienteDto == null)
+                throw new InvalidOperationException("No se encontró la configuración PGX del cliente.");
+
+            var server = (pgxClienteDto.PGX_CORE_SERVER ?? string.Empty).Trim();
+            var database = (pgxClienteDto.PGX_CORE_DB ?? string.Empty).Trim();
+            var user = (pgxClienteDto.PGX_CORE_USER ?? string.Empty).Trim();
+            var secret = (pgxClienteDto.PGX_CORE_KEY ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(server) ||
+                string.IsNullOrWhiteSpace(database) ||
+                string.IsNullOrWhiteSpace(user) ||
+                string.IsNullOrWhiteSpace(secret))
+            {
+                throw new InvalidOperationException("La configuración PGX del cliente está incompleta.");
+            }
+
+            var csb = new SqlConnectionStringBuilder
+            {
+                DataSource = server,
+                InitialCatalog = database,
+                IntegratedSecurity = false,
+                UserID = user,
+                Password = secret
+            };
+
+            return new SqlConnection(csb.ConnectionString);
+        }
+
     }
 }

@@ -12,4 +12,16 @@
         public string? mostrar { get; set; }
         public string? usuario { get; set; }
     }
+
+    public class PeriodoInicioRow
+    {
+        public int inicio_mes { get; set; } = 1;
+        public int inicio_anio { get; set; } = 1990;
+    }
+
+    public class MovimientoPeriodoRow
+    {
+        public string cod_cuenta { get; set; } = string.Empty;
+        public decimal movimiento { get; set; } = 0;
+    }
 }

@@ -9,20 +9,14 @@ namespace Galileo.DataBaseTier
 {
     public class FrmPresAlertasTiposDb
     {
-        private readonly IConfiguration _config;
-
+        private readonly PortalDB _portalDb;
         public FrmPresAlertasTiposDb(IConfiguration config)
         {
-            _config = config;
+            _portalDb = new PortalDB(config);
         }
 
         #region Helpers
 
-        private SqlConnection CreateConnection(int codCliente)
-        {
-            var connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codCliente);
-            return new SqlConnection(connString);
-        }
 
         private static string NormalizeCode(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
         private static string NormalizeText(string? value) => (value ?? string.Empty).Trim();
@@ -43,6 +37,8 @@ namespace Galileo.DataBaseTier
                 Result = new AlertasTiposLista()
             };
 
+            using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
+
             const string sqlBaseCount = @"
                 SELECT COUNT(*)
                 FROM PRES_TIPOS_DESVIACIONES";
@@ -62,7 +58,6 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
 
                 var parameters = new DynamicParameters();
                 var whereBuilder = new StringBuilder();
@@ -81,7 +76,7 @@ namespace Galileo.DataBaseTier
                     countQueryBuilder.Append(whereBuilder);
                 }
 
-                response.Result.total = connection.ExecuteScalar<int>(countQueryBuilder.ToString(), parameters);
+                response.Result.total = conn.ExecuteScalar<int>(countQueryBuilder.ToString(), parameters);
 
                 // 2) Query de datos (select + where + order + paginación)
                 var dataQueryBuilder = new StringBuilder(sqlBaseSelect);
@@ -106,18 +101,17 @@ namespace Galileo.DataBaseTier
                 }
 
                 var finalSql = dataQueryBuilder.ToString();
-                response.Result.lista = connection.Query<AlertasTiposDto>(finalSql, parameters).ToList();
+                response.Result.lista = conn.Query<AlertasTiposDto>(finalSql, parameters).ToList();
 
                 response.Code = 0;
+
+                return response;
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = "AlertasTipos_Obtener: " + ex.Message;
-                response.Result = null;
+                return DbHelper.CreateErrorResponse<AlertasTiposLista>("AlertasTipos_Obtener: " + ex.Message);
             }
 
-            return response;
         }
 
         /// <summary>
@@ -130,20 +124,13 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(alertatipo.cod_desviacion) ||
                 string.IsNullOrWhiteSpace(alertatipo.descripcion))
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar código y descripción."
-                };
+                return DbHelper.ErrorResponse("Debe indicar código y descripción.");
+
             }
 
             if (!alertatipo.orden_evaluacion.HasValue || alertatipo.orden_evaluacion.Value <= 0)
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar un orden de evaluación mayor a 0."
-                };
+                return DbHelper.ErrorResponse("Debe indicar un orden de evaluación mayor a 0.");
             }
 
             const string insertSql = @"
@@ -174,7 +161,7 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
                 var parameters = new
                 {
@@ -188,16 +175,18 @@ namespace Galileo.DataBaseTier
                     ModificaFecha = alertatipo.modifica_fecha
                 };
 
-                resp.Code = connection.Execute(insertSql, parameters);
+                resp.Code = conn.Execute(insertSql, parameters);
                 resp.Description = resp.Code > 0 ? "OK" : "No se insertó ningún registro.";
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTipos_Insertar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTipos_Insertar: " + ex.Message);
+                
             }
 
-            return resp;
+            
         }
 
         /// <summary>
@@ -210,20 +199,12 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(alertatipo.cod_desviacion) ||
                 string.IsNullOrWhiteSpace(alertatipo.descripcion))
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar código y descripción."
-                };
+                return DbHelper.ErrorResponse("Debe indicar código y descripción.");
             }
 
             if (!alertatipo.orden_evaluacion.HasValue || alertatipo.orden_evaluacion.Value <= 0)
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar un orden de evaluación mayor a 0."
-                };
+                return DbHelper.ErrorResponse("Debe indicar un orden de evaluación mayor a 0.");
             }
 
             const string updateSql = @"
@@ -239,7 +220,7 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
                 var parameters = new
                 {
@@ -252,17 +233,16 @@ namespace Galileo.DataBaseTier
                     ModificaFecha = DateTime.Now
                 };
 
-                int filas = connection.Execute(updateSql, parameters);
+                int filas = conn.Execute(updateSql, parameters);
                 resp.Code = filas;
                 resp.Description = filas > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTipos_Actualizar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTipos_Actualizar: " + ex.Message);
             }
-
-            return resp;
         }
 
         /// <summary>
@@ -278,21 +258,22 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
                 var parameters = new { CodDesviacion = codDesviacion };
 
-                int filas = connection.Execute(deleteSql, parameters);
+                int filas = conn.Execute(deleteSql, parameters);
                 resp.Code = filas;
                 resp.Description = filas > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTipos_Eliminar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTipos_Eliminar: " + ex.Message);
             }
 
-            return resp;
+            
         }
 
         /// <summary>Obtiene los tipos de justificación asociados a un tipo de alerta.</summary>
@@ -315,8 +296,8 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
-                var lista = connection.Query<AlertasTiposJustificacionDto>(sql, new
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
+                var lista = conn.Query<AlertasTiposJustificacionDto>(sql, new
                 {
                     id_justificacion = NormalizeCode(id_justificacion),
                     filtro = NormalizeText(filtro),
@@ -326,15 +307,15 @@ namespace Galileo.DataBaseTier
                 response.Result.lista = lista;
                 response.Result.total = lista.Count;
                 response.Code = 0;
+
+                return response;
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = "AlertasTiposJustificacion_Obtener: " + ex.Message;
-                response.Result = null;
+                return DbHelper.CreateErrorResponse<AlertasTiposJustificacionLista>("AlertasTiposJustificacion_Obtener: " + ex.Message);
             }
 
-            return response;
+           
         }
 
         /// <summary>Guarda o actualiza un tipo de justificación de alerta.</summary>
@@ -366,9 +347,9 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
-                if (connection.ExecuteScalar<int>(sqlPadre, new { id_justificacion = idJustificacion }) == 0)
+                if (conn.ExecuteScalar<int>(sqlPadre, new { id_justificacion = idJustificacion }) == 0)
                     return new ErrorDto { Code = -1, Description = $"No existe el tipo de alerta {idJustificacion}." };
 
                 var param = new
@@ -380,17 +361,18 @@ namespace Galileo.DataBaseTier
                     usuario
                 };
 
-                var existe = connection.ExecuteScalar<int>(sqlExiste, param) > 0;
-                resp.Code = connection.Execute(existe ? sqlUpdate : sqlInsert, param);
+                var existe = conn.ExecuteScalar<int>(sqlExiste, param) > 0;
+                resp.Code = conn.Execute(existe ? sqlUpdate : sqlInsert, param);
                 resp.Description = resp.Code > 0 ? "OK" : "No se guardó ningún registro.";
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTiposJustificacion_Guardar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTiposJustificacion_Guardar: " + ex.Message);
             }
 
-            return resp;
+
         }
 
         /// <summary>Elimina un tipo de justificación asociado a un tipo de alerta.</summary>
@@ -404,21 +386,22 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
-                resp.Code = connection.Execute(sql, new
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
+                resp.Code = conn.Execute(sql, new
                 {
                     id_justificacion = NormalizeCode(request.id_justificacion),
                     cod_tp_justificacion = NormalizeCode(request.cod_tp_justificacion)
                 });
                 resp.Description = resp.Code > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTiposJustificacion_Eliminar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTiposJustificacion_Eliminar: " + ex.Message);
             }
 
-            return resp;
+            
         }
 
         /// <summary>Obtiene el detalle de condiciones asociado a un tipo de alerta.</summary>
@@ -448,9 +431,9 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
-                var lista = connection.Query<AlertasTiposDetalleDto>(sql, new
+                var lista = conn.Query<AlertasTiposDetalleDto>(sql, new
                 {
                     cod_desviacion = NormalizeCode(cod_desviacion),
                     filtro = NormalizeText(filtro),
@@ -463,9 +446,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = "AlertasTiposDetalle_Obtener: " + ex.Message;
-                response.Result = null;
+                return DbHelper.CreateErrorResponse<AlertasTiposDetalleLista>("AlertasTiposDetalle_Obtener: " + ex.Message);
             }
 
             return response;
@@ -542,9 +523,9 @@ WHERE ID_CONDICION = @id_condicion;";
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
-                if (!ExisteTipoDesviacion(connection, sqlPadre, codDesviacion))
+                if (!ExisteTipoDesviacion(conn, sqlPadre, codDesviacion))
                 {
                     return new ErrorDto
                     {
@@ -555,15 +536,14 @@ WHERE ID_CONDICION = @id_condicion;";
 
                 var param = CrearParametrosAlertasTiposDetalle(request, codDesviacion, campoConsulta, operador, usuario);
                 var existe = request.id_condicion > 0 &&
-                             connection.ExecuteScalar<int>(sqlExiste, new { id_condicion = request.id_condicion }) > 0;
+                             conn.ExecuteScalar<int>(sqlExiste, new { id_condicion = request.id_condicion }) > 0;
 
-                resp.Code = connection.Execute(existe ? sqlUpdate : sqlInsert, param);
+                resp.Code = conn.Execute(existe ? sqlUpdate : sqlInsert, param);
                 resp.Description = resp.Code > 0 ? "OK" : "No se guardó ningún registro.";
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTiposDetalle_Guardar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTiposDetalle_Guardar: " + ex.Message);
             }
 
             return resp;
@@ -654,23 +634,24 @@ WHERE ID_CONDICION = @id_condicion;";
 
             try
             {
-                using var connection = CreateConnection(codCliente);
+                using var conn = DbHelper.OpenConnection(_portalDb, codCliente);
 
-                resp.Code = connection.Execute(sql, new
+                resp.Code = conn.Execute(sql, new
                 {
                     id_condicion = request.id_condicion,
                     cod_desviacion = NormalizeCode(request.cod_desviacion)
                 });
 
                 resp.Description = resp.Code > 0 ? "OK" : AlertasTiposConst.noExisteUsuario;
+
+                return resp;
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "AlertasTiposDetalle_Eliminar: " + ex.Message;
+                return DbHelper.ErrorResponse("AlertasTiposDetalle_Eliminar: " + ex.Message);
             }
 
-            return resp;
+            
         }
     }
 }

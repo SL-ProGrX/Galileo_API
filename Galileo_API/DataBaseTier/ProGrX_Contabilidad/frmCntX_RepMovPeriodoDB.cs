@@ -12,13 +12,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly PortalDB _portalDb;
 
         public FrmCntXRepMovPeriodoDb(IConfiguration config)
-            : this(new PortalDB(config))
         {
-        }
-
-        public FrmCntXRepMovPeriodoDb(PortalDB portalDb)
-        {
-            _portalDb = portalDb;
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
@@ -147,25 +142,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                cn.Open();
+                conn.Open();
 
-                Limpiar(cn, f.usuario!);
-                InsertBase(cn, f.usuario!, codContabilidad);
+                Limpiar(conn, f.usuario!);
+                InsertBase(conn, f.usuario!, codContabilidad);
+
 
                 if (!f.periodo.HasValue)
                     throw new ArgumentException("Periodo es requerido");
 
-                var (mes, anio) = ObtenerPeriodo(cn, f.periodo.Value, codContabilidad);
+                var (mes, anio) = ObtenerPeriodo(conn, f.periodo.Value, codContabilidad);
 
                 for (int i = 1; i <= 12; i++)
                 {
-                    string sqlMovimiento = ConstruirSqlMovimiento(f);
-                    sqlMovimiento = AplicarFiltros(sqlMovimiento, f);
+                    string sqlMovimiento = ConstruirSqlMovimiento(f.mostrar);
+                    sqlMovimiento = AplicarFiltros(sqlMovimiento, f.unidad, f.centroCosto);
 
-                    var movimientos = cn.Query(sqlMovimiento, new
+                    var movimientos = conn.Query<MovimientoPeriodoRow>(sqlMovimiento, new
                     {
                         anio,
                         mes,
@@ -176,7 +171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                     string sqlUpdate = ObtenerSqlUpdate(i);
 
-                    EjecutarUpdates(cn, movimientos, sqlUpdate, f.usuario!, codContabilidad);
+                    EjecutarUpdates(conn, movimientos, sqlUpdate, f.usuario!, codContabilidad);
 
                     (mes, anio) = SiguienteMes(mes, anio);
                 }
@@ -202,12 +197,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         private (int mes, int anio) ObtenerPeriodo(SqlConnection cn, int periodo, int codContabilidad)
         {
-            var result = cn.QueryFirstOrDefault<dynamic>(@"
+            const string sql = @"
         SELECT inicio_mes, inicio_anio
         FROM CntX_Cierres
         WHERE id_cierre = @periodo
-        AND cod_contabilidad = @cod_contabilidad
-    ", new { periodo, cod_contabilidad = codContabilidad });
+          AND cod_contabilidad = @cod_contabilidad";
+
+            var result = cn.QueryFirstOrDefault<PeriodoInicioRow>(sql, new
+            {
+                periodo,
+                cod_contabilidad = codContabilidad
+            });
 
             if (result == null)
                 throw new ArgumentException("No se encontró el periodo");
@@ -240,33 +240,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-        private static string ConstruirSqlMovimiento(CntxRepMovPeriodoFiltroDto f)
+        private static string ConstruirSqlMovimiento(string? mostrar)
         {
-            return f.mostrar == "A"
+            return mostrar == "A"
                 ? @"SELECT 
-                cod_cuenta,
-                saldo_inicial + total_debitos + total_creditos AS movimiento
-           FROM vCntX_Mov_Cuentas_General
-           WHERE anio = @anio AND mes = @mes AND cod_contabilidad = @cod_contabilidad"
+                        cod_cuenta,
+                        saldo_inicial + total_debitos + total_creditos AS movimiento
+                   FROM vCntX_Mov_Cuentas_General
+                   WHERE anio = @anio
+                     AND mes = @mes
+                     AND cod_contabilidad = @cod_contabilidad"
                 : @"SELECT 
-                cod_cuenta,
-                total_debitos + total_creditos AS movimiento
-           FROM vCntX_Mov_Cuentas_General
-           WHERE anio = @anio AND mes = @mes AND cod_contabilidad = @cod_contabilidad";
+                        cod_cuenta,
+                        total_debitos + total_creditos AS movimiento
+                   FROM vCntX_Mov_Cuentas_General
+                   WHERE anio = @anio
+                     AND mes = @mes
+                     AND cod_contabilidad = @cod_contabilidad";
         }
 
-        private static string AplicarFiltros(string sql, CntxRepMovPeriodoFiltroDto f)
+        private static string AplicarFiltros(string sql, string? unidad, string? centroCosto)
         {
-            if (!string.IsNullOrEmpty(f.unidad) && f.unidad != "C")
-                sql += " AND cod_unidad = @unidad";
+            var sqlBuilder = new System.Text.StringBuilder(sql);
 
-            if (!string.IsNullOrEmpty(f.centroCosto) && f.centroCosto != "T")
-                sql += " AND cod_centro_costo = @centro";
+            if (!string.IsNullOrWhiteSpace(unidad) && unidad != "C")
+                sqlBuilder.Append(" AND cod_unidad = @unidad");
 
-            return sql;
+            if (!string.IsNullOrWhiteSpace(centroCosto) && centroCosto != "T")
+                sqlBuilder.Append(" AND cod_centro_costo = @centro");
+
+            return sqlBuilder.ToString();
         }
 
-        private void EjecutarUpdates(SqlConnection cn, IEnumerable<dynamic> movimientos, string sqlUpdate, string usuario, int codContabilidad)
+        private void EjecutarUpdates(SqlConnection cn, IEnumerable<MovimientoPeriodoRow> movimientos, string sqlUpdate, string usuario, int codContabilidad)
         {
             using var transaction = cn.BeginTransaction();
 

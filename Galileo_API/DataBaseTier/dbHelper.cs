@@ -106,8 +106,10 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var sqlSeguro = ValidarSql(sql);
+
                 using var connection = new SqlConnection(connectionString);
-                result.Result = connection.QueryFirstOrDefault<T>(sql, parameters);
+                result.Result = connection.QueryFirstOrDefault<T>(sqlSeguro, parameters);
             }
             catch (Exception ex)
             {
@@ -149,8 +151,10 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var sqlSeguro = ValidarSql(sql);
+
                 using var connection = new SqlConnection(connectionString);
-                connection.Execute(sql, parameters);
+                connection.Execute(sqlSeguro, parameters);
             }
             catch (Exception ex)
             {
@@ -234,9 +238,11 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var spSeguro = ValidarStoredProcedure(procedureName);
+
                 using var connection = new SqlConnection(connectionString);
                 result.Result = connection.Query<T>(
-                    procedureName,
+                    spSeguro,
                     parameters,
                     commandType: CommandType.StoredProcedure).ToList();
             }
@@ -260,9 +266,12 @@ namespace Galileo.DataBaseTier
 
             try
             {
+
+                var spSeguro = ValidarStoredProcedure(procedureName);
+
                 using var connection = new SqlConnection(connectionString);
                 result.Result = connection.QueryFirstOrDefault<T>(
-                    procedureName,
+                    spSeguro,
                     parameters,
                     commandType: CommandType.StoredProcedure);
             }
@@ -288,6 +297,25 @@ namespace Galileo.DataBaseTier
 
         //Helper de paginaciones
 
+        /// <summary>
+        /// Valida que el nombre del procedimiento almacenado sea un identificador SQL esperado.
+        /// </summary>
+        private static string ValidarStoredProcedure(string procedureName)
+        {
+            var spSeguro = (procedureName ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(spSeguro))
+            {
+                throw new SecurityException("El nombre del procedimiento es requerido.");
+            }
+
+            if (spSeguro.Contains('\0'))
+            {
+                throw new SecurityException("El nombre del procedimiento no es válido.");
+            }
+
+            return spSeguro;
+        }
 
     }
 

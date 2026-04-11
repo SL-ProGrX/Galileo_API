@@ -83,6 +83,9 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<EnvioCorreoModels?> CorreoConfig(int codCliente, string codSmtp)
         {
+
+            codSmtp = NormalizeRequiredText(codSmtp, nameof(codSmtp), 20);
+
             const string sql = @"
 SELECT
     [DESCRIPCION]     AS Providers,
@@ -106,6 +109,9 @@ WHERE [ESTADO] = 1 AND COD_SMTP = @CodSmtp;";
 
         public ErrorDto<EnvioCorreoModels?> CorreoConfigCuenta(string smtpcode)
         {
+
+            smtpcode = NormalizeRequiredText(smtpcode, nameof(smtpcode), 20);
+
             const string sql = @"
 SELECT
     [DESCRIPCION]     AS Providers,
@@ -138,6 +144,9 @@ WHERE [COD_SMTP] = @SmtpCode;";
 
         public ErrorDto<AfiBeneDatosCorreo?> BuscoDatosSocioBeneficio(int codCliente, string cedula, string beneficio)
         {
+            cedula = NormalizeRequiredText(cedula, nameof(cedula), 30);
+            beneficio = NormalizeRequiredText(beneficio, nameof(beneficio), 20);
+
             const string sql = @"
 SELECT
     [NOMBREV2] + ' ' + [APELLIDO1] + ' ' + [APELLIDO2] AS nombre,
@@ -209,5 +218,19 @@ VALUES
                 }
             );
         }
+
+        private static string NormalizeRequiredText(string? value, string paramName, int maxLength = 100)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new ArgumentException($"{paramName} es requerido.", paramName);
+
+            if (normalized.Length > maxLength)
+                throw new ArgumentException($"{paramName} no es válido.", paramName);
+
+            return normalized;
+        }
+
     }
 }
