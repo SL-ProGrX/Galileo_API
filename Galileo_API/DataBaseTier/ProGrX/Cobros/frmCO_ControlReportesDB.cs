@@ -15,6 +15,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
         private readonly int vModulo = 4;
+        private readonly string vGrupoGestiones = "GESTIONES";
+        private readonly string vGrupoRecuperacion = "RECUPERACION";
 
         public FrmCOControlReportesDB(IConfiguration config)
         {
@@ -41,15 +43,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             var lista = new List<CoControlReporteItemDto>
             {
-                new() { codigo = "01", descripcion = "Gestiones Realizadas", grupo = "GESTIONES" },
-                new() { codigo = "04", descripcion = "Gestiones por Usuarios", grupo = "GESTIONES" },
-                new() { codigo = "09", descripcion = "Recuperación por Gestión", grupo = "RECUPERACION" },
-                new() { codigo = "10", descripcion = "Recuperación por Usuario", grupo = "RECUPERACION" },
-                new() { codigo = "11", descripcion = "Recuperación por Línea de Crédito", grupo = "RECUPERACION" },
-                new() { codigo = "12", descripcion = "Recuperación por Garantía", grupo = "RECUPERACION" },
-                new() { codigo = "14", descripcion = "Recuperación por Causa de Mora", grupo = "RECUPERACION" },
-                new() { codigo = "15", descripcion = "Recuperación por Arreglo de Pago", grupo = "RECUPERACION" },
-                new() { codigo = "13", descripcion = "Recuperación Informe Estadístico", grupo = "RECUPERACION" }
+                new() { codigo = "01", descripcion = "Gestiones Realizadas", grupo = vGrupoGestiones },
+                new() { codigo = "04", descripcion = "Gestiones por Usuarios", grupo = vGrupoGestiones },
+                new() { codigo = "09", descripcion = "Recuperación por Gestión", grupo = vGrupoRecuperacion },
+                new() { codigo = "10", descripcion = "Recuperación por Usuario", grupo = vGrupoRecuperacion },
+                new() { codigo = "11", descripcion = "Recuperación por Línea de Crédito", grupo = vGrupoRecuperacion },
+                new() { codigo = "12", descripcion = "Recuperación por Garantía", grupo = vGrupoRecuperacion },
+                new() { codigo = "14", descripcion = "Recuperación por Causa de Mora", grupo = vGrupoRecuperacion },
+                new() { codigo = "15", descripcion = "Recuperación por Arreglo de Pago", grupo = vGrupoRecuperacion },
+                new() { codigo = "13", descripcion = "Recuperación Informe Estadístico", grupo = vGrupoRecuperacion }
             };
 
             return DbHelper.CreateOkResponse(lista);
@@ -163,94 +165,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-        }
-
-        /// <summary>
-        /// Normaliza valores de filtro equivalentes a TODOS.
-        /// </summary>
-        /// <param name="valor"></param>
-        /// <returns></returns>
-        private static string? NormalizarValorFiltro(string? valor)
-        {
-            var tmp = (valor ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(tmp))
-                return null;
-
-            if (tmp.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            return tmp;
-        }
-
-        /// <summary>
-        /// Resuelve el metadato principal del reporte según código y tipo.
-        /// </summary>
-        /// <param name="codigoReporte"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        private static ReporteMeta? ResolverReporte(string codigoReporte, string tipo)
-        {
-            var esResumen = tipo.Equals("Resumen", StringComparison.OrdinalIgnoreCase);
-
-            return codigoReporte switch
-            {
-                "01" => new ReporteMeta(
-                    "GESTIONES REALIZADAS",
-                    esResumen ? "Cobro_ControlGestionesRealizadasRsm" : "Cobro_ControlGestionesRealizadas",
-                    true,
-                    "GESTIONES"),
-
-                "04" => new ReporteMeta(
-                    "GESTIONES REALIZADAS x USUARIOS",
-                    esResumen ? "Cobro_ControlGestionesUsuariosRsm" : "Cobro_ControlGestionesUsuarios",
-                    true,
-                    "GESTIONES"),
-
-                "09" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR GESTIÓN: RESUMEN" : "RECUPERACIÓN POR GESTIÓN: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Gestion_Rsm" : "Cobro_Control_Recuperacion_Gestion_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "10" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR USUARIO: RESUMEN" : "RECUPERACIÓN POR USUARIO: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Usuario_Rsm" : "Cobro_Control_Recuperacion_Usuario_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "11" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR LÍNEA DE CRÉDITO: RESUMEN" : "RECUPERACIÓN POR LÍNEA DE CRÉDITO: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Linea_Rsm" : "Cobro_Control_Recuperacion_Linea_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "12" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR GARANTÍA: RESUMEN" : "RECUPERACIÓN POR GARANTÍA: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Garantia_Rsm" : "Cobro_Control_Recuperacion_Garantia_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "13" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN: INFORME ESTADÍSTICO: RESUMEN" : "RECUPERACIÓN: INFORME ESTADÍSTICO: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Estadistica_Rsm" : "Cobro_Control_Recuperacion_Estadistica_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "14" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR CAUSA DE MORA: RESUMEN" : "RECUPERACIÓN POR CAUSA DE MORA: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Causa_Rsm" : "Cobro_Control_Recuperacion_Causa_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                "15" => new ReporteMeta(
-                    esResumen ? "RECUPERACIÓN POR TIPO ARREGLO DE PAGO: RESUMEN" : "RECUPERACIÓN POR TIPO ARREGLO DE PAGO: DETALLE",
-                    esResumen ? "Cobro_Control_Recuperacion_Arreglo_Rsm" : "Cobro_Control_Recuperacion_Arreglo_Dt",
-                    false,
-                    "RECUPERACION"),
-
-                _ => null
-            };
         }
 
         /// <summary>
