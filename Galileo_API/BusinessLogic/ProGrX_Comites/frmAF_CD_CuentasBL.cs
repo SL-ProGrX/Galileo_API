@@ -70,9 +70,24 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
             return _db.AfCdLiquidacionesPendientes_Obtener(codEmpresa, codComite);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> AfCdCargos_Lista_Obtener(int codEmpresa)
+        public ErrorDto<List<AfCdCargoData>> AfCdCargos_Lista_Obtener(int codEmpresa)
         {
             return _db.AfCdCargos_Lista_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<int> AfCdCantidadAsociados_Obtener(int codEmpresa, int codComite)
+        {
+            return _db.AfCdCantidadAsociados_Obtener(codEmpresa, codComite);
+        }
+
+        public ErrorDto AfCdCuenta_Descartar(int codEmpresa, int operacion, string usuario)
+        {
+            return _db.AfCdCuenta_Descartar(codEmpresa, operacion, usuario);
+        }
+
+        public ErrorDto AfCdCuenta_Guardar(int codEmpresa, string usuario, AfCdCuentaRequest request)
+        {
+            return _db.AfCdCuenta_Guardar(codEmpresa, usuario, request);
         }
     }
 }

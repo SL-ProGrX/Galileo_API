@@ -87,9 +87,27 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             }
 
             [HttpGet("AfCdCargos_Lista_Obtener")]
-            public ErrorDto<List<DropDownListaGenericaModel>> AfCdCargos_Lista_Obtener(int codEmpresa)
+            public ErrorDto<List<AfCdCargoData>> AfCdCargos_Lista_Obtener(int codEmpresa)
             {
                 return _bl.AfCdCargos_Lista_Obtener(codEmpresa);
+            }
+
+            [HttpGet("AfCdCantidadAsociados_Obtener")]
+            public ErrorDto<int> AfCdCantidadAsociados_Obtener(int codEmpresa, int codComite)
+            {
+                return _bl.AfCdCantidadAsociados_Obtener(codEmpresa, codComite);
+            }
+
+            [HttpDelete("AfCdCuenta_Descartar")]
+            public ErrorDto AfCdCuenta_Descartar(int codEmpresa, int operacion, string usuario)
+            {
+                return _bl.AfCdCuenta_Descartar(codEmpresa, operacion, usuario);
+            }
+
+            [HttpPost("AfCdCuenta_Guardar")]
+            public ErrorDto AfCdCuenta_Guardar(int codEmpresa, string usuario, AfCdCuentaRequest request)
+            {
+                return _bl.AfCdCuenta_Guardar(codEmpresa, usuario, request);
             }
         }
     }
