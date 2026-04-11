@@ -625,9 +625,9 @@ namespace Galileo.DataBaseTier
                     procedure,
                     new
                     {
-                        CodContab = codContab,
-                        CodModelo = codModelo,
-                        Usuario
+                        Contabilidad = codContab,
+                        Modelo = codModelo,
+                        Usuario = Usuario
                     },
                     commandType: CommandType.StoredProcedure).ToList();
             }

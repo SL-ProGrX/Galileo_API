@@ -189,6 +189,7 @@ SELECT
             CxCCuentasSgtRebajosInternosGuardarDto req)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
             using var tran = conn.BeginTransaction();
 
             try
@@ -233,8 +234,8 @@ SELECT
                         {
                             Operacion = req.Operacion_Aplicada,
                             Usuario,
-                            OficinaUnidad = globales.GOficinaUnidad,
-                            OficinaCentroCosto = globales.GOficinaCentroCosto
+                            OficinaUnidad = globales!.GOficinaUnidad,
+                            OficinaCentroCosto = globales!.GOficinaCentroCosto
                         },
                         tran
                     );
