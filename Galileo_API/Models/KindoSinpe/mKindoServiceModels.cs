@@ -606,7 +606,7 @@
             /// <summary>
             /// Referencia de la transacción asignada por el canal.
             /// </summary>
-            public string? ChannelReference { get; set; }
+            public string? ChannelRefNumber { get; set; }
 
             /// <summary>
             /// Monto de la transacción.
@@ -633,6 +633,11 @@
             /// Información del cliente que recibe la transacción.
             /// </summary>
             public DestinationCustomer? DestinationCustomer { get; set; }
+
+            /// <summary>
+            /// Campos personalizados adicionales asociados a la transacción.
+            /// </summary>
+            public List<CustomField>? CustomData { get; set; }
     }
 
     /// <summary>
@@ -707,10 +712,7 @@
             /// Información de la transacción PIN a enviar.
             /// </summary>
             public PINTransfer? Transfer { get; set; }
-            /// <summary>
-            /// Campos personalizados adicionales asociados a la transacción.
-            /// </summary>
-            public List<CustomField>? CustomData { get; set; }
+            
         }
 
         /// <summary>
@@ -1108,7 +1110,10 @@
 
             public string? Codigo { get; set; } = null;
             public string? Beneficiario { get; set; } = null;
-            public string? Cuenta { get; set; } = null;
+
+            public int? tipoIdOrigen { get; set; } = null;
+        public int? tipoIdDestino { get; set; } = null;
+        public string? Cuenta { get; set; } = null;
             public E_TipoIdentificacion tipoCedDestino { get; set; }
 
             public string? NDocumento { get; set; } = null;

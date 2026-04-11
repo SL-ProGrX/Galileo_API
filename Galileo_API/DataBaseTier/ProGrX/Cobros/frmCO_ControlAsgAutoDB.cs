@@ -53,8 +53,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<CbrControlDistribucionResult?> CbrControlDistribucion(int codEmpresa, CbrControlDistribucionParams param)
         {
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            try
             {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
                 var dbParam = new
                 {
                     param.Tipo,
@@ -64,12 +66,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     param.CasosAlDia,
                     param.Grupo
                 };
-                return conn.QueryFirstOrDefault<CbrControlDistribucionResult>(
-                    "spCBRControlDistribucion",
+
+                var response = connection.QueryFirstOrDefault<CbrControlDistribucionResult>(
+                    sql: "exec spCBR_Fondos_Apl_Contratos_Proceso_Carga_Informacion",
                     dbParam,
-                    commandType: System.Data.CommandType.StoredProcedure
+                    commandTimeout: 0
                 );
-            });
+
+                return DbHelper.CreateOkResponse(response);
+            }
+            catch(Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CbrControlDistribucionResult?>(ex.Message); 
+            }
+            
+
         }
     }
 }

@@ -5,6 +5,7 @@ using Galileo.Models.Security;
 using Galileo_API.Controllers.WFCSinpe;
 using Galileo_API.Models.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using Sinpe_CCD;
 using Sinpe_PIN;
 using Sinpe_TFT;
@@ -830,6 +831,8 @@ namespace Galileo_API.DataBaseTier
             {
                 solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
 
+              
+
                 body.Rastro = new Sinpe_CCD.Rastro();
                 detalle = (solicitud!.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4 + solicitud.Detalle5)
                     .Substring(0, Math.Min(255,
@@ -850,21 +853,7 @@ namespace Galileo_API.DataBaseTier
                                                     ? Sinpe_CCD.E_Monedas.Dolares
                                                     : Sinpe_CCD.E_Monedas.Colones;
 
-                // Monto
-                /**
-                Se comenta este codigo porque ProGrX puede pasar montos en dolares.
-                if (solicitud.Divisa == "DOL")
-                {
-                    transaccion.DatosTransaccion.Monto = solicitud.tipoCambio > 0
-                        ? solicitud.Monto / solicitud.tipoCambio
-                        : 0;
-                    transaccion.DatosTransaccion.Monto = Math.Round(transaccion.DatosTransaccion.Monto, 4); // Redondeo para dólares
-                }
-                else
-                {
-                    transaccion.DatosTransaccion.Monto = solicitud.Monto;
-                }**/
-
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
                 transaccion.DatosTransaccion.Monto = solicitud.Monto;
 
                 // Otros campos
@@ -882,13 +871,14 @@ namespace Galileo_API.DataBaseTier
                 transaccion.ClienteOrigen.Identificacion = solicitud.CedulaOrigen?.Replace("-", "");
                 transaccion.ClienteOrigen.Nombre = solicitud.NombreOrigen;
                 transaccion.ClienteOrigen.IBAN = solicitud.CuentaOrigen;
-                transaccion.ClienteOrigen.TipoCedula = solicitud.tipoCedOrigen;
+                transaccion.ClienteOrigen.TipoCedula = (E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result;
 
                 transaccion.ClienteDestino = new ClienteAS400();
                 transaccion.ClienteDestino.Identificacion = solicitud.Codigo?.Replace("-", "");
                 transaccion.ClienteDestino.Nombre = solicitud.Beneficiario;
                 transaccion.ClienteDestino.IBAN = solicitud.Cuenta;
-                transaccion.ClienteDestino.TipoCedula = solicitud.tipoCedDestino;
+                transaccion.ClienteDestino.TipoCedula = (E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdDestino).Result ;
+                transaccion.TipoTransaccion = ServiciosSINPE.CCD;
 
                 try
                 {
@@ -899,7 +889,7 @@ namespace Galileo_API.DataBaseTier
 
                     response = _srvSinpeCcd.RegistrarDebitoCuentaAsync(bodyWCF).Result;
                     responseDetail = response.RegistrarDebitoCuentaResult[0];
-                    ;
+                    
 
                     resp.Result = responseDetail;
                 }
@@ -1131,18 +1121,10 @@ namespace Galileo_API.DataBaseTier
                              .Substring(0, Math.Min(255, (detalle.Replace("\r\n", "") + " Transferencia SINPE").Length));
                 }
 
-                if (solicitud.Divisa == "DOL")
-                {
-                    solicitud.Monto = solicitud.tipoCambio > 0
-                         ? solicitud.Monto / solicitud.tipoCambio
-                         : 0;
-                    solicitud.Monto = Math.Round(solicitud.Monto, 4); // Redondeo para dólares
-                    solicitud.Divisa = "USD";
-                }
-                else
-                {
-                    solicitud.Divisa = "CRC";
-                }
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
+
+
+                solicitud.Monto = Math.Round(solicitud.Monto, 4); // Redondeo para dólares
 
                 Guid newGuid = Guid.NewGuid();
                 TransferData.HostId = _parametrosSinpe.vHostPin;
@@ -1313,18 +1295,9 @@ namespace Galileo_API.DataBaseTier
                                                     ? Sinpe_TFT.E_Monedas.Dolares
                                                     : Sinpe_TFT.E_Monedas.Colones;
 
-                // Monto
-                if (solicitud.Divisa == "DOL")
-                {
-                    transaccion.DatosDebito.Monto = solicitud.tipoCambio > 0
-                        ? solicitud.Monto / solicitud.tipoCambio
-                        : 0;
-                    transaccion.DatosDebito.Monto = Math.Round(transaccion.DatosDebito.Monto, 4); // Redondeo para dólares
-                }
-                else
-                {
-                    transaccion.DatosDebito.Monto = solicitud.Monto;
-                }
+                solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
+
+                transaccion.DatosDebito.Monto = solicitud.Monto;
 
                 // Otros campos
                 transaccion.DatosDebito.Descripcion = detalle.Replace("\r\n", "");
@@ -1810,7 +1783,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="TipoId"></param>
         /// <returns></returns>
-        private ErrorDto<int> setCodigoSugefEstandar(int TipoId)
+        private ErrorDto<int> setCodigoSugefEstandar(int? TipoId)
         {
             var response = new ErrorDto<int>();
             try
@@ -1830,7 +1803,7 @@ namespace Galileo_API.DataBaseTier
                         response.Result = 4;
                         break;
                     default:
-                        response.Result = TipoId;
+                        response.Result = TipoId ?? 0;
                         break;
                 }
             }
@@ -1838,7 +1811,7 @@ namespace Galileo_API.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = "Error al validar la información del código SUGEF.";
-                response.Result = TipoId;
+                response.Result = TipoId ?? 0;
             }
             return response;
         }

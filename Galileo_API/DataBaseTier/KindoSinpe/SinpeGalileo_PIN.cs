@@ -87,7 +87,6 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
-            
             return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/SendTransfer",
@@ -97,7 +96,7 @@ namespace Galileo_API.DataBaseTier
                        Errors = serviceRes.Errors,
                        IsSuccessful = serviceRes.IsSuccessful,
                        OperationId = serviceRes.OperationId,
-                       PINSendingResult = serviceRes.PINSendingResult     
+                       PINSendingResult = serviceRes.PINSendingResult
                    },
                    errorFactory: (code, msg) => new ResSendingDynamic
                    {

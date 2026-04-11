@@ -18,9 +18,9 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [HttpPost("Co_ControlComGeneracion_Actualizar")]
-        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa)
+        public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa, string usuario)
         {
-            return _bl.Co_ControlComGeneracion_Actualizar(CodEmpresa);
+            return _bl.Co_ControlComGeneracion_Actualizar(CodEmpresa, usuario);
         }
     }
 }
