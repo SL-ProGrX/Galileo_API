@@ -300,24 +300,20 @@ FROM dbo.fxSinpe_ValidaCredito(
             CoreInterno.CL_Transaccion[] transacciones,
             string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpCongeladosPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
+            ValidarStoredProcedurePermitido(storedProcedure, SpCongeladosPermitidos);
+            codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_RespuestaTransaccion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var s in transacciones)
-            {
-                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
-                const string querySolicitud = @"
+            const string querySolicitud = @"
 SELECT TOP (1) NSOLICITUD
 FROM TES_TRANSACCIONES
 WHERE REFERENCIA_SINPE = @referencia;";
+
+            foreach (var s in transacciones)
+            {
+                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
 
                 int solicitud = connection.QueryFirstOrDefault<int>(
                     querySolicitud,
@@ -333,13 +329,13 @@ WHERE REFERENCIA_SINPE = @referencia;";
                         IdRelacionCliente = string.Empty,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
-                new CL_Adicional_Info
-                {
-                    Mostrar = true,
-                    Nombre = "Estado",
-                    NombreFisico = "Galileo",
-                    Valor = "No se encontró la solicitud asociada a la referencia SINPE."
-                }
+                            new CL_Adicional_Info
+                            {
+                                Mostrar = true,
+                                Nombre = "Estado",
+                                NombreFisico = "Galileo",
+                                Valor = "No se encontró la solicitud asociada a la referencia SINPE."
+                            }
                         }
                     });
 
@@ -395,19 +391,21 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
-                    Resultado = rechazo ? CoreInterno.E_Resultado.Rechazo : CoreInterno.E_Resultado.Exitoso,
+                    Resultado = rechazo
+                        ? CoreInterno.E_Resultado.Rechazo
+                        : CoreInterno.E_Resultado.Exitoso,
                     MotivoError = rechazo ? res!.MOT_RECHAZO : 0,
                     ComprobanteInterno = codigoReferencia,
                     IdRelacionCliente = idCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
                     {
-            new CL_Adicional_Info
-            {
-                Mostrar = true,
-                Nombre = "Estado",
-                NombreFisico = "Galileo",
-                Valor = Convert.ToString(res?.DES_RECHAZO) ?? string.Empty
-            }
+                        new CL_Adicional_Info
+                        {
+                            Mostrar = true,
+                            Nombre = "Estado",
+                            NombreFisico = "Galileo",
+                            Valor = Convert.ToString(res?.DES_RECHAZO) ?? string.Empty
+                        }
                     }
                 });
             }
@@ -425,71 +423,33 @@ WHERE REFERENCIA_SINPE = @referencia;";
             };
 
         private CoreInterno.CL_ResultadoActualizacion[] EjecutaActualizacion(
-    int codEmpresa,
-    IEnumerable<CoreInterno.CL_ActualizaTransaccion> transacciones,
-    string storedProcedure)
+            int codEmpresa,
+            IEnumerable<CoreInterno.CL_ActualizaTransaccion> transacciones,
+            string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpActualizacionPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
-
+            ValidarStoredProcedurePermitido(storedProcedure, SpActualizacionPermitidos);
             codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            const string querySolicitud = @"
-SELECT TOP (1)
-    RECHAZO_CODIGO,
-    COD_REFERENCIA,
-    COMPRONANTE_INTERNO,
-    COD_TRANSITO,
-    RECHAZO_DESC
-FROM SINPE_MOV_TRANSITO
-WHERE COD_REFERENCIA = @codReferencia;";
-
             foreach (var s in transacciones)
             {
                 var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
-
-                var solicitud = connection.QueryFirstOrDefault<SinpeMovimientoTransitoRow>(
-                    querySolicitud,
-                    new { codReferencia = codigoReferencia });
+                var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
                 if (solicitud == null)
                 {
-                    resultado.Add(new CoreInterno.CL_ResultadoActualizacion
-                    {
-                        Resultado = CoreInterno.E_ResultadoActualizacion.Error,
-                        IdRelacionCliente = codigoReferencia
-                    });
-
+                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
                     continue;
                 }
 
-                var res = connection.QueryFirstOrDefault<dynamic>(
-                    storedProcedure,
-                    new
-                    {
-                        CODIGO_RECHAZO_SINPE = solicitud.RECHAZO_CODIGO,
-                        CODIGO_REFERENCIA = solicitud.COD_REFERENCIA,
-                        COMPTOBANTE_CGP = solicitud.COMPRONANTE_INTERNO,
-                        COMPROBANTE_INTERNO = solicitud.COD_TRANSITO,
-                        DESCRIPCION_RECHAZO = solicitud.RECHAZO_DESC
-                    },
-                    commandType: CommandType.StoredProcedure);
+                var res = EjecutarStoredProcedureMovimiento(connection, storedProcedure, solicitud);
+                var estadoResultado = (res?.Resultado == 0)
+                    ? CoreInterno.E_ResultadoActualizacion.Exitoso
+                    : CoreInterno.E_ResultadoActualizacion.Error;
 
-                resultado.Add(new CoreInterno.CL_ResultadoActualizacion
-                {
-                    Resultado = (res?.Resultado == 0)
-                        ? CoreInterno.E_ResultadoActualizacion.Exitoso
-                        : CoreInterno.E_ResultadoActualizacion.Error,
-                    IdRelacionCliente = solicitud.COD_REFERENCIA
-                });
+                resultado.Add(CrearResultadoActualizacion(solicitud.COD_REFERENCIA, estadoResultado));
             }
 
             return resultado.ToArray();
@@ -507,67 +467,27 @@ WHERE COD_REFERENCIA = @codReferencia;";
             IEnumerable<CoreInterno.TransaccionRechazada> transacciones,
             string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpReversaPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
-
+            ValidarStoredProcedurePermitido(storedProcedure, SpReversaPermitidos);
             codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            const string querySolicitud = @"
-SELECT TOP (1)
-    RECHAZO_CODIGO,
-    COD_REFERENCIA,
-    COMPRONANTE_INTERNO,
-    COD_TRANSITO,
-    RECHAZO_DESC
-FROM SINPE_MOV_TRANSITO
-WHERE COD_REFERENCIA = @codReferencia;";
-
             foreach (var s in transacciones)
             {
                 var codigoReferencia = NormalizarCodigoReferencia(s.IdRelacionCliente);
-
-                var solicitud = connection.QueryFirstOrDefault<SinpeMovimientoTransitoRow>(
-                    querySolicitud,
-                    new { codReferencia = codigoReferencia });
+                var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
                 if (solicitud == null)
                 {
-                    resultado.Add(new CoreInterno.CL_ResultadoActualizacion
-                    {
-                        Resultado = CoreInterno.E_ResultadoActualizacion.Error,
-                        IdRelacionCliente = codigoReferencia
-                    });
-
+                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
                     continue;
                 }
 
-                var res = connection.QueryFirstOrDefault<dynamic>(
-                    storedProcedure,
-                    new
-                    {
-                        CODIGO_RECHAZO_SINPE = solicitud.RECHAZO_CODIGO,
-                        CODIGO_REFERENCIA = solicitud.COD_REFERENCIA,
-                        COMPTOBANTE_CGP = solicitud.COMPRONANTE_INTERNO,
-                        COMPROBANTE_INTERNO = solicitud.COD_TRANSITO,
-                        DESCRIPCION_RECHAZO = solicitud.RECHAZO_DESC
-                    },
-                    commandType: CommandType.StoredProcedure);
-
+                var res = EjecutarStoredProcedureMovimiento(connection, storedProcedure, solicitud);
                 var estadoResultado = res?.Resultado ?? CoreInterno.E_ResultadoActualizacion.Error;
 
-                resultado.Add(new CoreInterno.CL_ResultadoActualizacion
-                {
-                    Resultado = estadoResultado,
-                    IdRelacionCliente = solicitud.COD_REFERENCIA
-                });
+                resultado.Add(CrearResultadoActualizacion(solicitud.COD_REFERENCIA, estadoResultado));
             }
 
             return resultado.ToArray();
@@ -2153,6 +2073,76 @@ WHERE COD_EMPRESA = @codEmpresa;";
                     Description = $"Error al validar divisas: {ex.Message}"
                 };
             }
+        }
+
+        private static void ValidarStoredProcedurePermitido(
+    string storedProcedure,
+    ISet<string> storedProceduresPermitidos)
+        {
+            if (string.IsNullOrWhiteSpace(storedProcedure) ||
+                !storedProceduresPermitidos.Contains(storedProcedure))
+            {
+                throw new ArgumentException(
+                    $"Stored procedure no permitido: '{storedProcedure}'",
+                    nameof(storedProcedure));
+            }
+        }
+
+        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacionError(string codigoReferencia)
+        {
+            return new CoreInterno.CL_ResultadoActualizacion
+            {
+                Resultado = CoreInterno.E_ResultadoActualizacion.Error,
+                IdRelacionCliente = codigoReferencia
+            };
+        }
+
+        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacion(
+            string codigoReferencia,
+            CoreInterno.E_ResultadoActualizacion estadoResultado)
+        {
+            return new CoreInterno.CL_ResultadoActualizacion
+            {
+                Resultado = estadoResultado,
+                IdRelacionCliente = codigoReferencia
+            };
+        }
+
+        private static SinpeMovimientoTransitoRow? ObtenerMovimientoTransito(
+            SqlConnection connection,
+            string codigoReferencia)
+        {
+            const string querySolicitud = @"
+SELECT TOP (1)
+    RECHAZO_CODIGO,
+    COD_REFERENCIA,
+    COMPRONANTE_INTERNO,
+    COD_TRANSITO,
+    RECHAZO_DESC
+FROM SINPE_MOV_TRANSITO
+WHERE COD_REFERENCIA = @codReferencia;";
+
+            return connection.QueryFirstOrDefault<SinpeMovimientoTransitoRow>(
+                querySolicitud,
+                new { codReferencia = codigoReferencia });
+        }
+
+        private static dynamic? EjecutarStoredProcedureMovimiento(
+            SqlConnection connection,
+            string storedProcedure,
+            SinpeMovimientoTransitoRow solicitud)
+        {
+            return connection.QueryFirstOrDefault<dynamic>(
+                storedProcedure,
+                new
+                {
+                    CODIGO_RECHAZO_SINPE = solicitud.RECHAZO_CODIGO,
+                    CODIGO_REFERENCIA = solicitud.COD_REFERENCIA,
+                    COMPTOBANTE_CGP = solicitud.COMPRONANTE_INTERNO,
+                    COMPROBANTE_INTERNO = solicitud.COD_TRANSITO,
+                    DESCRIPCION_RECHAZO = solicitud.RECHAZO_DESC
+                },
+                commandType: CommandType.StoredProcedure);
         }
 
         #endregion

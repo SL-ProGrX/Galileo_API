@@ -186,7 +186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return new FechasResultado
                 {
                     Ok = true,
-                    FechaInicio = new DateTime(1900, 1, 1),
+                    FechaInicio = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local),
                     FechaCorte = DateTime.Today
                 };
             }
@@ -242,12 +242,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 DateTimeStyles.None,
                 out fecha);
         }
-
-        private sealed record ReporteMeta(
-            string Titulo,
-            string NombreArchivo,
-            bool PermiteTodasFechas,
-            string Grupo);
 
         private sealed class FechasResultado
         {
