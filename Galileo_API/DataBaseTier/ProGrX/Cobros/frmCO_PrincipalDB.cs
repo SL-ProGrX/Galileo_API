@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
+using Galileo.Models;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
@@ -59,33 +60,72 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 const string sql = @"SELECT 
-                            rc.id_solicitud AS operacion,
-                            CASE 
-                                WHEN rc.estadosol = 'F' THEN 'NORMAL'
-                                ELSE 'OTRO'
-                            END AS descripcion,
-                            CASE 
-                                WHEN rc.estadosol = 'F' THEN 'NO'
-                                ELSE 'SI'
-                            END AS estado,
-                            c.codigo AS linea,
-                            ISNULL(c.DESCRIPCION_LINEA, c.DESCRIPCION) AS lineaDescripcion,
+                                rc.id_solicitud AS operacion,
 
-                            rc.cedula AS identificacion,
-                            RTRIM(s.nombre) AS identificacionDescripcion
+                                CASE 
+                                    WHEN rc.estadosol = 'F' THEN 'NORMAL'
+                                    ELSE 'OTRO'
+                                END AS descripcion,
 
-                        FROM reg_creditos rc
+                                CASE 
+                                    WHEN rc.estadosol = 'F' THEN 'NO'
+                                    ELSE 'SI'
+                                END AS estado,
 
-                        LEFT JOIN catalogo c 
-                            ON rc.codigo = c.codigo
+                     
+                                s.cod_institucion AS codInstitucion,
+                                ISNULL(rc.cod_deductora, s.cod_deductora) AS deductora,
 
-                        LEFT JOIN socios s 
-                            ON rc.cedula = s.cedula
+                                c.codigo AS linea,
+                                ISNULL(c.DESCRIPCION_LINEA, c.DESCRIPCION) AS lineaDescripcion,
 
-                        WHERE rc.id_solicitud = @operacion
-                                ";
+                                rc.cedula AS identificacion,
+                                RTRIM(s.nombre) AS identificacionDescripcion
+
+                            FROM reg_creditos rc
+
+                            LEFT JOIN socios s 
+                                ON rc.cedula = s.cedula
+
+                            LEFT JOIN catalogo c 
+                                ON rc.codigo = c.codigo
+
+                            WHERE rc.id_solicitud = @operacion";
 
                 response.Result = cn.QueryFirstOrDefault<OperacionConsultarDto>(sql, new { operacion });
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Deductoras_Listar(int codEmpresa,int codInstitucion)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+                        SELECT 
+                            COD_DEDUCTORA AS item,
+                            DESCRIPCION   AS descripcion
+                        FROM vAFI_Deductoras
+                        WHERE cod_institucion = @codInstitucion
+                        ORDER BY DESCRIPCION
+                    ";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    new { codInstitucion }
+                ).ToList();
             }
             catch (Exception ex)
             {
