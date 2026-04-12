@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security;
+using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier.ProGrX_Reportes
 {
     public sealed class RdlcPathResolver : IRdlcPathResolver
     {
         private static readonly string[] AllowedExtensions = new[] { ".rdlc", ".rdl" };
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
 
         /// <summary>
         /// Construye la ruta base de reportes dentro de la carpeta controlada por empresa.
@@ -58,58 +60,57 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         public string ResolveReportPath(string basePath)
         {
             if (string.IsNullOrWhiteSpace(basePath))
-            {
                 throw new SecurityException("La ruta base del reporte es requerida.");
-            }
 
             var normalizedBasePath = Path.GetFullPath(basePath);
             var directory = Path.GetDirectoryName(normalizedBasePath);
-            var normalizedDirectory = directory is null ? null : Path.GetFullPath(directory);
+            var normalizedDirectory = string.IsNullOrWhiteSpace(directory) ? string.Empty : Path.GetFullPath(directory);
 
             if (string.IsNullOrWhiteSpace(normalizedDirectory) || !Directory.Exists(normalizedDirectory))
-            {
                 return string.Empty;
-            }
 
-            var reportName = Path.GetFileNameWithoutExtension(normalizedBasePath);
-            if (string.IsNullOrWhiteSpace(reportName))
+            var requestedName = NormalizeSingleSegment(
+                Path.GetFileNameWithoutExtension(normalizedBasePath),
+                "nombreReporte");
+
+            var match = Directory
+                .EnumerateFiles(normalizedDirectory)
+                .Select(Path.GetFullPath)
+                .Where(path => IsUnderDirectory(normalizedDirectory, path))
+                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                .FirstOrDefault(path =>
+                    string.Equals(
+                        Path.GetFileNameWithoutExtension(path),
+                        requestedName,
+                        StringComparison.OrdinalIgnoreCase));
+
+            return match ?? string.Empty;
+        }
+
+
+        private static string NormalizeSingleSegment(string? value, string paramName)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new SecurityException($"{paramName} requerido.");
+
+            if (normalized.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
+                throw new SecurityException($"{paramName} inválido.");
+
+            if (normalized.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(normalized))
+                throw new SecurityException($"{paramName} inválido.");
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(
+                    normalized,
+                    @"^[A-Za-z0-9_.-]+$",
+                    RegexOptions.None,
+                    RegexTimeout))
             {
-                throw new SecurityException("El nombre del reporte no es válido.");
+                throw new SecurityException($"{paramName} inválido.");
             }
 
-            // Valida que el nombre del reporte no pueda ser tratado como una ruta absoluta ni contenga separadores.
-            if (Path.IsPathRooted(reportName)
-                || reportName.Contains(Path.DirectorySeparatorChar)
-                || reportName.Contains(Path.AltDirectorySeparatorChar))
-            {
-                throw new SecurityException("El nombre del reporte no es válido.");
-            }
-
-            var safeReportName = Path.GetFileName(reportName);
-            if (string.IsNullOrWhiteSpace(safeReportName))
-            {
-                throw new SecurityException("El nombre del reporte no es válido.");
-            }
-
-            foreach (var extension in AllowedExtensions)
-            {
-                var candidateBase = normalizedDirectory!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                    + Path.DirectorySeparatorChar
-                    + safeReportName;
-                var candidatePath = Path.GetFullPath(Path.ChangeExtension(candidateBase, extension));
-
-                if (!IsUnderDirectory(normalizedDirectory!, candidatePath))
-                {
-                    throw new SecurityException("La ruta del reporte no es válida.");
-                }
-
-                if (File.Exists(candidatePath))
-                {
-                    return candidatePath;
-                }
-            }
-
-            return string.Empty;
+            return normalized;
         }
 
         /// <summary>

@@ -476,10 +476,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="movimiento"></param>
         private static void LeerRespuestaSp(dynamic rs, out int pass, out string mensaje, out string movimiento)
         {
-            string passStr = Convert.ToString(rs?.Pass ?? rs?.PASS ?? "0") ?? "0";
+            string resultadoRaw = Convert.ToString(rs?.Pass ?? rs?.PASS ?? "0") ?? "0";
             string msgStr = Convert.ToString(rs?.Mensaje ?? rs?.MENSAJE ?? "") ?? "";
             string movStr = Convert.ToString(rs?.Movimiento ?? rs?.MOVIMIENTO ?? "") ?? "";
-            pass = Convert.ToInt32(passStr.Trim() == "" ? "0" : passStr.Trim());
+            pass = Convert.ToInt32(resultadoRaw.Trim() == "" ? "0" : resultadoRaw.Trim());
             mensaje = msgStr;
             movimiento = movStr;
         }

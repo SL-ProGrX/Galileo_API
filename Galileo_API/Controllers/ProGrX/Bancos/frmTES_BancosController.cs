@@ -161,13 +161,20 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             // ✅ Sanitizar documento (bloquea ../, rutas absolutas, separadores, etc.)
             documento = (documento ?? string.Empty).Trim();
 
+            if (documento != "archivo_especial_ck" &&
+                documento != "archivo_cheques_firmas" &&
+                documento != "archivo_cheques_sin_firmas")
+            {
+                return BadRequest("Nombre de documento inválido.");
+            }
+
             // 1) no permitir rutas
             if (documento.Contains("..", StringComparison.Ordinal) ||
                 documento.Contains('/', StringComparison.Ordinal) ||
                 documento.Contains('\\', StringComparison.Ordinal) ||
                 Path.IsPathRooted(documento))
             {
-                return BadRequest("Nombre de documento inválido.");
+                return BadRequest("Nombre de ruta inválido.");
             }
 
             // 2) opcional: allowlist de caracteres (recomendado)

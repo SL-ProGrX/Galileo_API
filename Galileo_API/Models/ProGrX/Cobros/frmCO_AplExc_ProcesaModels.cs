@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.Cobros
+﻿ namespace Galileo_API.Models.ProGrX.Cobros
 {
     public class CoAplExcProcInformacionData
     {

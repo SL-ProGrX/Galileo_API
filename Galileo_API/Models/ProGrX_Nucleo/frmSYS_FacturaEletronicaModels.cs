@@ -202,4 +202,29 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string? cabys_desc { get; set; }
     }
 
+    public class PortalProveedorConfigRow
+    {
+        public string portal_server { get; set; } = string.Empty;
+        public string portal_db { get; set; } = string.Empty;
+        public string portal_user { get; set; } = string.Empty;
+        public string portal_secret { get; set; } = string.Empty;
+    }
+
+    public class PortalSyncConfigRow
+    {
+        public string server { get; set; } = string.Empty;
+        public string db { get; set; } = string.Empty;
+        public string usr { get; set; } = string.Empty;
+        public string secret { get; set; } = string.Empty;
+    }
+
+    public class CorteCfgRow
+    {
+        public int incluye_polizas { get; set; }
+        public int incluye_principal { get; set; }
+        public string actividad { get; set; } = string.Empty;
+        public string moneda { get; set; } = string.Empty;
+        public string sucursal { get; set; } = string.Empty;
+        public string terminal { get; set; } = string.Empty;
+    }
 }
