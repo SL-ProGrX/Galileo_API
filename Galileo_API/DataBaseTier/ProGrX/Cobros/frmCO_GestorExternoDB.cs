@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using static Galileo_API.Models.ProGrX.Cobros.FrmCoGestorExternoModels;
 using Galileo.Models.Security;
+using System.Data;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
@@ -24,6 +25,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return _securityMainDb.Bitacora(data);
         }
 
+        private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CrdGestorExternoFiltroRequest request)
+        {
+            if (request.IgnorarFechas)
+            {
+                var inicioAll = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                var corteAll = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                return (inicioAll, corteAll);
+            }
+
+            var inicio = DateTime.SpecifyKind(
+                (request.FechaInicio ?? DateTime.Today).Date,
+                DateTimeKind.Utc);
+
+            var corte = DateTime.SpecifyKind(
+                (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
+                DateTimeKind.Utc);
+
+            return (inicio, corte);
+        }
+
         /// <summary>
         /// Obtiene listado de casos de gestor externo.
         /// </summary>
@@ -34,18 +55,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                var fechaInicio = request.IgnorarFechas
-                    ? new DateTime(2000, 1, 1)
-                    : (request.FechaInicio?.Date ?? DateTime.Today.Date);
+                var (inicio, corte) = ResolverRangoFechas(request);
 
-                var fechaCorte = request.IgnorarFechas
-                    ? new DateTime(2100, 1, 1)
-                    : (request.FechaCorte?.Date.AddDays(1).AddTicks(-1) ?? DateTime.Today.Date.AddDays(1).AddTicks(-1));
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Estado", string.IsNullOrWhiteSpace(request.Estado) ? "A" : request.Estado.Trim().Substring(0, 1));
-                parameters.Add("@Inicio", fechaInicio);
-                parameters.Add("@Corte", fechaCorte);
+                parameters.Add("@Inicio", inicio);
+                parameters.Add("@Corte", corte);
                 parameters.Add("@Filtro", request.Filtro?.Trim() ?? string.Empty);
                 parameters.Add("@Expediente", request.Expediente?.Trim() ?? string.Empty);
                 parameters.Add("@Usuario", request.Usuario?.Trim() ?? string.Empty);
@@ -69,13 +85,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             });
         }
 
+        /// <summary>
+        /// Registro de caso con gestor externo, para asignación o reversa dependiendo del estado indicado en la petición.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<string> Crd_GestorExterno_Registrar(int CodEmpresa, CrdGestorExternoRegistrarRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
             try
             {
-              
+
 
                 if (string.IsNullOrWhiteSpace(request.GestionUsuario))
                 {
@@ -167,7 +189,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
-        //btnReversa_Click
+      
         public ErrorDto<bool> Crd_GestorExterno_Reversar(int CodEmpresa, CrdGestorExternoReversaRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
@@ -230,122 +252,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
-        public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(int CodEmpresa, CrdGestorExternoCargaMasivaRequest request)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-
-            try
-            {
-                var response = new CrdGestorExternoCargaMasivaResponse
-                {
-                    TotalRecibidos = request.Registros.Count
-                };
-
-                if (request.Registros.Count == 0)
-                {
-                    return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
-                        "No se recibieron registros para procesar.",
-                        -1,
-                        response);
-                }
-
-                foreach (var registro in request.Registros)
-                {
-                    if (registro.Operacion <= 0)
-                    {
-                        response.TotalConError++;
-                        response.Mensajes.Add("Se omitió un registro por operación inválida.");
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(registro.Notas))
-                    {
-                        response.TotalConError++;
-                        response.Mensajes.Add($"La operación {registro.Operacion} fue omitida porque no tiene notas.");
-                        continue;
-                    }
-
-                    var parameters = new DynamicParameters();
-
-                    if (request.EstadoProceso == "A")
-                    {
-                        if (string.IsNullOrWhiteSpace(request.GestionUsuario))
-                        {
-                            return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
-                                "Debe indicar un gestor externo para la asignación masiva.",
-                                -1,
-                                response);
-                        }
-
-                        parameters.Add("@Operacion", registro.Operacion);
-                        parameters.Add("@GestionUsuario", request.GestionUsuario.Trim());
-                        parameters.Add("@Cedula", string.Empty);
-                        parameters.Add("@Nombre", string.Empty);
-                        parameters.Add("@Expediente", registro.Expediente?.Trim() ?? string.Empty);
-                        parameters.Add("@Notas", registro.Notas.Trim());
-                        parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
-
-                        const string addQuery = @"
-                    EXEC spCBR_Gestor_Externo_Add
-                        @Operacion,
-                        @GestionUsuario,
-                        @Cedula,
-                        @Nombre,
-                        @Expediente,
-                        @Notas,
-                        @Usuario;";
-
-                        var addResult = connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(addQuery, parameters);
-
-                        if (addResult?.Pass == 1)
-                        {
-                            response.TotalProcesados++;
-                        }
-                        else
-                        {
-                            response.TotalConError++;
-                            response.Mensajes.Add(
-                                $"Operación {registro.Operacion}: {addResult?.Mensaje ?? "No fue posible asignar."}");
-                        }
-                    }
-                    else
-                    {
-                        parameters.Add("@Operacion", registro.Operacion);
-                        parameters.Add("@Notas", registro.Notas.Trim());
-                        parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
-
-                        const string delQuery = @"
-                    EXEC spCBR_Gestor_Externo_Del_Masivo
-                        @Operacion,
-                        @Notas,
-                        @Usuario;";
-
-                        var delResult = connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(delQuery, parameters);
-
-                        if (delResult?.Pass == 1)
-                        {
-                            response.TotalProcesados++;
-                        }
-                        else
-                        {
-                            response.TotalConError++;
-                            response.Mensajes.Add(
-                                $"Operación {registro.Operacion}: {delResult?.Mensaje ?? "No fue posible desvincular."}");
-                        }
-                    }
-                }
-
-                return DbHelper.CreateOkResponse(response);
-            }
-            catch (Exception)
-            {
-                return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
-                    "Error al procesar la carga masiva de gestor externo.",
-                    -1,
-                    new CrdGestorExternoCargaMasivaResponse());
-            }
-        }
-
         /// <summary>
         /// Listado de gestiones 
         /// </summary>
@@ -390,6 +296,177 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return conn.Query<DropDownListaGenericaModel>(query).ToList();
             });
+        }
+
+        public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(
+        int codEmpresa,
+        CrdGestorExternoCargaMasivaRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            try
+            {
+                var response = CrearRespuestaInicial(request);
+
+                var validacion = ValidarCargaMasiva(request, response);
+                if (validacion is not null)
+                {
+                    return validacion;
+                }
+
+                foreach (var registro in request.Registros)
+                {
+                    ProcesarRegistroCargaMasiva(connection, request, registro, response);
+                }
+
+                return DbHelper.CreateOkResponse(response);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
+                    "Error al procesar la carga masiva de gestor externo.",
+                    -1,
+                    new CrdGestorExternoCargaMasivaResponse());
+            }
+        }
+        private static CrdGestorExternoCargaMasivaResponse CrearRespuestaInicial(
+            CrdGestorExternoCargaMasivaRequest request)
+        {
+            return new CrdGestorExternoCargaMasivaResponse
+            {
+                TotalRecibidos = request.Registros.Count
+            };
+        }
+
+        private static ErrorDto<CrdGestorExternoCargaMasivaResponse>? ValidarCargaMasiva(
+            CrdGestorExternoCargaMasivaRequest request,
+            CrdGestorExternoCargaMasivaResponse response)
+        {
+            if (request.Registros.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
+                    "No se recibieron registros para procesar.",
+                    -1,
+                    response);
+            }
+
+            if (EsAsignacion(request) && string.IsNullOrWhiteSpace(request.GestionUsuario))
+            {
+                return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
+                    "Debe indicar un gestor externo para la asignación masiva.",
+                    -1,
+                    response);
+            }
+
+            return null;
+        }
+
+        private static string? ValidarRegistroCargaMasiva(CrdGestorExternoCargaFilaRequest registro)
+        {
+            if (registro.Operacion <= 0)
+            {
+                return "Se omitió un registro por operación inválida.";
+            }
+
+            if (string.IsNullOrWhiteSpace(registro.Notas))
+            {
+                return $"La operación {registro.Operacion} fue omitida porque no tiene notas.";
+            }
+
+            return null;
+        }
+
+        private static void ProcesarRegistroCargaMasiva(
+            IDbConnection connection,
+            CrdGestorExternoCargaMasivaRequest request,
+            CrdGestorExternoCargaFilaRequest registro,
+            CrdGestorExternoCargaMasivaResponse response)
+        {
+            var mensajeValidacion = ValidarRegistroCargaMasiva(registro);
+            if (!string.IsNullOrEmpty(mensajeValidacion))
+            {
+                response.TotalConError++;
+                response.Mensajes.Add(mensajeValidacion);
+                return;
+            }
+
+            if (EsAsignacion(request))
+            {
+                ProcesarAsignacion(connection, request, registro, response);
+                return;
+            }
+
+            ProcesarDesvinculacion(connection, request, registro, response);
+        }
+        private static bool EsAsignacion(CrdGestorExternoCargaMasivaRequest request)
+        {
+            return string.Equals(request.EstadoProceso, "A", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void ProcesarAsignacion(
+    IDbConnection connection,
+    CrdGestorExternoCargaMasivaRequest request,
+    CrdGestorExternoCargaFilaRequest registro,
+    CrdGestorExternoCargaMasivaResponse response)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@Operacion", registro.Operacion);
+            parameters.Add("@GestionUsuario", request.GestionUsuario.Trim());
+            parameters.Add("@Cedula", string.Empty);
+            parameters.Add("@Nombre", string.Empty);
+            parameters.Add("@Expediente", registro.Expediente?.Trim() ?? string.Empty);
+            parameters.Add("@Notas", registro.Notas.Trim());
+            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
+
+            const string query = @"
+        EXEC spCBR_Gestor_Externo_Add
+            @Operacion,
+            @GestionUsuario,
+            @Cedula,
+            @Nombre,
+            @Expediente,
+            @Notas,
+            @Usuario;";
+
+            var result = connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(query, parameters);
+            ProcesarResultadoSp(result, registro.Operacion, response, "No fue posible asignar.");
+        }
+
+        private static void ProcesarDesvinculacion(
+    IDbConnection connection,
+    CrdGestorExternoCargaMasivaRequest request,
+    CrdGestorExternoCargaFilaRequest registro,
+    CrdGestorExternoCargaMasivaResponse response)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@Operacion", registro.Operacion);
+            parameters.Add("@Notas", registro.Notas.Trim());
+            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
+
+            const string query = @"
+        EXEC spCBR_Gestor_Externo_Del_Masivo
+            @Operacion,
+            @Notas,
+            @Usuario;";
+
+            var result = connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(query, parameters);
+            ProcesarResultadoSp(result, registro.Operacion, response, "No fue posible desvincular.");
+        }
+        private static void ProcesarResultadoSp(
+    CrdGestorExternoSpResponse? result,
+    long operacion,
+    CrdGestorExternoCargaMasivaResponse response,
+    string mensajeDefault)
+        {
+            if (result?.Pass == 1)
+            {
+                response.TotalProcesados++;
+                return;
+            }
+
+            response.TotalConError++;
+            response.Mensajes.Add(
+                $"Operación {operacion}: {result?.Mensaje ?? mensajeDefault}");
         }
     }
 }
