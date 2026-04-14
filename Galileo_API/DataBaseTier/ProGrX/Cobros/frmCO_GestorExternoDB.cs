@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityMainDb;
-        private readonly int vModulo = 4;
+        private const int ModuloCobros = 4;
 
         private const string SpGestorExternoList = @"
             EXEC spCBR_Gestor_Externo_List
@@ -47,6 +47,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 @Notas,
                 @Usuario;";
 
+        private const string QueryOperaciones = @"
+            SELECT
+                Id_Solicitud,
+                Cedula,
+                Nombre,
+                Codigo,
+                Antiguedad,
+                Saldo
+            FROM vCbr_Gestion_Externa_Operaciones_General_Lista
+            ORDER BY Id_Solicitud;";
+
+        private const string QueryGestores = @"
+            SELECT
+                RTRIM(Usuario) AS item,
+                RTRIM(Usuario) AS descripcion
+            FROM CBR_USUARIOS
+            WHERE OPERADOR_EXTERNO = 1
+            ORDER BY Usuario;";
+
         public FrmCoGestorExternoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -56,26 +75,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _securityMainDb.Bitacora(data);
-        }
-
-        private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CrdGestorExternoFiltroRequest request)
-        {
-            if (request.IgnorarFechas)
-            {
-                var inicioAll = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                var corteAll = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                return (inicioAll, corteAll);
-            }
-
-            var inicio = DateTime.SpecifyKind(
-                (request.FechaInicio ?? DateTime.Today).Date,
-                DateTimeKind.Utc);
-
-            var corte = DateTime.SpecifyKind(
-                (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
-                DateTimeKind.Utc);
-
-            return (inicio, corte);
         }
 
         public ErrorDto<List<CrdGestorExternoListaItemModel>> Crd_GestorExterno_Listado_Obtener(
@@ -99,32 +98,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                var validacion = ValidarRegistrar(request);
-                if (validacion is not null)
+                var mensajeValidacion = ValidarRegistrar(request);
+                if (!string.IsNullOrEmpty(mensajeValidacion))
                 {
-                    return validacion;
+                    return CrearErrorString(mensajeValidacion, -1);
                 }
 
-                var result = EjecutarSp(connection, SpGestorExternoAdd, CrearParametrosRegistrar(request));
+                var result = EjecutarSp(
+                    connection,
+                    SpGestorExternoAdd,
+                    CrearParametrosRegistrar(request));
 
-                if (result is null)
+                var respuesta = ConstruirRespuestaStringDesdeSp(
+                    result,
+                    "No se recibió respuesta del proceso de registro.",
+                    "No fue posible registrar el caso.",
+                    -2);
+
+                if (respuesta.Code == 0 && result is not null)
                 {
-                    return CrearErrorString("No se recibió respuesta del proceso de registro.", -1);
+                    RegistrarBitacora(codEmpresa, request.UsuarioEjecuta, result);
+                    respuesta.Result =
+                        $"{result.Movimiento}Caso con Gestor Externo, procesado satisfactoriamente!";
                 }
 
-                if (result.Pass != 1)
-                {
-                    return CrearErrorString(
-                        string.IsNullOrWhiteSpace(result.Mensaje)
-                            ? "No fue posible registrar el caso."
-                            : result.Mensaje,
-                        -2);
-                }
-
-                RegistrarBitacora(codEmpresa, request.UsuarioEjecuta, result);
-
-                var mensaje = $"{result.Movimiento}Caso con Gestor Externo, procesado satisfactoriamente!";
-                return DbHelper.CreateOkResponse(mensaje);
+                return respuesta;
             }
             catch (Exception)
             {
@@ -140,61 +138,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                var validacion = ValidarReversa(request);
-                if (validacion is not null)
+                var mensajeValidacion = ValidarReversa(request);
+                if (!string.IsNullOrEmpty(mensajeValidacion))
                 {
-                    return validacion;
+                    return CrearErrorBool(mensajeValidacion, -1);
                 }
 
-                var result = EjecutarSp(connection, SpGestorExternoDel, CrearParametrosReversa(request));
+                var result = EjecutarSp(
+                    connection,
+                    SpGestorExternoDel,
+                    CrearParametrosReversa(request));
 
-                return ConstruirRespuestaBool(
+                return ConstruirRespuestaBoolDesdeSp(
                     result,
                     "No se recibió respuesta del proceso de reversa.",
                     "No fue posible desvincular el caso.");
             }
             catch (Exception)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Error al desvincular el caso del gestor externo.",
-                    -1,
-                    false);
+                return CrearErrorBool("Error al desvincular el caso del gestor externo.", -1);
             }
         }
 
         public ErrorDto<List<CrdGestorExternoOperacionModel>> Crd_GestorExterno_Operacion_Buscar(int codEmpresa)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                const string query = @"
-                    SELECT
-                        Id_Solicitud,
-                        Cedula,
-                        Nombre,
-                        Codigo,
-                        Antiguedad,
-                        Saldo
-                    FROM vCbr_Gestion_Externa_Operaciones_General_Lista
-                    ORDER BY Id_Solicitud;";
-
-                return conn.Query<CrdGestorExternoOperacionModel>(query).ToList();
-            });
+                conn.Query<CrdGestorExternoOperacionModel>(QueryOperaciones).ToList());
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_GestorExterno_Gestores_Obtener(int codEmpresa)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                const string query = @"
-                    SELECT
-                        RTRIM(Usuario) AS item,
-                        RTRIM(Usuario) AS descripcion
-                    FROM CBR_USUARIOS
-                    WHERE OPERADOR_EXTERNO = 1
-                    ORDER BY Usuario;";
-
-                return conn.Query<DropDownListaGenericaModel>(query).ToList();
-            });
+                conn.Query<DropDownListaGenericaModel>(QueryGestores).ToList());
         }
 
         public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(
@@ -229,38 +204,54 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
+        private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CrdGestorExternoFiltroRequest request)
+        {
+            if (request.IgnorarFechas)
+            {
+                return (
+                    new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            }
+
+            var inicio = DateTime.SpecifyKind(
+                (request.FechaInicio ?? DateTime.Today).Date,
+                DateTimeKind.Utc);
+
+            var corte = DateTime.SpecifyKind(
+                (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
+                DateTimeKind.Utc);
+
+            return (inicio, corte);
+        }
+
         private static DynamicParameters CrearParametrosListado(
             CrdGestorExternoFiltroRequest request,
             DateTime inicio,
             DateTime corte)
         {
             var parameters = new DynamicParameters();
-            parameters.Add("@Estado", string.IsNullOrWhiteSpace(request.Estado) ? "A" : request.Estado.Trim()[0].ToString());
+            parameters.Add("@Estado", ObtenerEstado(request.Estado));
             parameters.Add("@Inicio", inicio);
             parameters.Add("@Corte", corte);
-            parameters.Add("@Filtro", request.Filtro?.Trim() ?? string.Empty);
-            parameters.Add("@Expediente", request.Expediente?.Trim() ?? string.Empty);
-            parameters.Add("@Usuario", request.Usuario?.Trim() ?? string.Empty);
+            parameters.Add("@Filtro", LimpiarTexto(request.Filtro));
+            parameters.Add("@Expediente", LimpiarTexto(request.Expediente));
+            parameters.Add("@Usuario", LimpiarTexto(request.Usuario));
             parameters.Add("@Operacion", request.Operacion);
-            parameters.Add(
-                "@Gestiona",
-                string.IsNullOrWhiteSpace(request.Gestiona) || request.Gestiona.Equals("TODOS", StringComparison.OrdinalIgnoreCase)
-                    ? string.Empty
-                    : request.Gestiona.Trim());
-
+            parameters.Add("@Gestiona", ObtenerGestiona(request.Gestiona));
             return parameters;
         }
 
         private static DynamicParameters CrearParametrosRegistrar(CrdGestorExternoRegistrarRequest request)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Operacion", request.Operacion);
-            parameters.Add("@GestionUsuario", request.GestionUsuario.Trim());
-            parameters.Add("@Cedula", request.Cedula.Trim());
-            parameters.Add("@Nombre", request.Nombre?.Trim() ?? string.Empty);
-            parameters.Add("@Expediente", request.Expediente?.Trim() ?? string.Empty);
-            parameters.Add("@Notas", request.Notas.Trim());
-            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
+            var parameters = CrearParametrosOperacionBase(
+                request.Operacion,
+                request.Notas,
+                request.UsuarioEjecuta);
+
+            parameters.Add("@GestionUsuario", LimpiarTexto(request.GestionUsuario));
+            parameters.Add("@Cedula", LimpiarTexto(request.Cedula));
+            parameters.Add("@Nombre", LimpiarTexto(request.Nombre));
+            parameters.Add("@Expediente", LimpiarTexto(request.Expediente));
             return parameters;
         }
 
@@ -268,8 +259,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Id", request.CasoId);
-            parameters.Add("@Notas", request.Notas.Trim());
-            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
+            parameters.Add("@Notas", LimpiarTexto(request.Notas));
+            parameters.Add("@Usuario", LimpiarTexto(request.UsuarioEjecuta));
+            return parameters;
+        }
+
+        private static DynamicParameters CrearParametrosOperacionBase(
+            long operacion,
+            string? notas,
+            string? usuario)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@Operacion", operacion);
+            parameters.Add("@Notas", LimpiarTexto(notas));
+            parameters.Add("@Usuario", LimpiarTexto(usuario));
             return parameters;
         }
 
@@ -277,14 +280,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             CrdGestorExternoCargaMasivaRequest request,
             CrdGestorExternoCargaFilaRequest registro)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Operacion", registro.Operacion);
-            parameters.Add("@GestionUsuario", request.GestionUsuario.Trim());
+            var parameters = CrearParametrosOperacionBase(
+                registro.Operacion,
+                registro.Notas,
+                request.UsuarioEjecuta);
+
+            parameters.Add("@GestionUsuario", LimpiarTexto(request.GestionUsuario));
             parameters.Add("@Cedula", string.Empty);
             parameters.Add("@Nombre", string.Empty);
-            parameters.Add("@Expediente", registro.Expediente?.Trim() ?? string.Empty);
-            parameters.Add("@Notas", registro.Notas.Trim());
-            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
+            parameters.Add("@Expediente", LimpiarTexto(registro.Expediente));
             return parameters;
         }
 
@@ -292,11 +296,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             CrdGestorExternoCargaMasivaRequest request,
             CrdGestorExternoCargaFilaRequest registro)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Operacion", registro.Operacion);
-            parameters.Add("@Notas", registro.Notas.Trim());
-            parameters.Add("@Usuario", request.UsuarioEjecuta.Trim());
-            return parameters;
+            return CrearParametrosOperacionBase(
+                registro.Operacion,
+                registro.Notas,
+                request.UsuarioEjecuta);
         }
 
         private static CrdGestorExternoSpResponse? EjecutarSp(
@@ -307,47 +310,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(query, parameters);
         }
 
-        private static ErrorDto<string>? ValidarRegistrar(CrdGestorExternoRegistrarRequest request)
+        private static string? ValidarRegistrar(CrdGestorExternoRegistrarRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.GestionUsuario))
             {
-                return CrearErrorString("Debe indicar un gestor externo.", -1);
+                return "Debe indicar un gestor externo.";
             }
 
             if (request.Operacion <= 0)
             {
-                return CrearErrorString("Debe indicar una operación válida.", -1);
+                return "Debe indicar una operación válida.";
             }
 
             if (string.IsNullOrWhiteSpace(request.Cedula))
             {
-                return CrearErrorString("Debe indicar la cédula.", -1);
+                return "Debe indicar la cédula.";
             }
 
-            if (string.IsNullOrWhiteSpace(request.Notas) || request.Notas.Trim().Length < 10)
-            {
-                return CrearErrorString("Debe indicar una nota válida de al menos 10 caracteres.", -1);
-            }
-
-            return null;
+            return ValidarLongitudMinimaNotas(request.Notas, 10);
         }
 
-        private static ErrorDto<bool>? ValidarReversa(CrdGestorExternoReversaRequest request)
+        private static string? ValidarReversa(CrdGestorExternoReversaRequest request)
         {
             if (request.CasoId <= 0)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Debe indicar un caso válido.",
-                    -1,
-                    false);
+                return "Debe indicar un caso válido.";
             }
 
-            if (string.IsNullOrWhiteSpace(request.Notas) || request.Notas.Trim().Length < 30)
+            return ValidarLongitudMinimaNotas(request.Notas, 30);
+        }
+
+        private static string? ValidarLongitudMinimaNotas(string? notas, int minimo)
+        {
+            if (string.IsNullOrWhiteSpace(notas) || notas.Trim().Length < minimo)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Debe indicar una nota válida de al menos 30 caracteres.",
-                    -1,
-                    false);
+                return $"Debe indicar una nota válida de al menos {minimo} caracteres.";
             }
 
             return null;
@@ -358,14 +355,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return DbHelper.CreateErrorResponse<string>(mensaje, codigo, string.Empty);
         }
 
-        private static ErrorDto<bool> ConstruirRespuestaBool(
+        private static ErrorDto<bool> CrearErrorBool(string mensaje, int codigo)
+        {
+            return DbHelper.CreateErrorResponse<bool>(mensaje, codigo, false);
+        }
+
+        private static ErrorDto<string> ConstruirRespuestaStringDesdeSp(
+            CrdGestorExternoSpResponse? result,
+            string mensajeNull,
+            string mensajeDefault,
+            int codigoError)
+        {
+            if (result is null)
+            {
+                return CrearErrorString(mensajeNull, -1);
+            }
+
+            if (result.Pass == 1)
+            {
+                return DbHelper.CreateOkResponse(string.Empty);
+            }
+
+            return CrearErrorString(
+                string.IsNullOrWhiteSpace(result.Mensaje) ? mensajeDefault : result.Mensaje,
+                codigoError);
+        }
+
+        private static ErrorDto<bool> ConstruirRespuestaBoolDesdeSp(
             CrdGestorExternoSpResponse? result,
             string mensajeNull,
             string mensajeDefault)
         {
             if (result is null)
             {
-                return DbHelper.CreateErrorResponse<bool>(mensajeNull, -1, false);
+                return CrearErrorBool(mensajeNull, -1);
             }
 
             if (result.Pass == 1)
@@ -373,10 +396,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateOkResponse(true);
             }
 
-            return DbHelper.CreateErrorResponse<bool>(
+            return CrearErrorBool(
                 string.IsNullOrWhiteSpace(result.Mensaje) ? mensajeDefault : result.Mensaje,
-                -1,
-                false);
+                -1);
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, CrdGestorExternoSpResponse result)
@@ -387,7 +409,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Usuario = usuario,
                 DetalleMovimiento = $"{result.Movimiento},{result.Mensaje}",
                 Movimiento = "REGISTRA-WEB",
-                Modulo = vModulo
+                Modulo = ModuloCobros
             });
         }
 
@@ -452,46 +474,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return;
             }
 
-            if (EsAsignacion(request))
-            {
-                ProcesarAsignacion(connection, request, registro, response);
-                return;
-            }
+            var esAsignacion = EsAsignacion(request);
+            var query = esAsignacion ? SpGestorExternoAdd : SpGestorExternoDelMasivo;
+            var parameters = esAsignacion
+                ? CrearParametrosAsignacion(request, registro)
+                : CrearParametrosDesvinculacion(request, registro);
+            var mensajeDefault = esAsignacion
+                ? "No fue posible asignar."
+                : "No fue posible desvincular.";
 
-            ProcesarDesvinculacion(connection, request, registro, response);
+            var result = EjecutarSp(connection, query, parameters);
+            ProcesarResultadoSp(result, registro.Operacion, response, mensajeDefault);
         }
 
         private static bool EsAsignacion(CrdGestorExternoCargaMasivaRequest request)
         {
             return string.Equals(request.EstadoProceso, "A", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static void ProcesarAsignacion(
-            IDbConnection connection,
-            CrdGestorExternoCargaMasivaRequest request,
-            CrdGestorExternoCargaFilaRequest registro,
-            CrdGestorExternoCargaMasivaResponse response)
-        {
-            var result = EjecutarSp(
-                connection,
-                SpGestorExternoAdd,
-                CrearParametrosAsignacion(request, registro));
-
-            ProcesarResultadoSp(result, registro.Operacion, response, "No fue posible asignar.");
-        }
-
-        private static void ProcesarDesvinculacion(
-            IDbConnection connection,
-            CrdGestorExternoCargaMasivaRequest request,
-            CrdGestorExternoCargaFilaRequest registro,
-            CrdGestorExternoCargaMasivaResponse response)
-        {
-            var result = EjecutarSp(
-                connection,
-                SpGestorExternoDelMasivo,
-                CrearParametrosDesvinculacion(request, registro));
-
-            ProcesarResultadoSp(result, registro.Operacion, response, "No fue posible desvincular.");
         }
 
         private static void ProcesarResultadoSp(
@@ -507,7 +505,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
 
             response.TotalConError++;
-            response.Mensajes.Add($"Operación {operacion}: {result?.Mensaje ?? mensajeDefault}");
+            response.Mensajes.Add(
+                $"Operación {operacion}: {result?.Mensaje ?? mensajeDefault}");
+        }
+
+        private static string LimpiarTexto(string? valor)
+        {
+            return valor?.Trim() ?? string.Empty;
+        }
+
+        private static string ObtenerEstado(string? estado)
+        {
+            return string.IsNullOrWhiteSpace(estado)
+                ? "A"
+                : estado.Trim()[0].ToString();
+        }
+
+        private static string ObtenerGestiona(string? gestiona)
+        {
+            return string.IsNullOrWhiteSpace(gestiona) ||
+                   gestiona.Equals("TODOS", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : gestiona.Trim();
         }
     }
 }
