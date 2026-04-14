@@ -72,7 +72,7 @@
             public string EstadoProceso { get; set; } = "A";
             public string GestionUsuario { get; set; } = string.Empty;
             public string UsuarioEjecuta { get; set; } = string.Empty;
-            public List<CrdGestorExternoCargaFilaRequest> Registros { get; set; } = [];
+            public List<CrdGestorExternoCargaFilaRequest> Registros { get; set; } = new();
         }
 
         public class CrdGestorExternoCargaMasivaResponse
@@ -80,7 +80,7 @@
             public int TotalRecibidos { get; set; }
             public int TotalProcesados { get; set; }
             public int TotalConError { get; set; }
-            public List<string> Mensajes { get; set; } = [];
+            public List<string> Mensajes { get; set; } = new();
         }
         public class CrdGestorExternoSpResponse
         {
