@@ -185,7 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
             catch (Exception)
             {
-                return CrearErrorString("Error al registrar el caso con gestor externo.", -1); ;
+                return CrearErrorString("Error al registrar el caso con gestor externo.", -1);
             }
         }
 
