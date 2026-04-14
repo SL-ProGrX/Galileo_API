@@ -1338,4 +1338,23 @@
         public DateTime? fecha { get; set; } = null;
     }
 
+    public class SinpeMovimientoTransitoRow
+    {
+        public int RECHAZO_CODIGO { get; set; } = -1;
+        public string COD_REFERENCIA { get; set; } = string.Empty;
+        public string COMPRONANTE_INTERNO { get; set; } = string.Empty;
+        public long COD_TRANSITO { get; set; } = 0;
+        public string RECHAZO_DESC { get; set; } = string.Empty;
     }
+
+    public class SinpeParametrosEmpresaRow
+    {
+        public string HostIdPIN { get; set; } = string.Empty;
+        public string UserCGP { get; set; } = string.Empty;
+        public int CanalCGP { get; set; } = 0;
+        public string UrlCGP_DTR { get; set; } = string.Empty;
+        public string UrlCGP_PIN { get; set; } = string.Empty;
+        public string ServiciosSinpe { get; set; } = string.Empty;
+    }
+
+}

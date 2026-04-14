@@ -123,4 +123,11 @@
         public string usuario { get; set; } = string.Empty;
         public bool bloqueo_visualizacion { get; set; } = false;
     }
+
+    public class PresAlertasControlPeriodoBloqueoActualizarRequest
+    {
+        public int id_periodo { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+        public bool bloqueo_visualizacion { get; set; } = false;
+    }
 }

@@ -216,7 +216,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                             {
                                 Mostrar = true,
                                 Nombre = "PgrX",
-                                NombreFisico = "Galileo",
+                                NombreFisico = "Galileo API",
                                 Valor = valida.DETALLE
                             }
                         }
@@ -254,44 +254,122 @@ FROM dbo.fxSinpe_ValidaCredito(
                 "sp_Sinpe_AplicaDebitosCongelados"
             };
 
+        private static string NormalizarCodigoReferencia(string? codigoReferencia)
+        {
+            var valor = (codigoReferencia ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(valor))
+                throw new ArgumentException("El código de referencia es requerido.", nameof(codigoReferencia));
+
+            if (valor.Length > 50)
+                throw new ArgumentException("El código de referencia no es válido.", nameof(codigoReferencia));
+
+            if (!Regex.IsMatch(valor, @"^[A-Za-z0-9\-]+$", RegexOptions.None, RegexTimeout))
+                throw new ArgumentException("El código de referencia no es válido.", nameof(codigoReferencia));
+
+            return valor;
+        }
+
+        private static int ValidarCodEmpresa(int codEmpresa)
+        {
+            if (codEmpresa <= 0)
+                throw new ArgumentException("El código de empresa no es válido.", nameof(codEmpresa));
+
+            return codEmpresa;
+        }
+
+        private static string NormalizarUsuarioSinpe(string? usuario)
+        {
+            var valor = (usuario ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(valor))
+                return "TS";
+
+            if (valor.Length > 30)
+                throw new ArgumentException("El usuario no es válido.", nameof(usuario));
+
+            if (!Regex.IsMatch(valor, @"^[A-Za-z0-9_.\-]+$", RegexOptions.None, RegexTimeout))
+                throw new ArgumentException("El usuario no es válido.", nameof(usuario));
+
+            return valor;
+        }
+
+
         private CoreInterno.CL_RespuestaTransaccion[] AplicaCongelados(
             int codEmpresa,
             CoreInterno.CL_Transaccion[] transacciones,
             string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpCongeladosPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
+            ValidarStoredProcedurePermitido(storedProcedure, SpCongeladosPermitidos);
+            codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_RespuestaTransaccion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
+            const string querySolicitud = @"
+SELECT TOP (1) NSOLICITUD
+FROM TES_TRANSACCIONES
+WHERE REFERENCIA_SINPE = @referencia;";
+
             foreach (var s in transacciones)
             {
-                var exist = @$"SELECT * FROM TES_TRANSACCIONES 
-                              where REFERENCIA_SINPE = @referencia";
-                int solicitud = connection.Query<int>(exist, new { referencia = s.CodigoReferencia }).FirstOrDefault();
+                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+
+                int solicitud = connection.QueryFirstOrDefault<int>(
+                    querySolicitud,
+                    new { referencia = codigoReferencia });
+
+                if (solicitud <= 0)
+                {
+                    resultado.Add(new CoreInterno.CL_RespuestaTransaccion
+                    {
+                        Resultado = CoreInterno.E_Resultado.Error,
+                        MotivoError = -1,
+                        ComprobanteInterno = codigoReferencia,
+                        IdRelacionCliente = string.Empty,
+                        InformacionAdicional = new CL_Adicional_Info[]
+                        {
+                            new CL_Adicional_Info
+                            {
+                                Mostrar = true,
+                                Nombre = "Estado",
+                                NombreFisico = "Galileo",
+                                Valor = "No se encontró la solicitud asociada a la referencia SINPE."
+                            }
+                        }
+                    });
+
+                    continue;
+                }
 
                 var trx = fxTesConsultaSolicitud(codEmpresa, solicitud);
+                if (trx.Result == null)
+                {
+                    resultado.Add(new CoreInterno.CL_RespuestaTransaccion
+                    {
+                        Resultado = CoreInterno.E_Resultado.Error,
+                        MotivoError = -1,
+                        ComprobanteInterno = codigoReferencia,
+                        IdRelacionCliente = string.Empty
+                    });
+
+                    continue;
+                }
 
                 var parametros = new
                 {
                     CENTRO_COSTO = s.CentroCosto,
                     COD_ENTIDAD = s.CodEntidad,
-                    CODIGO_REFERENCIA = s.CodigoReferencia,
+                    CODIGO_REFERENCIA = codigoReferencia,
                     COMPROBANTE_CGP = s.ComprobanteCGP,
                     CUENTA_IBAN_CONTRAPARTE = s.CuentaIBANContraparte,
                     DESCRIPCION = s.Descripcion,
                     FECHA_CICLO = s.FechaCiclo,
                     ID_ORIGEN = s.IdOrigen,
                     SERVICIO = s.CodigoServicio,
-                    MONEDA_COMISION = (trx.Result!.Divisa == "COL" )? 1: 2,
+                    MONEDA_COMISION = trx.Result.Divisa == "COL" ? 1 : 2,
                     MONTO_COMISION = s.MontoComision,
-                    NOMBRE_ORIGEN = trx.Result.NombreOrigen ,
+                    NOMBRE_ORIGEN = trx.Result.NombreOrigen,
                     IDENTIFICACION_CONTRAPARTE = trx.Result.CedulaOrigen,
                     IDENTIFICACION = trx.Result.Codigo,
                     CUENTA_IBAN = s.CuentaIBAN,
@@ -300,7 +378,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     CODIGO_SERVICIO = s.CodigoServicio,
                     IDRELACIONCLIENTE = s.IdRelacionCliente,
                     CANAL = "SINPE",
-                    REGISTRO_USUARIO = trx.Result?.UsuarioGenera
+                    REGISTRO_USUARIO = trx.Result.UsuarioGenera
                 };
 
                 var res = connection.QueryFirstOrDefault<dynamic>(
@@ -309,30 +387,26 @@ FROM dbo.fxSinpe_ValidaCredito(
                     commandType: CommandType.StoredProcedure);
 
                 bool rechazo = (res?.MOT_RECHAZO ?? 0) > 0;
-
-                string idCliente = res!.ID_REFERENCIA.ToString();
-                var responseVal = rechazo
-                        ? CoreInterno.E_Resultado.Rechazo 
-                        : CoreInterno.E_Resultado.Exitoso;
+                string idCliente = Convert.ToString(res?.ID_REFERENCIA) ?? string.Empty;
 
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
-                    Resultado = responseVal,
+                    Resultado = rechazo
+                        ? CoreInterno.E_Resultado.Rechazo
+                        : CoreInterno.E_Resultado.Exitoso,
                     MotivoError = rechazo ? res!.MOT_RECHAZO : 0,
-                    ComprobanteInterno = s.CodigoReferencia,
+                    ComprobanteInterno = codigoReferencia,
                     IdRelacionCliente = idCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
                     {
                         new CL_Adicional_Info
                         {
                             Mostrar = true,
-                            Nombre = "Stado",
+                            Nombre = "Estado",
                             NombreFisico = "Galileo",
-                            Valor = res.DES_RECHAZO
+                            Valor = Convert.ToString(res?.DES_RECHAZO) ?? string.Empty
                         }
                     }
-
-
                 });
             }
 
@@ -353,45 +427,29 @@ FROM dbo.fxSinpe_ValidaCredito(
             IEnumerable<CoreInterno.CL_ActualizaTransaccion> transacciones,
             string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpActualizacionPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
+            ValidarStoredProcedurePermitido(storedProcedure, SpActualizacionPermitidos);
+            codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
             foreach (var s in transacciones)
             {
-                //consulto solicitud 
-                var exist = $@"SELECT * FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @codReferencia";
-                var solicitud = connection.Query<dynamic>(exist, new { codReferencia = s.CodigoReferencia }).FirstOrDefault();
+                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+                var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
-
-                var res = connection.QueryFirstOrDefault<dynamic>(
-                    storedProcedure,
-                    new
-                    {
-                        CODIGO_RECHAZO_SINPE = solicitud!.RECHAZO_CODIGO,
-                        CODIGO_REFERENCIA = solicitud!.COD_REFERENCIA,
-                        COMPTOBANTE_CGP = solicitud!.COMPRONANTE_INTERNO,
-                        COMPROBANTE_INTERNO = solicitud!.COD_TRANSITO,
-                        DESCRIPCION_RECHAZO = solicitud!.RECHAZO_DESC
-                    },
-                    commandType: CommandType.StoredProcedure
-                );
-
-                var responseVal = (res?.Resultado == 0) ? CoreInterno.E_ResultadoActualizacion.Exitoso :
-                    CoreInterno.E_ResultadoActualizacion.Error;
-
-                resultado.Add(new CoreInterno.CL_ResultadoActualizacion
+                if (solicitud == null)
                 {
-                    Resultado = responseVal,
-                    IdRelacionCliente = solicitud!.COD_REFERENCIA,
-                });
+                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
+                    continue;
+                }
+
+                var res = EjecutarStoredProcedureMovimiento(connection, storedProcedure, solicitud);
+                var estadoResultado = (res?.Resultado == 0)
+                    ? CoreInterno.E_ResultadoActualizacion.Exitoso
+                    : CoreInterno.E_ResultadoActualizacion.Error;
+
+                resultado.Add(CrearResultadoActualizacion(solicitud.COD_REFERENCIA, estadoResultado));
             }
 
             return resultado.ToArray();
@@ -409,39 +467,29 @@ FROM dbo.fxSinpe_ValidaCredito(
             IEnumerable<CoreInterno.TransaccionRechazada> transacciones,
             string storedProcedure)
         {
-            if (string.IsNullOrWhiteSpace(storedProcedure) ||
-                !SpReversaPermitidos.Contains(storedProcedure))
-            {
-                throw new ArgumentException(
-                    $"Stored procedure no permitido: '{storedProcedure}'",
-                    nameof(storedProcedure));
-            }
+            ValidarStoredProcedurePermitido(storedProcedure, SpReversaPermitidos);
+            codEmpresa = ValidarCodEmpresa(codEmpresa);
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            resultado.AddRange(from s in transacciones//consulto solicitud 
-                               let exist = $@"SELECT * FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @codReferencia"
-                               let solicitud = connection.Query<dynamic>(exist, new { codReferencia = s.IdRelacionCliente }).FirstOrDefault()
-                               let res = connection.QueryFirstOrDefault<dynamic>(
-                                                   storedProcedure,
-                                                   new
-                                                   {
-                                                       CODIGO_RECHAZO_SINPE = solicitud!.RECHAZO_CODIGO,
-                                                       CODIGO_REFERENCIA = solicitud!.COD_REFERENCIA,
-                                                       COMPTOBANTE_CGP = solicitud!.COMPRONANTE_INTERNO,
-                                                       COMPROBANTE_INTERNO = solicitud!.COD_TRANSITO,
-                                                       DESCRIPCION_RECHAZO = solicitud!.RECHAZO_DESC
+            foreach (var s in transacciones)
+            {
+                var codigoReferencia = NormalizarCodigoReferencia(s.IdRelacionCliente);
+                var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
-                                                   },
-                                                   commandType: CommandType.StoredProcedure
-                                               )
-                               let r = res?.Resultado ?? CoreInterno.E_ResultadoActualizacion.Error
-                               select new CoreInterno.CL_ResultadoActualizacion
-                               {
-                                   Resultado = r,
-                                   IdRelacionCliente = s.IdRelacionCliente
-                               });
+                if (solicitud == null)
+                {
+                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
+                    continue;
+                }
+
+                var res = EjecutarStoredProcedureMovimiento(connection, storedProcedure, solicitud);
+                var estadoResultado = res?.Resultado ?? CoreInterno.E_ResultadoActualizacion.Error;
+
+                resultado.Add(CrearResultadoActualizacion(solicitud.COD_REFERENCIA, estadoResultado));
+            }
+
             return resultado.ToArray();
         }
 
@@ -756,19 +804,99 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public CoreInterno.ValidacionPerfilTrx_Response ValidarPerfilTransaccional(int CodEmpresa, CoreInterno.ValidacionPerfilTrx_Request transaccion)
         {
-            return new CoreInterno.ValidacionPerfilTrx_Response
+            try
             {
-                Resultado = true,
-                Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                const string query = @"EXEC dbo.sp_Sinpe_ValidarPerfilTransaccional
+            @IdCliente,
+            @TipoIdCliente,
+            @NombreCliente,
+            @CuentaIBAN,
+            @IdClienteEntContraparte,
+            @TipoIdClienteEntContraparte,
+            @NombreClienteContraparte,
+            @IBANClienteEntContraparte,
+            @Servicio,
+            @Modalidad,
+            @TipoMovimiento,
+            @Monto,
+            @Moneda,
+            @Canal,
+            @IP,
+            @Usuario";
+
+                var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    CodMotivoRechazo = "0",
-                    Estado = 1,
-                    MotivoRechazo = "Transacción Autorizada",
-                    NumRefProcesamiento = Guid.NewGuid().ToString()
-                },
-                Errores = null
-            };
+                    IdCliente = transaccion.IdCliente,
+                    TipoIdCliente = transaccion.TipoIdCliente,
+                    NombreCliente = transaccion.NombreCliente,
+                    CuentaIBAN = transaccion.CuentaIBAN,
+                    IdClienteEntContraparte = transaccion.IdClienteEntContraparte,
+                    TipoIdClienteEntContraparte = transaccion.TipoIdClienteEntContraparte,
+                    NombreClienteContraparte = transaccion.NombreClienteContraparte,
+                    IBANClienteEntContraparte = transaccion.IBANClienteEntContraparte,
+                    Servicio = transaccion.Servicio,
+                    Modalidad = transaccion.Modalidad,
+                    TipoMovimiento = transaccion.TipoMovimiento,
+                    Monto = transaccion.Monto,
+                    Moneda = transaccion.Moneda,
+                    Canal = 3,
+                    IP = "0.0.0.0",
+                    Usuario = "CGPWEB"
+                });
+
+                if (result == null)
+                {
+                    return new CoreInterno.ValidacionPerfilTrx_Response
+                    {
+                        Resultado = false,
+                        Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                        {
+                            Estado = 0,
+                            CodMotivoRechazo = "ERROR",
+                            MotivoRechazo = "No se obtuvo respuesta del validador.",
+                            NumRefProcesamiento = Guid.NewGuid().ToString()
+                        },
+                        Errores = null
+                    };
+                }
+
+                var estado = Convert.ToInt32(result.Estado);
+                var codMotivo = Convert.ToString(result.CodMotivoRechazo) ?? "ERROR";
+                var motivo = Convert.ToString(result.MotivoRechazo) ?? "Error";
+                var numRef = Convert.ToString(result.NumRefProcesamiento) ?? Guid.NewGuid().ToString();
+
+                return new CoreInterno.ValidacionPerfilTrx_Response
+                {
+                    Resultado = estado == 1,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        Estado = estado,
+                        CodMotivoRechazo = codMotivo,
+                        MotivoRechazo = motivo,
+                        NumRefProcesamiento = numRef
+                    },
+                    Errores = null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CoreInterno.ValidacionPerfilTrx_Response
+                {
+                    Resultado = false,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        Estado = 0,
+                        CodMotivoRechazo = "ERROR",
+                        MotivoRechazo = ex.Message,
+                        NumRefProcesamiento = Guid.NewGuid().ToString()
+                    },
+                    Errores = null
+                };
+            }
         }
+
 
         #endregion
 
@@ -1354,39 +1482,52 @@ FROM dbo.fxSinpe_ValidaCredito(
         public ErrorDto<ParametrosSinpe> GetUriEmpresa(int codEmpresa, string usuario)
         {
             var result = new ErrorDto<ParametrosSinpe>();
+
             try
             {
+                codEmpresa = ValidarCodEmpresa(codEmpresa);
+                usuario = NormalizarUsuarioSinpe(usuario);
+
                 using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-                var query = "SELECT * FROM SINPE_PARAMETROS_EMPRESA WHERE COD_EMPRESA = @codEmpresa";
-                var parametros = connection.Query(query, new
-                {
-                    codEmpresa = codEmpresa
-                }).FirstOrDefault();
+                const string query = @"
+SELECT TOP (1)
+    HostIdPIN,
+    UserCGP,
+    CanalCGP,
+    UrlCGP_DTR,
+    UrlCGP_PIN,
+    ServiciosSinpe
+FROM SINPE_PARAMETROS_EMPRESA
+WHERE COD_EMPRESA = @codEmpresa;";
 
-                if (parametros != null)
-                {
-                    var parametrosSinpe = new ParametrosSinpe
-                    {
-                        vHost = Environment.MachineName,
-                        vHostPin = parametros.HostIdPIN,
-                        vIpHost = fxObtenerIpEquipoActual(Environment.MachineName).Result ?? string.Empty,
-                        vUserCGP = parametros.UserCGP,
-                        vCanalCGP = Convert.ToInt32(parametros.CanalCGP),
-                        UrlCGP_DTR = parametros.UrlCGP_DTR,
-                        UrlCGP_PIN = parametros.UrlCGP_PIN,
-                        vUsuarioLog = usuario,
-                        ServiciosSinpe = parametros.ServiciosSinpe
-                    };
+                var parametros = connection.QueryFirstOrDefault<SinpeParametrosEmpresaRow>(
+                    query,
+                    new { codEmpresa });
 
-                    result.Result = parametrosSinpe;
-                }
-                else
+                if (parametros == null)
                 {
                     result.Result = null;
                     result.Code = -1;
                     result.Description = "No se encontraron parametros SINPE para esta empresa";
+                    return result;
                 }
+
+                result.Result = new ParametrosSinpe
+                {
+                    vHost = Environment.MachineName,
+                    vHostPin = parametros.HostIdPIN,
+                    vIpHost = fxObtenerIpEquipoActual(Environment.MachineName).Result ?? string.Empty,
+                    vUserCGP = parametros.UserCGP,
+                    vCanalCGP = parametros.CanalCGP,
+                    UrlCGP_DTR = parametros.UrlCGP_DTR,
+                    UrlCGP_PIN = parametros.UrlCGP_PIN,
+                    vUsuarioLog = usuario,
+                    ServiciosSinpe = parametros.ServiciosSinpe
+                };
+
+                result.Code = 0;
+                result.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -1394,6 +1535,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -1774,7 +1916,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            const string Query = @"SELECT *
+            const string Query = @"SELECT SINPE_PRODUCTO, TIPO_SINPE
                              FROM dbo.fxSinpe_Valida_MovimientosPermitidos(@iban);";
 
             var response = conn.QueryFirstOrDefault<dynamic>(Query, new { iban });
@@ -1931,6 +2073,76 @@ FROM dbo.fxSinpe_ValidaCredito(
                     Description = $"Error al validar divisas: {ex.Message}"
                 };
             }
+        }
+
+        private static void ValidarStoredProcedurePermitido(
+    string storedProcedure,
+    ISet<string> storedProceduresPermitidos)
+        {
+            if (string.IsNullOrWhiteSpace(storedProcedure) ||
+                !storedProceduresPermitidos.Contains(storedProcedure))
+            {
+                throw new ArgumentException(
+                    $"Stored procedure no permitido: '{storedProcedure}'",
+                    nameof(storedProcedure));
+            }
+        }
+
+        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacionError(string codigoReferencia)
+        {
+            return new CoreInterno.CL_ResultadoActualizacion
+            {
+                Resultado = CoreInterno.E_ResultadoActualizacion.Error,
+                IdRelacionCliente = codigoReferencia
+            };
+        }
+
+        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacion(
+            string codigoReferencia,
+            CoreInterno.E_ResultadoActualizacion estadoResultado)
+        {
+            return new CoreInterno.CL_ResultadoActualizacion
+            {
+                Resultado = estadoResultado,
+                IdRelacionCliente = codigoReferencia
+            };
+        }
+
+        private static SinpeMovimientoTransitoRow? ObtenerMovimientoTransito(
+            SqlConnection connection,
+            string codigoReferencia)
+        {
+            const string querySolicitud = @"
+SELECT TOP (1)
+    RECHAZO_CODIGO,
+    COD_REFERENCIA,
+    COMPRONANTE_INTERNO,
+    COD_TRANSITO,
+    RECHAZO_DESC
+FROM SINPE_MOV_TRANSITO
+WHERE COD_REFERENCIA = @codReferencia;";
+
+            return connection.QueryFirstOrDefault<SinpeMovimientoTransitoRow>(
+                querySolicitud,
+                new { codReferencia = codigoReferencia });
+        }
+
+        private static dynamic? EjecutarStoredProcedureMovimiento(
+            SqlConnection connection,
+            string storedProcedure,
+            SinpeMovimientoTransitoRow solicitud)
+        {
+            return connection.QueryFirstOrDefault<dynamic>(
+                storedProcedure,
+                new
+                {
+                    CODIGO_RECHAZO_SINPE = solicitud.RECHAZO_CODIGO,
+                    CODIGO_REFERENCIA = solicitud.COD_REFERENCIA,
+                    COMPTOBANTE_CGP = solicitud.COMPRONANTE_INTERNO,
+                    COMPROBANTE_INTERNO = solicitud.COD_TRANSITO,
+                    DESCRIPCION_RECHAZO = solicitud.RECHAZO_DESC
+                },
+                commandType: CommandType.StoredProcedure);
         }
 
         #endregion
