@@ -28,7 +28,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private const string SpGestorExternoAdd = @"
             EXEC spCBR_Gestor_Externo_Add
                 @Operacion,
-                @GestionUsuario,
+                @Gestiona,
                 @Cedula,
                 @Nombre,
                 @Expediente,
@@ -72,13 +72,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             _securityMainDb = new MSecurityMainDb(config);
         }
 
+        /// <summary>
+        /// Registro en bitacora
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _securityMainDb.Bitacora(data);
         }
 
-        public ErrorDto<List<CrdGestorExternoListaItemModel>> Crd_GestorExterno_Listado_Obtener(
-            int codEmpresa,
+        /// <summary>
+        /// Consulta el listado de casos con gestor externo según filtros indicados
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CrdGestorExternoListaItemModel>> Crd_GestorExterno_Listado_Obtener(int codEmpresa,
             CrdGestorExternoFiltroRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -90,9 +100,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             });
         }
 
-        public ErrorDto<string> Crd_GestorExterno_Registrar(
-            int codEmpresa,
-            CrdGestorExternoRegistrarRequest request)
+        /// <summary>
+        /// Registra un caso con gestor externo para una operación dada, siempre que no exista un caso activo para la misma operación. Si el registro es exitoso, se almacena un movimiento en bitácora con el detalle del caso registrado.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<string> Crd_GestorExterno_Registrar(int codEmpresa,CrdGestorExternoRegistrarRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -119,7 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 {
                     RegistrarBitacora(codEmpresa, request.UsuarioEjecuta, result);
                     respuesta.Result =
-                        $"{result.Movimiento}Caso con Gestor Externo, procesado satisfactoriamente!";
+                        $"{result.Movimiento} Caso con Gestor Externo, procesado satisfactoriamente!";
                 }
 
                 return respuesta;
@@ -130,9 +144,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
-        public ErrorDto<bool> Crd_GestorExterno_Reversar(
-            int codEmpresa,
-            CrdGestorExternoReversaRequest request)
+        /// <summary>
+        /// Reversa el registro de un caso con gestor externo, siempre que el caso se encuentre activo. Si la reversa es exitosa, se almacena un movimiento en bitácora con el detalle del caso reversado.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<string> Crd_GestorExterno_Reversar(int codEmpresa,CrdGestorExternoReversaRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -141,7 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var mensajeValidacion = ValidarReversa(request);
                 if (!string.IsNullOrEmpty(mensajeValidacion))
                 {
-                    return CrearErrorBool(mensajeValidacion, -1);
+                    return CrearErrorString(mensajeValidacion, -1);
                 }
 
                 var result = EjecutarSp(
@@ -149,32 +167,57 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     SpGestorExternoDel,
                     CrearParametrosReversa(request));
 
-                return ConstruirRespuestaBoolDesdeSp(
-                    result,
-                    "No se recibió respuesta del proceso de reversa.",
-                    "No fue posible desvincular el caso.");
+                var respuesta = ConstruirRespuestaStringDesdeSp(
+                       result,
+                       "No se recibió respuesta del proceso de registro.",
+                       "No fue posible registrar el caso.",
+                       -2);
+
+                if (respuesta.Code == 0 && result is not null)
+                {
+                    RegistrarBitacora(codEmpresa, request.UsuarioEjecuta, result);
+                    respuesta.Result =
+                        $"{result.Movimiento} Caso con Gestion Externa, desvinculado satisfactoriamente!";
+                }
+
+                return respuesta;
+
             }
             catch (Exception)
             {
-                return CrearErrorBool("Error al desvincular el caso del gestor externo.", -1);
+                return CrearErrorString("Error al registrar el caso con gestor externo.", -1); ;
             }
         }
 
+        /// <summary>
+        ///  Consulta el listado de operaciones para accion de f4
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrdGestorExternoOperacionModel>> Crd_GestorExterno_Operacion_Buscar(int codEmpresa)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CrdGestorExternoOperacionModel>(QueryOperaciones).ToList());
         }
 
+        /// <summary>
+        /// Consulta el listado de usuarios para asignar la gestion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_GestorExterno_Gestores_Obtener(int codEmpresa)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<DropDownListaGenericaModel>(QueryGestores).ToList());
         }
 
-        public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(
-            int codEmpresa,
-            CrdGestorExternoCargaMasivaRequest request)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(int codEmpresa,CrdGestorExternoCargaMasivaRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -204,6 +247,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
+        /// <summary>
+        /// Revisa y valida las fechas del filtro de busqueda
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CrdGestorExternoFiltroRequest request)
         {
             if (request.IgnorarFechas)
@@ -224,10 +272,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return (inicio, corte);
         }
 
-        private static DynamicParameters CrearParametrosListado(
-            CrdGestorExternoFiltroRequest request,
-            DateTime inicio,
-            DateTime corte)
+        /// <summary>
+        /// creacion de parametros para consulta de listado de casos con gestor externo, aplicando limpieza de texto y valores por defecto según corresponda
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="inicio"></param>
+        /// <param name="corte"></param>
+        /// <returns></returns>
+        private static DynamicParameters CrearParametrosListado(CrdGestorExternoFiltroRequest request,DateTime inicio, DateTime corte)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Estado", ObtenerEstado(request.Estado));
@@ -241,6 +293,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return parameters;
         }
 
+        /// <summary>
+        /// Crea parametros para el registro
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static DynamicParameters CrearParametrosRegistrar(CrdGestorExternoRegistrarRequest request)
         {
             var parameters = CrearParametrosOperacionBase(
@@ -248,13 +305,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 request.Notas,
                 request.UsuarioEjecuta);
 
-            parameters.Add("@GestionUsuario", LimpiarTexto(request.GestionUsuario));
+            parameters.Add("@Gestiona", LimpiarTexto(request.GestionUsuario));
             parameters.Add("@Cedula", LimpiarTexto(request.Cedula));
             parameters.Add("@Nombre", LimpiarTexto(request.Nombre));
             parameters.Add("@Expediente", LimpiarTexto(request.Expediente));
             return parameters;
         }
 
+        /// <summary>
+        /// Crea parametros para la reversion 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static DynamicParameters CrearParametrosReversa(CrdGestorExternoReversaRequest request)
         {
             var parameters = new DynamicParameters();
@@ -264,10 +326,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return parameters;
         }
 
-        private static DynamicParameters CrearParametrosOperacionBase(
-            long operacion,
-            string? notas,
-            string? usuario)
+        /// <summary>
+        /// Crea parametros base para una operación
+        /// </summary>
+        /// <param name="operacion"></param>
+        /// <param name="notas"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        private static DynamicParameters CrearParametrosOperacionBase(long operacion,string? notas,string? usuario)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Operacion", operacion);
@@ -276,25 +342,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return parameters;
         }
 
-        private static DynamicParameters CrearParametrosAsignacion(
-            CrdGestorExternoCargaMasivaRequest request,
-            CrdGestorExternoCargaFilaRequest registro)
+        /// <summary>
+        /// Crea parametros para la asignación de un gestor externo
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="registro"></param>
+        /// <returns></returns>
+        private static DynamicParameters CrearParametrosAsignacion(CrdGestorExternoCargaMasivaRequest request, CrdGestorExternoCargaFilaRequest registro)
         {
             var parameters = CrearParametrosOperacionBase(
                 registro.Operacion,
                 registro.Notas,
                 request.UsuarioEjecuta);
 
-            parameters.Add("@GestionUsuario", LimpiarTexto(request.GestionUsuario));
+            parameters.Add("@Gestiona", LimpiarTexto(request.GestionUsuario));
             parameters.Add("@Cedula", string.Empty);
             parameters.Add("@Nombre", string.Empty);
             parameters.Add("@Expediente", LimpiarTexto(registro.Expediente));
             return parameters;
         }
 
-        private static DynamicParameters CrearParametrosDesvinculacion(
-            CrdGestorExternoCargaMasivaRequest request,
-            CrdGestorExternoCargaFilaRequest registro)
+        /// <summary>
+        /// Crea parametros para la desvinvulacion
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="registro"></param>
+        /// <returns></returns>
+        private static DynamicParameters CrearParametrosDesvinculacion(CrdGestorExternoCargaMasivaRequest request, CrdGestorExternoCargaFilaRequest registro)
         {
             return CrearParametrosOperacionBase(
                 registro.Operacion,
@@ -302,14 +376,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 request.UsuarioEjecuta);
         }
 
-        private static CrdGestorExternoSpResponse? EjecutarSp(
-            IDbConnection connection,
-            string query,
-            DynamicParameters parameters)
+        /// <summary>
+        /// Ejecuta el sp correspondiente
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="query"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private static CrdGestorExternoSpResponse? EjecutarSp( IDbConnection connection, string query, DynamicParameters parameters)
         {
             return connection.QueryFirstOrDefault<CrdGestorExternoSpResponse>(query, parameters);
         }
 
+       /// <summary>
+       /// Validaciones de registro
+       /// </summary>
+       /// <param name="request"></param>
+       /// <returns></returns>
         private static string? ValidarRegistrar(CrdGestorExternoRegistrarRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.GestionUsuario))
@@ -330,6 +413,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return ValidarLongitudMinimaNotas(request.Notas, 10);
         }
 
+       /// <summary>
+       /// Validacion de reversion 
+       /// </summary>
+       /// <param name="request"></param>
+       /// <returns></returns>
         private static string? ValidarReversa(CrdGestorExternoReversaRequest request)
         {
             if (request.CasoId <= 0)
@@ -340,6 +428,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return ValidarLongitudMinimaNotas(request.Notas, 30);
         }
 
+        /// <summary>
+        /// Validacion de nota
+        /// </summary>
+        /// <param name="notas"></param>
+        /// <param name="minimo"></param>
+        /// <returns></returns>
         private static string? ValidarLongitudMinimaNotas(string? notas, int minimo)
         {
             if (string.IsNullOrWhiteSpace(notas) || notas.Trim().Length < minimo)
@@ -350,16 +444,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return null;
         }
 
+       /// <summary>
+       /// Creacion de respuesta de error
+       /// </summary>
+       /// <param name="mensaje"></param>
+       /// <param name="codigo"></param>
+       /// <returns></returns>
         private static ErrorDto<string> CrearErrorString(string mensaje, int codigo)
         {
             return DbHelper.CreateErrorResponse<string>(mensaje, codigo, string.Empty);
         }
 
-        private static ErrorDto<bool> CrearErrorBool(string mensaje, int codigo)
-        {
-            return DbHelper.CreateErrorResponse<bool>(mensaje, codigo, false);
-        }
-
+        /// <summary>
+        /// Creacion de respuesta de sp
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="mensajeNull"></param>
+        /// <param name="mensajeDefault"></param>
+        /// <param name="codigoError"></param>
+        /// <returns></returns>
         private static ErrorDto<string> ConstruirRespuestaStringDesdeSp(
             CrdGestorExternoSpResponse? result,
             string mensajeNull,
@@ -381,26 +484,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 codigoError);
         }
 
-        private static ErrorDto<bool> ConstruirRespuestaBoolDesdeSp(
-            CrdGestorExternoSpResponse? result,
-            string mensajeNull,
-            string mensajeDefault)
-        {
-            if (result is null)
-            {
-                return CrearErrorBool(mensajeNull, -1);
-            }
-
-            if (result.Pass == 1)
-            {
-                return DbHelper.CreateOkResponse(true);
-            }
-
-            return CrearErrorBool(
-                string.IsNullOrWhiteSpace(result.Mensaje) ? mensajeDefault : result.Mensaje,
-                -1);
-        }
-
+     
+        /// <summary>
+        /// Registro en bitacora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="result"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, CrdGestorExternoSpResponse result)
         {
             Bitacora(new BitacoraInsertarDto
@@ -408,11 +498,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
                 DetalleMovimiento = $"{result.Movimiento},{result.Mensaje}",
-                Movimiento = "REGISTRA-WEB",
+                Movimiento = $"{result.Movimiento}-WEB" ,
                 Modulo = ModuloCobros
             });
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static CrdGestorExternoCargaMasivaResponse CrearRespuestaInicial(
             CrdGestorExternoCargaMasivaRequest request)
         {
@@ -422,6 +517,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             };
         }
 
+        /// <summary>
+        /// Validacion de carga de archivo
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        /// <returns></returns>
         private static ErrorDto<CrdGestorExternoCargaMasivaResponse>? ValidarCargaMasiva(
             CrdGestorExternoCargaMasivaRequest request,
             CrdGestorExternoCargaMasivaResponse response)
@@ -434,7 +535,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     response);
             }
 
-            if (EsAsignacion(request) && string.IsNullOrWhiteSpace(request.GestionUsuario))
+            if (string.IsNullOrWhiteSpace(request.GestionUsuario) )
             {
                 return DbHelper.CreateErrorResponse<CrdGestorExternoCargaMasivaResponse>(
                     "Debe indicar un gestor externo para la asignación masiva.",
@@ -445,6 +546,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return null;
         }
 
+        /// <summary>
+        /// Validacion de datos carga de archivo
+        /// </summary>
+        /// <param name="registro"></param>
+        /// <returns></returns>
         private static string? ValidarRegistroCargaMasiva(CrdGestorExternoCargaFilaRequest registro)
         {
             if (registro.Operacion <= 0)
@@ -460,6 +566,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return null;
         }
 
+        /// <summary>
+        /// Procesa cada registro de la carga masiva, realizando validaciones y contabilizando resultados para la respuesta final
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="request"></param>
+        /// <param name="registro"></param>
+        /// <param name="response"></param>
         private static void ProcesarRegistroCargaMasiva(
             IDbConnection connection,
             CrdGestorExternoCargaMasivaRequest request,
@@ -467,6 +580,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             CrdGestorExternoCargaMasivaResponse response)
         {
             var mensajeValidacion = ValidarRegistroCargaMasiva(registro);
+
             if (!string.IsNullOrEmpty(mensajeValidacion))
             {
                 response.TotalConError++;
@@ -487,11 +601,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             ProcesarResultadoSp(result, registro.Operacion, response, mensajeDefault);
         }
 
+        /// <summary>
+        /// Valida si es asignacion o desvinculacion en la carga masiva, para determinar el proceso a ejecutar
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static bool EsAsignacion(CrdGestorExternoCargaMasivaRequest request)
         {
             return string.Equals(request.EstadoProceso, "A", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        ///  Realiza el procesamiento del resultado de cada registro en la carga masiva, actualizando los contadores de procesados y con error, y acumulando mensajes para la respuesta final
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="operacion"></param>
+        /// <param name="response"></param>
+        /// <param name="mensajeDefault"></param>
         private static void ProcesarResultadoSp(
             CrdGestorExternoSpResponse? result,
             long operacion,
@@ -509,11 +635,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 $"Operación {operacion}: {result?.Mensaje ?? mensajeDefault}");
         }
 
+        /// <summary>
+        /// limpia  el texto de entrada, aplicando trim y valores por defecto según corresponda
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <returns></returns>
         private static string LimpiarTexto(string? valor)
         {
             return valor?.Trim() ?? string.Empty;
         }
 
+        /// <summary>
+        /// Obtiene el estado del registro, aplicando valores por defecto si es necesario
+        /// </summary>
+        /// <param name="estado"></param>
+        /// <returns></returns>
         private static string ObtenerEstado(string? estado)
         {
             return string.IsNullOrWhiteSpace(estado)
@@ -521,6 +657,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 : estado.Trim()[0].ToString();
         }
 
+        /// <summary>
+        ///  Asigna el usuario que gestiona el caso, aplicando limpieza de texto y valores por defecto según corresponda. Si el valor recibido es "TODOS" (ignorando mayúsculas), se interpreta como sin filtro y se devuelve cadena vacía.
+        /// </summary>
+        /// <param name="gestiona"></param>
+        /// <returns></returns>
         private static string ObtenerGestiona(string? gestiona)
         {
             return string.IsNullOrWhiteSpace(gestiona) ||
