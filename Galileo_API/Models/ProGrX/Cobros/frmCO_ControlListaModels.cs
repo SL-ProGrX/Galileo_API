@@ -1,5 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX.Cobros
 {
+    #region Principal
     public class CoControlListaBuscarRequest
     {
         public string? usuario { get; set; } = string.Empty;
@@ -75,4 +76,100 @@
         public string tel_tra { get; set; } = string.Empty;
         public string email { get; set; } = string.Empty;
     }
+
+    public class CoControlListaUsuarioScrollResponse
+    {
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaUsuarioScrollRequest: CoControlListaUsuarioScrollResponse
+    {
+        public string direccion { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaUsuarioBusquedaRequest
+    {
+        public string filtro { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaUsuarioBusquedaRow: CoControlListaUsuarioScrollResponse
+    {
+        public string nombre { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaPersonaBusquedaRequest: CoControlListaUsuarioScrollResponse
+    {
+        public bool activo { get; set; } = true;
+    }
+
+    public class CoControlListaPersonaBusquedaRow
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+    }
+
+    #endregion
+
+    #region Operaciones
+
+    public class CoControlListaOperacionesRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaOperacionesResponse
+    {
+        public CoControlListaOperacionesResumen? resumen { get; set; }
+        public List<CoControlListaOperacionGarantiaRow>? garantias { get; set; }
+        public List<CoControlListaOperacionDetalleRow>? operaciones { get; set; }
+    }
+
+    public class CoControlListaOperacionesResumen
+    {
+        public int operaciones_al_dia { get; set; } = 0;
+        public int operaciones_mora { get; set; } = 0;
+        public int operaciones_cobro_judicial { get; set; } = 0;
+        public int operaciones_cartera { get; set; } = 0;
+        public decimal saldo_al_dia { get; set; } = 0;
+        public decimal saldo_mora { get; set; } = 0;
+        public decimal saldo_cobro_judicial { get; set; } = 0;
+        public decimal saldo_cartera { get; set; } = 0;
+    }
+
+    public class CoControlListaOperacionGarantiaRow
+    {
+        public string garantia { get; set; } = string.Empty;
+        public decimal saldo { get; set; } = 0;
+        public int operaciones { get; set; } = 0;
+        public decimal morintcor { get; set; } = 0;
+        public decimal morintmor { get; set; } = 0;
+        public decimal morcargos { get; set; } = 0;
+        public decimal morprincipal { get; set; } = 0;
+        public int morcuotas { get; set; } = 0;
+        public string morctaantigua { get; set; } = string.Empty;
+        public string morctaultima { get; set; } = string.Empty;
+        public int moradias { get; set; } = 0;
+        public string antiguedad { get; set; } = string.Empty;
+        public string cod_antiguedad { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaOperacionDetalleRow
+    {
+        public long id_solicitud { get; set; } = 0;
+        public string codigo { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public string antiguedad { get; set; } = string.Empty;
+        public string oficina { get; set; } = string.Empty;
+        public decimal intc { get; set; } = 0;
+        public decimal intm { get; set; } = 0;
+        public decimal cargos { get; set; } = 0;
+        public decimal poliza { get; set; } = 0;
+        public decimal amortiza { get; set; } = 0;
+        public decimal mora_financiera { get; set; } = 0;
+        public decimal mora_legal { get; set; } = 0;
+        public string garantia_detalle { get; set; } = string.Empty;
+    }
+
+    #endregion
+
 }
