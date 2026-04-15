@@ -571,30 +571,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             WHERE S.cedula = @cedula
             """;
 
+                const string sqlTelefonos = """
+            SELECT
+                Numero,
+                Tipo,
+                Ext,
+                contacto
+            FROM Telefonos
+            WHERE Cedula = @cedula
+            """;
+
+                var cedula = request.cedula.Trim();
+
                 var datos = conn.QueryFirstOrDefault<CoControlListaDatosPersonalesData>(
                     sqlDatos,
-                    new { cedula = request.cedula.Trim() })
+                    new { cedula })
                     ?? new CoControlListaDatosPersonalesData();
 
                 var telefonosRaw = conn.Query(
-                    """
-            SELECT Numero, Tipo, Ext, contacto
-            FROM Telefonos
-            WHERE Cedula = @cedula
-            """,
-                    new { cedula = request.cedula.Trim() }).ToList();
+             sqlTelefonos,
+             new { cedula }).ToList();
 
-                var telefonos = telefonosRaw.Select(x =>
+                var telefonos = telefonosRaw.Select(x => new CoControlListaTelefonoRow
                 {
-                    var row = (IDictionary<string, object>)x;
-
-                    return new CoControlListaTelefonoRow
-                    {
-                        numero = Convert.ToString(row["Numero"])?.Trim() ?? string.Empty,
-                        tipo = FxTipoTelefono(Convert.ToString(row["Tipo"])?.Trim() ?? string.Empty),
-                        ext = Convert.ToString(row["Ext"])?.Trim() ?? string.Empty,
-                        contacto = Convert.ToString(row["contacto"])?.Trim() ?? string.Empty,
-                    };
+                    numero = Convert.ToString(x.Numero)?.Trim() ?? string.Empty,
+                    tipo = FxTipoTelefono(Convert.ToString(x.Tipo)?.Trim() ?? string.Empty),
+                    ext = Convert.ToString(x.Ext)?.Trim() ?? string.Empty,
+                    contacto = Convert.ToString(x.contacto)?.Trim() ?? string.Empty,
                 }).ToList();
 
                 return DbHelper.CreateOkResponse(new CoControlListaDatosPersonalesResponse
