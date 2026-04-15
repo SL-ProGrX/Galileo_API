@@ -330,7 +330,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 Usuario = NormalizeUsuario(Usuario);
-                UsMenuDto respuesta = new UsMenuDto();
+                UsMenuDto respuesta;
                 const string sql = @"select 
                                 MENU_NODO,
                                 NODO_PADRE ,
