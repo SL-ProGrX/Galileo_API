@@ -384,6 +384,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             });
         }
 
+        /// <summary>
+        /// Envía notificaciones de cobro para los casos marcados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario, tipo y casos seleccionados.</param>
+        /// <returns>Total procesado.</returns>
+        public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaNotificarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<int>("Debe indicar el usuario actual.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<int>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+                var total = 0;
+
+                foreach (var caso in request!.casos)
+                {
+                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        "spSys_Notifica_Cobros_01_Atrasos",
+                        new
+                        {
+                            pCedula = caso.cedula.Trim(),
+                            Tipo = string.IsNullOrWhiteSpace(request.tipo) ? "R" : request.tipo.Trim(),
+                            Usuario = request.usuario.Trim()
+                        },
+                        transaction: tran,
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    total++;
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(total);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+        }
+
         #endregion
 
         #region Operaciones
@@ -627,6 +685,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 };
             });
         }
+
+        /// <summary>
+        /// Envía una notificación de cobro para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula, tipo y usuario.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
+            int codEmpresa,
+            CoControlListaNotificacionRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar la cédula.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                conn.Execute(
+                    "spSys_Notifica_Cobros_01_Atrasos",
+                    new
+                    {
+                        pCedula = request.cedula.Trim(),
+                        Tipo = string.IsNullOrWhiteSpace(request.tipo) ? "R" : request.tipo.Trim(),
+                        Usuario = request.usuario.Trim()
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
         #endregion
 
         #region Fiadores
@@ -742,6 +842,123 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         excluir_usuario = request.excluir_usuario?.Trim() ?? string.Empty
                     }).ToList();
             });
+        }
+
+
+        /// <summary>
+        /// Actualiza mantener y rebajo doble para los casos marcados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario actual, valores y casos seleccionados.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaAplicarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario actual.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+                const string sql = """
+            UPDATE cbr_asignacion
+            SET mantener = @mantener,
+                rebajo_doble = @rebajo_doble
+            WHERE usuario = @usuario
+              AND cedula = @cedula
+            """;
+
+                foreach (var caso in request.casos)
+                {
+                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        sql,
+                        new
+                        {
+                            usuario = request.usuario.Trim(),
+                            mantener = request.mantener,
+                            rebajo_doble = request.rebajo_doble,
+                            cedula = caso.cedula.Trim()
+                        },
+                        transaction: tran);
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Traslada los casos marcados a otro usuario.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario destino y casos seleccionados.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaTrasladarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario_destino))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario destino.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+                foreach (var caso in request!.casos)
+                {
+                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        "spCBRControlAsg",
+                        new
+                        {
+                            Cedula = caso.cedula.Trim(),
+                            Usuario = request.usuario_destino.Trim(),
+                            Mantener = 1
+                        },
+                        transaction: tran,
+                        commandType: System.Data.CommandType.StoredProcedure);
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
         }
 
         #endregion

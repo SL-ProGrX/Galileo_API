@@ -95,6 +95,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CoControlLista_Personas_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
+             int codEmpresa,
+             CoControlListaNotificarMarcadosRequest request)
+        {
+            return _db.CoControlLista_NotificarMarcados_Procesar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Operaciones
@@ -135,6 +142,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 
             return _db.Co_ControlLista_Gestiones_Consulta(codEmpresa, request);
         }
+
+        public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
+            int codEmpresa,
+            CoControlListaNotificacionRequest request)
+        {
+            request ??= new CoControlListaNotificacionRequest();
+            return _db.CoControlLista_Notificacion_Procesar(codEmpresa, request);
+        }
         #endregion
 
         #region Fiadores
@@ -161,6 +176,22 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
                      ?? new CoControlListaUsuarioBusquedaRequest();
             return _db.CoControlLista_UsuariosTraslado_Obtener(codEmpresa, filtros);
         }
+
+        public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaAplicarMarcadosRequest request)
+        {
+            return _db.CoControlLista_AplicarMarcados_Procesar(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaTrasladarMarcadosRequest request)
+        {
+            return _db.CoControlLista_TrasladarMarcados_Procesar(codEmpresa, request);
+        }
+
+
 
         #endregion
     }

@@ -4,6 +4,7 @@ using Galileo_API.BusinessLogic.ProGrX.Cobros;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Galileo_API.Controllers.ProGrX.Cobros
 {
@@ -101,6 +102,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_Personas_Obtener(CodEmpresa, filtros);
         }
 
+        [HttpPost("Co_ControlLista_NotificarMarcados_Procesar")]
+        public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
+                int CodEmpresa,
+                CoControlListaNotificarMarcadosRequest request)
+        {
+            return _bl.CoControlLista_NotificarMarcados_Procesar(CodEmpresa, request);
+        }
+
         #endregion
 
         #region Operaciones
@@ -135,6 +144,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         {
             return _bl.Co_ControlLista_Gestiones_Consulta(CodEmpresa, filtros);
         }
+
+        [HttpPost("Co_ControlLista_Notificacion_Procesar")]
+        public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
+            int CodEmpresa,
+            CoControlListaNotificacionRequest request)
+        {
+            return _bl.CoControlLista_Notificacion_Procesar(CodEmpresa, request);
+        }
         #endregion
 
         #region Fiadores
@@ -157,6 +174,22 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
            string request)
         {
             return _bl.CoControlLista_UsuariosTraslado_Obtener(codEmpresa, request);
+        }
+
+        [HttpPost("Co_ControlLista_AplicarMarcados_Procesar")]
+        public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
+    int CodEmpresa,
+    CoControlListaAplicarMarcadosRequest request)
+        {
+            return _bl.CoControlLista_AplicarMarcados_Procesar(CodEmpresa, request);
+        }
+
+        [HttpPost("Co_ControlLista_TrasladarMarcados_Procesar")]
+        public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
+            int CodEmpresa,
+            CoControlListaTrasladarMarcadosRequest request)
+        {
+            return _bl.CoControlLista_TrasladarMarcados_Procesar(CodEmpresa, request);
         }
 
         #endregion

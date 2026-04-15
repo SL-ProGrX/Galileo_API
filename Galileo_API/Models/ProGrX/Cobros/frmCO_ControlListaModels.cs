@@ -110,6 +110,13 @@
         public string nombre { get; set; } = string.Empty;
     }
 
+    public class CoControlListaNotificarMarcadosRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string tipo { get; set; } = "R";
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
+    }
+
     #endregion
 
     #region Operaciones
@@ -241,6 +248,13 @@
         public bool rebajo_doble { get; set; } = false;
         public bool aplica_mora { get; set; } = false;
     }
+
+    public class CoControlListaNotificacionRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string tipo { get; set; } = "R";
+        public string usuario { get; set; } = string.Empty;
+    }
     #endregion
 
     #region Fiadores
@@ -265,7 +279,24 @@
 
     #region Traslados
 
-  
+    public class CoControlListaTrasladoCasoRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaAplicarMarcadosRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public int mantener { get; set; } = 0;
+        public int rebajo_doble { get; set; } = 0;
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
+    }
+
+    public class CoControlListaTrasladarMarcadosRequest
+    {
+        public string usuario_destino { get; set; } = string.Empty;
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
+    }
 
     #endregion
 }
