@@ -11,6 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public class FrmCOControlListaDB
     {
         private readonly PortalDB _portalDB;
+        private readonly string vCedValida  = "Debe indicar la cédula.";
 
         public FrmCOControlListaDB(IConfiguration config)
         {
@@ -412,9 +413,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var total = 0;
 
-                foreach (var caso in request!.casos)
+  
+                var casos = request.casos
+                            .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                            .Select(x => x.cedula.Trim())
+                            .ToList();
+
+                foreach (var cedula in casos)
                 {
-                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    if (string.IsNullOrWhiteSpace(cedula))
                     {
                         continue;
                     }
@@ -423,7 +430,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         "spSys_Notifica_Cobros_01_Atrasos",
                         new
                         {
-                            pCedula = caso.cedula.Trim(),
+                            pCedula = cedula.Trim(),
                             Tipo = string.IsNullOrWhiteSpace(request.tipo) ? "R" : request.tipo.Trim(),
                             Usuario = request.usuario.Trim()
                         },
@@ -459,7 +466,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
                 return DbHelper.CreateErrorResponse<CoControlListaOperacionesResponse>(
-                    "Debe indicar la cédula.");
+                    vCedValida);
             }
 
             try
@@ -536,7 +543,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
                 return DbHelper.CreateErrorResponse<CoControlListaDatosPersonalesResponse>(
-                    "Debe indicar la cédula.");
+                    vCedValida);
             }
 
             try
@@ -629,7 +636,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
                 return DbHelper.CreateErrorResponse<CoControlListaGestionesResponse>(
-                    "Debe indicar la cédula.");
+                    vCedValida);
             }
 
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -698,7 +705,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
-                return DbHelper.CreateErrorResponse<bool>("Debe indicar la cédula.");
+                return DbHelper.CreateErrorResponse<bool>(vCedValida);
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
@@ -744,7 +751,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
                 return DbHelper.CreateErrorResponse<List<CoControlListaFiadorRow>>(
-                    "Debe indicar la cédula.");
+                    vCedValida);
             }
 
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -879,9 +886,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
               AND cedula = @cedula
             """;
 
-                foreach (var caso in request.casos)
+                var casos = request.casos
+                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .ToList();
+
+                foreach (var cedula in casos)
                 {
-                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    if (string.IsNullOrWhiteSpace(cedula))
                     {
                         continue;
                     }
@@ -893,7 +905,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                             usuario = request.usuario.Trim(),
                             mantener = request.mantener,
                             rebajo_doble = request.rebajo_doble,
-                            cedula = caso.cedula.Trim()
+                            cedula = cedula.Trim()
                         },
                         transaction: tran);
                 }
@@ -933,9 +945,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 conn.Open();
                 using var tran = conn.BeginTransaction();
 
-                foreach (var caso in request!.casos)
+
+                var casos = request.casos
+                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .ToList();
+
+                foreach (var cedula in casos)
                 {
-                    if (string.IsNullOrWhiteSpace(caso.cedula))
+                    if (string.IsNullOrWhiteSpace(cedula))
                     {
                         continue;
                     }
@@ -944,7 +962,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         "spCBRControlAsg",
                         new
                         {
-                            Cedula = caso.cedula.Trim(),
+                            Cedula = cedula.Trim(),
                             Usuario = request.usuario_destino.Trim(),
                             Mantener = 1
                         },
