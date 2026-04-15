@@ -30,7 +30,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpPost("Crd_GestorExterno_Reversar")]
-        public ErrorDto<bool> Crd_GestorExterno_Reversar(int codEmpresa, [FromBody]  CrdGestorExternoReversaRequest request)
+        public ErrorDto<string> Crd_GestorExterno_Reversar(int codEmpresa, [FromBody]  CrdGestorExternoReversaRequest request)
                 => _bl.Crd_GestorExterno_Reversar(codEmpresa, request);
 
         [Authorize]

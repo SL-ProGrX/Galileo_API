@@ -18,7 +18,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
                 => _db.Crd_GestorExterno_Listado_Obtener(CodEmpresa, request);
         public ErrorDto<string> Crd_GestorExterno_Registrar(int CodEmpresa, CrdGestorExternoRegistrarRequest request)
                         => _db.Crd_GestorExterno_Registrar(CodEmpresa, request);
-        public ErrorDto<bool> Crd_GestorExterno_Reversar(int CodEmpresa, CrdGestorExternoReversaRequest request)
+        public ErrorDto<string> Crd_GestorExterno_Reversar(int CodEmpresa, CrdGestorExternoReversaRequest request)
                 => _db.Crd_GestorExterno_Reversar(CodEmpresa, request);
         public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(int CodEmpresa, CrdGestorExternoCargaMasivaRequest request)
                  => _db.Crd_GestorExterno_CargaMasiva_Procesar(CodEmpresa, request);
