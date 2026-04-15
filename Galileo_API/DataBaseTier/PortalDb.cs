@@ -66,25 +66,21 @@ namespace Galileo.DataBaseTier
                 throw new SecurityException("No fue posible resolver una empresa válida.");
             }
 
-            if (codEmpresa < 0)
-            {
-                throw new SecurityException("No fue posible resolver una empresa válida.");
-            }
+            var server = (cliente.PGX_CORE_SERVER ?? string.Empty).Trim();
+            var database = (cliente.PGX_CORE_DB ?? string.Empty).Trim();
+            var user = (cliente.PGX_CORE_USER ?? string.Empty).Trim();
+            var secret = (cliente.PGX_CORE_KEY ?? string.Empty).Trim();
 
-            var clienteSeguro = cliente;
-
-            if (string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_SERVER) ||
-                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_DB) ||
-                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_USER) ||
-                string.IsNullOrWhiteSpace(clienteSeguro.PGX_CORE_KEY))
+            if (string.IsNullOrWhiteSpace(server) ||
+                string.IsNullOrWhiteSpace(database) ||
+                string.IsNullOrWhiteSpace(user) ||
+                string.IsNullOrWhiteSpace(secret))
             {
                 throw new SecurityException("La configuración de conexión de la empresa está incompleta.");
             }
 
-            if (!SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_SERVER) ||
-                !SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_DB)
-                // || !SafeSqlNameRegex.IsMatch(clienteSeguro.PGX_CORE_USER) revisar esta validacion
-                )
+            if (!SafeSqlNameRegex.IsMatch(server) ||
+                !SafeSqlNameRegex.IsMatch(database))
             {
                 throw new SecurityException("La configuración de conexión contiene caracteres no permitidos.");
             }
@@ -95,12 +91,17 @@ namespace Galileo.DataBaseTier
         /// </summary>
         private static string ConstruirConnectionStringSegura(PgxClienteDto cliente)
         {
+            var server = (cliente.PGX_CORE_SERVER ?? string.Empty).Trim();
+            var database = (cliente.PGX_CORE_DB ?? string.Empty).Trim();
+            var user = (cliente.PGX_CORE_USER ?? string.Empty).Trim();
+            var secret = (cliente.PGX_CORE_KEY ?? string.Empty).Trim();
+
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = cliente.PGX_CORE_SERVER,
-                InitialCatalog = cliente.PGX_CORE_DB,
-                UserID = cliente.PGX_CORE_USER,
-                Password = cliente.PGX_CORE_KEY,
+                DataSource = server,
+                InitialCatalog = database,
+                UserID = user,
+                Password = secret,
                 Encrypt = true,
                 TrustServerCertificate = true,
                 ApplicationName = "PGX_CORE_Access"

@@ -21,9 +21,11 @@ namespace Galileo.DataBaseTier
             int resp = 0;
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    var query = "SELECT dbo.fxSEG_Admin_Portal_Autenticate(@Usuario, @Token)";
+                    const string query = "SELECT dbo.fxSEG_Admin_Portal_Autenticate(@Usuario, @Token)";
                     var values = new
                     {
                         Usuario = Usuario,
@@ -31,73 +33,84 @@ namespace Galileo.DataBaseTier
                     };
                     resp = connection.Query<int>(query, values).FirstOrDefault();
                 }
+                return resp == 1;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return resp == 0;
             }
-            return resp == 1;
+            
         }
 
         public int UsuarioObtenerKeyAdmin(string Usuario)
         {
-            int Result = 0;
-            string sql = "select isnull(key_admin,0) as 'Admin' from us_usuarios where usuario = @Usuario";
-            var values = new
-            {
-                Usuario = Usuario,
-            };
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
+                const string sql = "select isnull(key_admin,0) as Admin from us_usuarios where usuario = @Usuario";
+                var values = new
+                {
+                    Usuario
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                Result = connection.Query<int>(sql, values).FirstOrDefault();
+                return connection.Query<int>(sql, values).FirstOrDefault();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return -1;
             }
-            return Result;
         }
 
         public UsAdminClientesDto US_ADMIN_CLIENTES_Obtener(string Usuario, int EmpresaId)
         {
-            UsAdminClientesDto Result = new UsAdminClientesDto();
-            string sql = "spSEG_Admin_Clients_Roles_Load";
-            var values = new
-            {
-                Usuario = Usuario,
-                EmpresaId = EmpresaId
-            };
+            
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
+                UsAdminClientesDto Result = new UsAdminClientesDto();
+                const string sql = "spSEG_Admin_Clients_Roles_Load";
+                var values = new
+                {
+                    Usuario = Usuario,
+                    EmpresaId = EmpresaId
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsAdminClientesDto>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsAdminClientesDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 if (queryResult != null)
                 {
                     Result = queryResult;
                 }
-
+                return Result;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new UsAdminClientesDto();
             }
-            return Result;
+            
         }
 
         public UsuarioBloqueoDto UsuarioBloqueoObtener(string Usuario)
         {
-
-            UsuarioBloqueoDto Result = new UsuarioBloqueoDto();
-            string sql = "spSEG_Bloqueo";
-            var values = new
-            {
-                Usuario = Usuario,
-            };
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
+                UsuarioBloqueoDto Result = new UsuarioBloqueoDto();
+                const string sql = "spSEG_Bloqueo";
+                var values = new
+                {
+                    Usuario = Usuario,
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioBloqueoDto>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsuarioBloqueoDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 if (queryResult != null)
                 {
                     Result = queryResult;
@@ -107,29 +120,32 @@ namespace Galileo.DataBaseTier
                 {
                     Result.Usuario = Usuario;
                 }
-
+                return Result;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new UsuarioBloqueoDto();
             }
-            return Result;
+            
 
         }
 
         public UsuarioCondicionDto UsuarioCondicionObtener(string Usuario)
         {
-
-            UsuarioCondicionDto Result = new UsuarioCondicionDto();
-            string sql = "spSEG_USRCondicion";
-            var values = new
-            {
-                Usuario = Usuario,
-            };
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
+                UsuarioCondicionDto Result = new UsuarioCondicionDto();
+                const string sql = "spSEG_USRCondicion";
+                var values = new
+                {
+                    Usuario = Usuario,
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioCondicionDto>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsuarioCondicionDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 if (queryResult != null)
                 {
                     Result = queryResult;
@@ -139,29 +155,34 @@ namespace Galileo.DataBaseTier
                 {
                     Result.Usuario = Usuario;
                 }
-
+                return Result;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new UsuarioCondicionDto();
             }
-            return Result;
+            
 
         }
 
         public UsuarioVencimientoDto UsuarioVencimientoObtener(string Usuario)
         {
 
-            UsuarioVencimientoDto Result = new UsuarioVencimientoDto();
-            string sql = "spSEG_Vencimiento";
-            var values = new
-            {
-                Usuario = Usuario,
-            };
+            
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+
+                UsuarioVencimientoDto Result = new UsuarioVencimientoDto();
+                const string sql = "spSEG_Vencimiento";
+                var values = new
+                {
+                    Usuario = Usuario,
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioVencimientoDto>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsuarioVencimientoDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 if (queryResult != null)
                 {
                     Result = queryResult;
@@ -171,13 +192,14 @@ namespace Galileo.DataBaseTier
                 {
                     Result.Usuario = Usuario;
                 }
-
+                return Result;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new UsuarioVencimientoDto();
             }
-            return Result;
+            
 
         }
 
@@ -185,7 +207,7 @@ namespace Galileo.DataBaseTier
         {
 
             int Result = 0;
-            string sql = "spSEG_App_Status";
+            const string sql = "spSEG_App_Status";
             var values = new
             {
                 AppName = AppName,
@@ -194,7 +216,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                Result = connection.Query<int>(sql, values).FirstOrDefault();
+                Result = connection.Query<int>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
 
             }
             catch (Exception ex)
@@ -209,7 +231,7 @@ namespace Galileo.DataBaseTier
         {
 
             int Result = 0;
-            string sql = "spPortal_Sincroniza_WebApps";
+            const string sql = "spPortal_Sincroniza_WebApps";
             var values = new
             {
                 Paso = Paso,
@@ -220,7 +242,7 @@ namespace Galileo.DataBaseTier
             {
 
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                Result = connection.Query(sql, values).FirstOrDefault();
+                Result = connection.Execute(sql, values, commandType: CommandType.StoredProcedure);
 
             }
             catch (Exception ex)
@@ -236,7 +258,7 @@ namespace Galileo.DataBaseTier
         {
 
             int Result = 0;
-            string sql = "spPortal_Sincroniza_WebApps";
+            const string sql = "spPortal_Sincroniza_WebApps";
             var values = new
             {
                 Paso = Paso,
@@ -247,7 +269,7 @@ namespace Galileo.DataBaseTier
             {
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                    Result = connection.Query(sql, values).FirstOrDefault();
+                    Result = connection.Execute(sql, values, commandType: CommandType.StoredProcedure);
 
             }
             catch (Exception ex)
@@ -262,7 +284,7 @@ namespace Galileo.DataBaseTier
         public PgxClienteDto SeleccionarPgxClientePorCodEmpresa(int CodEmpresa)
         {
             PgxClienteDto Result = new PgxClienteDto();
-            string sql = "spPGX_W_Usuario_Access_tmp";
+            const string sql = "spPGX_W_Usuario_Access_tmp";
             var parameters = new { CodEmpresa = CodEmpresa };
 
             try
@@ -282,7 +304,7 @@ namespace Galileo.DataBaseTier
             return Result;
         }
 
-        public void spCore_Usuario_Sincroniza(string PGX_Core_Server, string PGX_Core_Key, string pCliente, string pUsuario, string pNombre, string pEstado) //REVISAR Y TRABAJAR EN ESTO (CONN A DB DIFERENTE)
+        public void spCore_Usuario_Sincroniza(string pCliente, string pUsuario, string pNombre, string pEstado) //REVISAR Y TRABAJAR EN ESTO (CONN A DB DIFERENTE)
         {
             const string spName = "spSEG_SincronizaUsuarios";
 
@@ -304,55 +326,91 @@ namespace Galileo.DataBaseTier
 
         public UsMenuDto ObtenerMenuPorNodoYUsuario(int pNodo, string Usuario)
         {
-            UsMenuDto respuesta = new UsMenuDto();
-            string sql = "select *, dbo.fxSEG_MenuAccess(1, @Usuario, Modulo, Formulario, Tipo) as 'Acceso' " +
-             "from us_menus where menu_nodo = @Nodo";
-            var values = new
-            {
-                Usuario = Usuario,
-                Nodo = pNodo,
-            };
+            
             try
             {
+                Usuario = NormalizeUsuario(Usuario);
+                UsMenuDto respuesta = new UsMenuDto();
+                const string sql = @"select 
+                                MENU_NODO,
+                                NODO_PADRE ,
+                                NODO_DESCRIPCION ,
+                                TIPO ,
+                                ICONO ,
+                                MODO ,
+                                MODAL ,
+                                ACCESOS_DLL_ID ,
+                                ACCESOS_DLL_CLS,
+                                PRIORIDAD ,
+                                FORMULARIO ,
+                                MODULO ,
+                                MIGRADO_WEB ,
+                                ICONO_WEB ,
+                                dbo.fxSEG_MenuAccess(1, @Usuario, Modulo, Formulario, Tipo) as 'Acceso' 
+                            from us_menus where menu_nodo = @Nodo";
+                var values = new
+                {
+                    Usuario = Usuario,
+                    Nodo = pNodo,
+                };
+
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 respuesta = connection.Query<UsMenuDto>(sql, values).FirstOrDefault() ?? new UsMenuDto();
-
+                return respuesta;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new UsMenuDto();
             }
 
-            return respuesta;
+            
         }
 
         public int ActualizarEstadisticasFavoritos(int menuNodo, int? Cliente, string Usuario)
         {
-            int valorCliente = Cliente ?? 1; //si es null, asignar 1 por default
-            Cliente = valorCliente;
-
-            int Result = 0;
-            string sql = "spSEG_MenuUsos";
-            var values = new
-            {
-
-                Nodo = menuNodo,
-                Cliente = Cliente,
-                Usuario = Usuario,
-
-            };
+            
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                Result = connection.Query<int>(sql, values).FirstOrDefault();
+                Usuario = NormalizeUsuario(Usuario);
+                int valorCliente = Cliente ?? 1; //si es null, asignar 1 por default
+                Cliente = valorCliente;
 
+                int Result = 0;
+                const string sql = "spSEG_MenuUsos";
+                var values = new
+                {
+
+                    Nodo = menuNodo,
+                    Cliente = Cliente,
+                    Usuario = Usuario,
+
+                };
+
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                Result = connection.Query<int>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                return Result;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return -1;
             }
-            return Result;
+            
 
+        }
+
+        private static string NormalizeUsuario(string? usuario)
+        {
+            var normalized = (usuario ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new ArgumentException("Usuario es requerido.", nameof(usuario));
+
+            if (normalized.Length > 50)
+                throw new ArgumentException("Usuario no es válido.", nameof(usuario));
+
+            return normalized;
         }
 
     }//end class
