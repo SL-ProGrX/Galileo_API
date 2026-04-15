@@ -54,5 +54,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
 
         public ErrorDto<bool> AfCdCuentas_ActualizarEstadoPorRemesa(int codEmpresa, int codRemesa, string estado)
             => _db.AfCdCuentas_ActualizarEstadoPorRemesa(codEmpresa, codRemesa, estado);
+
+        public ErrorDto<List<AfCdRemesaTesDto>> AfCdRemesasTes_Filtradas(int codEmpresa, AfCdRemesaTesFiltroParams filtro)
+            => _db.AfCdRemesasTes_Filtradas(codEmpresa, filtro);
+
+        public ErrorDto<List<AfCdRemesaComiteDetalleDto>> AfCdRemesasComiteDetalle_Lista(int codEmpresa, AfCdRemesaComiteDetalleParams param)
+            => _db.AfCdRemesasComiteDetalle_Lista(codEmpresa, param);
+
+        public ErrorDto<List<AfCdRemesaResumenDto>> AfCdRemesasTes_ResumenCerradas(int codEmpresa)
+            => _db.AfCdRemesasTes_ResumenCerradas(codEmpresa);
+
+        public ErrorDto<List<AfCdRemesaDetalleDto>> AfCdRemesasTes_DetallePorRemesa(int codEmpresa, int codRemesa)
+            => _db.AfCdRemesasTes_DetallePorRemesa(codEmpresa, codRemesa);
     }
 }

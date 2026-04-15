@@ -63,11 +63,58 @@
 
     public class AfCdCuentaRemesaSpParams
     {
-        public int NOperacion { get; set; }
-        public int Cod_Remesa { get; set; }
+        public int? NOperacion { get; set; }
+        public int? Cod_Remesa { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public string? Notas { get; set; }
         public int TesoreriaId { get; set; } = 0;
+    }
+
+    public class AfCdRemesaTesFiltroParams
+    {
+        public int Cantidad { get; set; } = 15;
+        public string? Estado { get; set; } // 'A', 'C', 'T' o null para todos
+    }
+
+    public class AfCdRemesaComiteDetalleDto
+    {
+        public int Cod_Remesa { get; set; }
+        public int NOperacion { get; set; }
+        public int NSolicitud { get; set; }
+        public DateTime? Tesoreria_Fecha { get; set; }
+        public string Comite { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public string Cod_Comite { get; set; } = string.Empty;
+    }
+
+    public class AfCdRemesaComiteDetalleParams
+    {
+        public string Comite { get; set; } = string.Empty;
+        public required DateTime FechaInicio { get; set; }
+        public required DateTime FechaCorte { get; set; }
+    }
+
+    public class AfCdRemesaResumenDto
+    {
+        public int Cod_Remesa { get; set; }
+        public DateTime? Fecha { get; set; }
+        public DateTime? Fecha_Inicio { get; set; }
+        public DateTime? Fecha_Corte { get; set; }
+        public string? Usuario { get; set; }
+        public decimal Monto { get; set; }
+        public int Casos { get; set; }
+    }
+
+    public class AfCdRemesaDetalleDto
+    {
+        public int NOperacion { get; set; }
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Cuenta { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public int Id_Banco { get; set; }
+        public string Banco { get; set; } = string.Empty;
+        public string Comite { get; set; } = string.Empty;
     }
 }
