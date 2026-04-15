@@ -375,5 +375,148 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
             return new ErrorDto<bool> { Result = true };
         }
+
+        /// <summary>
+        /// Obtiene las remesas de tesorería filtradas por estado y cantidad.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="filtro">Parámetros de filtro (cantidad, estado).</param>
+        /// <returns>Lista de remesas.</returns>
+        public ErrorDto<List<AfCdRemesaTesDto>> AfCdRemesasTes_Filtradas(int codEmpresa, AfCdRemesaTesFiltroParams filtro)
+        {
+            var sql = $@"
+                SELECT TOP (@Cantidad)
+                    COD_REMESA AS Cod_Remesa,
+                    FECHA AS Fecha,
+                    USUARIO AS Usuario,
+                    FECHA_INICIO AS Fecha_Inicio,
+                    FECHA_CORTE AS Fecha_Corte,
+                    NOTAS AS Notas,
+                    ESTADO AS Estado
+                FROM afi_cd_remesas_tes
+                {{WHERE_CLAUSE}}
+                ORDER BY FECHA DESC";
+
+            string where = "";
+            if (!string.IsNullOrEmpty(filtro.Estado))
+                where = "WHERE ESTADO = @Estado";
+
+            sql = sql.Replace("{WHERE_CLAUSE}", where);
+
+            return DbHelper.ExecuteListQuery<AfCdRemesaTesDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { filtro.Cantidad, filtro.Estado }
+            );
+        }
+
+        /// <summary>
+        /// Obtiene el detalle de remesas por comité y rango de fechas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de filtro (comite, fechaInicio, fechaCorte).</param>
+        /// <returns>Lista de detalles de remesas por comité.</returns>
+        public ErrorDto<List<AfCdRemesaComiteDetalleDto>> AfCdRemesasComiteDetalle_Lista(int codEmpresa, AfCdRemesaComiteDetalleParams param)
+        {
+            var sql = @"
+                SELECT C.cod_Remesa,
+                       C.noperacion,
+                       D.nsolicitud,
+                       C.tesoreria_fecha,
+                       RTRIM(P.cod_Comite + ' - ' + P.Descripcion) AS Comite,
+                       D.monto,
+                       P.cod_Comite
+                FROM AFI_CD_COMITES P
+                INNER JOIN afi_cd_cuentas C
+                        ON P.cod_comite = C.cod_comite
+                INNER JOIN afi_cd_remesas_tes_detalle D
+                        ON C.cod_remesa = D.cod_remesa
+                       AND C.noperacion = D.noperacion
+                WHERE C.estado IN ('T','L')
+                  AND C.cod_comite LIKE @Comite
+                  AND C.tesoreria_fecha BETWEEN @FechaInicio AND @FechaCorte
+            ";
+
+            // El LIKE debe ser '%valor%', así que lo preparamos aquí
+            var parametros = new
+            {
+                Comite = $"%{param.Comite}%",
+                FechaInicio = param.FechaInicio.Date,
+                FechaCorte = param.FechaCorte.Date.AddDays(1).AddSeconds(-1)
+            };
+
+            return DbHelper.ExecuteListQuery<AfCdRemesaComiteDetalleDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                parametros
+            );
+        }
+
+        /// <summary>
+        /// Obtiene el resumen de remesas cerradas (estado 'C') con monto y casos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de resúmenes de remesas.</returns>
+        public ErrorDto<List<AfCdRemesaResumenDto>> AfCdRemesasTes_ResumenCerradas(int codEmpresa)
+        {
+            var sql = @"
+                SELECT R.cod_remesa,
+                       R.fecha,
+                       R.fecha_inicio,
+                       R.fecha_corte,
+                       R.usuario,
+                       SUM(C.monto) AS Monto,
+                       COUNT(*) AS Casos
+                FROM afi_cd_remesas_tes R
+                INNER JOIN AFI_CD_CUENTAS C
+                        ON R.cod_remesa = C.cod_remesa
+                WHERE R.estado = 'C'
+                GROUP BY R.cod_remesa,
+                         R.fecha,
+                         R.fecha_inicio,
+                         R.fecha_corte,
+                         R.usuario";
+            return DbHelper.ExecuteListQuery<AfCdRemesaResumenDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null
+            );
+        }
+
+        /// <summary>
+        /// Obtiene el detalle de cuentas de una remesa seleccionada.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codRemesa">Código de la remesa seleccionada.</param>
+        /// <returns>Lista de detalles de la remesa.</returns>
+        public ErrorDto<List<AfCdRemesaDetalleDto>> AfCdRemesasTes_DetallePorRemesa(int codEmpresa, int codRemesa)
+        {
+            var sql = @"
+                SELECT C.noperacion,
+                       C.cedula,
+                       S.nombre,
+                       C.cuenta,
+                       C.monto,
+                       C.id_banco,
+                       B.descripcion AS Banco,
+                       RTRIM(Com.Cod_Comite) + ' - ' + Com.Descripcion AS Comite
+                FROM afi_cd_cuentas C
+                INNER JOIN Tes_bancos B
+                        ON C.id_banco = B.id_banco
+                INNER JOIN socios S
+                        ON C.cedula = S.cedula
+                INNER JOIN Afi_Cd_Comites Com
+                        ON C.cod_Comite = Com.cod_comite
+                WHERE C.cod_remesa = @Cod_Remesa";
+            return DbHelper.ExecuteListQuery<AfCdRemesaDetalleDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { Cod_Remesa = codRemesa }
+            );
+        }
     }
 }
