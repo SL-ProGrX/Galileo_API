@@ -115,5 +115,50 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         #endregion
 
+        #region Datos Persona
+
+        [HttpGet("Co_ControlLista_DatosPersonales_Obtener")]
+        public ErrorDto<CoControlListaDatosPersonalesResponse> CoControlLista_DatosPersonales_Obtener(
+            int CodEmpresa,
+            string filtros)
+        {
+            return _bl.CoControlLista_DatosPersonales_Obtener(CodEmpresa, filtros);
+        }
+
+        #endregion
+
+        #region Gestiones
+        [HttpGet("Co_ControlLista_Gestiones_Consulta")]
+        public ErrorDto<CoControlListaGestionesResponse> Co_ControlLista_Gestiones_Consulta(
+            int CodEmpresa,
+            string filtros)
+        {
+            return _bl.Co_ControlLista_Gestiones_Consulta(CodEmpresa, filtros);
+        }
+        #endregion
+
+        #region Fiadores
+
+        [HttpGet("Co_ControlLista_Fiadores_Obtener")]
+        public ErrorDto<List<CoControlListaFiadorRow>> CoControlLista_Fiadores_Obtener(
+            int CodEmpresa,
+            string filtros)
+        {
+            return _bl.CoControlLista_Fiadores_Obtener(CodEmpresa, filtros);
+        }
+
+        #endregion
+
+        #region Traslados
+
+        [HttpGet("Co_ControlLista_UsuariosTraslado_Obtener")]
+        public ErrorDto<List<CoControlListaUsuarioBusquedaRow>> CoControlLista_UsuariosTraslado_Obtener(
+           int codEmpresa,
+           string request)
+        {
+            return _bl.CoControlLista_UsuariosTraslado_Obtener(codEmpresa, request);
+        }
+
+        #endregion
     }
 }
