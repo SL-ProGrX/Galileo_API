@@ -74,5 +74,30 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         {
             return _db.Mora_Listar(codEmpresa, operacion, tipo);
         }
+
+        public ErrorDto<List<COEjecutivoDto>> Ejecutivos_Listar(int codEmpresa, int operacion)
+        {
+            return _db.Ejecutivos_Listar(codEmpresa, operacion);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
+        {
+            return _db.Lineas_Listar(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Personas_Listar(int codEmpresa)
+        {
+            return _db.Personas_Listar(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> LineasPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            return _db.LineasPorPersona_Listar(codEmpresa, cedula);
+        }
+
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        {
+            return _db.OperacionesPorPersonaLinea_Listar(codEmpresa, cedula, linea);
+        }
     }
 }
