@@ -99,5 +99,40 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         {
             return _bl.Mora_Listar(codEmpresa, operacion, tipo);
         }
+
+        [Authorize]
+        [HttpGet("Ejecutivos_Listar")]
+        public ErrorDto<List<COEjecutivoDto>> Ejecutivos_Listar(int codEmpresa, int operacion)
+        {
+            return _bl.Ejecutivos_Listar(codEmpresa, operacion);
+        }
+
+        [Authorize]
+        [HttpGet("Lineas_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
+        {
+            return _bl.Lineas_Listar(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Personas_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Personas_Listar(int codEmpresa)
+        {
+            return _bl.Personas_Listar(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("LineasPorPersona_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> LineasPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            return _bl.LineasPorPersona_Listar(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("OperacionesPorPersonaLinea_Listar")]
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        {
+            return _bl.OperacionesPorPersonaLinea_Listar(codEmpresa, cedula, linea);
+        }
     }
 }

@@ -643,8 +643,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
-        public ErrorDto<List<COMoraDto>> Mora_Listar(int codEmpresa,int operacion,string tipo
-)
+        public ErrorDto<List<COMoraDto>> Mora_Listar(int codEmpresa, int operacion, string tipo)
         {
             var response = new ErrorDto<List<COMoraDto>>();
 
@@ -753,6 +752,175 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return response;
         }
+
+
+        public ErrorDto<List<COEjecutivoDto>> Ejecutivos_Listar(int codEmpresa, int operacion)
+        {
+            var response = new ErrorDto<List<COEjecutivoDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT
+                fecha_asignacion AS fecha,
+                UPPER(RTRIM(usuario)) AS oficial,
+                ISNULL(mantener, 0) AS mantiene,
+                ISNULL(rebajo_doble, 0) AS rebajo,
+                ISNULL(aplica_mora, 0) AS dobleMora
+            FROM cbr_asignacion_h
+            WHERE cedula = (
+                SELECT cedula 
+                FROM reg_creditos 
+                WHERE id_solicitud = @operacion
+            )
+            ORDER BY fecha_asignacion DESC
+        ";
+
+                response.Result = cn.Query<COEjecutivoDto>(
+                    sql,
+                    new { operacion }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT 
+                RTRIM(codigo) AS item,
+                RTRIM(ISNULL(DESCRIPCION_LINEA, DESCRIPCION)) AS descripcion
+            FROM catalogo
+            ORDER BY descripcion
+        ";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Personas_Listar(int codEmpresa)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT 
+                RTRIM(cedula) AS item,
+                RTRIM(nombre) AS descripcion
+            FROM socios
+            ORDER BY nombre
+        ";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> LineasPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT DISTINCT
+                RTRIM(c.codigo) AS item,
+                RTRIM(ISNULL(c.DESCRIPCION_LINEA, c.DESCRIPCION)) AS descripcion
+            FROM reg_creditos rc
+            INNER JOIN catalogo c
+                ON rc.codigo = c.codigo
+            WHERE rc.cedula = @cedula
+            ORDER BY descripcion
+        ";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    new { cedula }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        {
+            var response = new ErrorDto<List<OperacionBusquedaDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT
+                rc.id_solicitud AS operacion,
+                RTRIM(rc.codigo) AS codigo,
+                RTRIM(rc.cedula) AS cedula,
+                ISNULL(rc.montoapr, 0) AS montoapr,
+                ISNULL(rc.saldo, 0) AS saldo
+            FROM reg_creditos rc
+            WHERE rc.cedula = @cedula
+              AND rc.codigo = @linea
+            ORDER BY rc.id_solicitud DESC
+        ";
+
+                response.Result = cn.Query<OperacionBusquedaDto>(
+                    sql,
+                    new { cedula, linea }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
     }
 }
 
