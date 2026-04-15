@@ -23,7 +23,7 @@ namespace Galileo.DataBaseTier
             var seguridadPortal = new SeguridadPortalDb(_config);
             var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresaSeguro);
 
-            ValidarClientePortal(pgxClienteDto, codEmpresaSeguro);
+            ValidarClientePortal(pgxClienteDto);
 
             return ConstruirConnectionStringSegura(pgxClienteDto);
         }
@@ -59,7 +59,7 @@ namespace Galileo.DataBaseTier
         /// Valida que los datos de conexión recuperados desde portal sean aptos para construir
         /// una cadena de conexión controlada y sin formato libre.
         /// </summary>
-        private static void ValidarClientePortal(PgxClienteDto cliente, int codEmpresa)
+        private static void ValidarClientePortal(PgxClienteDto cliente)
         {
             if (cliente == null)
             {
