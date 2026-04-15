@@ -95,6 +95,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CoControlLista_Personas_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
+             int codEmpresa,
+             CoControlListaNotificarMarcadosRequest request)
+        {
+            return _db.CoControlLista_NotificarMarcados_Procesar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Operaciones
@@ -108,6 +115,83 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 
             return _db.CoControlLista_Operaciones_Obtener(codEmpresa, request);
         }
+
+        #endregion
+
+        #region Datos Persona
+
+        public ErrorDto<CoControlListaDatosPersonalesResponse> CoControlLista_DatosPersonales_Obtener(
+            int codEmpresa,
+            string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaDatosPersonalesRequest>(filtros)
+                   ?? new CoControlListaDatosPersonalesRequest();
+
+            return _db.CoControlLista_DatosPersonales_Obtener(codEmpresa, request);
+        }
+
+        #endregion
+
+        #region Gestiones
+        public ErrorDto<CoControlListaGestionesResponse> Co_ControlLista_Gestiones_Consulta(
+    int codEmpresa,
+    string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaGestionesRequest>(filtros)
+                     ?? new CoControlListaGestionesRequest();
+
+            return _db.Co_ControlLista_Gestiones_Consulta(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
+            int codEmpresa,
+            CoControlListaNotificacionRequest request)
+        {
+            request ??= new CoControlListaNotificacionRequest();
+            return _db.CoControlLista_Notificacion_Procesar(codEmpresa, request);
+        }
+        #endregion
+
+        #region Fiadores
+
+        public ErrorDto<List<CoControlListaFiadorRow>> CoControlLista_Fiadores_Obtener(
+    int codEmpresa,
+    string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaFiadoresRequest>(filtros)
+                     ?? new CoControlListaFiadoresRequest();
+
+            return _db.CoControlLista_Fiadores_Obtener(codEmpresa, request);
+        }
+
+        #endregion
+
+        #region Traslados
+
+        public ErrorDto<List<CoControlListaUsuarioBusquedaRow>> CoControlLista_UsuariosTraslado_Obtener(
+            int codEmpresa,
+            string request)
+        {
+            var filtros = JsonConvert.DeserializeObject<CoControlListaUsuarioBusquedaRequest>(request)
+                     ?? new CoControlListaUsuarioBusquedaRequest();
+            return _db.CoControlLista_UsuariosTraslado_Obtener(codEmpresa, filtros);
+        }
+
+        public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaAplicarMarcadosRequest request)
+        {
+            return _db.CoControlLista_AplicarMarcados_Procesar(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaTrasladarMarcadosRequest request)
+        {
+            return _db.CoControlLista_TrasladarMarcados_Procesar(codEmpresa, request);
+        }
+
+
 
         #endregion
     }

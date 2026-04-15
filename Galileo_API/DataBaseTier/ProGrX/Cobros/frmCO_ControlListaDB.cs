@@ -11,6 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public class FrmCOControlListaDB
     {
         private readonly PortalDB _portalDB;
+        private readonly string vCedValida  = "Debe indicar la cédula.";
 
         public FrmCOControlListaDB(IConfiguration config)
         {
@@ -384,6 +385,70 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             });
         }
 
+        /// <summary>
+        /// Envía notificaciones de cobro para los casos marcados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario, tipo y casos seleccionados.</param>
+        /// <returns>Total procesado.</returns>
+        public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaNotificarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<int>("Debe indicar el usuario actual.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<int>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+                var total = 0;
+
+  
+                var casos = request.casos
+                            .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                            .Select(x => x.cedula.Trim())
+                            .ToList();
+
+                foreach (var cedula in casos)
+                {
+                    if (string.IsNullOrWhiteSpace(cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        "spSys_Notifica_Cobros_01_Atrasos",
+                        new
+                        {
+                            pCedula = cedula.Trim(),
+                            Tipo = string.IsNullOrWhiteSpace(request.tipo) ? "R" : request.tipo.Trim(),
+                            Usuario = request.usuario.Trim()
+                        },
+                        transaction: tran,
+                        commandType: System.Data.CommandType.StoredProcedure);
+
+                    total++;
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(total);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+        }
+
         #endregion
 
         #region Operaciones
@@ -401,7 +466,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request == null || string.IsNullOrWhiteSpace(request.cedula))
             {
                 return DbHelper.CreateErrorResponse<CoControlListaOperacionesResponse>(
-                    "Debe indicar la cédula.");
+                    vCedValida);
             }
 
             try
@@ -463,5 +528,460 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
         #endregion
 
+        #region Datos Persona
+
+        /// <summary>
+        /// Consulta la información del tab de datos personales para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula seleccionada.</param>
+        /// <returns>Datos personales y teléfonos.</returns>
+        public ErrorDto<CoControlListaDatosPersonalesResponse> CoControlLista_DatosPersonales_Obtener(
+            int codEmpresa,
+            CoControlListaDatosPersonalesRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaDatosPersonalesResponse>(
+                    vCedValida);
+            }
+
+            try
+            {
+
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                const string sqlDatos = """
+            SELECT
+                RTRIM(ISNULL(Prov.Descripcion, '')) AS prov_desc,
+                RTRIM(ISNULL(Cant.Descripcion, '')) AS canton_desc,
+                RTRIM(ISNULL(Dist.Descripcion, '')) AS dist_desc,
+                RTRIM(ISNULL(S.direccion, '')) AS direccion,
+                RTRIM(ISNULL(S.af_email, '')) AS af_email
+            FROM socios S
+            LEFT JOIN Provincias Prov
+                ON S.Provincia = Prov.Provincia
+            LEFT JOIN Cantones Cant
+                ON S.Provincia = Cant.Provincia
+               AND S.Canton = Cant.Canton
+            LEFT JOIN Distritos Dist
+                ON S.Provincia = Dist.Provincia
+               AND S.Canton = Dist.Canton
+               AND S.distrito = Dist.distrito
+            WHERE S.cedula = @cedula
+            """;
+
+                const string sqlTelefonos = """
+            SELECT
+                Numero,
+                Tipo,
+                Ext,
+                contacto
+            FROM Telefonos
+            WHERE Cedula = @cedula
+            """;
+
+                var cedula = request.cedula.Trim();
+
+                var datos = conn.QueryFirstOrDefault<CoControlListaDatosPersonalesData>(
+                    sqlDatos,
+                    new { cedula })
+                    ?? new CoControlListaDatosPersonalesData();
+
+                var telefonosRaw = conn.Query(
+             sqlTelefonos,
+             new { cedula }).ToList();
+
+                var telefonos = telefonosRaw.Select(x => new CoControlListaTelefonoRow
+                {
+                    numero = Convert.ToString(x.Numero)?.Trim() ?? string.Empty,
+                    tipo = FxTipoTelefono(Convert.ToString(x.Tipo)?.Trim() ?? string.Empty),
+                    ext = Convert.ToString(x.Ext)?.Trim() ?? string.Empty,
+                    contacto = Convert.ToString(x.contacto)?.Trim() ?? string.Empty,
+                }).ToList();
+
+                return DbHelper.CreateOkResponse(new CoControlListaDatosPersonalesResponse
+                {
+                    datos_personales = datos,
+                    telefonos = telefonos
+                });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaDatosPersonalesResponse>(ex.Message);
+            }
+        }
+
+        private static string FxTipoTelefono(string tipo)
+        {
+            return tipo.Trim().ToUpperInvariant() switch
+            {
+                "1" => "Habitación",
+                "2" => "Trabajo",
+                "3" => "Celular",
+                _ => tipo
+            };
+        }
+
+        #endregion
+
+        #region Gestiones
+        /// <summary>
+        /// Consulta la información del tab de gestiones para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula seleccionada.</param>
+        /// <returns>Gestiones y oficiales.</returns>
+        public ErrorDto<CoControlListaGestionesResponse> Co_ControlLista_Gestiones_Consulta(
+            int codEmpresa,
+            CoControlListaGestionesRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaGestionesResponse>(
+                    vCedValida);
+            }
+
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                const string sqlGestiones = """
+            SELECT
+                S.cod_seg,
+                S.fecha,
+                DATEADD(DAY, ISNULL(S.tiempo_resolucion, 0), S.fecha) AS vencimiento,
+                ISNULL(G.descripcion, '') AS gestion,
+                ISNULL(S.notas, '') AS notas,
+                ISNULL(S.usuario, '') AS usuario,
+                ISNULL(S.monto, 0) AS monto,
+                ISNULL(S.tiempo_resolucion, 0) AS tiempo_resolucion,
+                ISNULL(A.descripcion, '') AS arreglo,
+                S.arreglo_vence,
+                ISNULL(C.descripcion, '') AS causa
+            FROM CBR_Seguimiento S
+            LEFT JOIN CBR_GESTIONES G
+                ON S.cod_gestion = G.cod_gestion
+            LEFT JOIN CBR_CAUSAS_MOROSIDAD C
+                ON S.cod_causa = C.cod_causa
+            LEFT JOIN CBR_TIPOS_ARREGLOS A
+                ON S.cod_arreglo = A.cod_arreglo
+            WHERE S.cedula = @cedula
+            ORDER BY S.cod_seg DESC
+            """;
+
+                const string sqlOficiales = """
+            SELECT
+                fecha_asignacion,
+                UPPER(ISNULL(usuario, '')) AS usuario,
+                ISNULL(mantener, 0) AS mantener,
+                ISNULL(rebajo_doble, 0) AS rebajo_doble,
+                ISNULL(aplica_mora, 0) AS aplica_mora
+            FROM cbr_asignacion_h
+            WHERE cedula = @cedula
+            ORDER BY fecha_asignacion DESC
+            """;
+
+                var gestiones = conn.Query<CoControlListaGestionRow>(
+                    sqlGestiones,
+                    new { cedula = request.cedula.Trim() }).ToList();
+
+                var oficiales = conn.Query<CoControlListaOficialRow>(
+                    sqlOficiales,
+                    new { cedula = request.cedula.Trim() }).ToList();
+
+                return new CoControlListaGestionesResponse
+                {
+                    gestiones = gestiones,
+                    oficiales = oficiales
+                };
+            });
+        }
+
+        /// <summary>
+        /// Envía una notificación de cobro para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula, tipo y usuario.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
+            int codEmpresa,
+            CoControlListaNotificacionRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<bool>(vCedValida);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                conn.Execute(
+                    "spSys_Notifica_Cobros_01_Atrasos",
+                    new
+                    {
+                        pCedula = request.cedula.Trim(),
+                        Tipo = string.IsNullOrWhiteSpace(request.tipo) ? "R" : request.tipo.Trim(),
+                        Usuario = request.usuario.Trim()
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+        #endregion
+
+        #region Fiadores
+
+        /// <summary>
+        /// Consulta la información del tab de fiadores para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula seleccionada y filtro de mora.</param>
+        /// <returns>Lista de fiadores.</returns>
+        public ErrorDto<List<CoControlListaFiadorRow>> CoControlLista_Fiadores_Obtener(
+            int codEmpresa,
+            CoControlListaFiadoresRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<List<CoControlListaFiadorRow>>(
+                    vCedValida);
+            }
+
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                var sql = """
+            SELECT
+                ISNULL(M.ESTADO, '') AS estado_mora,
+                F.Id_Solicitud AS id_solicitud,
+                S.cedula,
+                S.nombre,
+                E.descripcion AS estado,
+                I.descripcion AS inst
+            FROM fiadores F
+            INNER JOIN Socios S
+                ON F.cedulaf = S.cedula
+            INNER JOIN Instituciones I
+                ON S.cod_institucion = I.cod_institucion
+            INNER JOIN Reg_Creditos R
+                ON F.Id_Solicitud = R.Id_Solicitud
+            INNER JOIN AFI_ESTADOS_PERSONA E
+                ON E.cod_estado = S.estadoActual
+            LEFT JOIN MOROSIDAD M
+                ON F.Id_Solicitud = M.Id_Solicitud
+               AND M.Estado = 'A'
+            WHERE F.estado = 'A'
+              AND R.cedula = @cedula
+              AND R.Estado = 'A'
+            """;
+
+                if (request.solo_operaciones_atrasadas)
+                {
+                    sql += " AND M.ESTADO = 'A'";
+                }
+
+                sql += """
+             GROUP BY
+                F.Id_Solicitud,
+                S.cedula,
+                M.ESTADO,
+                S.nombre,
+                E.descripcion,
+                I.descripcion
+             ORDER BY
+                F.Id_Solicitud
+            """;
+
+                return conn.Query<CoControlListaFiadorRow>(
+                    sql,
+                    new { cedula = request.cedula.Trim() }).ToList();
+            });
+        }
+
+        #endregion
+
+        #region Traslados
+
+        /// <summary>
+        /// Consulta usuarios para la búsqueda del control de cobros.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro de búsqueda.</param>
+        /// <returns>Lista de usuarios.</returns>
+        public ErrorDto<List<CoControlListaUsuarioBusquedaRow>> CoControlLista_UsuariosTraslado_Obtener(
+            int codEmpresa,
+            CoControlListaUsuarioBusquedaRequest request)
+        {
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                var sql = """
+            SELECT
+                RTRIM(usuario) AS usuario,
+                RTRIM(nombre) AS nombre
+            FROM cbr_usuarios
+            WHERE 1 = 1
+              AND (@filtro = '' OR usuario LIKE '%' + @filtro + '%' OR nombre LIKE '%' + @filtro + '%')
+            """;
+
+                if (request.solo_activos)
+                {
+                    sql += " AND estado = 1";
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.excluir_usuario))
+                {
+                    sql += " AND usuario <> @excluir_usuario";
+                }
+
+                sql += " ORDER BY nombre";
+
+                return conn.Query<CoControlListaUsuarioBusquedaRow>(
+                    sql,
+                    new
+                    {
+                        filtro = request.filtro?.Trim() ?? string.Empty,
+                        excluir_usuario = request.excluir_usuario?.Trim() ?? string.Empty
+                    }).ToList();
+            });
+        }
+
+
+        /// <summary>
+        /// Actualiza mantener y rebajo doble para los casos marcados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario actual, valores y casos seleccionados.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaAplicarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario actual.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+                const string sql = """
+            UPDATE cbr_asignacion
+            SET mantener = @mantener,
+                rebajo_doble = @rebajo_doble
+            WHERE usuario = @usuario
+              AND cedula = @cedula
+            """;
+
+                var casos = request.casos
+                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .ToList();
+
+                foreach (var cedula in casos)
+                {
+                    if (string.IsNullOrWhiteSpace(cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        sql,
+                        new
+                        {
+                            usuario = request.usuario.Trim(),
+                            mantener = request.mantener,
+                            rebajo_doble = request.rebajo_doble,
+                            cedula = cedula.Trim()
+                        },
+                        transaction: tran);
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Traslada los casos marcados a otro usuario.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario destino y casos seleccionados.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
+            int codEmpresa,
+            CoControlListaTrasladarMarcadosRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario_destino))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario destino.");
+            }
+
+            if (request.casos == null || request.casos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe seleccionar al menos un caso.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
+                using var tran = conn.BeginTransaction();
+
+
+                var casos = request.casos
+                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .ToList();
+
+                foreach (var cedula in casos)
+                {
+                    if (string.IsNullOrWhiteSpace(cedula))
+                    {
+                        continue;
+                    }
+
+                    conn.Execute(
+                        "spCBRControlAsg",
+                        new
+                        {
+                            Cedula = cedula.Trim(),
+                            Usuario = request.usuario_destino.Trim(),
+                            Mantener = 1
+                        },
+                        transaction: tran,
+                        commandType: System.Data.CommandType.StoredProcedure);
+                }
+
+                tran.Commit();
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        #endregion
     }
 }
