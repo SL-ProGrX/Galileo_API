@@ -7,7 +7,7 @@
         public int Port { get; set; }
         public string EnableSsl { get; set; } = string.Empty;
         public string User { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
         public string cod_smtp { get; set; } = string.Empty;
     }
 
