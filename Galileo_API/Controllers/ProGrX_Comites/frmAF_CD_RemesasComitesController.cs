@@ -91,5 +91,28 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             [FromQuery] int codRemesa,
             [FromQuery] string estado)
             => _bl.AfCdCuentas_ActualizarEstadoPorRemesa(codEmpresa, codRemesa, estado);
+
+        [HttpPost("AfCdRemesasTes_Filtradas")]
+        public ActionResult<ErrorDto<List<AfCdRemesaTesDto>>> AfCdRemesasTes_Filtradas(
+            [FromQuery] int codEmpresa,
+            [FromBody] AfCdRemesaTesFiltroParams filtro)
+            => _bl.AfCdRemesasTes_Filtradas(codEmpresa, filtro);
+
+        [HttpPost("AfCdRemesasComiteDetalle_Lista")]
+        public ActionResult<ErrorDto<List<AfCdRemesaComiteDetalleDto>>> AfCdRemesasComiteDetalle_Lista(
+            [FromQuery] int codEmpresa,
+            [FromBody] AfCdRemesaComiteDetalleParams param)
+            => _bl.AfCdRemesasComiteDetalle_Lista(codEmpresa, param);
+        
+        [HttpGet("AfCdRemesasTes_ResumenCerradas")]
+        public ActionResult<ErrorDto<List<AfCdRemesaResumenDto>>> AfCdRemesasTes_ResumenCerradas(
+            [FromQuery] int codEmpresa)
+            => _bl.AfCdRemesasTes_ResumenCerradas(codEmpresa);
+        
+        [HttpGet("AfCdRemesasTes_DetallePorRemesa")]
+        public ActionResult<ErrorDto<List<AfCdRemesaDetalleDto>>> AfCdRemesasTes_DetallePorRemesa(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int codRemesa)
+            => _bl.AfCdRemesasTes_DetallePorRemesa(codEmpresa, codRemesa);
     }
 }

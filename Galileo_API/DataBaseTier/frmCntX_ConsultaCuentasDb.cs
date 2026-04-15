@@ -7,23 +7,21 @@ namespace Galileo.DataBaseTier
 {
     public class FrmCntXConsultaCuentasDb
     {
-        private readonly IConfiguration _config;
-
+        private readonly PortalDB _portalDB;
         private const string Icon = "pi pi-fw pi-folder";
         private const string ExpandedIcon = "pi pi-fw pi-folder-open";
         private const string CollapsedIcon = "pi pi-fw pi-folder";
 
         public FrmCntXConsultaCuentasDb(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         public List<CtnxCuentasDto> ObtenerCuentas(int codEmpresa, CuentaVarModel cuenta)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
                 if (cuenta.Cuenta == "T") // Tipo de Cuenta
                 {
                     const string sql = @"
@@ -60,11 +58,9 @@ namespace Galileo.DataBaseTier
         
         public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int codEmpresa, CuentaVarModel cuenta)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
                 const string sql = @"
                     SELECT cod_cuenta, cuenta_madre, cod_cuenta_Mask, descripcion, acepta_movimientos
                     FROM CntX_Cuentas
@@ -106,10 +102,9 @@ namespace Galileo.DataBaseTier
 
         public List<DropDownListaGenericaModel> ObtenerDivisas(int codEmpresa, int contabilidad)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
                 const string sql = @"
                     SELECT RTRIM(cod_divisa) AS item, RTRIM(descripcion) AS descripcion
                     FROM CntX_Divisas
@@ -130,10 +125,10 @@ namespace Galileo.DataBaseTier
 
         public List<DropDownListaGenericaModel> ObtenerTiposCuentas(int codEmpresa, int contabilidad)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
                 const string sql = @"
                     SELECT TIPO_CUENTA AS item, Descripcion AS descripcion
                     FROM CntX_Tipos_Cuentas
