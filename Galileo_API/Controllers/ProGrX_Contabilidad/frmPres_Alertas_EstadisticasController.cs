@@ -138,5 +138,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _BL.PresAlertasDashboardJustificacion_Obtener(CodEmpresa, request);
         }
 
+        [Authorize]
+        [HttpPost("PresAlertasControlPeriodo_ActualizarBloqueo")]
+        public ErrorDto PresAlertasControlPeriodo_ActualizarBloqueo(int CodEmpresa, [FromBody] PresAlertasControlPeriodoBloqueoActualizarRequest request)
+        {
+            return _BL.PresAlertasControlPeriodo_ActualizarBloqueo(CodEmpresa, request);
+        }
+
     }
 }

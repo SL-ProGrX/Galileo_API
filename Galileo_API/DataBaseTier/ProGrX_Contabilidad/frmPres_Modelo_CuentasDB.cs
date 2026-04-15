@@ -99,10 +99,10 @@ namespace Galileo.DataBaseTier
 
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo,
-                CodUnidad = codUnidad,
-                CodCentroCosto = codCentroCosto
+                CONTA = codContab,
+                MODELO = codModelo,
+                UNIDAD = codUnidad,
+                CENTRO_COSTO = codCentroCosto
             };
 
             return ExecuteStoredProcList<CuentasCatalogoData>(
@@ -407,8 +407,8 @@ namespace Galileo.DataBaseTier
                         new
                         {
                             Contabilidad = codContab,
-                            Tipo = 0,
-                            Modelo = codModelo
+                            CierreId = 0,
+                            ModeloPresupuesto = codModelo
                         },
                         commandType: CommandType.StoredProcedure)
                     .ToList();
