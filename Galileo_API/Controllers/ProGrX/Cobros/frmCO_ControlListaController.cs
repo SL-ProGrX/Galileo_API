@@ -193,5 +193,43 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         #endregion
+
+        #region Gestiones Modal
+
+        [HttpGet("Co_ControlLista_GestionActual_Obtener")]
+        public ErrorDto<CoControlListaGestionActualResponse> CoControlLista_GestionActual_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            return _bl.CoControlLista_GestionActual_Obtener(CodEmpresa, filtros);
+        }
+
+        [HttpGet("Co_ControlLista_GestionDetalle_Obtener")]
+        public ErrorDto<CoControlListaGestionDetalleResponse> CoControlLista_GestionDetalle_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            return _bl.CoControlLista_GestionDetalle_Obtener(CodEmpresa, filtros);
+        }
+
+        [HttpPost("Co_ControlLista_Gestion_Procesar")]
+        public ErrorDto<bool> CoControlLista_Gestion_Procesar(
+            int CodEmpresa,
+            CoControlListaGestionProcesarRequest request)
+        {
+            return _bl.CoControlLista_Gestion_Procesar(CodEmpresa, request);
+        }
+
+        #endregion
+
+        #region Cartera
+        [HttpGet("Co_ControlLista_ResumenCarteraUsuario_Obtener")]
+        public ErrorDto<CoControlListaResumenCarteraUsuarioResponse> CoControlLista_ResumenCarteraUsuario_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            return _bl.CoControlLista_ResumenCarteraUsuario_Obtener(CodEmpresa, filtros);
+        }
+        #endregion
     }
 }
