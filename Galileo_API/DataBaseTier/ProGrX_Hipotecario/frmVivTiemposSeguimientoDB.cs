@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// <returns></returns>
         public ErrorDto VivTiemposSeguimiento_Guardar(int codEmpresa, VivTiemposSeguimientoData request)
         {
-            const string sql = @"Update dbo.ViviendaTiemposSeguimiento SET TiempoMaximo = @ TMaximo, 
+            const string sql = @"Update dbo.ViviendaTiemposSeguimiento SET TiempoMaximo = @TMaximo, 
                 TiempoAlerta = @TAlerta WHERE Profesional = @Profesional AND Proceso = @Proceso";
 
             return DbHelper.ExecuteNonQuery(
