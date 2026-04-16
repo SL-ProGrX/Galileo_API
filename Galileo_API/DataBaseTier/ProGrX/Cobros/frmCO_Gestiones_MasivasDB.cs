@@ -6,6 +6,7 @@ using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -172,11 +173,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 using var tx = conn.BeginTransaction();
 
-                EjecutarCargaMasiva(conn, tx, usuarioCobro, string.Empty, true);
+                var sb = new StringBuilder();
+                var parameters = new DynamicParameters();
+
+                var i = 0;
+                var linea = 0;
 
                 foreach (var cedula in cedulas)
                 {
-                    EjecutarCargaMasiva(conn, tx, usuarioCobro, cedula, false);
+                    linea++;
+                    var clean = linea == 1 ? 1 : 0;
+
+                    sb.AppendLine($@"
+                    exec spSys_Carga_Masiva
+                        @Tipo{i},
+                        @ProcesoId{i},
+                        @Usuario{i},
+                        @Llave01{i},
+                        @Llave02{i},
+                        @Clean{i};");
+
+                    parameters.Add($"Tipo{i}", TipoCarga);
+                    parameters.Add($"ProcesoId{i}", ProcesoId);
+                    parameters.Add($"Usuario{i}", usuarioCobro);
+                    parameters.Add($"Llave01{i}", cedula);
+                    parameters.Add($"Llave02{i}", string.Empty);
+                    parameters.Add($"Clean{i}", clean);
+
+                    i++;
+
+                    if (sb.Length > 40000)
+                    {
+                        conn.Execute(sb.ToString(), parameters, tx);
+
+                        sb.Clear();
+                        parameters = new DynamicParameters();
+                    }
+                }
+
+                if (sb.Length > 0)
+                {
+                    conn.Execute(sb.ToString(), parameters, tx);
                 }
 
                 var lista = ObtenerRevision(conn, tx, usuarioCobro);
@@ -377,35 +414,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-        }
-        /// <summary>
-        /// Ejecuta el SP estándar de carga masiva al staging temporal.
-        /// </summary>
-        /// <param name="conn"></param>
-        /// <param name="tx"></param>
-        /// <param name="usuarioCobro"></param>
-        /// <param name="cedula"></param>
-        /// <param name="clean"></param>
-        private static void EjecutarCargaMasiva(SqlConnection conn,SqlTransaction tx,string usuarioCobro,string cedula,bool clean)
-        {
-            const string sp = @"
-                exec spSys_Carga_Masiva
-                    @Tipo,
-                    @ProcesoId,
-                    @Usuario,
-                    @Llave01,
-                    @Llave02,
-                    @Clean;";
-
-            conn.Execute(sp, new
-            {
-                Tipo = TipoCarga,
-                ProcesoId,
-                Usuario = usuarioCobro,
-                Llave01 = cedula,
-                Llave02 = string.Empty,
-                Clean = clean ? 1 : 0
-            }, tx);
         }
         /// <summary>
         /// Obtiene la revisión del lote cargado en staging.
