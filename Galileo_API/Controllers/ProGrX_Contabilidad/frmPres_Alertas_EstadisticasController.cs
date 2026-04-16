@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PgxAPI.Models.ProGrX_Contabilidad;
+using Galileo.Models.ProGrX_Contabilidad;
 
 namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {

@@ -4,7 +4,7 @@ using Galileo.DataBaseTier.ProGrX_Contabilidad;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using PgxAPI.Models.ProGrX_Contabilidad;
+using Galileo.Models.ProGrX_Contabilidad;
 
 namespace Galileo.BusinessLogic.ProGrX_Contabilidad
 {

@@ -1,10 +1,10 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using PgxAPI.DataBaseTier.ProGrX.Fondos;
-using PgxAPI.Models.ProGrX.Fondos;
+using Galileo.DataBaseTier.ProGrX.Fondos;
+using Galileo.Models.ProGrX.Fondos;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
-namespace PgxAPI.BusinessLogic.ProGrX.Fondos
+namespace Galileo.BusinessLogic.ProGrX.Fondos
 {
     public class FrmFndLiquidacionPlanBL
     {

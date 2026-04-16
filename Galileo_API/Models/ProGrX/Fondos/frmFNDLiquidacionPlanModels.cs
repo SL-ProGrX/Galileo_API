@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
 
-namespace PgxAPI.Models.ProGrX.Fondos
+namespace Galileo.Models.ProGrX.Fondos
 {
     public static class FndLiquidaPlanConst
     {

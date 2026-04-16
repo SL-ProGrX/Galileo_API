@@ -29,33 +29,26 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             );
         }
 
-        public ErrorDto<List<CajasCreditoPendienteDto>> Cajas_AM_Creditos_Pendientes(
-            int codEmpresa, CajasAMCreditosPendientesRequestDto request)
+        public ErrorDto<List<CajasCreditoPendienteDto>> Cajas_AM_Creditos_Pendientes(int codEmpresa, CajasAMCreditosPendientesRequestDto request)
         {
             return DbFrmCajas_AM.Cajas_AM_Creditos_Pendientes(
                 codEmpresa, request
             );
         }
 
-        public ErrorDto<bool> Cajas_AM_Creditos_Agregar(
-            int codEmpresa,
-            List<CajasAmAgregarRequestDto> items)
+        public ErrorDto<bool> Cajas_AM_Creditos_Agregar(int codEmpresa, List<CajasAmAgregarRequestDto> items)
         {
             return DbFrmCajas_AM.Cajas_AM_Creditos_Agregar(
                 codEmpresa, items
             );
         }
 
-        public ErrorDto<bool> Cajas_AM_Eliminar(
-            int codEmpresa,
-            List<long> ids)
+        public ErrorDto<bool> Cajas_AM_Eliminar(int codEmpresa,List<long> ids)
         {
             return DbFrmCajas_AM.Cajas_AM_Eliminar(codEmpresa, ids);
         }
 
-        public ErrorDto<long> Cajas_AM_Aplicar(
-            int codEmpresa,
-            CajasAmAplicarRequestDto request)
+        public ErrorDto<long> Cajas_AM_Aplicar(int codEmpresa,CajasAmAplicarRequestDto request)
         {
             return DbFrmCajas_AM.Cajas_AM_Aplicar(
                 codEmpresa, request

@@ -13,10 +13,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             _db = new FrmCajasCajaChicaDB(config);
         }
 
-        public ErrorDto<List<CajasCajaChicaServiciosDto>> Cajas_CajaChicaServicios_Buscar(
-               int codEmpresa,
-               string codCaja,
-               string servicioBusqueda)
+        public ErrorDto<List<CajasCajaChicaServiciosDto>> Cajas_CajaChicaServicios_Buscar(int codEmpresa,string codCaja,string servicioBusqueda)
         {
             return _db.Cajas_CajaChicaServicios_Buscar(
                 codEmpresa,
@@ -24,29 +21,21 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
                 servicioBusqueda);
         }
 
-
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDocumentos_Obtener(
-                int codEmpresa,
-                string codCaja)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDocumentos_Obtener(int codEmpresa,string codCaja)
         {
             return _db.Cajas_CajaChicaDocumentos_Obtener(
                 codEmpresa,
                 codCaja);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(
-            int codEmpresa,
-            int codContabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(int codEmpresa,int codContabilidad)
         {
             return _db.Cajas_CajaChicaDivisas_Obtener(
                 codEmpresa,
                 codContabilidad);
         }
 
-        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(
-                int codEmpresa,
-                int codContabilidad,
-                string codDivisa)
+        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(int codEmpresa,int codContabilidad,string codDivisa)
         {
             return _db.Cajas_CajaChicaTipoCambio_Obtener(
                 codEmpresa,
@@ -54,17 +43,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
                 codDivisa);
         }
 
-        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(
-               int codEmpresa,
-               string? filtroNombre)
+        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(int codEmpresa,string? filtroNombre)
         {
             return _db.Cajas_CajaChicaSocios_Buscar(
                 codEmpresa,
                 filtroNombre);
         }
 
-        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(
-                 CajasCajaChicaAplicarDbRequestDto req)
+        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(CajasCajaChicaAplicarDbRequestDto req)
         {
             return _db.Cajas_CajaChicaRetiro_Aplicar(
                 req);

@@ -19,10 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpGet("Cajas_CajaChicaServicios_Buscar")]
-        public ErrorDto<List<CajasCajaChicaServiciosDto>> Cajas_CajaChicaServicios_Buscar(
-              int codEmpresa,
-              string codCaja,
-              string servicioBusqueda)
+        public ErrorDto<List<CajasCajaChicaServiciosDto>> Cajas_CajaChicaServicios_Buscar(int codEmpresa,string codCaja,string servicioBusqueda)
         {
             return _bl.Cajas_CajaChicaServicios_Buscar(
                 codEmpresa,
@@ -31,9 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpGet("Cajas_CajaChicaDocumentos_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDocumentos_Obtener(
-                int codEmpresa,
-                string codCaja)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDocumentos_Obtener(int codEmpresa,string codCaja)
         {
             return _bl.Cajas_CajaChicaDocumentos_Obtener(
                 codEmpresa,
@@ -41,9 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpGet("Cajas_CajaChicaDivisas_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(
-            int codEmpresa,
-            int codContabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(int codEmpresa,int codContabilidad)
         {
             return _bl.Cajas_CajaChicaDivisas_Obtener(
                 codEmpresa,
@@ -51,10 +44,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpGet("Cajas_CajaChicaTipoCambio_Obtener")]
-        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(
-                int codEmpresa,
-                int codContabilidad,
-                string codDivisa)
+        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(int codEmpresa,int codContabilidad,string codDivisa)
         {
             return _bl.Cajas_CajaChicaTipoCambio_Obtener(
                 codEmpresa,
@@ -63,9 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpGet("Cajas_CajaChicaSocios_Buscar")]
-        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(
-               int codEmpresa,
-               string? filtroNombre)
+        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(int codEmpresa,string? filtroNombre)
         {
             return _bl.Cajas_CajaChicaSocios_Buscar(
                 codEmpresa,
@@ -73,8 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [HttpPost("Cajas_CajaChicaRetiro_Aplicar")]
-        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(
-                 CajasCajaChicaAplicarDbRequestDto req)
+        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(CajasCajaChicaAplicarDbRequestDto req)
         {
             return _bl.Cajas_CajaChicaRetiro_Aplicar(
                 req);
