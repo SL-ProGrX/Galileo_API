@@ -117,4 +117,27 @@
         public string Banco { get; set; } = string.Empty;
         public string Comite { get; set; } = string.Empty;
     }
+
+    public class TesTokenDto
+    {
+        public string Id_Token { get; set; } = string.Empty;
+    }
+
+    public class TesTokenConsecDto
+    {
+        public int Consec { get; set; }
+    }
+
+    public class TesTokenInsertDto
+    {
+        public string Id_Token { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+    }
+
+    public class AfCdRemesaDesembolsoParams
+    {
+        public int Remesa { get; set; }
+        public string Token { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+    }
 }

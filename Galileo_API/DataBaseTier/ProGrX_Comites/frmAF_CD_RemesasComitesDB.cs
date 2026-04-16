@@ -518,5 +518,101 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 new { Cod_Remesa = codRemesa }
             );
         }
+
+        /// <summary>
+        /// Obtiene el token activo más reciente.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Token activo.</returns>
+        public ErrorDto<TesTokenDto> TesTokens_ObtenerActivo(int codEmpresa)
+        {
+            var sql = @"
+                SELECT TOP 1 id_token AS Id_Token
+                FROM tes_tokens
+                WHERE estado = 'A'
+                ORDER BY registro_fecha";
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<TesTokenDto>(sql)
+            );
+
+            return new ErrorDto<TesTokenDto>
+            {
+                Result = result.Result,
+                Code = result.Result != null ? 0 : -2,
+                Description = result.Result != null ? "Ok" : "No se encontró token activo."
+            };
+        }
+
+        /// <summary>
+        /// Obtiene el consecutivo para un token basado en la fecha.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="fecha">Fecha base para el token.</param>
+        /// <returns>Consecutivo.</returns>
+        public ErrorDto<TesTokenConsecDto> TesTokens_ObtenerConsec(int codEmpresa, string fecha)
+        {
+            var sql = @"
+                SELECT ISNULL(COUNT(id_token),0) + 1 AS Consec
+                FROM tes_tokens
+                WHERE id_token LIKE (@Fecha + '.%')";
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<TesTokenConsecDto>(sql, new { Fecha = fecha })
+            );
+
+            return new ErrorDto<TesTokenConsecDto>
+            {
+                Result = result.Result,
+                Code = 0,
+                Description = "Ok"
+            };
+        }
+
+        /// <summary>
+        /// Inserta un nuevo token.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="dto">Datos del token.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> TesTokens_Insertar(int codEmpresa, TesTokenInsertDto dto)
+        {
+            var sql = @"
+                INSERT INTO tes_tokens(id_token, registro_fecha, registro_usuario, estado)
+                VALUES(@Id_Token, dbo.MyGetdate(), @Usuario, 'A')";
+
+            DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sql, dto);
+                return true;
+            });
+
+            return new ErrorDto<bool> { Result = true };
+        }
+
+        /// <summary>
+        /// Ejecuta el SP spAFI_CD_Remesa_Desembolso para procesar el desembolso de una remesa.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros del SP (remesa, token, usuario).</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> AfCdRemesasTes_Desembolso(int codEmpresa, AfCdRemesaDesembolsoParams param)
+        {
+            var sql = "spAFI_CD_Remesa_Desembolso";
+            var parameters = new
+            {
+                Remesa = param.Remesa,
+                Token = param.Token,
+                Usuario = param.Usuario
+            };
+
+            DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return new ErrorDto<bool> { Result = true };
+        }
     }
 }
