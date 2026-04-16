@@ -19,8 +19,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly MCntLinkDB mCntLink;
         private readonly string dirRDLC;
         private readonly int vModulo = 9; // Módulo de Tesorería
-        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
         private readonly string vBanco = "Bancos";
+        private const string DocumentoEspecialCk = "archivo_especial_ck";
+        private const string DocumentoChequesFirmas = "archivo_cheques_firmas";
+        private const string DocumentoChequesSinFirmas = "archivo_cheques_sin_firmas";
 
         public FrmTesBancosDB(IConfiguration config)
         {
@@ -784,21 +786,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static ErrorDto Validasiones(IFormFile file, string documento, ref string ext, ref string col)
         {
-             // 0) Validaciones
             if (file == null || file.Length <= 0)
                 return DbHelper.ErrorResponse("No se recibió un archivo válido.");
 
-            ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (ext != ".rdl" && ext != ".rdlc")
+            ext = Path.GetExtension(file.FileName);
+            if (!ExtensionesPermitidas.Contains(ext))
                 return DbHelper.ErrorResponse("Extensión inválida. Solo .rdl/.rdlc.");
 
-            col = (documento ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(col) ||
-                !Regex.IsMatch(col, @"^[A-Za-z0-9_]+$", RegexOptions.None, RegexTimeout))
-                return DbHelper.ErrorResponse("Nombre de columna inválido.");
+            if (documento != DocumentoEspecialCk &&
+                    documento != DocumentoChequesFirmas &&
+                    documento != DocumentoChequesSinFirmas)
+            {
+                return DbHelper.ErrorResponse("Nombre de documento inválido.");
+            }
+
+            col = documento;
 
             return DbHelper.CreateOkResponse();
         }
+
+        private static readonly HashSet<string> ExtensionesPermitidas =
+            new(StringComparer.OrdinalIgnoreCase) { ".rdl", ".rdlc" };
 
 
         // Resuelve qué archivo devolver (SIN exponerlo al cliente)
