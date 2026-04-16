@@ -5,18 +5,17 @@ namespace Galileo.DataBaseTier
 {
     public class MActivosFijos
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
         public MActivosFijos(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         public DateTime fxCntX_PeriodoActual(int CodEmpresa, int contabilidad)
         {
             DateTime result;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            using var connection = new SqlConnection(stringConn);
+           
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var query = $@"select dbo.fxCntX_PeriodoActual(@conta) as 'Periodo'";
             result = connection.Query<DateTime>(query, new { conta = contabilidad }).FirstOrDefault();
             
@@ -25,10 +24,10 @@ namespace Galileo.DataBaseTier
 
         public DateTime fxActivos_FechaUltimoCierre(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+           
             DateTime result;
 
-            using var connection = new SqlConnection(stringConn);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var query = $@"select dbo.fxActivos_UltimoPeriodoCerrado() as 'Fecha'";
             result = connection.Query<DateTime>(query).FirstOrDefault();
 

@@ -90,6 +90,8 @@
     public class CoControlListaUsuarioBusquedaRequest
     {
         public string filtro { get; set; } = string.Empty;
+        public bool solo_activos { get; set; } = false;
+        public string excluir_usuario { get; set; } = string.Empty;
     }
 
     public class CoControlListaUsuarioBusquedaRow: CoControlListaUsuarioScrollResponse
@@ -106,6 +108,13 @@
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaNotificarMarcadosRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string tipo { get; set; } = "R";
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
     }
 
     #endregion
@@ -172,4 +181,122 @@
 
     #endregion
 
+    #region Datos Persona
+
+    public class CoControlListaDatosPersonalesRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaDatosPersonalesResponse
+    {
+        public CoControlListaDatosPersonalesData? datos_personales { get; set; }
+        public List<CoControlListaTelefonoRow>? telefonos { get; set; }
+    }
+
+    public class CoControlListaDatosPersonalesData
+    {
+        public string prov_desc { get; set; } = string.Empty;
+        public string canton_desc { get; set; } = string.Empty;
+        public string dist_desc { get; set; } = string.Empty;
+        public string direccion { get; set; } = string.Empty;
+        public string af_email { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaTelefonoRow
+    {
+        public string numero { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+        public string ext { get; set; } = string.Empty;
+        public string contacto { get; set; } = string.Empty;
+    }
+
+    #endregion
+
+    #region Gestiones
+    public class CoControlListaGestionesRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaGestionesResponse
+    {
+        public List<CoControlListaGestionRow>? gestiones { get; set; }
+        public List<CoControlListaOficialRow>? oficiales { get; set; }
+    }
+
+    public class CoControlListaGestionRow
+    {
+        public int cod_seg { get; set; } = 0;
+        public DateTime? fecha { get; set; }
+        public DateTime? vencimiento { get; set; }
+        public string gestion { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public int tiempo_resolucion { get; set; } = 0;
+        public string arreglo { get; set; } = string.Empty;
+        public DateTime? arreglo_vence { get; set; }
+        public string causa { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaOficialRow
+    {
+        public DateTime? fecha_asignacion { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public bool mantener { get; set; } = false;
+        public bool rebajo_doble { get; set; } = false;
+        public bool aplica_mora { get; set; } = false;
+    }
+
+    public class CoControlListaNotificacionRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string tipo { get; set; } = "R";
+        public string usuario { get; set; } = string.Empty;
+    }
+    #endregion
+
+    #region Fiadores
+
+    public class CoControlListaFiadoresRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public bool solo_operaciones_atrasadas { get; set; } = true;
+    }
+
+    public class CoControlListaFiadorRow
+    {
+        public string estado_mora { get; set; } = string.Empty;
+        public int id_solicitud { get; set; } = 0;
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+        public string inst { get; set; } = string.Empty;
+    }
+
+    #endregion
+
+    #region Traslados
+
+    public class CoControlListaTrasladoCasoRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaAplicarMarcadosRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public int mantener { get; set; } = 0;
+        public int rebajo_doble { get; set; } = 0;
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
+    }
+
+    public class CoControlListaTrasladarMarcadosRequest
+    {
+        public string usuario_destino { get; set; } = string.Empty;
+        public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
+    }
+
+    #endregion
 }
