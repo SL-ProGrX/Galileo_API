@@ -6,11 +6,7 @@ using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 {
-#pragma warning restore S6680 // Deshabilita regla Sonar S6680 (DoS: limita recursos asignados por input del usuario)
-    /// <summary>
-    /// BL de frmCajas_Crd_AbonosStP (migración VB6 -> .NET).
-    /// Capa delgada: delega en DB para acceso a datos y lógica heredada.
-    /// </summary>
+
     public sealed class FrmCajasCrdAbonosStpBL
     {
         private readonly FrmCajasCrdAbonosStpDB _db;

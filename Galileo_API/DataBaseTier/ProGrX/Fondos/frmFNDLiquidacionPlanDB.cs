@@ -4,11 +4,11 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Humanizer;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.ProGrX.Fondos;
+using Galileo.Models.ProGrX.Fondos;
 using System.Data;
 using System.Text;
 
-namespace PgxAPI.DataBaseTier.ProGrX.Fondos
+namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
     public class FrmFndLiquidacionPlanDB
     {

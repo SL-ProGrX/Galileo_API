@@ -6,47 +6,38 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 {
     public class FrmCajasDatosAsociadosBl(FrmCajasDatosAsociadosDb dbfrmCajas_DatosAsociados)
     {
-
         public FrmCajasDatosAsociadosBl(IConfiguration config)
             : this(new FrmCajasDatosAsociadosDb(config))
         { }
 
-        public ErrorDto<List<CajasCreditoDto>> Cajas_Consulta_Creditos(
-    int codEmpresa, string cedula)
+        public ErrorDto<List<CajasCreditoDto>> Cajas_Consulta_Creditos(int codEmpresa, string cedula)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_Creditos(codEmpresa, cedula);
         }
 
-        public ErrorDto<List<CajasFondosDto>> Cajas_Consulta_Fondos(
-            int codEmpresa, string cedula, string usuario)
+        public ErrorDto<List<CajasFondosDto>> Cajas_Consulta_Fondos(int codEmpresa, string cedula, string usuario)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_Fondos(codEmpresa, cedula, usuario);
         }
 
-        public ErrorDto<List<CajasCxcDto>> Cajas_Consulta_CxC(
-            int codEmpresa, string cedula)
+        public ErrorDto<List<CajasCxcDto>> Cajas_Consulta_CxC(int codEmpresa, string cedula)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_CxC(codEmpresa, cedula);
         }
 
-        public ErrorDto<List<CajasServiciosDto>> Cajas_Consulta_Servicios(
-            int codEmpresa, string cedula)
+        public ErrorDto<List<CajasServiciosDto>> Cajas_Consulta_Servicios(int codEmpresa, string cedula)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_Servicios(codEmpresa, cedula);
         }
 
-        public ErrorDto<List<CajasSaldoFavorDto>> Cajas_Consulta_SaldosFavor(
-            int codEmpresa, string cedula, bool liquidados)
+        public ErrorDto<List<CajasSaldoFavorDto>> Cajas_Consulta_SaldosFavor(int codEmpresa, string cedula, bool liquidados)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_SaldosFavor(codEmpresa, cedula, liquidados);
         }
 
-        public ErrorDto<List<CajasReciboMultipleDto>> Cajas_Consulta_RecibosMultiples(
-            int codEmpresa, string cedula)
+        public ErrorDto<List<CajasReciboMultipleDto>> Cajas_Consulta_RecibosMultiples(int codEmpresa, string cedula)
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_RecibosMultiples(codEmpresa, cedula);
         }
-
-
     }
 }

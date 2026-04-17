@@ -1,6 +1,7 @@
-﻿using static Galileo.Models.ProGrX.Cajas.CajasDesglocePagoRequest;
+﻿using Galileo.Models;
+using static Galileo_API.Models.ProGrX.Cajas.CajasDesglocePagoRequest;
 
-namespace Galileo.Models.ProGrX.Cajas
+namespace Galileo_API.Models.ProGrX.Cajas
 {
     public class CajasDisponibleFondosDto
     {
@@ -9,7 +10,7 @@ namespace Galileo.Models.ProGrX.Cajas
         public string? divisa_desc { get; set; }
     }
 
-    public class CajasSaldoFavorDto
+    public class CajasSaldoFavorDetDto
     {
         public string? clienteid { get; set; }
         public int? referencia { get; set; }

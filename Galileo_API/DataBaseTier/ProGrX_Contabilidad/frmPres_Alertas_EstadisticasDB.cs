@@ -5,7 +5,7 @@ using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Polizas;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models.ProGrX_Contabilidad;
+using Galileo.Models.ProGrX_Contabilidad;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Contabilidad
