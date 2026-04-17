@@ -14,42 +14,6 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
         }
 
-        private static string ObtenerCampoOrdenSeguro(string? sortField)
-        {
-            var campo = (sortField ?? string.Empty).Trim().ToUpperInvariant();
-            string[] permitidos =
-            {
-                "ID_ROE",
-                "TIPOROE",
-                "CEDULA_ASO",
-                "IDENTIFICACION_DEPO",
-                "NOMBRE_DEPO",
-                "FECHA",
-                "USUARIO",
-                "MONTO_LOCAL",
-                "MONTO_DOL",
-                "TIPO_CAMBIO",
-                "REGISTRO_FECHA",
-                "REGISTRO_USUARIO",
-                "ACTUALIZA_FECHA",
-                "ACTUALIZA_USUARIO",
-                "USUARIO_ANULACION",
-                "FECHA_ANULACION",
-                "OBSERV_ANULACION",
-                "IMPRIME_FECHA",
-                "IMPRIME_USUARIO",
-                "ID_SESION",
-                "ESTADO"
-            };
-
-            return permitidos.Contains(campo) ? campo : "ID_ROE";
-        }
-
-        private static string ObtenerDireccionOrdenSeguro(int sortOrder)
-        {
-            return sortOrder == 0 ? "DESC" : "ASC";
-        }
-
         private static ErrorDto<CajasRoeAnularLista> CrearRespuestaLista() => new()
         {
             Code = 0,
@@ -91,7 +55,41 @@ namespace Galileo.DataBaseTier
 
         private static string AgregarFiltroSiAplica(string query, bool condicion, string fragmento) => condicion ? string.Concat(query, fragmento) : query;
 
-        private static string ConstruirQuery(FiltrosCajasRoeAnularData filtros, string sortField, string sortDirection)
+        private static string ObtenerOrderBySeguro(FiltrosCajasRoeAnularData filtros)
+        {
+            bool asc = (filtros.sortOrder ?? 0) != 0;
+            string campo = (filtros.sortField ?? string.Empty).Trim().ToUpperInvariant();
+
+            var camposValidos = new Dictionary<string, string>
+            {
+                { "TIPOROE", "TIPOROE" },
+                { "CEDULA_ASO", "CEDULA_ASO" },
+                { "IDENTIFICACION_DEPO", "IDENTIFICACION_DEPO" },
+                { "NOMBRE_DEPO", "NOMBRE_DEPO" },
+                { "FECHA", "FECHA" },
+                { "USUARIO", "USUARIO" },
+                { "MONTO_LOCAL", "MONTO_LOCAL" },
+                { "MONTO_DOL", "MONTO_DOL" },
+                { "TIPO_CAMBIO", "TIPO_CAMBIO" },
+                { "REGISTRO_FECHA", "REGISTRO_FECHA" },
+                { "REGISTRO_USUARIO", "REGISTRO_USUARIO" },
+                { "ACTUALIZA_FECHA", "ACTUALIZA_FECHA" },
+                { "ACTUALIZA_USUARIO", "ACTUALIZA_USUARIO" },
+                { "USUARIO_ANULACION", "USUARIO_ANULACION" },
+                { "FECHA_ANULACION", "FECHA_ANULACION" },
+                { "OBSERV_ANULACION", "OBSERV_ANULACION" },
+                { "IMPRIME_FECHA", "IMPRIME_FECHA" },
+                { "IMPRIME_USUARIO", "IMPRIME_USUARIO" },
+                { "ID_SESION", "ID_SESION" },
+                { "ESTADO", "ESTADO" }
+            };
+
+            string campoOrden = camposValidos.ContainsKey(campo) ? camposValidos[campo] : "ID_ROE";
+            string direccion = asc ? "ASC" : "DESC";
+            return $" order by {campoOrden} {direccion} ";
+        }
+
+        private static string ConstruirQuery(FiltrosCajasRoeAnularData filtros)
         {
             var filtrosQuery = new[]
             {
@@ -107,7 +105,8 @@ namespace Galileo.DataBaseTier
             };
 
             var query = filtrosQuery.Aggregate(QueryBase, (actual, item) => AgregarFiltroSiAplica(actual, item.Item1, item.Item2));
-            return string.Concat(query, $@" order by {sortField} {sortDirection}
+            query = string.Concat(query, ObtenerOrderBySeguro(filtros));
+            return string.Concat(query, @"
                              OFFSET @pagina ROWS
                              FETCH NEXT @paginacion ROWS ONLY");
         }
@@ -131,10 +130,8 @@ namespace Galileo.DataBaseTier
                 var totalQuery = "select COUNT(1) from CAJAS_ROE";
                 result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                var sortField = ObtenerCampoOrdenSeguro(filtros.sortField);
-                var sortDirection = ObtenerDireccionOrdenSeguro(filtros.sortOrder ?? 0);
                 var (pagina, paginacion) = ObtenerPaginacion(filtros);
-                var query = ConstruirQuery(filtros, sortField, sortDirection);
+                var query = ConstruirQuery(filtros);
 
                 result.Result.lista = connection.Query<CajasRoeAnularData>(
                     query,
