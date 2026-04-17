@@ -3,7 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
 using Galileo.Models.Security;
-
+using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier.ProGrX.Cajas
 {
@@ -114,14 +114,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : 10) + " ROWS ONLY ";
                 }
 
-                var qTotal = @"SELECT COUNT(*) 
+                var qTotal = @"SELECT COUNT(*)
                            FROM dbo.CAJAS_SERVICIOS C" + where;
 
                 int total = cn.QueryFirstOrDefault<int>(
                     qTotal,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
+                        cod_recaudador = TextoSeguro(cod_recaudador),
                         like = "%" + filtroTexto + "%"
                     });
 
@@ -129,10 +129,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 var qDatos = @"
                 SELECT
-                      RTRIM(C.cod_servicio)            AS cod_servicio,
-                      RTRIM(C.descripcion)            AS descripcion,
-                      ISNULL(C.activo, 1)             AS activo,
-                      RTRIM(C.cod_recaudador)         AS cod_recaudador
+                      RTRIM(C.cod_servicio)     AS cod_servicio,
+                      RTRIM(C.descripcion)      AS descripcion,
+                      ISNULL(C.activo, 1)       AS activo,
+                      RTRIM(C.cod_recaudador)   AS cod_recaudador
                 FROM dbo.CAJAS_SERVICIOS C
                 " + where + @"
                 ORDER BY C.cod_servicio
@@ -172,7 +172,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                var cod = (cod_servicio ?? string.Empty).Trim();
+                var cod = TextoSeguro(cod_servicio);
 
                 string where = " WHERE C.cod_recaudador = @cod_recaudador ";
 
@@ -388,11 +388,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 int existe = cn.QueryFirstOrDefault<int>(
                     qExiste,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
-                        cod_servicio = TextoSeguro(servicio.cod_servicio)
-                    });
+                    CrearParametrosClaveServicio(servicio.cod_recaudador, servicio.cod_servicio));
 
                 if (servicio.isNew)
                 {
@@ -487,29 +483,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                      @usuario,
                      dbo.MyGetdate());";
 
-                cn.Execute(
-                    qInsert,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
-                        cod_servicio = TextoSeguro(servicio.cod_servicio),
-                        descripcion = TextoSeguro(servicio.descripcion),
-                        activo = servicio.activo,
-                        contrato = TextoSeguro(servicio.contrato),
-                        vence_fecha = servicio.vence_fecha ?? DateTime.Today,
-                        vence_activo = servicio.vence_activo,
-                        cod_cuenta = TextoSeguro(servicio.cod_cuenta),
-                        cod_cuenta_comision = TextoSeguro(servicio.cod_cuenta_comision),
-                        cod_cuenta_iv = TextoSeguro(servicio.cod_cuenta_iv),
-                        cod_concepto = TextoSeguro(servicio.cod_concepto),
-                        intercambio = servicio.intercambio,
-                        cod_unidad = TextoSeguro(servicio.cod_unidad),
-                        cod_centro_costo = TextoSeguro(servicio.cod_centro_costo),
-                        valor_transito_valida = servicio.valor_transito_valida,
-                        genera_factura = servicio.genera_factura,
-                        cabys = TextoSeguro(servicio.cabys),
-                        usuario = usuario ?? string.Empty
-                    });
+                cn.Execute(qInsert, CrearParametrosServicio(servicio, usuario));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -567,29 +541,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 WHERE cod_recaudador     = @cod_recaudador
                   AND cod_servicio       = @cod_servicio;";
 
-                cn.Execute(
-                    qUpdate,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
-                        cod_servicio = TextoSeguro(servicio.cod_servicio),
-                        descripcion = TextoSeguro(servicio.descripcion),
-                        activo = servicio.activo,
-                        contrato = TextoSeguro(servicio.contrato),
-                        vence_fecha = servicio.vence_fecha ?? DateTime.Today,
-                        vence_activo = servicio.vence_activo,
-                        cod_cuenta = TextoSeguro(servicio.cod_cuenta),
-                        cod_cuenta_comision = TextoSeguro(servicio.cod_cuenta_comision),
-                        cod_cuenta_iv = TextoSeguro(servicio.cod_cuenta_iv),
-                        cod_concepto = TextoSeguro(servicio.cod_concepto),
-                        intercambio = servicio.intercambio,
-                        cod_unidad = TextoSeguro(servicio.cod_unidad),
-                        cod_centro_costo = TextoSeguro(servicio.cod_centro_costo),
-                        valor_transito_valida = servicio.valor_transito_valida,
-                        genera_factura = servicio.genera_factura,
-                        cabys = TextoSeguro(servicio.cabys),
-                        usuario = usuario ?? string.Empty
-                    });
+                cn.Execute(qUpdate, CrearParametrosServicio(servicio, usuario));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -1001,8 +953,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 cn.Execute(qDelete, new
                 {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                    cod_servicio = (cod_servicio ?? string.Empty).Trim(),
+                    cod_recaudador = TextoSeguro(cod_recaudador),
+                    cod_servicio = TextoSeguro(cod_servicio),
                     linea
                 });
 
@@ -1181,7 +1133,39 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
-    
+
+        private static object CrearParametrosClaveServicio(string? codRecaudador, string? codServicio)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio)
+            };
+        }
+
+        private static DynamicParameters CrearParametrosServicio(CajasServiciosConceptosData servicio, string? usuario)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("@cod_recaudador", TextoSeguro(servicio.cod_recaudador));
+            parametros.Add("@cod_servicio", TextoSeguro(servicio.cod_servicio));
+            parametros.Add("@descripcion", TextoSeguro(servicio.descripcion));
+            parametros.Add("@activo", servicio.activo);
+            parametros.Add("@contrato", TextoSeguro(servicio.contrato));
+            parametros.Add("@vence_fecha", servicio.vence_fecha ?? DateTime.Today);
+            parametros.Add("@vence_activo", servicio.vence_activo);
+            parametros.Add("@cod_cuenta", TextoSeguro(servicio.cod_cuenta));
+            parametros.Add("@cod_cuenta_comision", TextoSeguro(servicio.cod_cuenta_comision));
+            parametros.Add("@cod_cuenta_iv", TextoSeguro(servicio.cod_cuenta_iv));
+            parametros.Add("@cod_concepto", TextoSeguro(servicio.cod_concepto));
+            parametros.Add("@intercambio", servicio.intercambio);
+            parametros.Add("@cod_unidad", TextoSeguro(servicio.cod_unidad));
+            parametros.Add("@cod_centro_costo", TextoSeguro(servicio.cod_centro_costo));
+            parametros.Add("@valor_transito_valida", servicio.valor_transito_valida);
+            parametros.Add("@genera_factura", servicio.genera_factura);
+            parametros.Add("@cabys", TextoSeguro(servicio.cabys));
+            parametros.Add("@usuario", usuario ?? string.Empty);
+            return parametros;
+        }
 
         private static string TextoSeguro(string? valor)
         {
