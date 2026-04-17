@@ -48,6 +48,81 @@ namespace Galileo.DataBaseTier
             return sortOrder == 0 ? "DESC" : "ASC";
         }
 
+        private static ErrorDto<CajasRoeAnularLista> CrearRespuestaLista()
+        {
+            return new ErrorDto<CajasRoeAnularLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = CrearListaVacia()
+            };
+        }
+
+        private static CajasRoeAnularLista CrearListaVacia()
+        {
+            return new CajasRoeAnularLista
+            {
+                total = 0,
+                lista = new List<CajasRoeAnularData>()
+            };
+        }
+
+        private static object CrearParametrosConsulta(FiltrosCajasRoeAnularData filtros, int pagina, int paginacion)
+        {
+            return new
+            {
+                fecha_inicio = filtros.fecha_desde,
+                fecha_fin = filtros.fecha_hasta,
+                cedula = filtros.IDENTIFICACION_DEPO,
+                nombre = filtros.NOMBRE_DEPO,
+                filtro = filtros.filtro,
+                pagina,
+                paginacion
+            };
+        }
+
+        private static void AsignarError(ErrorDto<CajasRoeAnularLista> result, Exception ex)
+        {
+            result.Code = -1;
+            result.Description = ex.Message;
+            result.Result = CrearListaVacia();
+        }
+
+        private static (int pagina, int paginacion) ObtenerPaginacion(FiltrosCajasRoeAnularData filtros)
+        {
+            return (
+                filtros.pagina.GetValueOrDefault() < 0 ? 0 : filtros.pagina.GetValueOrDefault(),
+                filtros.paginacion.GetValueOrDefault() <= 0 ? 10 : filtros.paginacion.GetValueOrDefault());
+        }
+
+        private const string QueryBase = @"select ID_ROE, TIPOROE, rtrim(CEDULA_ASO) as 'CEDULA_ASO', IDENTIFICACION_DEPO, NOMBRE_DEPO, FECHA, USUARIO, MONTO_LOCAL, MONTO_DOL,TIPO_CAMBIO
+                                , REGISTRO_FECHA, REGISTRO_USUARIO, ACTUALIZA_FECHA, ACTUALIZA_USUARIO, USUARIO_ANULACION, FECHA_ANULACION, OBSERV_ANULACION, IMPRIME_FECHA, IMPRIME_USUARIO
+                                , ISNULL(ID_SESION,'') AS 'ID_SESION', ESTADO
+                                From CAJAS_ROE WHERE ESTADO = 'A'  ";
+
+        private static string AgregarFiltroSiAplica(string query, bool condicion, string fragmento)
+        {
+            return condicion ? query + fragmento : query;
+        }
+
+        private static string ConstruirQuery(FiltrosCajasRoeAnularData filtros, string sortField, string sortDirection)
+        {
+            var query = QueryBase;
+            query = AgregarFiltroSiAplica(query, !filtros.rango_fechas, @" and Fecha between @fecha_inicio and @fecha_fin ");
+            query = AgregarFiltroSiAplica(query, !string.IsNullOrWhiteSpace(filtros.IDENTIFICACION_DEPO), @" and ( Cedula_Aso like '%'+@cedula+'%' or IDENTIFICACION_DEPO like '%'+@cedula+'%' )");
+            query = AgregarFiltroSiAplica(query, !string.IsNullOrWhiteSpace(filtros.NOMBRE_DEPO), @" and NOMBRE_DEPO like '%'+@nombre+'%'");
+            query = AgregarFiltroSiAplica(query, !string.IsNullOrWhiteSpace(filtros.filtro), @" and (
+                            CAST(ID_ROE AS varchar(50)) like '%'+@filtro+'%'
+                            or TIPOROE like '%'+@filtro+'%'
+                            or CEDULA_ASO like '%'+@filtro+'%'
+                            or IDENTIFICACION_DEPO like '%'+@filtro+'%'
+                            or NOMBRE_DEPO like '%'+@filtro+'%') ");
+
+            return query + $@" order by {sortField} {sortDirection}
+                             OFFSET @pagina ROWS
+                             FETCH NEXT @paginacion ROWS ONLY";
+        }
+
         /// <summary>
         /// Consulta los ROE de cajas para anular
         /// </summary>
@@ -56,16 +131,8 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CajasRoeAnularLista> CajasRoeAnular_Obtener(int CodEmpresa, FiltrosCajasRoeAnularData filtros)
         {
-            var result = new ErrorDto<CajasRoeAnularLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CajasRoeAnularLista
-                {
-                    total = 0,
-                    lista = new List<CajasRoeAnularData>()
-                }
-            };
+            var result = CrearRespuestaLista();
+            result.Result ??= CrearListaVacia();
 
             try
             {
@@ -75,62 +142,18 @@ namespace Galileo.DataBaseTier
                 var totalQuery = "select COUNT(1) from CAJAS_ROE";
                 result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                var query = @"select ID_ROE, TIPOROE, rtrim(CEDULA_ASO) as 'CEDULA_ASO', IDENTIFICACION_DEPO, NOMBRE_DEPO, FECHA, USUARIO, MONTO_LOCAL, MONTO_DOL,TIPO_CAMBIO
-                                , REGISTRO_FECHA, REGISTRO_USUARIO, ACTUALIZA_FECHA, ACTUALIZA_USUARIO, USUARIO_ANULACION, FECHA_ANULACION, OBSERV_ANULACION, IMPRIME_FECHA, IMPRIME_USUARIO
-                                , ISNULL(ID_SESION,'') AS 'ID_SESION', ESTADO
-                                From CAJAS_ROE WHERE ESTADO = 'A'  ";
-
                 var sortField = ObtenerCampoOrdenSeguro(filtros.sortField);
                 var sortDirection = ObtenerDireccionOrdenSeguro(filtros.sortOrder ?? 0);
-                var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
-                var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
+                var (pagina, paginacion) = ObtenerPaginacion(filtros);
+                var query = ConstruirQuery(filtros, sortField, sortDirection);
 
-                if (!filtros.rango_fechas)
-                {
-                    query += @" and Fecha between @fecha_inicio and @fecha_fin ";
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtros.IDENTIFICACION_DEPO))
-                {
-                    query += @" and ( Cedula_Aso like '%'+@cedula+'%' or IDENTIFICACION_DEPO like '%'+@cedula+'%' )";
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtros.NOMBRE_DEPO))
-                {
-                    query += @" and NOMBRE_DEPO like '%'+@nombre+'%'";
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    query += @" and (
-                            CAST(ID_ROE AS varchar(50)) like '%'+@filtro+'%'
-                            or TIPOROE like '%'+@filtro+'%'
-                            or CEDULA_ASO like '%'+@filtro+'%'
-                            or IDENTIFICACION_DEPO like '%'+@filtro+'%'
-                            or NOMBRE_DEPO like '%'+@filtro+'%') ";
-                }
-
-                query += $@" order by {sortField} {sortDirection}
-                             OFFSET @pagina ROWS
-                             FETCH NEXT @paginacion ROWS ONLY";
-
-                result.Result.lista = connection.Query<CajasRoeAnularData>(query, new
-                {
-                    fecha_inicio = filtros.fecha_desde,
-                    fecha_fin = filtros.fecha_hasta,
-                    cedula = filtros.IDENTIFICACION_DEPO,
-                    nombre = filtros.NOMBRE_DEPO,
-                    filtro = filtros.filtro,
-                    pagina,
-                    paginacion
-                }).ToList();
+                result.Result.lista = connection.Query<CajasRoeAnularData>(
+                    query,
+                    CrearParametrosConsulta(filtros, pagina, paginacion)).ToList();
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<CajasRoeAnularData>();
+                AsignarError(result, ex);
             }
 
             return result;
