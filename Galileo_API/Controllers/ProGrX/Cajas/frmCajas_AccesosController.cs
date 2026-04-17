@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public FrmCajasAccesosController(IConfiguration config)
             => BL_Cajas_Accesos = new FrmCajasAccesosBl(config);
 
+
         [Authorize]
         [HttpGet("Cajas_Apertura_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposCedulasCajas_Apertura_Obtener_Obtener(int CodEmpresa, string usuario)

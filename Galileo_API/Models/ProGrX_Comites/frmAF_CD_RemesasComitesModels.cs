@@ -118,11 +118,6 @@
         public string Comite { get; set; } = string.Empty;
     }
 
-    public class TesTokenDto
-    {
-        public string Id_Token { get; set; } = string.Empty;
-    }
-
     public class TesTokenConsecDto
     {
         public int Consec { get; set; }

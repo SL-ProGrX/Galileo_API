@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX.Cajas
 {
-#pragma warning restore S6680 // Deshabilita regla Sonar S6680 (DoS: limita recursos asignados por input del usuario)
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]

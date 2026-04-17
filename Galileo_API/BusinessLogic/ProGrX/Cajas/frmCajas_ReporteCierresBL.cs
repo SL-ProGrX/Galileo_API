@@ -1,8 +1,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo_API.DataBaseTier;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
-using Galileo_API.Models;
 using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas
@@ -50,10 +48,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return DbfrmCajas_ReporteCierres.Cajas_Definicion_Lista(codEmpresa);
         }
+
         public ErrorDto<bool> Cajas_Cierre_Forzar(int codEmpresa,string codCaja,int codApertura,string usuario)
         {
             return DbfrmCajas_ReporteCierres.Cajas_Cierre_Forzar(codEmpresa, codCaja, codApertura, usuario);
         }
-
     }
 }

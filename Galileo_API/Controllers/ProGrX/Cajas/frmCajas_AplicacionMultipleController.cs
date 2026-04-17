@@ -4,7 +4,6 @@ using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-
 namespace Galileo_API.Controllers.ProGrX.Cajas
 {
     [Route("api/[controller]")]
