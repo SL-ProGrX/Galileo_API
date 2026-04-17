@@ -556,14 +556,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                         usuario = usuario ?? string.Empty
                     });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
-                    Modulo = vModulo,
-                    Movimiento = "Registra - WEB",
-                    DetalleMovimiento = $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}"
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Registra - WEB",
+                    $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}");
             }
             catch (Exception ex)
             {
@@ -639,14 +636,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                         usuario = usuario ?? string.Empty
                     });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
-                    Modulo = vModulo,
-                    Movimiento = "Modifica - WEB",
-                    DetalleMovimiento = $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}"
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Modifica - WEB",
+                    $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}");
             }
             catch (Exception ex)
             {
@@ -959,14 +953,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     porcentaje_imp_ventas = rango.porcentaje_imp_ventas
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
-                    Modulo = vModulo,
-                    Movimiento = "Registra - WEB",
-                    DetalleMovimiento = $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}"
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Registra - WEB",
+                    $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}");
             }
             catch (Exception ex)
             {
@@ -1019,14 +1010,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     porcentaje_imp_ventas = rango.porcentaje_imp_ventas
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
-                    Modulo = vModulo,
-                    Movimiento = "Modifica - WEB",
-                    DetalleMovimiento = $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}"
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Modifica - WEB",
+                    $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}");
             }
             catch (Exception ex)
             {
@@ -1071,14 +1059,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     linea
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
-                    Modulo = vModulo,
-                    Movimiento = "Elimina - WEB",
-                    DetalleMovimiento = $"Cajas Servicios - Rango comisión Línea: {linea} Serv.: {cod_servicio} Recaudador: {cod_recaudador}"
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Elimina - WEB",
+                    $"Cajas Servicios - Rango comisión Línea: {linea} Serv.: {cod_servicio} Recaudador: {cod_recaudador}");
             }
             catch (Exception ex)
             {
@@ -1207,15 +1192,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                                 usuario = usuario ?? string.Empty
                             });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = CodEmpresa,
-                            Usuario = usuario ?? string.Empty,
-                            Modulo = vModulo,
-                            Movimiento = "Registra - WEB",
-                            DetalleMovimiento =
-                                $"Cajas_Servicios: Asigna caja {cod_caja} al servicio {cod_servicio} del recaudador {cod_recaudador}"
-                        });
+                        RegistrarBitacora(
+                            CodEmpresa,
+                            usuario,
+                            "Registra - WEB",
+                            $"Cajas_Servicios: Asigna caja {cod_caja} al servicio {cod_servicio} del recaudador {cod_recaudador}");
                     }
                     else
                     {
@@ -1241,15 +1222,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                                 cod_caja = (cod_caja ?? string.Empty).Trim()
                             });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = CodEmpresa,
-                            Usuario = usuario ?? string.Empty,
-                            Modulo = vModulo,
-                            Movimiento = "Elimina - WEB",
-                            DetalleMovimiento =
-                                $"Cajas_Servicios: Quita caja {cod_caja} del servicio {cod_servicio} del recaudador {cod_recaudador}"
-                        });
+                        RegistrarBitacora(
+                            CodEmpresa,
+                            usuario,
+                            "Elimina - WEB",
+                            $"Cajas_Servicios: Quita caja {cod_caja} del servicio {cod_servicio} del recaudador {cod_recaudador}");
                     }
                     else
                     {
@@ -1264,6 +1241,19 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
 
             return resp;
+        }
+    
+
+        private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalleMovimiento)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario ?? string.Empty,
+                Modulo = vModulo,
+                Movimiento = movimiento,
+                DetalleMovimiento = detalleMovimiento
+            });
         }
     }
 }
