@@ -478,65 +478,55 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 codCaja) ?? string.Empty;
         }
 
+        private static int TransformarBloqueCifrado(int block, int indiceSecuencia)
+        {
+            int[] ajustes = { 1, -5, 7, -13, -2, 3 };
+            return block + ajustes[indiceSecuencia % ajustes.Length];
+        }
+
         /// <summary>
         /// Cifrar cadena
         /// </summary>
         public static string FxStringCifrado(string input)
         {
-            var vResBuilder = new StringBuilder();
-            var vResX = new StringBuilder();
-            int vSec = 0;
+            var asciiInvertido = new StringBuilder();
+            var cifrado = new StringBuilder();
 
-            foreach (char c in input)
+            foreach (char caracter in input)
             {
-                int ascii = (int)c;
-                vResBuilder.Insert(0, ascii.ToString());
+                asciiInvertido.Insert(0, ((int)caracter).ToString());
             }
 
-            string vRes = vResBuilder.ToString();
+            string textoBase = asciiInvertido.ToString();
 
-            for (int i = 0; i < vRes.Length; i += 3)
+            for (int i = 0, secuencia = 0; i < textoBase.Length; i += 3, secuencia++)
             {
-                int take = Math.Min(3, vRes.Length - i);
-                string slice = vRes.Substring(i, take);
-                int block = int.Parse(slice);
-                int transformed = block;
-
-                switch (vSec)
-                {
-                    case 0: transformed = block + 1; break;
-                    case 1: transformed = block - 5; break;
-                    case 2: transformed = block + 7; break;
-                    case 3: transformed = block - 13; break;
-                    case 4: transformed = block - 2; break;
-                    case 5: transformed = block + 3; break;
-                }
-
-                vResX.Append(transformed);
-                vSec = (vSec + 1) % 6;
+                int longitud = Math.Min(3, textoBase.Length - i);
+                int bloque = int.Parse(textoBase.Substring(i, longitud));
+                cifrado.Append(TransformarBloqueCifrado(bloque, secuencia));
             }
 
-            return FxDepuraCadena(vResX.ToString());
+            return FxDepuraCadena(cifrado.ToString());
         }
 
-        /// <summary>
-        /// Depurar cadena
-        /// </summary>
         private static string FxDepuraCadena(string cadena)
         {
-            var vRes = new StringBuilder();
+            var resultado = new StringBuilder();
 
             for (int i = 0; i < cadena.Length - 1; i++)
             {
-                string sub = cadena.Substring(i, 2);
-
-                if (int.TryParse(sub, out int num) && num > 31 && num != 39 && num != 34)
+                if (!int.TryParse(cadena.Substring(i, 2), out int numero))
                 {
-                    vRes.Insert(0, (char)num);
+                    continue;
+                }
+
+                if (numero > 31 && numero != 39 && numero != 34)
+                {
+                    resultado.Insert(0, (char)numero);
                 }
             }
 
-            return vRes.ToString();
+            return resultado.ToString();
         }
     }
 }
