@@ -3,7 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
 using Galileo.Models.Security;
-
+using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier.ProGrX.Cajas
 {
@@ -12,11 +12,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         private readonly PortalDB _portalDb;
         private readonly int vModulo = 5;
         private readonly MSecurityMainDb _Security_MainDB;
+
         public FrmCajasRecaudadoresDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
             _Security_MainDB = new MSecurityMainDb(config);
         }
+
         /// <summary>
         /// Lista de recaudadores
         /// <param name="CodEmpresa"></param>
@@ -55,8 +57,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : 10) + " ROWS ONLY ";
                 }
 
-                // TOTAL
-                    var qTotal = @"
+                var qTotal = @"
                 SELECT COUNT(*) 
                 FROM dbo.CAJAS_RECAUDADOR R
             " + where;
@@ -70,7 +71,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 resp.Result.total = total;
 
-                // DATOS
                 var qDatos = @"
                 SELECT
                     RTRIM(R.cod_recaudador)   AS cod_recaudador,
@@ -87,14 +87,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 ORDER BY R.cod_recaudador
             " + pagina + " " + paginacion;
 
-                var lista = cn.Query<CajasRecaudadorData>(
+                resp.Result.lista = cn.Query<CajasRecaudadorData>(
                     qDatos,
                     new
                     {
                         like = "%" + filtroTexto + "%"
                     }).ToList();
-
-                resp.Result.lista = lista;
             }
             catch (Exception ex)
             {
@@ -115,7 +113,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="cod_recaudador"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDto<CajasRecaudadorData> Cajas_Recaudadores_Scroll(int CodEmpresa,int cod_contabilidad,int scroll,string? cod_recaudador)
+        public ErrorDto<CajasRecaudadorData> Cajas_Recaudadores_Scroll(int CodEmpresa, int cod_contabilidad, int scroll, string? cod_recaudador)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto<CajasRecaudadorData>
@@ -142,10 +140,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                    ORDER BY cod_recaudador DESC;";
                 }
 
-                var siguiente = cn.QueryFirstOrDefault<string>(q, new
-                {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim()
-                });
+                var siguiente = cn.QueryFirstOrDefault<string>(q, CrearParametroCodigoRecaudador(cod_recaudador));
 
                 if (!string.IsNullOrEmpty(siguiente))
                 {
@@ -172,7 +167,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="cod_recaudador"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<CajasRecaudadorData> Cajas_Recaudadores_Obtener(int CodEmpresa,int cod_contabilidad,string cod_recaudador)
+        public ErrorDto<CajasRecaudadorData> Cajas_Recaudadores_Obtener(int CodEmpresa, int cod_contabilidad, string cod_recaudador)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto<CajasRecaudadorData>
@@ -216,11 +211,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 var data = cn.QueryFirstOrDefault<CajasRecaudadorData>(
                     q,
-                    new
-                    {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        conta = cod_contabilidad
-                    });
+                    CrearParametrosRecaudadorContabilidad(cod_recaudador, cod_contabilidad));
 
                 if (data == null)
                 {
@@ -241,6 +232,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Verifica si el código de recaudador está libre u ocupador.
         /// <param name="CodEmpresa"></param>
@@ -251,6 +243,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "" };
+
             try
             {
                 const string q = @"
@@ -258,10 +251,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             FROM dbo.CAJAS_RECAUDADOR
             WHERE UPPER(cod_recaudador) = @cod;";
 
-                int existe = cn.ExecuteScalar<int>(q, new
-                {
-                    cod = (cod_recaudador ?? string.Empty).Trim().ToUpper()
-                });
+                int existe = cn.ExecuteScalar<int>(q, CrearParametroCodigoRecaudadorMayuscula(cod_recaudador));
 
                 if (existe == 0)
                 {
@@ -301,7 +291,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                // Validaciones básicas
                 if (string.IsNullOrWhiteSpace(recaudador.cod_recaudador))
                 {
                     resp.Code = -2;
@@ -323,10 +312,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 int existe = cn.QueryFirstOrDefault<int>(
                     qExiste,
-                    new
-                    {
-                        cod_recaudador = (recaudador.cod_recaudador ?? string.Empty).Trim()
-                    });
+                    CrearParametroCodigoRecaudador(recaudador.cod_recaudador));
 
                 if (recaudador.isNew)
                 {
@@ -359,6 +345,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Inserta un nuevo recaudador.
         /// <param name="CodEmpresa"></param>
@@ -399,19 +386,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                  dbo.MyGetdate(),
                  @usuario);";
 
-                cn.Execute(
-                    qInsert,
-                    new
-                    {
-                        cod_recaudador = (recaudador.cod_recaudador ?? string.Empty).Trim(),
-                        descripcion = (recaudador.descripcion ?? string.Empty).Trim(),
-                        notas = (recaudador.notas ?? string.Empty).Trim(),
-                        activo = recaudador.activo ? 1 : 0,
-                        cod_cuenta = (recaudador.cod_cuenta ?? string.Empty).Trim(),
-                        cod_cuenta_iv = (recaudador.cod_cuenta_iv ?? string.Empty).Trim(),
-                        cod_cuenta_comision = (recaudador.cod_cuenta_comision ?? string.Empty).Trim(),
-                        usuario = usuario ?? string.Empty
-                    });
+                cn.Execute(qInsert, CrearParametrosRecaudador(recaudador, usuario));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -427,6 +402,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Actualiza un recaudador.
         /// <param name="CodEmpresa"></param>
@@ -455,19 +431,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     cod_cuenta_iv       = @cod_cuenta_iv
                 WHERE cod_recaudador    = @cod_recaudador;";
 
-                cn.Execute(
-                    qUpdate,
-                    new
-                    {
-                        cod_recaudador = (recaudador.cod_recaudador ?? string.Empty).Trim(),
-                        descripcion = (recaudador.descripcion ?? string.Empty).Trim(),
-                        notas = (recaudador.notas ?? string.Empty).Trim(),
-                        activo = recaudador.activo ? 1 : 0,
-                        cod_cuenta = (recaudador.cod_cuenta ?? string.Empty).Trim(),
-                        cod_cuenta_iv = (recaudador.cod_cuenta_iv ?? string.Empty).Trim(),
-                        cod_cuenta_comision = (recaudador.cod_cuenta_comision ?? string.Empty).Trim(),
-                        usuario = usuario ?? string.Empty
-                    });
+                cn.Execute(qUpdate, CrearParametrosRecaudador(recaudador, usuario));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -495,18 +459,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
                 cn.Open();
                 using var tran = cn.BeginTransaction();
+
                 const string qDelete = @"
             DELETE FROM dbo.CAJAS_RECAUDADOR
             WHERE cod_recaudador = @cod_recaudador;";
 
-                cn.Execute(qDelete, new
-                {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim()
-                }, tran);
+                cn.Execute(qDelete, CrearParametroCodigoRecaudador(cod_recaudador), tran);
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -524,13 +487,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Lista todos los contactos de un recaudador.
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_recaudador"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<CajasRecaudadorContactoData>> Cajas_Recaudadores_Contactos_Lista_Obtener(int CodEmpresa,string cod_recaudador)
+        public ErrorDto<List<CajasRecaudadorContactoData>> Cajas_Recaudadores_Contactos_Lista_Obtener(int CodEmpresa, string cod_recaudador)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto<List<CajasRecaudadorContactoData>>
@@ -555,10 +519,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 WHERE cod_recaudador = @cod_recaudador
                 ORDER BY linea;";
 
-                resp.Result = cn.Query<CajasRecaudadorContactoData>(q, new
-                {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim()
-                }).AsList();
+                resp.Result = cn.Query<CajasRecaudadorContactoData>(
+                    q,
+                    CrearParametroCodigoRecaudador(cod_recaudador)).AsList();
             }
             catch (Exception ex)
             {
@@ -569,6 +532,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Guarda (insert/update) un contacto del recaudador.
         /// <param name="CodEmpresa"></param>
@@ -576,13 +540,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="contacto"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto Cajas_Recaudadores_Contactos_Guardar( int CodEmpresa,string usuario,CajasRecaudadorContactoData contacto)
+        public ErrorDto Cajas_Recaudadores_Contactos_Guardar(int CodEmpresa, string usuario, CajasRecaudadorContactoData contacto)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
-                // Validaciones básicas
                 if (string.IsNullOrWhiteSpace(contacto.cod_recaudador))
                 {
                     resp.Code = -2;
@@ -599,11 +563,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 int existe = 0;
                 if (contacto.linea > 0)
                 {
-                    existe = cn.ExecuteScalar<int>(qExiste, new
-                    {
-                        cod_recaudador = contacto.cod_recaudador.Trim(),
-                        linea = contacto.linea
-                    });
+                    existe = cn.ExecuteScalar<int>(qExiste, CrearParametrosContactoClave(contacto.cod_recaudador, contacto.linea));
                 }
 
                 if (contacto.isNew || contacto.linea == 0 || existe == 0)
@@ -623,6 +583,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Inserta un nuevo contacto del recaudador.
         /// <param name="CodEmpresa"></param>
@@ -630,10 +591,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="contacto"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDto Cajas_Recaudadores_Contactos_Insertar(int CodEmpresa,string usuario,CajasRecaudadorContactoData contacto)
+        private ErrorDto Cajas_Recaudadores_Contactos_Insertar(int CodEmpresa, string usuario, CajasRecaudadorContactoData contacto)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
                 const string qNextLinea = @"
@@ -641,10 +603,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 FROM dbo.CAJAS_RECAUDADOR_CONTACTOS
                 WHERE cod_recaudador = @cod_recaudador;";
 
-                contacto.linea = cn.ExecuteScalar<int>(qNextLinea, new
-                {
-                    cod_recaudador = contacto.cod_recaudador.Trim()
-                });
+                contacto.linea = cn.ExecuteScalar<int>(qNextLinea, CrearParametroCodigoRecaudador(contacto.cod_recaudador));
 
                 const string qInsert = @"
                 INSERT INTO dbo.CAJAS_RECAUDADOR_CONTACTOS
@@ -654,17 +613,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     (@cod_recaudador, @linea, @identificacion, @nombre,
                      @tel_trabajo, @tel_celular, @email);";
 
-                cn.Execute(qInsert, new
-                {
-                    cod_recaudador = contacto.cod_recaudador.Trim(),
-                    linea = contacto.linea,
-                    identificacion = contacto.identificacion?.Trim() ?? string.Empty,
-                    nombre = contacto.nombre?.Trim() ?? string.Empty,
-                    tel_trabajo = contacto.tel_trabajo?.Trim() ?? string.Empty,
-                    tel_celular = contacto.tel_celular?.Trim() ?? string.Empty,
-                    email = contacto.email?.Trim() ?? string.Empty,
-                    usuario = usuario ?? string.Empty
-                });
+                cn.Execute(qInsert, CrearParametrosContacto(contacto));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -680,6 +629,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Actualiza un contacto del recaudador existente.
         /// <param name="CodEmpresa"></param>
@@ -687,10 +637,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="contacto"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDto Cajas_Recaudadores_Contactos_Actualizar(int CodEmpresa,string usuario,CajasRecaudadorContactoData contacto)
+        private ErrorDto Cajas_Recaudadores_Contactos_Actualizar(int CodEmpresa, string usuario, CajasRecaudadorContactoData contacto)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
                 const string qUpdate = @"
@@ -703,17 +654,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             WHERE cod_recaudador = @cod_recaudador
               AND linea          = @linea;";
 
-                cn.Execute(qUpdate, new
-                {
-                    cod_recaudador = contacto.cod_recaudador.Trim(),
-                    linea = contacto.linea,
-                    identificacion = contacto.identificacion?.Trim() ?? string.Empty,
-                    nombre = contacto.nombre?.Trim() ?? string.Empty,
-                    tel_trabajo = contacto.tel_trabajo?.Trim() ?? string.Empty,
-                    tel_celular = contacto.tel_celular?.Trim() ?? string.Empty,
-                    email = contacto.email?.Trim() ?? string.Empty,
-                    usuario = usuario ?? string.Empty
-                });
+                cn.Execute(qUpdate, CrearParametrosContacto(contacto));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -729,6 +670,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Elimina un contacto del recaudador.
         /// <param name="CodEmpresa"></param>
@@ -737,10 +679,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="linea"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto Cajas_Recaudadores_Contactos_Eliminar(int CodEmpresa,string usuario,string cod_recaudador,int linea)
+        public ErrorDto Cajas_Recaudadores_Contactos_Eliminar(int CodEmpresa, string usuario, string cod_recaudador, int linea)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
                 const string qDelete = @"
@@ -748,11 +691,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             WHERE cod_recaudador = @cod_recaudador
               AND linea          = @linea;";
 
-                cn.Execute(qDelete, new
-                {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                    linea
-                });
+                cn.Execute(qDelete, CrearParametrosContactoClave(cod_recaudador, linea));
 
                 RegistrarBitacora(
                     CodEmpresa,
@@ -768,13 +707,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Lista los servicios del recaudador.
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_recaudador"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<CajasRecaudadorServicioItem>> Cajas_Recaudadores_Servicios_Lista_Obtener(int CodEmpresa,string cod_recaudador)
+        public ErrorDto<List<CajasRecaudadorServicioItem>> Cajas_Recaudadores_Servicios_Lista_Obtener(int CodEmpresa, string cod_recaudador)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto<List<CajasRecaudadorServicioItem>>
@@ -795,10 +735,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     WHERE S.cod_recaudador = @cod_recaudador
                     ORDER BY S.cod_servicio;";
 
-                resp.Result = cn.Query<CajasRecaudadorServicioItem>(q, new
-                {
-                    cod_recaudador = (cod_recaudador ?? string.Empty).Trim()
-                }).AsList();
+                resp.Result = cn.Query<CajasRecaudadorServicioItem>(
+                    q,
+                    CrearParametroCodigoRecaudador(cod_recaudador)).AsList();
             }
             catch (Exception ex)
             {
@@ -809,6 +748,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Lista de cajas con indicador de si están vinculadas al servicio del recaudador.
         /// <param name="CodEmpresa"></param>
@@ -816,7 +756,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="cod_servicio"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<CajasServiciosCajasVinculadasData>> Cajas_Recaudadores_Servicios_CajasVinculadas_Lista_Obtener(int CodEmpresa,string cod_recaudador,string cod_servicio)
+        public ErrorDto<List<CajasServiciosCajasVinculadasData>> Cajas_Recaudadores_Servicios_CajasVinculadas_Lista_Obtener(int CodEmpresa, string cod_recaudador, string cod_servicio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto<List<CajasServiciosCajasVinculadasData>>
@@ -842,15 +782,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND X.cod_servicio   = @cod_servicio
             ORDER BY C.DESCRIPCION;";
 
-                var listaTmp = cn.Query<CajasServiciosCajasVinculadasData>(
+                resp.Result = cn.Query<CajasServiciosCajasVinculadasData>(
                     q,
-                    new
-                    {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (cod_servicio ?? string.Empty).Trim()
-                    });
-
-                resp.Result = listaTmp.ToList();
+                    CrearParametrosServicioAsignado(cod_recaudador, cod_servicio)).ToList();
             }
             catch (Exception ex)
             {
@@ -861,6 +795,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Guarda la asignación de una caja a un servicio de un recaudador
         /// <param name="CodEmpresa"></param>
@@ -872,7 +807,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// </param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto Cajas_Recaudadores_Servicios_CajasVinculadas_Guardar(int CodEmpresa,string usuario,string cod_recaudador,string cod_servicio,string cod_caja,short asignada)
+        public ErrorDto Cajas_Recaudadores_Servicios_CajasVinculadas_Guardar(int CodEmpresa, string usuario, string cod_recaudador, string cod_servicio, string cod_caja, short asignada)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
             var resp = new ErrorDto
@@ -892,16 +827,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 int existe = cn.ExecuteScalar<int>(
                     qExiste,
-                    new
-                    {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                        cod_caja = (cod_caja ?? string.Empty).Trim()
-                    });
+                    CrearParametrosServicioCaja(cod_recaudador, cod_servicio, cod_caja));
 
                 if (asignada == 1)
                 {
-                    //insertar si no existe
                     if (existe == 0)
                     {
                         const string qInsert = @"
@@ -912,13 +841,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                         cn.Execute(
                             qInsert,
-                            new
-                            {
-                                cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                                cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                                cod_caja = (cod_caja ?? string.Empty).Trim(),
-                                usuario = usuario ?? string.Empty
-                            });
+                            CrearParametrosServicioCajaConUsuario(cod_recaudador, cod_servicio, cod_caja, usuario));
 
                         RegistrarBitacora(
                             CodEmpresa,
@@ -933,7 +856,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 }
                 else
                 {
-                    // borrar si existe
                     if (existe > 0)
                     {
                         const string qDelete = @"
@@ -944,12 +866,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                         cn.Execute(
                             qDelete,
-                            new
-                            {
-                                cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                                cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                                cod_caja = (cod_caja ?? string.Empty).Trim()
-                            });
+                            CrearParametrosServicioCaja(cod_recaudador, cod_servicio, cod_caja));
 
                         RegistrarBitacora(
                             CodEmpresa,
@@ -970,6 +887,96 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
 
             return resp;
+        }
+
+        private static string TextoSeguro(string? valor)
+        {
+            return (valor ?? string.Empty).Trim();
+        }
+
+        private static object CrearParametroCodigoRecaudador(string? codRecaudador)
+        {
+            return new { cod_recaudador = TextoSeguro(codRecaudador) };
+        }
+
+        private static object CrearParametroCodigoRecaudadorMayuscula(string? codRecaudador)
+        {
+            return new { cod = TextoSeguro(codRecaudador).ToUpperInvariant() };
+        }
+
+        private static object CrearParametrosRecaudadorContabilidad(string? codRecaudador, int codContabilidad)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                conta = codContabilidad
+            };
+        }
+
+        private static DynamicParameters CrearParametrosRecaudador(CajasRecaudadorData recaudador, string? usuario)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("@cod_recaudador", TextoSeguro(recaudador.cod_recaudador));
+            parametros.Add("@descripcion", TextoSeguro(recaudador.descripcion));
+            parametros.Add("@notas", TextoSeguro(recaudador.notas));
+            parametros.Add("@activo", recaudador.activo ? 1 : 0);
+            parametros.Add("@cod_cuenta", TextoSeguro(recaudador.cod_cuenta));
+            parametros.Add("@cod_cuenta_iv", TextoSeguro(recaudador.cod_cuenta_iv));
+            parametros.Add("@cod_cuenta_comision", TextoSeguro(recaudador.cod_cuenta_comision));
+            parametros.Add("@usuario", usuario ?? string.Empty);
+            return parametros;
+        }
+
+        private static object CrearParametrosContactoClave(string? codRecaudador, int linea)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                linea
+            };
+        }
+
+        private static DynamicParameters CrearParametrosContacto(CajasRecaudadorContactoData contacto)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("@cod_recaudador", TextoSeguro(contacto.cod_recaudador));
+            parametros.Add("@linea", contacto.linea);
+            parametros.Add("@identificacion", TextoSeguro(contacto.identificacion));
+            parametros.Add("@nombre", TextoSeguro(contacto.nombre));
+            parametros.Add("@tel_trabajo", TextoSeguro(contacto.tel_trabajo));
+            parametros.Add("@tel_celular", TextoSeguro(contacto.tel_celular));
+            parametros.Add("@email", TextoSeguro(contacto.email));
+            return parametros;
+        }
+
+        private static object CrearParametrosServicioAsignado(string? codRecaudador, string? codServicio)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio)
+            };
+        }
+
+        private static object CrearParametrosServicioCaja(string? codRecaudador, string? codServicio, string? codCaja)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio),
+                cod_caja = TextoSeguro(codCaja)
+            };
+        }
+
+        private static object CrearParametrosServicioCajaConUsuario(string? codRecaudador, string? codServicio, string? codCaja, string? usuario)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio),
+                cod_caja = TextoSeguro(codCaja),
+                usuario = usuario ?? string.Empty
+            };
         }
 
         private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalleMovimiento)
