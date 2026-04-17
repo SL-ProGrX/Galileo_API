@@ -3,6 +3,7 @@ using Galileo_API.Models.ProGrX_Comites;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using Galileo.Models.TES;
 
 namespace Galileo_API.Controllers.ProGrX_Comites
 {
