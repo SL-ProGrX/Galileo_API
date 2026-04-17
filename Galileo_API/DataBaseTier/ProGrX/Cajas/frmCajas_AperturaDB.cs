@@ -260,34 +260,40 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static ErrorDto ValidarConfiguracionCaja(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            var formasPagoConfiguradas = connection.QuerySingle<int>(
+            var validacion = ValidarConteoConfiguracionCaja(
+                connection,
+                transaction,
+                codCaja,
                 "SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;",
-                CrearParametrosCaja(codCaja),
-                transaction: transaction);
+                "Aun no se definen formas de pago para esta caja...");
 
-            if (formasPagoConfiguradas == 0)
+            if (validacion.Code != 0)
             {
-                return DbHelper.ErrorResponse("Aun no se definen formas de pago para esta caja...", -2);
+                return validacion;
             }
 
-            var documentosConfigurados = connection.QuerySingle<int>(
+            validacion = ValidarConteoConfiguracionCaja(
+                connection,
+                transaction,
+                codCaja,
                 "SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;",
-                CrearParametrosCaja(codCaja),
-                transaction: transaction);
+                "Aun no se definen documentos para esta caja...");
 
-            if (documentosConfigurados == 0)
+            if (validacion.Code != 0)
             {
-                return DbHelper.ErrorResponse("Aun no se definen documentos para esta caja...", -2);
+                return validacion;
             }
 
-            var serviciosConfigurados = connection.QuerySingle<int>(
+            validacion = ValidarConteoConfiguracionCaja(
+                connection,
+                transaction,
+                codCaja,
                 "SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;",
-                CrearParametrosCaja(codCaja),
-                transaction: transaction);
+                "Aun no se definen servicios para esta caja...");
 
-            if (serviciosConfigurados == 0)
+            if (validacion.Code != 0)
             {
-                return DbHelper.ErrorResponse("Aun no se definen servicios para esta caja...", -2);
+                return validacion;
             }
 
             var aperturasAbiertas = connection.QuerySingle<int>(
@@ -298,10 +304,80 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             if (aperturasAbiertas > 0)
             {
-                return DbHelper.ErrorResponse("La caja se encuentra abierta", -2);
+                return DbHelper.ErrorResponse("La caja se encuentra abierta", CodigoErrorValidacion);
             }
 
             return DbHelper.CreateOkResponse();
+        }
+
+        private static ErrorDto ValidarConteoConfiguracionCaja(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string codCaja,
+            string query,
+            string mensajeError)
+        {
+            var cantidad = connection.QuerySingle<int>(
+                query,
+                CrearParametrosCaja(codCaja),
+                transaction: transaction);
+
+            return cantidad == 0
+                ? DbHelper.ErrorResponse(mensajeError, CodigoErrorValidacion)
+                : DbHelper.CreateOkResponse();
+        }
+
+        private static void EjecutarInsertDetalleApertura(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string? codCaja,
+            int nuevaApertura,
+            CajasDivisaDto row)
+        {
+            const string insertDetalle = @"
+                    INSERT INTO cajas_aperturas_cierres
+                        (cod_apertura, cod_caja, si_efectivo, si_documentos, cod_divisa)
+                    VALUES
+                        (@CodApertura, @CodCaja, @Efectivo, @Documentos, @CodDivisa);";
+
+            connection.Execute(insertDetalle, new
+            {
+                CodApertura = nuevaApertura,
+                CodCaja = codCaja,
+                Efectivo = row.efectivo,
+                Documentos = row.documentos,
+                CodDivisa = row.cod_divisa.Trim()
+            }, transaction: transaction);
+        }
+
+        private static void EjecutarResolucionAprovisionamiento(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string? codCaja,
+            string? usuario,
+            int nuevaApertura,
+            CajasAperturaTeConsultaData traslado)
+        {
+            const string sp = @"
+                    EXEC spCajas_TE_Resolucion
+                        @TrasladoId,
+                        @Accion,
+                        @CodCaja,
+                        @UsuarioCaja,
+                        @CodApertura,
+                        @UsuarioLogin,
+                        @Flag;";
+
+            connection.Execute(sp, new
+            {
+                TrasladoId = traslado.traslado_id,
+                Accion = "A",
+                CodCaja = codCaja,
+                UsuarioCaja = usuario,
+                CodApertura = nuevaApertura,
+                UsuarioLogin = usuario,
+                Flag = 1
+            }, transaction: transaction);
         }
 
 
@@ -380,12 +456,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 return;
             }
 
-            const string insertDetalle = @"
-                    INSERT INTO cajas_aperturas_cierres
-                        (cod_apertura, cod_caja, si_efectivo, si_documentos, cod_divisa)
-                    VALUES
-                        (@CodApertura, @CodCaja, @Efectivo, @Documentos, @CodDivisa);";
-
             foreach (var row in req.saldosIniciales)
             {
                 if (row == null || string.IsNullOrWhiteSpace(row.cod_divisa))
@@ -393,14 +463,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     continue;
                 }
 
-                connection.Execute(insertDetalle, new
-                {
-                    CodApertura = nuevaApertura,
-                    CodCaja = req.codCaja,
-                    Efectivo = row.efectivo,
-                    Documentos = row.documentos,
-                    CodDivisa = row.cod_divisa.Trim()
-                }, transaction: transaction);
+                EjecutarInsertDetalleApertura(connection, transaction, req.codCaja, nuevaApertura, row);
             }
         }
 
@@ -415,28 +478,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 return;
             }
 
-            const string sp = @"
-                    EXEC spCajas_TE_Resolucion
-                        @TrasladoId,
-                        @Accion,
-                        @CodCaja,
-                        @UsuarioCaja,
-                        @CodApertura,
-                        @UsuarioLogin,
-                        @Flag;";
-
             foreach (var trasladoId in req.trasladosAprovisionamientos)
             {
-                connection.Execute(sp, new
-                {
-                    TrasladoId = trasladoId.traslado_id,
-                    Accion = "A",
-                    CodCaja = req.codCaja,
-                    UsuarioCaja = req.usuario,
-                    CodApertura = nuevaApertura,
-                    UsuarioLogin = req.usuario,
-                    Flag = 1
-                }, transaction: transaction);
+                EjecutarResolucionAprovisionamiento(connection, transaction, req.codCaja, req.usuario, nuevaApertura, trasladoId);
             }
         }
 
