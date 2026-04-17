@@ -3,7 +3,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
 using Galileo.Models.Security;
-using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier
 {
@@ -18,6 +17,22 @@ namespace Galileo.DataBaseTier
         {
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
             _Security_MainDB = new MSecurityMainDb(config);
+        }
+
+        private static string ObtenerCampoOrdenSeguro(string? sortField)
+        {
+            return (sortField ?? string.Empty).Trim().ToUpperInvariant() switch
+            {
+                "DOC_TIPO" => "DOC_TIPO",
+                "DESCRIPCION" => "DESCRIPCION",
+                "ACTIVO" => "ACTIVO",
+                _ => "DOC_TIPO"
+            };
+        }
+
+        private static string ObtenerDireccionOrdenSeguro(int sortOrder)
+        {
+            return sortOrder == 0 ? "DESC" : "ASC";
         }
 
 
@@ -48,24 +63,27 @@ namespace Galileo.DataBaseTier
                 var totalQuery = "select COUNT(1) from CAJAS_SALDOS_FAVOR_TIPOS";
                 result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? "DOC_TIPO"
-                    : filtros.sortField;
-
                 var query = @"select DOC_TIPO,descripcion,Activo from CAJAS_SALDOS_FAVOR_TIPOS ";
+
+                var sortField = ObtenerCampoOrdenSeguro(filtros.sortField);
+                var sortDirection = ObtenerDireccionOrdenSeguro(filtros.sortOrder);
+                var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
+                var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
 
                 if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 {
                     query += @" WHERE ( DOC_TIPO LIKE '%'+@filtro+'%' OR descripcion LIKE '%'+@filtro+'%' ) ";
                 }
 
-                query += $@" order by {sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                query += $@" order by {sortField} {sortDirection}
+                                         OFFSET @pagina ROWS 
+                                         FETCH NEXT @paginacion ROWS ONLY";
 
                 result.Result.lista = connection.Query<CajasSaldosFavorTiposData>(query, new
                 {
-                    filtro = filtros.filtro
+                    filtro = filtros.filtro,
+                    pagina,
+                    paginacion
                 }).ToList();
             }
             catch (Exception ex)
