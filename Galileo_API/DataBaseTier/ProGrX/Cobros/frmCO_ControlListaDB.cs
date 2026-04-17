@@ -101,10 +101,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             int codEmpresa,
             CoControlListaUsuarioScrollRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            if (request == null)
             {
                 return DbHelper.CreateErrorResponse<CoControlListaUsuarioScrollResponse>(
-                    vUserValida);
+                    "La solicitud es requerida.");
             }
 
             try
@@ -112,29 +112,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
                 var direccion = (request.direccion ?? string.Empty).Trim().ToUpperInvariant();
+                var usuario = request.usuario?.Trim() ?? string.Empty;
                 var sql = string.Empty;
 
                 if (direccion == "SIGUIENTE")
                 {
-                    sql = """
-                SELECT TOP 1
-                    RTRIM(usuario) AS usuario
-                FROM cbr_usuarios
-                WHERE estado = 1
-                  AND usuario > @usuario
-                ORDER BY usuario ASC
-                """;
+                    sql = string.IsNullOrWhiteSpace(usuario)
+                        ? """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                              ORDER BY usuario ASC
+                              """
+                                            : """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                                AND usuario > @usuario
+                              ORDER BY usuario ASC
+                              """;
                 }
                 else if (direccion == "ANTERIOR")
                 {
-                    sql = """
-                SELECT TOP 1
-                    RTRIM(usuario) AS usuario
-                FROM cbr_usuarios
-                WHERE estado = 1
-                  AND usuario < @usuario
-                ORDER BY usuario DESC
-                """;
+                    sql = string.IsNullOrWhiteSpace(usuario)
+                        ? """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                              ORDER BY usuario DESC
+                              """
+                                            : """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                                AND usuario < @usuario
+                              ORDER BY usuario DESC
+                              """;
                 }
                 else
                 {
@@ -144,8 +161,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var result = conn.QueryFirstOrDefault<CoControlListaUsuarioScrollResponse>(
                     sql,
-                    new { usuario = request.usuario.Trim() })
+                    new { usuario })
                     ?? new CoControlListaUsuarioScrollResponse();
+
+                if(String.IsNullOrEmpty(result.usuario))
+                {
+                    return DbHelper.CreateErrorResponse<CoControlListaUsuarioScrollResponse>("No se encontró más usuarios.", -2);
+                }
 
                 return DbHelper.CreateOkResponse(result);
             }
@@ -245,6 +267,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_clasificacion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_CLASIFICACION_CARTERA
+            WHERE Estado = 1
             ORDER BY descripcion
             """;
 
@@ -266,6 +289,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_oficina)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM SIF_OFICINAS
+            WHERE Estado = 1
             ORDER BY descripcion
             """;
 
@@ -287,6 +311,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_institucion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM INSTITUCIONES
+            WHERE Activa = 1
             ORDER BY descripcion
             """;
 
@@ -309,6 +334,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_gestion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_GESTIONES
+            WHERE estado = 1
+              AND nivel_gestion = 'U'
             ORDER BY descripcion
             """;
 
@@ -330,6 +357,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_causa)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_CAUSAS_MOROSIDAD
+            WHERE Activa = 1
             ORDER BY descripcion
             """;
 
@@ -351,6 +379,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_arreglo)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_TIPOS_ARREGLOS
+            WHERE Activo = 1
             ORDER BY descripcion
             """;
 
@@ -416,11 +445,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var total = 0;
 
-  
+
                 var casos = request.casos
-                            .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                            .Select(x => x.cedula.Trim())
-                            .ToList();
+                    .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .Distinct()
+                    .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -893,9 +923,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             """;
 
                 var casos = request.casos
-                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                    .Select(x => x.cedula.Trim())
-                    .ToList();
+                         .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                         .Select(x => x.cedula.Trim())
+                         .Distinct()
+                         .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -953,9 +984,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
 
                 var casos = request.casos
-                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                    .Select(x => x.cedula.Trim())
-                    .ToList();
+                        .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                        .Select(x => x.cedula.Trim())
+                        .Distinct()
+                        .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -1483,6 +1515,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     totales = totales
                 };
             });
+        }
+
+/// <summary>
+/// Procesa la carga del análisis de cartera de cobros por usuario.
+/// </summary>
+/// <param name="codEmpresa">Código de empresa.</param>
+/// <returns>Mensaje del proceso.</returns>
+public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
+    int codEmpresa)
+        {
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                conn.Execute(
+                    "spCbrGestionAnalisis",
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(new CoControlListaAnalisisCarteraProcesarResponse
+                {
+                    mensaje = "Proceso concluido con éxito. La información puede ser utilizada desde la base de datos de análisis: CobroCarteraUsuarios."
+                });
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaAnalisisCarteraProcesarResponse>(ex.Message);
+            }
         }
 
         #endregion

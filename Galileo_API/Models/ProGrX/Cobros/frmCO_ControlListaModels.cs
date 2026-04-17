@@ -409,13 +409,13 @@
         public string garantia { get; set; } = string.Empty;
         public decimal saldo { get; set; } = 0;
         public int operaciones { get; set; } = 0;
-        public decimal int_corrientes { get; set; } = 0;
-        public decimal int_moratorios { get; set; } = 0;
-        public decimal cargos { get; set; } = 0;
-        public decimal mora_principal { get; set; } = 0;
-        public int cuotas { get; set; } = 0;
-        public string cta_antigua { get; set; } = string.Empty;
-        public string cta_ultima { get; set; } = string.Empty;
+        public decimal morIntCor { get; set; } = 0;
+        public decimal morIntMor { get; set; } = 0;
+        public decimal morCargos { get; set; } = 0;
+        public decimal morPrincipal { get; set; } = 0;
+        public int morCuotas { get; set; } = 0;
+        public string morCtaAntigua { get; set; } = string.Empty;
+        public string morCtaUltima { get; set; } = string.Empty;
     }
 
     public class CoControlListaResumenCarteraUsuarioResponse
@@ -423,6 +423,11 @@
         public List<CoControlListaResumenCarteraAlDiaRow> lista_al_dia_cobro_jud { get; set; } = new();
         public List<CoControlListaResumenCarteraMoraRow> lista_mora { get; set; } = new();
         public CoControlListaResumenCarteraTotalesResponse totales { get; set; } = new();
+    }
+
+    public class CoControlListaAnalisisCarteraProcesarResponse
+    {
+        public string mensaje { get; set; } = string.Empty;
     }
 
     #endregion
