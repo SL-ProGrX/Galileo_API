@@ -2,8 +2,8 @@
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic.ProGrX.Fondos;
-using PgxAPI.Models.ProGrX.Fondos;
+using Galileo.BusinessLogic.ProGrX.Fondos;
+using Galileo.Models.ProGrX.Fondos;
 
 
 namespace Galileo_API.Controllers.ProGrX.Fondos

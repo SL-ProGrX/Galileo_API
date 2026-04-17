@@ -1,9 +1,7 @@
-﻿using Galileo.DataBaseTier;
-using Galileo.Models;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
 using Galileo_API.Models.ProGrX.Cajas;
-using Galileo_API.Models.ProGrX.Cobros;
 using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas

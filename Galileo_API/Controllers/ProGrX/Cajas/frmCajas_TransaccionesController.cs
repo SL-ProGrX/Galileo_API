@@ -116,5 +116,4 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.CajasReciboDigital(codEmpresa, param);
         }
     }
-
 }
