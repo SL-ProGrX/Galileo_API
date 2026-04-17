@@ -230,8 +230,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         #region Cartera
 
         public ErrorDto<CoControlListaResumenCarteraUsuarioResponse> CoControlLista_ResumenCarteraUsuario_Obtener(
-    int codEmpresa,
-    string filtros)
+                int codEmpresa,
+                string filtros)
         {
             var request = JsonConvert.DeserializeObject<CoControlListaResumenCarteraUsuarioRequest>(filtros)
                     ?? new CoControlListaResumenCarteraUsuarioRequest();
@@ -239,6 +239,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CoControlLista_ResumenCarteraUsuario_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
+              int codEmpresa)
+        {
+
+            return _db.CoControlLista_AnalisisCartera_Procesar(codEmpresa);
+        }
         #endregion
     }
 }

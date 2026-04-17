@@ -230,6 +230,13 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         {
             return _bl.CoControlLista_ResumenCarteraUsuario_Obtener(CodEmpresa, filtros);
         }
+
+        [HttpPost("Co_ControlLista_AnalisisCartera_Procesar")]
+        public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
+            int CodEmpresa)
+        {
+            return _bl.CoControlLista_AnalisisCartera_Procesar(CodEmpresa);
+        }
         #endregion
     }
 }
