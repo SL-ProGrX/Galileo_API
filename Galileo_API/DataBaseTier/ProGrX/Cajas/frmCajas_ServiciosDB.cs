@@ -13,6 +13,43 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         private readonly int vModulo = 5;
         private readonly MSecurityMainDb _Security_MainDB;
 
+        private const string ServicioDetalleSelect = @"
+                SELECT
+                      RTRIM(C.cod_recaudador)                  AS cod_recaudador,
+                      RTRIM(C.cod_servicio)                    AS cod_servicio,
+                      ISNULL(RTRIM(C.descripcion),'')          AS descripcion,
+                      ISNULL(C.activo,1)                       AS activo,
+                      ISNULL(RTRIM(C.contrato),'')             AS contrato,
+                      C.vence_fecha                            AS vence_fecha,
+                      ISNULL(C.vende_activo,1)                 AS vence_activo,
+                      ISNULL(RTRIM(C.cod_concepto),'')         AS cod_concepto,
+                      ISNULL(RTRIM(Con.descripcion),'')        AS concepto_desc,
+                      ISNULL(C.Intercambio,0)                  AS intercambio,
+                      ISNULL(C.VALOR_TRANSITO_VALIDA,0)        AS valor_transito_valida,
+                      ISNULL(C.GENERA_FACTURA,0)               AS genera_factura,
+                      ISNULL(RTRIM(C.CABYS),'')                AS cabys,
+                      ISNULL(RTRIM(C.cod_unidad),'')           AS cod_unidad,
+                      ISNULL(RTRIM(C.cod_centro_costo),'')     AS cod_centro_costo,
+                      ISNULL(RTRIM(C.cod_cuenta),'')           AS cod_cuenta,
+                      ISNULL(RTRIM(C.cod_cuenta_comision),'')  AS cod_cuenta_comision,
+                      ISNULL(RTRIM(C.cod_cuenta_iv),'')        AS cod_cuenta_iv,
+                      ISNULL(RTRIM(CC.descripcion),'')         AS centro_costo_desc,
+                      ISNULL(RTRIM(U.descripcion),'')          AS unidad_desc,
+                      ISNULL(RTRIM(Cta.descripcion),'')        AS cuenta_desc,
+                      ISNULL(RTRIM(CtaCom.descripcion),'')     AS cuenta_comision_desc,
+                      ISNULL(RTRIM(CtaIv.descripcion),'')      AS cuenta_iv_desc,
+                      ISNULL(C.REGISTRO_USUARIO,'')            AS registro_usuario,
+                      ISNULL(CONVERT(varchar(19), C.REGISTRO_FECHA,120),'') AS registro_fecha,
+                      ISNULL(C.MODIFICA_USUARIO,'')            AS modifica_usuario,
+                      ISNULL(CONVERT(varchar(19), C.MODIFICA_FECHA,120),'') AS modifica_fecha
+                FROM dbo.CAJAS_SERVICIOS C
+                LEFT JOIN dbo.SIF_CONCEPTOS Con     ON Con.COD_CONCEPTO      = C.cod_concepto
+                LEFT JOIN dbo.CntX_Cuentas Cta      ON C.cod_cuenta          = Cta.Cod_Cuenta
+                LEFT JOIN dbo.CntX_Cuentas CtaCom   ON C.cod_cuenta_comision = CtaCom.Cod_Cuenta
+                LEFT JOIN dbo.CntX_Cuentas CtaIv    ON C.cod_cuenta_iv       = CtaIv.Cod_Cuenta
+                LEFT JOIN dbo.Cntx_Unidades U       ON U.cod_unidad          = C.cod_unidad
+                LEFT JOIN dbo.Cntx_Centro_Costos CC ON CC.cod_centro_costo   = C.cod_centro_costo";
+
         public FrmCajasServiciosDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
@@ -101,21 +138,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 ORDER BY C.cod_servicio
                 " + pagina + " " + paginacion;
 
-                var enumerable = cn.Query<CajasServiciosConceptosData>(
+                resp.Result.lista = cn.Query<CajasServiciosConceptosData>(
                     qDatos,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
+                        cod_recaudador = TextoSeguro(cod_recaudador),
                         like = "%" + filtroTexto + "%"
-                    });
-
-                var lista = new List<CajasServiciosConceptosData>();
-                foreach (var item in enumerable)
-                {
-                    lista.Add(item);
-                }
-
-                resp.Result.lista = lista;
+                    }).ToList();
             }
             catch (Exception ex)
             {
@@ -163,44 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     ? " ORDER BY C.cod_servicio ASC "
                     : " ORDER BY C.cod_servicio DESC ";
 
-                var query = @"
-                SELECT TOP 1
-                      RTRIM(C.cod_recaudador)                  AS cod_recaudador,
-                      RTRIM(C.cod_servicio)                    AS cod_servicio,
-                      ISNULL(RTRIM(C.descripcion),'')          AS descripcion,
-                      ISNULL(C.activo,1)                       AS activo,
-                      ISNULL(RTRIM(C.contrato),'')             AS contrato,
-                      C.vence_fecha                            AS vence_fecha,
-                      ISNULL(C.vende_activo,1)                 AS vence_activo,
-                      ISNULL(RTRIM(C.cod_concepto),'')         AS cod_concepto,
-                      ISNULL(RTRIM(Con.descripcion),'')        AS concepto_desc,
-                      ISNULL(C.Intercambio,0)                  AS intercambio,
-                      ISNULL(C.VALOR_TRANSITO_VALIDA,0)        AS valor_transito_valida,
-                      ISNULL(C.GENERA_FACTURA,0)               AS genera_factura,
-                      ISNULL(RTRIM(C.CABYS),'')                AS cabys,
-                      ISNULL(RTRIM(C.cod_unidad),'')           AS cod_unidad,
-                      ISNULL(RTRIM(C.cod_centro_costo),'')     AS cod_centro_costo,
-                      ISNULL(RTRIM(C.cod_cuenta),'')           AS cod_cuenta,
-                      ISNULL(RTRIM(C.cod_cuenta_comision),'')  AS cod_cuenta_comision,
-                      ISNULL(RTRIM(C.cod_cuenta_iv),'')        AS cod_cuenta_iv,
-
-                      ISNULL(RTRIM(CC.descripcion),'')         AS centro_costo_desc,
-                      ISNULL(RTRIM(U.descripcion),'')          AS unidad_desc,
-                      ISNULL(RTRIM(Cta.descripcion),'')        AS cuenta_desc,
-                      ISNULL(RTRIM(CtaCom.descripcion),'')     AS cuenta_comision_desc,
-                      ISNULL(RTRIM(CtaIv.descripcion),'')      AS cuenta_iv_desc,
-
-                      ISNULL(C.REGISTRO_USUARIO,'')            AS registro_usuario,
-                      ISNULL(CONVERT(varchar(19), C.REGISTRO_FECHA,120),'') AS registro_fecha,
-                      ISNULL(C.MODIFICA_USUARIO,'')            AS modifica_usuario,
-                      ISNULL(CONVERT(varchar(19), C.MODIFICA_FECHA,120),'') AS modifica_fecha
-                FROM dbo.CAJAS_SERVICIOS C
-                LEFT JOIN dbo.SIF_CONCEPTOS Con     ON Con.COD_CONCEPTO      = C.cod_concepto
-                LEFT JOIN dbo.CntX_Cuentas Cta      ON C.cod_cuenta          = Cta.Cod_Cuenta
-                LEFT JOIN dbo.CntX_Cuentas CtaCom   ON C.cod_cuenta_comision = CtaCom.Cod_Cuenta
-                LEFT JOIN dbo.CntX_Cuentas CtaIv    ON C.cod_cuenta_iv       = CtaIv.Cod_Cuenta
-                LEFT JOIN dbo.Cntx_Unidades U       ON U.cod_unidad          = C.cod_unidad
-                LEFT JOIN dbo.Cntx_Centro_Costos CC ON CC.cod_centro_costo   = C.cod_centro_costo
+                var query = ServicioDetalleSelect + @"
                 " + where + @"
                 " + order + ";";
 
@@ -208,7 +200,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     query,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
+                        cod_recaudador = TextoSeguro(cod_recaudador),
                         cod
                     });
 
@@ -246,44 +238,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                var query = @"
-                SELECT
-                      RTRIM(C.cod_recaudador)                  AS cod_recaudador,
-                      RTRIM(C.cod_servicio)                    AS cod_servicio,
-                      ISNULL(RTRIM(C.descripcion),'')          AS descripcion,
-                      ISNULL(C.activo,1)                       AS activo,
-                      ISNULL(RTRIM(C.contrato),'')             AS contrato,
-                      C.vence_fecha                            AS vence_fecha,
-                      ISNULL(C.vende_activo,1)                 AS vence_activo,
-                      ISNULL(RTRIM(C.cod_concepto),'')         AS cod_concepto,
-                      ISNULL(RTRIM(Con.descripcion),'')        AS concepto_desc,
-                      ISNULL(C.Intercambio,0)                  AS intercambio,
-                      ISNULL(C.VALOR_TRANSITO_VALIDA,0)        AS valor_transito_valida,
-                      ISNULL(C.GENERA_FACTURA,0)               AS genera_factura,
-                      ISNULL(RTRIM(C.CABYS),'')                AS cabys,
-                      ISNULL(RTRIM(C.cod_unidad),'')           AS cod_unidad,
-                      ISNULL(RTRIM(C.cod_centro_costo),'')     AS cod_centro_costo,
-                      ISNULL(RTRIM(C.cod_cuenta),'')           AS cod_cuenta,
-                      ISNULL(RTRIM(C.cod_cuenta_comision),'')  AS cod_cuenta_comision,
-                      ISNULL(RTRIM(C.cod_cuenta_iv),'')        AS cod_cuenta_iv,
-
-                      ISNULL(RTRIM(CC.descripcion),'')         AS centro_costo_desc,
-                      ISNULL(RTRIM(U.descripcion),'')          AS unidad_desc,
-                      ISNULL(RTRIM(Cta.descripcion),'')        AS cuenta_desc,
-                      ISNULL(RTRIM(CtaCom.descripcion),'')     AS cuenta_comision_desc,
-                      ISNULL(RTRIM(CtaIv.descripcion),'')      AS cuenta_iv_desc,
-
-                      ISNULL(C.REGISTRO_USUARIO,'')            AS registro_usuario,
-                      ISNULL(CONVERT(varchar(19), C.REGISTRO_FECHA,120),'') AS registro_fecha,
-                      ISNULL(C.MODIFICA_USUARIO,'')            AS modifica_usuario,
-                      ISNULL(CONVERT(varchar(19), C.MODIFICA_FECHA,120),'') AS modifica_fecha
-                FROM dbo.CAJAS_SERVICIOS C
-                LEFT JOIN dbo.SIF_CONCEPTOS Con     ON Con.COD_CONCEPTO      = C.cod_concepto
-                LEFT JOIN dbo.CntX_Cuentas Cta      ON C.cod_cuenta          = Cta.Cod_Cuenta
-                LEFT JOIN dbo.CntX_Cuentas CtaCom   ON C.cod_cuenta_comision = CtaCom.Cod_Cuenta
-                LEFT JOIN dbo.CntX_Cuentas CtaIv    ON C.cod_cuenta_iv       = CtaIv.Cod_Cuenta
-                LEFT JOIN dbo.Cntx_Unidades U       ON U.cod_unidad          = C.cod_unidad
-                LEFT JOIN dbo.Cntx_Centro_Costos CC ON CC.cod_centro_costo   = C.cod_centro_costo
+                var query = ServicioDetalleSelect + @"
                 WHERE C.cod_recaudador = @cod_recaudador
                   AND C.cod_servicio   = @cod;";
 
@@ -291,8 +246,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     query,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod = (cod_servicio ?? string.Empty).Trim()
+                        cod_recaudador = TextoSeguro(cod_recaudador),
+                        cod = TextoSeguro(cod_servicio)
                     });
 
                 if (resp.Result == null)
@@ -361,8 +316,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     q,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod = (cod_servicio ?? string.Empty).Trim().ToUpper()
+                        cod_recaudador = TextoSeguro(cod_recaudador),
+                        cod = TextoSeguro(cod_servicio).ToUpperInvariant()
                     });
 
                 if (n == 0)
@@ -435,8 +390,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     qExiste,
                     new
                     {
-                        cod_recaudador = (servicio.cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (servicio.cod_servicio ?? string.Empty).Trim()
+                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
+                        cod_servicio = TextoSeguro(servicio.cod_servicio)
                     });
 
                 if (servicio.isNew)
@@ -536,23 +491,23 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     qInsert,
                     new
                     {
-                        cod_recaudador = (servicio.cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (servicio.cod_servicio ?? string.Empty).Trim(),
-                        descripcion = (servicio.descripcion ?? string.Empty).Trim(),
+                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
+                        cod_servicio = TextoSeguro(servicio.cod_servicio),
+                        descripcion = TextoSeguro(servicio.descripcion),
                         activo = servicio.activo,
-                        contrato = (servicio.contrato ?? string.Empty).Trim(),
+                        contrato = TextoSeguro(servicio.contrato),
                         vence_fecha = servicio.vence_fecha ?? DateTime.Today,
                         vence_activo = servicio.vence_activo,
-                        cod_cuenta = (servicio.cod_cuenta ?? string.Empty).Trim(),
-                        cod_cuenta_comision = (servicio.cod_cuenta_comision ?? string.Empty).Trim(),
-                        cod_cuenta_iv = (servicio.cod_cuenta_iv ?? string.Empty).Trim(),
-                        cod_concepto = (servicio.cod_concepto ?? string.Empty).Trim(),
+                        cod_cuenta = TextoSeguro(servicio.cod_cuenta),
+                        cod_cuenta_comision = TextoSeguro(servicio.cod_cuenta_comision),
+                        cod_cuenta_iv = TextoSeguro(servicio.cod_cuenta_iv),
+                        cod_concepto = TextoSeguro(servicio.cod_concepto),
                         intercambio = servicio.intercambio,
-                        cod_unidad = (servicio.cod_unidad ?? string.Empty).Trim(),
-                        cod_centro_costo = (servicio.cod_centro_costo ?? string.Empty).Trim(),
+                        cod_unidad = TextoSeguro(servicio.cod_unidad),
+                        cod_centro_costo = TextoSeguro(servicio.cod_centro_costo),
                         valor_transito_valida = servicio.valor_transito_valida,
                         genera_factura = servicio.genera_factura,
-                        cabys = (servicio.cabys ?? string.Empty).Trim(),
+                        cabys = TextoSeguro(servicio.cabys),
                         usuario = usuario ?? string.Empty
                     });
 
@@ -616,23 +571,23 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     qUpdate,
                     new
                     {
-                        cod_recaudador = (servicio.cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (servicio.cod_servicio ?? string.Empty).Trim(),
-                        descripcion = (servicio.descripcion ?? string.Empty).Trim(),
+                        cod_recaudador = TextoSeguro(servicio.cod_recaudador),
+                        cod_servicio = TextoSeguro(servicio.cod_servicio),
+                        descripcion = TextoSeguro(servicio.descripcion),
                         activo = servicio.activo,
-                        contrato = (servicio.contrato ?? string.Empty).Trim(),
+                        contrato = TextoSeguro(servicio.contrato),
                         vence_fecha = servicio.vence_fecha ?? DateTime.Today,
                         vence_activo = servicio.vence_activo,
-                        cod_cuenta = (servicio.cod_cuenta ?? string.Empty).Trim(),
-                        cod_cuenta_comision = (servicio.cod_cuenta_comision ?? string.Empty).Trim(),
-                        cod_cuenta_iv = (servicio.cod_cuenta_iv ?? string.Empty).Trim(),
-                        cod_concepto = (servicio.cod_concepto ?? string.Empty).Trim(),
+                        cod_cuenta = TextoSeguro(servicio.cod_cuenta),
+                        cod_cuenta_comision = TextoSeguro(servicio.cod_cuenta_comision),
+                        cod_cuenta_iv = TextoSeguro(servicio.cod_cuenta_iv),
+                        cod_concepto = TextoSeguro(servicio.cod_concepto),
                         intercambio = servicio.intercambio,
-                        cod_unidad = (servicio.cod_unidad ?? string.Empty).Trim(),
-                        cod_centro_costo = (servicio.cod_centro_costo ?? string.Empty).Trim(),
+                        cod_unidad = TextoSeguro(servicio.cod_unidad),
+                        cod_centro_costo = TextoSeguro(servicio.cod_centro_costo),
                         valor_transito_valida = servicio.valor_transito_valida,
                         genera_factura = servicio.genera_factura,
-                        cabys = (servicio.cabys ?? string.Empty).Trim(),
+                        cabys = TextoSeguro(servicio.cabys),
                         usuario = usuario ?? string.Empty
                     });
 
@@ -782,21 +737,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND cod_servicio   = @cod_servicio
                 ORDER BY linea;";
 
-                var enumerable = cn.Query<CajasServiciosComisionesData>(
+                resp.Result = cn.Query<CajasServiciosComisionesData>(
                     q,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (cod_servicio ?? string.Empty).Trim()
-                    });
-
-                var lista = new List<CajasServiciosComisionesData>();
-                foreach (var item in enumerable)
-                {
-                    lista.Add(item);
-                }
-
-                resp.Result = lista;
+                        cod_recaudador = TextoSeguro(cod_recaudador),
+                        cod_servicio = TextoSeguro(cod_servicio)
+                    }).ToList();
             }
             catch (Exception ex)
             {
@@ -1108,21 +1055,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND X.cod_servicio   = @cod_servicio
             ORDER BY C.DESCRIPCION;";
 
-                var listaTmp = cn.Query<CajasServiciosCajasVinculadasData>(
+                resp.Result = cn.Query<CajasServiciosCajasVinculadasData>(
                     q,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (cod_servicio ?? string.Empty).Trim()
-                    });
-
-                var lista = new List<CajasServiciosCajasVinculadasData>();
-                foreach (var item in listaTmp)
-                {
-                    lista.Add(item);
-                }
-
-                resp.Result = lista;
+                        cod_recaudador = TextoSeguro(cod_recaudador),
+                        cod_servicio = TextoSeguro(cod_servicio)
+                    }).ToList();
             }
             catch (Exception ex)
             {
@@ -1167,9 +1106,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     qExiste,
                     new
                     {
-                        cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                        cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                        cod_caja = (cod_caja ?? string.Empty).Trim()
+                        cod_recaudador = TextoSeguro(cod_recaudador),
+                        cod_servicio = TextoSeguro(cod_servicio),
+                        cod_caja = TextoSeguro(cod_caja)
                     });
 
                 if (asignada == 1)
@@ -1186,9 +1125,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                             qInsert,
                             new
                             {
-                                cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                                cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                                cod_caja = (cod_caja ?? string.Empty).Trim(),
+                                cod_recaudador = TextoSeguro(cod_recaudador),
+                                cod_servicio = TextoSeguro(cod_servicio),
+                                cod_caja = TextoSeguro(cod_caja),
                                 usuario = usuario ?? string.Empty
                             });
 
@@ -1217,9 +1156,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                             qDelete,
                             new
                             {
-                                cod_recaudador = (cod_recaudador ?? string.Empty).Trim(),
-                                cod_servicio = (cod_servicio ?? string.Empty).Trim(),
-                                cod_caja = (cod_caja ?? string.Empty).Trim()
+                                cod_recaudador = TextoSeguro(cod_recaudador),
+                                cod_servicio = TextoSeguro(cod_servicio),
+                                cod_caja = TextoSeguro(cod_caja)
                             });
 
                         RegistrarBitacora(
@@ -1243,6 +1182,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             return resp;
         }
     
+
+        private static string TextoSeguro(string? valor)
+        {
+            return (valor ?? string.Empty).Trim();
+        }
 
         private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalleMovimiento)
         {
