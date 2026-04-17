@@ -76,7 +76,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var bloqueSql = new StringBuilder();
             var parameters = new DynamicParameters();
             var usuarioSeguro = (usuario ?? string.Empty).Trim();
-            using var tx = connection.BeginTransaction();
+             
+
+           
 
             foreach (var operacion in operaciones)
             {
@@ -109,7 +111,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (numeroLinea == 1)
                 {
-                    connection.Execute(sqlActual);
+                    connection.Execute(sqlActual,parameters);
                     continue;
                 }
 
@@ -117,11 +119,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (bloqueSql.Length > LongitudMaximaBloqueSql)
                 {
-                    EjecutarBloqueSql(connection, bloqueSql);
+                    EjecutarBloqueSql(connection, bloqueSql, parameters);
                 }
             }
 
-            EjecutarBloqueSql(connection, bloqueSql);
+            EjecutarBloqueSql(connection, bloqueSql, parameters);
         }
 
    
@@ -129,14 +131,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Ejecuta el bloque acumulado y lo limpia.
         /// </summary>
-        private static void EjecutarBloqueSql(IDbConnection connection, StringBuilder bloqueSql)
+        private static void EjecutarBloqueSql(IDbConnection connection, StringBuilder bloqueSql, DynamicParameters parameters)
         {
             if (bloqueSql.Length == 0)
             {
                 return;
             }
 
-            connection.Execute(bloqueSql.ToString());
+            connection.Execute(bloqueSql.ToString(), parameters);
             bloqueSql.Clear();
         }
 
