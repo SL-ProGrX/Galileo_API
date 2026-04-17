@@ -46,10 +46,32 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             response.Result = default;
         }
 
+
         private static void AsignarResultadoError<T>(ErrorDto<T> response, ErrorDto error)
         {
             response.Code = error.Code;
             response.Description = error.Description;
+        }
+
+        private static void IntentarRollback(SqlConnection? connection, SqlTransaction? transaction)
+        {
+            if (connection?.State != System.Data.ConnectionState.Open)
+            {
+                return;
+            }
+
+            try
+            {
+                transaction?.Rollback();
+            }
+            catch (InvalidOperationException)
+            {
+                // La transacción ya no estaba activa.
+            }
+            catch (SqlException)
+            {
+                // Error de SQL al intentar revertir; se conserva el error original.
+            }
         }
 
 
@@ -243,20 +265,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 response.Description = $"Apertura # {nuevaApertura} registrada satisfactoriamente...";
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
-                try
-                {
-                    if (connection?.State == System.Data.ConnectionState.Open)
-                    {
-                        transaction?.Rollback();
-                    }
-                }
-                catch
-                {
-                    // Se conserva el error original; un fallo en rollback no debe ocultarlo.
-                }
-
+                IntentarRollback(connection, transaction);
+                AsignarError(response, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                IntentarRollback(connection, transaction);
                 AsignarError(response, ex);
             }
             finally
