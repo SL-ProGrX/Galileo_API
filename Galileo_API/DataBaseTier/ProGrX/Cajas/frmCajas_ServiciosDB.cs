@@ -13,6 +13,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         private readonly int vModulo = 5;
         private readonly MSecurityMainDb _Security_MainDB;
 
+        private const string MensajeOk = "Ok";
+        private const string MovimientoRegistraWeb = "Registra - WEB";
+        private const string MovimientoModificaWeb = "Modifica - WEB";
+        private const string MovimientoEliminaWeb = "Elimina - WEB";
+
         private const string ServicioDetalleSelect = @"
                 SELECT
                       RTRIM(C.cod_recaudador)                  AS cod_recaudador,
@@ -97,37 +102,18 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                string where = " WHERE C.cod_recaudador = @cod_recaudador ";
-                string pagina = string.Empty;
-                string paginacion = string.Empty;
-
-                string filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
-
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where += " AND (C.cod_servicio LIKE @like OR C.Descripcion LIKE @like) ";
-                }
-
-                if (filtros?.pagina != null)
-                {
-                    pagina = " OFFSET " + filtros.pagina + " ROWS ";
-                    paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : 10) + " ROWS ONLY ";
-                }
-
-                var qTotal = @"SELECT COUNT(*)
-                           FROM dbo.CAJAS_SERVICIOS C" + where;
+                string where = ConstruirWhereConceptos(filtros, out string filtroTexto);
+                var (pagina, paginacion) = ConstruirPaginacion(filtros, 10);
 
                 int total = cn.QueryFirstOrDefault<int>(
-                    qTotal,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(cod_recaudador),
-                        like = "%" + filtroTexto + "%"
-                    });
+                    @"SELECT COUNT(*)
+                      FROM dbo.CAJAS_SERVICIOS C" + where,
+                    CrearParametrosConceptos(cod_recaudador, filtroTexto));
 
                 resp.Result.total = total;
 
-                var qDatos = @"
+                resp.Result.lista = cn.Query<CajasServiciosConceptosData>(
+                    @"
                 SELECT
                       RTRIM(C.cod_servicio)     AS cod_servicio,
                       RTRIM(C.descripcion)      AS descripcion,
@@ -136,22 +122,16 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 FROM dbo.CAJAS_SERVICIOS C
                 " + where + @"
                 ORDER BY C.cod_servicio
-                " + pagina + " " + paginacion;
-
-                resp.Result.lista = cn.Query<CajasServiciosConceptosData>(
-                    qDatos,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(cod_recaudador),
-                        like = "%" + filtroTexto + "%"
-                    }).ToList();
+                " + pagina + " " + paginacion,
+                    CrearParametrosConceptos(cod_recaudador, filtroTexto)).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = new List<CajasServiciosConceptosData>();
+                AsignarError(resp, ex, new CajasServiciosConceptosLista
+                {
+                    total = 0,
+                    lista = new List<CajasServiciosConceptosData>()
+                });
             }
 
             return resp;
@@ -168,7 +148,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         public ErrorDto<CajasServiciosConceptosData> Cajas_Servicios_Conceptos_Scroll(int CodEmpresa, string cod_recaudador, int scroll, string? cod_servicio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            var resp = new ErrorDto<CajasServiciosConceptosData> { Code = 0, Description = "" };
+            var resp = CrearRespuesta<CajasServiciosConceptosData>();
 
             try
             {
@@ -211,14 +191,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 }
                 else
                 {
-                    resp.Description = "Ok";
+                    resp.Description = MensajeOk;
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "Error al desplazar el servicio del recaudador: " + ex.Message;
-                resp.Result = null;
+                AsignarError(resp, ex, null, "Error al desplazar el servicio del recaudador: ");
             }
 
             return resp;
@@ -234,7 +212,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         public ErrorDto<CajasServiciosConceptosData> Cajas_Servicios_Conceptos_Obtener(int CodEmpresa, string cod_recaudador, string cod_servicio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            var resp = new ErrorDto<CajasServiciosConceptosData> { Code = 0, Description = "" };
+            var resp = CrearRespuesta<CajasServiciosConceptosData>();
 
             try
             {
@@ -257,14 +235,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 }
                 else
                 {
-                    resp.Description = "Ok";
+                    resp.Description = MensajeOk;
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "Error al obtener el servicio del recaudador: " + ex.Message;
-                resp.Result = null;
+                AsignarError(resp, ex, null, "Error al obtener el servicio del recaudador: ");
             }
 
             return resp;
@@ -351,44 +327,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
-                if (string.IsNullOrWhiteSpace(servicio.cod_recaudador))
+                var validacion = ValidarServicio(servicio);
+                if (validacion != null)
                 {
-                    resp.Code = -2;
-                    resp.Description = "Debe indicar el recaudador.";
-                    return resp;
+                    return validacion;
                 }
 
-                if (string.IsNullOrWhiteSpace(servicio.cod_servicio))
-                {
-                    resp.Code = -2;
-                    resp.Description = "Debe indicar el código del servicio.";
-                    return resp;
-                }
-
-                if (string.IsNullOrWhiteSpace(servicio.descripcion))
-                {
-                    resp.Code = -2;
-                    resp.Description = "Debe indicar la descripción del servicio.";
-                    return resp;
-                }
-
-                const string qExiste = @"
-                SELECT ISNULL(COUNT(*),0)
-                FROM dbo.CAJAS_SERVICIOS
-                WHERE cod_recaudador = @cod_recaudador
-                  AND cod_servicio   = @cod_servicio;";
-
-                int existe = cn.QueryFirstOrDefault<int>(
-                    qExiste,
-                    CrearParametrosClaveServicio(servicio.cod_recaudador, servicio.cod_servicio));
+                int existe = ObtenerExisteServicio(cn, servicio.cod_recaudador, servicio.cod_servicio);
 
                 if (servicio.isNew)
                 {
@@ -415,8 +364,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -433,11 +381,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
@@ -488,13 +432,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 RegistrarBitacora(
                     CodEmpresa,
                     usuario,
-                    "Registra - WEB",
+                    MovimientoRegistraWeb,
                     $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -511,11 +454,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
@@ -546,13 +485,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 RegistrarBitacora(
                     CodEmpresa,
                     usuario,
-                    "Modifica - WEB",
+                    MovimientoModificaWeb,
                     $"Servicio: {servicio.cod_servicio} Recaudador: {servicio.cod_recaudador}");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -577,76 +515,33 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                string where = " WHERE 1 = 1 ";
-                string pagina = string.Empty;
-                string paginacion = string.Empty;
+                string where = ConstruirWhereCabys(filtros, out string filtroTexto);
+                var (pagina, paginacion) = ConstruirPaginacion(filtros, 30);
+                string orderBy = ConstruirOrderByCabys(filtros);
 
-                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where += " AND ( CABYS.Cod_ByS LIKE @like OR CABYS.Descripcion LIKE @like ) ";
-                }
-
-                if (filtros?.pagina != null)
-                {
-                    pagina = " OFFSET " + filtros.pagina + " ROWS ";
-                    paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : 30) + " ROWS ONLY ";
-                }
-
-                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                string sortDir = filtros?.sortOrder == 1 ? "DESC" : "ASC";
-
-                string orderBy;
-                switch (sortField)
-                {
-                    case "descripcion":
-                        orderBy = $" ORDER BY CABYS.Descripcion {sortDir} ";
-                        break;
-                    case "item":
-                    case "cod_bys":
-                        orderBy = $" ORDER BY CABYS.Cod_ByS {sortDir} ";
-                        break;
-                    default:
-                        orderBy = " ORDER BY CABYS.Cod_ByS ASC ";
-                        break;
-                }
-
-                var qTotal = @"
+                resp.Result.total = cn.QueryFirstOrDefault<int>(
+                    @"
                     SELECT COUNT(*)
                     FROM vINV_Cabys CABYS
-                " + where;
+                " + where,
+                    CrearParametroLike(filtroTexto));
 
-                int total = cn.QueryFirstOrDefault<int>(
-                    qTotal,
-                    new
-                    {
-                        like = "%" + filtroTexto + "%"
-                    });
-
-                resp.Result.total = total;
-
-                var qDatos = @"
+                resp.Result.lista = cn.Query<DropDownListaGenericaModel>(
+                    @"
                     SELECT
                         RTRIM(CABYS.Cod_ByS)      AS item,
                         RTRIM(CABYS.Descripcion) AS descripcion
                     FROM vINV_Cabys CABYS
-                " + where + orderBy + pagina + " " + paginacion;
-
-                var enumerable = cn.Query<DropDownListaGenericaModel>(
-                    qDatos,
-                    new
-                    {
-                        like = "%" + filtroTexto + "%"
-                    });
-
-                resp.Result.lista = enumerable.ToList();
+                " + where + orderBy + pagina + " " + paginacion,
+                    CrearParametroLike(filtroTexto)).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = "Error al obtener CABYS: " + ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = new List<DropDownListaGenericaModel>();
+                AsignarError(resp, ex, new CajasServiciosCabysLista
+                {
+                    total = 0,
+                    lista = new List<DropDownListaGenericaModel>()
+                }, "Error al obtener CABYS: ");
             }
 
             return resp;
@@ -663,12 +558,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto<List<CajasServiciosComisionesData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<CajasServiciosComisionesData>()
-            };
+            var resp = CrearRespuesta(new List<CajasServiciosComisionesData>());
 
             try
             {
@@ -691,17 +581,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 resp.Result = cn.Query<CajasServiciosComisionesData>(
                     q,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(cod_recaudador),
-                        cod_servicio = TextoSeguro(cod_servicio)
-                    }).ToList();
+                    CrearParametrosClaveServicio(cod_recaudador, cod_servicio)).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = new List<CajasServiciosComisionesData>();
+                AsignarError(resp, ex, new List<CajasServiciosComisionesData>());
             }
 
             return resp;
@@ -718,41 +602,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
-                if (string.IsNullOrWhiteSpace(rango.cod_recaudador))
+                var validacion = ValidarRango(rango);
+                if (validacion != null)
                 {
-                    resp.Code = -2;
-                    resp.Description = "Debe indicar el recaudador.";
-                    return resp;
+                    return validacion;
                 }
 
-                if (string.IsNullOrWhiteSpace(rango.cod_servicio))
-                {
-                    resp.Code = -2;
-                    resp.Description = "Debe indicar el servicio.";
-                    return resp;
-                }
-
-                const string qExiste = @"
-                SELECT ISNULL(COUNT(*),0)
-                FROM dbo.CAJAS_SERVICIOS_RANGOS
-                WHERE cod_recaudador = @cod_recaudador
-                  AND cod_servicio   = @cod_servicio
-                  AND linea          = @linea;";
-
-                int existe = cn.ExecuteScalar<int>(qExiste, new
-                {
-                    cod_recaudador = rango.cod_recaudador,
-                    cod_servicio = rango.cod_servicio,
-                    linea = rango.linea
-                });
+                int existe = ObtenerExisteComision(cn, rango.cod_recaudador, rango.cod_servicio, rango.linea);
 
                 if (rango.isNew)
                 {
@@ -779,8 +639,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -797,11 +656,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
@@ -813,11 +668,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     WHERE cod_recaudador = @cod_recaudador
                       AND cod_servicio   = @cod_servicio;";
 
-                    rango.linea = cn.ExecuteScalar<int>(qNextLinea, new
-                    {
-                        cod_recaudador = rango.cod_recaudador,
-                        cod_servicio = rango.cod_servicio
-                    });
+                    rango.linea = cn.ExecuteScalar<int>(qNextLinea, CrearParametrosClaveServicio(rango.cod_recaudador, rango.cod_servicio));
                 }
 
                 const string qInsert = @"
@@ -840,28 +691,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                      @porcentaje_comision,
                      @porcentaje_imp_ventas);";
 
-                cn.Execute(qInsert, new
-                {
-                    cod_recaudador = rango.cod_recaudador,
-                    cod_servicio = rango.cod_servicio,
-                    linea = rango.linea,
-                    monto_inicio = rango.monto_inicial,
-                    monto_corte = rango.monto_corte,
-                    monto_minimo_comision = rango.monto_minimo_comision,
-                    porcentaje_comision = rango.porcentaje_comision,
-                    porcentaje_imp_ventas = rango.porcentaje_imp_ventas
-                });
+                cn.Execute(qInsert, CrearParametrosComision(rango));
 
                 RegistrarBitacora(
                     CodEmpresa,
                     usuario,
-                    "Registra - WEB",
+                    MovimientoRegistraWeb,
                     $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -878,11 +718,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
@@ -897,28 +733,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND cod_servicio   = @cod_servicio
                   AND linea          = @linea;";
 
-                cn.Execute(qUpdate, new
-                {
-                    cod_recaudador = rango.cod_recaudador,
-                    cod_servicio = rango.cod_servicio,
-                    linea = rango.linea,
-                    monto_inicio = rango.monto_inicial,
-                    monto_corte = rango.monto_corte,
-                    monto_minimo_comision = rango.monto_minimo_comision,
-                    porcentaje_comision = rango.porcentaje_comision,
-                    porcentaje_imp_ventas = rango.porcentaje_imp_ventas
-                });
+                cn.Execute(qUpdate, CrearParametrosComision(rango));
 
                 RegistrarBitacora(
                     CodEmpresa,
                     usuario,
-                    "Modifica - WEB",
+                    MovimientoModificaWeb,
                     $"Cajas Servicios - Rango comisión Línea: {rango.linea} Serv.: {rango.cod_servicio} Recaudador: {rango.cod_recaudador}");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -937,11 +762,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
@@ -951,23 +772,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND cod_servicio   = @cod_servicio
                   AND linea          = @linea;";
 
-                cn.Execute(qDelete, new
-                {
-                    cod_recaudador = TextoSeguro(cod_recaudador),
-                    cod_servicio = TextoSeguro(cod_servicio),
-                    linea
-                });
+                cn.Execute(qDelete, CrearParametrosComision(cod_recaudador, cod_servicio, linea));
 
                 RegistrarBitacora(
                     CodEmpresa,
                     usuario,
-                    "Elimina - WEB",
+                    MovimientoEliminaWeb,
                     $"Cajas Servicios - Rango comisión Línea: {linea} Serv.: {cod_servicio} Recaudador: {cod_recaudador}");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -984,12 +799,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto<List<CajasServiciosCajasVinculadasData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<CajasServiciosCajasVinculadasData>()
-            };
+            var resp = CrearRespuesta(new List<CajasServiciosCajasVinculadasData>());
 
             try
             {
@@ -1009,17 +819,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                 resp.Result = cn.Query<CajasServiciosCajasVinculadasData>(
                     q,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(cod_recaudador),
-                        cod_servicio = TextoSeguro(cod_servicio)
-                    }).ToList();
+                    CrearParametrosClaveServicio(cod_recaudador, cod_servicio)).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = new List<CajasServiciosCajasVinculadasData>();
+                AsignarError(resp, ex, new List<CajasServiciosCajasVinculadasData>());
             }
 
             return resp;
@@ -1039,29 +843,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var resp = CrearRespuesta();
 
             try
             {
-                const string qExiste = @"
-            SELECT ISNULL(COUNT(1), 0)
-            FROM dbo.CAJAS_SERVICIOS_ASIGNADOS
-            WHERE cod_recaudador = @cod_recaudador
-              AND cod_servicio   = @cod_servicio
-              AND cod_caja       = @cod_caja;";
-
-                int existe = cn.ExecuteScalar<int>(
-                    qExiste,
-                    new
-                    {
-                        cod_recaudador = TextoSeguro(cod_recaudador),
-                        cod_servicio = TextoSeguro(cod_servicio),
-                        cod_caja = TextoSeguro(cod_caja)
-                    });
+                int existe = ObtenerExisteCajaAsignada(cn, cod_recaudador, cod_servicio, cod_caja);
 
                 if (asignada == 1)
                 {
@@ -1075,18 +861,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                         cn.Execute(
                             qInsert,
-                            new
-                            {
-                                cod_recaudador = TextoSeguro(cod_recaudador),
-                                cod_servicio = TextoSeguro(cod_servicio),
-                                cod_caja = TextoSeguro(cod_caja),
-                                usuario = usuario ?? string.Empty
-                            });
+                            CrearParametrosCajaAsignada(cod_recaudador, cod_servicio, cod_caja, usuario));
 
                         RegistrarBitacora(
                             CodEmpresa,
                             usuario,
-                            "Registra - WEB",
+                            MovimientoRegistraWeb,
                             $"Cajas_Servicios: Asigna caja {cod_caja} al servicio {cod_servicio} del recaudador {cod_recaudador}");
                     }
                     else
@@ -1106,17 +886,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
                         cn.Execute(
                             qDelete,
-                            new
-                            {
-                                cod_recaudador = TextoSeguro(cod_recaudador),
-                                cod_servicio = TextoSeguro(cod_servicio),
-                                cod_caja = TextoSeguro(cod_caja)
-                            });
+                            CrearParametrosCajaAsignada(cod_recaudador, cod_servicio, cod_caja));
 
                         RegistrarBitacora(
                             CodEmpresa,
                             usuario,
-                            "Elimina - WEB",
+                            MovimientoEliminaWeb,
                             $"Cajas_Servicios: Quita caja {cod_caja} del servicio {cod_servicio} del recaudador {cod_recaudador}");
                     }
                     else
@@ -1127,8 +902,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                AsignarError(resp, ex);
             }
 
             return resp;
@@ -1141,6 +915,226 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 cod_recaudador = TextoSeguro(codRecaudador),
                 cod_servicio = TextoSeguro(codServicio)
             };
+        }
+
+        private static object CrearParametrosConceptos(string? codRecaudador, string? filtroTexto)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                like = CrearLike(filtroTexto)
+            };
+        }
+
+        private static object CrearParametroLike(string? filtroTexto)
+        {
+            return new
+            {
+                like = CrearLike(filtroTexto)
+            };
+        }
+
+        private static object CrearParametrosComision(CajasServiciosComisionesData rango)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(rango.cod_recaudador),
+                cod_servicio = TextoSeguro(rango.cod_servicio),
+                linea = rango.linea,
+                monto_inicio = rango.monto_inicial,
+                monto_corte = rango.monto_corte,
+                monto_minimo_comision = rango.monto_minimo_comision,
+                porcentaje_comision = rango.porcentaje_comision,
+                porcentaje_imp_ventas = rango.porcentaje_imp_ventas
+            };
+        }
+
+        private static object CrearParametrosComision(string? codRecaudador, string? codServicio, int linea)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio),
+                linea
+            };
+        }
+
+        private static object CrearParametrosCajaAsignada(string? codRecaudador, string? codServicio, string? codCaja, string? usuario = null)
+        {
+            return new
+            {
+                cod_recaudador = TextoSeguro(codRecaudador),
+                cod_servicio = TextoSeguro(codServicio),
+                cod_caja = TextoSeguro(codCaja),
+                usuario = usuario ?? string.Empty
+            };
+        }
+
+        private static string ConstruirWhereConceptos( FiltrosLazyLoadData filtros, out string filtroTexto)
+        {
+            string where = " WHERE C.cod_recaudador = @cod_recaudador ";
+            filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                where += " AND (C.cod_servicio LIKE @like OR C.Descripcion LIKE @like) ";
+            }
+
+            return where;
+        }
+
+        private static string ConstruirWhereCabys(FiltrosLazyLoadData filtros, out string filtroTexto)
+        {
+            string where = " WHERE 1 = 1 ";
+            filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                where += " AND ( CABYS.Cod_ByS LIKE @like OR CABYS.Descripcion LIKE @like ) ";
+            }
+
+            return where;
+        }
+
+        private static (string pagina, string paginacion) ConstruirPaginacion(FiltrosLazyLoadData filtros, int paginacionDefault)
+        {
+            if (filtros?.pagina == null)
+            {
+                return (string.Empty, string.Empty);
+            }
+
+            string pagina = " OFFSET " + filtros.pagina + " ROWS ";
+            string paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : paginacionDefault) + " ROWS ONLY ";
+            return (pagina, paginacion);
+        }
+
+        private static string ConstruirOrderByCabys(FiltrosLazyLoadData filtros)
+        {
+            string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+            string sortDir = filtros?.sortOrder == 1 ? "DESC" : "ASC";
+
+            return sortField switch
+            {
+                "descripcion" => $" ORDER BY CABYS.Descripcion {sortDir} ",
+                "item" or "cod_bys" => $" ORDER BY CABYS.Cod_ByS {sortDir} ",
+                _ => " ORDER BY CABYS.Cod_ByS ASC "
+            };
+        }
+
+        private static ErrorDto? ValidarServicio(CajasServiciosConceptosData servicio)
+        {
+            if (string.IsNullOrWhiteSpace(servicio.cod_recaudador))
+            {
+                return CrearRespuestaError("Debe indicar el recaudador.");
+            }
+
+            if (string.IsNullOrWhiteSpace(servicio.cod_servicio))
+            {
+                return CrearRespuestaError("Debe indicar el código del servicio.");
+            }
+
+            if (string.IsNullOrWhiteSpace(servicio.descripcion))
+            {
+                return CrearRespuestaError("Debe indicar la descripción del servicio.");
+            }
+
+            return null;
+        }
+
+        private static ErrorDto? ValidarRango(CajasServiciosComisionesData rango)
+        {
+            if (string.IsNullOrWhiteSpace(rango.cod_recaudador))
+            {
+                return CrearRespuestaError("Debe indicar el recaudador.");
+            }
+
+            if (string.IsNullOrWhiteSpace(rango.cod_servicio))
+            {
+                return CrearRespuestaError("Debe indicar el servicio.");
+            }
+
+            return null;
+        }
+
+        private static ErrorDto CrearRespuesta()
+        {
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = MensajeOk
+            };
+        }
+
+        private static ErrorDto<T> CrearRespuesta<T>(T? result = default)
+        {
+            return new ErrorDto<T>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = result
+            };
+        }
+
+        private static ErrorDto CrearRespuestaError(string descripcion)
+        {
+            return new ErrorDto
+            {
+                Code = -2,
+                Description = descripcion
+            };
+        }
+
+        private static void AsignarError(ErrorDto resp, Exception ex, string prefijo = "")
+        {
+            resp.Code = -1;
+            resp.Description = prefijo + ex.Message;
+        }
+
+        private static void AsignarError<T>(ErrorDto<T> resp, Exception ex, T? result, string prefijo = "")
+        {
+            resp.Code = -1;
+            resp.Description = prefijo + ex.Message;
+            resp.Result = result;
+        }
+
+        private static int ObtenerExisteServicio(System.Data.IDbConnection cn, string? codRecaudador, string? codServicio)
+        {
+            const string qExiste = @"
+                SELECT ISNULL(COUNT(*),0)
+                FROM dbo.CAJAS_SERVICIOS
+                WHERE cod_recaudador = @cod_recaudador
+                  AND cod_servicio   = @cod_servicio;";
+
+            return cn.QueryFirstOrDefault<int>(qExiste, CrearParametrosClaveServicio(codRecaudador, codServicio));
+        }
+
+        private static int ObtenerExisteComision(System.Data.IDbConnection cn, string? codRecaudador, string? codServicio, int linea)
+        {
+            const string qExiste = @"
+                SELECT ISNULL(COUNT(*),0)
+                FROM dbo.CAJAS_SERVICIOS_RANGOS
+                WHERE cod_recaudador = @cod_recaudador
+                  AND cod_servicio   = @cod_servicio
+                  AND linea          = @linea;";
+
+            return cn.ExecuteScalar<int>(qExiste, CrearParametrosComision(codRecaudador, codServicio, linea));
+        }
+
+        private static int ObtenerExisteCajaAsignada(System.Data.IDbConnection cn, string? codRecaudador, string? codServicio, string? codCaja)
+        {
+            const string qExiste = @"
+            SELECT ISNULL(COUNT(1), 0)
+            FROM dbo.CAJAS_SERVICIOS_ASIGNADOS
+            WHERE cod_recaudador = @cod_recaudador
+              AND cod_servicio   = @cod_servicio
+              AND cod_caja       = @cod_caja;";
+
+            return cn.ExecuteScalar<int>(qExiste, CrearParametrosCajaAsignada(codRecaudador, codServicio, codCaja));
+        }
+
+        private static string CrearLike(string? texto)
+        {
+            return "%" + (texto ?? string.Empty).Trim() + "%";
         }
 
         private static DynamicParameters CrearParametrosServicio(CajasServiciosConceptosData servicio, string? usuario)
