@@ -67,14 +67,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Ejecuta la carga masiva replicando la lógica VB6:
-        /// primer registro con bandera 1, siguientes con 0 y ejecución por bloques.
+        /// Ejecución de carga masiva de cobro judicial.
         /// </summary>
         private static void EjecutarCargaMasivaCobroJudicial(IDbConnection connection, IEnumerable<string> operaciones, string usuario)
         {
             var numeroLinea = 0;
+            var i = 0;
             var bloqueSql = new StringBuilder();
-            var usuarioSeguro = SanitizarValorSql(usuario);
+            var parameters = new DynamicParameters();
+            var usuarioSeguro = (usuario ?? string.Empty).Trim();
+            using var tx = connection.BeginTransaction();
 
             foreach (var operacion in operaciones)
             {
@@ -85,11 +87,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 numeroLinea++;
                 var operacionSegura = SanitizarValorSql(operacion);
+                var clean = numeroLinea == 1 ? 1 : 0;
 
-                var sqlActual = ConstruirSentenciaCargaMasiva(
-                    usuarioSeguro,
-                    operacionSegura,
-                    numeroLinea == 1 ? 1 : 0);
+
+                var sqlActual = $@"
+               exec spSys_Carga_Masiva
+                   @Tipo{i},
+                   @ProcesoId{i},
+                   @Usuario{i},
+                   @Llave01{i},
+                   @Llave02{i},
+                   @Clean{i};";
+
+                parameters.Add($"Tipo{i}", AccionCarga);
+                parameters.Add($"ProcesoId{i}", ModuloCobroJudicialMasivo);
+                parameters.Add($"Usuario{i}", usuarioSeguro);
+                parameters.Add($"Llave01{i}", operacionSegura);
+                parameters.Add($"Llave02{i}", string.Empty);
+                parameters.Add($"Clean{i}", clean);
+                i++;
 
                 if (numeroLinea == 1)
                 {
@@ -108,14 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             EjecutarBloqueSql(connection, bloqueSql);
         }
 
-        /// <summary>
-        /// Construye la sentencia EXEC para la carga masiva.
-        /// </summary>
-        private static string ConstruirSentenciaCargaMasiva(string usuario,string operacion,int esInicio)
-        {
-            return            
-            $"{new string(' ', 10)}exec spSys_Carga_Masiva '{AccionCarga}', '{ModuloCobroJudicialMasivo}', '{usuario}', '{operacion}', '', {esInicio}";
-        }
+   
 
         /// <summary>
         /// Ejecuta el bloque acumulado y lo limpia.
