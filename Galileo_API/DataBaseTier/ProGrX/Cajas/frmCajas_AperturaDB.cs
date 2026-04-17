@@ -52,59 +52,69 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             response.Description = error.Description;
         }
 
+
         private static object CrearParametrosCaja(string codCaja)
         {
             return new { CodCaja = codCaja };
         }
 
-        /// <summary>
-        /// Obtener las cajas asignadas a un usuario
-        /// </summary>
+        private static int ConsultarEnteroCaja(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string query,
+            string codCaja)
+        {
+            return connection.QuerySingle<int>(
+                query,
+                CrearParametrosCaja(codCaja),
+                transaction: transaction);
+        }
+
+        private static T? ConsultarCaja<T>(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string query,
+            string codCaja)
+        {
+            return connection.QueryFirstOrDefault<T>(
+                query,
+                CrearParametrosCaja(codCaja),
+                transaction: transaction);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Asignadas_Obtener(int CodEmpresa, string Usuario)
         {
-            var query = @"select rtrim(C.cod_caja) as item,rtrim(C.Descripcion) as descripcion 
-            from cajas_definicion C inner join cajas_usuarios U on C.cod_caja = U.cod_caja and U.usuario = @Usuario
-            where C.Activa = 1 order by C.cod_caja";
-
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 CodEmpresa,
-                query,
+                @"select rtrim(C.cod_caja) as item,rtrim(C.Descripcion) as descripcion 
+            from cajas_definicion C inner join cajas_usuarios U on C.cod_caja = U.cod_caja and U.usuario = @Usuario
+            where C.Activa = 1 order by C.cod_caja",
                 new { Usuario });
         }
 
-        /// <summary>
-        /// Obtener los saldos iniciales por divisa para la apertura de caja
-        /// </summary>
         public ErrorDto<List<CajasDivisaDto>> Cajas_Apertura_Divisas_Obtener(int CodEmpresa, int CodConta)
         {
-            var query = @"
+            return DbHelper.ExecuteListQuery<CajasDivisaDto>(
+                _portalDb,
+                CodEmpresa,
+                @"
             SELECT 
                 cod_divisa,
                 0 AS Efectivo,
                 0 AS Documentos
             FROM CNTX_DIVISAS
-            WHERE COD_CONTABILIDAD = @CodConta";
-
-            return DbHelper.ExecuteListQuery<CajasDivisaDto>(
-                _portalDb,
-                CodEmpresa,
-                query,
+            WHERE COD_CONTABILIDAD = @CodConta",
                 new { CodConta });
         }
 
-        /// <summary>
-        /// Obtener el detalle de la apertura de caja
-        /// </summary>
         public ErrorDto<CajaAperturaDetalleDto?> Cajas_Apertura_Detalle_Obtener(int CodEmpresa, string CodCaja)
         {
-            var query = @"SELECT TOP 1 *,  CASE WHEN Estado = 'A' THEN 'Abierta' ELSE 'Cerrada' END AS Estado
-            FROM Cajas_Aperturas_Main WHERE cod_Caja = @CodCaja ORDER BY Cod_Apertura DESC;";
-
             return DbHelper.ExecuteSingleQuery<CajaAperturaDetalleDto?>(
                 _portalDb,
                 CodEmpresa,
-                query,
+                @"SELECT TOP 1 *,  CASE WHEN Estado = 'A' THEN 'Abierta' ELSE 'Cerrada' END AS Estado
+            FROM Cajas_Aperturas_Main WHERE cod_Caja = @CodCaja ORDER BY Cod_Apertura DESC;",
                 default,
                 new { CodCaja });
         }
@@ -260,49 +270,28 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static ErrorDto ValidarConfiguracionCaja(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            var validacion = ValidarConteoConfiguracionCaja(
-                connection,
-                transaction,
-                codCaja,
-                "SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;",
-                "Aun no se definen formas de pago para esta caja...");
-
-            if (validacion.Code != 0)
+            var validaciones = new (string Query, string Mensaje)[]
             {
-                return validacion;
+                ("SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;", "Aun no se definen formas de pago para esta caja..."),
+                ("SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;", "Aun no se definen documentos para esta caja..."),
+                ("SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;", "Aun no se definen servicios para esta caja...")
+            };
+
+            foreach (var item in validaciones)
+            {
+                var validacion = ValidarConteoConfiguracionCaja(connection, transaction, codCaja, item.Query, item.Mensaje);
+                if (validacion.Code != 0)
+                {
+                    return validacion;
+                }
             }
 
-            validacion = ValidarConteoConfiguracionCaja(
+            if (ConsultarEnteroCaja(
                 connection,
                 transaction,
-                codCaja,
-                "SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;",
-                "Aun no se definen documentos para esta caja...");
-
-            if (validacion.Code != 0)
-            {
-                return validacion;
-            }
-
-            validacion = ValidarConteoConfiguracionCaja(
-                connection,
-                transaction,
-                codCaja,
-                "SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;",
-                "Aun no se definen servicios para esta caja...");
-
-            if (validacion.Code != 0)
-            {
-                return validacion;
-            }
-
-            var aperturasAbiertas = connection.QuerySingle<int>(
                 @"SELECT COUNT(*) FROM cajas_aperturas_main
                   WHERE cod_caja = @CodCaja AND estado = 'A';",
-                CrearParametrosCaja(codCaja),
-                transaction: transaction);
-
-            if (aperturasAbiertas > 0)
+                codCaja) > 0)
             {
                 return DbHelper.ErrorResponse("La caja se encuentra abierta", CodigoErrorValidacion);
             }
@@ -317,12 +306,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             string query,
             string mensajeError)
         {
-            var cantidad = connection.QuerySingle<int>(
-                query,
-                CrearParametrosCaja(codCaja),
-                transaction: transaction);
-
-            return cantidad == 0
+            return ConsultarEnteroCaja(connection, transaction, query, codCaja) == 0
                 ? DbHelper.ErrorResponse(mensajeError, CodigoErrorValidacion)
                 : DbHelper.CreateOkResponse();
         }
@@ -383,16 +367,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static (int AperturaCompartida, string CierrePeriocidad) ObtenerDefinicionCaja(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            var definicion = connection.QueryFirstOrDefault<dynamic>(
+            var definicion = ConsultarCaja<dynamic>(
+                connection,
+                transaction,
                 @"SELECT Apertura_Compartida, Cierre_Periocidad
                   FROM cajas_definicion
                   WHERE cod_caja = @CodCaja AND activa = 1;",
-                CrearParametrosCaja(codCaja), transaction: transaction);
+                codCaja);
 
-            var aperturaCompartida = definicion is null ? 0 : (int)definicion.Apertura_Compartida;
-            var cierrePeriocidad = (definicion?.Cierre_Periocidad ?? string.Empty).ToString().Trim();
-
-            return (aperturaCompartida, cierrePeriocidad);
+            return (
+                definicion is null ? 0 : (int)definicion.Apertura_Compartida,
+                (definicion?.Cierre_Periocidad ?? string.Empty).ToString().Trim());
         }
 
         private static int CalcularDiasVence(string cierrePeriocidad)
@@ -410,13 +395,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static int ObtenerNuevaApertura(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            var ultimo = connection.QuerySingle<int>(
+            return ConsultarEnteroCaja(
+                connection,
+                transaction,
                 @"SELECT ISNULL(MAX(cod_apertura), 0)
                   FROM cajas_aperturas_main
                   WHERE cod_caja = @CodCaja;",
-                CrearParametrosCaja(codCaja), transaction: transaction);
-
-            return ultimo + 1;
+                codCaja) + 1;
         }
 
         private static void InsertarAperturaMain(
@@ -486,9 +471,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static string ObtenerCuentaDevolucion(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            return connection.QueryFirstOrDefault<string>(
+            return ConsultarCaja<string>(
+                connection,
+                transaction,
                 @"SELECT cod_cuenta_dev FROM cajas_definicion WHERE cod_caja = @CodCaja;",
-                CrearParametrosCaja(codCaja), transaction: transaction) ?? string.Empty;
+                codCaja) ?? string.Empty;
         }
 
         /// <summary>
