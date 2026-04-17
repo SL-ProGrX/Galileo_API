@@ -133,21 +133,28 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             if (req is null)
             {
-                return DbHelper.CreateErrorResponse(
-                    "La solicitud de apertura es requerida.",
-                    -2,
-                    new CajaAperturaResponseDto
+                return new ErrorDto<CajaAperturaResponseDto>
+                {
+                    Code = -2,
+                    Description = "La solicitud de apertura es requerida.",
+                    Result = new CajaAperturaResponseDto
                     {
                         codCaja = string.Empty,
                         codCuentaConta = string.Empty
-                    });
+                    }
+                };
             }
 
-            var response = DbHelper.CreateOkResponse(new CajaAperturaResponseDto
+            var response = new ErrorDto<CajaAperturaResponseDto>
             {
-                codCaja = req.codCaja ?? string.Empty,
-                codCuentaConta = string.Empty
-            });
+                Code = 0,
+                Description = "Ok",
+                Result = new CajaAperturaResponseDto
+                {
+                    codCaja = req.codCaja ?? string.Empty,
+                    codCuentaConta = string.Empty
+                }
+            };
 
             SqlConnection? connection = null;
             SqlTransaction? transaction = null;
@@ -197,7 +204,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
             catch (Exception ex)
             {
-                RollbackSilently(connection, transaction);
+                try
+                {
+                    if (connection?.State == System.Data.ConnectionState.Open)
+                    {
+                        transaction?.Rollback();
+                    }
+                }
+                catch
+                {
+                    // Se conserva el error original; un fallo en rollback no debe ocultarlo.
+                }
 
                 response.Code = -1;
                 response.Description = ex.Message;
@@ -214,23 +231,43 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         private static ErrorDto ValidarConfiguracionCaja(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
-            if (ObtenerCantidad(connection, transaction, "SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;", codCaja) == 0)
+            var formasPagoConfiguradas = connection.QuerySingle<int>(
+                "SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;",
+                new { CodCaja = codCaja },
+                transaction: transaction);
+
+            if (formasPagoConfiguradas == 0)
             {
                 return DbHelper.ErrorResponse("Aun no se definen formas de pago para esta caja...", -2);
             }
 
-            if (ObtenerCantidad(connection, transaction, "SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;", codCaja) == 0)
+            var documentosConfigurados = connection.QuerySingle<int>(
+                "SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;",
+                new { CodCaja = codCaja },
+                transaction: transaction);
+
+            if (documentosConfigurados == 0)
             {
                 return DbHelper.ErrorResponse("Aun no se definen documentos para esta caja...", -2);
             }
 
-            if (ObtenerCantidad(connection, transaction, "SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;", codCaja) == 0)
+            var serviciosConfigurados = connection.QuerySingle<int>(
+                "SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;",
+                new { CodCaja = codCaja },
+                transaction: transaction);
+
+            if (serviciosConfigurados == 0)
             {
                 return DbHelper.ErrorResponse("Aun no se definen servicios para esta caja...", -2);
             }
 
-            if (ObtenerCantidad(connection, transaction, @"SELECT COUNT(*) FROM cajas_aperturas_main
-                  WHERE cod_caja = @CodCaja AND estado = 'A';", codCaja) > 0)
+            var aperturasAbiertas = connection.QuerySingle<int>(
+                @"SELECT COUNT(*) FROM cajas_aperturas_main
+                  WHERE cod_caja = @CodCaja AND estado = 'A';",
+                new { CodCaja = codCaja },
+                transaction: transaction);
+
+            if (aperturasAbiertas > 0)
             {
                 return DbHelper.ErrorResponse("La caja se encuentra abierta", -2);
             }
@@ -238,25 +275,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             return DbHelper.CreateOkResponse();
         }
 
-        private static int ObtenerCantidad(SqlConnection connection, SqlTransaction transaction, string query, string codCaja)
-        {
-            return connection.QuerySingle<int>(query, new { CodCaja = codCaja }, transaction: transaction);
-        }
-
-        private static void RollbackSilently(SqlConnection? connection, SqlTransaction? transaction)
-        {
-            try
-            {
-                if (connection?.State == System.Data.ConnectionState.Open)
-                {
-                    transaction?.Rollback();
-                }
-            }
-            catch
-            {
-                // Se conserva el error original; un fallo en rollback no debe ocultarlo.
-            }
-        }
 
         private static (int AperturaCompartida, string CierrePeriocidad) ObtenerDefinicionCaja(SqlConnection connection, SqlTransaction transaction, string codCaja)
         {
