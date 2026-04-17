@@ -2,6 +2,7 @@
 using Galileo_API.Models.ProGrX_Comites;
 using Galileo.Models.ERROR;
 using System.Collections.Generic;
+using Galileo.Models.TES;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Comites
 {
