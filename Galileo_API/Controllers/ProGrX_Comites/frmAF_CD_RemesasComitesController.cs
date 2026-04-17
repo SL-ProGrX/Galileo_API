@@ -114,5 +114,23 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             [FromQuery] int codEmpresa,
             [FromQuery] int codRemesa)
             => _bl.AfCdRemesasTes_DetallePorRemesa(codEmpresa, codRemesa);
+
+        [HttpGet("TesTokens_ObtenerActivo")]
+        public ActionResult<ErrorDto<TesTokenDto>> TesTokens_ObtenerActivo([FromQuery] int codEmpresa)
+            => _bl.TesTokens_ObtenerActivo(codEmpresa);
+
+        [HttpGet("TesTokens_ObtenerConsec")]
+        public ActionResult<ErrorDto<TesTokenConsecDto>> TesTokens_ObtenerConsec([FromQuery] int codEmpresa, [FromQuery] string fecha)
+            => _bl.TesTokens_ObtenerConsec(codEmpresa, fecha);
+
+        [HttpPost("TesTokens_Insertar")]
+        public ActionResult<ErrorDto<bool>> TesTokens_Insertar([FromQuery] int codEmpresa, [FromBody] TesTokenInsertDto dto)
+            => _bl.TesTokens_Insertar(codEmpresa, dto);
+
+        [HttpPost("AfCdRemesasTes_Desembolso")]
+        public ActionResult<ErrorDto<bool>> AfCdRemesasTes_Desembolso(
+            [FromQuery] int codEmpresa,
+            [FromBody] AfCdRemesaDesembolsoParams param)
+            => _bl.AfCdRemesasTes_Desembolso(codEmpresa, param);
     }
 }

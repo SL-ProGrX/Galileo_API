@@ -66,5 +66,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
 
         public ErrorDto<List<AfCdRemesaDetalleDto>> AfCdRemesasTes_DetallePorRemesa(int codEmpresa, int codRemesa)
             => _db.AfCdRemesasTes_DetallePorRemesa(codEmpresa, codRemesa);
+
+        public ErrorDto<TesTokenDto> TesTokens_ObtenerActivo(int codEmpresa)
+            => _db.TesTokens_ObtenerActivo(codEmpresa);
+
+        public ErrorDto<TesTokenConsecDto> TesTokens_ObtenerConsec(int codEmpresa, string fecha)
+            => _db.TesTokens_ObtenerConsec(codEmpresa, fecha);
+
+        public ErrorDto<bool> TesTokens_Insertar(int codEmpresa, TesTokenInsertDto dto)
+            => _db.TesTokens_Insertar(codEmpresa, dto);
+
+        public ErrorDto<bool> AfCdRemesasTes_Desembolso(int codEmpresa, AfCdRemesaDesembolsoParams param)
+            => _db.AfCdRemesasTes_Desembolso(codEmpresa, param);
     }
 }
