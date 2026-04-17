@@ -14,6 +14,40 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
         }
 
+        private static string ObtenerCampoOrdenSeguro(string? sortField)
+        {
+            return (sortField ?? string.Empty).Trim().ToUpperInvariant() switch
+            {
+                "ID_ROE" => "ID_ROE",
+                "TIPOROE" => "TIPOROE",
+                "CEDULA_ASO" => "CEDULA_ASO",
+                "IDENTIFICACION_DEPO" => "IDENTIFICACION_DEPO",
+                "NOMBRE_DEPO" => "NOMBRE_DEPO",
+                "FECHA" => "FECHA",
+                "USUARIO" => "USUARIO",
+                "MONTO_LOCAL" => "MONTO_LOCAL",
+                "MONTO_DOL" => "MONTO_DOL",
+                "TIPO_CAMBIO" => "TIPO_CAMBIO",
+                "REGISTRO_FECHA" => "REGISTRO_FECHA",
+                "REGISTRO_USUARIO" => "REGISTRO_USUARIO",
+                "ACTUALIZA_FECHA" => "ACTUALIZA_FECHA",
+                "ACTUALIZA_USUARIO" => "ACTUALIZA_USUARIO",
+                "USUARIO_ANULACION" => "USUARIO_ANULACION",
+                "FECHA_ANULACION" => "FECHA_ANULACION",
+                "OBSERV_ANULACION" => "OBSERV_ANULACION",
+                "IMPRIME_FECHA" => "IMPRIME_FECHA",
+                "IMPRIME_USUARIO" => "IMPRIME_USUARIO",
+                "ID_SESION" => "ID_SESION",
+                "ESTADO" => "ESTADO",
+                _ => "ID_ROE"
+            };
+        }
+
+        private static string ObtenerDireccionOrdenSeguro(int sortOrder)
+        {
+            return sortOrder == 0 ? "DESC" : "ASC";
+        }
+
         /// <summary>
         /// Consulta los ROE de cajas para anular
         /// </summary>
@@ -41,14 +75,15 @@ namespace Galileo.DataBaseTier
                 var totalQuery = "select COUNT(1) from CAJAS_ROE";
                 result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? "ID_ROE"
-                    : filtros.sortField;
-
                 var query = @"select ID_ROE, TIPOROE, rtrim(CEDULA_ASO) as 'CEDULA_ASO', IDENTIFICACION_DEPO, NOMBRE_DEPO, FECHA, USUARIO, MONTO_LOCAL, MONTO_DOL,TIPO_CAMBIO
                                 , REGISTRO_FECHA, REGISTRO_USUARIO, ACTUALIZA_FECHA, ACTUALIZA_USUARIO, USUARIO_ANULACION, FECHA_ANULACION, OBSERV_ANULACION, IMPRIME_FECHA, IMPRIME_USUARIO
                                 , ISNULL(ID_SESION,'') AS 'ID_SESION', ESTADO
                                 From CAJAS_ROE WHERE ESTADO = 'A'  ";
+
+                var sortField = ObtenerCampoOrdenSeguro(filtros.sortField);
+                var sortDirection = ObtenerDireccionOrdenSeguro(filtros.sortOrder ?? 0);
+                var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
+                var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
 
                 if (!filtros.rango_fechas)
                 {
@@ -75,9 +110,9 @@ namespace Galileo.DataBaseTier
                             or NOMBRE_DEPO like '%'+@filtro+'%') ";
                 }
 
-                query += $@" order by {sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                             OFFSET {filtros.pagina} ROWS
-                             FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                query += $@" order by {sortField} {sortDirection}
+                             OFFSET @pagina ROWS
+                             FETCH NEXT @paginacion ROWS ONLY";
 
                 result.Result.lista = connection.Query<CajasRoeAnularData>(query, new
                 {
@@ -85,7 +120,9 @@ namespace Galileo.DataBaseTier
                     fecha_fin = filtros.fecha_hasta,
                     cedula = filtros.IDENTIFICACION_DEPO,
                     nombre = filtros.NOMBRE_DEPO,
-                    filtro = filtros.filtro
+                    filtro = filtros.filtro,
+                    pagina,
+                    paginacion
                 }).ToList();
             }
             catch (Exception ex)
