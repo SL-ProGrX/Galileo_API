@@ -16,6 +16,47 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
         }
 
+        private const string MensajeOk = "Ok";
+        private const int CodigoErrorValidacion = -2;
+
+        private static ErrorDto<T> CrearRespuestaOk<T>(T? result = default)
+        {
+            return new ErrorDto<T>
+            {
+                Code = 0,
+                Description = MensajeOk,
+                Result = result
+            };
+        }
+
+        private static ErrorDto<T> CrearRespuestaValidacion<T>(string descripcion, T result)
+        {
+            return new ErrorDto<T>
+            {
+                Code = CodigoErrorValidacion,
+                Description = descripcion,
+                Result = result
+            };
+        }
+
+        private static void AsignarError<T>(ErrorDto<T> response, Exception ex)
+        {
+            response.Code = -1;
+            response.Description = ex.Message;
+            response.Result = default;
+        }
+
+        private static void AsignarResultadoError<T>(ErrorDto<T> response, ErrorDto error)
+        {
+            response.Code = error.Code;
+            response.Description = error.Description;
+        }
+
+        private static object CrearParametrosCaja(string codCaja)
+        {
+            return new { CodCaja = codCaja };
+        }
+
         /// <summary>
         /// Obtener las cajas asignadas a un usuario
         /// </summary>
@@ -133,28 +174,20 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             if (req is null)
             {
-                return new ErrorDto<CajaAperturaResponseDto>
-                {
-                    Code = -2,
-                    Description = "La solicitud de apertura es requerida.",
-                    Result = new CajaAperturaResponseDto
+                return CrearRespuestaValidacion(
+                    "La solicitud de apertura es requerida.",
+                    new CajaAperturaResponseDto
                     {
                         codCaja = string.Empty,
                         codCuentaConta = string.Empty
-                    }
-                };
+                    });
             }
 
-            var response = new ErrorDto<CajaAperturaResponseDto>
+            var response = CrearRespuestaOk(new CajaAperturaResponseDto
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new CajaAperturaResponseDto
-                {
-                    codCaja = req.codCaja ?? string.Empty,
-                    codCuentaConta = string.Empty
-                }
-            };
+                codCaja = req.codCaja ?? string.Empty,
+                codCuentaConta = string.Empty
+            });
 
             SqlConnection? connection = null;
             SqlTransaction? transaction = null;
@@ -164,8 +197,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 var validaClave = Cajas_Apertura_UsuarioAutorizado_Validar(CodEmpresa, req.usuario, req.clave, req.codCaja ?? string.Empty);
                 if (validaClave.Code == -2)
                 {
-                    response.Code = -2;
-                    response.Description = validaClave.Description;
+                    AsignarResultadoError(response, validaClave);
                     return response;
                 }
 
@@ -176,8 +208,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 var validacion = ValidarConfiguracionCaja(connection, transaction, req.codCaja ?? string.Empty);
                 if (validacion.Code != 0)
                 {
-                    response.Code = validacion.Code;
-                    response.Description = validacion.Description;
+                    AsignarResultadoError(response, validacion);
                     transaction.Rollback();
                     return response;
                 }
@@ -216,9 +247,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     // Se conserva el error original; un fallo en rollback no debe ocultarlo.
                 }
 
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+                AsignarError(response, ex);
             }
             finally
             {
@@ -233,7 +262,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             var formasPagoConfiguradas = connection.QuerySingle<int>(
                 "SELECT COUNT(*) FROM CAJAS_FORMAS_PAGO WHERE cod_caja = @CodCaja;",
-                new { CodCaja = codCaja },
+                CrearParametrosCaja(codCaja),
                 transaction: transaction);
 
             if (formasPagoConfiguradas == 0)
@@ -243,7 +272,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             var documentosConfigurados = connection.QuerySingle<int>(
                 "SELECT COUNT(*) FROM CAJAS_DOCUMENTOS WHERE cod_caja = @CodCaja;",
-                new { CodCaja = codCaja },
+                CrearParametrosCaja(codCaja),
                 transaction: transaction);
 
             if (documentosConfigurados == 0)
@@ -253,7 +282,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             var serviciosConfigurados = connection.QuerySingle<int>(
                 "SELECT COUNT(*) FROM cajas_servicios_asignados WHERE cod_caja = @CodCaja;",
-                new { CodCaja = codCaja },
+                CrearParametrosCaja(codCaja),
                 transaction: transaction);
 
             if (serviciosConfigurados == 0)
@@ -264,7 +293,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             var aperturasAbiertas = connection.QuerySingle<int>(
                 @"SELECT COUNT(*) FROM cajas_aperturas_main
                   WHERE cod_caja = @CodCaja AND estado = 'A';",
-                new { CodCaja = codCaja },
+                CrearParametrosCaja(codCaja),
                 transaction: transaction);
 
             if (aperturasAbiertas > 0)
@@ -282,7 +311,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 @"SELECT Apertura_Compartida, Cierre_Periocidad
                   FROM cajas_definicion
                   WHERE cod_caja = @CodCaja AND activa = 1;",
-                new { CodCaja = codCaja }, transaction: transaction);
+                CrearParametrosCaja(codCaja), transaction: transaction);
 
             var aperturaCompartida = definicion is null ? 0 : (int)definicion.Apertura_Compartida;
             var cierrePeriocidad = (definicion?.Cierre_Periocidad ?? string.Empty).ToString().Trim();
@@ -309,7 +338,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 @"SELECT ISNULL(MAX(cod_apertura), 0)
                   FROM cajas_aperturas_main
                   WHERE cod_caja = @CodCaja;",
-                new { CodCaja = codCaja }, transaction: transaction);
+                CrearParametrosCaja(codCaja), transaction: transaction);
 
             return ultimo + 1;
         }
@@ -415,7 +444,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         {
             return connection.QueryFirstOrDefault<string>(
                 @"SELECT cod_cuenta_dev FROM cajas_definicion WHERE cod_caja = @CodCaja;",
-                new { CodCaja = codCaja }, transaction: transaction) ?? string.Empty;
+                CrearParametrosCaja(codCaja), transaction: transaction) ?? string.Empty;
         }
 
         /// <summary>
