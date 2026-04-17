@@ -842,17 +842,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (int.TryParse(s, out var n)) return n;
             return 0;
         }
-        private sealed class CatalogoCfg
-        {
-            public string TablaCatalogo { get; }
-            public string TablaAsignacion { get; }
 
-            public CatalogoCfg(string tablaCatalogo, string tablaAsignacion)
-            {
-                TablaCatalogo = tablaCatalogo;
-                TablaAsignacion = tablaAsignacion;
-            }
-        }
         private static bool TryParseFecha(string? s, out DateTime dt)
         {
             dt = default;

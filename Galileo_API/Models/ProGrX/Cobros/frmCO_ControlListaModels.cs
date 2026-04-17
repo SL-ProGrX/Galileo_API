@@ -299,4 +299,132 @@
     }
 
     #endregion
+
+    #region Gestiones Modal
+
+    public class CoControlListaGestionActualRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaGestionOperacionRow
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaGestionActualResponse
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string estado_mora_texto { get; set; } = string.Empty;
+        public string estado_mora_tag { get; set; } = string.Empty;
+
+        public string cod_gestion { get; set; } = string.Empty;
+        public string gestion_desc { get; set; } = string.Empty;
+
+        public string cod_causa { get; set; } = string.Empty;
+        public string causa_desc { get; set; } = string.Empty;
+
+        public string cod_arreglo { get; set; } = string.Empty;
+        public string arreglo_desc { get; set; } = string.Empty;
+        public DateTime? arreglo_vence { get; set; }
+
+        public decimal monto { get; set; } = 0;
+        public bool permite_modificar_monto { get; set; } = false;
+        public decimal desviacion_min { get; set; } = 0;
+        public decimal desviacion_max { get; set; } = 0;
+
+        public List<CoControlListaGestionOperacionRow> operaciones { get; set; } = new();
+    }
+
+    public class CoControlListaGestionDetalleRequest
+    {
+        public string cod_gestion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaGestionDetalleResponse
+    {
+        public string cod_gestion { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public bool permite_modificar_monto { get; set; } = false;
+        public decimal desviacion_min { get; set; } = 0;
+        public decimal desviacion_max { get; set; } = 0;
+    }
+
+    public class CoControlListaGestionProcesarRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string usuario_sesion { get; set; } = string.Empty;
+        public string cod_gestion { get; set; } = string.Empty;
+        public DateTime? fecha_pago { get; set; }
+        public string notas { get; set; } = string.Empty;
+        public string oficina { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string operacion { get; set; } = string.Empty;
+        public string cod_causa { get; set; } = string.Empty;
+        public string cod_arreglo { get; set; } = string.Empty;
+    }
+
+    #endregion
+
+    #region Cartera
+
+    public class CoControlListaResumenCarteraUsuarioRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaResumenCarteraTotalesItem
+    {
+        public decimal saldo { get; set; } = 0;
+        public int operaciones { get; set; } = 0;
+    }
+
+    public class CoControlListaResumenCarteraTotalesResponse
+    {
+        public CoControlListaResumenCarteraTotalesItem al_dia { get; set; } = new();
+        public CoControlListaResumenCarteraTotalesItem mora { get; set; } = new();
+        public CoControlListaResumenCarteraTotalesItem cobro_jud { get; set; } = new();
+        public CoControlListaResumenCarteraTotalesItem cartera { get; set; } = new();
+    }
+
+    public class CoControlListaResumenCarteraAlDiaRow
+    {
+        public string id { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public decimal saldo { get; set; } = 0;
+        public string proceso { get; set; } = string.Empty;
+        public int operaciones { get; set; } = 0;
+    }
+
+    public class CoControlListaResumenCarteraMoraRow
+    {
+        public string id { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public decimal saldo { get; set; } = 0;
+        public int operaciones { get; set; } = 0;
+        public decimal int_corrientes { get; set; } = 0;
+        public decimal int_moratorios { get; set; } = 0;
+        public decimal cargos { get; set; } = 0;
+        public decimal mora_principal { get; set; } = 0;
+        public int cuotas { get; set; } = 0;
+        public string cta_antigua { get; set; } = string.Empty;
+        public string cta_ultima { get; set; } = string.Empty;
+    }
+
+    public class CoControlListaResumenCarteraUsuarioResponse
+    {
+        public List<CoControlListaResumenCarteraAlDiaRow> lista_al_dia_cobro_jud { get; set; } = new();
+        public List<CoControlListaResumenCarteraMoraRow> lista_mora { get; set; } = new();
+        public CoControlListaResumenCarteraTotalesResponse totales { get; set; } = new();
+    }
+
+    #endregion
+
 }

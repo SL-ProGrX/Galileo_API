@@ -3,6 +3,8 @@ namespace Galileo.Models.TES
     public class TesTokenDto
     {
         public required string idtoken { get; set; }
+
+        public required string id_token { get; set; }
         public required string estado { get; set; }
         public DateTime registrofecha { get; set; }
         public required string registrousuario { get; set; }
