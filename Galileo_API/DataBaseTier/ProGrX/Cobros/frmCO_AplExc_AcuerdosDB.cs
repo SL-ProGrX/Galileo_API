@@ -32,9 +32,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoAplExcAcuerdosData?> CoAplExcAcuerdos_Obtener(int codEmpresa, int idAcuerdo)
         {
             const string query = @"exec spCbr_Excedente_Apl_Acuerdos_Consulta @IdAcuerdo";
-            return DbHelper.ExecuteSingleQuery<CoAplExcAcuerdosData>(
+
+            var resp = DbHelper.ExecuteSingleQuery<CoAplExcAcuerdosData>(
                 _portalDb, codEmpresa, query, null, new { IdAcuerdo = idAcuerdo }
             );
+
+            if (resp.Code < 0 || resp.Result == null)
+                return resp;
+
+            resp.Result.giro_excedentes = resp.Result.giro_excedentes == "True" ? "Sí" : "No";
+            resp.Result.estado = resp.Result.estado == "True" ? "Activo" : "Inactivo";
+
+            return resp;
         }
 
         /// <summary>
