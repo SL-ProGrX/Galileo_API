@@ -2,7 +2,7 @@
 using Galileo_API.BusinessLogic.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Galileo_API.Models.ProGrX.Cobros.FrmCoCobroJudicialMasivoModels;
+using static Galileo_API.Models.ProGrX.Cobros.FrmCoProcesosMasivoModels;
 
 
 namespace Galileo_API.Controllers.ProGrX.Cobros
@@ -18,18 +18,19 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpPost("Co_CobroJudicialMasivo_CargarOperaciones")]
-        public ErrorDto<CoCobroJudicialMasivoCargaResponse> Co_CobroJudicialMasivo_CargarOperaciones(
-                    int codEmpresa, [FromBody] CoCobroJudicialMasivoCargaRequest request)
+        public ErrorDto<CoProcesosMasivoCargaResponse> Co_CobroJudicialMasivo_CargarOperaciones(
+                    int codEmpresa, [FromBody] CoProcesosMasivoCargaRequest request, string modulo)
     => _bl.Co_CobroJudicialMasivo_CargarOperaciones(
         codEmpresa,
         request.Operaciones,
-        request.Usuario);
+        request.Usuario,
+       modulo  );
 
 
         [Authorize]
         [HttpPost("Co_CobroJudicialMasivo_Procesar")]
-        public ErrorDto<bool> Co_CobroJudicialMasivo_Procesar(int codEmpresa,  string usuario,string notas )
-              => _bl.Co_CobroJudicialMasivo_Procesar(codEmpresa, notas, usuario);
+        public ErrorDto<bool> Co_CobroJudicialMasivo_Procesar(int codEmpresa,  string usuario,string notas, string modulo )
+              => _bl.Co_CobroJudicialMasivo_Procesar(codEmpresa, notas, usuario, modulo);
 
     }
 }
