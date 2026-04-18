@@ -1085,7 +1085,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     "per_cobro_judicial" => "PER_COBRO_JUDICIAL",
                     "per_reversiones" => "PER_REVERSIONES",
                     "per_readecuaciones" => "PER_READECUACIONES",
-                    _ => throw new ArgumentException(nameof(tipo), "Tipo no válido")
+                    _ => throw new ArgumentException("Tipo no válido", nameof(tipo))
                 };
 
                 string sql = $@"
