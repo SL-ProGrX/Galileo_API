@@ -130,9 +130,47 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpGet("OperacionesPorPersonaLinea_Listar")]
-        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa, string cedula, string linea)
         {
             return _bl.OperacionesPorPersonaLinea_Listar(codEmpresa, cedula, linea);
+        }
+
+        [Authorize]
+        [HttpPost("CambiarDeductora")]
+        public ErrorDto<string> CambiarDeductora(int codEmpresa, COCambiarDeductoraRequestDto request)
+        {
+            return _bl.CambiarDeductora(
+                codEmpresa,
+                request.operacion,
+                request.deductora
+            );
+        }
+
+        [Authorize]
+        [HttpPost("ValidarCongelamiento")]
+        public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, COValidarCongelamientoRequestDto request)
+        {
+            return _bl.ValidarCongelamiento(codEmpresa, request.cedula, request.tipo
+            );
+        }
+
+        [HttpPost("ValidarPasoCobroJudicial")]
+        public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
+        {
+            return _bl.ValidarPasoCobroJudicial(codEmpresa, operacion);
+        }
+
+        [HttpPost("CobroJudicial_Ejecutar")]
+        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
+        {
+            return _bl.CobroJudicial_Ejecutar(codEmpresa, request.operacion, request.usuario
+            );
+        }
+
+        [HttpGet("Avisos_Listar")]
+        public ActionResult<ErrorDto<List<COAvisoDto>>> Avisos_Listar(int codEmpresa, int operacion)
+        {
+            return _bl.Avisos_Listar(codEmpresa, operacion);
         }
     }
 }
