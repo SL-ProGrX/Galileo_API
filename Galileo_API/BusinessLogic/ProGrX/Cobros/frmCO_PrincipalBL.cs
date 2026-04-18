@@ -95,9 +95,34 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.LineasPorPersona_Listar(codEmpresa, cedula);
         }
 
-        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa, string cedula, string linea)
         {
             return _db.OperacionesPorPersonaLinea_Listar(codEmpresa, cedula, linea);
+        }
+
+        public ErrorDto<string> CambiarDeductora(int codEmpresa, int operacion, int deductora)
+        {
+            return _db.CambiarDeductora(codEmpresa, operacion, deductora);
+        }
+
+        public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, string cedula, string tipo)
+        {
+            return _db.ValidarCongelamiento(codEmpresa, cedula, tipo);
+        }
+
+        public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
+        {
+            return _db.ValidarPasoCobroJudicial(codEmpresa, operacion);
+        }
+
+        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario)
+        {
+            return _db.CobroJudicial_Ejecutar(codEmpresa, operacion, usuario);
+        }
+
+        public ErrorDto<List<COAvisoDto>> Avisos_Listar(int codEmpresa, int operacion)
+        {
+            return _db.Avisos_Listar(codEmpresa, operacion);
         }
     }
 }
