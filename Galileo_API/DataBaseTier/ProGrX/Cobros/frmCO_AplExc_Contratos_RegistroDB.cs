@@ -247,12 +247,6 @@ exec spCbr_Excedente_Apl_Contratos_Add
             }
         }
 
-        private sealed class CoAplExcContratosRegistroGuardarDbResponse
-        {
-            public int Pass { get; set; }
-            public long ContratoId { get; set; }
-            public string? Movimiento { get; set; }
-            public string? Mensaje { get; set; }
-        }
+      
     }
 }

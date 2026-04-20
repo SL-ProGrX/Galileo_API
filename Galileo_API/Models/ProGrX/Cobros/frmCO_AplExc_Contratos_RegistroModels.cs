@@ -53,30 +53,38 @@
         public class CoAplExcContratosRegistroCreditoRow
         {
             public string estado_desc { get; set; } = string.Empty;
-            public long id_contrato { get; set; }
+            public long id_contrato { get; set; } = 0;
             public string codigo { get; set; } = string.Empty;
-            public long id_solicitud { get; set; }
-            public decimal saldo { get; set; }
+            public long id_solicitud { get; set; } = 0;
+            public decimal saldo { get; set; } = 0;
             public DateTime? fecha_vencimiento { get; set; }
         }
 
         public class CoAplExcContratosRegistroGuardarRequest
         {
-            public long id_contrato { get; set; }
+            public long id_contrato { get; set; } = 0;
             public string cedula { get; set; } = string.Empty;
             public DateTime? fecha_vencimiento { get; set; }
-            public int estado { get; set; }
-            public long id_solicitud { get; set; }
+            public int estado { get; set; } = 0;
+            public long id_solicitud { get; set; } = 0;
             public string observaciones { get; set; } = string.Empty;
             public string usuario { get; set; } = string.Empty;
         }
 
         public class CoAplExcContratosRegistroGuardarResponse
         {
-            public bool pass { get; set; }
-            public long contrato_id { get; set; }
+            public bool pass { get; set; } = false;
+            public long contrato_id { get; set; } = 0;
             public string movimiento { get; set; } = string.Empty;
             public string mensaje { get; set; } = string.Empty;
+        }
+
+        public class CoAplExcContratosRegistroGuardarDbResponse
+        {
+            public int Pass { get; set; } = 0;
+            public long ContratoId { get; set; } = 0;
+            public string? Movimiento { get; set; } = string.Empty;
+            public string? Mensaje { get; set; } = string.Empty;
         }
     }
 
