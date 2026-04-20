@@ -4,50 +4,70 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using System.Data;
 using System.Text;
-using static Galileo_API.Models.ProGrX.Cobros.FrmCoCobroJudicialMasivoModels;
+using static Galileo_API.Models.ProGrX.Cobros.FrmCoProcesosMasivoModels;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCoCobroJudicialMasivoDB
+    public class FrmCoProcesosMasivoDB
     {
         private readonly PortalDB _portalDB;
+        private const string ModuloIncobrablesMasivo = "CBR-INC";
         private const string ModuloCobroJudicialMasivo = "CBR-CJE";
+        private const string ModuloCobroJudicialReversaMasivo = "CBR-re";
+
+
         private const string AccionCarga = "C";
         private const int LongitudMaximaBloqueSql = 40000;
         // Módulo para bitácora
         private const int ModuloBitacora = 4;
 
-        public FrmCoCobroJudicialMasivoDB(IConfiguration config)
+        public FrmCoProcesosMasivoDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }
 
 
         /// <summary>
-        /// Carga masivamente las operaciones de cobro judicial.
-        /// Migra la lógica de frmCO_Cobro_Judicial_Masivo.
+        /// Carga masivamente las operaciones de proceso indicado. 
         /// </summary>
-        public ErrorDto<CoCobroJudicialMasivoCargaResponse> Co_CobroJudicialMasivo_CargarOperaciones(int CodEmpresa, List<string> operaciones, string usuario)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="operaciones"></param>
+        /// <param name="usuario"></param>
+        ///  <param name="modulo"></param>
+        /// <returns></returns>
+        public ErrorDto<CoProcesosMasivoCargaResponse> Co_ProcesosMasivo_CargarArchivo(int CodEmpresa, List<string> operaciones, string usuario, string modulo)
         {
 
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                EjecutarCargaMasivaCobroJudicial(
+
+                if (!TieneOperacionesValidas(operaciones))
+                {
+                    return DbHelper.CreateErrorResponse<CoProcesosMasivoCargaResponse>(
+                                  "No existen operaciones válidas para procesar.",
+                                  -1,
+                                  new CoProcesosMasivoCargaResponse());
+                }
+
+
+
+                EjecutarCargaMasivaProcesos(
                     connection,
                     operaciones!,
-                    usuario);
+                    usuario,
+                    modulo);
 
-                var casosValidos = ObtenerRevisionCobroJudicial(connection, usuario, "R");
-                var casosInconsistentes = ObtenerRevisionCobroJudicial(connection, usuario, "I");
+                var casosValidos = ObtenerRevisionProcesos(connection, usuario, "R", modulo);
+                var casosInconsistentes = ObtenerRevisionProcesos(connection, usuario, "I", modulo);
 
-                var response = new CoCobroJudicialMasivoCargaResponse
+                var response = new CoProcesosMasivoCargaResponse
                 {
                     CasosValidos = casosValidos,
                     CasosInconsistentes = casosInconsistentes,
-                    Resumen = new CoCobroJudicialMasivoResumenModel
+                    Resumen = new CoProcesosMasivoResumenModel
                     {
                         CantidadCasosValidos = casosValidos.Count,
                         TotalMoraFinanciera = casosValidos.Sum(x => x.Mora_Financiera),
@@ -59,26 +79,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
             catch (Exception)
             {
-                return DbHelper.CreateErrorResponse<CoCobroJudicialMasivoCargaResponse>(
-           "Ocurrió un error al cargar y revisar el archivo de cobro judicial.",
+                return DbHelper.CreateErrorResponse<CoProcesosMasivoCargaResponse>(
+           "Ocurrió un error al cargar y revisar el archivo de incobrables.",
            -1,
-           new CoCobroJudicialMasivoCargaResponse());
+           new CoProcesosMasivoCargaResponse());
             }
         }
 
         /// <summary>
-        /// Ejecución de carga masiva de cobro judicial.
+        /// Ejecución de carga masiva delos registros de proceso correspondiente.
         /// </summary>
-        private static void EjecutarCargaMasivaCobroJudicial(IDbConnection connection, IEnumerable<string> operaciones, string usuario)
+        /// <param name="connection"></param>
+        /// <param name="operaciones"></param>
+        /// <param name="usuario"></param>
+        private static void EjecutarCargaMasivaProcesos(IDbConnection connection, IEnumerable<string> operaciones, string usuario,string modulo)
         {
             var numeroLinea = 0;
             var i = 0;
             var bloqueSql = new StringBuilder();
             var parameters = new DynamicParameters();
             var usuarioSeguro = (usuario ?? string.Empty).Trim();
-             
 
-           
 
             foreach (var operacion in operaciones)
             {
@@ -88,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 }
 
                 numeroLinea++;
-                var operacionSegura = SanitizarValorSql(operacion);
+                var operacionSegura = (operacion ?? string.Empty).Trim();
                 var clean = numeroLinea == 1 ? 1 : 0;
 
 
@@ -102,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                    @Clean{i};";
 
                 parameters.Add($"Tipo{i}", AccionCarga);
-                parameters.Add($"ProcesoId{i}", ModuloCobroJudicialMasivo);
+                parameters.Add($"ProcesoId{i}", modulo);
                 parameters.Add($"Usuario{i}", usuarioSeguro);
                 parameters.Add($"Llave01{i}", operacionSegura);
                 parameters.Add($"Llave02{i}", string.Empty);
@@ -111,7 +132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (numeroLinea == 1)
                 {
-                    connection.Execute(sqlActual,parameters);
+                    connection.Execute(sqlActual, parameters);
                     continue;
                 }
 
@@ -126,11 +147,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             EjecutarBloqueSql(connection, bloqueSql, parameters);
         }
 
-   
-
         /// <summary>
         /// Ejecuta el bloque acumulado y lo limpia.
         /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="bloqueSql"></param>
+        /// <param name="parameters"></param>
         private static void EjecutarBloqueSql(IDbConnection connection, StringBuilder bloqueSql, DynamicParameters parameters)
         {
             if (bloqueSql.Length == 0)
@@ -145,6 +167,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Indica si la lista contiene elementos para procesar.
         /// </summary>
+        /// <param name="operaciones"></param>
+        /// <returns></returns>
         private static bool TieneOperacionesValidas(List<string>? operaciones)
         {
             return operaciones != null && operaciones.Count > 0;
@@ -163,31 +187,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return decimal.TryParse(operacion.Trim(), out _);
         }
 
-        /// <summary>
-        /// Sanitiza valores para construcción de SQL dinámico.
-        /// </summary>
-        private static string SanitizarValorSql(string? valor)
-        {
-            return (valor ?? string.Empty).Trim().Replace("'", "''");
-        }
 
         /// <summary>
-        /// Recupera la revisión de los casos de cobro judicial, diferenciando entre válidos e inconsistentes según el tipo de revisión solicitado.
+        /// Recupera la revisión de los casos del procesos de carga masiva, diferenciando entre válidos e inconsistentes según el tipo de revisión solicitado.
         /// </summary>
         /// <param name="connection"></param>
         /// <param name="usuario"></param>
         /// <param name="tipoRevision"></param>
+        /// <param name="modulo"></param>
         /// <returns></returns>
-        private static List<CoCobroJudicialMasivoRegistroModel> ObtenerRevisionCobroJudicial(IDbConnection connection,string usuario,string tipoRevision)
+        private static List<CoProcesosMasivoRegistroModel> ObtenerRevisionProcesos(IDbConnection connection, string usuario, string tipoRevision,string modulo)
         {
-            const string storedProcedure = "spCBR_Cobro_Judicial_Masivo_Revisa";
+            string  storedProcedure = ObtenerStoredProcedureRevision(modulo);
 
-            var resultado = connection.Query<CoCobroJudicialMasivoRegistroModel>(
+             
+            if (string.IsNullOrWhiteSpace(storedProcedure))
+            {
+                throw new ArgumentException("Módulo no válido.");
+            }
+
+            var resultado = connection.Query<CoProcesosMasivoRegistroModel>(
                 storedProcedure,
                 new
                 {
                     Tipo = AccionCarga,
-                    ProcesoId = ModuloCobroJudicialMasivo,
+                    ProcesoId = modulo,
                     Usuario = usuario,
                     Lista = tipoRevision
                 },
@@ -195,17 +219,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return resultado.AsList();
         }
-    
+
         /// <summary>
-        ///  Procesa los casos de cobro judicial masivo previamente cargados y revisados, registrando una nota explicativa.
+        ///  Procesa los casos del proceso masivo previamente cargados y revisados, registrando una nota explicativa.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <param name="usuario"></param>
+        /// <param name="modulo"></param>
         /// <returns></returns>
-        public ErrorDto<bool> Co_CobroJudicialMasivo_Procesar(int CodEmpresa, string nota, string usuario)
+        public ErrorDto<bool> Co_ProcesosMasivo_Procesar(int CodEmpresa, string nota, string usuario,string modulo)
         {
-           
+
 
             var notas = nota?.Trim() ?? string.Empty;
 
@@ -221,11 +246,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                const string storedProcedure = "spCBR_Cobro_Judicial_Masivo_Procesa";
+                 string storedProcedure = ObtenerStoredProcedureProceso(modulo);
+               
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Tipo", "C");
-                parameters.Add("@ProcesoId", "CBR-CJE");
+                parameters.Add("@Tipo", AccionCarga);
+                parameters.Add("@ProcesoId", modulo);
                 parameters.Add("@Usuario", usuario);
                 parameters.Add("@Notas", notas);
 
@@ -239,10 +265,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             catch (Exception)
             {
                 return DbHelper.CreateErrorResponse<bool>(
-                    "Error al procesar los cobros judiciales masivos.",
+                    "Error al procesar los  registros del proceso.",
                     -1,
                     false);
             }
         }
+        private static string ObtenerStoredProcedureRevision(string modulo) => modulo switch
+        {
+            ModuloCobroJudicialMasivo => "spCBR_Cobro_Judicial_Masivo_Revisa",
+            ModuloIncobrablesMasivo => "spCBR_Incobrables_Masivo_Revisa",
+            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Revisa",
+            _ => throw new ArgumentException("Módulo no válido.")
+        };
+
+        private static string ObtenerStoredProcedureProceso(string modulo) => modulo switch
+        {
+            ModuloCobroJudicialMasivo => "spCBR_Cobro_Judicial_Masivo_Procesa",
+            ModuloIncobrablesMasivo => "spCBR_Incobrables_Masivo_Procesa",
+            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Procesa",
+            _ => throw new ArgumentException("Módulo no válido.")
+        };
     }
 }
