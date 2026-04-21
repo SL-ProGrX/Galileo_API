@@ -44,8 +44,8 @@ namespace Galileo.DataBaseTier
             return sqlSeguro;
         }
 
-        public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default!)
-            => new() { Code = 0, Description = "Ok", Result = initialResult };
+        public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default!, string description = "Ok")
+            => new() { Code = 0, Description = description, Result = initialResult };
 
         public static ErrorDto CreateOkResponse()
             => new() { Code = 0, Description = "OK" };
