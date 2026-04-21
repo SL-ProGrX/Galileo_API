@@ -52,5 +52,23 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CO_AplExc_Contratos_Registro_Guardar(codEmpresa, request);
         }
 
+        public ErrorDto<List<CoAplExcContratosRegistroPersonaF4Row>> CO_AplExc_Contratos_Registro_Personas_F4_Obtener(
+                int codEmpresa,
+                string request)
+        {
+            var filtros = JsonConvert.DeserializeObject<CoAplExcContratosRegistroPersonaF4Request>(request)
+                          ?? new CoAplExcContratosRegistroPersonaF4Request();
+
+            return _db.CO_AplExc_Contratos_Registro_Personas_F4_Obtener(codEmpresa, filtros);
+        }
+
+        public ErrorDto<CoAplExcContratosRegistroCargaLoteResponse> CO_AplExc_Contratos_Registro_Carga_Lote(
+    int codEmpresa,
+    CoAplExcContratosRegistroCargaLoteRequest request)
+        {
+            request ??= new CoAplExcContratosRegistroCargaLoteRequest();
+            return _db.CO_AplExc_Contratos_Registro_Carga_Lote(codEmpresa, request);
+        }
+
     }
 }

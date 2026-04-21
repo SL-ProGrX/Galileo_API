@@ -49,5 +49,21 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         {
             return _bl.CO_AplExc_Contratos_Registro_Guardar(CodEmpresa, request);
         }
+
+        [HttpGet("CO_AplExc_Contratos_Registro_Personas_F4_Obtener")]
+        public ErrorDto<List<CoAplExcContratosRegistroPersonaF4Row>> CO_AplExc_Contratos_Registro_Personas_F4_Obtener(
+            int CodEmpresa,
+            string request)
+        {
+            return _bl.CO_AplExc_Contratos_Registro_Personas_F4_Obtener(CodEmpresa, request);
+        }
+
+        [HttpPost("CO_AplExc_Contratos_Registro_Carga_Lote")]
+        public ErrorDto<CoAplExcContratosRegistroCargaLoteResponse> CO_AplExc_Contratos_Registro_Carga_Lote(
+    int CodEmpresa,
+    [FromBody] CoAplExcContratosRegistroCargaLoteRequest request)
+        {
+            return _bl.CO_AplExc_Contratos_Registro_Carga_Lote(CodEmpresa, request);
+        }
     }
 }
