@@ -18,18 +18,18 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpGet("Cajas_Aperturas_Consulta")]
-        public ErrorDto<List<CajasAperturaReporteDto>> Cajas_Aperturas_Consulta(int codEmpresa, string codCaja, DateTime fechaInicio,
+        public ErrorDto<List<CajasAperturaReporteDto>> Cajas_Aperturas_Consulta(int codEmpresa, string? codCaja, DateTime fechaInicio,
             DateTime fechaCorte, string filtro)
         {
-            return _bl.Cajas_Aperturas_Consulta(codEmpresa, codCaja, fechaInicio, fechaCorte, filtro);
+            return _bl.Cajas_Aperturas_Consulta(codEmpresa, codCaja ?? string.Empty, fechaInicio, fechaCorte, filtro);
         }
 
         [Authorize]
         [HttpGet("Cajas_Acceso_Consulta")]
-        public ErrorDto<List<CajasAccesoDto>> Cajas_Acceso_Consulta(int codEmpresa, string codCaja, DateTime fechaInicio,
+        public ErrorDto<List<CajasAccesoDto>> Cajas_Acceso_Consulta(int codEmpresa, string? codCaja, DateTime fechaInicio,
            DateTime fechaCorte)
         {
-            return _bl.Cajas_Acceso_Consulta(codEmpresa, codCaja, fechaInicio, fechaCorte);
+            return _bl.Cajas_Acceso_Consulta(codEmpresa, codCaja ?? string.Empty, fechaInicio, fechaCorte);
         }
 
         [Authorize]

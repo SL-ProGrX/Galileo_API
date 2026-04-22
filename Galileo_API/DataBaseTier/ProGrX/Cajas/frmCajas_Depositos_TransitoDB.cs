@@ -80,8 +80,8 @@ namespace Galileo.DataBaseTier
                     "spCajas_Depositos_Transito",
                     new
                     {
-                        fecha_inicio = fechaInicio,
-                        fecha_corte = fechaCorte,
+                        fInicio = fechaInicio,
+                        fCorte = fechaCorte,
                         filtros.banco,
                         filtros.numero,
                         filtros.MntInicio,
