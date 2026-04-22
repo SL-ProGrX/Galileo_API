@@ -179,4 +179,13 @@
         public string concepto { get; set; } = "";
     }
 
+    public class COEjecutivoDto
+    {
+        public DateTime? fecha { get; set; }
+        public string oficial { get; set; } = string.Empty;
+        public bool mantiene { get; set; }
+        public bool rebajo { get; set; }
+        public bool dobleMora { get; set; }
+    }
+
 }

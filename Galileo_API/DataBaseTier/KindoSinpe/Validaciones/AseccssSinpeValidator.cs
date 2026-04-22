@@ -35,7 +35,7 @@ namespace Galileo_API.DataBaseTier
     // LEGACY: código histórico, no modificar sin plan de refactor
     public class AseccssSinpeValidator : IWfcSinpe
     {
-        private readonly IConfiguration _config;
+
         private readonly SINPE_PINClient _srvSinpePin = new SINPE_PINClient();
         private readonly SINPE_TFTClient _srvSinpeTft = new SINPE_TFTClient();
         private readonly SINPE_CCDClient _srvSinpeCcd = new SINPE_CCDClient();
@@ -44,12 +44,13 @@ namespace Galileo_API.DataBaseTier
 
         private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
+        private readonly PortalDB _portalDB;
 
         public AseccssSinpeValidator(IConfiguration config)
         {
-            _config = config;
-            _mTesoreria = new MTesoreria(_config);
-            _mKindo = new MKindoServiceDb(_config);
+            _portalDB = new PortalDB(config);
+            _mTesoreria = new MTesoreria(config);
+            _mKindo = new MKindoServiceDb(config);
             _parametrosSinpe = new Galileo.Models.KindoSinpe.ParametrosSinpe();
 
         }
@@ -384,10 +385,10 @@ namespace Galileo_API.DataBaseTier
         private ErrorDto<string> fxTesConsultarMotivoRechazo(int CodEmpresa, int idMotivo)
         {
             ErrorDto<string> response = new ErrorDto<string>();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = @"
                             SELECT CONCAT(descripcion, ' (', cod_motivo, ')') AS rechazo
                             FROM sinpe_motivos
@@ -808,7 +809,7 @@ namespace Galileo_API.DataBaseTier
         private ErrorDto<Sinpe_CCD.RespuestaRegistro> fxTesEnvioSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, string vUsuario)
         {
             //(Realiza el proceso de emisión de la transferencia SINPE)
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+           
             var resp = new ErrorDto<Sinpe_CCD.RespuestaRegistro>
             {
                 Code = 0,
@@ -1199,7 +1200,7 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+           
             var response = new ErrorDto<int>
             {
                 Code = 0,
@@ -1209,7 +1210,7 @@ namespace Galileo_API.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = @"
                             SELECT CODIGO_PIN
                             FROM AFI_TIPOS_IDS
@@ -1229,7 +1230,7 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<string> ConsultarConsecutivoSinpe(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+           
             var response = new ErrorDto<string>
             {
                 Code = 0,
@@ -1239,7 +1240,7 @@ namespace Galileo_API.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 response.Result = connection.QueryFirstOrDefault<string>(
                            "spPSL_ConsultarConsecutivoSinpe",
                            new { CANAL = _parametrosSinpe.vCanalCGP },
@@ -1443,12 +1444,11 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<Galileo.Models.KindoSinpe.FE_ParametrosEncabezado> ObtieneParametrosEncabezado(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto<Galileo.Models.KindoSinpe.FE_ParametrosEncabezado> response = new ErrorDto<Galileo.Models.KindoSinpe.FE_ParametrosEncabezado>();
             response.Result = new Galileo.Models.KindoSinpe.FE_ParametrosEncabezado();
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = $@"exec spFE_ObtieneParametrosEncabezado ";
                 response.Result = connection.Query<Galileo.Models.KindoSinpe.FE_ParametrosEncabezado>(query).FirstOrDefault();
             }
@@ -1464,13 +1464,12 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<short[]> ObtieneMediosPago(int CodEmpresa, string pNumComprobante, string pTipoDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto<short[]> response = new ErrorDto<short[]>();
             response.Result = new short[0];
             try
             {
                 //Info de pruebas
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 response.Result = connection.Query<short>(
                            "spFE_ObtieneMedioPagos",
                            new { pNumComprobante, pTipoDocumento },
@@ -1515,11 +1514,10 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<Galileo.Models.KindoSinpe.FE_Receptor> receptorValidado(int CodEmpresa, string pCedula, string? n)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<Galileo.Models.KindoSinpe.FE_Receptor>();
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 response.Result = connection.QueryFirstOrDefault<Galileo.Models.KindoSinpe.FE_Receptor>(
                    "spFE_ObtieneEncabezado",
                    new { pCedula },
@@ -1560,11 +1558,11 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<List<Galileo.Models.KindoSinpe.FE_Detalles>> ObtieneDetalles(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, string? n)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             var response = new ErrorDto<List<Galileo.Models.KindoSinpe.FE_Detalles>>();
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 response.Result = connection.Query<Galileo.Models.KindoSinpe.FE_Detalles>(
                             "spFE_ObtieneDetalle",
                             new { pNumComprobante, pTipoDocumento, pTipoTramite },
@@ -1598,7 +1596,7 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<List<FactElectronica.FE_JsonDescuentos>> ObtieneDescuentos(int CodEmpresa, string pNumComprobante, string pTipoDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             var response = new ErrorDto<List<FactElectronica.FE_JsonDescuentos>>();
             var ListaDescuentoServicio = new List<FactElectronica.FE_JsonDescuentos>();
             var DescuentoServicio = new FactElectronica.FE_JsonDescuentos();
@@ -1608,7 +1606,7 @@ namespace Galileo_API.DataBaseTier
                 //'//-------------------------------------------- //
                 //'   Los creditos Jaules no tienen descuento
                 //'//-------------------------------------------- //
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 response.Result = connection.Query<FactElectronica.FE_JsonDescuentos>(
                          "dbo.spFE_ObtieneDescuentos",
                          new { pNumComprobante, pTipoDocumento },
@@ -1633,25 +1631,29 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<List<FactElectronica.FE_JsonImpuestos>> ObtieneImpuestos(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, short pNumeroLinea)
         {
-            var response = new ErrorDto<List<FactElectronica.FE_JsonImpuestos>>();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                response.Result = connection.Query<FactElectronica.FE_JsonImpuestos>(
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                return new ErrorDto<List<FactElectronica.FE_JsonImpuestos>>
+                {
+                    Code = 0,
+                    Description = "Ok",
+                    Result = connection.Query<FactElectronica.FE_JsonImpuestos>(
                         "dbo.spFE_ObtieneImpuestos",
                         new { pNumComprobante, pTipoDocumento, pTipoTramite, pNumeroLinea },
                         commandType: CommandType.StoredProcedure
-                    ).ToList();
+                    ).ToList()
+                };
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+                return new ErrorDto<List<FactElectronica.FE_JsonImpuestos>>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = null
+                };
             }
-
-            return response;
         }
 
         private ErrorDto<FactElectronica.FE_ParametrosSistemas> GenerarParametros(string pNumeroComprobante, string pTipoDoc, string pNotas)
@@ -1692,7 +1694,7 @@ namespace Galileo_API.DataBaseTier
         /// <returns></returns>
         private ErrorDto<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             var response = new ErrorDto<string>
             {
                 Code = 0,
@@ -1702,7 +1704,7 @@ namespace Galileo_API.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = $@"SELECT DESCRIPCION FROM SINPE_MOTIVOS where COD_MOTIVO = @rechazo ";
                 response.Result = connection.Query<string>(query, new { rechazo = idRechazo }).FirstOrDefault();
             }
@@ -1723,7 +1725,7 @@ namespace Galileo_API.DataBaseTier
         /// <returns></returns>
         private ErrorDto<bool> fxTesRespuestaSinpe(int CodEmpresa, Galileo.Models.KindoSinpe.TesTransaccion datos)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             var response = new ErrorDto<bool>
             {
                 Code = 0,
@@ -1735,7 +1737,7 @@ namespace Galileo_API.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 if (datos.IdMotivoRechazo != 201)
                 {
                     nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
@@ -1824,7 +1826,6 @@ namespace Galileo_API.DataBaseTier
         /// <returns></returns>
         private ErrorDto<bool> EnviaNotificacionesCajas(int CodEmpresa, string CodigoReferencia)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<bool>
             {
                 Code = 0,
@@ -1833,7 +1834,7 @@ namespace Galileo_API.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var result = connection.Execute(
                              "sp_Sinpe_Notificaciones_Cajas",
                              new { CODIGO_REFERENCIA = CodigoReferencia },

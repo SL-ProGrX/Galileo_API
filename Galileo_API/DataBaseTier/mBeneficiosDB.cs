@@ -11,36 +11,14 @@ namespace Galileo.DataBaseTier
 {
     public class MBeneficiosDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public MBeneficiosDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         #region Conexión + helpers base
-
-        private SqlConnection CreateEmpresaConnection(int codEmpresa)
-        {
-            var connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            if (string.IsNullOrWhiteSpace(connString))
-                throw new InvalidOperationException("Cadena de conexión de empresa no configurada.");
-
-            return new SqlConnection(connString);
-        }
-
-        private ErrorDto WithConn(int codEmpresa, Func<SqlConnection, ErrorDto> work, string opName)
-        {
-            try
-            {
-                using var connection = CreateEmpresaConnection(codEmpresa);
-                return work(connection);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto { Code = -1, Description = $"{opName} - {ex.Message}" };
-            }
-        }
 
         private static BeneCategoriaValidaListaRequest ToValidaRequest(BeneficioGeneralDatos b) => new()
         {
@@ -74,24 +52,20 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto fxNombre(int CodEmpresa, string cedula)
         {
-            return WithConn(CodEmpresa, connection =>
-            {
-                const string query = "select nombre from socios where cedula = @cedula";
-                var nombre = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            const string query = "select nombre from socios where cedula = @cedula";
+            var nombre = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
 
-                return new ErrorDto { Code = 0, Description = nombre };
-            }, nameof(fxNombre));
+            return new ErrorDto { Code = 0, Description = nombre };
         }
 
         public ErrorDto fxDescribeBanco(int CodEmpresa, int codBanco)
         {
-            return WithConn(CodEmpresa, connection =>
-            {
-                const string query = "select descripcion from Tes_Bancos where id_banco = @codBanco";
-                var desc = connection.Query<string>(query, new { codBanco }).FirstOrDefault();
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            const string query = "select descripcion from Tes_Bancos where id_banco = @codBanco";
+            var desc = connection.Query<string>(query, new { codBanco }).FirstOrDefault();
 
-                return new ErrorDto { Code = 0, Description = desc };
-            }, nameof(fxDescribeBanco));
+            return new ErrorDto { Code = 0, Description = desc };
         }
 
         public static string fxEstadoBeneficio(string estado)
@@ -119,7 +93,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                using var connection = CreateEmpresaConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 const string query = "Select valor from SIF_parametros where cod_parametro = @cod_parametro";
                 return connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
             }
@@ -133,7 +107,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                using var connection = CreateEmpresaConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 const string query = "select valor from fsl_parametros where cod_parametro = @cod_parametro";
                 return connection.Query<string>(query, new { cod_parametro }).FirstOrDefault() ?? string.Empty;
             }
@@ -145,12 +119,11 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto BitacoraBeneficios(BitacoraBeneInsertarDto req)
         {
-            return WithConn(req.EmpresaId, connection =>
-            {
-                var strSQL = @"
-                    INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
-                               ([COD_BENEFICIO]
-                               ,[CONSEC]
+            using var connection = DbHelper.OpenConnection(_portalDB, req.EmpresaId);
+            var strSQL = @"
+                INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
+                           ([COD_BENEFICIO]
+                           ,[CONSEC]
                                ,[MOVIMIENTO]
                                ,[DETALLE]
                                ,[REGISTRO_FECHA]
@@ -173,14 +146,13 @@ namespace Galileo.DataBaseTier
                 });
 
                 return new ErrorDto { Code = rows, Description = "Ok" };
-            }, nameof(BitacoraBeneficios));
         }
 
         public long fxConsec(int CodCliente, string cod_beneficio)
         {
             try
             {
-                using var connection = CreateEmpresaConnection(CodCliente);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
                 const string query = @"Select isnull(Max(consec),0) as consecutivo 
                                        from afi_bene_otorga 
                                        where cod_beneficio = @cod_beneficio";
@@ -196,7 +168,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                using var connection = CreateEmpresaConnection(CodCliente);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
                 const string query = @"SELECT ESTADOACTUAL FROM SOCIOS WHERE CEDULA = @cedula";
                 var estado = connection.Query<string>(query, new { cedula }).FirstOrDefault();
 
@@ -225,9 +197,8 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto ValidaRequisitos(int CodCliente, string estado, string cod_beneficio, int consec)
         {
-            return WithConn(CodCliente, connection =>
-            {
-                const string dtEstado = @"
+            using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
+            const string dtEstado = @"
                     SELECT COD_ESTADO
                     FROM [dbo].[AFI_BENE_ESTADOS]
                     WHERE COD_ESTADO = @estado 
@@ -263,14 +234,13 @@ namespace Galileo.DataBaseTier
                     return new ErrorDto { Code = -1, Description = "No cumple con los requisitos del beneficio" };
 
                 return new ErrorDto { Code = 0 };
-            }, nameof(ValidaRequisitos));
+           
         }
 
         public ErrorDto ValidaFallecido(int CodCliente, string cedulafallecido)
         {
-            return WithConn(CodCliente, connection =>
-            {
-                const string query = @"
+            using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
+            const string query = @"
                     SELECT CONCAT(O.ID_BENEFICIO, TRIM(O.COD_BENEFICIO), FORMAT(O.CONSEC,'00000'), '- cédula: ', O.CEDULA) as Texto
                     FROM AFI_BENE_OTORGA O 
                     WHERE SEPELIO_IDENTIFICACION = @cedulafallecido";
@@ -289,7 +259,7 @@ namespace Galileo.DataBaseTier
                     Code = -1,
                     Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otros
                 };
-            }, nameof(ValidaFallecido));
+          
         }
 
         #endregion
@@ -399,9 +369,8 @@ namespace Galileo.DataBaseTier
             int codeOnMatch,
             bool marcarJustificables)
         {
-            return WithConn(CodCliente, connection =>
-            {
-                var query = QuerysStringValidaciones.ResolveQuery(tipo, col, request.cod_beneficio);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
+            var query = QuerysStringValidaciones.ResolveQuery(tipo, col, request.cod_beneficio);
                 var validaciones = connection
                     .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
                     .ToList();
@@ -428,7 +397,7 @@ namespace Galileo.DataBaseTier
                     Code = code,
                     Description = sb.ToString()
                 };
-            }, nameof(fxValidaciones));
+           
         }
 
         private static string FormatMsg(string? raw, bool destacar)
@@ -450,9 +419,8 @@ namespace Galileo.DataBaseTier
     BeneCategoriaValidaListaRequest request,
     bool justifica)
         {
-            return WithConn(CodCliente, connection =>
-            {
-                var query = BuildJustificaQuery(col);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodCliente);
+            var query = BuildJustificaQuery(col);
 
                 var validaciones = connection
                     .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
@@ -482,7 +450,7 @@ namespace Galileo.DataBaseTier
                 var code = DecideJustificaCode(justifica, justificadas, obligatorias, desc);
 
                 return new ErrorDto { Code = code, Description = desc };
-            }, nameof(fxValidacionesJustifica));
+           
         }
 
         private static string BuildJustificaQuery(string col)

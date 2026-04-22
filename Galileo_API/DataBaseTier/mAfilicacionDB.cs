@@ -5,22 +5,21 @@ namespace Galileo.DataBaseTier
 {
     public class MAfilicacionDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public MAfilicacionDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         public string fxgAFIParametroComision(int CodEmpresa, string pCodigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             string result = "";
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                 
-                    var query = $@"select valor from AFI_COMISIONES_PARAMETROS where cod_parametro = @codigo";
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                var query = $@"select valor from AFI_COMISIONES_PARAMETROS where cod_parametro = @codigo";
                     result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
                 
             }
@@ -33,13 +32,12 @@ namespace Galileo.DataBaseTier
 
         public string fxNombre(int CodEmpresa, string strCedula)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             string result = "";
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                
-                    var query = $@"select nombre from socios where cedula = @cedula";
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                var query = $@"select nombre from socios where cedula = @cedula";
                     result = connection.QueryFirstOrDefault<string>(query, new { cedula = strCedula }) ?? "";
                 
             }
@@ -52,10 +50,10 @@ namespace Galileo.DataBaseTier
     
         public bool fxgCongelamiento(int CodEmpresa, string vCedula, string vParametro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = "";
                 switch (vParametro)
                 {
@@ -92,11 +90,11 @@ namespace Galileo.DataBaseTier
 
         public string fxgAFIParametro(int CodEmpresa, string pCodigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            
             string result = "";
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"select valor from afi_parametros where cod_parametro = @codigo";
                 result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
@@ -111,10 +109,10 @@ namespace Galileo.DataBaseTier
 
         public void sbgAFIBitacora(int CodEmpresa, string pMovimiento,  string pDetalle, string pCedula, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+           
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec spAFI_Persona_Bitacora_Especial_Add @Cedula, @Movimiento,  @Detalle,  @Usuario";
                 connection.Execute(query, new
