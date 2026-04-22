@@ -27,5 +27,45 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         {
             return _bl.Operaciones_Listar(codEmpresa);
         }
+
+        [Authorize]
+        [HttpGet("Lineas_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
+        {
+            return _bl.Lineas_Listar(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Desembolso_Consultar")]
+        public ErrorDto<VivDesembolsoHeaderDto> Desembolso_Consultar(int codEmpresa, int operacion)
+        {
+            return _bl.Desembolso_Consultar(codEmpresa, operacion);
+        }
+
+        [Authorize]
+        [HttpGet("Desembolsos_Listar")]
+        public ErrorDto<List<VivDesembolsoDto>> Desembolsos_Listar(int codEmpresa, int operacion)
+        {
+            return _bl.Desembolsos_Listar(codEmpresa, operacion);
+        }
+
+        [Authorize]
+        [HttpGet("Pendientes_Listar")]
+        public ErrorDto<List<VivDesembolsoPendienteDto>> Pendientes_Listar(int codEmpresa, int operacion)
+        {
+            return _bl.Pendientes_Listar(codEmpresa, operacion);
+        }
+
+        [HttpGet("Bancos_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Bancos_Listar(int codEmpresa, string usuario)
+        {
+            return _bl.Bancos_Listar(codEmpresa, usuario);
+        }
+
+        [HttpGet("Cuentas_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string cedula, int bancoId)
+        {
+            return _bl.Cuentas_Listar(codEmpresa, cedula, bancoId);
+        }
     }
 }
