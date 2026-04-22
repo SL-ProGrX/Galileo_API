@@ -1599,6 +1599,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Obtiene el primer valor disponible convertido al tipo indicado según las claves enviadas.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="row"></param>
+        /// <param name="converter"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        private static T GetValueOrDefault<T>(
+            IDictionary<string, object?> row,
+            Func<object?, T> converter,
+            T defaultValue,
+            params string[] keys)
+        {
+            var value = keys
+                .Select(key => row.TryGetValue(key, out var v) ? v : null)
+                .FirstOrDefault(v => v != null && v != DBNull.Value);
+
+            if (value == null)
+            {
+                return defaultValue;
+            }
+
+            return converter(value);
+        }
+
+        /// <summary>
         /// Obtiene el primer valor string disponible según las claves indicadas.
         /// </summary>
         /// <param name="row"></param>
@@ -1606,11 +1633,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         private static string GetString(IDictionary<string, object?> row, params string[] keys)
         {
-            var value = keys
-                .Select(key => row.TryGetValue(key, out var v) ? v : null)
-                .FirstOrDefault(v => v != null && v != DBNull.Value);
-
-            return Convert.ToString(value)?.Trim() ?? string.Empty;
+            return GetValueOrDefault(
+                row,
+                value => Convert.ToString(value)?.Trim() ?? string.Empty,
+                string.Empty,
+                keys);
         }
 
         /// <summary>
@@ -1633,16 +1660,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         private static decimal GetDecimal(IDictionary<string, object?> row, params string[] keys)
         {
-            var value = keys
-                .Select(key => row.TryGetValue(key, out var v) ? v : null)
-                .FirstOrDefault(v => v != null && v != DBNull.Value);
-
-            if (value == null)
-            {
-                return 0m;
-            }
-
-            return Convert.ToDecimal(value);
+            return GetValueOrDefault(
+                row,
+                value => Convert.ToDecimal(value),
+                0m,
+                keys);
         }
 
         /// <summary>
