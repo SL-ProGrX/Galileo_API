@@ -150,12 +150,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             var procedureName = "spCajas_TE_Consulta";
             var parameters = new
             {
-                CodCaja,
-                Accion = "D",
-                Valor = "",
+                Caja = CodCaja,
+                OrigenDestino = "D",
+                Movimiento = "",
                 Estado = "P",
-                FechaInicio = (DateTime?)null,
-                FechaFin = (DateTime?)null
+                fInicio = (DateTime?)null,
+                fCorte = (DateTime?)null
             };
 
             return DbHelper.ExecuteStoredProcedureList<CajasAperturaTeConsultaData>(
