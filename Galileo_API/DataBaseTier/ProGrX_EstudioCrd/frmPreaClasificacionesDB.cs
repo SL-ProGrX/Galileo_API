@@ -1082,17 +1082,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto PreaClasificacion_Garantia_Asignar(int codEmpresa, string codGarantia, string garantia, bool asignado)
         {
-            string sql = "";
-            if (asignado)
-            {
-                sql = @"insert Crd_clasificacion_Garantia_DT (cod_garantia,garantia) 
-                values(@CodGarantia, @Garantia);";
-            } 
-            else
-            {
-                sql = @"delete Crd_clasificacion_Garantia_DT 
+            string sql = asignado
+                ? @"insert Crd_clasificacion_Garantia_DT (cod_garantia,garantia) 
+                values(@CodGarantia, @Garantia);"
+                : @"delete Crd_clasificacion_Garantia_DT 
                 where cod_Garantia = @CodGarantia and garantia = @Garantia;";
-            }
 
             var resp = DbHelper.ExecuteNonQuery(
                 _portalDb,
