@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
+using System.Data;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
@@ -17,6 +18,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Trae las operciones disponibles
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<OperacionBusquedaDto>> Operaciones_Listar(int codEmpresa)
         {
             var response = new ErrorDto<List<OperacionBusquedaDto>>();
@@ -49,6 +55,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Consulta la operacion 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
 
         public ErrorDto<OperacionConsultarDto> Operacion_Consultar(int codEmpresa, int operacion)
         {
@@ -104,6 +116,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
+        /// <summary>
+        /// Obtiene las deductoras
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codInstitucion"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Deductoras_Listar(int codEmpresa, int codInstitucion)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -137,6 +155,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
+        /// <summary>
+        /// Obtiene los estados
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="fechaCorte"></param>
+        /// <returns></returns>
         public ErrorDto<CoEstadoDto> Estado_Consultar(int codEmpresa, int operacion, DateTime? fechaCorte)
         {
             var response = new ErrorDto<CoEstadoDto>();
@@ -266,6 +291,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
+        /// <summary>
+        /// Obtiene el historial
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<CoHistorialDto>> Historial_Listar(int codEmpresa, int operacion)
         {
             var response = new ErrorDto<List<CoHistorialDto>>();
@@ -315,6 +346,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
+        /// <summary>
+        /// Obtiene las gestiones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
         public ErrorDto<List<COGestionDto>> Gestiones_Listar(int codEmpresa, string cedula)
         {
             var response = new ErrorDto<List<COGestionDto>>();
@@ -353,7 +390,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        /// Obtiene los cobros fiadores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<COCobroFiadorRowDto>> CobroFiadores_Listar(int codEmpresa, int operacion)
         {
             var response = new ErrorDto<List<COCobroFiadorRowDto>>();
@@ -381,6 +423,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Cancela el cobro de fiadores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto<string> CobroFiador_Cancelar(int codEmpresa, int operacion, string usuario)
         {
             var response = new ErrorDto<string>();
@@ -423,6 +472,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Obtiene los traslados de deuda
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<COTrasladoDeudaRowDto>> TrasladoDeuda_Listar(int codEmpresa, int operacion)
         {
             var response = new ErrorDto<List<COTrasladoDeudaRowDto>>();
@@ -474,6 +529,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Revierte el traslado de Deuda
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<string> TrasladoDeuda_Revertir(int codEmpresa, COTrasladoDeudaRevertirRequestDto request)
         {
             var response = new ErrorDto<string>();
@@ -534,7 +595,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        /// Consulta de contacto
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<COContactoDto> Contacto_Consultar(int codEmpresa, int operacion)
         {
             var response = new ErrorDto<COContactoDto>();
@@ -642,7 +708,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        /// En lista las moras
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
         public ErrorDto<List<COMoraDto>> Mora_Listar(int codEmpresa, int operacion, string tipo)
         {
             var response = new ErrorDto<List<COMoraDto>>();
@@ -753,7 +825,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        /// Obtiene los ejecutivos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<COEjecutivoDto>> Ejecutivos_Listar(int codEmpresa, int operacion)
         {
             var response = new ErrorDto<List<COEjecutivoDto>>();
@@ -793,7 +870,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        ///  En lista las lineas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -822,7 +903,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-
+        /// <summary>
+        ///  En lista las personas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Personas_Listar(int codEmpresa)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -851,6 +936,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Lista las lineas por persona
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> LineasPorPersona_Listar(int codEmpresa, string cedula)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -885,7 +976,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa,string cedula,string linea)
+        /// <summary>
+        /// Lista las operaciones persona por liena
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="linea"></param>
+        /// <returns></returns>
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersonaLinea_Listar(int codEmpresa, string cedula, string linea)
         {
             var response = new ErrorDto<List<OperacionBusquedaDto>>();
 
@@ -910,6 +1008,214 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 response.Result = cn.Query<OperacionBusquedaDto>(
                     sql,
                     new { cedula, linea }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+        /// <summary>
+        /// Cambia la deductora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="deductora"></param>
+        /// <returns></returns>
+        public ErrorDto<string> CambiarDeductora(int codEmpresa, int operacion, int deductora)
+        {
+            var response = new ErrorDto<string>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"UPDATE reg_creditos
+                                SET cod_deductora = @deductora
+                                WHERE id_solicitud = @operacion ";
+
+                var rows = cn.Execute(sql, new
+                {
+                    operacion,
+                    deductora
+                });
+
+                if (rows == 0)
+                {
+                    response.Code = -1;
+                    response.Description = "No se pudo actualizar la deductora.";
+                    return response;
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Valida el congelmiento
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, string cedula, string tipo)
+        {
+            var response = new ErrorDto<bool>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                string columna = tipo switch
+                {
+                    "per_traspaso_deudas" => "PER_TRASPASO_DEUDAS",
+                    "per_cobro_judicial" => "PER_COBRO_JUDICIAL",
+                    "per_reversiones" => "PER_REVERSIONES",
+                    "per_readecuaciones" => "PER_READECUACIONES",
+                    _ => throw new ArgumentException("Tipo no válido", nameof(tipo))
+                };
+
+                string sql = $@"
+            SELECT COUNT(1)
+            FROM afi_congelar
+            WHERE estado = 'A'
+              AND cedula = @cedula
+              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
+              AND {columna} = 0";
+
+                var count = cn.ExecuteScalar<int>(sql, new { cedula });
+
+                response.Result = count > 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Valida el paso de cobro judicial
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
+        {
+            var response = new ErrorDto<bool>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT COUNT(1)
+            FROM reg_Creditos R
+            INNER JOIN catalogo C ON R.codigo = C.codigo
+                AND C.retencion = 'N'
+                AND C.poliza = 'N'
+            WHERE R.id_solicitud = @operacion
+              AND R.Proceso <> 'J'";
+
+                var count = cn.ExecuteScalar<int>(sql, new { operacion });
+
+                response.Result = count == 1;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Ejecuta el proceso de cobro judicial
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario)
+        {
+            var response = new ErrorDto<string>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var parameters = new
+                {
+                    operacion,
+                    usuario
+                };
+
+                cn.Execute(
+                    "spCO_CobroJudicial_Ejecutar",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                response.Result = "Operación enviada a cobro judicial correctamente";
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+       /// <summary>
+       /// Lista los avisos
+       /// </summary>
+       /// <param name="codEmpresa"></param>
+       /// <param name="operacion"></param>
+       /// <returns></returns>
+        public ErrorDto<List<COAvisoDto>> Avisos_Listar(int codEmpresa, int operacion)
+        {
+            var response = new ErrorDto<List<COAvisoDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+            SELECT 
+                fecha = fecha_aviso,
+                tipo = CASE 
+                        WHEN tipo_aviso = 1 THEN 'Primer Aviso'
+                        WHEN tipo_aviso = 2 THEN 'Segundo Aviso'
+                        ELSE 'Otro Aviso'
+                       END
+            FROM cbr_avisos
+            WHERE id_solicitud = @operacion
+            ORDER BY fecha_aviso
+        ";
+
+                response.Result = cn.Query<COAvisoDto>(
+                    sql,
+                    new { operacion }
                 ).ToList();
             }
             catch (Exception ex)

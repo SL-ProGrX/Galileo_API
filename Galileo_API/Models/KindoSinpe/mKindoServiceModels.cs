@@ -111,7 +111,10 @@
         public enum E_CodigoServicioSINPE
         {
             [Description("Pagos Inmediatos (PIN)")]
-            Pago_Inmediatos = 22
+            Pago_Inmediatos = 22,
+
+            [Description("Debitos Directos (DTR)")]
+            Debitos_Directos = 24
         }
 
         public enum E_ModalidadTransaccionSINPE

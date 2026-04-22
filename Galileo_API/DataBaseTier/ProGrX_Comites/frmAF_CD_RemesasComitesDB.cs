@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.TES;
 using Galileo_API.Models.ProGrX_Comites;
 using System.Collections.Generic;
 

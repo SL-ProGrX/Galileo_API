@@ -1,4 +1,4 @@
-﻿using PgxAPI.Models.ProGrX_Contabilidad;
+﻿using Galileo.Models.ProGrX_Contabilidad;
 
 namespace Galileo_API.Models.ProGrX_Contabilidad
 {

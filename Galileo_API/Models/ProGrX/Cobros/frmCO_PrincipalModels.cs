@@ -188,4 +188,29 @@
         public bool dobleMora { get; set; }
     }
 
+    public class COCambiarDeductoraRequestDto
+    {
+        public int operacion { get; set; }
+        public int deductora { get; set; }
+    }
+
+    public class COValidarCongelamientoRequestDto
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+    }
+
+    public class CobroJudicialRequestDto
+    {
+        public int operacion { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+  
+        public class COAvisoDto
+        {
+            public DateTime fecha { get; set; }
+            public string tipo { get; set; } = string.Empty;
+        }
+    
 }

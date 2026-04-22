@@ -1,9 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Galileo_API;
 using System.Text.Json;
 using System.Globalization;
@@ -66,6 +63,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         { securityScheme, Array.Empty<string>() }
     });
+    c.CustomSchemaIds(type => type.FullName);
 });
 
 // ✅ HSTS

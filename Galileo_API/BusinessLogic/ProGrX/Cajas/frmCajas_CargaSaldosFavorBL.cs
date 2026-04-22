@@ -99,5 +99,4 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.Cajas_SaldoFavorLiquidacion(param);
         }
     }
-
 }

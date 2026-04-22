@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cobros;
 using System.Data;
 using System.Data.Common;
+using System.Security.Principal;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -12,6 +13,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     {
         private readonly PortalDB _portalDB;
         private readonly string vCedValida  = "Debe indicar la cédula.";
+        private readonly string vNormal = "Normal";
+        private readonly string vUserValida = "Debe indicar el usuario.";
 
         public FrmCOControlListaDB(IConfiguration config)
         {
@@ -98,10 +101,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             int codEmpresa,
             CoControlListaUsuarioScrollRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            if (request == null)
             {
                 return DbHelper.CreateErrorResponse<CoControlListaUsuarioScrollResponse>(
-                    "Debe indicar el usuario actual.");
+                    "La solicitud es requerida.");
             }
 
             try
@@ -109,29 +112,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
                 var direccion = (request.direccion ?? string.Empty).Trim().ToUpperInvariant();
+                var usuario = request.usuario?.Trim() ?? string.Empty;
                 var sql = string.Empty;
 
                 if (direccion == "SIGUIENTE")
                 {
-                    sql = """
-                SELECT TOP 1
-                    RTRIM(usuario) AS usuario
-                FROM cbr_usuarios
-                WHERE estado = 1
-                  AND usuario > @usuario
-                ORDER BY usuario ASC
-                """;
+                    sql = string.IsNullOrWhiteSpace(usuario)
+                        ? """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                              ORDER BY usuario ASC
+                              """
+                                            : """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                                AND usuario > @usuario
+                              ORDER BY usuario ASC
+                              """;
                 }
                 else if (direccion == "ANTERIOR")
                 {
-                    sql = """
-                SELECT TOP 1
-                    RTRIM(usuario) AS usuario
-                FROM cbr_usuarios
-                WHERE estado = 1
-                  AND usuario < @usuario
-                ORDER BY usuario DESC
-                """;
+                    sql = string.IsNullOrWhiteSpace(usuario)
+                        ? """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                              ORDER BY usuario DESC
+                              """
+                                            : """
+                              SELECT TOP 1
+                                  RTRIM(usuario) AS usuario
+                              FROM cbr_usuarios
+                              WHERE estado = 1
+                                AND usuario < @usuario
+                              ORDER BY usuario DESC
+                              """;
                 }
                 else
                 {
@@ -141,8 +161,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var result = conn.QueryFirstOrDefault<CoControlListaUsuarioScrollResponse>(
                     sql,
-                    new { usuario = request.usuario.Trim() })
+                    new { usuario })
                     ?? new CoControlListaUsuarioScrollResponse();
+
+                if(String.IsNullOrEmpty(result.usuario))
+                {
+                    return DbHelper.CreateErrorResponse<CoControlListaUsuarioScrollResponse>("No se encontró más usuarios.", -2);
+                }
 
                 return DbHelper.CreateOkResponse(result);
             }
@@ -242,6 +267,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_clasificacion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_CLASIFICACION_CARTERA
+            WHERE Estado = 1
             ORDER BY descripcion
             """;
 
@@ -263,6 +289,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_oficina)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM SIF_OFICINAS
+            WHERE Estado = 1
             ORDER BY descripcion
             """;
 
@@ -284,6 +311,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_institucion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM INSTITUCIONES
+            WHERE Activa = 1
             ORDER BY descripcion
             """;
 
@@ -306,6 +334,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_gestion)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_GESTIONES
+            WHERE estado = 1
+              AND nivel_gestion = 'U'
             ORDER BY descripcion
             """;
 
@@ -327,6 +357,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_causa)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_CAUSAS_MOROSIDAD
+            WHERE Activa = 1
             ORDER BY descripcion
             """;
 
@@ -348,6 +379,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(CONVERT(VARCHAR(20), cod_arreglo)) AS item,
                 RTRIM(descripcion) AS descripcion
             FROM CBR_TIPOS_ARREGLOS
+            WHERE Activo = 1
             ORDER BY descripcion
             """;
 
@@ -397,7 +429,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             if (request == null || string.IsNullOrWhiteSpace(request.usuario))
             {
-                return DbHelper.CreateErrorResponse<int>("Debe indicar el usuario actual.");
+                return DbHelper.CreateErrorResponse<int>(vUserValida);
             }
 
             if (request.casos == null || request.casos.Count == 0)
@@ -413,11 +445,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var total = 0;
 
-  
+
                 var casos = request.casos
-                            .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                            .Select(x => x.cedula.Trim())
-                            .ToList();
+                    .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                    .Select(x => x.cedula.Trim())
+                    .Distinct()
+                    .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -867,7 +900,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             if (request == null || string.IsNullOrWhiteSpace(request.usuario))
             {
-                return DbHelper.CreateErrorResponse<bool>("Debe indicar el usuario actual.");
+                return DbHelper.CreateErrorResponse<bool>(vUserValida);
             }
 
             if (request.casos == null || request.casos.Count == 0)
@@ -890,9 +923,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             """;
 
                 var casos = request.casos
-                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                    .Select(x => x.cedula.Trim())
-                    .ToList();
+                         .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                         .Select(x => x.cedula.Trim())
+                         .Distinct()
+                         .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -950,9 +984,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
 
                 var casos = request.casos
-                    .Where(x => string.IsNullOrWhiteSpace(x.cedula))
-                    .Select(x => x.cedula.Trim())
-                    .ToList();
+                        .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
+                        .Select(x => x.cedula.Trim())
+                        .Distinct()
+                        .ToList();
 
                 foreach (var cedula in casos)
                 {
@@ -979,6 +1014,533 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             catch (DbException ex)
             {
                 return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        #endregion
+
+        #region Gestiones Modal
+
+        /// <summary>
+        /// Consulta la información actual del frame de gestión para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula y usuario actual.</param>
+        /// <returns>Información actual de gestión.</returns>
+        public ErrorDto<CoControlListaGestionActualResponse> CoControlLista_GestionActual_Obtener(
+            int codEmpresa,
+            CoControlListaGestionActualRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaGestionActualResponse>(
+                    "Debe indicar la cédula.");
+            }
+
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                var cedula = request.cedula.Trim();
+
+                var result = ObtenerGestionActualBase(conn, cedula);
+                var operacionesRaw = ObtenerOperacionesGestionActual(conn, cedula);
+
+                result.operaciones = ConstruirOperacionesGestion(operacionesRaw);
+                AsignarEstadoMora(result, operacionesRaw);
+                CompletarDatosGestion(conn, result);
+
+                return result;
+            });
+        }
+
+        private static CoControlListaGestionActualResponse ObtenerGestionActualBase(
+    IDbConnection conn,
+    string cedula)
+        {
+            const string sql = """
+        SELECT
+            RTRIM(ISNULL(Lt.cedula, '')) AS cedula,
+            RTRIM(ISNULL(Lt.nombre, '')) AS nombre,
+            RTRIM(ISNULL(Lt.ult_cod_gestion, '')) AS cod_gestion,
+            RTRIM(ISNULL(Lt.gestionDesc, '')) AS gestion_desc,
+            RTRIM(ISNULL(Lt.cod_causa, '')) AS cod_causa,
+            RTRIM(ISNULL(Lt.causaDesc, '')) AS causa_desc,
+            RTRIM(ISNULL(Lt.cod_arreglo, '')) AS cod_arreglo,
+            RTRIM(ISNULL(Lt.arregloDesc, '')) AS arreglo_desc,
+            Lt.arreglo_vence
+        FROM dbo.vCBRControlListado Lt
+        WHERE Lt.cedula = @cedula
+        """;
+
+            return conn.QueryFirstOrDefault<CoControlListaGestionActualResponse>(
+                sql,
+                new { cedula }) ?? new CoControlListaGestionActualResponse();
+        }
+
+        private static List<dynamic> ObtenerOperacionesGestionActual(
+            IDbConnection conn,
+            string cedula)
+        {
+            const string sql = """
+        SELECT
+            R.id_solicitud,
+            R.codigo,
+            C.Descripcion AS linea_desc,
+            R.saldo,
+            R.plazo,
+            ISNULL(R.interesv, R.int) AS interesv,
+            G.Descripcion AS garantia_desc,
+            R.Proceso,
+            CASE
+                WHEN R.Proceso = 'N' THEN 'Normal'
+                WHEN R.Proceso = 'J' THEN 'Cbr.Judicial'
+                WHEN R.Proceso = 'T' THEN 'Traspaso Deuda'
+                WHEN R.Proceso = 'E' THEN 'Incobrable'
+                ELSE 'Normal'
+            END AS proceso_desc,
+            ISNULL(V.cuota, 0) AS cuota,
+            ISNULL(V.intc, 0) AS intc,
+            ISNULL(V.intm, 0) AS intm,
+            ISNULL(V.amortiza, 0) AS amortiza
+        FROM reg_creditos R
+        INNER JOIN catalogo C
+            ON R.codigo = C.codigo
+           AND C.Linea_Interna = 1
+        INNER JOIN CRD_GARANTIA_TIPOS G
+            ON R.garantia = G.garantia
+        LEFT JOIN vista_morosidad V
+            ON R.id_solicitud = V.id_solicitud
+        WHERE R.cedula = @cedula
+          AND R.Estado = 'A'
+          AND (ISNULL(V.Cuota, 0) > 0 OR R.Proceso = 'J')
+        ORDER BY R.Fecult, R.id_solicitud
+        """;
+
+            return conn.Query(sql, new { cedula }).ToList();
+        }
+
+        private static List<CoControlListaGestionOperacionRow> ConstruirOperacionesGestion(
+            List<dynamic> operacionesRaw)
+        {
+            var operaciones = new List<CoControlListaGestionOperacionRow>
+    {
+        new()
+        {
+            item = "+ Antigua",
+            descripcion = "+ Antigua"
+        }
+    };
+
+            foreach (dynamic row in operacionesRaw)
+            {
+                var idSolicitud = Convert.ToString(row.id_solicitud)?.Trim() ?? string.Empty;
+                var codigo = Convert.ToString(row.codigo)?.Trim() ?? string.Empty;
+                var lineaDesc = Convert.ToString(row.linea_desc)?.Trim() ?? string.Empty;
+
+                operaciones.Add(new CoControlListaGestionOperacionRow
+                {
+                    item = idSolicitud,
+                    descripcion = $"{idSolicitud} - {codigo} - {lineaDesc}"
+                });
+            }
+
+            return operaciones;
+        }
+
+        private static void AsignarEstadoMora(
+            CoControlListaGestionActualResponse result,
+            List<dynamic> operacionesRaw)
+        {
+            if (operacionesRaw.Count == 0)
+            {
+                result.estado_mora_tag = "N";
+                result.estado_mora_texto = "Operaciones Activas al Dia";
+                return;
+            }
+
+            var presentaMora = operacionesRaw.Any(x => Convert.ToDecimal(x.cuota ?? 0) > 0);
+
+            result.estado_mora_tag = presentaMora ? "S" : "N";
+            result.estado_mora_texto = presentaMora
+                ? "Presenta operaciones con morosidad"
+                : "Operaciones Activas al Dia";
+        }
+
+        private static void CompletarDatosGestion(
+            IDbConnection conn,
+            CoControlListaGestionActualResponse result)
+        {
+            if (string.IsNullOrWhiteSpace(result.cod_gestion))
+            {
+                result.monto = 0;
+                result.permite_modificar_monto = false;
+                result.desviacion_min = 0;
+                result.desviacion_max = 0;
+                return;
+            }
+
+            const string sql = """
+        SELECT
+            RTRIM(ISNULL(descripcion, '')) AS descripcion,
+            ISNULL(monto, 0) AS monto,
+            ISNULL(modifica_usuario, 0) AS modifica_usuario,
+            ISNULL(modifica_desviacion, 0) AS modifica_desviacion
+        FROM cbr_gestiones
+        WHERE estado = 1
+          AND nivel_gestion = 'U'
+          AND cod_gestion = @cod_gestion
+        """;
+
+            var gestion = conn.QueryFirstOrDefault(
+                sql,
+                new { cod_gestion = result.cod_gestion.Trim() });
+
+            if (gestion == null)
+            {
+                result.monto = 0;
+                result.permite_modificar_monto = false;
+                result.desviacion_min = 0;
+                result.desviacion_max = 0;
+                return;
+            }
+
+            var monto = Convert.ToDecimal(gestion.monto ?? 0);
+            var desviacion = Convert.ToDecimal(gestion.modifica_desviacion ?? 0);
+            var modificaUsuario = Convert.ToInt32(gestion.modifica_usuario ?? 0);
+
+            result.monto = monto;
+            result.permite_modificar_monto = modificaUsuario == 1;
+            result.desviacion_min = monto - desviacion;
+            result.desviacion_max = monto + desviacion;
+        }
+
+        /// <summary>
+        /// Consulta el detalle de una gestión para el frame de seguimiento.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Código de gestión y usuario actual.</param>
+        /// <returns>Detalle de la gestión.</returns>
+        public ErrorDto<CoControlListaGestionDetalleResponse> CoControlLista_GestionDetalle_Obtener(
+            int codEmpresa,
+            CoControlListaGestionDetalleRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.cod_gestion))
+                {
+                    return DbHelper.CreateErrorResponse<CoControlListaGestionDetalleResponse>(
+                        "Debe indicar el código de gestión.");
+                }
+
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                const string sqlGestion = """
+            SELECT
+                RTRIM(ISNULL(cod_gestion, '')) AS cod_gestion,
+                RTRIM(ISNULL(descripcion, '')) AS descripcion,
+                ISNULL(monto, 0) AS monto,
+                ISNULL(modifica_usuario, 0) AS modifica_usuario,
+                ISNULL(modifica_desviacion, 0) AS modifica_desviacion
+            FROM cbr_gestiones
+            WHERE estado = 1
+              AND nivel_gestion = 'U'
+              AND cod_gestion = @cod_gestion
+            """;
+
+                const string sqlAcceso = """
+            SELECT dbo.fxCBRGestionUsuario(@cod_gestion, @usuario) AS acceso
+            """;
+
+                var codGestion = request.cod_gestion.Trim();
+                var usuario = request.usuario?.Trim() ?? string.Empty;
+
+                var gestion = conn.QueryFirstOrDefault(
+                    sqlGestion,
+                    new { cod_gestion = codGestion });
+
+                if (gestion == null)
+                {
+                    return DbHelper.CreateErrorResponse<CoControlListaGestionDetalleResponse>(
+                        "La gestión no se encuentra activa.");
+                }
+
+                var acceso = conn.ExecuteScalar<int>(
+                    sqlAcceso,
+                    new
+                    {
+                        cod_gestion = codGestion,
+                        usuario
+                    });
+
+                if (acceso == 0)
+                {
+                    return DbHelper.CreateErrorResponse<CoControlListaGestionDetalleResponse>(
+                        "El usuario no tiene acceso a esta gestión.");
+                }
+
+                var monto = Convert.ToDecimal(gestion.monto ?? 0);
+                var modificaUsuario = Convert.ToInt32(gestion.modifica_usuario ?? 0);
+                var modificaDesviacion = Convert.ToDecimal(gestion.modifica_desviacion ?? 0);
+
+                var resp  =  new CoControlListaGestionDetalleResponse
+                {
+                    cod_gestion = Convert.ToString(gestion.cod_gestion)?.Trim() ?? string.Empty,
+                    descripcion = Convert.ToString(gestion.descripcion)?.Trim() ?? string.Empty,
+                    monto = monto,
+                    permite_modificar_monto = modificaUsuario == 1,
+                    desviacion_min = monto - modificaDesviacion,
+                    desviacion_max = monto + modificaDesviacion,
+                };
+
+                return DbHelper.CreateOkResponse(resp);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaGestionDetalleResponse>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Procesa el registro de seguimiento de cobro.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos del seguimiento.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto<bool> CoControlLista_Gestion_Procesar(
+            int codEmpresa,
+            CoControlListaGestionProcesarRequest request)
+        {
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse<bool>("La solicitud es requerida.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar la cédula.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario_sesion))
+            {
+                return DbHelper.CreateErrorResponse<bool>(vUserValida);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cod_gestion))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar la gestión.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.notas))
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe especificar una observación.");
+            }
+
+            if (!request.fecha_pago.HasValue)
+            {
+                return DbHelper.CreateErrorResponse<bool>("Debe indicar la fecha de pago.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                var cedula = request.cedula.Trim();
+                var usuario = request.usuario_sesion.Trim();
+                var codGestion = request.cod_gestion.Trim();
+
+                const string sqlEstadoUsuario = """
+            SELECT ISNULL(COUNT(*), 0)
+            FROM cbr_usuarios
+            WHERE usuario = @usuario
+              AND estado = 1
+            """;
+
+                const string sqlGestion = """
+            SELECT ISNULL(COUNT(*), 0)
+            FROM cbr_gestiones
+            WHERE cod_gestion = @cod_gestion
+              AND estado = 1
+              AND nivel_gestion = 'U'
+            """;
+
+                const string sqlParametro = """
+            SELECT valor
+            FROM cbr_parametros
+            WHERE cod_parametro = '05'
+            """;
+
+                const string sqlAsignacion = """
+            SELECT ISNULL(COUNT(*), 0)
+            FROM cbr_asignacion
+            WHERE usuario = @usuario
+              AND cedula = @cedula
+            """;
+
+                var usuarioActivo = conn.ExecuteScalar<int>(
+                    sqlEstadoUsuario,
+                    new { usuario });
+
+                if (usuarioActivo == 0)
+                {
+                    return DbHelper.CreateErrorResponse<bool>(
+                        "El usuario actual no se encuentra activo.");
+                }
+
+                var gestionActiva = conn.ExecuteScalar<int>(
+                    sqlGestion,
+                    new { cod_gestion = codGestion });
+
+                if (gestionActiva == 0)
+                {
+                    return DbHelper.CreateErrorResponse<bool>(
+                        "La gestión actual no se encuentra activa.");
+                }
+
+                var parametro05 = conn.ExecuteScalar<string>(sqlParametro) ?? string.Empty;
+
+                if (!parametro05.StartsWith("S", StringComparison.OrdinalIgnoreCase))
+                {
+                    var asignado = conn.ExecuteScalar<int>(
+                        sqlAsignacion,
+                        new { usuario, cedula });
+
+                    if (asignado == 0)
+                    {
+                        return DbHelper.CreateErrorResponse<bool>(
+                            "Este expediente no se encuentra asignado al usuario actual.");
+                    }
+                }
+
+                var operacion = string.Equals(request.operacion?.Trim(), "+ Antigua", StringComparison.OrdinalIgnoreCase)
+                    ? "0"
+                    : (request.operacion?.Trim() ?? "0");
+
+                conn.Execute(
+                    "spCBRControlSGT",
+                    new
+                    {
+                        Cedula = cedula,
+                        Usuario = usuario,
+                        CodGestion = codGestion,
+                        Vence = request.fecha_pago.Value,
+                        Notas = request.notas.Trim(),
+                        Oficina = request.oficina?.Trim() ?? string.Empty,
+                        Monto = request.monto,
+                        Operacion = operacion,
+                        Causa = request.cod_causa?.Trim() ?? string.Empty,
+                        Arreglo = request.cod_arreglo?.Trim() ?? string.Empty
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        #endregion
+
+        #region Cartera
+
+        /// <summary>
+        /// Consulta el resumen de cartera por usuario para el control de lista.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Usuario seleccionado.</param>
+        /// <returns>Listas por hoja y totales del resumen de cartera.</returns>
+        public ErrorDto<CoControlListaResumenCarteraUsuarioResponse> CoControlLista_ResumenCarteraUsuario_Obtener(
+            int codEmpresa,
+            CoControlListaResumenCarteraUsuarioRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaResumenCarteraUsuarioResponse>(
+                    "Debe indicar el usuario.");
+            }
+
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                var usuario = request.usuario.Trim();
+
+                const string sqlAlDiaCobroJud = "EXEC spCbrPersonaAlDiaGarantia @usuario";
+
+                const string sqlMora = "EXEC spCbrListaMoraGarantia @usuario";
+
+                var alDiaCobroJudRaw = conn.Query<CoControlListaResumenCarteraAlDiaRow> (
+                    sqlAlDiaCobroJud,
+                    new { usuario }).ToList();
+
+                var moraRaw = conn.Query<CoControlListaResumenCarteraMoraRow>(
+                    sqlMora,
+                    new { usuario }).ToList();
+
+                var totales = new CoControlListaResumenCarteraTotalesResponse
+                {
+                    al_dia = new CoControlListaResumenCarteraTotalesItem
+                    {
+                        saldo = alDiaCobroJudRaw
+                            .Where(x => string.Equals(x.proceso, vNormal, StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => x.saldo),
+                        operaciones = alDiaCobroJudRaw
+                            .Where(x => string.Equals(x.proceso, vNormal, StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => x.operaciones),
+                    },
+                    cobro_jud = new CoControlListaResumenCarteraTotalesItem
+                    {
+                        saldo = alDiaCobroJudRaw
+                            .Where(x => !string.Equals(x.proceso, vNormal, StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => x.saldo),
+                        operaciones = alDiaCobroJudRaw
+                            .Where(x => !string.Equals(x.proceso, vNormal, StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => x.operaciones),
+                    },
+                    mora = new CoControlListaResumenCarteraTotalesItem
+                    {
+                        saldo = moraRaw.Sum(x => x.saldo),
+                        operaciones = moraRaw.Sum(x => x.operaciones),
+                    },
+                };
+
+                totales.cartera = new CoControlListaResumenCarteraTotalesItem
+                {
+                    saldo = totales.al_dia.saldo + totales.cobro_jud.saldo + totales.mora.saldo,
+                    operaciones = totales.al_dia.operaciones + totales.cobro_jud.operaciones + totales.mora.operaciones,
+                };
+
+                return new CoControlListaResumenCarteraUsuarioResponse
+                {
+                    lista_al_dia_cobro_jud = alDiaCobroJudRaw,
+                    lista_mora = moraRaw,
+                    totales = totales
+                };
+            });
+        }
+
+/// <summary>
+/// Procesa la carga del análisis de cartera de cobros por usuario.
+/// </summary>
+/// <param name="codEmpresa">Código de empresa.</param>
+/// <returns>Mensaje del proceso.</returns>
+public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
+    int codEmpresa)
+        {
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                conn.Execute(
+                    "spCbrGestionAnalisis",
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(new CoControlListaAnalisisCarteraProcesarResponse
+                {
+                    mensaje = "Proceso concluido con éxito. La información puede ser utilizada desde la base de datos de análisis: CobroCarteraUsuarios."
+                });
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<CoControlListaAnalisisCarteraProcesarResponse>(ex.Message);
             }
         }
 

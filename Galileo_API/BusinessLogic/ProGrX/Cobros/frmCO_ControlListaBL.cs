@@ -194,5 +194,57 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 
 
         #endregion
+
+        #region Gestiones Modal
+
+        public ErrorDto<CoControlListaGestionActualResponse> CoControlLista_GestionActual_Obtener(
+            int codEmpresa,
+            string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaGestionActualRequest>(filtros)
+                   ?? new CoControlListaGestionActualRequest();
+
+            return _db.CoControlLista_GestionActual_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<CoControlListaGestionDetalleResponse> CoControlLista_GestionDetalle_Obtener(
+            int codEmpresa,
+            string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaGestionDetalleRequest>(filtros)
+                    ?? new CoControlListaGestionDetalleRequest();
+
+            return _db.CoControlLista_GestionDetalle_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> CoControlLista_Gestion_Procesar(
+            int codEmpresa,
+            CoControlListaGestionProcesarRequest request)
+        {
+            request ??= new CoControlListaGestionProcesarRequest();
+            return _db.CoControlLista_Gestion_Procesar(codEmpresa, request);
+        }
+
+        #endregion
+
+        #region Cartera
+
+        public ErrorDto<CoControlListaResumenCarteraUsuarioResponse> CoControlLista_ResumenCarteraUsuario_Obtener(
+                int codEmpresa,
+                string filtros)
+        {
+            var request = JsonConvert.DeserializeObject<CoControlListaResumenCarteraUsuarioRequest>(filtros)
+                    ?? new CoControlListaResumenCarteraUsuarioRequest();
+
+            return _db.CoControlLista_ResumenCarteraUsuario_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
+              int codEmpresa)
+        {
+
+            return _db.CoControlLista_AnalisisCartera_Procesar(codEmpresa);
+        }
+        #endregion
     }
 }

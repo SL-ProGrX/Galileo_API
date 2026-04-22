@@ -758,7 +758,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                                     @Origen
                                 )";
 
-                if (new[] { "21", "31", "22", "2222", "83", "84" }.Contains(request.codigoServicio.ToString().Trim()))
+                if (new[] { "21", "31", "22", "2222", "83", "84", "24" }.Contains(request.codigoServicio.ToString().Trim()))
                 {
                     var valida = connection.QueryFirstOrDefault<decimal>(query, new
                     {
