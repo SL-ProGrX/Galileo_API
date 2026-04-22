@@ -48,16 +48,9 @@
         public DateTime? fecha_vencimiento { get; set; }
     }
 
-    public class CoAplFndContratosRegistroGuardarRequest
+    public class CoAplFndContratosRegistroGuardarRequest: CoAplContratosRegistroGuardarRequest
     {
-        public long id_contrato { get; set; } = 0;
-        public string cedula { get; set; } = string.Empty;
-        public DateTime? firma_contrato { get; set; }
-        public DateTime? fecha_vencimiento { get; set; }
-        public int estado { get; set; } = 0;
-        public long id_solicitud { get; set; } = 0;
-        public string observaciones { get; set; } = string.Empty;
-        public string usuario { get; set; } = string.Empty;
+        public bool? guarda { get; set; } = false;
     }
 
     public class CoAplFndContratosRegistroGuardarResponse

@@ -56,25 +56,14 @@
             public DateTime? fecha_firma { get; set; }
         }
 
-        public class CoAplExcContratosRegistroGuardarRequest
+        public class CoAplExcContratosRegistroGuardarRequest: CoAplContratosRegistroGuardarRequest
         {
-            public long id_contrato { get; set; } = 0;
-            public string cedula { get; set; } = string.Empty;
-
-            public DateTime?  firma_contrato { get; set; }
-            public DateTime? fecha_vencimiento { get; set; }
-            public int estado { get; set; } = 0;
-            public long id_solicitud { get; set; } = 0;
-            public string observaciones { get; set; } = string.Empty;
-            public string usuario { get; set; } = string.Empty;
+            public bool? guarda { get; set; } = false;
         }
 
-        public class CoAplExcContratosRegistroGuardarResponse
+        public class CoAplExcContratosRegistroGuardarResponse: CoAplContratosRegistroGuardarResponse
         {
-            public bool pass { get; set; } = false;
-            public long contrato_id { get; set; } = 0;
-            public string movimiento { get; set; } = string.Empty;
-            public string mensaje { get; set; } = string.Empty;
+            public bool? resp { get; set; } = false;
         }
 
         public class CoAplExcContratosRegistroGuardarDbResponse
