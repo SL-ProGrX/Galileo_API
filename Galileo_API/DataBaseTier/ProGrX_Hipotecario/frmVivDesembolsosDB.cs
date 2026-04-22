@@ -11,7 +11,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
     public class FrmVivDesembolsosDb
     {
         private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 3;
 
         public FrmVivDesembolsosDb(IConfiguration config)
@@ -24,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         public FrmVivDesembolsosDb(PortalDB portalDB, MSecurityMainDb dbBitacora)
         {
             _portalDb = portalDB;
-            _bitacora = dbBitacora;
+           
         }
 
         public ErrorDto<List<OperacionBusquedaDto>> Operaciones_Listar(int codEmpresa)
