@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
     public class FrmCajasReporteCierresDb(IConfiguration config)
     {
         private readonly IConfiguration _config = config;
-        private const string OperacionRealizadaCorrectamente = "Operación realizada correctamente";
+        private const string OperacionRealizadaCorrectamente = "Operaciï¿½n realizada correctamente";
 
         private SqlConnection ObtenerConexion(int codEmpresa)
         {
@@ -41,7 +41,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             };
         }
 
-        // ================= MÉTODOS BD =================
+        // ================= Mï¿½TODOS BD =================
 
         /// <summary>
         /// Consulta aperturas
@@ -72,9 +72,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Revisa_Fecha      AS revisa_fecha,
                         Revisa_Usuario    AS revisa_usuario
                     FROM CAJAS_APERTURAS_MAIN
-                    WHERE COD_CAJA = @codCaja
-                      AND Apertura_Fecha BETWEEN @fechaInicio AND @fechaCorte");
+                    WHERE Apertura_Fecha BETWEEN @fechaInicio AND @fechaCorte ");
 
+                if (codCaja != string.Empty)
+                {
+                    sql.Append(" AND COD_CAJA = @codCaja");
+                }
                 if (filtro == "R")
                 {
                     sql.Append(" AND Recibe_Fecha IS NULL");
@@ -118,7 +121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 using var cn = ObtenerConexion(codEmpresa);
 
-                const string sql = @"
+                var sql = new StringBuilder(@"
                     SELECT
                         FechaIngreso AS fecha,
                         Caja         AS caja,
@@ -126,12 +129,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Usuario      AS usuario,
                         SifVersion   AS version
                     FROM CAJAS_BITACORA_INGRESO
-                    WHERE Caja = @codCaja
-                      AND FechaIngreso BETWEEN @fechaInicio AND @fechaCorte
-                    ORDER BY FechaIngreso DESC";
+                    WHERE FechaIngreso BETWEEN @fechaInicio AND @fechaCorte ");
+
+                if (codCaja != string.Empty)
+                {
+                    sql.Append(" AND Caja = @codCaja");
+                }
+
+                sql.Append(" ORDER BY FechaIngreso DESC");
 
                 response.Result = [.. cn.Query<CajasAccesoDto>(
-                    sql,
+                    sql.ToString(),
                     new
                     {
                         codCaja,
@@ -148,7 +156,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Consulta depósitos
+        /// Consulta depï¿½sitos
         /// </summary>
         public ErrorDto<List<CajasDepositoDto>> Cajas_Depositos_Consulta(
             int codEmpresa,
@@ -219,7 +227,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         // ================= RECIBE / REVISA =================
 
         /// <summary>
-        ///  reutilizable para marcar recibe/revisa sin SQL dinámico inseguro
+        ///  reutilizable para marcar recibe/revisa sin SQL dinï¿½mico inseguro
         /// </summary>
         private ErrorDto<bool> ActualizarCampoCierre(
             int codEmpresa,
@@ -230,7 +238,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             var response = CrearRespuesta(false);
 
-            // Elegimos SQL entre constantes ? sin concatenar columnas dinámicamente
+            // Elegimos SQL entre constantes ? sin concatenar columnas dinï¿½micamente
             string sql = tipo switch
             {
                 "RECIBE" => @"
@@ -245,7 +253,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         REVISA_USUARIO = @usuario
                     WHERE COD_CAJA = @codCaja
                       AND COD_APERTURA = @codApertura",
-                _ => throw new ArgumentException("Tipo de cierre no válido", nameof(tipo))
+                _ => throw new ArgumentException("Tipo de cierre no vï¿½lido", nameof(tipo))
             };
 
             try
@@ -304,7 +312,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Definición de cajas lista
+        /// Definiciï¿½n de cajas lista
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Definicion_Lista(int codEmpresa)
         {
