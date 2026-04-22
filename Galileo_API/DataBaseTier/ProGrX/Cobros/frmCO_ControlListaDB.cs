@@ -1420,8 +1420,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         Cedula = cedula,
                         Usuario = usuario,
-                        Gestion = codGestion,
-                        FechaVence = request.fecha_pago.Value,
+                        CodGestion = codGestion,
+                        Vence = request.fecha_pago.Value,
                         Notas = request.notas.Trim(),
                         Oficina = request.oficina?.Trim() ?? string.Empty,
                         Monto = request.monto,

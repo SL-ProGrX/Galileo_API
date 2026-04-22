@@ -1,31 +1,31 @@
 ﻿namespace Galileo_API.Models.ProGrX.Cobros
 {
-    public class FrmCoCobroJudicialMasivoModels
+    public class FrmCoProcesosMasivoModels
     {
       
-        public class CoCobroJudicialMasivoResumenModel
+        public class CoProcesosMasivoResumenModel
         {
             public int CantidadCasosValidos { get; set; }
             public decimal TotalMoraFinanciera { get; set; }
             public decimal TotalMoraLegal { get; set; } 
         }
 
-        public class CoCobroJudicialMasivoCargaRequest
+        public class CoProcesosMasivoCargaRequest
         {
             public List<string> Operaciones { get; set; } = [];
             public string Usuario { get; set; } = string.Empty;
         }
 
 
-        public class CoCobroJudicialMasivoCargaResponse
+        public class CoProcesosMasivoCargaResponse
         {
-            public CoCobroJudicialMasivoResumenModel Resumen { get; set; } = new();
-            public List<CoCobroJudicialMasivoRegistroModel> CasosValidos { get; set; } = [];
-            public List<CoCobroJudicialMasivoRegistroModel> CasosInconsistentes { get; set; } = [];
+            public CoProcesosMasivoResumenModel Resumen { get; set; } = new();
+            public List<CoProcesosMasivoRegistroModel> CasosValidos { get; set; } = [];
+            public List<CoProcesosMasivoRegistroModel> CasosInconsistentes { get; set; } = [];
         }
       
 
-        public class CoCobroJudicialMasivoRegistroModel
+        public class CoProcesosMasivoRegistroModel
         {
             public string Id_Solicitud { get; set; } = string.Empty;
             public string Codigo { get; set; } = string.Empty;
