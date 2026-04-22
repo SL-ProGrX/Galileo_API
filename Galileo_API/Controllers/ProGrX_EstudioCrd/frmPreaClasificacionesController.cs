@@ -40,6 +40,64 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.PreaClasificacion_Razon_Eliminar(codEmpresa, codRazon, usuario);
         }
 
+        [HttpPost("PreaClasificacion_Garantia_Guardar")]
+        public ErrorDto PreaClasificacion_Garantia_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _bl.PreaClasificacion_Garantia_Guardar(codEmpresa, usuario, request);
+        }
 
+        [HttpDelete("PreaClasificacion_Garantia_Eliminar")]
+        public ErrorDto PreaClasificacion_Garantia_Eliminar(int codEmpresa, string codGarantia, string usuario)
+        {
+            return _bl.PreaClasificacion_Garantia_Eliminar(codEmpresa, codGarantia, usuario);
+        }
+
+        [HttpPost("PreaClasificacion_Mora_Guardar")]
+        public ErrorDto PreaClasificacion_Mora_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _bl.PreaClasificacion_Mora_Guardar(codEmpresa, usuario, request);
+        }
+        
+        [HttpDelete("PreaClasificacion_Mora_Eliminar")]
+        public ErrorDto PreaClasificacion_Mora_Eliminar(int codEmpresa, string codMora, string usuario)
+        {
+            return _bl.PreaClasificacion_Mora_Eliminar(codEmpresa, codMora, usuario);
+        }
+
+        [HttpPost("PreaClasificacion_Capacidad_Guardar")]
+        public ErrorDto PreaClasificacion_Capacidad_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _bl.PreaClasificacion_Capacidad_Guardar(codEmpresa, usuario, request);
+        }
+
+        [HttpDelete("PreaClasificacion_Capacidad_Eliminar")]
+        public ErrorDto PreaClasificacion_Capacidad_Eliminar(int codEmpresa, string codCapacidad, string usuario)
+        {
+            return _bl.PreaClasificacion_Capacidad_Eliminar(codEmpresa, codCapacidad, usuario);
+        }
+
+        [HttpPost("PreaClasificacion_Endeudamiento_Guardar")]
+        public ErrorDto PreaClasificacion_Endeudamiento_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _bl.PreaClasificacion_Endeudamiento_Guardar(codEmpresa, usuario, request);
+        }
+
+        [HttpDelete("PreaClasificacion_Endeudamiento_Eliminar")]
+        public ErrorDto PreaClasificacion_Endeudamiento_Eliminar(int codEmpresa, string codEndeudamiento, string usuario)
+        {
+            return _bl.PreaClasificacion_Endeudamiento_Eliminar(codEmpresa, codEndeudamiento, usuario);
+        }
+
+        [HttpPost("PreaClasificacion_Historial_Guardar")]
+        public ErrorDto PreaClasificacion_Historial_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _bl.PreaClasificacion_Historial_Guardar(codEmpresa, usuario, request);
+        }
+
+        [HttpDelete("PreaClasificacion_Historial_Eliminar")]
+        public ErrorDto PreaClasificacion_Historial_Eliminar(int codEmpresa, string codHistorial, string usuario)
+        {
+            return _bl.PreaClasificacion_Historial_Eliminar(codEmpresa, codHistorial, usuario);
+        }
     }
 }

@@ -30,5 +30,55 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         {
             return _db.PreaClasificacion_Razon_Eliminar(codEmpresa, codRazon, usuario);
         }
+
+        public ErrorDto PreaClasificacion_Garantia_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _db.PreaClasificacion_Garantia_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto PreaClasificacion_Garantia_Eliminar(int codEmpresa, string codGarantia, string usuario)
+        {
+            return _db.PreaClasificacion_Garantia_Eliminar(codEmpresa, codGarantia, usuario);
+        }
+
+        public ErrorDto PreaClasificacion_Mora_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _db.PreaClasificacion_Mora_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto PreaClasificacion_Mora_Eliminar(int codEmpresa, string codMora, string usuario)
+        {
+            return _db.PreaClasificacion_Mora_Eliminar(codEmpresa, codMora, usuario);
+        }
+
+        public ErrorDto PreaClasificacion_Capacidad_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _db.PreaClasificacion_Capacidad_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto PreaClasificacion_Capacidad_Eliminar(int codEmpresa, string codCapacidad, string usuario)
+        {
+            return _db.PreaClasificacion_Capacidad_Eliminar(codEmpresa, codCapacidad, usuario);
+        }
+
+        public ErrorDto PreaClasificacion_Endeudamiento_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _db.PreaClasificacion_Endeudamiento_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto PreaClasificacion_Endeudamiento_Eliminar(int codEmpresa, string codEndeudamiento, string usuario)
+        {
+            return _db.PreaClasificacion_Endeudamiento_Eliminar(codEmpresa, codEndeudamiento, usuario);
+        }
+
+        public ErrorDto PreaClasificacion_Historial_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            return _db.PreaClasificacion_Historial_Guardar(codEmpresa, usuario, request);
+        }
+
+        public ErrorDto PreaClasificacion_Historial_Eliminar(int codEmpresa, string codHistorial, string usuario)
+        {
+            return _db.PreaClasificacion_Historial_Eliminar(codEmpresa, codHistorial, usuario);
+        }
     }
 }

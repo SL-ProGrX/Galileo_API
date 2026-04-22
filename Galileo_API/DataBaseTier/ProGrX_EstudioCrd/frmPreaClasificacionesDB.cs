@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 case "garantia":
                 query = @"select 
-                    A.cod_garantia as codigo,A.descripcion, rtrim(B.cod_Razon) + ' - ' + rtrim(B.descripcion) as razon 
+                    A.cod_garantia as codigo,A.descripcion, rtrim(B.cod_Razon) as razon, rtrim(B.descripcion) as razon_desc 
                     from Crd_Clasificacion_Garantia A inner join Crd_Clasificacion_Razon B on A.cod_Razon = B.Cod_Razon 
                     order by A.cod_Garantia";
                 break;
@@ -49,28 +49,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     when A.tipo = 'M' then 'Mora'
                     when A.tipo = 'C' then 'Cobro (Ejecutado)'
                     when A.tipo = 'I' then 'Incobrable' end as Tipo 
-                    ,A.desde,A.hasta,rtrim(B.cod_Razon) + ' - ' + rtrim(B.descripcion) as razon 
+                    ,A.desde,A.hasta,rtrim(B.cod_Razon) as razon, rtrim(B.descripcion) as razon_desc 
                     from Cbr_Clasificacion_Mora A inner join Crd_Clasificacion_Razon B on A.cod_Razon = B.Cod_Razon
                     order by A.cod_mora";
                  break;
 
                 case "capacidad":
                 query = @"select 
-                    A.cod_capacidad as codigo,A.desde,A.hasta,rtrim(B.cod_Razon) + ' - ' + rtrim(B.descripcion) as razon 
+                    A.cod_capacidad as codigo,A.desde,A.hasta,rtrim(B.cod_Razon) as razon, rtrim(B.descripcion) as razon_desc 
                     from Crd_Clasificacion_Capacidad A inner join Crd_Clasificacion_Razon B on A.cod_Razon = B.Cod_Razon
                     order by A.cod_capacidad";
                     break;
 
                 case "endeudamiento":
                 query = @"select 
-                    A.cod_endeudamiento as codigo,A.desde,A.hasta,rtrim(B.cod_Razon) + ' - ' + rtrim(B.descripcion) as razon 
+                    A.cod_endeudamiento as codigo,A.desde,A.hasta,rtrim(B.cod_Razon) as razon, rtrim(B.descripcion) as razon_desc 
                     from Crd_Clasificacion_endeudamiento A inner join Crd_Clasificacion_Razon B on A.cod_Razon = B.Cod_Razon
                     order by A.cod_endeudamiento";
                 break;
 
                 case "historial":
                 query = @"select 
-                    A.cod_historial as codigo,A.descripcion, rtrim(B.cod_Razon) + ' - ' + rtrim(B.descripcion) as razon 
+                    A.cod_historial as codigo,A.descripcion, rtrim(B.cod_Razon) as razon, rtrim(B.descripcion) as razon_desc 
                     from Crd_Clasificacion_historial A inner join Crd_Clasificacion_Razon B on A.cod_Razon = B.Cod_Razon 
                     order by A.cod_historial";
                     break;
@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 sqlDelete,
                 new
                 {
-                    CodRazon = codRazon
+                    CodRazon = codRazon?.Trim()
                 });
 
             if (respDelete.Code < 0)
@@ -135,6 +135,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return respDelete;
         }
 
+        #region Razon helpers
         private bool ExisteRazon(int codEmpresa, string codRazon)
         {
             const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) as Existe 
@@ -228,6 +229,736 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             return respInsert;
         }
+        #endregion
+
+        public ErrorDto PreaClasificacion_Garantia_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            var resp = ExisteGarantia(codEmpresa, request.codigo)
+                ? ActualizarGarantia(codEmpresa, usuario, request)
+                : InsertarGarantia(codEmpresa, usuario, request);
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Información guardada satisfactoriamente..."
+            };
+        }
+
+        public ErrorDto PreaClasificacion_Garantia_Eliminar(int codEmpresa, string codGarantia, string usuario)
+        {
+            const string sqlDeleteDt = @"delete Crd_Clasificacion_Garantia_Dt where cod_garantia = @CodGarantia;";
+            const string sqlDelete = @"delete Crd_Clasificacion_Garantia where cod_garantia = @CodGarantia;";
+
+            var respDeleteDt = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDeleteDt,
+                new
+                {
+                    CodGarantia = codGarantia
+                });
+
+            if (respDeleteDt.Code < 0)
+                return respDeleteDt;
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodGarantia = codGarantia
+                });
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Elimina - WEB",
+                detalle: $"Clasificacion Garantia : {codGarantia}"
+            );
+
+            return respDelete;
+        }
+
+        #region Garantia helpers
+        private bool ExisteGarantia(int codEmpresa, string codGarantia)
+        {
+            const string sqlExiste = @"
+            SELECT ISNULL(COUNT(*), 0) as Existe
+            FROM Crd_Clasificacion_Garantia
+            WHERE cod_Garantia = @CodGarantia;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlExiste,
+                0,
+                new
+                {
+                    CodGarantia = codGarantia.Trim()
+                });
+
+            if (resp.Code < 0)
+                return false;
+
+            return resp.Result > 0;
+        }
+
+        private ErrorDto ActualizarGarantia(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlUpdate = @"
+            UPDATE Crd_Clasificacion_Garantia
+            SET
+                descripcion = @Descripcion,
+                cod_razon = @CodRazon
+            WHERE cod_Garantia = @CodGarantia;";
+
+            var respUpdate = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    CodGarantia = request.codigo?.Trim(),
+                    Descripcion = request.descripcion?.Trim(),
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respUpdate.Code < 0)
+                return respUpdate;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Modifica - WEB",
+                detalle: $"Clasificacion Garantía : {request.codigo}"
+            );
+
+            return respUpdate;
+        }
+
+        private ErrorDto InsertarGarantia(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlInsert = @"
+            INSERT INTO Crd_Clasificacion_Garantia
+            (
+                cod_Garantia,
+                descripcion,
+                cod_razon
+            )
+            VALUES
+            (
+                @CodGarantia,
+                @Descripcion,
+                @CodRazon
+            );";
+
+            var respInsert = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlInsert,
+                new
+                {
+                    CodGarantia = request.codigo?.Trim(),
+                    Descripcion = request.descripcion?.Trim(),
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respInsert.Code < 0)
+                return respInsert;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Registra - WEB",
+                detalle: $"Clasificacion Garantía : {request.codigo}"
+            );
+
+            return respInsert;
+        }
+        #endregion
+
+        public ErrorDto PreaClasificacion_Mora_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            var resp = ExisteMora(codEmpresa, request.codigo)
+                ? ActualizarMora(codEmpresa, usuario, request)
+                : InsertarMora(codEmpresa, usuario, request);
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Información guardada satisfactoriamente..."
+            };
+        }
+
+        public ErrorDto PreaClasificacion_Mora_Eliminar(int codEmpresa, string codMora, string usuario)
+        {
+            const string sqlDelete = @"DELETE Cbr_Clasificacion_Mora WHERE cod_Mora = @CodMora;";
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodMora = codMora?.Trim()
+                });
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Elimina - WEB",
+                detalle: $"Clasificacion Mora : {codMora}"
+            );
+
+            return respDelete;
+        }
+
+        #region Mora helpers
+        private bool ExisteMora(int codEmpresa, string codMora)
+        {
+            const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) as Existe 
+            FROM Cbr_Clasificacion_Mora WHERE cod_mora = @CodMora;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlExiste,
+                0,
+                new
+                {
+                    CodMora = codMora.Trim()
+                });
+
+            if (resp.Code < 0)
+                return false;
+
+            return resp.Result > 0;
+        }
+
+        private ErrorDto ActualizarMora(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlUpdate = @"
+            UPDATE Cbr_Clasificacion_Mora 
+            SET
+                tipo = @Tipo,
+                desde = @Desde,
+                hasta = @Hasta,
+                cod_razon = @CodRazon
+            WHERE cod_mora = @CodMora;";
+
+            var respUpdate = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    CodMora = request.codigo?.Trim(),
+                    Tipo = request.tipo?.Substring(0, 1),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respUpdate.Code < 0)
+                return respUpdate;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Modifica - WEB",
+                detalle: $"Clasificacion Mora : {request.codigo}"
+            );
+
+            return respUpdate;
+        }
+
+        private ErrorDto InsertarMora(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlInsert = @"
+            INSERT INTO Cbr_Clasificacion_Mora
+            (
+                cod_mora,
+                tipo,
+                desde,
+                hasta,
+                cod_razon
+            )
+            VALUES
+            (
+                @CodMora,
+                @Tipo,
+                @Desde,
+                @Hasta,
+                @CodRazon
+            );";
+
+            var respInsert = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlInsert,
+                new
+                {
+                    CodMora = request.codigo?.Trim(),
+                    Tipo = request.tipo?.Substring(0, 1),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respInsert.Code < 0)
+                return respInsert;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Registra - WEB",
+                detalle: $"Clasificacion Mora : {request.codigo}"
+            );
+
+            return respInsert;
+        }
+        #endregion
+
+        public ErrorDto PreaClasificacion_Capacidad_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            var resp = ExisteCapacidad(codEmpresa, request.codigo)
+                ? ActualizarCapacidad(codEmpresa, usuario, request)
+                : InsertarCapacidad(codEmpresa, usuario, request);
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Información guardada satisfactoriamente..."
+            };
+        }
+
+        public ErrorDto PreaClasificacion_Capacidad_Eliminar(int codEmpresa, string codCapacidad, string usuario)
+        {
+            const string sqlDelete = @"DELETE Crd_Clasificacion_Capacidad 
+            WHERE cod_capacidad = @CodCapacidad;";
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodCapacidad = codCapacidad?.Trim()
+                });
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Elimina - WEB",
+                detalle: $"Clasificacion Capacidad : {codCapacidad}"
+            );
+
+            return respDelete;
+        }
+
+        #region Capacidad helpers
+        private bool ExisteCapacidad(int codEmpresa, string codCapacidad)
+        {
+            const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) as Existe 
+            FROM Crd_Clasificacion_Capacidad WHERE cod_capacidad = @CodCapacidad;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlExiste,
+                0,
+                new
+                {
+                    CodCapacidad = codCapacidad.Trim()
+                });
+
+            if (resp.Code < 0)
+                return false;
+
+            return resp.Result > 0;
+        }
+
+        private ErrorDto ActualizarCapacidad(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlUpdate = @"
+            UPDATE Crd_Clasificacion_Capacidad
+            SET
+                desde = @Desde,
+                hasta = @Hasta,
+                cod_razon = @CodRazon
+            WHERE cod_capacidad = @CodCapacidad;";
+
+            var respUpdate = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    CodCapacidad = request.codigo?.Trim(),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respUpdate.Code < 0)
+                return respUpdate;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Modifica - WEB",
+                detalle: $"Clasificacion Capacidad : {request.codigo}"
+            );
+
+            return respUpdate;
+        }
+
+        private ErrorDto InsertarCapacidad(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlInsert = @"
+            INSERT INTO Crd_Clasificacion_Capacidad
+            (
+                cod_capacidad,
+                desde,
+                hasta,
+                cod_razon
+            )
+            VALUES
+            (
+                @CodCapacidad,
+                @Desde,
+                @Hasta,
+                @CodRazon
+            );";
+
+            var respInsert = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlInsert,
+                new
+                {
+                    CodCapacidad = request.codigo?.Trim(),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respInsert.Code < 0)
+                return respInsert;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Registra - WEB",
+                detalle: $"Clasificacion Capacidad : {request.codigo}"
+            );
+
+            return respInsert;
+        }
+        #endregion
+
+        public ErrorDto PreaClasificacion_Endeudamiento_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            var resp = ExisteEndeudamiento(codEmpresa, request.codigo)
+                ? ActualizarEndeudamiento(codEmpresa, usuario, request)
+                : InsertarEndeudamiento(codEmpresa, usuario, request);
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Información guardada satisfactoriamente..."
+            };
+        }
+
+        public ErrorDto PreaClasificacion_Endeudamiento_Eliminar(int codEmpresa, string codEndeudamiento, string usuario)
+        {
+            const string sqlDelete = @"DELETE Crd_Clasificacion_Endeudamiento 
+            WHERE cod_Endeudamiento = @CodEndeudamiento;";
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodEndeudamiento = codEndeudamiento?.Trim()
+                });
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Elimina - WEB",
+                detalle: $"Clasificacion Endeudamiento : {codEndeudamiento}"
+            );
+
+            return respDelete;
+        }
+
+        #region Endeudamiento helpers
+        private bool ExisteEndeudamiento(int codEmpresa, string codEndeudamiento)
+        {
+            const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) as Existe 
+            FROM Crd_Clasificacion_Endeudamiento WHERE cod_Endeudamiento = @CodEndeudamiento;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlExiste,
+                0,
+                new
+                {
+                    CodEndeudamiento = codEndeudamiento.Trim()
+                });
+
+            if (resp.Code < 0)
+                return false;
+
+            return resp.Result > 0;
+        }
+
+        private ErrorDto ActualizarEndeudamiento(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlUpdate = @"
+            UPDATE Crd_Clasificacion_Endeudamiento
+            SET
+                desde = @Desde,
+                hasta = @Hasta,
+                cod_razon = @CodRazon
+            WHERE cod_Endeudamiento = @CodEndeudamiento;";
+
+            var respUpdate = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    CodEndeudamiento = request.codigo?.Trim(),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respUpdate.Code < 0)
+                return respUpdate;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Modifica - WEB",
+                detalle: $"Clasificacion Endeudamiento : {request.codigo}"
+            );
+
+            return respUpdate;
+        }
+
+        private ErrorDto InsertarEndeudamiento(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlInsert = @"
+            INSERT INTO Crd_Clasificacion_Endeudamiento
+            (
+                cod_Endeudamiento,
+                desde,
+                hasta,
+                cod_razon
+            )
+            VALUES
+            (
+                @CodEndeudamiento,
+                @Desde,
+                @Hasta,
+                @CodRazon
+            );";
+
+            var respInsert = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlInsert,
+                new
+                {
+                    CodEndeudamiento = request.codigo?.Trim(),
+                    Desde = request.desde,
+                    Hasta = request.hasta,
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respInsert.Code < 0)
+                return respInsert;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Registra - WEB",
+                detalle: $"Clasificacion Endeudamiento : {request.codigo}"
+            );
+
+            return respInsert;
+        }
+
+        #endregion
+
+        public ErrorDto PreaClasificacion_Historial_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            var resp = ExisteHistorial(codEmpresa, request.codigo)
+                ? ActualizarHistorial(codEmpresa, usuario, request)
+                : InsertarHistorial(codEmpresa, usuario, request);
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Información guardada satisfactoriamente..."
+            };
+        }
+
+        public ErrorDto PreaClasificacion_Historial_Eliminar(int codEmpresa, string codHistorial, string usuario)
+        {
+            const string sqlDelete = @"DELETE Crd_Clasificacion_Historial
+            WHERE cod_historial = @CodHistorial;";
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodHistorial = codHistorial?.Trim()
+                });
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Elimina - WEB",
+                detalle: $"Clasificacion Historial : {codHistorial}"
+            );
+
+            return respDelete;
+        }
+
+        #region Historial helpers
+        private bool ExisteHistorial(int codEmpresa, string codHistorial)
+        {
+            const string sqlExiste = @"SELECT ISNULL(COUNT(*), 0) as Existe
+            FROM Crd_Clasificacion_Historial WHERE cod_historial = @CodHistorial;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlExiste,
+                0,
+                new
+                {
+                    CodHistorial = codHistorial.Trim()
+                });
+
+            if (resp.Code < 0)
+                return false;
+
+            return resp.Result > 0;
+        }
+
+        private ErrorDto ActualizarHistorial(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlUpdate = @"
+            UPDATE Crd_Clasificacion_Historial
+            SET
+                descripcion = @Descripcion,
+                cod_razon = @CodRazon
+            WHERE cod_historial = @CodHistorial;";
+
+            var respUpdate = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlUpdate,
+                new
+                {
+                    CodHistorial = request.codigo?.Trim(),
+                    Descripcion = request.descripcion?.Trim(),
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respUpdate.Code < 0)
+                return respUpdate;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Modifica - WEB",
+                detalle: $"Clasificacion Historial : {request.codigo}"
+            );
+
+            return respUpdate;
+        }
+
+        private ErrorDto InsertarHistorial(int codEmpresa, string usuario, PreaClasificacionData request)
+        {
+            const string sqlInsert = @"
+            INSERT INTO Crd_Clasificacion_Historial
+            (
+                cod_historial,
+                descripcion,
+                cod_razon
+            )
+            VALUES
+            (
+                @CodHistorial,
+                @Descripcion,
+                @CodRazon
+            );";
+
+            var respInsert = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlInsert,
+                new
+                {
+                    CodHistorial = request.codigo?.Trim(),
+                    Descripcion = request.descripcion?.Trim(),
+                    CodRazon = request.razon?.Trim()
+                });
+
+            if (respInsert.Code < 0)
+                return respInsert;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento: "Registra - WEB",
+                detalle: $"Clasificacion Historial : {request.codigo}"
+            );
+
+            return respInsert;
+        }
+        #endregion
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
