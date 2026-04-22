@@ -41,4 +41,12 @@
         public string observaciones { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
+
+    public class CoAplContratosRegistroGuardarResponse
+    {
+        public bool pass { get; set; } = false;
+        public long contrato_id { get; set; } = 0;
+        public string movimiento { get; set; } = string.Empty;
+        public string mensaje { get; set; } = string.Empty;
+    }
 }

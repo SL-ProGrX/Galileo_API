@@ -53,12 +53,9 @@
         public bool? guarda { get; set; } = false;
     }
 
-    public class CoAplFndContratosRegistroGuardarResponse
+    public class CoAplFndContratosRegistroGuardarResponse: CoAplContratosRegistroGuardarResponse
     {
-        public bool pass { get; set; }
-        public long contrato_id { get; set; }
-        public string movimiento { get; set; } = string.Empty;
-        public string mensaje { get; set; } = string.Empty;
+        public bool? resp { get; set; } = false;
     }
 
     public class CoAplFndContratosRegistroGuardarDbResponse
