@@ -23,6 +23,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             _bitacora = dbBitacora;
         }
 
+        /// <summary>
+        /// Obtiene las razones de clasificacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<PreaClasificacionRazonData>> PreaClasificacion_Razones_Obtener(int codEmpresa)
         {
             const string query = @"select cod_razon,descripcion,color 
@@ -31,6 +36,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 _portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene el catalogo de clasificacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="catalogo"></param>
+        /// <returns></returns>
         public ErrorDto<List<PreaClasificacionData>> PreaClasificacion_Catalogo_Obtener(int codEmpresa, string catalogo)
         {
             string query = "";
@@ -93,6 +104,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 _portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Guarda o actualiza una razon de clasificacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Razon_Guardar(int codEmpresa, string usuario, PreaClasificacionRazonData request)
         {
             var resp = ExisteRazon(codEmpresa, request.cod_razon)
@@ -109,6 +127,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una razon de clasificacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codRazon"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Razon_Eliminar(int codEmpresa, string codRazon, string usuario)
         {
             const string sqlDelete = @"delete Crd_Clasificacion_Razon where cod_razon = @CodRazon;";
@@ -231,6 +256,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
         #endregion
 
+        /// <summary>
+        /// Guarda o actualiza una clasificacion de garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Garantia_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             var resp = ExisteGarantia(codEmpresa, request.codigo)
@@ -247,6 +279,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una clasificacion de garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codGarantia"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Garantia_Eliminar(int codEmpresa, string codGarantia, string usuario)
         {
             const string sqlDeleteDt = @"delete Crd_Clasificacion_Garantia_Dt where cod_garantia = @CodGarantia;";
@@ -384,6 +423,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
         #endregion
 
+        /// <summary>
+        /// Guarda o actualiza una clasificacion de mora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Mora_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             var resp = ExisteMora(codEmpresa, request.codigo)
@@ -400,6 +446,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una clasificacion de mora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codMora"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Mora_Eliminar(int codEmpresa, string codMora, string usuario)
         {
             const string sqlDelete = @"DELETE Cbr_Clasificacion_Mora WHERE cod_Mora = @CodMora;";
@@ -532,6 +585,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
         #endregion
 
+        /// <summary>
+        /// Guarda o actualiza una clasificacion de capacidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Capacidad_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             var resp = ExisteCapacidad(codEmpresa, request.codigo)
@@ -548,6 +608,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una clasificacion de capacidad
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codCapacidad"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Capacidad_Eliminar(int codEmpresa, string codCapacidad, string usuario)
         {
             const string sqlDelete = @"DELETE Crd_Clasificacion_Capacidad 
@@ -676,6 +743,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
         #endregion
 
+        /// <summary>
+        /// Guarda o actualiza una clasificacion de endeudamiento
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Endeudamiento_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             var resp = ExisteEndeudamiento(codEmpresa, request.codigo)
@@ -692,6 +766,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una clasificacion de endeudamiento
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codEndeudamiento"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Endeudamiento_Eliminar(int codEmpresa, string codEndeudamiento, string usuario)
         {
             const string sqlDelete = @"DELETE Crd_Clasificacion_Endeudamiento 
@@ -821,6 +902,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
         #endregion
 
+        /// <summary>
+        /// Guarda o actualiza una clasificacion de historial
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Historial_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             var resp = ExisteHistorial(codEmpresa, request.codigo)
@@ -837,6 +925,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             };
         }
 
+        /// <summary>
+        /// Elimina una clasificacion de historial
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codHistorial"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto PreaClasificacion_Historial_Eliminar(int codEmpresa, string codHistorial, string usuario)
         {
             const string sqlDelete = @"DELETE Crd_Clasificacion_Historial
@@ -960,6 +1055,68 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
         #endregion
 
+        /// <summary>
+        /// Obtiene las clasificaciones asignadas a una garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codGarantia"></param>
+        /// <returns></returns>
+        public ErrorDto<List<PreaClasificacionGarantiaData>> PreaClasificacion_Garantia_Obtener(int codEmpresa, string codGarantia)
+        {
+            const string query = @"select Gt.GARANTIA, Gt.DESCRIPCION, 
+            case when isnull(Gr.COD_GARANTIA,'') = '' then 0 else 1 end 'asignado' 
+            from  CRD_GARANTIA_TIPOS Gt 
+            left join CRD_CLASIFICACION_GARANTIA_DT Gr on Gt.GARANTIA = Gr.GARANTIA and Gr.COD_GARANTIA = @CodGarantia 
+            order by Gr.COD_GARANTIA desc, Gt.DESCRIPCION";
+            return DbHelper.ExecuteListQuery<PreaClasificacionGarantiaData>(
+                _portalDb, codEmpresa, query, new { CodGarantia = codGarantia?.Trim() });
+        }
+
+        /// <summary>
+        /// Asigna o desasigna una clasificacion a una garantia
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codGarantia"></param>
+        /// <param name="garantia"></param>
+        /// <param name="asignado"></param>
+        /// <returns></returns>
+        public ErrorDto PreaClasificacion_Garantia_Asignar(int codEmpresa, string codGarantia, string garantia, bool asignado)
+        {
+            string sql = "";
+            if (asignado)
+            {
+                sql = @"insert Crd_clasificacion_Garantia_DT (cod_garantia,garantia) 
+                values(@CodGarantia, @Garantia);";
+            } 
+            else
+            {
+                sql = @"delete Crd_clasificacion_Garantia_DT 
+                where cod_Garantia = @CodGarantia and garantia = @Garantia;";
+            }
+
+            var resp = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new
+                {
+                    CodGarantia = codGarantia?.Trim(),
+                    Garantia = garantia?.Trim()
+                });
+
+            if (resp.Code < 0)
+                return resp;
+
+            return resp;
+        }
+
+        /// <summary>
+        /// Registra en bitacora
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="movimiento"></param>
+        /// <param name="detalle"></param>
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
         {
             _bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto

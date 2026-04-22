@@ -99,5 +99,17 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         {
             return _bl.PreaClasificacion_Historial_Eliminar(codEmpresa, codHistorial, usuario);
         }
+
+        [HttpGet("PreaClasificacion_Garantia_Obtener")]
+        public ErrorDto<List<PreaClasificacionGarantiaData>> PreaClasificacion_Garantia_Obtener(int codEmpresa, string codGarantia)
+        {
+            return _bl.PreaClasificacion_Garantia_Obtener(codEmpresa, codGarantia);
+        }
+
+        [HttpPost("PreaClasificacion_Garantia_Asignar")]
+        public ErrorDto PreaClasificacion_Garantia_Asignar(int codEmpresa, string codGarantia, string garantia, bool asignado)
+        {
+            return _bl.PreaClasificacion_Garantia_Asignar(codEmpresa, codGarantia, garantia, asignado);
+        }
     }
 }

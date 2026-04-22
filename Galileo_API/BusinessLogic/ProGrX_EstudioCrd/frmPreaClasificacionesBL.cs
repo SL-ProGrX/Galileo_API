@@ -80,5 +80,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         {
             return _db.PreaClasificacion_Historial_Eliminar(codEmpresa, codHistorial, usuario);
         }
+
+        public ErrorDto<List<PreaClasificacionGarantiaData>> PreaClasificacion_Garantia_Obtener(int codEmpresa, string codGarantia)
+        {
+            return _db.PreaClasificacion_Garantia_Obtener(codEmpresa, codGarantia);
+        }
+
+        public ErrorDto PreaClasificacion_Garantia_Asignar(int codEmpresa, string codGarantia, string garantia, bool asignado)
+        {
+            return _db.PreaClasificacion_Garantia_Asignar(codEmpresa, codGarantia, garantia, asignado);
+        }
     }
 }
