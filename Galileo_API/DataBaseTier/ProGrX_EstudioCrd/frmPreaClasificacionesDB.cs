@@ -9,6 +9,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 3;
+        private readonly string vEliminaM = "Elimina - WEB";
+        private readonly string vRegistraM = "Registra - WEB";
+        private readonly string vModificaM = "Modifica - WEB";
+
 
         public FrmPreaClasificacionesDb(IConfiguration config)
            : this(
@@ -88,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 default:
                     break;
-            };
+            }
 
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -123,7 +127,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -153,7 +157,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"PreAnalisis (Razon) : {codRazon}"
             );
 
@@ -208,7 +212,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"PreAnalisis (Razon) : {request.cod_razon}"
             );
 
@@ -248,7 +252,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"PreAnalisis (Razon) : {request.cod_razon}"
             );
 
@@ -275,7 +279,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -318,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"Clasificacion Garantia : {codGarantia}"
             );
 
@@ -375,7 +379,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"Clasificacion Garantía : {request.codigo}"
             );
 
@@ -415,7 +419,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"Clasificacion Garantía : {request.codigo}"
             );
 
@@ -442,7 +446,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -472,7 +476,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"Clasificacion Mora : {codMora}"
             );
 
@@ -531,7 +535,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"Clasificacion Mora : {request.codigo}"
             );
 
@@ -577,7 +581,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"Clasificacion Mora : {request.codigo}"
             );
 
@@ -604,7 +608,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -635,7 +639,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"Clasificacion Capacidad : {codCapacidad}"
             );
 
@@ -692,7 +696,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"Clasificacion Capacidad : {request.codigo}"
             );
 
@@ -735,7 +739,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"Clasificacion Capacidad : {request.codigo}"
             );
 
@@ -762,7 +766,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -793,7 +797,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"Clasificacion Endeudamiento : {codEndeudamiento}"
             );
 
@@ -850,7 +854,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"Clasificacion Endeudamiento : {request.codigo}"
             );
 
@@ -893,7 +897,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"Clasificacion Endeudamiento : {request.codigo}"
             );
 
@@ -921,7 +925,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = resp.Description
             };
         }
 
@@ -952,7 +956,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Elimina - WEB",
+                movimiento: vEliminaM,
                 detalle: $"Clasificacion Historial : {codHistorial}"
             );
 
@@ -1007,7 +1011,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Modifica - WEB",
+                movimiento: vModificaM,
                 detalle: $"Clasificacion Historial : {request.codigo}"
             );
 
@@ -1047,7 +1051,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
-                movimiento: "Registra - WEB",
+                movimiento: vRegistraM,
                 detalle: $"Clasificacion Historial : {request.codigo}"
             );
 
