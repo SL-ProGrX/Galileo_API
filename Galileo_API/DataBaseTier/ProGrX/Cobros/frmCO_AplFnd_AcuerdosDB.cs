@@ -222,7 +222,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoAplFndAcuerdosCargaMasivaResponse> Co_AplFnd_Acuerdos_CargaMasiva(
             int codEmpresa,  CoAplFndAcuerdosCargaMasivaRequest request)
         {
-            if (request.Items == null || request.Items.Count == 0)
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse<CoAplFndAcuerdosCargaMasivaResponse>(
+                    "La solicitud es requerida.",
+                    -1,
+                    new CoAplFndAcuerdosCargaMasivaResponse());
+            }
+            if (request.Items == null )
+            {
+                return DbHelper.CreateErrorResponse<CoAplFndAcuerdosCargaMasivaResponse>(
+                    "No se recibieron registros para procesar.",
+                    -1,
+                    new CoAplFndAcuerdosCargaMasivaResponse());
+            }
+            if ( request.Items.Count == 0)
             {
                 return DbHelper.CreateErrorResponse<CoAplFndAcuerdosCargaMasivaResponse>(
                     "No se recibieron registros para procesar.",
@@ -274,12 +288,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         parameters,
                         commandType: CommandType.StoredProcedure);
 
-                    if (dbResult != null && dbResult.Pass==0)
+                    if (dbResult == null)
                     {
                         resultado.Procesado = false;
-                        resultado.Mensaje = dbResult?.Mensaje ?? "No fue posible procesar el registro.";
+                        resultado.Mensaje = "No fue posible procesar el registro.";
+                        resultado.AcuerdoId = 0;
+                        resultado.Movimiento = string.Empty;
+
+                        response.ConError++;
+                        response.Detalle.Add(resultado);
+                        continue;
+                    }
+
+                    if (dbResult.Pass != 1)
+                    {
+                        resultado.Procesado = false;
+                        resultado.Mensaje = dbResult.Mensaje;
                         resultado.AcuerdoId = dbResult.AcuerdoId;
-                        resultado.Movimiento = dbResult?.Movimiento ?? string.Empty;
+                        resultado.Movimiento = dbResult.Movimiento;
+
                         response.ConError++;
                         response.Detalle.Add(resultado);
                         continue;
@@ -287,7 +314,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                     resultado.Procesado = true;
                     resultado.Mensaje = dbResult?.Mensaje ?? string.Empty;
-                    resultado.AcuerdoId = dbResult.AcuerdoId;
+                    resultado.AcuerdoId = dbResult?.AcuerdoId ?? 0;
                     resultado.Movimiento = dbResult?.Movimiento ?? string.Empty;
                     response.Correctos++;
                     response.Detalle.Add(resultado);
