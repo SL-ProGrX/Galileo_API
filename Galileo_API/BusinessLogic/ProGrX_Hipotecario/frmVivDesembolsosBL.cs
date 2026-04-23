@@ -44,11 +44,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             return _db.Bancos_Listar(codEmpresa, usuario);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string cedula, int bancoId)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string bancoId)
         {
-            return _db.Cuentas_Listar(codEmpresa, cedula, bancoId);
+            return _db.Cuentas_Listar(codEmpresa, bancoId);
         }
 
+        public ErrorDto<List<ConceptoApiDto>> Conceptos_Listar(int codEmpresa)
+        {
+            return _db.Conceptos_Listar(codEmpresa);
+        }
 
+        public ErrorDto<bool> PermiteDesembolso(int codEmpresa,int operacion,int index)
+        {
+            return _db.PermiteDesembolso(codEmpresa, operacion, index);
+        }
     }
 }
