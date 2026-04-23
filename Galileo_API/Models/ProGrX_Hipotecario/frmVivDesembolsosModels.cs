@@ -52,4 +52,11 @@
 
         public DateTime? fecha { get; set; }
     }
+
+    public class ConceptoApiDto
+    {
+        public string item { get; set; } = "";
+        public string descripcion { get; set; } = "";
+        public int aplicaIntereses { get; set; }
+    }
 }
