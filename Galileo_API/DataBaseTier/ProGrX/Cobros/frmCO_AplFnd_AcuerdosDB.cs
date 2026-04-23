@@ -278,7 +278,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         resultado.Procesado = false;
                         resultado.Mensaje = dbResult?.Mensaje ?? "No fue posible procesar el registro.";
-                        resultado.AcuerdoId = dbResult?.AcuerdoId ?? 0;
+                        resultado.AcuerdoId = dbResult.AcuerdoId;
                         resultado.Movimiento = dbResult?.Movimiento ?? string.Empty;
                         response.ConError++;
                         response.Detalle.Add(resultado);
@@ -287,7 +287,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                     resultado.Procesado = true;
                     resultado.Mensaje = dbResult?.Mensaje ?? string.Empty;
-                    resultado.AcuerdoId = dbResult?.AcuerdoId ?? 0;
+                    resultado.AcuerdoId = dbResult.AcuerdoId;
                     resultado.Movimiento = dbResult?.Movimiento ?? string.Empty;
                     response.Correctos++;
                     response.Detalle.Add(resultado);
