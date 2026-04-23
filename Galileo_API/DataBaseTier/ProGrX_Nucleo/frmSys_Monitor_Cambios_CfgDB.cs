@@ -105,7 +105,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
            
         }
 
-        // <summary>
+        /// <summary>
         /// Obtiene la bitácora de cambios de configuración según los filtros enviados.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
@@ -125,44 +125,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
                 const string procedure = "[spSEG_Bitacora_Consulta]";
-
-                DateTime inicio;
-                DateTime corte;
-
-                if (!filtros.chkFechas)
-                {
-                    if (!filtros.chkHoras)
-                    {
-                        inicio = filtros.dtpInicio.Date.Add(filtros.dtpInicio.TimeOfDay);
-                        corte = filtros.dtpCorte.Date.Add(filtros.dtpCorte.TimeOfDay);
-                    }
-                    else
-                    {
-                        inicio = filtros.dtpInicio.Date;
-                        corte = filtros.dtpCorte.Date.AddDays(1).AddTicks(-1);
-                    }
-                }
-                else
-                {
-                    inicio = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
-                    corte = new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Unspecified);
-                }
-
-                var values = new
-                {
-                    Cliente = CodEmpresa,
-                    FechaInicio = inicio,
-                    FechaCorte = corte,
-                    Usuario = string.IsNullOrWhiteSpace(filtros.usuario) ? null : filtros.usuario.Trim(),
-                    Modulo = string.IsNullOrWhiteSpace(filtros.modulo) || filtros.modulo == "T" ? null : filtros.modulo.Trim(),
-                    Movimiento = string.IsNullOrWhiteSpace(filtros.fuente) || filtros.fuente == "T" ? null : filtros.fuente.Trim(),
-                    Detalle = string.IsNullOrWhiteSpace(filtros.detalle) ? null : filtros.detalle.Trim(),
-                    AppName = string.IsNullOrWhiteSpace(filtros.appNombre) ? null : filtros.appNombre.Trim(),
-                    AppVersion = string.IsNullOrWhiteSpace(filtros.appVersion) ? null : filtros.appVersion.Trim(),
-                    LogEquipo = string.IsNullOrWhiteSpace(filtros.logEquipo) ? null : filtros.logEquipo.Trim(),
-                    LogIP = string.IsNullOrWhiteSpace(filtros.logIP) ? null : filtros.logIP.Trim(),
-                    EquipoMAC = string.IsNullOrWhiteSpace(filtros.mac) ? null : filtros.mac.Trim()
-                };
+                var (inicio, corte) = ObtenerRangoFechasBitacora(filtros);
+                var values = CrearParametrosBitacora(CodEmpresa, filtros, inicio, corte);
 
                 response.Result = connection
                     .Query<MovimientoLogDto>(procedure, values, commandType: System.Data.CommandType.StoredProcedure)
@@ -178,5 +142,92 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return response;
         }
 
+        /// <summary>
+        /// Calcula el rango de fechas a consultar en bitácora según la configuración de filtros.
+        /// </summary>
+        /// <param name="filtros">Filtros de consulta de bitácora.</param>
+        /// <returns>Tupla con fecha de inicio y fecha de corte.</returns>
+        private static (DateTime inicio, DateTime corte) ObtenerRangoFechasBitacora(MonitorCambiosCfgFiltros filtros)
+        {
+            if (filtros.chkFechas)
+            {
+                return (
+                    new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                    new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Unspecified)
+                );
+            }
+
+            if (!filtros.chkHoras)
+            {
+                return (
+                    filtros.dtpInicio.Date.Add(filtros.dtpInicio.TimeOfDay),
+                    filtros.dtpCorte.Date.Add(filtros.dtpCorte.TimeOfDay)
+                );
+            }
+
+            return (
+                filtros.dtpInicio.Date,
+                filtros.dtpCorte.Date.AddDays(1).AddTicks(-1)
+            );
+        }
+
+        /// <summary>
+        /// Crea el objeto de parámetros requerido por el procedimiento de consulta de bitácora.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros enviados por la pantalla.</param>
+        /// <param name="inicio">Fecha inicial calculada.</param>
+        /// <param name="corte">Fecha final calculada.</param>
+        /// <returns>Objeto anónimo con los parámetros del procedimiento almacenado.</returns>
+        private static object CrearParametrosBitacora(
+            int codEmpresa,
+            MonitorCambiosCfgFiltros filtros,
+            DateTime inicio,
+            DateTime corte)
+        {
+            return new
+            {
+                Cliente = codEmpresa,
+                FechaInicio = inicio,
+                FechaCorte = corte,
+                Usuario = NormalizarTexto(filtros.usuario),
+                Modulo = NormalizarTextoTodosComoNull(filtros.modulo),
+                Movimiento = NormalizarTextoTodosComoNull(filtros.fuente),
+                Detalle = NormalizarTexto(filtros.detalle),
+                AppName = NormalizarTexto(filtros.appNombre),
+                AppVersion = NormalizarTexto(filtros.appVersion),
+                LogEquipo = NormalizarTexto(filtros.logEquipo),
+                LogIP = NormalizarTexto(filtros.logIP),
+                EquipoMAC = NormalizarTexto(filtros.mac)
+            };
+        }
+
+        /// <summary>
+        /// Normaliza un texto para parámetros opcionales.
+        /// Devuelve null cuando el valor viene vacío.
+        /// </summary>
+        /// <param name="valor">Texto a normalizar.</param>
+        /// <returns>Texto limpio o null.</returns>
+        private static string? NormalizarTexto(string? valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        }
+
+        /// <summary>
+        /// Normaliza un texto para filtros donde el valor "T" representa todos.
+        /// Devuelve null cuando el valor viene vacío o es "T".
+        /// </summary>
+        /// <param name="valor">Texto a normalizar.</param>
+        /// <returns>Texto limpio o null.</returns>
+        private static string? NormalizarTextoTodosComoNull(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            var texto = valor.Trim();
+            return texto == "T" ? null : texto;
+        }
     }
 }
