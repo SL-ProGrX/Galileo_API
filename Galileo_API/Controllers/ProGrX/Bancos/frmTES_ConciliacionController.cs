@@ -125,7 +125,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _BL.TES_ConciliacionDetalle_Obtener(CodEmpresa, filtros);
         }
 
-        [HttpPost("TES_ConciliacionDetalleLote_Obtener")]
+        [HttpGet("TES_ConciliacionDetalleLote_Obtener")]
         public ErrorDto<List<TesConciliacionDetallesLoteData>> TES_ConciliacionDetalleLote_Obtener(int CodEmpresa, string filtros)
         {
             return _BL.TES_ConciliacionDetalleLote_Obtener(CodEmpresa, filtros);
