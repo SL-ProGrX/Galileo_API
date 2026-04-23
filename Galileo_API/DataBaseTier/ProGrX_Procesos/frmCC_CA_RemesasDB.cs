@@ -60,7 +60,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 response.filtros.Add(new DropDownListaGenericaModel { item = "N", descripcion = "Nombre" });
                 response.filtros.Add(new DropDownListaGenericaModel { item = "O", descripcion = "Operación" });
 
-                var periodo = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                var hoy = DateTime.Today;
+                var periodo = new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Local);
                 for (var i = 0; i <= 6; i++)
                 {
                     var valor = periodo.AddMonths(i).ToString("yyyyMM");
