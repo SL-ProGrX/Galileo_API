@@ -313,9 +313,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     }
 
                     resultado.Procesado = true;
-                    resultado.Mensaje = dbResult?.Mensaje ?? string.Empty;
+                    resultado.Mensaje = dbResult.Mensaje;
                     resultado.AcuerdoId = dbResult.AcuerdoId ;
-                    resultado.Movimiento = dbResult?.Movimiento ?? string.Empty;
+                    resultado.Movimiento = dbResult.Movimiento ;
                     response.Correctos++;
                     response.Detalle.Add(resultado);
 
