@@ -19,7 +19,7 @@
     public class VivDesembolsoDto
     {
 
-        public int codigo { get; set; }
+        public int? codigo { get; set; }
         public string beneficiario { get; set; } = string.Empty;
 
         public decimal monto { get; set; }
@@ -44,9 +44,9 @@
 
         public string beneficiario { get; set; } = string.Empty;
 
-        public decimal monto { get; set; }
-        public decimal descuento { get; set; }
-        public decimal montogiro { get; set; }
+        public decimal? monto { get; set; }
+        public decimal? descuento { get; set; }
+        public decimal? montogiro { get; set; }
 
         public string cuenta { get; set; } = string.Empty;
         public string aplicainteres { get; set; } = string.Empty;
@@ -59,15 +59,15 @@
     {
         public string item { get; set; } = "";
         public string descripcion { get; set; } = "";
-        public int aplicaIntereses { get; set; }
+        public int? aplicaIntereses { get; set; }
     }
 
     public class ActivarDesembolsoPendienteRequestDto
     {
-        public int contacto { get; set; }
-        public int garantia { get; set; }
+        public int? contacto { get; set; }
+        public int? garantia { get; set; }
         public string tipo { get; set; } = string.Empty;
-        public int linea { get; set; }
+        public int? linea { get; set; }
         public string usuario { get; set; } = string.Empty;
 
         public decimal descuento { get; set; }
@@ -76,49 +76,49 @@
         public string fechaCorte { get; set; } = string.Empty;
         public string fechaUltimoCorte { get; set; } = string.Empty;
 
-        public int diasActuales { get; set; }
+        public int? diasActuales { get; set; }
         public decimal interesesActuales { get; set; }
 
-        public int diasAcumulados { get; set; }
+        public int? diasAcumulados { get; set; }
         public decimal interesesAcumulados { get; set; }
     }
 
 
     public class CambioPendienteResponseDto
     {
-        public int Pass { get; set; }
+        public int? Pass { get; set; }
         public string Mensaje { get; set; } = string.Empty;
         public string Movimiento { get; set; } = string.Empty;
     }
 
     public class CambioPendienteRequestDto
     {
-        public int garantia { get; set; }
+        public int? garantia { get; set; }
         public string tipo { get; set; } = string.Empty;
-        public int linea { get; set; }
-        public int contacto { get; set; }
+        public int? linea { get; set; }
+        public int? contacto { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
     public class AgregarPendienteRequestDto
     {
-        public int contacto { get; set; }
-        public int garantia { get; set; }
+        public int? contacto { get; set; }
+        public int? garantia { get; set; }
         public string tipoDesembolso { get; set; } = string.Empty;
         public string beneficiario { get; set; } = string.Empty;
 
         public decimal monto { get; set; }
-        public int aplicaIntereses { get; set; }
+        public int?  aplicaIntereses { get; set; }
 
         public string usuario { get; set; } = string.Empty;
         public string fecha { get; set; } = string.Empty;
 
-        public decimal disponible { get; set; }
+        public decimal? disponible { get; set; }
     }
 
     public class DesembolsoDetalleDto
     {
-        public int codigodesembolso { get; set; }
+        public int? codigodesembolso { get; set; }
         public string codigo { get; set; } = string.Empty;
         public decimal monto { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -126,27 +126,27 @@
 
     public class ViviendaDesembolsoRequestDto
     {
-        public int codigodesembolso { get; set; }
-        public int numeroOperacion { get; set; }
+        public int? codigodesembolso { get; set; }
+        public int? numeroOperacion { get; set; }
         public string registroUsuario { get; set; } = string.Empty;
         public string beneficiario { get; set; } = string.Empty;
 
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public string? detalle { get; set; }
-        public decimal disponible { get; set; }
+        public decimal? disponible { get; set; }
 
-        public int aplicaIntereses { get; set; }
+        public int? aplicaIntereses { get; set; }
 
         public string fechaCorte { get; set; } = string.Empty;
         public string fechaUltimoCorte { get; set; } = string.Empty;
 
-        public int interesesActualDias { get; set; }
-        public decimal interesesActualMonto { get; set; }
+        public int? interesesActualDias { get; set; }
+        public decimal? interesesActualMonto { get; set; }
 
-        public int interesesAcumDias { get; set; }
-        public decimal interesesAcumMonto { get; set; }
+        public int? interesesAcumDias { get; set; }
+        public decimal? interesesAcumMonto { get; set; }
 
-        public int bancoCodigo { get; set; }
+        public int? bancoCodigo { get; set; }
         public string bancoEmitir { get; set; } = string.Empty;
         public string bancoCuenta { get; set; } = string.Empty;
         public string identificacion { get; set; } = string.Empty;

@@ -485,7 +485,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     : p.Get<int>("@CodigoDesembolso");
 
                 if (idDesembolso <= 0)
-                    throw new Exception("No se pudo generar el desembolso");
+                {
+                    tx.Rollback();
+
+                    response.Code = -1;
+                    response.Description = "No se pudo generar el desembolso";
+
+                    return response;
+                }
+
 
                 foreach (var item in request.detalles)
                 {
