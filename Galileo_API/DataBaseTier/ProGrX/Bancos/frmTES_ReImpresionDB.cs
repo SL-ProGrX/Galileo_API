@@ -64,28 +64,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     response.Result.verificaTag = "S";
 
-                    if (response.Result != null)
+                    if (response.Result.comprobante != "01")
                     {
-                        if (response.Result.comprobante != "01")
-                        {
-                            response.Result.verifica = " - El Documento Actual no se puede ReImprimir, porque no es Cheque Continuo...";
-                            response.Result.verificaTag = "N";
-                        }
-
-                        if (response.Result.estado != "I")
-                        {
-                            response.Result.verifica += " - El documento no se encuentra Impreso / No se puede ReImprimir...";
-                            response.Result.verificaTag = "N";
-                        }
-
-                        if (response.Result.verificaTag == "S")
-                        {
-                            response.Result.verifica = " - El Documento se puede ReImprimir...";
-                        }
+                        response.Result.verifica = " - El Documento Actual no se puede ReImprimir, porque no es Cheque Continuo...";
+                        response.Result.verificaTag = "N";
                     }
-                    else
+
+                    if (response.Result.estado != "I")
                     {
-                        response.Result = new TesReImpresionModels();
+                        response.Result.verifica += " - El documento no se encuentra Impreso / No se puede ReImprimir...";
+                        response.Result.verificaTag = "N";
+                    }
+
+                    if (response.Result.verificaTag == "S")
+                    {
+                        response.Result.verifica = " - El Documento se puede ReImprimir...";
                     }
                 }
                 else
