@@ -178,16 +178,86 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string cedula, int bancoId)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string bancoId)
         {
             return ExecuteQuery(codEmpresa, cn =>
             {
-                const string sql = @"EXEC spSys_Cuentas_Bancarias @cedula, @bancoId, 1";
+                const string sql = @"EXEC spSys_Cuentas_Bancarias '', @bancoId, 1";
 
-                return cn.Query<DropDownListaGenericaModel>(
+                return cn.Query<string, string, DropDownListaGenericaModel>(
                     sql,
-                    new { cedula, bancoId }).ToList();
+                    (id, desc) => new DropDownListaGenericaModel
+                    {
+                        item = id.ToString(),
+                        descripcion = desc
+                    },
+                    new { bancoId },
+                    splitOn: "ITMX"
+                ).ToList();
             });
+        }
+
+
+        public ErrorDto<List<ConceptoApiDto>> Conceptos_Listar(int codEmpresa)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+                            SELECT RTRIM(codigo) AS item,RTRIM(descripcion) AS descripcion,
+                    ISNULL(aplicaInteres, 0) AS aplicaIntereses
+                FROM ViviendaTiposDesembolsos";
+
+                return cn.Query<ConceptoApiDto>(sql).ToList();
+            });
+        }
+        public ErrorDto<bool> PermiteDesembolso(int codEmpresa,int operacion,int index)
+        {
+            var response = new ErrorDto<bool>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                string sql;
+
+                if (index == 2) 
+                {
+                    sql = @"
+                SELECT COUNT(*) 
+                FROM REG_CREDITOS
+                WHERE ESTADOSOL = 'F'
+                AND ID_SOLICITUD = @Operacion
+            ";
+                }
+                else 
+                {
+                    sql = @"
+                SELECT COUNT(*)
+                FROM REG_CREDITOS R
+                INNER JOIN ViviendaDesembolsosDisponible D
+                    ON R.ID_SOLICITUD = D.NumeroOperacion
+                WHERE R.ESTADOSOL = 'F'
+                AND R.ID_SOLICITUD = @Operacion
+                AND R.EMITIR NOT IN ('CK','TE')
+                AND D.Disponible > 0
+            ";
+                }
+
+                var result = cn.ExecuteScalar<int>(sql, new
+                {
+                    Operacion = operacion
+                });
+
+                response.Result = result > 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
         }
     }
 }

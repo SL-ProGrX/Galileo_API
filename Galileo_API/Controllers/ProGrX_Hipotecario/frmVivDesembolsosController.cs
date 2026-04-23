@@ -63,9 +63,21 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [HttpGet("Cuentas_Listar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string cedula, int bancoId)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string bancoId)
         {
-            return _bl.Cuentas_Listar(codEmpresa, cedula, bancoId);
+            return _bl.Cuentas_Listar(codEmpresa, bancoId);
+        }
+
+        [HttpGet("Conceptos_Listar")]
+        public ErrorDto<List<ConceptoApiDto>> Conceptos_Listar(int codEmpresa)
+        {
+            return _bl.Conceptos_Listar(codEmpresa);
+        }
+
+        [HttpGet("PermiteDesembolso")]
+        public ErrorDto<bool> PermiteDesembolso(int codEmpresa,int operacion,int index)
+        {
+            return _bl.PermiteDesembolso(codEmpresa, operacion, index);
         }
     }
 }
