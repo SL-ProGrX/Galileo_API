@@ -42,16 +42,16 @@
         }
         public class CoAplFndAcuerdosDetalleResponse
         {
-            public int Id_Acuerdo { get; set; }
+            public int Id_Acuerdo { get; set; } = 0;
             public string Cedula { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
             public string Observaciones { get; set; } = string.Empty;
-            public DateTime Firma_Boleta { get; set; }  
-            public bool Estado { get; set; }
-            public bool Ind_Obrero { get; set; }
-            public bool Ind_Creditos { get; set; }
-            public bool Ind_Sobres { get; set; }
-            public bool Ind_Abono { get; set; }
+            public DateTime? Firma_Boleta { get; set; }
+            public bool Estado { get; set; } = false;
+            public bool Ind_Obrero { get; set; } = false;
+            public bool Ind_Creditos { get; set; } = false;
+            public bool Ind_Sobres { get; set; } = false;
+            public bool Ind_Abono { get; set; } = false;
             public string Usuario { get; set; } = string.Empty;
         }
         public class CoAplFndAcuerdosGuardarResponse

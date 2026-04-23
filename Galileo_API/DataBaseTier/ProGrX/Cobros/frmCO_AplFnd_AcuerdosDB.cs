@@ -46,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var parameters = new DynamicParameters();
             parameters.Add("@Acuerdo", request.Id_Acuerdo);
             parameters.Add("@Cedula", request.Cedula.Trim());
-            parameters.Add("@Firma", request.Firma_Boleta.Date);
+            parameters.Add("@Firma", request.Firma_Boleta);
             parameters.Add("@Activo", request.Estado);
             parameters.Add("@ICreditos", request.Ind_Creditos);
             parameters.Add("@IObrero", request.Ind_Obrero);
