@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly PortalDB _portalDB;
         private const string ModuloIncobrablesMasivo = "CBR-INC";
         private const string ModuloCobroJudicialMasivo = "CBR-CJE";
-        private const string ModuloCobroJudicialReversaMasivo = "CBR-re";
+        private const string ModuloCobroJudicialReversaMasivo = "CBR-CJR";
 
 
         private const string AccionCarga = "C";
@@ -274,7 +274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             ModuloCobroJudicialMasivo => "spCBR_Cobro_Judicial_Masivo_Revisa",
             ModuloIncobrablesMasivo => "spCBR_Incobrables_Masivo_Revisa",
-            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Revisa",
+            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Reversa_Revisa",
             _ => throw new ArgumentException("Módulo no válido.")
         };
 
@@ -282,7 +282,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             ModuloCobroJudicialMasivo => "spCBR_Cobro_Judicial_Masivo_Procesa",
             ModuloIncobrablesMasivo => "spCBR_Incobrables_Masivo_Procesa",
-            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Procesa",
+            ModuloCobroJudicialReversaMasivo => "spCBR_Cobro_Judicial_Masivo_Reversa_Procesa",
             _ => throw new ArgumentException("Módulo no válido.")
         };
     }
