@@ -54,9 +54,34 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             return _db.Conceptos_Listar(codEmpresa);
         }
 
-        public ErrorDto<bool> PermiteDesembolso(int codEmpresa,int operacion,int index)
+        public ErrorDto<bool> PermiteDesembolso(int codEmpresa, int operacion, int index)
         {
             return _db.PermiteDesembolso(codEmpresa, operacion, index);
+        }
+
+        public ErrorDto<bool> ActivarDesembolsoPendiente(int codEmpresa, ActivarDesembolsoPendienteRequestDto request)
+        {
+            return _db.ActivarDesembolsoPendiente(codEmpresa, request);
+        }
+
+        public ErrorDto<CambioPendienteResponseDto> Pendiente_Cambiar(int codEmpresa, CambioPendienteRequestDto request)
+        {
+            return _db.Pendiente_Cambiar(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> Pendiente_Agregar(int codEmpresa, AgregarPendienteRequestDto request)
+        {
+            return _db.Pendiente_Agregar(codEmpresa, request);
+        }
+
+        public ErrorDto<bool> DesembolsoDetalle_Guardar(int codEmpresa, List<DesembolsoDetalleDto> detalles)
+        {
+            return _db.DesembolsoDetalle_Guardar(codEmpresa, detalles);
+        }
+
+        public ErrorDto<int> Desembolso_Guardar(int codEmpresa, ViviendaDesembolsoRequestDto request)
+        {
+            return _db.Desembolso_Guardar(codEmpresa, request);
         }
     }
 }
