@@ -28,30 +28,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // WHERE común para filtro
         private const string WhereFilterSql = @"
             WHERE (@filtro IS NULL
-                   OR cod_tipo    LIKE @filtro
-                   OR descripcion LIKE @filtro)";
+       OR LTRIM(RTRIM(cod_tipo)) LIKE LTRIM(RTRIM(@filtro))
+       OR descripcion LIKE @filtro)";
 
         // Query de datos con orden y paginación
         private const string ObrasTiposDataSql =
             BaseSelectSql + @"
             " + WhereFilterSql + @"
             ORDER BY
-                -- ASC
-                CASE @orderDir WHEN 1 THEN
-                    CASE @orderIndex
-                        WHEN 1 THEN cod_tipo
-                        WHEN 2 THEN descripcion
-                        WHEN 3 THEN CAST(activo AS INT)
-                    END
-                END ASC,
-                -- DESC
-                CASE @orderDir WHEN 0 THEN
-                    CASE @orderIndex
-                        WHEN 1 THEN cod_tipo
-                        WHEN 2 THEN descripcion
-                        WHEN 3 THEN CAST(activo AS INT)
-                    END
-                END DESC
+                CASE WHEN @orderDir = 1 AND @orderIndex = 1 THEN cod_tipo END ASC,
+                CASE WHEN @orderDir = 1 AND @orderIndex = 2 THEN descripcion END ASC,
+                CASE WHEN @orderDir = 1 AND @orderIndex = 3 THEN activo END ASC,
+
+
+                CASE WHEN @orderDir = 0 AND @orderIndex = 1 THEN cod_tipo END DESC,
+                CASE WHEN @orderDir = 0 AND @orderIndex = 2 THEN descripcion END DESC,
+                CASE WHEN @orderDir = 0 AND @orderIndex = 3 THEN activo END DESC
+               
             OFFSET @offset ROWS 
             FETCH NEXT @rows ROWS ONLY;";
 
