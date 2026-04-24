@@ -56,24 +56,28 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.Pendientes_Listar(codEmpresa, operacion);
         }
 
+        [Authorize]
         [HttpGet("Bancos_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Bancos_Listar(int codEmpresa, string usuario)
         {
             return _bl.Bancos_Listar(codEmpresa, usuario);
         }
 
+        [Authorize]
         [HttpGet("Cuentas_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string bancoId)
         {
             return _bl.Cuentas_Listar(codEmpresa, bancoId);
         }
 
+        [Authorize]
         [HttpGet("Conceptos_Listar")]
         public ErrorDto<List<ConceptoApiDto>> Conceptos_Listar(int codEmpresa)
         {
             return _bl.Conceptos_Listar(codEmpresa);
         }
 
+        [Authorize]
         [HttpGet("PermiteDesembolso")]
         public ErrorDto<bool> PermiteDesembolso(int codEmpresa, int operacion, int index)
         {
@@ -110,9 +114,39 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
 
         [Authorize]
         [HttpPost("Desembolso_Guardar")]
-        public ErrorDto<int> Desembolso_Guardar(int codEmpresa,ViviendaDesembolsoRequestDto request)
+        public ErrorDto<int> Desembolso_Guardar(int codEmpresa, ViviendaDesembolsoRequestDto request)
         {
             return _bl.Desembolso_Guardar(codEmpresa, request);
         }
+
+        [Authorize]
+        [HttpGet("Cedulas_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cedulas_Listar(int codEmpresa)
+        {
+            return _bl.Cedulas_Listar(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Contactos_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Contactos_Listar(int codEmpresa,string tipo)
+        {
+            return _bl.Contactos_Listar(codEmpresa, tipo);
+        }
+
+        [Authorize]
+        [HttpGet("TiposDesembolso_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposDesembolso_Listar(int codEmpresa)
+        {
+            return _bl.TiposDesembolso_Listar(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Garantias_Listar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Garantias_Listar(int codEmpresa,int operacion)
+        {
+            return _bl.Garantias_Listar(codEmpresa, operacion);
+        }
+
+
     }
 }
