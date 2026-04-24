@@ -41,16 +41,16 @@ namespace Galileo.Controllers.ProGrX_Nucleo
        
         [Authorize]
         [HttpGet("Sif_OficinasUnidadContable_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa, int contabilidad)
         {
-            return _bl.Sif_OficinasUnidadContable_Obtener(CodEmpresa);
+            return _bl.Sif_OficinasUnidadContable_Obtener(CodEmpresa, contabilidad);
         }
 
         [Authorize]
         [HttpGet("Sif_OficinasCentroCostos_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa, int contabilidad)
         {
-            return _bl.Sif_OficinasCentroCostos_Obtener(CodEmpresa);
+            return _bl.Sif_OficinasCentroCostos_Obtener(CodEmpresa, contabilidad);
         }
 
         [Authorize]

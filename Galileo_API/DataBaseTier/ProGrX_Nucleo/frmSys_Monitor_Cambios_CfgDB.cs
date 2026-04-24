@@ -35,130 +35,199 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
         public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Modulos_Obtener(int CodEmpresa)
         {
-            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-
-            const string query = "exec spSEG_Modulos_Consulta";
-
-            var modulos = connection.Query<MonitorCambiosCfgModulosDto>(query).ToList();
-
-            var response = modulos.Select(m => new DropDownListaGenericaModel
+            try
             {
-                item = m.modulo,
-                descripcion = m.nombre
-                 
-            }).ToList();
+                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-            response.Add(new DropDownListaGenericaModel
-            {
-                item = "T",
-                descripcion = "[TODOS]"
-            });
+                const string query = "exec spSEG_Modulos_Consulta";
 
-            return new ErrorDto<List<DropDownListaGenericaModel>>
+                var modulos = connection.Query<MonitorCambiosCfgModulosDto>(query).ToList();
+
+                var response = modulos.Select(m => new DropDownListaGenericaModel
+                {
+                    item = m.modulo,
+                    descripcion = m.nombre
+
+                }).ToList();
+
+                response.Add(new DropDownListaGenericaModel
+                {
+                    item = "T",
+                    descripcion = "[TODOS]"
+                });
+
+                return new ErrorDto<List<DropDownListaGenericaModel>>
+                {
+                    Code = 0,
+                    Description = "OK",
+                    Result = response
+                };
+            }
+            catch (Exception ex)
             {
-                Code = 0,
-                Description = "OK",
-                Result = response
-            };
+                return new ErrorDto<List<DropDownListaGenericaModel>>
+                {
+                    Code = -1,
+                    Description = $"Error al obtener los módulos: {ex.Message}",
+                    Result = null
+                };
+            }
+
         }
 
 
         public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Tablas_Obtener(int CodEmpresa)
         {
-            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-
-            const string query = "select TableName as 'item', TableDesc as 'descripcion'  From Sys_Conf_Monitor_Tables";
-
-            var response = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-            return new ErrorDto<List<DropDownListaGenericaModel>>
+            try
             {
-                Code = 0,
-                Description = "OK",
-                Result = response
-            };
+                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+
+                const string query = "select TableName as 'item', TableDesc as 'descripcion'  From Sys_Conf_Monitor_Tables";
+
+                var response = connection.Query<DropDownListaGenericaModel>(query).ToList();
+
+                return new ErrorDto<List<DropDownListaGenericaModel>>
+                {
+                    Code = 0,
+                    Description = "OK",
+                    Result = response
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<List<DropDownListaGenericaModel>>
+                {
+                    Code = -1,
+                    Description = $"Error al obtener las tablas: {ex.Message}",
+                    Result = null
+                };
+            }
+           
         }
 
+        /// <summary>
+        /// Obtiene la bitácora de cambios de configuración según los filtros enviados.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="filtros">Filtros aplicados a la consulta de bitácora.</param>
+        /// <returns>Listado de movimientos encontrados.</returns>
         public ErrorDto<List<MovimientoLogDto>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, MonitorCambiosCfgFiltros filtros)
         {
-            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-
-
-            const string query = $@"exec spSEG_Bitacora_Consulta 
-                                                    @Cliente,
-                                                    @FechaInicio,
-                                                    @FechaCorte,
-                                                    @Usuario,
-                                                    @Modulo,
-                                                    @Movimiento,
-                                                    @Detalle,
-                                                    @AppName,
-                                                    @AppVersion,
-                                                    @LogEquipo,
-                                                    @LogIP,
-                                                    @EquipoMAC";
-
-            DateTime inicio;
-            DateTime corte;
-
-            if (!filtros.chkFechas) // vbUnchecked
-            {
-                if (!filtros.chkHoras) // vbUnchecked
-                {
-                    inicio = filtros.dtpInicio.Date.Add(filtros.dtpInicio.TimeOfDay);
-                    corte = filtros.dtpCorte.Date.Add(filtros.dtpCorte.TimeOfDay);
-                }
-                else
-                {
-                    inicio = filtros.dtpInicio.Date; // 00:00:00
-                    corte = filtros.dtpCorte.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
-                }
-            }
-            else
-            {
-                inicio = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
-                corte = new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Unspecified);
-            }
-
-            // === 2) Parámetros opcionales (Null si vacío / [TODOS]) ===
-            string? usuario = string.IsNullOrWhiteSpace(filtros.usuario) ? null : filtros.usuario.Trim();
-            string? moduloId = (filtros.modulo == "T") ? null : filtros.modulo;
-            string? fuente = (filtros.fuente == "T") ? null : filtros.fuente!.Trim();
-            string? detalle = string.IsNullOrWhiteSpace(filtros.detalle) ? null : filtros.detalle.Trim();
-            string? appNombre = string.IsNullOrWhiteSpace(filtros.appNombre) ? null : filtros.appNombre.Trim();
-            string? appVersion = string.IsNullOrWhiteSpace(filtros.appVersion) ? null : filtros.appVersion.Trim();
-            string? logEquipo = string.IsNullOrWhiteSpace(filtros.logEquipo) ? null : filtros.logEquipo.Trim();
-            string? logIP = string.IsNullOrWhiteSpace(filtros.logIP) ? null : filtros.logIP.Trim();
-            string? mac = string.IsNullOrWhiteSpace(filtros.mac) ? null : filtros.mac.Trim();
-
-            // === 3) Dapper parameters (evita SQL injection y SonarQube feliz) ===
-            var p = new DynamicParameters();
-            p.Add("@Cliente", CodEmpresa);
-            p.Add("@FechaInicio", inicio);
-            p.Add("@FechaCorte", corte);
-            p.Add("@Usuario", usuario);
-            p.Add("@Modulo", moduloId);
-            p.Add("@Movimiento", fuente);
-            p.Add("@Detalle", detalle);
-            p.Add("@AppName", appNombre);
-            p.Add("@AppVersion", appVersion);
-            p.Add("@LogEquipo", logEquipo);
-            p.Add("@LogIP", logIP);
-            p.Add("@EquipoMAC", mac);
-
-            // Si tu SP espera el orden exacto y no nombres (raro, pero pasa),
-            // esto igual funciona en SQL Server porque mapea por nombre.
-
-            var data = connection.Query<MovimientoLogDto>(query, p, commandType: System.Data.CommandType.StoredProcedure).ToList();
-
-            return new ErrorDto<List<MovimientoLogDto>>
+            var response = new ErrorDto<List<MovimientoLogDto>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = data
+                Result = new List<MovimientoLogDto>()
             };
 
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+
+                const string procedure = "[spSEG_Bitacora_Consulta]";
+                var (inicio, corte) = ObtenerRangoFechasBitacora(filtros);
+                var values = CrearParametrosBitacora(CodEmpresa, filtros, inicio, corte);
+
+                response.Result = connection
+                    .Query<MovimientoLogDto>(procedure, values, commandType: System.Data.CommandType.StoredProcedure)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error al obtener la bitácora de movimientos: {ex.Message}";
+                response.Result = null;
+            }
+
+            return response;
         }
 
+        /// <summary>
+        /// Calcula el rango de fechas a consultar en bitácora según la configuración de filtros.
+        /// </summary>
+        /// <param name="filtros">Filtros de consulta de bitácora.</param>
+        /// <returns>Tupla con fecha de inicio y fecha de corte.</returns>
+        private static (DateTime inicio, DateTime corte) ObtenerRangoFechasBitacora(MonitorCambiosCfgFiltros filtros)
+        {
+            if (filtros.chkFechas)
+            {
+                return (
+                    new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                    new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Unspecified)
+                );
+            }
+
+            if (!filtros.chkHoras)
+            {
+                return (
+                    filtros.dtpInicio.Date.Add(filtros.dtpInicio.TimeOfDay),
+                    filtros.dtpCorte.Date.Add(filtros.dtpCorte.TimeOfDay)
+                );
+            }
+
+            return (
+                filtros.dtpInicio.Date,
+                filtros.dtpCorte.Date.AddDays(1).AddTicks(-1)
+            );
+        }
+
+        /// <summary>
+        /// Crea el objeto de parámetros requerido por el procedimiento de consulta de bitácora.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros enviados por la pantalla.</param>
+        /// <param name="inicio">Fecha inicial calculada.</param>
+        /// <param name="corte">Fecha final calculada.</param>
+        /// <returns>Objeto anónimo con los parámetros del procedimiento almacenado.</returns>
+        private static object CrearParametrosBitacora(
+            int codEmpresa,
+            MonitorCambiosCfgFiltros filtros,
+            DateTime inicio,
+            DateTime corte)
+        {
+            return new
+            {
+                Cliente = codEmpresa,
+                FechaInicio = inicio,
+                FechaCorte = corte,
+                Usuario = NormalizarTexto(filtros.usuario),
+                Modulo = NormalizarTextoTodosComoNull(filtros.modulo),
+                Movimiento = NormalizarTextoTodosComoNull(filtros.fuente),
+                Detalle = NormalizarTexto(filtros.detalle),
+                AppName = NormalizarTexto(filtros.appNombre),
+                AppVersion = NormalizarTexto(filtros.appVersion),
+                LogEquipo = NormalizarTexto(filtros.logEquipo),
+                LogIP = NormalizarTexto(filtros.logIP),
+                EquipoMAC = NormalizarTexto(filtros.mac)
+            };
+        }
+
+        /// <summary>
+        /// Normaliza un texto para parámetros opcionales.
+        /// Devuelve null cuando el valor viene vacío.
+        /// </summary>
+        /// <param name="valor">Texto a normalizar.</param>
+        /// <returns>Texto limpio o null.</returns>
+        private static string? NormalizarTexto(string? valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        }
+
+        /// <summary>
+        /// Normaliza un texto para filtros donde el valor "T" representa todos.
+        /// Devuelve null cuando el valor viene vacío o es "T".
+        /// </summary>
+        /// <param name="valor">Texto a normalizar.</param>
+        /// <returns>Texto limpio o null.</returns>
+        private static string? NormalizarTextoTodosComoNull(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            var texto = valor.Trim();
+            return texto == "T" ? null : texto;
+        }
     }
 }
