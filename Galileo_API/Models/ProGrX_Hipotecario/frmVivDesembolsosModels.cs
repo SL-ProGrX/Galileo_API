@@ -108,7 +108,7 @@
         public string beneficiario { get; set; } = string.Empty;
 
         public decimal? monto { get; set; }
-        public int?  aplicaIntereses { get; set; }
+        public int? aplicaIntereses { get; set; }
 
         public string usuario { get; set; } = string.Empty;
         public string fecha { get; set; } = string.Empty;
@@ -153,4 +153,6 @@
 
         public List<DesembolsoDetalleDto> detalles { get; set; } = new();
     }
+
+
 }
