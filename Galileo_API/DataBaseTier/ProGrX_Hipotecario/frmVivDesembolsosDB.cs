@@ -46,6 +46,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return response;
         }
 
+        /// <summary>
+        /// Operaciones listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<OperacionBusquedaDto>> Operaciones_Listar(int codEmpresa)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -65,6 +70,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Lineas listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -80,6 +90,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Consulta de desembolsos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<VivDesembolsoHeaderDto> Desembolso_Consultar(int codEmpresa, int operacion)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -93,6 +109,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Desembolsos listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<VivDesembolsoDto>> Desembolsos_Listar(int codEmpresa, int operacion)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -115,6 +137,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Pendientes listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<VivDesembolsoPendienteDto>> Pendientes_Listar(int codEmpresa, int operacion)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -162,6 +190,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Bancos listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Bancos_Listar(int codEmpresa, string usuario)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -180,6 +214,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
+        /// <summary>
+        /// Cuenta listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="bancoId"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Listar(int codEmpresa, string bancoId)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -199,7 +239,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
-
+        /// <summary>
+        /// Conceptos listar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<ConceptoApiDto>> Conceptos_Listar(int codEmpresa)
         {
             return ExecuteQuery(codEmpresa, cn =>
@@ -212,6 +256,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 return cn.Query<ConceptoApiDto>(sql).ToList();
             });
         }
+
+        /// <summary>
+        /// Permite desembolso
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public ErrorDto<bool> PermiteDesembolso(int codEmpresa, int operacion, int index)
         {
             var response = new ErrorDto<bool>();
@@ -262,7 +314,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return response;
         }
 
-
+        /// <summary>
+        /// Activa el desembolso pendiente
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> ActivarDesembolsoPendiente(int codEmpresa, ActivarDesembolsoPendienteRequestDto request)
         {
             var response = new ErrorDto<bool>();
@@ -310,6 +367,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         }
 
 
+        /// <summary>
+        /// Cambia desembolso pendiente
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CambioPendienteResponseDto> Pendiente_Cambiar(int codEmpresa, CambioPendienteRequestDto request)
         {
             var response = new ErrorDto<CambioPendienteResponseDto>();
@@ -349,7 +412,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return response;
         }
 
-
+        /// <summary>
+        /// Agrega desembolso pendiente
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> Pendiente_Agregar(int codEmpresa, AgregarPendienteRequestDto request)
         {
             var response = new ErrorDto<bool>();
@@ -392,7 +460,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return response;
         }
 
-
+        /// <summary>
+        /// Guarda detalle de desembolso
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="detalles"></param>
+        /// <returns></returns>
         public ErrorDto<bool> DesembolsoDetalle_Guardar(int codEmpresa, List<DesembolsoDetalleDto> detalles)
         {
             var response = new ErrorDto<bool>();
@@ -433,8 +506,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return response;
         }
 
-
-        public ErrorDto<int> Desembolso_Guardar(int codEmpresa,ViviendaDesembolsoRequestDto request)
+        /// <summary>
+        /// Guarda desembolso
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<int> Desembolso_Guardar(int codEmpresa, ViviendaDesembolsoRequestDto request)
         {
             var response = new ErrorDto<int>();
 
@@ -525,5 +603,98 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
             return response;
         }
+
+        /// <summary>
+        /// Obtiene cedulas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Cedulas_Listar(int codEmpresa)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+                        SELECT DISTINCT
+                            RTRIM(rc.cedula) AS item,
+                            RTRIM(p.nombre) AS descripcion
+                        FROM reg_creditos rc
+                        INNER JOIN SOCIOS p
+                            ON rc.cedula = p.cedula
+                        WHERE rc.estadosol = 'F'
+                        ORDER BY descripcion";
+
+                return cn.Query<DropDownListaGenericaModel>(sql).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Obtiene contactos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Contactos_Listar(int codEmpresa, string tipo)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+                       SELECT 
+                           RTRIM(idContacto) AS item,
+                           RTRIM(Nombre) AS descripcion
+                       FROM ViviendaContactos
+                       WHERE Estado = 'A'
+                       ORDER BY Nombre
+        ";
+
+                return cn.Query<DropDownListaGenericaModel>(sql, new { tipo }).ToList();
+            });
+        }
+
+
+        /// <summary>
+        /// Obtiene tipo de desembolso
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposDesembolso_Listar(int codEmpresa)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+            SELECT 
+                RTRIM(Codigo) AS item,
+                RTRIM(Descripcion) AS descripcion
+            FROM ViviendaTiposDesembolsos
+            WHERE Estado = 'A'
+            ORDER BY Codigo
+        ";
+
+                return cn.Query<DropDownListaGenericaModel>(sql).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Obtiene garantias
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Garantias_Listar(int codEmpresa, int operacion)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+            SELECT 
+                IdGarantia AS item,
+                NumeroFinca AS descripcion
+            FROM ViviendaGarantia
+            WHERE NumeroOperacion = @operacion
+            ORDER BY IdGarantia
+        ";
+
+                return cn.Query<DropDownListaGenericaModel>(sql, new { operacion }).ToList();
+            });
+        }
+
     }
 }

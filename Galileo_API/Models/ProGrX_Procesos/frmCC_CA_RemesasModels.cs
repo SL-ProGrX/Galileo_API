@@ -45,4 +45,48 @@ namespace Galileo_API.Models.ProGrX_Procesos
         public string estado_desc { get; set; } = string.Empty;
         public string transaccion { get; set; } = string.Empty;
     }
+
+    public class CcCaRemesasEnvioPendienteData
+    {
+        public long numero_generacion { get; set; }
+    }
+
+    public class CcCaRemesasEnvioRegistrarRequest
+    {
+        public int cod_remesa { get; set; } = 0;
+        public string cod_entidad { get; set; } = string.Empty;
+        public DateTime fecha_vence { get; set; } = DateTime.MinValue;  
+        public string proceso { get; set; } = string.Empty;
+        public long numero_generacion { get; set; } = 0;
+        public List<CcCaRemesasEnvioConsultaData> seleccionados { get; set; } = new();
+    }
+
+    public class CcCaRemesasArchivoBancoRow
+    {
+        public string Formato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Referencia { get; set; } = string.Empty;
+        public string Tarjeta { get; set; } = string.Empty;
+        public DateTime Fecha_Vence { get; set; } = DateTime.MinValue;
+        public decimal Monto { get; set; } = 0;
+        public DateTime Fecha_Transaccion { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string NUMERO_AFILIADO { get; set; } = string.Empty;
+    }
+
+    public class CcCaRemesasAutorizacionExcelData
+    {
+        public string documento { get; set; } = string.Empty;
+        public string transaccion { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+    }
+
+    public class CcCaRemesasRecibeAutorizacionesRequest
+    {
+        public long numero_generacion { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+        public List<CcCaRemesasAutorizacionExcelData> autorizaciones { get; set; } = new();
+    }
+
 }
