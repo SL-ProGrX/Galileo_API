@@ -70,17 +70,17 @@
         public int? linea { get; set; }
         public string usuario { get; set; } = string.Empty;
 
-        public decimal descuento { get; set; }
-        public decimal disponible { get; set; }
+        public decimal? descuento { get; set; }
+        public decimal? disponible { get; set; }
 
         public string fechaCorte { get; set; } = string.Empty;
         public string fechaUltimoCorte { get; set; } = string.Empty;
 
         public int? diasActuales { get; set; }
-        public decimal interesesActuales { get; set; }
+        public decimal? interesesActuales { get; set; }
 
         public int? diasAcumulados { get; set; }
-        public decimal interesesAcumulados { get; set; }
+        public decimal? interesesAcumulados { get; set; }
     }
 
 
@@ -107,7 +107,7 @@
         public string tipoDesembolso { get; set; } = string.Empty;
         public string beneficiario { get; set; } = string.Empty;
 
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public int?  aplicaIntereses { get; set; }
 
         public string usuario { get; set; } = string.Empty;
@@ -120,7 +120,7 @@
     {
         public int? codigodesembolso { get; set; }
         public string codigo { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
