@@ -75,9 +75,44 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [HttpGet("PermiteDesembolso")]
-        public ErrorDto<bool> PermiteDesembolso(int codEmpresa,int operacion,int index)
+        public ErrorDto<bool> PermiteDesembolso(int codEmpresa, int operacion, int index)
         {
             return _bl.PermiteDesembolso(codEmpresa, operacion, index);
+        }
+
+        [Authorize]
+        [HttpPost("ActivarDesembolsoPendiente")]
+        public ErrorDto<bool> ActivarDesembolsoPendiente(int codEmpresa, ActivarDesembolsoPendienteRequestDto request)
+        {
+            return _bl.ActivarDesembolsoPendiente(codEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Pendiente_Cambiar")]
+        public ErrorDto<CambioPendienteResponseDto> Pendiente_Cambiar(int codEmpresa, CambioPendienteRequestDto request)
+        {
+            return _bl.Pendiente_Cambiar(codEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("Pendiente_Agregar")]
+        public ErrorDto<bool> Pendiente_Agregar(int codEmpresa, AgregarPendienteRequestDto request)
+        {
+            return _bl.Pendiente_Agregar(codEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("DesembolsoDetalle_Guardar")]
+        public ErrorDto<bool> DesembolsoDetalle_Guardar(int codEmpresa, List<DesembolsoDetalleDto> detalles)
+        {
+            return _bl.DesembolsoDetalle_Guardar(codEmpresa, detalles);
+        }
+
+        [Authorize]
+        [HttpPost("Desembolso_Guardar")]
+        public ErrorDto<int> Desembolso_Guardar(int codEmpresa,ViviendaDesembolsoRequestDto request)
+        {
+            return _bl.Desembolso_Guardar(codEmpresa, request);
         }
     }
 }
