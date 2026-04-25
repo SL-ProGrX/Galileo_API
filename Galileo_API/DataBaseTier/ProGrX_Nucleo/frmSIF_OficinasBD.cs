@@ -1,5 +1,4 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
+﻿using Dapper; 
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
@@ -215,10 +214,10 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa, int contabilidad)
         {
-            const string query = @"select cod_unidad as 'item',descripcion from CntX_Unidades";
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
+            const string query = @"select cod_unidad as 'item',descripcion from CntX_Unidades where cod_contabilidad = @contabilidad  order by cod_unidad";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query, new { contabilidad });
         }
         
         
@@ -227,10 +226,10 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa, int contabilidad)
         {
-            const string query = @"select cod_centro_costo as 'item',descripcion from CNTX_CENTRO_COSTOS";
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
+            const string query = @"select cod_centro_costo as 'item',descripcion from CNTX_CENTRO_COSTOS  where cod_contabilidad = @contabilidad order by cod_centro_costo ";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query, new { contabilidad });
         }
         
         
@@ -375,7 +374,7 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// <param name="usuarioRegistro"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDto Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, int apoyo, string usuarioRegistro, string accion)
+        public ErrorDto Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, int apoyo, string UsuarioReg, string accion)
         {
             var r = WithEmpresaConn(CodEmpresa, connection =>
             {
@@ -385,8 +384,8 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
                     oficina,
                     usuario = (usuario ?? string.Empty).Trim(),
                     apoyo,
-                    usuarioRegistro,
-                    accion
+                    UsuarioReg,
+                    Mov = accion
                 }, commandType: CommandType.StoredProcedure).FirstOrDefault();
             });
 

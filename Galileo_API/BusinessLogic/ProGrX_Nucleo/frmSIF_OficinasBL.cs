@@ -26,14 +26,14 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             return _db.Sif_Oficinas_ActualizarDatos(CodEmpresa, oficinaDatos);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa, int contabilidad)
         {
-            return _db.Sif_OficinasUnidadContable_Obtener(CodEmpresa);
+            return _db.Sif_OficinasUnidadContable_Obtener(CodEmpresa, contabilidad);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa, int contabilidad)
         {
-            return _db.Sif_OficinasCentroCostos_Obtener(CodEmpresa);
+            return _db.Sif_OficinasCentroCostos_Obtener(CodEmpresa, contabilidad);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Sif_Oficinas_Lista(int CodEmpresa)

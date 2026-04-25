@@ -302,7 +302,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             var db = DbHelper.WithConn(_portalDb, Emp(CodEmpresa), connection =>
             {
-                const string query = @"exec spSys_Educacion_Asigna @cod_Educ,@cod_DetalleEduc,@usuario,@check";
+                const string query = @"exec spSys_Educacion_Asigna @cod_DetalleEduc,@cod_Educ,@usuario,@check";
                 connection.Execute(query, new
                 {
                     cod_Educ = cod_Educ.Trim(),

@@ -531,7 +531,7 @@ namespace Galileo.DataBaseTier
                 const string sp = "spSys_UENS_Miembros_Consultas";
                 return connection.Query<CoreUsuariosDto>(sp, new
                 {
-                    cod_unidad,
+                    UEN = cod_unidad,
                     filtro = (filtro ?? string.Empty)
                 }, commandType: CommandType.StoredProcedure).ToList();
             });
@@ -556,7 +556,7 @@ namespace Galileo.DataBaseTier
 
                 connection.Execute(sp, new
                 {
-                    cod_unidad,
+                    UEN = cod_unidad,
                     core_usuario = request.core_usuario,
                     registro_usuario = request.registro_usuario,
                     mov
@@ -583,7 +583,7 @@ namespace Galileo.DataBaseTier
                 const string sp = "spSys_UENS_Roles_Consultas";
                 return connection.Query<CoreRolesDto>(sp, new
                 {
-                    cod_unidad,
+                    UEN = cod_unidad,
                     filtro = (filtro ?? string.Empty)
                 }, commandType: CommandType.StoredProcedure).ToList();
             });
@@ -609,14 +609,14 @@ namespace Galileo.DataBaseTier
                 const string sp = "spSys_UENS_Roles_Registro";
                 connection.Execute(sp, new
                 {
-                    cod_unidad,
-                    core_usuario = request.core_usuario,
-                    rol_solicita = Convert.ToInt32(request.rol_solicita),
-                    rol_consulta = Convert.ToInt32(request.rol_consulta),
-                    rol_autoriza = Convert.ToInt32(request.rol_autoriza),
-                    rol_encargado = Convert.ToInt32(request.rol_encargado),
-                    rol_lider = Convert.ToInt32(request.rol_lider),
-                    registro_usuario = request.registro_usuario
+                    UEN = cod_unidad,
+                    CoreUser = request.core_usuario,
+                    R_Solicita = Convert.ToInt32(request.rol_solicita),
+                    R_Consulta = Convert.ToInt32(request.rol_consulta),
+                    R_Autoriza = Convert.ToInt32(request.rol_autoriza),
+                    R_Encargado = Convert.ToInt32(request.rol_encargado),
+                    R_Lider = Convert.ToInt32(request.rol_lider),
+                    Usuario = request.registro_usuario
                 }, commandType: CommandType.StoredProcedure);
 
                 return 1;
