@@ -2,7 +2,7 @@
 {
     public class CrdPreaTablaPagosData
     {
-        public int idx { get; set; }
+        public int idx { get; set; } = 0;
         public DateTime? fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
         public DateTime? inicio { get; set; }
