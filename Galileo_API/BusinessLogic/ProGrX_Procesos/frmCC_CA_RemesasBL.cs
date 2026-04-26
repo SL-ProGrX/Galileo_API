@@ -26,7 +26,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
             CcCaRemesasEnvioConsultaRequest request)
         {
             if (request == null)
-                return DbHelper.CreateErrorResponse<List<CcCaRemesasEnvioConsultaData>>("El request es requerido.");
+                return DbHelper.CreateErrorResponse<List<CcCaRemesasEnvioConsultaData>>(CcCaRemesaCOnstantes.vRequestRequerido);
 
             if (request.cod_remesa <= 0)
                 return DbHelper.CreateErrorResponse<List<CcCaRemesasEnvioConsultaData>>("El tipo de remesa es requerido.");
@@ -69,7 +69,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
             CcCaRemesasEnvioRegistrarRequest request)
         {
             if (request == null)
-                return DbHelper.ErrorResponse("El request es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vRequestRequerido, -2);
 
             if (request.cod_remesa <= 0)
                 return DbHelper.ErrorResponse("El tipo de remesa es requerido.", -2);
@@ -103,7 +103,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
                 CcCaRemesasRecibeAutorizacionesRequest request)
         {
             if (request == null)
-                return DbHelper.ErrorResponse("El request es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vRequestRequerido, -2);
 
             if (request.numero_generacion <= 0)
                 return DbHelper.ErrorResponse("El número de generación es requerido.", -2);
@@ -138,7 +138,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         {
             if (request == null)
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
-                    "El request es requerido.");
+                   CcCaRemesaCOnstantes.vRequestRequerido);
 
             if (request.numero_generacion <= 0)
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
