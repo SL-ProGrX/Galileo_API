@@ -8,32 +8,32 @@
         public string? CedulaAso { get; set; }
         public string? IdentificacionDepo { get; set; }
         public string? NombreDepo { get; set; }
-        public string? EstadoFiltro { get; set; } = string.Empty; // "Activo", "Inactivo", "PendienteActu", "PendienteImprimir"
+        public string? EstadoFiltro { get; set; } = string.Empty; 
     }
 
     public class CajasRoeConsultaResult
     {
-        public int ID_ROE { get; set; }
-        public string? TIPOROE { get; set; }
-        public string? CEDULA_ASO { get; set; }
-        public string? IDENTIFICACION_DEPO { get; set; }
-        public string? NOMBRE_DEPO { get; set; }
-        public DateTime? FECHA { get; set; }
-        public string? USUARIO { get; set; }
-        public decimal? MONTO_LOCAL { get; set; }
-        public decimal? MONTO_DOL { get; set; }
-        public decimal? TIPO_CAMBIO { get; set; }
-        public DateTime? REGISTRO_FECHA { get; set; }
-        public string? REGISTRO_USUARIO { get; set; }
-        public DateTime? ACTUALIZA_FECHA { get; set; }
-        public string? ACTUALIZA_USUARIO { get; set; }
-        public string? USUARIO_ANULACION { get; set; }
-        public DateTime? FECHA_ANULACION { get; set; }
-        public string? OBSERV_ANULACION { get; set; }
-        public DateTime? IMPRIME_FECHA { get; set; }
-        public string? IMPRIME_USUARIO { get; set; }
-        public string? ID_SESION { get; set; }
-        public string? ESTADO { get; set; }
+        public int Id_Roe { get; set; }
+        public string? TipoRoe { get; set; }
+        public string? Cedula_Aso { get; set; }
+        public string? Identificacion_Depo { get; set; }
+        public string? Nombre_Depo { get; set; }
+        public DateTime? Fecha { get; set; }
+        public string? Usuario { get; set; }
+        public decimal? Monto_Local { get; set; }
+        public decimal? Monto_Dol { get; set; }
+        public decimal? Tipo_Cambio { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Actualiza_Fecha { get; set; }
+        public string? Actualiza_Usuario { get; set; }
+        public string? Usuario_Anulacion { get; set; }
+        public DateTime? Fecha_Anulacion { get; set; }
+        public string? Observ_Anulacion { get; set; }
+        public DateTime? Imprime_Fecha { get; set; }
+        public string? Imprime_Usuario { get; set; }
+        public string? Id_Sesion { get; set; }
+        public string? Estado { get; set; }
     }
 
     public class CajasRoeImprimeValidaResult
