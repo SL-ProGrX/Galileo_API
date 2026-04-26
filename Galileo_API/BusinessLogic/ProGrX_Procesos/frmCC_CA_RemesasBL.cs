@@ -116,5 +116,51 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
 
             return _db.CcCaRemesas_Recibe_Autorizaciones_Cargar(codEmpresa, request);
         }
+
+        public ErrorDto CcCaRemesas_Recibe_Cierra(
+            int codEmpresa,
+            long numeroGeneracion,
+            string usuario)
+        {
+            if (numeroGeneracion <= 0)
+                return DbHelper.ErrorResponse("El número de generación es requerido.", -2);
+
+            if (string.IsNullOrWhiteSpace(usuario))
+                return DbHelper.ErrorResponse("El usuario es requerido.", -2);
+
+            return _db.CcCaRemesas_Recibe_Cierra(codEmpresa, numeroGeneracion, usuario);
+        }
+
+
+        public ErrorDto<CcCaRemesasRecibeAplicaResponse> CcCaRemesas_Recibe_Aplica(
+            int codEmpresa,
+            CcCaRemesasRecibeAplicaRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El request es requerido.");
+
+            if (request.numero_generacion <= 0)
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El número de generación es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El usuario es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.tipo_documento))
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El tipo de documento es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.numero_documento))
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El número de documento es requerido.");
+
+            if (request.lote <= 0)
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
+                    "El tamaño del lote debe ser mayor a cero.");
+
+            return _db.CcCaRemesas_Recibe_Aplica(codEmpresa, request);
+        }
     }
 }
