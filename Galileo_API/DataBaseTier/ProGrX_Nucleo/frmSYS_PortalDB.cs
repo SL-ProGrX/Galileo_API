@@ -5,7 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 
-
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysPortalDB
@@ -13,13 +12,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         private readonly IConfiguration _config;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+
         public FrmSysPortalDB(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
         }
 
-        
         /// <summary>
         /// Obtiene la información de mensajes para el primer tab desde vSys_Notificaciones_Cfg.
         /// </summary>
@@ -46,7 +45,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 string? like = null;
                 if (!string.IsNullOrWhiteSpace(filtroTxt))
                 {
-                    // Escapa comodines para evitar que el usuario inyecte patrones
                     like = $"%{filtroTxt.Replace("%", "[%]").Replace("_", "[_]")}%";
                 }
 
@@ -54,7 +52,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(sortField))
                     sortField = "codigo";
 
-                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                int sortOrder = filtros?.sortOrder ?? 1;
                 int take = filtros?.paginacion ?? 30;
                 int off = filtros?.pagina ?? 0;
                 if (off < 0) off = 0;
@@ -80,12 +78,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 const string sql = @"
                     SELECT
-                        RTRIM(COD_NOTIFICA)                 AS codigo,
-                        RTRIM(TITULO)                       AS titulo,
-                        RTRIM(SMTP_ID)                      AS smtp_id,
-                        RTRIM(TIPO)                         AS tipo_formato_cod,
-                        RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
-                        CAST(Activa AS bit)                 AS activa
+                        RTRIM(COD_NOTIFICA)         AS codigo,
+                        RTRIM(TITULO)               AS titulo,
+                        RTRIM(SMTP_ID)              AS smtp_id,
+                        RTRIM(TIPO)                 AS tipo_formato_cod,
+                        RTRIM(ISNULL(Tipo_Desc,'')) AS tipo_formato_desc,
+                        CAST(Activa AS bit)         AS activa
                     FROM vSys_Notificaciones_Cfg
                     WHERE (@like IS NULL OR (
                           COD_NOTIFICA LIKE @like
@@ -95,23 +93,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                           OR ISNULL(Tipo_Desc,'') LIKE @like
                     ))
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'codigo' THEN COD_NOTIFICA END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'titulo' THEN TITULO END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'smtp_id' THEN SMTP_ID END ASC,
                         CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END ASC,
                         CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CAST(Activa AS int) END ASC,
-
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'codigo' THEN COD_NOTIFICA END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'titulo' THEN TITULO END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'smtp_id' THEN SMTP_ID END DESC,
                         CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END DESC,
                         CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CAST(Activa AS int) END DESC,
-
-                        -- Fallback
                         COD_NOTIFICA ASC
                     OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
@@ -128,7 +121,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return result;
         }
 
-
         /// <summary>
         /// Obtiene una lista de mensajes  sin paginación, con filtros aplicados. Para exportar.
         /// </summary>
@@ -139,7 +131,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDto<List<SysMensajesPortalListaItem>>()
+            var result = new ErrorDto<List<SysMensajesPortalListaItem>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -151,8 +143,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(connStr);
 
                 var p = new DynamicParameters();
-
                 var raw = (filtros?.filtro ?? string.Empty).Trim();
+
                 string? like = string.IsNullOrWhiteSpace(raw)
                     ? null
                     : $"%{raw.Replace("%", "[%]").Replace("_", "[_]")}%";
@@ -161,7 +153,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(sortField))
                     sortField = "codigo";
 
-                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                int sortOrder = filtros?.sortOrder ?? 1;
 
                 p.Add("like", like);
                 p.Add("sortField", sortField);
@@ -169,12 +161,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 const string query = @"
                     SELECT
-                        RTRIM(COD_NOTIFICA)                 AS codigo,
-                        RTRIM(TITULO)                       AS titulo,
-                        RTRIM(SMTP_ID)                      AS smtp_id,
-                        RTRIM(TIPO)                         AS tipo_formato_cod,
-                        RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
-                        CAST(Activa AS bit)                 AS activa
+                        RTRIM(COD_NOTIFICA)         AS codigo,
+                        RTRIM(TITULO)               AS titulo,
+                        RTRIM(SMTP_ID)              AS smtp_id,
+                        RTRIM(TIPO)                 AS tipo_formato_cod,
+                        RTRIM(ISNULL(Tipo_Desc,'')) AS tipo_formato_desc,
+                        CAST(Activa AS bit)         AS activa
                     FROM vSys_Notificaciones_Cfg
                     WHERE (@like IS NULL OR (
                           COD_NOTIFICA LIKE @like
@@ -184,22 +176,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                           OR ISNULL(Tipo_Desc,'') LIKE @like
                     ))
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'codigo' THEN COD_NOTIFICA END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'titulo' THEN TITULO END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'smtp_id' THEN SMTP_ID END ASC,
                         CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END ASC,
                         CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CAST(Activa AS int) END ASC,
-
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'codigo' THEN COD_NOTIFICA END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'titulo' THEN TITULO END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'smtp_id' THEN SMTP_ID END DESC,
                         CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END DESC,
                         CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CAST(Activa AS int) END DESC,
-
                         COD_NOTIFICA ASC;";
 
                 result.Result = connection.Query<SysMensajesPortalListaItem>(query, p).ToList();
@@ -213,7 +201,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             return result;
         }
-
 
         /// <summary>
         /// Obtiene una lista de detalles de los mensajes por código.
@@ -230,7 +217,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var cn = new SqlConnection(conn);
 
-                var sql = @"
+                const string sql = @"
                     SELECT TOP (1)
                         RTRIM(COD_NOTIFICA)         AS codigo,
                         RTRIM(TITULO)               AS titulo,
@@ -238,25 +225,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         RTRIM(TIPO)                 AS tipo_formato_cod,
                         RTRIM(ISNULL(Tipo_Desc,'')) AS tipo_formato_desc,
                         CAST(Activa AS bit)         AS activa,
-
                         RTRIM(ISNULL(PIE_01,''))    AS pie_01,
                         RTRIM(ISNULL(PIE_02,''))    AS pie_02,
-
                         RTRIM(ISNULL(IMAGEN_LOCATE,'')) AS imagen_ruta,
                         TRY_CAST(NULLIF(RTRIM(ISNULL(IMAGEN_W,'')),'') AS int) AS imagen_ancho,
                         TRY_CAST(NULLIF(RTRIM(ISNULL(IMAGEN_H,'')),'') AS int) AS imagen_alto,
-
                         RTRIM(ISNULL(P_PROCEDIMIENTO,'')) AS procedimiento,
-
                         P_ACTIVACION                AS activacion,
                         RTRIM(ISNULL(Activacion_Desc,'')) AS activacion_desc,
-
                         P_ACTIVA_FECHA              AS fecha_especifica,
                         P_ACTIVA_DIA                AS dia_del_mes,
                         P_ACTIVA_DIA_FREQ           AS frecuencia_n_dias,
                         P_ACTIVA_DIA_FREQ_INICIA    AS frecuencia_inicio,
                         RTRIM(ISNULL(P_ACTIVA_EVENTO,'')) AS evento_codigo,
-
                         RTRIM(ISNULL(REGISTRO_USUARIO,'')) AS registro_usuario,
                         REGISTRO_FECHA              AS registro_fecha,
                         RTRIM(ISNULL(MODIFICA_USUARIO,'')) AS modifica_usuario,
@@ -282,9 +263,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Code = -1;
                 r.Description = ex.Message;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para guardar la información de un mensaje.
@@ -308,12 +289,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 using var cn = new SqlConnection(connStr);
                 cn.Open();
-                using var tx = cn.BeginTransaction();
 
+                using var tx = cn.BeginTransaction();
                 int exists = ExistsNotificacion(cn, tx, dto.codigo);
                 var p = BuildGuardarMensajeParams(dto, usuario);
 
-                ExecuteGuardarMensaje(cn, tx, exists, p);
+                int rows = ExecuteGuardarMensaje(cn, tx, exists, p);
+                if (rows <= 0)
+                {
+                    tx.Rollback();
+                    r.Code = -1;
+                    r.Description = "No se guardó la notificación.";
+                    return r;
+                }
+
                 tx.Commit();
 
                 WriteBitacoraGuardarMensaje(CodEmpresa, usuario, exists, dto);
@@ -335,18 +324,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Description = "Datos insuficientes para guardar la notificación.";
                 return false;
             }
+
             return true;
         }
 
         private static void NormalizeGuardarMensaje(SysMensajesPortalDetalleModel dto)
         {
-            // -------- Normalización / defaults --------
-            dto.imagen_ancho = dto.imagen_ancho <= 0 ? 600 : dto.imagen_ancho;
-            dto.imagen_alto = dto.imagen_alto <= 0 ? 300 : dto.imagen_alto;
-
-            ApplyActivacionRules(dto);
-
-            // trims suaves
             dto.codigo = dto.codigo.Trim();
             dto.titulo = (dto.titulo ?? string.Empty).Trim();
             dto.smtp_id = (dto.smtp_id ?? string.Empty).Trim();
@@ -355,61 +338,60 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             dto.pie_02 = (dto.pie_02 ?? string.Empty).Trim();
             dto.imagen_ruta = (dto.imagen_ruta ?? string.Empty).Trim();
             dto.procedimiento = (dto.procedimiento ?? string.Empty).Trim();
+            dto.imagen_ancho = dto.imagen_ancho <= 0 ? 600 : dto.imagen_ancho;
+            dto.imagen_alto = dto.imagen_alto <= 0 ? 300 : dto.imagen_alto;
+            ApplyActivacionRules(dto);
         }
 
         private static void ApplyActivacionRules(SysMensajesPortalDetalleModel dto)
         {
             switch (char.ToUpperInvariant(dto.activacion))
             {
-                case 'M':
-                    ClearActivacionFields(dto, clearFecha: true, clearDia: true, clearFrecuencia: true, clearInicio: true, clearEvento: true);
-                    break;
-
                 case 'F':
-                    ClearActivacionFields(dto, clearFecha: false, clearDia: true, clearFrecuencia: true, clearInicio: true, clearEvento: true);
+                    dto.dia_del_mes = 1;
+                    dto.frecuencia_n_dias = 7;
+                    dto.frecuencia_inicio = null;
+                    dto.evento_codigo = "N/A";
                     break;
 
                 case 'D':
-                    if (dto.dia_del_mes is < 1 or > 32) dto.dia_del_mes = 1;
-                    ClearActivacionFields(dto, clearFecha: true, clearDia: false, clearFrecuencia: true, clearInicio: true, clearEvento: true);
+                    dto.fecha_especifica = null;
+                    dto.dia_del_mes = dto.dia_del_mes is < 1 or > 32 ? 1 : dto.dia_del_mes;
+                    dto.frecuencia_n_dias = 7;
+                    dto.frecuencia_inicio = null;
+                    dto.evento_codigo = "N/A";
                     break;
 
                 case 'C':
-                    if (dto.frecuencia_n_dias is null or < 1) dto.frecuencia_n_dias = 7;
-                    ClearActivacionFields(dto, clearFecha: true, clearDia: true, clearFrecuencia: false, clearInicio: false, clearEvento: true);
+                    dto.fecha_especifica = null;
+                    dto.dia_del_mes = 1;
+                    dto.frecuencia_n_dias = dto.frecuencia_n_dias is null or < 1 or > 32 ? 7 : dto.frecuencia_n_dias;
+                    dto.evento_codigo = "N/A";
                     break;
 
                 case 'E':
+                    dto.fecha_especifica = null;
+                    dto.dia_del_mes = 1;
+                    dto.frecuencia_n_dias = 7;
+                    dto.frecuencia_inicio = null;
                     dto.evento_codigo = string.IsNullOrWhiteSpace(dto.evento_codigo) ? "N/A" : dto.evento_codigo.Trim();
-                    ClearActivacionFields(dto, clearFecha: true, clearDia: true, clearFrecuencia: true, clearInicio: true, clearEvento: false);
                     break;
 
                 default:
                     dto.activacion = 'M';
-                    ClearActivacionFields(dto, clearFecha: true, clearDia: true, clearFrecuencia: true, clearInicio: true, clearEvento: true);
+                    dto.fecha_especifica = null;
+                    dto.dia_del_mes = 1;
+                    dto.frecuencia_n_dias = 7;
+                    dto.frecuencia_inicio = null;
+                    dto.evento_codigo = "N/A";
                     break;
             }
-        }
-
-        private static void ClearActivacionFields(
-            SysMensajesPortalDetalleModel dto,
-            bool clearFecha,
-            bool clearDia,
-            bool clearFrecuencia,
-            bool clearInicio,
-            bool clearEvento)
-        {
-            if (clearFecha) dto.fecha_especifica = null;
-            if (clearDia) dto.dia_del_mes = null;
-            if (clearFrecuencia) dto.frecuencia_n_dias = null;
-            if (clearInicio) dto.frecuencia_inicio = null;
-            if (clearEvento) dto.evento_codigo = null;
         }
 
         private static int ExistsNotificacion(SqlConnection cn, SqlTransaction tx, string codigo)
         {
             return cn.ExecuteScalar<int>(
-                "SELECT COUNT(1) FROM SYS_NOTIFICACIONES_CFG WHERE COD_NOTIFICA=@codigo",
+                "SELECT COUNT(1) FROM SYS_NOTIFICACIONES_CFG WHERE COD_NOTIFICA = @codigo",
                 new { codigo },
                 tx);
         }
@@ -423,76 +405,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             p.Add("smtp_id", dto.smtp_id);
             p.Add("tipo_formato_cod", dto.tipo_formato_cod);
             p.Add("activa", dto.activa);
-
-            p.Add("pie_01", dto.pie_01 ?? "");
-            p.Add("pie_02", dto.pie_02 ?? "");
-
-            p.Add("imagen_ruta", dto.imagen_ruta ?? "");
+            p.Add("pie_01", dto.pie_01);
+            p.Add("pie_02", dto.pie_02);
+            p.Add("imagen_ruta", dto.imagen_ruta);
             p.Add("imagen_ancho", dto.imagen_ancho);
             p.Add("imagen_alto", dto.imagen_alto);
-
-            p.Add("procedimiento", dto.procedimiento ?? "");
-
+            p.Add("procedimiento", dto.procedimiento);
             p.Add("activacion", dto.activacion);
             p.Add("fecha_especifica", dto.fecha_especifica);
-            p.Add("dia_del_mes", dto.dia_del_mes);
-            p.Add("frecuencia_n_dias", dto.frecuencia_n_dias);
+            p.Add("dia_del_mes", dto.dia_del_mes ?? 1);
+            p.Add("frecuencia_n_dias", dto.frecuencia_n_dias ?? 7);
             p.Add("frecuencia_inicio", dto.frecuencia_inicio);
-            p.Add("evento_codigo", dto.evento_codigo ?? "");
-
+            p.Add("evento_codigo", string.IsNullOrWhiteSpace(dto.evento_codigo) ? "N/A" : dto.evento_codigo.Trim());
             p.Add("usuario", usuario);
 
             return p;
         }
 
-        private static void ExecuteGuardarMensaje(SqlConnection cn, SqlTransaction tx, int exists, DynamicParameters p)
+        private static int ExecuteGuardarMensaje(SqlConnection cn, SqlTransaction tx, int exists, DynamicParameters p)
         {
             const string insertSql = @"
                 INSERT INTO SYS_NOTIFICACIONES_CFG
                 (
-                  COD_NOTIFICA, TITULO, SMTP_ID, TIPO, ACTIVA,
-                  PIE_01, PIE_02,
-                  P_ACTIVACION, P_PROCEDIMIENTO, P_ACTIVA_FECHA, P_ACTIVA_DIA,
-                  P_ACTIVA_DIA_FREQ, P_ACTIVA_DIA_FREQ_INICIA, P_ACTIVA_EVENTO,
-                  REGISTRO_FECHA, REGISTRO_USUARIO,
-                  IMAGEN_LOCATE, IMAGEN_W, IMAGEN_H
+                    COD_NOTIFICA, TITULO, SMTP_ID, TIPO, ACTIVA,
+                    PIE_01, PIE_02,
+                    P_ACTIVACION, P_PROCEDIMIENTO, P_ACTIVA_FECHA, P_ACTIVA_DIA,
+                    P_ACTIVA_DIA_FREQ, P_ACTIVA_DIA_FREQ_INICIA, P_ACTIVA_EVENTO,
+                    REGISTRO_FECHA, REGISTRO_USUARIO,
+                    IMAGEN_LOCATE, IMAGEN_W, IMAGEN_H
                 )
                 VALUES
                 (
-                  @codigo, @titulo, @smtp_id, @tipo_formato_cod, @activa,
-                  @pie_01, @pie_02,
-                  @activacion, @procedimiento, @fecha_especifica, @dia_del_mes,
-                  @frecuencia_n_dias, @frecuencia_inicio, @evento_codigo,
-                  GETDATE(), @usuario,
-                  @imagen_ruta, @imagen_ancho, @imagen_alto
+                    @codigo, @titulo, @smtp_id, @tipo_formato_cod, @activa,
+                    @pie_01, @pie_02,
+                    @activacion, @procedimiento, @fecha_especifica, @dia_del_mes,
+                    @frecuencia_n_dias, @frecuencia_inicio, @evento_codigo,
+                    GETDATE(), @usuario,
+                    @imagen_ruta, @imagen_ancho, @imagen_alto
                 );";
 
             const string updateSql = @"
                 UPDATE SYS_NOTIFICACIONES_CFG
-                SET TITULO            = @titulo,
-                    SMTP_ID           = @smtp_id,
-                    TIPO              = @tipo_formato_cod,
-                    ACTIVA            = @activa,
-                    PIE_01            = @pie_01,
-                    PIE_02            = @pie_02,
-                    P_ACTIVACION      = @activacion,
-                    P_PROCEDIMIENTO   = @procedimiento,
-                    P_ACTIVA_FECHA    = @fecha_especifica,
-                    P_ACTIVA_DIA      = @dia_del_mes,
+                SET TITULO = @titulo,
+                    SMTP_ID = @smtp_id,
+                    TIPO = @tipo_formato_cod,
+                    ACTIVA = @activa,
+                    PIE_01 = @pie_01,
+                    PIE_02 = @pie_02,
+                    P_ACTIVACION = @activacion,
+                    P_PROCEDIMIENTO = @procedimiento,
+                    P_ACTIVA_FECHA = @fecha_especifica,
+                    P_ACTIVA_DIA = @dia_del_mes,
                     P_ACTIVA_DIA_FREQ = @frecuencia_n_dias,
                     P_ACTIVA_DIA_FREQ_INICIA = @frecuencia_inicio,
-                    P_ACTIVA_EVENTO   = @evento_codigo,
-                    IMAGEN_LOCATE     = @imagen_ruta,
-                    IMAGEN_W          = @imagen_ancho,
-                    IMAGEN_H          = @imagen_alto,
-                    MODIFICA_FECHA    = dbo.mygetdate(),
-                    MODIFICA_USUARIO  = @usuario
+                    P_ACTIVA_EVENTO = @evento_codigo,
+                    IMAGEN_LOCATE = @imagen_ruta,
+                    IMAGEN_W = @imagen_ancho,
+                    IMAGEN_H = @imagen_alto,
+                    MODIFICA_FECHA = dbo.mygetdate(),
+                    MODIFICA_USUARIO = @usuario
                 WHERE COD_NOTIFICA = @codigo;";
 
-            if (exists == 0)
-                cn.Execute(insertSql, p, tx);
-            else
-                cn.Execute(updateSql, p, tx);
+            return exists == 0
+                ? cn.Execute(insertSql, p, tx)
+                : cn.Execute(updateSql, p, tx);
         }
 
         private void WriteBitacoraGuardarMensaje(int CodEmpresa, string usuario, int exists, SysMensajesPortalDetalleModel dto)
@@ -502,12 +478,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 EmpresaId = CodEmpresa,
                 Usuario = usuario,
                 Modulo = vModulo,
-                Movimiento = (exists == 0 ? "Registra - WEB" : "Modifica - WEB"),
-                DetalleMovimiento = $"Notificación: {dto.codigo} - {dto.titulo}"
+                Movimiento = exists == 0 ? "Registra - WEB" : "Modifica - WEB",
+                DetalleMovimiento = $"Portal - Notificación:  {dto.codigo}"
             });
         }
-        
-        
+
         /// <summary>
         /// Método para eliminar la notificación o mensjae por codigo.
         /// </summary>
@@ -523,7 +498,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var cn = new SqlConnection(conn);
-                cn.Execute("DELETE FROM SYS_NOTIFICACIONES_CFG WHERE COD_NOTIFICA=@codigo", new { codigo });
+                cn.Execute("DELETE FROM SYS_NOTIFICACIONES_CFG WHERE COD_NOTIFICA = @codigo", new { codigo });
+
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -538,9 +514,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Code = -1;
                 r.Description = ex.Message;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para obtener el catalogo de smtp.
@@ -556,6 +532,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var cn = new SqlConnection(conn);
                 var sql = @"EXEC spSys_SMTPs_AUT_Lista;";
+
                 r.Result = cn.Query(sql).Select(row => new SysMensajesPortalSmtpDto
                 {
                     codigo = (row.COD_SMTP as string ?? "").Trim(),
@@ -573,9 +550,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Description = ex.Message;
                 r.Result = null;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para obtener el catalogo de formatos.
@@ -590,10 +567,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var cn = new SqlConnection(conn);
-                var sql = @"
+
+                const string sql = @"
                     SELECT DISTINCT
-                        RTRIM(TIPO)        AS codigo,
-                        RTRIM(Tipo_Desc)   AS descripcion
+                        RTRIM(TIPO) AS codigo,
+                        RTRIM(Tipo_Desc) AS descripcion
                     FROM vSys_Notificaciones_Cfg
                     WHERE TIPO IS NOT NULL
                     ORDER BY descripcion;";
@@ -607,9 +585,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Description = ex.Message;
                 r.Result = null;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para obtener el catalogo de activaciones.
@@ -617,22 +595,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysMensajesPortalActivacionDto>> Sys_MensajesPortal_Activaciones_Obtener()
         {
-            var r = new ErrorDto<List<SysMensajesPortalActivacionDto>>
+            return new ErrorDto<List<SysMensajesPortalActivacionDto>>
             {
                 Code = 0,
                 Result = new List<SysMensajesPortalActivacionDto>
                 {
                     new() { codigo = 'M', descripcion = "Manual" },
-                    new() { codigo = 'F', descripcion = "Fecha" },
-                    new() { codigo = 'D', descripcion = "Día del Mes" },
-                    new() { codigo = 'C', descripcion = "Cada N días" },
                     new() { codigo = 'E', descripcion = "Evento" },
+                    new() { codigo = 'D', descripcion = "Día del Mes" },
+                    new() { codigo = 'F', descripcion = "Fecha" },
+                    new() { codigo = 'C', descripcion = "Cada N días" }
                 },
                 Description = "OK"
             };
-            return r;
         }
-
 
         /// <summary>
         /// Método para obtener el catalogo de eventos.
@@ -647,14 +623,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var cn = new SqlConnection(conn);
-                var sql = @"
+
+                const string sql = @"
                     IF OBJECT_ID('SYS_EVENTOS_NOTIF') IS NOT NULL
                     SELECT RTRIM(COD_EVENTO) AS codigo, RTRIM(DESCRIPCION) AS descripcion
                     FROM SYS_EVENTOS_NOTIF
                     ORDER BY DESCRIPCION;";
 
                 var rows = cn.Query<SysMensajesPortalEventoDto>(sql).ToList();
-                r.Result = (rows.Count > 0)
+
+                r.Result = rows.Count > 0
                     ? rows
                     : new List<SysMensajesPortalEventoDto>
                     {
@@ -679,9 +657,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Description = ex.Message;
                 r.Result = null;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para obtener la información de portal para ese tab.
@@ -696,12 +674,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var cn = new SqlConnection(conn);
-                var sql = @"
+
+                const string sql = @"
                     SELECT TOP (1)
                         RTRIM(ISNULL(LOGO_WEB_SITE,'')) AS logo_url,
-                        ISNULL(LOGO_ALTO,  0)           AS logo_alto,
-                        ISNULL(LOGO_ANCHO, 0)           AS logo_ancho,
-                        RTRIM(ISNULL(COLOR_SET,''))     AS color_set_hex
+                        ISNULL(LOGO_ALTO, 0) AS logo_alto,
+                        ISNULL(LOGO_ANCHO, 0) AS logo_ancho,
+                        RTRIM(ISNULL(COLOR_SET,'')) AS color_set_hex
                     FROM SIF_EMPRESA
                     ORDER BY ID_EMPRESA;";
 
@@ -714,9 +693,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Code = -1;
                 r.Description = ex.Message;
             }
+
             return r;
         }
-
 
         /// <summary>
         /// Método para guardar la información de portal.
@@ -733,12 +712,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var cn = new SqlConnection(conn);
+
                 cn.Execute(@"
                     UPDATE SIF_EMPRESA
                     SET LOGO_WEB_SITE = @logo_url,
-                        LOGO_ALTO     = @logo_alto,
-                        LOGO_ANCHO    = @logo_ancho,
-                        COLOR_SET     = @color_set_hex;",
+                        LOGO_ALTO = @logo_alto,
+                        LOGO_ANCHO = @logo_ancho,
+                        COLOR_SET = @color_set_hex;",
                     new
                     {
                         dto.logo_url,
@@ -746,13 +726,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         dto.logo_ancho,
                         dto.color_set_hex
                     });
+
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     Modulo = vModulo,
                     Movimiento = "Actualiza - WEB",
-                    DetalleMovimiento = $"Portal: Preferencias (Logo/Color) actualizadas"
+                    DetalleMovimiento = "Portal: Preferencias para Logo y Set Color"
                 });
             }
             catch (Exception ex)
@@ -760,8 +741,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 r.Code = -1;
                 r.Description = ex.Message;
             }
+
             return r;
         }
-
     }
 }

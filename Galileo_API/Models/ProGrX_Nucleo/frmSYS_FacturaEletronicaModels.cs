@@ -91,7 +91,7 @@ namespace Galileo.Models.ProGrX_Nucleo
         {
             public FeFacturasResumenCabecera cabecera { get; set; } = new();
             public List<FeFacturaResumenItem> lista { get; set; } = new();
-        }
+    }
         public class FeClienteItem
         {
             public string? id_prov { get; set; }
