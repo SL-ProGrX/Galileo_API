@@ -80,5 +80,22 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         {
             return _bl.CcCaRemesas_Recibe_Autorizaciones_Cargar(CodEmpresa, request);
         }
+
+        [HttpPost("CcCaRemesas_Recibe_Cierra")]
+        public ErrorDto CcCaRemesas_Recibe_Cierra(
+            int CodEmpresa,
+            long numeroGeneracion,
+            string usuario)
+        {
+            return _bl.CcCaRemesas_Recibe_Cierra(CodEmpresa, numeroGeneracion, usuario);
+        }
+
+        [HttpPost("CcCaRemesas_Recibe_Aplica")]
+        public ErrorDto<CcCaRemesasRecibeAplicaResponse> CcCaRemesas_Recibe_Aplica(
+                int CodEmpresa,
+                [FromBody] CcCaRemesasRecibeAplicaRequest request)
+        {
+            return _bl.CcCaRemesas_Recibe_Aplica(CodEmpresa, request);
+        }
     }
 }

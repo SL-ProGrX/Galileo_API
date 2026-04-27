@@ -89,4 +89,22 @@ namespace Galileo_API.Models.ProGrX_Procesos
         public List<CcCaRemesasAutorizacionExcelData> autorizaciones { get; set; } = new();
     }
 
+    public class CcCaRemesasRecibeAplicaRequest
+    {
+        public long numero_generacion { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+        public string tipo_documento { get; set; } = "CA";
+        public string numero_documento { get; set; } = string.Empty;
+        public int lote { get; set; } = 50;
+    }
+
+    public class CcCaRemesasRecibeAplicaResponse
+    {
+        public int pendientes { get; set; } = 0;
+    }
+
+    public static class CcCaRemesaCOnstantes
+    {
+        public const string vRequestRequerido = "El request es requerido.";
+    }
 }

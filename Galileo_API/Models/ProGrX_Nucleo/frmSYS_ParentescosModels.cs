@@ -12,7 +12,7 @@
         public string descripcion { get; set; } = string.Empty;
         public bool activo { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
-        public required DateTime registro_fecha { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public bool isNew { get; set; } = false;
     }
 }
