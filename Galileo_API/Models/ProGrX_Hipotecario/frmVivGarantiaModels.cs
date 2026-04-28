@@ -124,7 +124,7 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
 
     public class FrmVivGarantiaIdGarantiaRequest
     {
-        public long id_garantia { get; set; }
+        public long id_garantia { get; set; } = 0;
     }
 
     public class FrmVivGarantiaDerechoDuenoItem
@@ -151,8 +151,8 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
     public class FrmVivGarantiaSociosBuscarRequest
     {
         public string filtro { get; set; } = string.Empty;
-        public int first { get; set; }
-        public int rows { get; set; }
+        public int first { get; set; } = 0;
+        public int rows { get; set; } = 0;
     }
 
     public class FrmVivGarantiaSocioItem
@@ -245,7 +245,7 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
 
     public class FrmVivGarantiaNotasRequest
     {
-        public long id_garantia { get; set; }
+        public long id_garantia { get; set; } = 0;
         public string tipo { get; set; } = string.Empty;
     }
 

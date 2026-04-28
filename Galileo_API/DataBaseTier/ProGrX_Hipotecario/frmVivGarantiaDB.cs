@@ -175,6 +175,16 @@ ORDER BY Descripcion;";
             int codEmpresa,
             FrmVivGarantiaDetalleRequest request)
         {
+            if (request.id_garantia <= 0)
+            {
+                return new ErrorDto<FrmVivGarantiaDetalleResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar una garantía válida.",
+                    Result = new FrmVivGarantiaDetalleResponse()
+                };
+            }
+
             const string query = @"
 SELECT
     vGarantia.IdGarantia AS id_garantia,
