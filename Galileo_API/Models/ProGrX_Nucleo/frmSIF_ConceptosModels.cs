@@ -13,7 +13,7 @@
         public string nivel_acceso { get; set; } = string.Empty;      // U = Usuario, S = Sistema
         public bool activo { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
-        public required DateTime registro_fecha { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public bool isNew { get; set; } = false;
 
         // Relación con Documentos asignados

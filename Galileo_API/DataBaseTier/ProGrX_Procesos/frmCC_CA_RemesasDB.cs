@@ -448,6 +448,79 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             }
         }
 
+        /// <summary>
+        /// Cierra una remesa luego de cargar sus autorizaciones.
+        /// Equivale al paso spPrm_CA_Remesa_Cierra del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="numeroGeneracion">Número de generación de la remesa.</param>
+        /// <param name="usuario">Usuario que ejecuta el cierre.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto CcCaRemesas_Recibe_Cierra(
+            int codEmpresa,
+            long numeroGeneracion,
+            string usuario)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+            try
+            {
+                conn.Execute(
+                    "spPrm_CA_Remesa_Cierra",
+                    new
+                    {
+                        Remesa = numeroGeneracion,
+                        Usuario = usuario.Trim()
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.OkResponse("Remesa cerrada correctamente.");
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// Aplica los abonos de una remesa cerrada en bloques.
+        /// Equivale al paso spPrm_CA_Abonos_Aplica del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos de aplicación.</param>
+        /// <returns>Cantidad de pendientes luego del bloque aplicado.</returns>
+        public ErrorDto<CcCaRemesasRecibeAplicaResponse> CcCaRemesas_Recibe_Aplica(
+            int codEmpresa,
+            CcCaRemesasRecibeAplicaRequest request)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            var response = new CcCaRemesasRecibeAplicaResponse();
+
+            try
+            {
+                var row = conn.QueryFirstOrDefault<dynamic>(
+                    "spPrm_CA_Abonos_Aplica",
+                    new
+                    {
+                        Remesa = request.numero_generacion,
+                        Usuario = request.usuario.Trim(),
+                        TipoDoc = request.tipo_documento.Trim(),
+                        Documento = request.numero_documento.Trim(),
+                        Proceso = request.lote
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                response.pendientes = row == null ? 0 : Convert.ToInt32(row.Procesado ?? 0);
+
+                return DbHelper.CreateOkResponse(response);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(ex.Message, -1, response);
+            }
+        }
+
         #endregion
 
 
