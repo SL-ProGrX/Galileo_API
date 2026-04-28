@@ -9,18 +9,18 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmARF_OperacionesDB
+    public class FrmARFOperacionesDB
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurityMainDb;
         private readonly int vModulo = 20;
 
-        public FrmARF_OperacionesDB(IConfiguration config)
+        public FrmARFOperacionesDB(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config))
         {
         }
 
-        public FrmARF_OperacionesDB(PortalDB portalDb, MSecurityMainDb mSecurityMainDb)
+        public FrmARFOperacionesDB(PortalDB portalDb, MSecurityMainDb mSecurityMainDb)
         {
             _portalDb = portalDb;
             _mSecurityMainDb = mSecurityMainDb;
@@ -229,153 +229,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             try
             {
                 var notas = (request.notas ?? string.Empty).Trim();
-                var estadoActual = request.operacion.HasValue && request.operacion.Value > 0
-                    ? cn.ExecuteScalar<string?>(
-                        "select isnull(ESTADO, 'P') from ARF_OPERACIONES where Operacion = @operacion",
-                        new { operacion = request.operacion.Value },
-                        tx)
-                    : "P";
+                var estadoActual = ObtenerEstadoActual(cn, tx, request.operacion);
 
-                if (request.cod_acreedor <= 0)
-                    throw new Exception("No se ha especificado un Arrendador.");
+                ValidarGuardarRequest(request, estadoActual);
 
-                if (string.IsNullOrWhiteSpace(request.cod_local))
-                    throw new Exception("No se ha especificado una Unidad/Local.");
-
-                if (request.cuota <= 0)
-                    throw new Exception("El Monto no es válido.");
-
-                if (request.tasa_descuento < 0 || request.tasa_descuento > 100)
-                    throw new Exception("La Tasa Descuento no es válida.");
-
-                if (request.tasa_interes < 0 || request.tasa_interes > 100)
-                    throw new Exception("La Tasa de Interés no es válida.");
-
-                if (request.plazo <= 0)
-                    throw new Exception("El Plazo no es válido.");
-
-                if (request.incremento_tipo == "P" && (request.incremento_valor < 0 || request.incremento_valor > 100))
-                    throw new Exception("El Porcentaje de Incremento Anual no es válido.");
-
-                if (request.incremento_tipo == "M" && request.incremento_valor < 0)
-                    throw new Exception("El Monto del Incremento Anual no es válido.");
-
-                if (request.deposito_garantia_monto < 0)
-                    throw new Exception("El dato del depósito de garantía no es válido.");
-
-                if (request.fecha_inicio >= request.fecha_finaliza)
-                    throw new Exception("Rango de Fechas Erróneo, verificar.");
-
-                if (!string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase))
-                    throw new Exception("Esta Operación no puede ser modificada porque no se encuentra en estado de recibido.");
-
-                int operacion;
-
-                if (!request.operacion.HasValue || request.operacion.Value <= 0)
-                {
-                    const string insertSql = @"
-                        insert into ARF_OPERACIONES
-                        (
-                            COD_ACREEDOR, COD_LOCAL, TASA_DESCUENTO, TASA_INTERES, PERIODICIDAD,
-                            CUOTA, PLAZO, FECHA_INICIO, FECHA_FINALIZA, CORTE_ULTIMO, PAGO_PROXIMO,
-                            NOTAS, ESTADO, DEPOSITO_GARANTIA_MONTO, DEPOSITO_GARANTIA_IND,
-                            INCREMENTO_TIPO, INCREMENTO_VALOR, VALOR_NOMINAL, DEPRECIACION_ACUM,
-                            VALOR_LIBROS, VALOR_INICIAL, COD_DIVISA, REGISTRO_FECHA, REGISTRO_USUARIO
-                        )
-                        output inserted.Operacion
-                        values
-                        (
-                            @cod_acreedor, @cod_local, @tasa_descuento, @tasa_interes, @periodicidad,
-                            @cuota, @plazo, @fecha_inicio, @fecha_finaliza, null, null,
-                            @notas, 'R', @deposito_garantia_monto, @deposito_garantia_ind,
-                            @incremento_tipo, @incremento_valor, 0, 0, 0, 0,
-                            @cod_divisa, getdate(), @usuario
-                        )";
-
-                    operacion = cn.ExecuteScalar<int>(insertSql, new
-                    {
-                        request.cod_acreedor,
-                        cod_local = request.cod_local.Trim(),
-                        request.tasa_descuento,
-                        request.tasa_interes,
-                        request.periodicidad,
-                        request.cuota,
-                        request.plazo,
-                        request.fecha_inicio,
-                        request.fecha_finaliza,
-                        notas,
-                        request.deposito_garantia_monto,
-                        deposito_garantia_ind = request.deposito_garantia_ind ? 1 : 0,
-                        request.incremento_tipo,
-                        request.incremento_valor,
-                        request.cod_divisa,
-                        request.usuario
-                    }, tx);
-
-                    RegistrarBitacora(
-                        codEmpresa,
-                        request.usuario,
-                        "Registra - WEB",
-                        $"Registro de Operación de Arrendamiento No.: {operacion}");
-                }
-                else
-                {
-                    const string updateSql = @"
-                        update ARF_OPERACIONES
-                        set
-                            COD_ACREEDOR = @cod_acreedor,
-                            COD_LOCAL = @cod_local,
-                            TASA_DESCUENTO = @tasa_descuento,
-                            TASA_INTERES = @tasa_interes,
-                            PERIODICIDAD = @periodicidad,
-                            CUOTA = @cuota,
-                            PLAZO = @plazo,
-                            FECHA_INICIO = @fecha_inicio,
-                            FECHA_FINALIZA = @fecha_finaliza,
-                            CORTE_ULTIMO = null,
-                            PAGO_PROXIMO = null,
-                            NOTAS = @notas,
-                            ESTADO = 'R',
-                            DEPOSITO_GARANTIA_MONTO = @deposito_garantia_monto,
-                            DEPOSITO_GARANTIA_IND = @deposito_garantia_ind,
-                            INCREMENTO_TIPO = @incremento_tipo,
-                            INCREMENTO_VALOR = @incremento_valor,
-                            VALOR_NOMINAL = 0,
-                            DEPRECIACION_ACUM = 0,
-                            VALOR_LIBROS = 0,
-                            VALOR_INICIAL = 0,
-                            COD_DIVISA = @cod_divisa
-                        where Operacion = @operacion";
-
-                    cn.Execute(updateSql, new
-                    {
-                        operacion = request.operacion.Value,
-                        request.cod_acreedor,
-                        cod_local = request.cod_local.Trim(),
-                        request.tasa_descuento,
-                        request.tasa_interes,
-                        request.periodicidad,
-                        request.cuota,
-                        request.plazo,
-                        request.fecha_inicio,
-                        request.fecha_finaliza,
-                        notas,
-                        request.deposito_garantia_monto,
-                        deposito_garantia_ind = request.deposito_garantia_ind ? 1 : 0,
-                        request.incremento_tipo,
-                        request.incremento_valor,
-                        request.cod_divisa
-                    }, tx);
-
-                    operacion = request.operacion.Value;
-
-                    RegistrarBitacora(
-                        codEmpresa,
-                        request.usuario,
-                        "Modifica - WEB",
-                        $"Modifica Operación de Arrendamiento No.: {operacion}");
-                }
+                var operacion = !request.operacion.HasValue || request.operacion.Value <= 0
+                    ? InsertarOperacion(cn, tx, codEmpresa, request, notas)
+                    : ActualizarOperacion(cn, tx, codEmpresa, request, notas);
 
                 cn.Execute(
                     "spARF_Operacion_Plan_Add",
@@ -400,6 +260,180 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             return response;
         }
+
+
+        private string ObtenerEstadoActual(SqlConnection cn, SqlTransaction tx, int? operacion)
+        {
+            if (!operacion.HasValue || operacion.Value <= 0)
+            {
+                return "P";
+            }
+
+            return cn.ExecuteScalar<string?>(
+                       "select isnull(ESTADO, 'P') from ARF_OPERACIONES where Operacion = @operacion",
+                       new { operacion = operacion.Value },
+                       tx)
+                   ?? "P";
+        }
+
+        private void ValidarGuardarRequest(ArfOperacionGuardarRequestDto request, string estadoActual)
+        {
+            if (request.cod_acreedor <= 0)
+                throw new ArgumentException("No se ha especificado un Arrendador.");
+
+            if (string.IsNullOrWhiteSpace(request.cod_local))
+                throw new ArgumentException("No se ha especificado una Unidad/Local.");
+
+            if (request.cuota <= 0)
+                throw new ArgumentOutOfRangeException(nameof(request.cuota), "El Monto no es válido.");
+
+            if (request.tasa_descuento < 0 || request.tasa_descuento > 100)
+                throw new ArgumentOutOfRangeException(nameof(request.tasa_descuento), "La Tasa Descuento no es válida.");
+
+            if (request.tasa_interes < 0 || request.tasa_interes > 100)
+                throw new ArgumentOutOfRangeException(nameof(request.tasa_interes), "La Tasa de Interés no es válida.");
+
+            if (request.plazo <= 0)
+                throw new ArgumentOutOfRangeException(nameof(request.plazo), "El Plazo no es válido.");
+
+            if (request.incremento_tipo == "P" && (request.incremento_valor < 0 || request.incremento_valor > 100))
+                throw new ArgumentOutOfRangeException(nameof(request.incremento_valor), "El Porcentaje de Incremento Anual no es válido.");
+
+            if (request.incremento_tipo == "M" && request.incremento_valor < 0)
+                throw new ArgumentOutOfRangeException(nameof(request.incremento_valor), "El Monto del Incremento Anual no es válido.");
+
+            if (request.deposito_garantia_monto < 0)
+                throw new ArgumentOutOfRangeException(nameof(request.deposito_garantia_monto), "El dato del depósito de garantía no es válido.");
+
+            if (request.fecha_inicio >= request.fecha_finaliza)
+                throw new ArgumentException("Rango de Fechas Erróneo, verificar.");
+
+            if (!string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Esta Operación no puede ser modificada porque no se encuentra en estado de recibido.");
+        }
+
+        private int InsertarOperacion(
+            SqlConnection cn,
+            SqlTransaction tx,
+            int codEmpresa,
+            ArfOperacionGuardarRequestDto request,
+            string notas)
+        {
+            const string insertSql = @"
+        insert into ARF_OPERACIONES
+        (
+            COD_ACREEDOR, COD_LOCAL, TASA_DESCUENTO, TASA_INTERES, PERIODICIDAD,
+            CUOTA, PLAZO, FECHA_INICIO, FECHA_FINALIZA, CORTE_ULTIMO, PAGO_PROXIMO,
+            NOTAS, ESTADO, DEPOSITO_GARANTIA_MONTO, DEPOSITO_GARANTIA_IND,
+            INCREMENTO_TIPO, INCREMENTO_VALOR, VALOR_NOMINAL, DEPRECIACION_ACUM,
+            VALOR_LIBROS, VALOR_INICIAL, COD_DIVISA, REGISTRO_FECHA, REGISTRO_USUARIO
+        )
+        output inserted.Operacion
+        values
+        (
+            @cod_acreedor, @cod_local, @tasa_descuento, @tasa_interes, @periodicidad,
+            @cuota, @plazo, @fecha_inicio, @fecha_finaliza, null, null,
+            @notas, 'R', @deposito_garantia_monto, @deposito_garantia_ind,
+            @incremento_tipo, @incremento_valor, 0, 0, 0, 0,
+            @cod_divisa, getdate(), @usuario
+        )";
+
+            var operacion = cn.ExecuteScalar<int>(insertSql, new
+            {
+                request.cod_acreedor,
+                cod_local = request.cod_local.Trim(),
+                request.tasa_descuento,
+                request.tasa_interes,
+                request.periodicidad,
+                request.cuota,
+                request.plazo,
+                request.fecha_inicio,
+                request.fecha_finaliza,
+                notas,
+                request.deposito_garantia_monto,
+                deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
+                request.incremento_tipo,
+                request.incremento_valor,
+                request.cod_divisa,
+                request.usuario
+            }, tx);
+
+            RegistrarBitacora(
+                codEmpresa,
+                request.usuario,
+                "Registra - WEB",
+                $"Registro de Operación de Arrendamiento No.: {operacion}");
+
+            return operacion;
+        }
+
+        private int ActualizarOperacion(
+            SqlConnection cn,
+            SqlTransaction tx,
+            int codEmpresa,
+            ArfOperacionGuardarRequestDto request,
+            string notas)
+        {
+            const string updateSql = @"
+        update ARF_OPERACIONES
+        set
+            COD_ACREEDOR = @cod_acreedor,
+            COD_LOCAL = @cod_local,
+            TASA_DESCUENTO = @tasa_descuento,
+            TASA_INTERES = @tasa_interes,
+            PERIODICIDAD = @periodicidad,
+            CUOTA = @cuota,
+            PLAZO = @plazo,
+            FECHA_INICIO = @fecha_inicio,
+            FECHA_FINALIZA = @fecha_finaliza,
+            CORTE_ULTIMO = null,
+            PAGO_PROXIMO = null,
+            NOTAS = @notas,
+            ESTADO = 'R',
+            DEPOSITO_GARANTIA_MONTO = @deposito_garantia_monto,
+            DEPOSITO_GARANTIA_IND = @deposito_garantia_ind,
+            INCREMENTO_TIPO = @incremento_tipo,
+            INCREMENTO_VALOR = @incremento_valor,
+            VALOR_NOMINAL = 0,
+            DEPRECIACION_ACUM = 0,
+            VALOR_LIBROS = 0,
+            VALOR_INICIAL = 0,
+            COD_DIVISA = @cod_divisa
+        where Operacion = @operacion";
+
+            cn.Execute(updateSql, new
+            {
+                operacion = request.operacion!.Value,
+                request.cod_acreedor,
+                cod_local = request.cod_local.Trim(),
+                request.tasa_descuento,
+                request.tasa_interes,
+                request.periodicidad,
+                request.cuota,
+                request.plazo,
+                request.fecha_inicio,
+                request.fecha_finaliza,
+                notas,
+                request.deposito_garantia_monto,
+                deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
+                request.incremento_tipo,
+                request.incremento_valor,
+                request.cod_divisa
+            }, tx);
+
+            var operacion = request.operacion.Value;
+
+            RegistrarBitacora(
+                codEmpresa,
+                request.usuario,
+                "Modifica - WEB",
+                $"Modifica Operación de Arrendamiento No.: {operacion}");
+
+            return operacion;
+        }
+
+
 
         /// <summary>
         /// Activar

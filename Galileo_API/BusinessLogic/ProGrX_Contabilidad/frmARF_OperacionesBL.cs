@@ -5,13 +5,13 @@ using Galileo_API.Models.ProGrX_Contabilidad;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 {
-    public class FrmARF_OperacionesBL
+    public class FrmARFOperacionesBL
     {
-        private readonly FrmARF_OperacionesDB _db;
+        private readonly FrmARFOperacionesDB _db;
 
-        public FrmARF_OperacionesBL(IConfiguration config)
+        public FrmARFOperacionesBL(IConfiguration config)
         {
-            _db = new FrmARF_OperacionesDB(config);
+            _db = new FrmARFOperacionesDB(config);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Listar(int codEmpresa)

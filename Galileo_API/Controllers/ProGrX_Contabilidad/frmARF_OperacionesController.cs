@@ -10,13 +10,13 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmARF_OperacionesController : ControllerBase
+    public class FrmARFOperacionesController : ControllerBase
     {
-        private readonly FrmARF_OperacionesBL _bl;
+        private readonly FrmARFOperacionesBL _bl;
 
-        public FrmARF_OperacionesController(IConfiguration config)
+        public FrmARFOperacionesController(IConfiguration config)
         {
-            _bl = new FrmARF_OperacionesBL(config);
+            _bl = new FrmARFOperacionesBL(config);
         }
 
         [HttpGet("Divisas_Listar")]

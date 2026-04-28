@@ -52,11 +52,11 @@
         public string periodicidad { get; set; } = string.Empty;
         public decimal? cuota { get; set; }
         public short? plazo { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_finaliza { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_finaliza { get; set; }
         public string notas { get; set; } = string.Empty;
         public decimal? deposito_garantia_monto { get; set; }
-        public bool deposito_garantia_ind { get; set; }
+        public bool? deposito_garantia_ind { get; set; }
         public string incremento_tipo { get; set; } = string.Empty;
         public decimal? incremento_valor { get; set; }
         public string cod_divisa { get; set; } = string.Empty;
