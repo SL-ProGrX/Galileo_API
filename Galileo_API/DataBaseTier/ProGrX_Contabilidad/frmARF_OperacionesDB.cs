@@ -313,14 +313,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         request.usuario
                     }, tx);
 
-                    _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = codEmpresa,
-                        Usuario = request.usuario,
-                        Movimiento = "Registra - WEB",
-                        Modulo = vModulo,
-                        DetalleMovimiento = $"Registro de Operación de Arrendamiento No.: {operacion}"
-                    });
+                    RegistrarBitacora(
+                        codEmpresa,
+                        request.usuario,
+                        "Registra - WEB",
+                        $"Registro de Operación de Arrendamiento No.: {operacion}");
                 }
                 else
                 {
@@ -373,14 +370,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                     operacion = request.operacion.Value;
 
-                    _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = codEmpresa,
-                        Usuario = request.usuario,
-                        Movimiento = "Modifica - WEB",
-                        Modulo = vModulo,
-                        DetalleMovimiento = $"Modifica Operación de Arrendamiento No.: {operacion}"
-                    });
+                    RegistrarBitacora(
+                        codEmpresa,
+                        request.usuario,
+                        "Modifica - WEB",
+                        $"Modifica Operación de Arrendamiento No.: {operacion}");
                 }
 
                 cn.Execute(
@@ -431,14 +425,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     },
                     commandType: CommandType.StoredProcedure);
 
-                _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = request.usuario,
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo,
-                    DetalleMovimiento = $"Activación de Operación de Arrendamiento No.: {request.operacion}"
-                });
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Registra - WEB",
+                    $"Activación de Operación de Arrendamiento No.: {request.operacion}");
 
                 response.Code = 0;
                 response.Description = "Activación aplicada satisfactoriamente.";
@@ -606,43 +597,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto Cambio_Aplicar(int codEmpresa, ArfOperacionCambioRequestDto request)
         {
-            try
-            {
-                const string sql = @"exec spARF_Operacion_Cambios
-                    @Operacion, @Usuario, @TasaDescuento, @TasaInteres, @Monto, @Plazo, @Notas, @Periodo";
+            const string sql = @"exec spARF_Operacion_Cambios
+                @Operacion, @Usuario, @TasaDescuento, @TasaInteres, @Monto, @Plazo, @Notas, @Periodo";
 
-                var resp = DbHelper.ExecuteSingleQuery<dynamic>(
-                    _portalDb,
-                    codEmpresa,
-                    sql,
-                    null,
-                    new
-                    {
-                        Operacion = request.operacion,
-                        Usuario = (request.usuario ?? string.Empty).Trim(),
-                        TasaDescuento = request.tasa_descuento,
-                        TasaInteres = request.tasa_interes,
-                        Monto = request.monto,
-                        Plazo = request.plazo,
-                        Notas = (request.notas ?? string.Empty).Trim(),
-                        Periodo = request.periodo
-                    });
-
-                _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            return EjecutarProcesoOperacion(
+                codEmpresa,
+                sql,
+                new
                 {
-                    EmpresaId = codEmpresa,
-                    Usuario = request.usuario,
-                    DetalleMovimiento = $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}",
-                    Movimiento = "Aplica",
-                    Modulo = vModulo
-                });
-
-                return new ErrorDto { Code = 0, Description = "Cambios aplicados satisfactoriamente." };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto { Code = -1, Description = ex.Message };
-            }
+                    Operacion = request.operacion,
+                    Usuario = (request.usuario ?? string.Empty).Trim(),
+                    TasaDescuento = request.tasa_descuento,
+                    TasaInteres = request.tasa_interes,
+                    Monto = request.monto,
+                    Plazo = request.plazo,
+                    Notas = (request.notas ?? string.Empty).Trim(),
+                    Periodo = request.periodo
+                },
+                request.usuario,
+                $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}",
+                "Cambios aplicados satisfactoriamente.");
         }
 
         /// <summary>
@@ -653,37 +627,71 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto Finiquito_Aplicar(int codEmpresa, ArfOperacionFiniquitoRequestDto request)
         {
+            const string sql = @"exec spARF_Operacion_Finiquito @Operacion, @Usuario, @Notas, @Periodo";
+
+            return EjecutarProcesoOperacion(
+                codEmpresa,
+                sql,
+                new
+                {
+                    Operacion = request.operacion,
+                    Usuario = (request.usuario ?? string.Empty).Trim(),
+                    Notas = (request.notas ?? string.Empty).Trim(),
+                    Periodo = request.periodo
+                },
+                request.usuario,
+                $"Finiquito de la Operación de Arrendamiento No.: {request.operacion}",
+                "Finiquito aplicado satisfactoriamente.");
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalleMovimiento)
+        {
+            _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                Movimiento = movimiento,
+                Modulo = vModulo,
+                DetalleMovimiento = detalleMovimiento
+            });
+        }
+
+        private ErrorDto EjecutarProcesoOperacion(
+            int codEmpresa,
+            string sql,
+            object parametros,
+            string usuario,
+            string detalleBitacora,
+            string mensajeExito)
+        {
             try
             {
-                const string sql = @"exec spARF_Operacion_Finiquito @Operacion, @Usuario, @Notas, @Periodo";
-
-                var resp = DbHelper.ExecuteSingleQuery<dynamic>(
+                DbHelper.ExecuteSingleQuery<dynamic>(
                     _portalDb,
                     codEmpresa,
                     sql,
                     null,
-                    new
-                    {
-                        Operacion = request.operacion,
-                        Usuario = (request.usuario ?? string.Empty).Trim(),
-                        Notas = (request.notas ?? string.Empty).Trim(),
-                        Periodo = request.periodo
-                    });
+                    parametros);
 
-                _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+                RegistrarBitacora(
+                    codEmpresa,
+                    usuario,
+                    "Aplica",
+                    detalleBitacora);
+
+                return new ErrorDto
                 {
-                    EmpresaId = codEmpresa,
-                    Usuario = request.usuario,
-                    DetalleMovimiento = $"Finiquito de la Operación de Arrendamiento No.: {request.operacion}",
-                    Movimiento = "Aplica",
-                    Modulo = vModulo
-                });
-
-                return new ErrorDto { Code = 0, Description = "Finiquito aplicado satisfactoriamente." };
+                    Code = 0,
+                    Description = mensajeExito
+                };
             }
             catch (Exception ex)
             {
-                return new ErrorDto { Code = -1, Description = ex.Message };
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = ex.Message
+                };
             }
         }
     }
