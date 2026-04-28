@@ -233,9 +233,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 ValidarGuardarRequest(request, estadoActual);
 
-                var operacion = !request.operacion.HasValue || request.operacion.Value <= 0
-                    ? InsertarOperacion(cn, tx, codEmpresa, request, notas)
-                    : ActualizarOperacion(cn, tx, codEmpresa, request, notas);
+                var esNuevo = !request.operacion.HasValue || request.operacion.Value <= 0;
+                var operacion = GuardarOperacion(cn, tx, codEmpresa, request, notas, esNuevo);
 
                 cn.Execute(
                     "spARF_Operacion_Plan_Add",
@@ -348,6 +347,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return valor.HasValue && valor.Value >= 0 && valor.Value <= 100;
         }
 
+        private int GuardarOperacion(
+            SqlConnection cn,
+            SqlTransaction tx,
+            int codEmpresa,
+            ArfOperacionGuardarRequestDto request,
+            string notas,
+            bool esNuevo)
+        {
+            if (esNuevo)
+            {
+                return InsertarOperacion(cn, tx, codEmpresa, request, notas);
+            }
+
+            return ActualizarOperacion(cn, tx, codEmpresa, request, notas);
+        }
+
         private int InsertarOperacion(
             SqlConnection cn,
             SqlTransaction tx,
@@ -374,25 +389,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     @cod_divisa, getdate(), @usuario
                 )";
 
-            var operacion = cn.ExecuteScalar<int>(insertSql, new
-            {
-                cod_acreedor = request.cod_acreedor.GetValueOrDefault(),
-                cod_local = request.cod_local.Trim(),
-                tasa_descuento = request.tasa_descuento.GetValueOrDefault(),
-                tasa_interes = request.tasa_interes.GetValueOrDefault(),
-                request.periodicidad,
-                cuota = request.cuota.GetValueOrDefault(),
-                plazo = request.plazo.GetValueOrDefault(),
-                request.fecha_inicio,
-                request.fecha_finaliza,
-                notas,
-                deposito_garantia_monto = request.deposito_garantia_monto.GetValueOrDefault(),
-                deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
-                request.incremento_tipo,
-                incremento_valor = request.incremento_valor.GetValueOrDefault(),
-                request.cod_divisa,
-                request.usuario
-            }, tx);
+            var parametros = CrearParametrosGuardar(request, notas, null);
+            var operacion = cn.ExecuteScalar<int>(insertSql, parametros, tx);
 
             RegistrarBitacora(
                 codEmpresa,
@@ -437,9 +435,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     COD_DIVISA = @cod_divisa
                 where Operacion = @operacion";
 
-            cn.Execute(updateSql, new
+            var parametros = CrearParametrosGuardar(request, notas, request.operacion!.Value);
+            cn.Execute(updateSql, parametros, tx);
+
+            var operacion = request.operacion.Value;
+
+            RegistrarBitacora(
+                codEmpresa,
+                request.usuario,
+                "Modifica - WEB",
+                $"Modifica Operación de Arrendamiento No.: {operacion}");
+
+            return operacion;
+        }
+
+        private static object CrearParametrosGuardar(
+            ArfOperacionGuardarRequestDto request,
+            string notas,
+            int? operacion)
+        {
+            return new
             {
-                operacion = request.operacion!.Value,
+                operacion,
                 cod_acreedor = request.cod_acreedor.GetValueOrDefault(),
                 cod_local = request.cod_local.Trim(),
                 tasa_descuento = request.tasa_descuento.GetValueOrDefault(),
@@ -454,18 +471,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
                 request.incremento_tipo,
                 incremento_valor = request.incremento_valor.GetValueOrDefault(),
-                request.cod_divisa
-            }, tx);
-
-            var operacion = request.operacion.Value;
-
-            RegistrarBitacora(
-                codEmpresa,
-                request.usuario,
-                "Modifica - WEB",
-                $"Modifica Operación de Arrendamiento No.: {operacion}");
-
-            return operacion;
+                request.cod_divisa,
+                request.usuario
+            };
         }
 
         /// <summary>
