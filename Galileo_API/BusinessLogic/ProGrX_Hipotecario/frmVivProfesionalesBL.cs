@@ -29,5 +29,20 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         public ErrorDto<CrdVivContactoConsultaDto> CrdVivContacto_Consulta(int codEmpresa, int idContacto)
             => _db.CrdVivContacto_Consulta(codEmpresa, idContacto);
+
+        public ErrorDto<List<VivContactoEmpresaDto>> VivContactos_EmpresaLista(int codEmpresa, int vCodigo)
+            => _db.VivContactos_EmpresaLista(codEmpresa, vCodigo);
+
+        public ErrorDto<CrdVivContactoAddResult> CrdVivContacto_Add(int codEmpresa, CrdVivContactoAddParams param)
+            => _db.CrdVivContacto_Add(codEmpresa, param);
+
+        public ErrorDto<bool> VivContacto_Delete(int codEmpresa, int idContacto)
+            => _db.VivContacto_Delete(codEmpresa, idContacto);
+
+        public ErrorDto<List<VivContactoDto>> VivContactos_JuridicosLista(int codEmpresa, int vCodigo)
+            => _db.VivContactos_JuridicosLista(codEmpresa, vCodigo);
+
+        public ErrorDto<bool> VivContacto_SetEmpresa(int codEmpresa, int vCodigo, int? txtEmpresaId)
+            => _db.VivContacto_SetEmpresa(codEmpresa, vCodigo, txtEmpresaId);
     }
 }
