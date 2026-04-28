@@ -9,18 +9,18 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmARFOperacionesDB
+    public class FrmArfOperacionesDb
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurityMainDb;
         private readonly int vModulo = 20;
 
-        public FrmARFOperacionesDB(IConfiguration config)
+        public FrmArfOperacionesDb(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config))
         {
         }
 
-        public FrmARFOperacionesDB(PortalDB portalDb, MSecurityMainDb mSecurityMainDb)
+        public FrmArfOperacionesDb(PortalDB portalDb, MSecurityMainDb mSecurityMainDb)
         {
             _portalDb = portalDb;
             _mSecurityMainDb = mSecurityMainDb;
@@ -261,7 +261,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-
         private string ObtenerEstadoActual(SqlConnection cn, SqlTransaction tx, int? operacion)
         {
             if (!operacion.HasValue || operacion.Value <= 0)
@@ -278,39 +277,75 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         private void ValidarGuardarRequest(ArfOperacionGuardarRequestDto request, string estadoActual)
         {
-            if (request.cod_acreedor <= 0)
-                throw new ArgumentException("No se ha especificado un Arrendador.");
+            ValidarCamposObligatorios(request);
+            ValidarRangosPrincipales(request);
+            ValidarIncrementos(request);
+            ValidarFechas(request);
+            ValidarEstadoEditable(estadoActual);
+        }
+
+        private void ValidarCamposObligatorios(ArfOperacionGuardarRequestDto request)
+        {
+            if (request.cod_acreedor.GetValueOrDefault() <= 0)
+                throw new ArgumentException("No se ha especificado un Arrendador.", nameof(request));
 
             if (string.IsNullOrWhiteSpace(request.cod_local))
-                throw new ArgumentException("No se ha especificado una Unidad/Local.");
+                throw new ArgumentException("No se ha especificado una Unidad/Local.", nameof(request));
+        }
 
-            if (request.cuota <= 0)
-                throw new ArgumentOutOfRangeException(nameof(request.cuota), "El Monto no es válido.");
+        private void ValidarRangosPrincipales(ArfOperacionGuardarRequestDto request)
+        {
+            if (request.cuota.GetValueOrDefault() <= 0)
+                throw new ArgumentOutOfRangeException(nameof(request), "El Monto no es válido.");
 
-            if (request.tasa_descuento < 0 || request.tasa_descuento > 100)
-                throw new ArgumentOutOfRangeException(nameof(request.tasa_descuento), "La Tasa Descuento no es válida.");
+            if (!EstaEntreCeroYCien(request.tasa_descuento))
+                throw new ArgumentOutOfRangeException(nameof(request), "La Tasa Descuento no es válida.");
 
-            if (request.tasa_interes < 0 || request.tasa_interes > 100)
-                throw new ArgumentOutOfRangeException(nameof(request.tasa_interes), "La Tasa de Interés no es válida.");
+            if (!EstaEntreCeroYCien(request.tasa_interes))
+                throw new ArgumentOutOfRangeException(nameof(request), "La Tasa de Interés no es válida.");
 
-            if (request.plazo <= 0)
-                throw new ArgumentOutOfRangeException(nameof(request.plazo), "El Plazo no es válido.");
+            if (request.plazo.GetValueOrDefault() <= 0)
+                throw new ArgumentOutOfRangeException(nameof(request), "El Plazo no es válido.");
 
-            if (request.incremento_tipo == "P" && (request.incremento_valor < 0 || request.incremento_valor > 100))
-                throw new ArgumentOutOfRangeException(nameof(request.incremento_valor), "El Porcentaje de Incremento Anual no es válido.");
+            if (request.deposito_garantia_monto.GetValueOrDefault() < 0)
+                throw new ArgumentOutOfRangeException(nameof(request), "El dato del depósito de garantía no es válido.");
+        }
 
-            if (request.incremento_tipo == "M" && request.incremento_valor < 0)
-                throw new ArgumentOutOfRangeException(nameof(request.incremento_valor), "El Monto del Incremento Anual no es válido.");
+        private void ValidarIncrementos(ArfOperacionGuardarRequestDto request)
+        {
+            if (string.Equals(request.incremento_tipo, "P", StringComparison.OrdinalIgnoreCase) &&
+                !EstaEntreCeroYCien(request.incremento_valor))
+            {
+                throw new ArgumentOutOfRangeException(nameof(request), "El Porcentaje de Incremento Anual no es válido.");
+            }
 
-            if (request.deposito_garantia_monto < 0)
-                throw new ArgumentOutOfRangeException(nameof(request.deposito_garantia_monto), "El dato del depósito de garantía no es válido.");
+            if (string.Equals(request.incremento_tipo, "M", StringComparison.OrdinalIgnoreCase) &&
+                request.incremento_valor.GetValueOrDefault() < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(request), "El Monto del Incremento Anual no es válido.");
+            }
+        }
 
+        private void ValidarFechas(ArfOperacionGuardarRequestDto request)
+        {
             if (request.fecha_inicio >= request.fecha_finaliza)
-                throw new ArgumentException("Rango de Fechas Erróneo, verificar.");
+                throw new ArgumentException("Rango de Fechas Erróneo, verificar.", nameof(request));
+        }
 
-            if (!string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase))
+        private void ValidarEstadoEditable(string estadoActual)
+        {
+            var esRecibida = string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase);
+            var esPendiente = string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase);
+
+            if (!esRecibida && !esPendiente)
+            {
                 throw new InvalidOperationException("Esta Operación no puede ser modificada porque no se encuentra en estado de recibido.");
+            }
+        }
+
+        private static bool EstaEntreCeroYCien(decimal? valor)
+        {
+            return valor.HasValue && valor.Value >= 0 && valor.Value <= 100;
         }
 
         private int InsertarOperacion(
@@ -321,40 +356,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             string notas)
         {
             const string insertSql = @"
-        insert into ARF_OPERACIONES
-        (
-            COD_ACREEDOR, COD_LOCAL, TASA_DESCUENTO, TASA_INTERES, PERIODICIDAD,
-            CUOTA, PLAZO, FECHA_INICIO, FECHA_FINALIZA, CORTE_ULTIMO, PAGO_PROXIMO,
-            NOTAS, ESTADO, DEPOSITO_GARANTIA_MONTO, DEPOSITO_GARANTIA_IND,
-            INCREMENTO_TIPO, INCREMENTO_VALOR, VALOR_NOMINAL, DEPRECIACION_ACUM,
-            VALOR_LIBROS, VALOR_INICIAL, COD_DIVISA, REGISTRO_FECHA, REGISTRO_USUARIO
-        )
-        output inserted.Operacion
-        values
-        (
-            @cod_acreedor, @cod_local, @tasa_descuento, @tasa_interes, @periodicidad,
-            @cuota, @plazo, @fecha_inicio, @fecha_finaliza, null, null,
-            @notas, 'R', @deposito_garantia_monto, @deposito_garantia_ind,
-            @incremento_tipo, @incremento_valor, 0, 0, 0, 0,
-            @cod_divisa, getdate(), @usuario
-        )";
+                insert into ARF_OPERACIONES
+                (
+                    COD_ACREEDOR, COD_LOCAL, TASA_DESCUENTO, TASA_INTERES, PERIODICIDAD,
+                    CUOTA, PLAZO, FECHA_INICIO, FECHA_FINALIZA, CORTE_ULTIMO, PAGO_PROXIMO,
+                    NOTAS, ESTADO, DEPOSITO_GARANTIA_MONTO, DEPOSITO_GARANTIA_IND,
+                    INCREMENTO_TIPO, INCREMENTO_VALOR, VALOR_NOMINAL, DEPRECIACION_ACUM,
+                    VALOR_LIBROS, VALOR_INICIAL, COD_DIVISA, REGISTRO_FECHA, REGISTRO_USUARIO
+                )
+                output inserted.Operacion
+                values
+                (
+                    @cod_acreedor, @cod_local, @tasa_descuento, @tasa_interes, @periodicidad,
+                    @cuota, @plazo, @fecha_inicio, @fecha_finaliza, null, null,
+                    @notas, 'R', @deposito_garantia_monto, @deposito_garantia_ind,
+                    @incremento_tipo, @incremento_valor, 0, 0, 0, 0,
+                    @cod_divisa, getdate(), @usuario
+                )";
 
             var operacion = cn.ExecuteScalar<int>(insertSql, new
             {
-                request.cod_acreedor,
+                cod_acreedor = request.cod_acreedor.GetValueOrDefault(),
                 cod_local = request.cod_local.Trim(),
-                request.tasa_descuento,
-                request.tasa_interes,
+                tasa_descuento = request.tasa_descuento.GetValueOrDefault(),
+                tasa_interes = request.tasa_interes.GetValueOrDefault(),
                 request.periodicidad,
-                request.cuota,
-                request.plazo,
+                cuota = request.cuota.GetValueOrDefault(),
+                plazo = request.plazo.GetValueOrDefault(),
                 request.fecha_inicio,
                 request.fecha_finaliza,
                 notas,
-                request.deposito_garantia_monto,
+                deposito_garantia_monto = request.deposito_garantia_monto.GetValueOrDefault(),
                 deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
                 request.incremento_tipo,
-                request.incremento_valor,
+                incremento_valor = request.incremento_valor.GetValueOrDefault(),
                 request.cod_divisa,
                 request.usuario
             }, tx);
@@ -376,49 +411,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             string notas)
         {
             const string updateSql = @"
-        update ARF_OPERACIONES
-        set
-            COD_ACREEDOR = @cod_acreedor,
-            COD_LOCAL = @cod_local,
-            TASA_DESCUENTO = @tasa_descuento,
-            TASA_INTERES = @tasa_interes,
-            PERIODICIDAD = @periodicidad,
-            CUOTA = @cuota,
-            PLAZO = @plazo,
-            FECHA_INICIO = @fecha_inicio,
-            FECHA_FINALIZA = @fecha_finaliza,
-            CORTE_ULTIMO = null,
-            PAGO_PROXIMO = null,
-            NOTAS = @notas,
-            ESTADO = 'R',
-            DEPOSITO_GARANTIA_MONTO = @deposito_garantia_monto,
-            DEPOSITO_GARANTIA_IND = @deposito_garantia_ind,
-            INCREMENTO_TIPO = @incremento_tipo,
-            INCREMENTO_VALOR = @incremento_valor,
-            VALOR_NOMINAL = 0,
-            DEPRECIACION_ACUM = 0,
-            VALOR_LIBROS = 0,
-            VALOR_INICIAL = 0,
-            COD_DIVISA = @cod_divisa
-        where Operacion = @operacion";
+                update ARF_OPERACIONES
+                set
+                    COD_ACREEDOR = @cod_acreedor,
+                    COD_LOCAL = @cod_local,
+                    TASA_DESCUENTO = @tasa_descuento,
+                    TASA_INTERES = @tasa_interes,
+                    PERIODICIDAD = @periodicidad,
+                    CUOTA = @cuota,
+                    PLAZO = @plazo,
+                    FECHA_INICIO = @fecha_inicio,
+                    FECHA_FINALIZA = @fecha_finaliza,
+                    CORTE_ULTIMO = null,
+                    PAGO_PROXIMO = null,
+                    NOTAS = @notas,
+                    ESTADO = 'R',
+                    DEPOSITO_GARANTIA_MONTO = @deposito_garantia_monto,
+                    DEPOSITO_GARANTIA_IND = @deposito_garantia_ind,
+                    INCREMENTO_TIPO = @incremento_tipo,
+                    INCREMENTO_VALOR = @incremento_valor,
+                    VALOR_NOMINAL = 0,
+                    DEPRECIACION_ACUM = 0,
+                    VALOR_LIBROS = 0,
+                    VALOR_INICIAL = 0,
+                    COD_DIVISA = @cod_divisa
+                where Operacion = @operacion";
 
             cn.Execute(updateSql, new
             {
                 operacion = request.operacion!.Value,
-                request.cod_acreedor,
+                cod_acreedor = request.cod_acreedor.GetValueOrDefault(),
                 cod_local = request.cod_local.Trim(),
-                request.tasa_descuento,
-                request.tasa_interes,
+                tasa_descuento = request.tasa_descuento.GetValueOrDefault(),
+                tasa_interes = request.tasa_interes.GetValueOrDefault(),
                 request.periodicidad,
-                request.cuota,
-                request.plazo,
+                cuota = request.cuota.GetValueOrDefault(),
+                plazo = request.plazo.GetValueOrDefault(),
                 request.fecha_inicio,
                 request.fecha_finaliza,
                 notas,
-                request.deposito_garantia_monto,
+                deposito_garantia_monto = request.deposito_garantia_monto.GetValueOrDefault(),
                 deposito_garantia_ind = request.deposito_garantia_ind == true ? 1 : 0,
                 request.incremento_tipo,
-                request.incremento_valor,
+                incremento_valor = request.incremento_valor.GetValueOrDefault(),
                 request.cod_divisa
             }, tx);
 
@@ -432,8 +467,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             return operacion;
         }
-
-
 
         /// <summary>
         /// Activar
