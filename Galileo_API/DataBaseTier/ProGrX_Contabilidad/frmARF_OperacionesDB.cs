@@ -275,7 +275,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                    ?? "P";
         }
 
-        private void ValidarGuardarRequest(ArfOperacionGuardarRequestDto request, string estadoActual)
+        private static void ValidarGuardarRequest(ArfOperacionGuardarRequestDto request, string estadoActual)
         {
             ValidarCamposObligatorios(request);
             ValidarRangosPrincipales(request);
@@ -284,7 +284,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             ValidarEstadoEditable(estadoActual);
         }
 
-        private void ValidarCamposObligatorios(ArfOperacionGuardarRequestDto request)
+        private static void ValidarCamposObligatorios(ArfOperacionGuardarRequestDto request)
         {
             if (request.cod_acreedor.GetValueOrDefault() <= 0)
                 throw new ArgumentException("No se ha especificado un Arrendador.", nameof(request));
@@ -293,7 +293,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 throw new ArgumentException("No se ha especificado una Unidad/Local.", nameof(request));
         }
 
-        private void ValidarRangosPrincipales(ArfOperacionGuardarRequestDto request)
+        private static void ValidarRangosPrincipales(ArfOperacionGuardarRequestDto request)
         {
             if (request.cuota.GetValueOrDefault() <= 0)
                 throw new ArgumentOutOfRangeException(nameof(request), "El Monto no es válido.");
@@ -311,7 +311,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 throw new ArgumentOutOfRangeException(nameof(request), "El dato del depósito de garantía no es válido.");
         }
 
-        private void ValidarIncrementos(ArfOperacionGuardarRequestDto request)
+        private static void ValidarIncrementos(ArfOperacionGuardarRequestDto request)
         {
             if (string.Equals(request.incremento_tipo, "P", StringComparison.OrdinalIgnoreCase) &&
                 !EstaEntreCeroYCien(request.incremento_valor))
@@ -326,13 +326,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        private void ValidarFechas(ArfOperacionGuardarRequestDto request)
+        private static void ValidarFechas(ArfOperacionGuardarRequestDto request)
         {
             if (request.fecha_inicio >= request.fecha_finaliza)
                 throw new ArgumentException("Rango de Fechas Erróneo, verificar.", nameof(request));
         }
 
-        private void ValidarEstadoEditable(string estadoActual)
+        private static void ValidarEstadoEditable(string estadoActual)
         {
             var esRecibida = string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase);
             var esPendiente = string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase);
