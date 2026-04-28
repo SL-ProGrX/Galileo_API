@@ -22,10 +22,10 @@
         public string usuario { get; set; } = string.Empty;
         public string doc_tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool envia_fondo { get; set; }
-        public bool envia_tesoreria { get; set; }
-        public bool ret_efectivo { get; set; }
-        public bool excluye_saldo_favor { get; set; }
+        public required bool envia_fondo { get; set; }
+        public required bool envia_tesoreria { get; set; }
+        public required bool ret_efectivo { get; set; }
+        public required bool excluye_saldo_favor { get; set; }
     }
     public class FiltroData
     {

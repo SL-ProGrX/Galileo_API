@@ -1,4 +1,6 @@
-﻿namespace Galileo.Models.ProGrX.Cajas
+﻿using Org.BouncyCastle.Ocsp;
+
+namespace Galileo.Models.ProGrX.Cajas
 {
     public class CajasDepositosTransitoData
     {
@@ -20,10 +22,10 @@
     {
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }
-        public int banco { get; set; }
+        public required int banco { get; set; }
         public string? numero { get; set; } = string.Empty;
-        public decimal MntInicio { get; set; }
-        public decimal MntCorte { get; set; }
+        public required decimal MntInicio { get; set; }
+        public required decimal MntCorte { get; set; }
         public string? filtro { get; set; } //filtro del buscar en tablas o buscador
         public int? pagina { get; set; } = 1;//pagina de la tabla
         public int? paginacion { get; set; } = 30; //paginacion de la tabla
