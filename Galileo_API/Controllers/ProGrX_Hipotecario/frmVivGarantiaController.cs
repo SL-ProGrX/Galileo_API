@@ -74,15 +74,65 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #endregion
 
         #region Derechos
+        [HttpPost("Viv_GarantiaDerechos_Listar")]
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+            int codEmpresa,
+            FrmVivGarantiaIdGarantiaRequest request)
+        {
+            return _bl.FrmVivGarantiaDerechos_Listar(codEmpresa, request);
+        }
+
+        [HttpPost("Viv_GarantiaSocio_Obtener")]
+        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+    int codEmpresa,
+    FrmVivGarantiaSocioRequest request)
+        {
+            return _bl.FrmVivGarantiaSocio_Obtener(codEmpresa, request);
+        }
+
+        [HttpPost("Viv_GarantiaSocios_Buscar")]
+        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> FrmVivGarantiaSocios_Buscar(
+    int codEmpresa,
+    FrmVivGarantiaSociosBuscarRequest request)
+        {
+            return _bl.FrmVivGarantiaSocios_Buscar(codEmpresa, request);
+        }
         #endregion
 
         #region Historial del Tramite
+
+        [HttpPost("Viv_GarantiaHistorial_Obtener")]
+        public ErrorDto<FrmVivGarantiaHistorialResponse> FrmVivGarantiaHistorial_Obtener(
+    int codEmpresa,
+    FrmVivGarantiaIdGarantiaRequest request)
+        {
+            return _bl.FrmVivGarantiaHistorial_Obtener(codEmpresa, request);
+        }
+
         #endregion
 
         #region Fincas
+
+        [HttpPost("Viv_GarantiaFincasAsociadas_Listar")]
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+    int codEmpresa,
+    FrmVivGarantiaCargaRequest request)
+        {
+            return _bl.FrmVivGarantiaFincasAsociadas_Listar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Notas
+
+        [HttpPost("Viv_GarantiaNotas_Listar")]
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> FrmVivGarantiaNotas_Listar(
+    int codEmpresa,
+    FrmVivGarantiaNotasRequest request)
+        {
+            return _bl.FrmVivGarantiaNotas_Listar(codEmpresa, request);
+        }
+
         #endregion
     }
 }

@@ -555,7 +555,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         CuentaIBAN = result.CUENTA_IBAN,
                         DesProducto = result.DesProducto,
-                        Estado = (result.ESTADO == "A") ? 1 : 23,
+                        Estado = result.ESTADO,
                         IdTitular = result.IdTitular,
                         Moneda = result.MONEDA,
                         NombreTitular = result.NombreTitular,
