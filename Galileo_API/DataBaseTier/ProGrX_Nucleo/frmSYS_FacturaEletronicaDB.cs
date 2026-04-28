@@ -1782,7 +1782,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 tipo = FirstNonEmpty(r, "TIPO", "TIPO_DOC", "TIPO_DOCUMENTO", "DOC", "TIPO_COMPROBANTE"),
                 lineas = FirstNonZeroInt(r, "LINEAS", "NUM_LINEAS", "CANTIDAD"),
                 detalle = FirstNonEmpty(r, "DETALLE", "DESCRIPCION", "PRODUCTO"),
-                facturado = FirstNonZeroDecimal(r, "FACTURADO", "MONTO_FACTURADO", "SUBTOTAL", "MONTO_TOTAL", "TOTAL"),
+                facturado = FirstNonZeroDecimal( r,"TOTAL_VENTA","FACTURADO","MONTO_FACTURADO","TOTAL_COMPROBANTE","SUBTOTAL","MONTO_TOTAL","TOTAL"),
                 inicio = TryParseDateTimeNullable(FirstAny(r, "INICIO", "FECHA_INICIO")),
                 corte = TryParseDateTimeNullable(FirstAny(r, "CORTE", "FECHA_CORTE")),
                 xml_respuesta = FirstNonEmpty(r, "XML_RESPUESTA", "ESTADO", "RESPUESTA"),

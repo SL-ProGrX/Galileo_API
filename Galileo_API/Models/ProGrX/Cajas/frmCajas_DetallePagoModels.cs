@@ -46,14 +46,14 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class CajasDesglocePagoDto
     {
-        public int linea { get; set; }
+        public required int linea { get; set; }
         public string? ticket { get; set; }
         public string? cod_caja { get; set; }
-        public int cod_apertura { get; set; }
-        public decimal monto { get; set; }
+        public required int cod_apertura { get; set; }
+        public required decimal monto { get; set; }
         public string? cod_divisa { get; set; }
-        public decimal tipo_cambio { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public required decimal tipo_cambio { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }
         public string? cod_tarjeta { get; set; }
         public string? tarjeta_numero { get; set; }
@@ -63,12 +63,12 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? cuenta_bancaria { get; set; }
         public string? num_referencia { get; set; }
         public string? cod_cuenta { get; set; }
-        public int aplica_saldo_favor { get; set; }
-        public decimal saldo_favor { get; set; }
-        public int saldo_favor_id { get; set; }
+        public required int aplica_saldo_favor { get; set; }
+        public required decimal saldo_favor { get; set; }
+        public required int saldo_favor_id { get; set; }
         public string? observaciones { get; set; }
         public string? cod_forma_pago { get; set; }
-        public int dp_banco { get; set; }
+        public required int dp_banco { get; set; }
         public DateTime? dp_fecha { get; set; }
         public string? cod_plan { get; set; }
         public int? cod_contrato { get; set; }
@@ -79,25 +79,25 @@ namespace Galileo_API.Models.ProGrX.Cajas
     public class DistribuyeSaldoFavorDto
     {
         public string? cod_caja { get; set; }
-        public int cod_apertura { get; set; }
+        public required int cod_apertura { get; set; }
         public string? ticket { get; set; }
         public string? usuario { get; set; }
-        public decimal total_aplicar { get; set; }
+        public required decimal total_aplicar { get; set; }
         public string? divisa { get; set; }
     }
 
     public class CajasDesglocePagoRequest
     {
         public string? cod_caja { get; set; }
-        public int cod_apertura { get; set; }
+        public required int cod_apertura { get; set; }
         public string? ticket { get; set; }
         public string? usuario { get; set; }
         public string? cod_forma_pago { get; set; }
         public string? cuenta_bancaria { get; set; }
         public string? num_referencia { get; set; }
-        public decimal monto { get; set; }
+        public required decimal monto { get; set; }
         public string? cod_divisa { get; set; }
-        public decimal tipo_cambio { get; set; }
+        public required decimal tipo_cambio { get; set; }
         public string? notas { get; set; }
         public int? saldo_favor_id { get; set; }
         public string? cod_tarjeta { get; set; }

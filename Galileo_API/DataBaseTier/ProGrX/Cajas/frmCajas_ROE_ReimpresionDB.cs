@@ -27,9 +27,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 var sql = new StringBuilder(@"
-                    SELECT ID_ROE, TIPOROE, rtrim(CEDULA_ASO) as CEDULA_ASO, IDENTIFICACION_DEPO, NOMBRE_DEPO, FECHA, USUARIO, MONTO_LOCAL, MONTO_DOL, TIPO_CAMBIO,
-                           REGISTRO_FECHA, REGISTRO_USUARIO, ACTUALIZA_FECHA, ACTUALIZA_USUARIO, USUARIO_ANULACION, FECHA_ANULACION, OBSERV_ANULACION, IMPRIME_FECHA, IMPRIME_USUARIO,
-                           ISNULL(ID_SESION,'') AS ID_SESION, ESTADO
+                    SELECT 
+                        ID_ROE AS Id_Roe,
+                        TIPOROE AS TipoRoe,
+                        RTRIM(CEDULA_ASO) AS Cedula_Aso,
+                        IDENTIFICACION_DEPO AS Identificacion_Depo,
+                        NOMBRE_DEPO AS Nombre_Depo,
+                        FECHA AS Fecha,
+                        USUARIO AS Usuario,
+                        MONTO_LOCAL AS Monto_Local,
+                        MONTO_DOL AS Monto_Dol,
+                        TIPO_CAMBIO AS Tipo_Cambio,
+                        REGISTRO_FECHA AS Registro_Fecha,
+                        REGISTRO_USUARIO AS Registro_Usuario,
+                        ACTUALIZA_FECHA AS Actualiza_Fecha,
+                        ACTUALIZA_USUARIO AS Actualiza_Usuario,
+                        USUARIO_ANULACION AS Usuario_Anulacion,
+                        FECHA_ANULACION AS Fecha_Anulacion,
+                        OBSERV_ANULACION AS Observ_Anulacion,
+                        IMPRIME_FECHA AS Imprime_Fecha,
+                        IMPRIME_USUARIO AS Imprime_Usuario,
+                        ISNULL(ID_SESION,'') AS Id_Sesion,
+                        ESTADO AS Estado
                     FROM CAJAS_ROE
                     WHERE 1=1
                 ");
@@ -43,7 +62,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 sql.Append(" ORDER BY FECHA DESC");
 
-                var response =  conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList();
+                var response = conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList();
                 return response;
             });
         }

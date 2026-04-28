@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Text;
 using System.Globalization;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -37,32 +38,63 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             {
                 using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
                 var p = new DynamicParameters();
-                const string defaultSortColumn = "REGISTRO_FECHA";
 
-                // Extracted filter logic to helper
                 var where = BuildWhereClauseAndParameters(filtros, p);
-
-                var qTotal = $"SELECT COUNT(1) FROM vCajas_Saldos_Favor {where};";
+                var qTotal = BuildTotalQuery(where);
                 resp.Result.Total = cn.Query<int>(qTotal, p).FirstOrDefault();
 
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? defaultSortColumn
-                    : filtros.sortField.Trim();
+                var qDatos = BuildDataQuery(filtros, where, p);
+                resp.Result.Lista = cn.Query<CajasSaldosFavorItem>(qDatos, p).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result.Lista = new List<CajasSaldosFavorItem>();
+                resp.Result.Total = 0;
+            }
 
-                var orden = filtros.sortOrder == 0 ? "DESC" : "ASC";
-                var sortColumn = ObtenerColumnaOrden(sortField, defaultSortColumn);
-                var orderBy = $" ORDER BY {sortColumn} {orden} ";
-                bool sinPaginacion = filtros.paginacion <= 0;
-                string paging = "";
+            return resp;
+        }
 
-                if (!sinPaginacion)
-                {
-                    var pageIndex = filtros.pagina <= 0 ? 0 : filtros.pagina - 1;
-                    var offset = pageIndex * filtros.paginacion;
-                    paging = $" OFFSET {offset} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                }
+        private static string BuildWhereClauseAndParameters(FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            var where = new StringBuilder(@"
+                WHERE 1 = 1
+                  AND Saldo > 0
+                  AND VALIDA_REQUIERE = 1
+                ");
 
-                var qDatos = $@"
+            AddEstadoFilter(where, filtros, p);
+            AddFechaFilter(where, filtros, p);
+            AddBusquedaGeneralFilter(where, filtros, p);
+            AddCedulaFilter(where, filtros, p);
+            AddNombreFilter(where, filtros, p);
+            AddTipoDocumentoFilter(where, filtros, p);
+            AddNumeroDocumentoFilter(where, filtros, p);
+            AddUsuarioRegistroFilter(where, filtros, p);
+            AddEntidadPagadoraFilter(where, filtros, p);
+            AddOrigenRecursosFilter(where, filtros, p);
+            AddMontoFilter(where, filtros, p);
+
+            return where.ToString();
+        }
+
+        private static string BuildTotalQuery(string where)
+        {
+            return $@"
+                SELECT COUNT(1)
+                FROM vCajas_Saldos_Favor
+                {where};";
+        }
+
+        private static string BuildDataQuery(FiltrosSaldosFavorTransito filtros, string where, DynamicParameters p)
+        {
+            var sortColumn = ObtenerColumnaOrden(filtros.sortField, "REGISTRO_FECHA");
+            var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
+            var paging = BuildPagingClause(filtros, p);
+
+            return $@"
                 SELECT
                       Linea,
                       Cedula,
@@ -91,102 +123,165 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                       Valida_Notas
                 FROM vCajas_Saldos_Favor
                 {where}
-                {orderBy}
+                ORDER BY {sortColumn} {sortDirection}
                 {paging};";
-
-                resp.Result.Lista = cn.Query<CajasSaldosFavorItem>(qDatos, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result.Lista = new List<CajasSaldosFavorItem>();
-                resp.Result.Total = 0;
-            }
-
-            return resp;
         }
 
-        private static string BuildWhereClauseAndParameters(FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        private static string BuildPagingClause(FiltrosSaldosFavorTransito filtros, DynamicParameters p)
         {
-            var where = @"
-                WHERE 1 = 1
-                  AND Saldo > 0
-                  AND VALIDA_REQUIERE = 1
-                ";
+            if (filtros.paginacion <= 0)
+            {
+                return string.Empty;
+            }
 
-            if (!string.IsNullOrWhiteSpace(filtros.Estado))
+            var pageIndex = filtros.pagina <= 0 ? 0 : filtros.pagina - 1;
+            var offset = pageIndex * filtros.paginacion;
+
+            p.Add("@Offset", offset);
+            p.Add("@PageSize", filtros.paginacion);
+
+            return " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY ";
+        }
+
+        private static void AddEstadoFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.Estado))
             {
-                where += " AND ISNULL(VALIDA_ESTADO,'P') = @Estado ";
-                p.Add("@Estado", filtros.Estado.Trim().Substring(0, 1));
+                return;
             }
-            if (!filtros.TodasLasFechas &&
-                !string.IsNullOrWhiteSpace(filtros.FechaInicio) &&
-                !string.IsNullOrWhiteSpace(filtros.FechaCorte))
+
+            where.Append(" AND ISNULL(VALIDA_ESTADO,'P') = @Estado ");
+            p.Add("@Estado", filtros.Estado.Trim().Substring(0, 1));
+        }
+
+        private static void AddFechaFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (filtros.TodasLasFechas ||
+                string.IsNullOrWhiteSpace(filtros.FechaInicio) ||
+                string.IsNullOrWhiteSpace(filtros.FechaCorte))
             {
-                where += " AND REGISTRO_FECHA BETWEEN @FechaInicio AND @FechaCorte ";
-                p.Add("@FechaInicio", DateTime.ParseExact($"{filtros.FechaInicio} 00:00:00", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
-                p.Add("@FechaCorte", DateTime.ParseExact($"{filtros.FechaCorte} 23:59:59", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                return;
             }
-            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+
+            where.Append(" AND REGISTRO_FECHA BETWEEN @FechaInicio AND @FechaCorte ");
+            p.Add("@FechaInicio", DateTime.ParseExact($"{filtros.FechaInicio} 00:00:00", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+            p.Add("@FechaCorte", DateTime.ParseExact($"{filtros.FechaCorte} 23:59:59", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+        }
+
+        private static void AddBusquedaGeneralFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.filtro))
             {
-                where += @"
+                return;
+            }
+
+            where.Append(@"
                      AND (
                             Cedula           LIKE @Filtro
                          OR Nombre           LIKE @Filtro
                          OR Doc_Numero       LIKE @Filtro
                          OR Registro_Usuario LIKE @Filtro
-                        )";
-                p.Add("@Filtro", "%" + filtros.filtro.Trim() + "%");
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.Cedula))
-            {
-                where += " AND Cedula LIKE @Cedula ";
-                p.Add("@Cedula", "%" + filtros.Cedula.Trim() + "%");
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.Nombre))
-            {
-                where += " AND ISNULL(Nombre,'') LIKE @Nombre ";
-                p.Add("@Nombre", "%" + filtros.Nombre.Trim() + "%");
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.TipoDocumento) &&
-                filtros.TipoDocumento.Trim().ToUpper() != "TODOS")
-            {
-                where += " AND Doc_Tipo = @DocTipo ";
-                p.Add("@DocTipo", filtros.TipoDocumento.Trim());
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.NumeroDocumento))
-            {
-                where += " AND Doc_Numero LIKE @NumDoc ";
-                p.Add("@NumDoc", "%" + filtros.NumeroDocumento.Trim() + "%");
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.UsuarioRegistro))
-            {
-                where += " AND Registro_Usuario LIKE @UsuarioReg ";
-                p.Add("@UsuarioReg", "%" + filtros.UsuarioRegistro.Trim() + "%");
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.EntidadPagadora) &&
-                filtros.EntidadPagadora.Trim().ToUpper() != "TODOS")
-            {
-                where += " AND COD_ENTIDAD_PAGO = @EntidadPago ";
-                p.Add("@EntidadPago", filtros.EntidadPagadora.Trim());
-            }
-            if (!string.IsNullOrWhiteSpace(filtros.OrigenRecursos) &&
-                filtros.OrigenRecursos.Trim().ToUpper() != "TODOS")
-            {
-                where += " AND COD_ORIGEN_RECURSOS = @OrigenRec ";
-                p.Add("@OrigenRec", filtros.OrigenRecursos.Trim());
-            }
-            where += " AND Monto BETWEEN @MontoDesde AND @MontoHasta ";
-            p.Add("@MontoDesde", filtros.MontoDesde);
-            p.Add("@MontoHasta", filtros.MontoHasta);
-
-            return where;
+                        )");
+            p.Add("@Filtro", $"%{filtros.filtro.Trim()}%");
         }
 
-        private static string ObtenerColumnaOrden(string sortField, string defaultSortColumn)
+        private static void AddCedulaFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
         {
-            return sortField.ToUpperInvariant() switch
+            if (string.IsNullOrWhiteSpace(filtros.Cedula))
+            {
+                return;
+            }
+
+            where.Append(" AND Cedula LIKE @Cedula ");
+            p.Add("@Cedula", $"%{filtros.Cedula.Trim()}%");
+        }
+
+        private static void AddNombreFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.Nombre))
+            {
+                return;
+            }
+
+            where.Append(" AND ISNULL(Nombre,'') LIKE @Nombre ");
+            p.Add("@Nombre", $"%{filtros.Nombre.Trim()}%");
+        }
+
+        private static void AddTipoDocumentoFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.TipoDocumento) || IsTodos(filtros.TipoDocumento))
+            {
+                return;
+            }
+
+            where.Append(" AND Doc_Tipo = @DocTipo ");
+            p.Add("@DocTipo", filtros.TipoDocumento.Trim());
+        }
+
+        private static void AddNumeroDocumentoFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.NumeroDocumento))
+            {
+                return;
+            }
+
+            where.Append(" AND Doc_Numero LIKE @NumDoc ");
+            p.Add("@NumDoc", $"%{filtros.NumeroDocumento.Trim()}%");
+        }
+
+        private static void AddUsuarioRegistroFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.UsuarioRegistro))
+            {
+                return;
+            }
+
+            where.Append(" AND Registro_Usuario LIKE @UsuarioReg ");
+            p.Add("@UsuarioReg", $"%{filtros.UsuarioRegistro.Trim()}%");
+        }
+
+        private static void AddEntidadPagadoraFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.EntidadPagadora) || IsTodos(filtros.EntidadPagadora))
+            {
+                return;
+            }
+
+            where.Append(" AND COD_ENTIDAD_PAGO = @EntidadPago ");
+            p.Add("@EntidadPago", filtros.EntidadPagadora.Trim());
+        }
+
+        private static void AddOrigenRecursosFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.OrigenRecursos) || IsTodos(filtros.OrigenRecursos))
+            {
+                return;
+            }
+
+            where.Append(" AND COD_ORIGEN_RECURSOS = @OrigenRec ");
+            p.Add("@OrigenRec", filtros.OrigenRecursos.Trim());
+        }
+
+        private static void AddMontoFilter(StringBuilder where, FiltrosSaldosFavorTransito filtros, DynamicParameters p)
+        {
+            where.Append(" AND Monto BETWEEN @MontoDesde AND @MontoHasta ");
+            p.Add("@MontoDesde", filtros.MontoDesde);
+            p.Add("@MontoHasta", filtros.MontoHasta);
+        }
+
+        private static bool IsTodos(string value)
+        {
+            return string.Equals(value.Trim(), "TODOS", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ObtenerColumnaOrden(string? sortField, string defaultSortColumn)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+            {
+                return defaultSortColumn;
+            }
+
+            return sortField.Trim().ToUpperInvariant() switch
             {
                 "CEDULA" => "Cedula",
                 "NOMBRE" => "Nombre",

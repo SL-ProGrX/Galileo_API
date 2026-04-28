@@ -124,7 +124,12 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                filtros ??= new FiltrosCajasRoeAnularData();
+                filtros ??= new FiltrosCajasRoeAnularData
+                {
+                    rango_fechas = false,
+                    fecha_desde = DateTime.MinValue,
+                    fecha_hasta = DateTime.MaxValue
+                };
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
                 var totalQuery = "select COUNT(1) from CAJAS_ROE";

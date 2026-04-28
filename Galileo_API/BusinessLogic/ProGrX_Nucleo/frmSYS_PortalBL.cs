@@ -39,28 +39,27 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             NormalizeMensajePortalDto(dto);
 
             var activationError = ValidateAndNormalizeActivacion(dto);
-            if (activationError != null && activationError.Code != 0)
+            if (activationError.Code != 0)
                 return activationError;
 
-            var res = _db.Sys_MensajesPortal_Mensaje_Guardar(CodEmpresa, dto, usuario?.Trim() ?? string.Empty);
-            return res;
+            return _db.Sys_MensajesPortal_Mensaje_Guardar(CodEmpresa, dto, usuario?.Trim() ?? string.Empty);
         }
 
-        private ErrorDto? ValidateMensajePortalDto(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto? ValidateMensajePortalDto(SysMensajesPortalDetalleModel dto)
         {
             if (dto == null) return new ErrorDto { Code = 1, Description = "Payload vacío." };
             if (string.IsNullOrWhiteSpace(dto.codigo)) return new ErrorDto { Code = 1, Description = "El código es obligatorio." };
             if (string.IsNullOrWhiteSpace(dto.titulo)) return new ErrorDto { Code = 1, Description = "El título es obligatorio." };
-            if (string.IsNullOrWhiteSpace(dto.smtp_id)) return new ErrorDto { Code = 1, Description = "Debe seleccionar un SMTP." };
             if (string.IsNullOrWhiteSpace(dto.tipo_formato_cod)) return new ErrorDto { Code = 1, Description = "Debe seleccionar un tipo de formato." };
-            return new ErrorDto { Code = 0, Description = "OK" };
+
+            return null;
         }
-        
+
         private static void NormalizeMensajePortalDto(SysMensajesPortalDetalleModel dto)
         {
             dto.codigo = dto.codigo.Trim();
             dto.titulo = dto.titulo.Trim();
-            dto.smtp_id = dto.smtp_id.Trim();
+            dto.smtp_id = dto.smtp_id?.Trim() ?? string.Empty;
             dto.tipo_formato_cod = dto.tipo_formato_cod.Trim();
             dto.pie_01 = dto.pie_01?.Trim() ?? string.Empty;
             dto.pie_02 = dto.pie_02?.Trim() ?? string.Empty;
@@ -71,33 +70,26 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             dto.imagen_alto = dto.imagen_alto <= 0 ? 300 : dto.imagen_alto;
         }
 
-        private ErrorDto ValidateAndNormalizeActivacion(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto ValidateAndNormalizeActivacion(SysMensajesPortalDetalleModel dto)
         {
-            switch (char.ToUpper(dto.activacion))
+            switch (char.ToUpperInvariant(dto.activacion))
             {
                 case 'M':
                     SetActivacionManual(dto);
                     return new ErrorDto { Code = 0, Description = "OK" };
+
                 case 'F':
-                {
-                    var result = ValidateActivacionFecha(dto);
-                    return result;
-                }
+                    return ValidateActivacionFecha(dto);
+
                 case 'D':
-                {
-                    var result = ValidateActivacionDia(dto);
-                    return result;
-                }
+                    return ValidateActivacionDia(dto);
+
                 case 'C':
-                {
-                    var result = ValidateActivacionFrecuencia(dto);
-                    return result ?? new ErrorDto { Code = 0, Description = "OK" };
-                }
+                    return ValidateActivacionFrecuencia(dto);
+
                 case 'E':
-                {
-                    var result = ValidateActivacionEvento(dto);
-                    return result ?? new ErrorDto { Code = 0, Description = "OK" };
-                }
+                    return ValidateActivacionEvento(dto);
+
                 default:
                     return new ErrorDto { Code = 1, Description = "Código de activación inválido. Valores permitidos: M,F,D,C,E." };
             }
@@ -105,55 +97,66 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
 
         private static void SetActivacionManual(SysMensajesPortalDetalleModel dto)
         {
+            dto.activacion = 'M';
             dto.fecha_especifica = null;
-            dto.dia_del_mes = null;
-            dto.frecuencia_n_dias = null;
+            dto.dia_del_mes = 1;
+            dto.frecuencia_n_dias = 7;
             dto.frecuencia_inicio = null;
-            dto.evento_codigo = null;
+            dto.evento_codigo = "N/A";
         }
 
-        private ErrorDto ValidateActivacionFecha(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto ValidateActivacionFecha(SysMensajesPortalDetalleModel dto)
         {
             if (dto.fecha_especifica == null)
                 return new ErrorDto { Code = 1, Description = "Debe indicar la fecha específica." };
-            dto.dia_del_mes = null;
-            dto.frecuencia_n_dias = null;
+
+            dto.dia_del_mes = 1;
+            dto.frecuencia_n_dias = 7;
             dto.frecuencia_inicio = null;
-            dto.evento_codigo = null;
+            dto.evento_codigo = "N/A";
+
             return new ErrorDto { Code = 0, Description = "OK" };
         }
 
-        private ErrorDto ValidateActivacionDia(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto ValidateActivacionDia(SysMensajesPortalDetalleModel dto)
         {
             if (dto.dia_del_mes == null || dto.dia_del_mes < 1 || dto.dia_del_mes > 32)
                 return new ErrorDto { Code = 1, Description = "El día del mes debe estar entre 1 y 31, o 32 para 'Último día'." };
+
             dto.fecha_especifica = null;
-            dto.frecuencia_n_dias = null;
+            dto.frecuencia_n_dias = 7;
             dto.frecuencia_inicio = null;
-            dto.evento_codigo = null;
+            dto.evento_codigo = "N/A";
+
             return new ErrorDto { Code = 0, Description = "OK" };
         }
 
-        private ErrorDto? ValidateActivacionFrecuencia(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto ValidateActivacionFrecuencia(SysMensajesPortalDetalleModel dto)
         {
             if (dto.frecuencia_n_dias == null || dto.frecuencia_n_dias < 1 || dto.frecuencia_n_dias > 32)
                 return new ErrorDto { Code = 1, Description = "La frecuencia (N días) debe estar entre 1 y 32." };
+
             if (dto.frecuencia_inicio == null)
                 return new ErrorDto { Code = 1, Description = "Debe indicar la fecha de inicio de la frecuencia." };
+
             dto.fecha_especifica = null;
-            dto.dia_del_mes = null;
-            dto.evento_codigo = null;
+            dto.dia_del_mes = 1;
+            dto.evento_codigo = "N/A";
+
             return new ErrorDto { Code = 0, Description = "OK" };
         }
 
-        private ErrorDto ValidateActivacionEvento(SysMensajesPortalDetalleModel dto)
+        private static ErrorDto ValidateActivacionEvento(SysMensajesPortalDetalleModel dto)
         {
             if (string.IsNullOrWhiteSpace(dto.evento_codigo))
                 return new ErrorDto { Code = 1, Description = "Debe seleccionar un evento para la activación por evento." };
+
             dto.fecha_especifica = null;
-            dto.dia_del_mes = null;
-            dto.frecuencia_n_dias = null;
+            dto.dia_del_mes = 1;
+            dto.frecuencia_n_dias = 7;
             dto.frecuencia_inicio = null;
+            dto.evento_codigo = dto.evento_codigo.Trim();
+
             return new ErrorDto { Code = 0, Description = "OK" };
         }
 
@@ -162,8 +165,7 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             if (string.IsNullOrWhiteSpace(codigo))
                 return new ErrorDto { Code = 1, Description = "Código requerido." };
 
-            var res = _db.Sys_MensajesPortal_Mensaje_Eliminar(CodEmpresa, codigo.Trim(), usuario?.Trim() ?? string.Empty);
-            return res;
+            return _db.Sys_MensajesPortal_Mensaje_Eliminar(CodEmpresa, codigo.Trim(), usuario?.Trim() ?? string.Empty);
         }
 
         public ErrorDto<List<SysMensajesPortalSmtpDto>> Sys_MensajesPortal_Smtps_Obtener(int CodEmpresa)
@@ -196,15 +198,16 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             if (dto == null) return new ErrorDto { Code = 1, Description = "Payload vacío." };
 
             dto.logo_url = dto.logo_url?.Trim() ?? string.Empty;
+
             if (dto.logo_alto < 0 || dto.logo_ancho < 0)
                 return new ErrorDto { Code = 1, Description = "Las dimensiones del logo no pueden ser negativas." };
 
             dto.color_set_hex = dto.color_set_hex?.Trim() ?? string.Empty;
+
             if (!string.IsNullOrEmpty(dto.color_set_hex) && dto.color_set_hex.Length != 6)
                 return new ErrorDto { Code = 1, Description = "El color base debe ser un hex de 6 caracteres (sin #)." };
 
-            var res = _db.Sys_MensajesPortal_Portal_Guardar(CodEmpresa, dto, usuario?.Trim() ?? string.Empty);
-            return res;
+            return _db.Sys_MensajesPortal_Portal_Guardar(CodEmpresa, dto, usuario?.Trim() ?? string.Empty);
         }
     }
 }
