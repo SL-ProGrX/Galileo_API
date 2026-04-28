@@ -10,13 +10,13 @@
     {
         public string? cedula { get; set; }
         public string? plan { get; set; }
-        public int contrato { get; set; }
-        public decimal aporte { get; set; }
+        public required int contrato { get; set; }
+        public required decimal aporte { get; set; }
         public string? tipodoc { get; set; }
         public string? usuario { get; set; }
         public string? caja { get; set; }
-        public int apertura { get; set; }
-        public int sesionid { get; set; }
+        public required int apertura { get; set; }
+        public required int sesionid { get; set; }
         public string? tiquete { get; set; }
         public string? nombre { get; set; }
         public string? cod_divisa { get; set; }
@@ -35,9 +35,9 @@
         public string? tipo { get; set; }
         public string? operadora { get; set; }
         public string? plan { get; set; }
-        public int contrato { get; set; }
-        public decimal montoautorizado { get; set; }
-        public decimal aporte { get; set; }
+        public required int contrato { get; set; }
+        public required decimal montoautorizado { get; set; }
+        public required decimal aporte { get; set; }
         public string? usuario { get; set; }
     }
 
