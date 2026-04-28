@@ -10,13 +10,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 {
     public class FrmVivProfesionalesDB
     {
-        private readonly PortalDB _portalDb;
-
-        public FrmVivProfesionalesDB(IConfiguration config)
-        {
-            _portalDb = new PortalDB(config);
-        }
-
         /// <summary>
         /// Obtiene la lista de contactos de vivienda, filtrando por tipo profesional y estado si aplica.
         /// </summary>
@@ -150,6 +143,152 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 Code = result.Result != null ? 0 : -2,
                 Description = result.Result != null ? "Ok" : "No se encontró el contacto."
             };
+        }
+
+        /// <summary>
+        /// Obtiene la lista de contactos de vivienda asociados a una empresa específica.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa (para la conexión).</param>
+        /// <param name="vCodigo">ID de la empresa (idEmpresa en la tabla).</param>
+        /// <returns>Lista de contactos asociados a la empresa, incluyendo estado, tipo y si está suspendido.</returns>
+        public ErrorDto<List<VivContactoEmpresaDto>> VivContactos_EmpresaLista(int codEmpresa, int vCodigo)
+        {
+            var sql = @"
+                SELECT 
+                    IdContacto,
+                    Identificacion,
+                    Nombre,
+                    PagaHonorarios,
+                    CASE WHEN Estado = 'A' THEN 'Activo'
+                         WHEN Estado = 'I' THEN 'Inactivo'
+                    END AS Estado,
+                    CASE TipoProfesional
+                        WHEN 'I' THEN 'Ingeniero'
+                        WHEN 'A' THEN 'Abodado'
+                        ELSE 'Contacto'
+                    END AS Tipo,
+                    dbo.fxCrd_Viv_Profesional_Suspendido(IdContacto) AS Suspendido
+                FROM ViviendaContactos
+                WHERE idEmpresa = @IdEmpresa
+                ORDER BY Nombre";
+
+            return DbHelper.ExecuteListQuery<VivContactoEmpresaDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { IdEmpresa = vCodigo }
+            );
+        }
+
+        /// <summary>
+        /// Ejecuta el SP spCrdViv_Contacto_Add para agregar o modificar un profesional/contacto.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros del contacto a agregar/modificar.</param>
+        /// <returns>IdContacto y tipo de movimiento realizado.</returns>
+        public ErrorDto<CrdVivContactoAddResult> CrdVivContacto_Add(int codEmpresa, CrdVivContactoAddParams param)
+        {
+            var sql = "spCrdViv_Contacto_Add";
+            var parameters = new
+            {
+                param.IdContacto,
+                param.TipoId,
+                param.Identificacion,
+                param.Nombre,
+                param.Estado,
+                param.TipoProfesional,
+                param.Telefono,
+                param.TelefonoExt,
+                param.TelMovil,
+                param.Fax,
+                param.FaxExt,
+                param.Email,
+                param.Direccion,
+                param.AptoPostal,
+                param.PagaHonorarios,
+                BancoId = param.BancoId,
+                param.Emite,
+                param.Usuario
+            };
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<CrdVivContactoAddResult>(sql, parameters, commandType: System.Data.CommandType.StoredProcedure)
+            );
+
+            return new ErrorDto<CrdVivContactoAddResult>
+            {
+                Result = result.Result,
+                Code = result.Result != null ? 0 : -2,
+                Description = result.Result != null ? "Ok" : "No se pudo agregar/modificar el contacto."
+            };
+        }
+
+        /// <summary>
+        /// Elimina un contacto de vivienda por IdContacto.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="idContacto">Id del contacto a eliminar.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto<bool> VivContacto_Delete(int codEmpresa, int idContacto)
+        {
+            var sql = "DELETE FROM ViviendaContactos WHERE IdContacto = @IdContacto";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                int rows = conn.Execute(sql, new { IdContacto = idContacto });
+                return rows > 0;
+            });
+            return new ErrorDto<bool>
+            {
+                Result = result.Result,
+                Code = result.Result ? 0 : -2,
+                Description = result.Result ? "Ok" : "No se eliminó el contacto."
+            };
+        }
+
+        /// <summary>
+        /// Obtiene la lista de contactos tipo 'J' excluyendo un IdContacto específico.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="vCodigo">IdContacto a excluir.</param>
+        /// <returns>Lista de contactos tipo 'J'.</returns>
+        public ErrorDto<List<VivContactoDto>> VivContactos_JuridicosLista(int codEmpresa, int vCodigo)
+        {
+            var sql = @"SELECT Identificacion, idContacto, nombre FROM ViviendaContactos WHERE TipoContacto = 'J' AND IdContacto <> @vCodigo";
+            return DbHelper.ExecuteListQuery<VivContactoDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { vCodigo }
+            );
+        }
+
+        /// <summary>
+        /// Actualiza el campo idEmpresa de ViviendaContactos por idContacto. Permite null.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="vCodigo">IdContacto a actualizar.</param>
+        /// <param name="txtEmpresaId">Nuevo idEmpresa (puede ser null).</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto<bool> VivContacto_SetEmpresa(int codEmpresa, int vCodigo, int? txtEmpresaId)
+        {
+            var sql = "UPDATE ViviendaContactos SET idEmpresa = @idEmpresa WHERE idContacto = @idContacto";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                int rows = conn.Execute(sql, new { idEmpresa = txtEmpresaId, idContacto = vCodigo });
+                return rows > 0;
+            });
+            return new ErrorDto<bool>
+            {
+                Result = result.Result,
+                Code = result.Result ? 0 : -2,
+                Description = result.Result ? "Ok" : "No se actualizó el contacto."
+            };
+        }
+        private readonly PortalDB _portalDb;
+
+        public FrmVivProfesionalesDB(IConfiguration config)
+        {
+            _portalDb = new PortalDB(config);
         }
     }
 }
