@@ -1,6 +1,4 @@
-﻿using Galileo.Models;
-
-namespace Galileo.Models.ProGrX.Cajas
+﻿namespace Galileo.Models.ProGrX.Cajas
 {
     public class CajasServiciosConceptosLista
     {
@@ -50,18 +48,18 @@ namespace Galileo.Models.ProGrX.Cajas
 
         public string concepto { get; set; } = string.Empty;
 
-        public int linea { get; set; }
+        public required int linea { get; set; }
 
-        public decimal monto_inicial { get; set; }
-        public decimal monto_corte { get; set; }
-        public decimal monto_minimo_comision { get; set; }
-        public decimal porcentaje_comision { get; set; }
-        public decimal porcentaje_imp_ventas { get; set; }
+        public required decimal monto_inicial { get; set; }
+        public required decimal monto_corte { get; set; }
+        public required decimal monto_minimo_comision { get; set; }
+        public required decimal porcentaje_comision { get; set; }
+        public required decimal porcentaje_imp_ventas { get; set; }
 
         public string usuario { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
 
-        public bool isNew { get; set; }
+        public required bool isNew { get; set; }
     }
     public class CajasServiciosCajasVinculadasData
     {

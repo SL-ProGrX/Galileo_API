@@ -7,10 +7,10 @@
         public string nombre_usuario { get; set; } = string.Empty;
         public string contrasena { get; set; } = string.Empty;
         public DateTime? contrasena_renovacion { get; set; }
-        public bool bloqueo { get; set; }
+        public required bool bloqueo { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public required bool isNew { get; set; }
     }
 
     public class CajasUsuariosListadoUsuarioData

@@ -3,7 +3,7 @@
     public class CajasEfectivosDenominacionesData
     {
         public string cod_divisa { get; set; } = string.Empty;
-        public decimal denominacion { get; set; }
+        public required decimal denominacion { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public bool activa { get; set; } = true;
