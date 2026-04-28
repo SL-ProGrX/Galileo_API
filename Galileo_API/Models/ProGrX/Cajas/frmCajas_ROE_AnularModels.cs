@@ -35,9 +35,9 @@
     {
         public string? IDENTIFICACION_DEPO { get; set; } = string.Empty;
         public string? NOMBRE_DEPO { get; set; } = string.Empty;
-        public bool rango_fechas { get; set; }
-        public DateTime fecha_desde { get; set; }
-        public DateTime fecha_hasta { get; set; }
+        public required bool rango_fechas { get; set; }
+        public required DateTime fecha_desde { get; set; }
+        public required DateTime fecha_hasta { get; set; }
         public string? filtro { get; set; } //filtro del buscar en tablas o buscador
         public int? pagina { get; set; } = 1;//pagina de la tabla
         public int? paginacion { get; set; } = 30; //paginacion de la tabla

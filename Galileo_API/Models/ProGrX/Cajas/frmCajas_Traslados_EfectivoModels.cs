@@ -13,10 +13,10 @@
 
     public class CajasTrasladosEfectivoDto
     {
-        public int traslado_id { get; set; }
+        public required int traslado_id { get; set; }
         public required string cod_caja { get; set; }
         public required string registro_usuario { get; set; }
-        public int cod_apertura { get; set; }
+        public required int cod_apertura { get; set; }
         public DateTime? registro_fecha { get; set; }
         public required string cod_divisa { get; set; }
         public decimal? importe { get; set; }
@@ -34,7 +34,7 @@
 
     public class CajasTeResolucionRequest
     {
-        public int apertura_id { get; set; }
+        public required int apertura_id { get; set; }
         public required string cod_caja { get; set; }
         public required string caja_usuario { get; set; }
         public required string usuario { get; set; } 
