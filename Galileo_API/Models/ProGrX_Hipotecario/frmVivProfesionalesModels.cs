@@ -101,8 +101,8 @@
 
     public class CrdVivContactoAddParams
     {
-        public int IdContacto { get; set; }
-        public int TipoId { get; set; }
+        public int? IdContacto { get; set; }
+        public int? TipoId { get; set; }
         public string Identificacion { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
@@ -115,8 +115,8 @@
         public string Email { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
         public string AptoPostal { get; set; } = string.Empty;
-        public short PagaHonorarios { get; set; }
-        public int BancoId { get; set; }
+        public short? PagaHonorarios { get; set; }
+        public int? BancoId { get; set; }
         public string Emite { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
