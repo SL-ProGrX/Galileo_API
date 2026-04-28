@@ -69,7 +69,12 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                filtros ??= new FiltrosData();
+                filtros ??= new FiltrosData
+                {
+                    banco = 0,
+                    MntInicio = 0,
+                    MntCorte = 0
+                };
 
                 var fechaInicio = filtros.fecha_inicio?.Date.AddHours(0).AddMinutes(0).AddSeconds(0);
                 var fechaCorte = filtros.fecha_corte?.Date.AddHours(23).AddMinutes(59).AddSeconds(59);

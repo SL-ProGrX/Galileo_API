@@ -5,7 +5,7 @@ using Galileo_API;
 using System.Text.Json;
 using System.Globalization;
 using Galileo.DataBaseTier;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 // ✅ Asegúrate que este using apunte al namespace real donde está tu filtro
 var builder = WebApplication.CreateBuilder(args);
@@ -43,26 +43,32 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
+const string bearerScheme = "Bearer";
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Galileo API", Version = "v1", Description = "API para gestión de Galileo" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Galileo API",
+        Version = "v1",
+        Description = "API para gestión de Galileo"
+    });
 
-    var securityScheme = new OpenApiSecurityScheme
+    c.AddSecurityDefinition(bearerScheme, new OpenApiSecurityScheme
     {
         Name = "Authorization",
         Description = "Ingresa: Bearer {tu_token}",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT",
-        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-    };
-
-    c.AddSecurityDefinition("Bearer", securityScheme);
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { securityScheme, Array.Empty<string>() }
+        BearerFormat = "JWT"
     });
+
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference(bearerScheme)] = new List<string>()
+    });
+
     c.CustomSchemaIds(type => type.FullName);
 });
 
