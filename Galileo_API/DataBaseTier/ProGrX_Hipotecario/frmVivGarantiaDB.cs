@@ -81,7 +81,7 @@ WHERE P.COD_PREANALISIS = @expediente;";
                     operacion = request.operacion,
                     expediente = request.expediente.Trim()
                 }
-            );
+            )!;
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ ORDER BY Descripcion;";
             //mapeo los datos a la respuesta
             var result = new ErrorDto<List<FrmVivGarantiaGeneralItem>>
             {
-                Result = general.Result.Select(g => new FrmVivGarantiaGeneralItem
+                Result = general.Result!.Select(g => new FrmVivGarantiaGeneralItem
                 {
                     id_garantia = g.id_garantia,
                     numero_finca = g.numero_finca,
@@ -175,6 +175,16 @@ ORDER BY Descripcion;";
             int codEmpresa,
             FrmVivGarantiaDetalleRequest request)
         {
+            if (request.id_garantia <= 0)
+            {
+                return new ErrorDto<FrmVivGarantiaDetalleResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar una garantía válida.",
+                    Result = new FrmVivGarantiaDetalleResponse()
+                };
+            }
+
             const string query = @"
 SELECT
     vGarantia.IdGarantia AS id_garantia,
@@ -213,7 +223,12 @@ SELECT
   --  RTRIM(ISNULL(vGarantia.NombreAbogado, '')) 
    null AS abogado_nombre,
   --  RTRIM(ISNULL(vGarantia.TipoPolizaAvaluo, '')) 
-  null AS tipo_poliza_avaluo
+  null AS tipo_poliza_avaluo,
+
+RTRIM(ISNULL(vGarantia.Gravamenes, '')) AS gravamenes,
+RTRIM(ISNULL(vGarantia.AnotacionesGravamen, '')) AS anotaciones_gravamen,
+ISNULL(vGarantia.MontoNoGravable, 0) AS monto_no_gravable
+
 FROM ViviendaGarantia AS vGarantia
 WHERE vGarantia.IdGarantia = @id_garantia;";
 
@@ -226,7 +241,7 @@ WHERE vGarantia.IdGarantia = @id_garantia;";
                 {
                     id_garantia = request.id_garantia
                 }
-            );
+            )!;
         }
 
         /// <summary>
@@ -293,15 +308,267 @@ ORDER BY DESCRIPCION;";
         #endregion
 
         #region Derechos
+
+        // <summary>
+        /// Obtiene la lista de dueños registrados para una garantía.
+        /// Replica la consulta VB6 fxTraerListaDuenosxGarantia.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Id de garantía.</param>
+        /// <returns>Lista de dueños de la garantía.</returns>
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+            int codEmpresa,
+            FrmVivGarantiaIdGarantiaRequest request)
+        {
+            const string query = @"
+                    SELECT
+                        VDG.IdGarantia AS id_garantia,
+                        RTRIM(ISNULL(VDG.Cedula, '')) AS cedula,
+                        RTRIM(ISNULL(VDG.Nombre, '')) AS nombre,
+                        VDG.PROVINCIA AS provincia_id,
+                        VDG.CANTON AS canton_id,
+                        VDG.DISTRITO AS distrito_id,
+                        RTRIM(ISNULL(VDG.Direccion, '')) AS direccion,
+                        RTRIM(ISNULL(P.DESCRIPCION, '')) AS desc_provincia,
+                        RTRIM(ISNULL(C.DESCRIPCION, '')) AS desc_canton,
+                        RTRIM(ISNULL(D.DESCRIPCION, '')) AS desc_distrito,
+                        RTRIM(ISNULL(VDG.RegistroUsuario, '')) AS registro_usuario,
+                        VDG.RegistroFecha AS registro_fecha
+                    FROM CANTONES AS C
+                    INNER JOIN PROVINCIAS AS P
+                    INNER JOIN ViviendaDerechosGarantia AS VDG
+                        ON P.PROVINCIA = VDG.PROVINCIA
+                        ON C.CANTON = VDG.CANTON
+                        AND C.PROVINCIA = VDG.PROVINCIA
+                    LEFT JOIN DISTRITOS AS D
+                        ON VDG.PROVINCIA = D.PROVINCIA
+                        AND VDG.CANTON = D.CANTON
+                        AND VDG.DISTRITO = D.DISTRITO
+                    WHERE VDG.IdGarantia = @id_garantia
+                    ORDER BY VDG.Cedula;";
+
+            return DbHelper.ExecuteListQuery<FrmVivGarantiaDerechoDuenoItem>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    id_garantia = request.id_garantia
+                }
+            );
+        }
+
+        /// <summary>
+        /// Obtiene el nombre de un socio por cédula.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Cédula del socio.</param>
+        /// <returns>Datos básicos del socio.</returns>
+        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+            int codEmpresa,
+            FrmVivGarantiaSocioRequest request)
+        {
+            const string query = @"
+SELECT
+    RTRIM(ISNULL(Cedula, '')) AS cedula,
+    RTRIM(ISNULL(Nombre, '')) AS nombre
+FROM Socios
+WHERE Cedula = @cedula;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new FrmVivGarantiaSocioItem(),
+                new
+                {
+                    cedula = request.cedula.Trim()
+                }
+            );
+        }
+
+
+        /// <summary>
+        /// Busca socios para el formulario compartido frmBusquedas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro y paginación.</param>
+        /// <returns>Lista paginada de socios.</returns>
+        public ErrorDto<List<FrmVivGarantiaSocioItem>> FrmVivGarantiaSocios_Buscar(
+            int codEmpresa,
+            FrmVivGarantiaSociosBuscarRequest request)
+        {
+            const string query = @"
+SELECT
+    RTRIM(ISNULL(Cedula, '')) AS cedula,
+    RTRIM(ISNULL(Nombre, '')) AS nombre,
+    COUNT(1) OVER() AS total
+FROM Socios
+WHERE @filtro = ''
+   OR Cedula LIKE '%' + @filtro + '%'
+   OR Nombre LIKE '%' + @filtro + '%'
+ORDER BY Nombre
+OFFSET @first ROWS
+FETCH NEXT @rows ROWS ONLY;";
+
+            return DbHelper.ExecuteListQuery<FrmVivGarantiaSocioItem>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    filtro = request.filtro.Trim(),
+                    first = request.first,
+                    rows = request.rows <= 0 ? 30 : request.rows
+                }
+            );
+        }
         #endregion
 
         #region Historial del Tramite
+
+        /// <summary>
+        /// Obtiene la información del historial del trámite por garantía y tipo profesional.
+        /// Replica spCRDVivInfoTramite_T usado por VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="idGarantia">Id de garantía.</param>
+        /// <param name="tipo">Tipo profesional: I ingeniero, A abogado.</param>
+        /// <returns>Información del trámite.</returns>
+        public ErrorDto<FrmVivGarantiaHistorialRawItem> FrmVivGarantiaHistorial_ObtenerPorTipo(
+            int codEmpresa,
+            long idGarantia,
+            string tipo)
+        {
+            const string query = @"
+              EXEC spCRDVivInfoTramite_T @IdGarantia, @tipo;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new FrmVivGarantiaHistorialRawItem(),
+                new
+                {
+                    IdGarantia = idGarantia,
+                    tipo = tipo.Trim()
+                }
+            );
+        }
+
         #endregion
 
         #region Fincas
+
+        /// <summary>
+        /// Obtiene la lista de fincas asociadas a una operación o expediente.
+        /// Replica sbFincas_Asociadas del VB6 usando spCrd_Fincas_Asociadas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Operación o expediente.</param>
+        /// <returns>Lista de fincas asociadas.</returns>
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+            int codEmpresa,
+            FrmVivGarantiaCargaRequest request)
+        {
+            const string query = @"
+                    CREATE TABLE #FincasAsociadas (
+                        IdGarantia BIGINT NULL,
+                        NumeroOperacion BIGINT NULL,
+                        NumeroFinca VARCHAR(100) NULL,
+                        NumPlanoCatastro VARCHAR(100) NULL,
+                        Estado VARCHAR(20) NULL,
+                        ValorTerreno DECIMAL(18, 2) NULL,
+                        ValorConstruccion DECIMAL(18, 2) NULL,
+                        AreaFinca DECIMAL(18, 2) NULL,
+                        GradoHipoteca VARCHAR(50) NULL,
+                        TipoPoliza VARCHAR(50) NULL,
+                        Cedula VARCHAR(50) NULL,
+                        Nombre VARCHAR(300) NULL,
+                        Linea_Estado VARCHAR(50) NULL,
+                        Saldo DECIMAL(18, 2) NULL,
+                        Codigo VARCHAR(50) NULL,
+                        Linea_Desc VARCHAR(300) NULL,
+                        Poliza_Id BIGINT NULL,
+                        Poliza_Cuota DECIMAL(18, 2) NULL,
+                        Poliza_Estado VARCHAR(50) NULL,
+                        Poliza_Codigo VARCHAR(50) NULL,
+                        Poliza_Desc VARCHAR(300) NULL,
+                        Tipo_Aplicacion VARCHAR(50) NULL
+                    );
+
+                    INSERT INTO #FincasAsociadas
+                    EXEC spCrd_Fincas_Asociadas @operacion, @expediente;
+
+                    SELECT
+                        ISNULL(IdGarantia, 0) AS id_garantia,
+                        ISNULL(NumeroOperacion, 0) AS numero_operacion,
+                        RTRIM(ISNULL(NumeroFinca, '')) AS numero_finca,
+                        RTRIM(ISNULL(NumPlanoCatastro, '')) AS num_plano_catastro,
+                        RTRIM(ISNULL(Estado, '')) AS estado,
+                        ISNULL(ValorTerreno, 0) AS valor_terreno,
+                        ISNULL(ValorConstruccion, 0) AS valor_construccion,
+                        ISNULL(AreaFinca, 0) AS area_finca,
+                        RTRIM(ISNULL(GradoHipoteca, '')) AS grado_hipoteca,
+                        RTRIM(ISNULL(TipoPoliza, '')) AS tipo_poliza,
+                        RTRIM(ISNULL(Cedula, '')) AS cedula,
+                        RTRIM(ISNULL(Nombre, '')) AS nombre,
+                        RTRIM(ISNULL(Linea_Estado, '')) AS linea_estado,
+                        ISNULL(Saldo, 0) AS saldo,
+                        RTRIM(ISNULL(Codigo, '')) AS codigo,
+                        RTRIM(ISNULL(Linea_Desc, '')) AS linea_desc,
+                        ISNULL(Poliza_Id, 0) AS poliza_id,
+                        ISNULL(Poliza_Cuota, 0) AS poliza_cuota,
+                        RTRIM(ISNULL(Poliza_Estado, '')) AS poliza_estado,
+                        RTRIM(ISNULL(Poliza_Codigo, '')) AS poliza_codigo,
+                        RTRIM(ISNULL(Poliza_Desc, '')) AS poliza_desc,
+                        RTRIM(ISNULL(Tipo_Aplicacion, '')) AS tipo_aplicacion
+                    FROM #FincasAsociadas;
+
+                    DROP TABLE #FincasAsociadas;";
+
+            return DbHelper.ExecuteListQuery<FrmVivGarantiaFincaAsociadaItem>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    operacion = request.operacion,
+                    expediente = request.expediente.Trim()
+                }
+            );
+        }
+
         #endregion
 
         #region Notas
+
+        /// <summary>
+        /// Obtiene las notas del trámite por garantía y tipo profesional.
+        /// Replica sbHipoteca_Tramite_Notas de VB6 usando spCrdViv_Garantia_TramiteNotas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Id de garantía y tipo profesional: A abogado, I ingeniero.</param>
+        /// <returns>Lista de notas del trámite.</returns>
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteRawItem>> FrmVivGarantiaNotas_Listar(
+            int codEmpresa,
+            FrmVivGarantiaNotasRequest request)
+        {
+            const string query = @"
+EXEC spCrdViv_Garantia_TramiteNotas @GarantiaId, @TipoProfesional;";
+
+            return DbHelper.ExecuteListQuery<FrmVivGarantiaNotaTramiteRawItem>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    GarantiaId = request.id_garantia,
+                    TipoProfesionaltipo = request.tipo.Trim()
+                }
+            );
+        }
+
         #endregion
 
     }
