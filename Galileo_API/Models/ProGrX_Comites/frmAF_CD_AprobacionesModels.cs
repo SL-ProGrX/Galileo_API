@@ -14,7 +14,7 @@
 
     public class AfcdAprobacionRequest
     {
-        public int codEmpresa { get; set; }
+        public required int codEmpresa { get; set; }
         public List<string> operaciones { get; set; } = new();
         public string usuario { get; set; } = string.Empty;
         public string oficina { get; set; } = string.Empty;
@@ -22,7 +22,7 @@
 
     public class AfcdRechazoRequest
     {
-        public int codEmpresa { get; set; }
+        public required int codEmpresa { get; set; }
         public List<string> operaciones { get; set; } = new();
     }
 

@@ -32,7 +32,7 @@ namespace Galileo_API.Models.ProGrX.Cobros
 
     public class CoControlReportesCuboRequestDto
     {
-        public bool todasFechas { get; set; }
+        public required bool todasFechas { get; set; }
         public string? fechaInicio { get; set; }
         public string? fechaCorte { get; set; }
         public string usuarioEjecuta { get; set; } = string.Empty;
