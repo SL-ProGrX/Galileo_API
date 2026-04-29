@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
@@ -102,28 +103,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                string where = ConstruirWhereConceptos(filtros, out string filtroTexto);
-                var (pagina, paginacion) = ConstruirPaginacion(filtros, 10);
+                var parametros = CrearParametrosConceptos(cod_recaudador, filtros, 10, out string where);
 
-                int total = cn.QueryFirstOrDefault<int>(
-                    @"SELECT COUNT(*)
-                      FROM dbo.CAJAS_SERVICIOS C" + where,
-                    CrearParametrosConceptos(cod_recaudador, filtroTexto));
-
-                resp.Result.total = total;
-
-                resp.Result.lista = cn.Query<CajasServiciosConceptosData>(
-                    @"
-                SELECT
-                      RTRIM(C.cod_servicio)     AS cod_servicio,
-                      RTRIM(C.descripcion)      AS descripcion,
-                      ISNULL(C.activo, 1)       AS activo,
-                      RTRIM(C.cod_recaudador)   AS cod_recaudador
-                FROM dbo.CAJAS_SERVICIOS C
-                " + where + @"
-                ORDER BY C.cod_servicio
-                " + pagina + " " + paginacion,
-                    CrearParametrosConceptos(cod_recaudador, filtroTexto)).ToList();
+                resp.Result.total = cn.QueryFirstOrDefault<int>(BuildConceptosTotalQuery(where), parametros);
+                resp.Result.lista = cn.Query<CajasServiciosConceptosData>(BuildConceptosDataQuery(where, filtros), parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -153,28 +136,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             try
             {
                 var cod = TextoSeguro(cod_servicio);
-
-                string where = " WHERE C.cod_recaudador = @cod_recaudador ";
-
-                if (!string.IsNullOrEmpty(cod))
-                {
-                    if (scroll == 1)
-                    {
-                        where += " AND C.cod_servicio > @cod ";
-                    }
-                    else
-                    {
-                        where += " AND C.cod_servicio < @cod ";
-                    }
-                }
-
-                string order = scroll == 1
-                    ? " ORDER BY C.cod_servicio ASC "
-                    : " ORDER BY C.cod_servicio DESC ";
-
-                var query = ServicioDetalleSelect + @"
-                " + where + @"
-                " + order + ";";
+                var query = BuildServicioScrollQuery(scroll, cod);
 
                 resp.Result = cn.QueryFirstOrDefault<CajasServiciosConceptosData>(
                     query,
@@ -515,25 +477,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                string where = ConstruirWhereCabys(filtros, out string filtroTexto);
-                var (pagina, paginacion) = ConstruirPaginacion(filtros, 30);
-                string orderBy = ConstruirOrderByCabys(filtros);
+                var parametros = CrearParametrosCabys(filtros, 30, out string where);
 
-                resp.Result.total = cn.QueryFirstOrDefault<int>(
-                    @"
-                    SELECT COUNT(*)
-                    FROM vINV_Cabys CABYS
-                " + where,
-                    CrearParametroLike(filtroTexto));
-
-                resp.Result.lista = cn.Query<DropDownListaGenericaModel>(
-                    @"
-                    SELECT
-                        RTRIM(CABYS.Cod_ByS)      AS item,
-                        RTRIM(CABYS.Descripcion) AS descripcion
-                    FROM vINV_Cabys CABYS
-                " + where + orderBy + pagina + " " + paginacion,
-                    CrearParametroLike(filtroTexto)).ToList();
+                resp.Result.total = cn.QueryFirstOrDefault<int>(BuildCabysTotalQuery(where), parametros);
+                resp.Result.lista = cn.Query<DropDownListaGenericaModel>(BuildCabysDataQuery(where, filtros), parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -917,21 +864,25 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             };
         }
 
-        private static object CrearParametrosConceptos(string? codRecaudador, string? filtroTexto)
+        private static DynamicParameters CrearParametrosConceptos(string? codRecaudador, FiltrosLazyLoadData filtros, int paginacionDefault, out string where)
         {
-            return new
-            {
-                cod_recaudador = TextoSeguro(codRecaudador),
-                like = CrearLike(filtroTexto)
-            };
+            var parametros = new DynamicParameters();
+            parametros.Add("@cod_recaudador", TextoSeguro(codRecaudador));
+
+            where = ConstruirWhereConceptos(filtros, parametros);
+            AgregarParametrosPaginacion(filtros, paginacionDefault, parametros);
+
+            return parametros;
         }
 
-        private static object CrearParametroLike(string? filtroTexto)
+        private static DynamicParameters CrearParametrosCabys(FiltrosLazyLoadData filtros, int paginacionDefault, out string where)
         {
-            return new
-            {
-                like = CrearLike(filtroTexto)
-            };
+            var parametros = new DynamicParameters();
+
+            where = ConstruirWhereCabys(filtros, parametros);
+            AgregarParametrosPaginacion(filtros, paginacionDefault, parametros);
+
+            return parametros;
         }
 
         private static object CrearParametrosComision(CajasServiciosComisionesData rango)
@@ -970,42 +921,116 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             };
         }
 
-        private static string ConstruirWhereConceptos( FiltrosLazyLoadData filtros, out string filtroTexto)
+        private static string ConstruirWhereConceptos(FiltrosLazyLoadData filtros, DynamicParameters parametros)
         {
-            string where = " WHERE C.cod_recaudador = @cod_recaudador ";
-            filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+            var where = new StringBuilder(" WHERE C.cod_recaudador = @cod_recaudador ");
+            string filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
 
             if (!string.IsNullOrWhiteSpace(filtroTexto))
             {
-                where += " AND (C.cod_servicio LIKE @like OR C.Descripcion LIKE @like) ";
+                where.Append(" AND (C.cod_servicio LIKE @like OR C.Descripcion LIKE @like) ");
+                parametros.Add("@like", CrearLike(filtroTexto));
             }
 
-            return where;
+            return where.ToString();
         }
 
-        private static string ConstruirWhereCabys(FiltrosLazyLoadData filtros, out string filtroTexto)
+        private static string ConstruirWhereCabys(FiltrosLazyLoadData filtros, DynamicParameters parametros)
         {
-            string where = " WHERE 1 = 1 ";
-            filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+            var where = new StringBuilder(" WHERE 1 = 1 ");
+            string filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
 
             if (!string.IsNullOrWhiteSpace(filtroTexto))
             {
-                where += " AND ( CABYS.Cod_ByS LIKE @like OR CABYS.Descripcion LIKE @like ) ";
+                where.Append(" AND (CABYS.Cod_ByS LIKE @like OR CABYS.Descripcion LIKE @like) ");
+                parametros.Add("@like", CrearLike(filtroTexto));
             }
 
-            return where;
+            return where.ToString();
         }
 
-        private static (string pagina, string paginacion) ConstruirPaginacion(FiltrosLazyLoadData filtros, int paginacionDefault)
+        private static string ConstruirPaginacion(FiltrosLazyLoadData filtros)
+        {
+            return filtros?.pagina == null
+                ? string.Empty
+                : " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY ";
+        }
+
+        private static void AgregarParametrosPaginacion(FiltrosLazyLoadData filtros, int paginacionDefault, DynamicParameters parametros)
         {
             if (filtros?.pagina == null)
             {
-                return (string.Empty, string.Empty);
+                return;
             }
 
-            string pagina = " OFFSET " + filtros.pagina + " ROWS ";
-            string paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : paginacionDefault) + " ROWS ONLY ";
-            return (pagina, paginacion);
+            var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
+            var pageSize = filtros.paginacion != 0 ? filtros.paginacion : paginacionDefault;
+
+            parametros.Add("@Offset", offset);
+            parametros.Add("@PageSize", pageSize);
+        }
+
+        private static string BuildConceptosTotalQuery(string where)
+        {
+            return $@"
+                SELECT COUNT(*)
+                FROM dbo.CAJAS_SERVICIOS C
+                {where};";
+        }
+
+        private static string BuildConceptosDataQuery(string where, FiltrosLazyLoadData filtros)
+        {
+            return $@"
+                SELECT
+                      RTRIM(C.cod_servicio)     AS cod_servicio,
+                      RTRIM(C.descripcion)      AS descripcion,
+                      ISNULL(C.activo, 1)       AS activo,
+                      RTRIM(C.cod_recaudador)   AS cod_recaudador
+                FROM dbo.CAJAS_SERVICIOS C
+                {where}
+                ORDER BY C.cod_servicio
+                {ConstruirPaginacion(filtros)};";
+        }
+
+        private static string BuildServicioScrollQuery(int scroll, string cod)
+        {
+            var where = new StringBuilder(" WHERE C.cod_recaudador = @cod_recaudador ");
+
+            if (!string.IsNullOrEmpty(cod))
+            {
+                where.Append(scroll == 1
+                    ? " AND C.cod_servicio > @cod "
+                    : " AND C.cod_servicio < @cod ");
+            }
+
+            var order = scroll == 1
+                ? " ORDER BY C.cod_servicio ASC "
+                : " ORDER BY C.cod_servicio DESC ";
+
+            return $@"
+                {ServicioDetalleSelect}
+                {where}
+                {order};";
+        }
+
+        private static string BuildCabysTotalQuery(string where)
+        {
+            return $@"
+                    SELECT COUNT(*)
+                    FROM vINV_Cabys CABYS
+                    {where};";
+        }
+
+        private static string BuildCabysDataQuery(string where, FiltrosLazyLoadData filtros)
+        {
+            return $@"
+                    SELECT
+                        RTRIM(CABYS.Cod_ByS)      AS item,
+                        RTRIM(CABYS.Descripcion) AS descripcion
+                    FROM vINV_Cabys CABYS
+                    {where}
+                    {ConstruirOrderByCabys(filtros)}
+                    {ConstruirPaginacion(filtros)};";
         }
 
         private static string ConstruirOrderByCabys(FiltrosLazyLoadData filtros)
