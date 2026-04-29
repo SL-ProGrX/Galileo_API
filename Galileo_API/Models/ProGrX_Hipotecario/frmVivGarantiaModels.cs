@@ -38,6 +38,7 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public List<DropDownListaGenericaModel> tipos_poliza { get; set; } = [];
         public List<DropDownListaGenericaModel> provincias { get; set; } = [];
         public List<DropDownListaGenericaModel> zonas { get; set; } = [];
+        public bool habilita_avaluo_posterior { get; set; }
     }
 
     public class FrmVivGarantiaOperacionGarantiaItem
@@ -263,7 +264,7 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
 
     public class FrmVivGarantiaNotaTramiteItem
     {
-        public long id_nota { get; set; }
+        public long id_nota { get; set; } = 0;
         public string tipo { get; set; } = string.Empty;
         public string identificacion { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -271,5 +272,103 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string nota { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
+    }
+
+    public class FrmVivGarantiaGuardarRequest
+    {
+        public long id_garantia { get; set; } = 0;
+        public long numero_operacion { get; set; } = 0;
+        public string expediente { get; set; } = string.Empty;
+
+        public int? id_zona { get; set; }
+        public int ubicacion_provincia { get; set; } = 0;
+        public int ubicacion_canton { get; set; } = 0;
+        public int? ubicacion_distrito { get; set; }
+
+        public string numero_finca { get; set; } = string.Empty;
+        public string tipo_derecho { get; set; } = string.Empty;
+        public string num_plano_catastro { get; set; } = string.Empty;
+        public string grado_hipoteca { get; set; } = string.Empty;
+        public decimal area_finca { get; set; } = 0;
+
+        public string direccion { get; set; } = string.Empty;
+        public string anotaciones_finca { get; set; } = string.Empty;
+        public string gravamenes { get; set; } = string.Empty;
+        public string anotaciones_gravamen { get; set; } = string.Empty;
+
+        public bool cobertura_primer_grado { get; set; } = false;
+        public bool registrar_calculo_avaluo { get; set; } = false;
+        public bool registrar_calculo_honorarios { get; set; } = false;
+        public bool registrar_detalle_manual { get; set; } = false;
+
+        public string tipo_poliza { get; set; } = string.Empty;
+        public string registro_usuario { get; set; } = string.Empty;
+
+        public bool guardar_avaluo_posterior { get; set; } = false;
+        public FrmVivGarantiaAvaluoPosteriorRequest? avaluo_posterior { get; set; }
+    }
+
+    public class FrmVivGarantiaGuardarResponse
+    {
+        public long id_garantia { get; set; }
+    }
+
+    public class FrmVivGarantiaDerechoGuardarRequest
+    {
+        public int actualiza { get; set; } = 0;
+        public string cedula { get; set; } = string.Empty;
+        public long id_garantia { get; set; } = 0;
+        public int provincia { get; set; } = 0;
+        public int canton { get; set; } = 0;
+        public int? distrito { get; set; }
+        public string nombre { get; set; } = string.Empty;
+        public string direccion { get; set; } = string.Empty;
+        public string registro_usuario { get; set; } = string.Empty;
+
+        public long numero_operacion { get; set; } = 0;
+    }
+
+    public class FrmVivGarantiaDerechoBorrarRequest
+    {
+        public long id_garantia { get; set; } = 0;
+        public long numero_operacion { get; set; } = 0;
+
+        public string cedula { get; set; } = string.Empty;
+    }
+
+    public class FrmVivGarantiaAvaluoPosteriorRequest
+    {
+        public long id_garantia { get; set; } = 0;
+        public long id_ingeniero { get; set; } = 0;
+        public long id_abogado { get; set; } = 0;
+        public DateTime? fecha_inspeccion { get; set; }
+        public decimal valor_terreno { get; set; } = 0;
+        public decimal valor_construccion { get; set; } = 0;
+        public string observaciones_avaluo { get; set; } = string.Empty;
+        public string registro_usuario { get; set; } = string.Empty;
+        public decimal viaticos { get; set; } = 0;
+        public string tipo_poliza { get; set; } = string.Empty;
+    }
+
+    public class FrmVivGarantiaProfesionalesBuscarRequest
+    {
+        public string filtro { get; set; } = string.Empty;
+        public string tipo_profesional { get; set; } = string.Empty;
+        public int first { get; set; } = 0;
+        public int rows { get; set; } = 30;
+    }
+
+    public class FrmVivGarantiaProfesionalItem
+    {
+        public long id_contacto { get; set; } = 0;
+        public string identificacion { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public int total { get; set; } = 0;
+    }
+
+    public class FrmVivGarantiaProfesionalesBuscarResponse
+    {
+        public List<FrmVivGarantiaProfesionalItem> value { get; set; } = [];
+        public int total { get; set; } = 0;
     }
 }
