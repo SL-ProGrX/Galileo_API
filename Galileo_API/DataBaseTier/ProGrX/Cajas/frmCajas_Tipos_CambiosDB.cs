@@ -1,9 +1,9 @@
 ﻿using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
 using Galileo.Models.Security;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier.ProGrX.Cajas
@@ -19,15 +19,16 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
             _Security_MainDB = new MSecurityMainDb(config);
         }
+
         /// <summary>
         /// Lista de tipos de cambios de una contabilidad.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="cod_divisa"></param>"
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="cod_divisa"></param>
+        /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<CajasTiposCambiosData>> Cajas_TiposCambios_Obtener(int CodEmpresa,int codContabilidad,string cod_divisa,FiltrosLazyLoadData filtros)
+        public ErrorDto<List<CajasTiposCambiosData>> Cajas_TiposCambios_Obtener(int CodEmpresa, int codContabilidad, string cod_divisa, FiltrosLazyLoadData filtros)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -40,50 +41,55 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                if (filtros == null)
-                    filtros = new FiltrosLazyLoadData();
+                filtros ??= new FiltrosLazyLoadData();
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@cod_divisa", cod_divisa);
                 parameters.Add("@cod_contabilidad", codContabilidad);
 
-                var where = @"
-                    WHERE COD_CONTABILIDAD = @cod_contabilidad
-                      AND cod_divisa       = @cod_divisa";
+                var where = BuildTiposCambiosWhere(filtros, parameters);
+                var query = BuildTiposCambiosQuery(filtros, where);
 
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    where += @"
+                result.Result = cn.Query<CajasTiposCambiosData>(query, parameters).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new List<CajasTiposCambiosData>();
+            }
+
+            return result;
+        }
+
+        private static string BuildTiposCambiosWhere(FiltrosLazyLoadData filtros, DynamicParameters parameters)
+        {
+            var where = new StringBuilder(@"
+                    WHERE COD_CONTABILIDAD = @cod_contabilidad
+                      AND cod_divisa       = @cod_divisa");
+
+            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+            {
+                where.Append(@"
                       AND (
                              CAST(ID_Cambio AS varchar(50)) LIKE @filtro
                           OR CAST(TC_Compra AS varchar(50)) LIKE @filtro
                           OR CAST(TC_Venta  AS varchar(50)) LIKE @filtro
                           OR CAST(Variacion AS varchar(50)) LIKE @filtro
-                          )";
+                          )");
 
-                    parameters.Add("@filtro", "%" + filtros.filtro + "%");
-                }
-                string requestedSort = (filtros.sortField ?? string.Empty).Trim().ToUpperInvariant();
-                string sortField;
+                parameters.Add("@filtro", $"%{filtros.filtro.Trim()}%");
+            }
 
-                if (requestedSort == "ID_CAMBIO")
-                    sortField = "ID_Cambio";
-                else if (requestedSort == "TC_COMPRA")
-                    sortField = "TC_Compra";
-                else if (requestedSort == "TC_VENTA")
-                    sortField = "TC_Venta";
-                else if (requestedSort == "INICIO")
-                    sortField = "Inicio";
-                else if (requestedSort == "CORTE")
-                    sortField = "Corte";
-                else if (requestedSort == "VARIACION")
-                    sortField = "Variacion";
-                else
-                    sortField = "ID_Cambio";
+            return where.ToString();
+        }
 
-                string sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
+        private static string BuildTiposCambiosQuery(FiltrosLazyLoadData filtros, string where)
+        {
+            var sortField = ObtenerColumnaOrdenTiposCambios(filtros.sortField);
+            var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
-                string query = @"
+            return $@"
                 SELECT
                       ID_Cambio         AS id_cambio,
                       COD_CONTABILIDAD  AS cod_contabilidad,
@@ -96,27 +102,29 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                       RTRIM(Usuario)    AS usuario,
                       Fecha             AS fecha
                 FROM CAJAS_DIVISAS_TIPO_CAMBIO
-                " + where + @"
-                ORDER BY " + sortField + " " + sortDirection + ";";
-
-                var enumerable = cn.Query<CajasTiposCambiosData>(query, parameters);
-                var lista = new List<CajasTiposCambiosData>();
-                foreach (var item in enumerable)
-                {
-                    lista.Add(item);
-                }
-
-                result.Result = lista;
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = new List<CajasTiposCambiosData>();
-            }
-
-            return result;
+                {where}
+                ORDER BY {sortField} {sortDirection};";
         }
+
+        private static string ObtenerColumnaOrdenTiposCambios(string? sortField)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+            {
+                return "ID_Cambio";
+            }
+
+            return sortField.Trim().ToUpperInvariant() switch
+            {
+                "ID_CAMBIO" => "ID_Cambio",
+                "TC_COMPRA" => "TC_Compra",
+                "TC_VENTA" => "TC_Venta",
+                "INICIO" => "Inicio",
+                "CORTE" => "Corte",
+                "VARIACION" => "Variacion",
+                _ => "ID_Cambio"
+            };
+        }
+
         /// <summary>
         /// Inserta o actualiza un tipo de cambio.
         /// </summary>
@@ -124,7 +132,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="usuario"></param>
         /// <param name="cambio"></param>
         /// <returns></returns>
-        public ErrorDto Cajas_TiposCambios_Guardar(int CodEmpresa,string usuario,CajasTiposCambiosData cambio)
+        public ErrorDto Cajas_TiposCambios_Guardar(int CodEmpresa, string usuario, CajasTiposCambiosData cambio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -202,6 +210,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Inserta un nuevo tipo de cambio.
         /// </summary>
@@ -209,7 +218,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="usuario"></param>
         /// <param name="cambio"></param>
         /// <returns>.</returns>
-        private ErrorDto Cajas_TiposCambios_Insertar(int CodEmpresa,string usuario,CajasTiposCambiosData cambio)
+        private ErrorDto Cajas_TiposCambios_Insertar(int CodEmpresa, string usuario, CajasTiposCambiosData cambio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -274,6 +283,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Actualiza un tipo de cambio existente.
         /// </summary>
@@ -281,7 +291,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="usuario"></param>
         /// <param name="cambio"></param>
         /// <returns></returns>
-        private ErrorDto Cajas_TiposCambios_Actualizar(int CodEmpresa,string usuario,CajasTiposCambiosData cambio)
+        private ErrorDto Cajas_TiposCambios_Actualizar(int CodEmpresa, string usuario, CajasTiposCambiosData cambio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -333,6 +343,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Elimina una denominación de efectivo por divisa y monto.
         /// </summary>
@@ -342,7 +353,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <param name="id_cambio"></param>
         /// <param name="cod_divisa"></param>
         /// <returns></returns>
-        public ErrorDto Cajas_TiposCambios_Eliminar(int CodEmpresa,string usuario,int codContabilidad,string cod_divisa,int id_cambio)
+        public ErrorDto Cajas_TiposCambios_Eliminar(int CodEmpresa, string usuario, int codContabilidad, string cod_divisa, int id_cambio)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -391,13 +402,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
+
         /// <summary>
         /// Devuelve una lista con las divisas.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_TiposCambios_Divisas_Obtener(int CodEmpresa,int codContabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_TiposCambios_Divisas_Obtener(int CodEmpresa, int codContabilidad)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -419,17 +431,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                   AND divisa_local      = 0
                 ORDER BY cod_divisa;";
 
-                var enumerable = cn.Query<DropDownListaGenericaModel>(
+                result.Result = cn.Query<DropDownListaGenericaModel>(
                     q,
-                    new { contabilidad = codContabilidad });
-
-                var lista = new List<DropDownListaGenericaModel>();
-                foreach (var item in enumerable)
-                {
-                    lista.Add(item);
-                }
-
-                result.Result = lista;
+                    new { contabilidad = codContabilidad }).ToList();
             }
             catch (Exception ex)
             {

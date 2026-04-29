@@ -278,7 +278,11 @@ where d.cod_institucion = @cod_institucion
         {
             try
             {
-                req ??= new CcPlanillaCtaCorreccionListaRequest();
+                req ??= new CcPlanillaCtaCorreccionListaRequest
+                {
+                    cod_institucion = 0,
+                    proceso = 0
+                };
                 req.filtros ??= new FiltrosLazyLoadData();
                 req.proceso = ResolveProceso(CodEmpresa, req.proceso);
 

@@ -131,7 +131,7 @@
 
     public class AfCdRemesaDesembolsoParams
     {
-        public int Remesa { get; set; }
+        public required int Remesa { get; set; }
         public string Token { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
