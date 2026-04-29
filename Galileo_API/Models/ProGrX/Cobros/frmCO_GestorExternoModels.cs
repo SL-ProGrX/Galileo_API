@@ -24,7 +24,7 @@
         public class CrdGestorExternoFiltroRequest
         {
             public string Estado { get; set; } = "A";
-            public bool IgnorarFechas { get; set; }
+            public required bool IgnorarFechas { get; set; }
             public DateTime? FechaInicio { get; set; }
             public DateTime? FechaCorte { get; set; }
             public string Filtro { get; set; } = string.Empty;
@@ -36,7 +36,7 @@
 
         public class CrdGestorExternoRegistrarRequest
         {
-            public long Operacion { get; set; }
+            public required long Operacion { get; set; }
             public string GestionUsuario { get; set; } = string.Empty;
             public string Cedula { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
@@ -47,7 +47,7 @@
 
         public class CrdGestorExternoReversaRequest
         {
-            public int CasoId { get; set; }
+            public required int CasoId { get; set; }
             public string Notas { get; set; } = string.Empty;
             public string UsuarioEjecuta { get; set; } = string.Empty;
         }

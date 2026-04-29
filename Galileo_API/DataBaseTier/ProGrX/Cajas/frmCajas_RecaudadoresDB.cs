@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
@@ -40,38 +41,72 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                string where = " WHERE 1 = 1 ";
-                string pagina = string.Empty;
-                string paginacion = string.Empty;
+                filtros ??= new FiltrosLazyLoadData();
+                var parametros = CrearParametrosListaRecaudadores(filtros, out string where);
 
-                string filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+                resp.Result.total = cn.QueryFirstOrDefault<int>(BuildRecaudadoresTotalQuery(where), parametros);
+                resp.Result.lista = cn.Query<CajasRecaudadorData>(BuildRecaudadoresDataQuery(where, filtros), parametros).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result.total = 0;
+                resp.Result.lista = new List<CajasRecaudadorData>();
+            }
 
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where += " AND (R.cod_recaudador LIKE @like OR R.descripcion LIKE @like) ";
-                }
+            return resp;
+        }
 
-                if (filtros?.pagina != null)
-                {
-                    pagina = " OFFSET " + filtros.pagina + " ROWS ";
-                    paginacion = " FETCH NEXT " + (filtros.paginacion != 0 ? filtros.paginacion : 10) + " ROWS ONLY ";
-                }
+        private static DynamicParameters CrearParametrosListaRecaudadores(FiltrosLazyLoadData filtros, out string where)
+        {
+            var parametros = new DynamicParameters();
+            var filtroTexto = (filtros.filtro ?? string.Empty).Trim();
+            var whereBuilder = new StringBuilder(" WHERE 1 = 1 ");
 
-                var qTotal = @"
-                SELECT COUNT(*) 
+            if (!string.IsNullOrWhiteSpace(filtroTexto))
+            {
+                whereBuilder.Append(" AND (R.cod_recaudador LIKE @like OR R.descripcion LIKE @like) ");
+                parametros.Add("@like", $"%{filtroTexto}%");
+            }
+
+            AgregarPaginacionRecaudadores(filtros, parametros);
+            where = whereBuilder.ToString();
+            return parametros;
+        }
+
+        private static void AgregarPaginacionRecaudadores(FiltrosLazyLoadData filtros, DynamicParameters parametros)
+        {
+            if (filtros.pagina <= 0)
+            {
+                return;
+            }
+
+            var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
+            var pageSize = filtros.paginacion != 0 ? filtros.paginacion : 10;
+
+            parametros.Add("@Offset", offset);
+            parametros.Add("@PageSize", pageSize);
+        }
+
+        private static string BuildPaginacionRecaudadores(FiltrosLazyLoadData filtros)
+        {
+            return filtros.pagina <= 0
+                ? string.Empty
+                : " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY ";
+        }
+
+        private static string BuildRecaudadoresTotalQuery(string where)
+        {
+            return $@"
+                SELECT COUNT(*)
                 FROM dbo.CAJAS_RECAUDADOR R
-            " + where;
+                {where};";
+        }
 
-                int total = cn.QueryFirstOrDefault<int>(
-                    qTotal,
-                    new
-                    {
-                        like = "%" + filtroTexto + "%"
-                    });
-
-                resp.Result.total = total;
-
-                var qDatos = @"
+        private static string BuildRecaudadoresDataQuery(string where, FiltrosLazyLoadData filtros)
+        {
+            return $@"
                 SELECT
                     RTRIM(R.cod_recaudador)   AS cod_recaudador,
                     RTRIM(R.descripcion)      AS descripcion,
@@ -83,26 +118,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     R.registro_usuario,
                     R.registro_fecha
                 FROM dbo.CAJAS_RECAUDADOR R
-            " + where + @"
+                {where}
                 ORDER BY R.cod_recaudador
-            " + pagina + " " + paginacion;
-
-                resp.Result.lista = cn.Query<CajasRecaudadorData>(
-                    qDatos,
-                    new
-                    {
-                        like = "%" + filtroTexto + "%"
-                    }).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = new List<CajasRecaudadorData>();
-            }
-
-            return resp;
+                {BuildPaginacionRecaudadores(filtros)};";
         }
 
         /// <summary>

@@ -18,7 +18,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
 
         private const string AccionCarga = "C";
-        private const int LongitudMaximaBloqueSql = 40000;
         // Módulo para bitácora
         private const int ModuloBitacora = 4;
 
@@ -92,14 +91,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="connection"></param>
         /// <param name="operaciones"></param>
         /// <param name="usuario"></param>
-        private static void EjecutarCargaMasivaProcesos(IDbConnection connection, IEnumerable<string> operaciones, string usuario,string modulo)
+        private static void EjecutarCargaMasivaProcesos(IDbConnection connection, IEnumerable<string> operaciones, string usuario, string modulo)
         {
             var numeroLinea = 0;
-            var i = 0;
-            var bloqueSql = new StringBuilder();
-            var parameters = new DynamicParameters();
             var usuarioSeguro = (usuario ?? string.Empty).Trim();
-
 
             foreach (var operacion in operaciones)
             {
@@ -109,60 +104,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 }
 
                 numeroLinea++;
-                var operacionSegura = (operacion ?? string.Empty).Trim();
-                var clean = numeroLinea == 1 ? 1 : 0;
-
-
-                var sqlActual = $@"
-               exec spSys_Carga_Masiva
-                   @Tipo{i},
-                   @ProcesoId{i},
-                   @Usuario{i},
-                   @Llave01{i},
-                   @Llave02{i},
-                   @Clean{i};";
-
-                parameters.Add($"Tipo{i}", AccionCarga);
-                parameters.Add($"ProcesoId{i}", modulo);
-                parameters.Add($"Usuario{i}", usuarioSeguro);
-                parameters.Add($"Llave01{i}", operacionSegura);
-                parameters.Add($"Llave02{i}", string.Empty);
-                parameters.Add($"Clean{i}", clean);
-                i++;
-
-                if (numeroLinea == 1)
-                {
-                    connection.Execute(sqlActual, parameters);
-                    continue;
-                }
-
-                bloqueSql.Append(sqlActual);
-
-                if (bloqueSql.Length > LongitudMaximaBloqueSql)
-                {
-                    EjecutarBloqueSql(connection, bloqueSql, parameters);
-                }
+                EjecutarCargaMasivaOperacion(
+                    connection,
+                    modulo,
+                    usuarioSeguro,
+                    operacion,
+                    numeroLinea == 1);
             }
-
-            EjecutarBloqueSql(connection, bloqueSql, parameters);
         }
 
-        /// <summary>
-        /// Ejecuta el bloque acumulado y lo limpia.
-        /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="bloqueSql"></param>
-        /// <param name="parameters"></param>
-        private static void EjecutarBloqueSql(IDbConnection connection, StringBuilder bloqueSql, DynamicParameters parameters)
+        private static void EjecutarCargaMasivaOperacion(
+            IDbConnection connection,
+            string modulo,
+            string usuario,
+            string operacion,
+            bool limpiarCargaAnterior)
         {
-            if (bloqueSql.Length == 0)
-            {
-                return;
-            }
-
-            connection.Execute(bloqueSql.ToString(), parameters);
-            bloqueSql.Clear();
+            connection.Execute(
+                "spSys_Carga_Masiva",
+                new
+                {
+                    Tipo = AccionCarga,
+                    ProcesoId = modulo,
+                    Usuario = usuario,
+                    Llave01 = operacion.Trim(),
+                    Llave02 = string.Empty,
+                    Clean = limpiarCargaAnterior ? 1 : 0
+                },
+                commandType: CommandType.StoredProcedure);
         }
+
 
         /// <summary>
         /// Indica si la lista contiene elementos para procesar.
