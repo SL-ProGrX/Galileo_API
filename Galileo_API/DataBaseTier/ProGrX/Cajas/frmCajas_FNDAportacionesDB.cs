@@ -394,20 +394,10 @@ namespace Galileo.DataBaseTier
             {
                 if (sysDocVersion == 1)
                 {
-                    string strCampo = vTipo.ToUpper() switch
-                    {
-                        "RE" => "CS_RECIBO",
-                        "DP" => "CS_DEPOSITO",
-                        "ND" => "CS_NOTA_DEBITO",
-                        "NC" => "CS_NOTA_CREDITO",
-                        _ => throw new InvalidOperationException($"Tipo de documento {vTipo} no válido")
-                    };
+                    var consecutivoSql = ObtenerSqlConsecutivo(vTipo);
 
-                    var sqlSelect = $"SELECT {strCampo} AS Consecutivo FROM ase_consecutivos";
-                    long consecutivo = connection.QueryFirstOrDefault<long>(sqlSelect);
-
-                    var sqlUpdate = $"UPDATE ase_consecutivos SET {strCampo} = {strCampo} + 1";
-                    connection.Execute(sqlUpdate);
+                    long consecutivo = connection.QueryFirstOrDefault<long>(consecutivoSql.SelectSql);
+                    connection.Execute(consecutivoSql.UpdateSql);
 
                     return consecutivo;
                 }
@@ -421,6 +411,26 @@ namespace Galileo.DataBaseTier
             {
                 throw new InvalidOperationException($"Error al obtener consecutivo para tipo {vTipo}: {ex.Message}", ex);
             }
+        }
+
+        private static (string SelectSql, string UpdateSql) ObtenerSqlConsecutivo(string vTipo)
+        {
+            return vTipo.ToUpperInvariant() switch
+            {
+                "RE" => (
+                    "SELECT CS_RECIBO AS Consecutivo FROM ase_consecutivos",
+                    "UPDATE ase_consecutivos SET CS_RECIBO = CS_RECIBO + 1"),
+                "DP" => (
+                    "SELECT CS_DEPOSITO AS Consecutivo FROM ase_consecutivos",
+                    "UPDATE ase_consecutivos SET CS_DEPOSITO = CS_DEPOSITO + 1"),
+                "ND" => (
+                    "SELECT CS_NOTA_DEBITO AS Consecutivo FROM ase_consecutivos",
+                    "UPDATE ase_consecutivos SET CS_NOTA_DEBITO = CS_NOTA_DEBITO + 1"),
+                "NC" => (
+                    "SELECT CS_NOTA_CREDITO AS Consecutivo FROM ase_consecutivos",
+                    "UPDATE ase_consecutivos SET CS_NOTA_CREDITO = CS_NOTA_CREDITO + 1"),
+                _ => throw new InvalidOperationException($"Tipo de documento {vTipo} no válido")
+            };
         }
 
 

@@ -1079,23 +1079,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                string columna = tipo switch
-                {
-                    "per_traspaso_deudas" => "PER_TRASPASO_DEUDAS",
-                    "per_cobro_judicial" => "PER_COBRO_JUDICIAL",
-                    "per_reversiones" => "PER_REVERSIONES",
-                    "per_readecuaciones" => "PER_READECUACIONES",
-                    _ => throw new ArgumentException("Tipo no válido", nameof(tipo))
-                };
-
-                string sql = $@"
-            SELECT COUNT(1)
-            FROM afi_congelar
-            WHERE estado = 'A'
-              AND cedula = @cedula
-              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
-              AND {columna} = 0";
-
+                var sql = ObtenerSqlValidarCongelamiento(tipo);
                 var count = cn.ExecuteScalar<int>(sql, new { cedula });
 
                 response.Result = count > 0;
@@ -1107,6 +1091,42 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
 
             return response;
+        }
+
+        private static string ObtenerSqlValidarCongelamiento(string tipo)
+        {
+            return tipo switch
+            {
+                "per_traspaso_deudas" => @"
+            SELECT COUNT(1)
+            FROM afi_congelar
+            WHERE estado = 'A'
+              AND cedula = @cedula
+              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
+              AND PER_TRASPASO_DEUDAS = 0",
+                "per_cobro_judicial" => @"
+            SELECT COUNT(1)
+            FROM afi_congelar
+            WHERE estado = 'A'
+              AND cedula = @cedula
+              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
+              AND PER_COBRO_JUDICIAL = 0",
+                "per_reversiones" => @"
+            SELECT COUNT(1)
+            FROM afi_congelar
+            WHERE estado = 'A'
+              AND cedula = @cedula
+              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
+              AND PER_REVERSIONES = 0",
+                "per_readecuaciones" => @"
+            SELECT COUNT(1)
+            FROM afi_congelar
+            WHERE estado = 'A'
+              AND cedula = @cedula
+              AND dbo.MyGetdate() BETWEEN fecha_inicia AND fecha_finaliza
+              AND PER_READECUACIONES = 0",
+                _ => throw new ArgumentException("Tipo no válido", nameof(tipo))
+            };
         }
 
         /// <summary>
