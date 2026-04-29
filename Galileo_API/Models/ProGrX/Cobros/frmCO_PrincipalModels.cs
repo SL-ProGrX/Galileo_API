@@ -119,13 +119,13 @@
 
     public class COTrasladoDeudaRevertirRequestDto
     {
-        public int operacion { get; set; }
+        public required int operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
 
-        public decimal nuevomonto { get; set; }
-        public int plazo { get; set; }
-        public decimal tasa { get; set; }
-        public decimal tasapts { get; set; }
+        public required decimal nuevomonto { get; set; }
+        public required int plazo { get; set; }
+        public required decimal tasa { get; set; }
+        public required decimal tasapts { get; set; }
 
         public List<int> operacionesseleccionadas { get; set; } = new();
     }
@@ -190,8 +190,8 @@
 
     public class COCambiarDeductoraRequestDto
     {
-        public int operacion { get; set; }
-        public int deductora { get; set; }
+        public required int operacion { get; set; }
+        public required int deductora { get; set; }
     }
 
     public class COValidarCongelamientoRequestDto
@@ -202,15 +202,15 @@
 
     public class CobroJudicialRequestDto
     {
-        public int operacion { get; set; }
+        public required int operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
-  
-        public class COAvisoDto
-        {
-            public DateTime fecha { get; set; }
-            public string tipo { get; set; } = string.Empty;
-        }
-    
+
+    public class COAvisoDto
+    {
+        public DateTime fecha { get; set; }
+        public string tipo { get; set; } = string.Empty;
+    }
+
 }

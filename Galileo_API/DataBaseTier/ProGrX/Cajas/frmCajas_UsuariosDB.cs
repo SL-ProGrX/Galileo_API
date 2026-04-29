@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
@@ -31,34 +32,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 var parameters = new DynamicParameters();
                 parameters.Add("@soloAsignados", soloAsignados ? 1 : 0);
 
-                var where = " WHERE u.Estado = 'A' ";
+                var where = BuildUsuariosListaWhere(filtros, soloAsignados, parameters);
+                var query = BuildUsuariosListaQuery(filtros, where);
 
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    where += @" AND (RTRIM(u.Nombre) LIKE @filtro OR RTRIM(u.Descripcion) LIKE @filtro)";
-                    parameters.Add("@filtro", "%" + filtros.filtro + "%");
-                }
-
-                if (soloAsignados)
-                {
-                    where += @" AND EXISTS (SELECT 1 FROM CAJAS_USUARIOS cu WHERE cu.USUARIO = u.Nombre)";
-                }
-
-                var sortField = "USUARIO";
-                var sortDirection = filtros.sortOrder == 0 ? "ASC" : "DESC";
-
-                var q = $@"
-                SELECT 
-                      RTRIM(u.Nombre) AS usuario
-                    , RTRIM(u.Descripcion) AS nombre_usuario
-                    , CASE 
-                        WHEN EXISTS (SELECT 1 FROM CAJAS_USUARIOS cu WHERE cu.USUARIO = u.Nombre)
-                        THEN 1 ELSE 0 END AS tiene_cajas
-                FROM Usuarios u
-                {where}
-                ORDER BY {sortField} {sortDirection};";
-
-                result.Result = cn.Query<CajasUsuariosListadoUsuarioData>(q, parameters).ToList();
+                result.Result = cn.Query<CajasUsuariosListadoUsuarioData>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -68,6 +45,40 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
 
             return result;
+        }
+
+        private static string BuildUsuariosListaWhere(FiltrosLazyLoadData filtros, bool soloAsignados, DynamicParameters parameters)
+        {
+            var where = new StringBuilder(" WHERE u.Estado = 'A' ");
+
+            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+            {
+                where.Append(" AND (RTRIM(u.Nombre) LIKE @filtro OR RTRIM(u.Descripcion) LIKE @filtro) ");
+                parameters.Add("@filtro", $"%{filtros.filtro.Trim()}%");
+            }
+
+            if (soloAsignados)
+            {
+                where.Append(" AND EXISTS (SELECT 1 FROM CAJAS_USUARIOS cu WHERE cu.USUARIO = u.Nombre) ");
+            }
+
+            return where.ToString();
+        }
+
+        private static string BuildUsuariosListaQuery(FiltrosLazyLoadData filtros, string where)
+        {
+            var sortDirection = filtros.sortOrder == 0 ? "ASC" : "DESC";
+
+            return $@"
+                SELECT
+                      RTRIM(u.Nombre) AS usuario
+                    , RTRIM(u.Descripcion) AS nombre_usuario
+                    , CASE
+                        WHEN EXISTS (SELECT 1 FROM CAJAS_USUARIOS cu WHERE cu.USUARIO = u.Nombre)
+                        THEN 1 ELSE 0 END AS tiene_cajas
+                FROM Usuarios u
+                {where}
+                ORDER BY u.Nombre {sortDirection};";
         }
 
         public ErrorDto Cajas_Usuarios_Guardar(int CodEmpresa, string usuario, CajasUsuariosData usuarioCaja)

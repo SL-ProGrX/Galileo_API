@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text;
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -22,10 +23,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         /// <summary>
         /// Obtiene la lista de parámetros de cajas visibles.
+        /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
-        /// </summary>
-        public ErrorDto<List<CajasParametrosData>> Cajas_Parametros_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
+        public ErrorDto<List<CajasParametrosData>> Cajas_Parametros_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<List<CajasParametrosData>>
             {
@@ -41,37 +42,47 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 cn.Execute("spCajas_Parametros", commandType: CommandType.StoredProcedure);
 
                 var parameters = new DynamicParameters();
-                var where = " WHERE visible = 'S' ";
+                var where = BuildParametrosWhere(filtros, parameters);
+                var query = BuildParametrosQuery(filtros, where);
 
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    where += @"
+                result.Result = cn.Query<CajasParametrosData>(query, parameters).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+
+            return result;
+        }
+
+        private static string BuildParametrosWhere(FiltrosLazyLoadData filtros, DynamicParameters parameters)
+        {
+            var where = new StringBuilder(" WHERE visible = 'S' ");
+
+            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+            {
+                where.Append(@"
                 AND (
                        RTRIM(cod_parametro) LIKE @filtro
                     OR RTRIM(descripcion)   LIKE @filtro
                     OR RTRIM(valor)         LIKE @filtro
-                )";
+                )");
 
-                    parameters.Add("@filtro", $"%{filtros.filtro}%");
-                }
+                parameters.Add("@filtro", $"%{filtros.filtro.Trim()}%");
+            }
 
-                var allowedSortFields = new[]
-                {
-                    "cod_parametro",
-                    "descripcion",
-                    "valor"
-                };
+            return where.ToString();
+        }
 
-                var sortField = allowedSortFields
-                    .FirstOrDefault(f =>
-                        f.Equals(filtros.sortField ?? string.Empty,
-                                 StringComparison.OrdinalIgnoreCase))
-                    ?? "cod_parametro";
+        private static string BuildParametrosQuery(FiltrosLazyLoadData filtros, string where)
+        {
+            var sortField = ObtenerColumnaOrdenParametros(filtros.sortField);
+            var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
-                var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
-
-                var q = $@"
-            SELECT 
+            return $@"
+            SELECT
                   RTRIM(cod_parametro) AS cod_parametro
                 , RTRIM(descripcion)   AS descripcion
                 , RTRIM(valor)         AS valor
@@ -84,26 +95,29 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             FROM CAJAS_PARAMETROS
             {where}
             ORDER BY {sortField} {sortDirection};";
-
-                result.Result = cn.Query<CajasParametrosData>(q, parameters).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
         }
 
+        private static string ObtenerColumnaOrdenParametros(string? sortField)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+            {
+                return "cod_parametro";
+            }
+
+            return sortField.Trim().ToUpperInvariant() switch
+            {
+                "COD_PARAMETRO" => "cod_parametro",
+                "DESCRIPCION" => "descripcion",
+                "VALOR" => "valor",
+                _ => "cod_parametro"
+            };
+        }
 
         /// <summary>
         /// Actualiza el valor de un parámetro de cajas.
+        /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametro"></param>
-        /// </summary>
-
         public ErrorDto Cajas_Parametros_Guardar(int CodEmpresa, CajasParametrosData parametro)
         {
             using var cn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
@@ -115,7 +129,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-
                 if (string.IsNullOrWhiteSpace(parametro.cod_parametro))
                 {
                     resp.Code = -2;
@@ -143,6 +156,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     resp.Description = $"El parámetro {parametro.cod_parametro} no existe.";
                     return resp;
                 }
+
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -160,7 +174,5 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             return resp;
         }
-
-
     }
 }

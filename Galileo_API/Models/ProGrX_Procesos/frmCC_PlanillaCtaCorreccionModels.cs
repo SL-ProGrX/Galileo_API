@@ -5,8 +5,8 @@ namespace Galileo_API.Models.ProGrX_Procesos
     public class CcPlanillaCtaCorreccionListaRequest
     {
         public int tipo_consulta { get; set; } = 1;
-        public int cod_institucion { get; set; }
-        public decimal proceso { get; set; }
+        public required int cod_institucion { get; set; }
+        public required decimal proceso { get; set; }
         public string? operacion { get; set; }
         public string? linea { get; set; }
         public string? cedula { get; set; }
@@ -41,15 +41,15 @@ namespace Galileo_API.Models.ProGrX_Procesos
 
     public class CcPlanillaCtaCorreccionActualizarCuotaRequest
     {
-        public int cod_institucion { get; set; }
-        public int proceso { get; set; }
-        public long operacion { get; set; }
+        public required int cod_institucion { get; set; }
+        public required int proceso { get; set; }
+        public required long operacion { get; set; }
         public string linea { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
-        public decimal cuota { get; set; }
-        public decimal cuota_anterior { get; set; }
+        public required decimal cuota { get; set; }
+        public required decimal cuota_anterior { get; set; }
         public string referencia { get; set; } = string.Empty;
-        public short mora_ind { get; set; }
+        public required short mora_ind { get; set; }
         public string cod_deduccion { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
