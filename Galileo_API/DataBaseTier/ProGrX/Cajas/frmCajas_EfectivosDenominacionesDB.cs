@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
@@ -35,40 +36,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 var parameters = new DynamicParameters();
                 parameters.Add("@cod_divisa", cod_divisa);
 
-                var where = " WHERE cod_divisa = @cod_divisa ";
-
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    where += @"
-                AND (
-                       CAST(Denominacion AS varchar(50)) LIKE @filtro
-                    OR descripcion LIKE @filtro
-                    OR Tipo LIKE @filtro
-                )";
-
-                    parameters.Add("@filtro", $"%{filtros.filtro}%");
-                }
-
-                var allowedSortFields = new[] { "Denominacion", "descripcion", "Tipo" };
-
-                var sortField = allowedSortFields
-                    .FirstOrDefault(f => f.Equals(filtros.sortField, StringComparison.OrdinalIgnoreCase))
-                    ?? "Denominacion";
-
-                var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
-
-                var query = $@"
-            SELECT 
-                  cod_divisa
-                , Denominacion  AS denominacion
-                , Tipo          AS tipo
-                , descripcion
-                , Activa        AS activa
-                , Registro_Usuario AS registro_usuario
-                , Registro_Fecha   AS registro_fecha
-            FROM CAJAS_EFECTIVO_DENOMINACIONES
-            {where}
-            ORDER BY {sortField} {sortDirection};";
+                var where = BuildWhereDenominaciones(filtros, parameters);
+                var query = BuildDenominacionesQuery(filtros, where);
 
                 result.Result = connection
                     .Query<CajasEfectivosDenominacionesData>(query, parameters)
@@ -82,6 +51,60 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
             }
 
             return result;
+        }
+
+        private static string BuildWhereDenominaciones(FiltrosLazyLoadData filtros, DynamicParameters parameters)
+        {
+            var where = new StringBuilder(" WHERE cod_divisa = @cod_divisa ");
+
+            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+            {
+                where.Append(@"
+                AND (
+                       CAST(Denominacion AS varchar(50)) LIKE @filtro
+                    OR descripcion LIKE @filtro
+                    OR Tipo LIKE @filtro
+                )");
+
+                parameters.Add("@filtro", $"%{filtros.filtro.Trim()}%");
+            }
+
+            return where.ToString();
+        }
+
+        private static string BuildDenominacionesQuery(FiltrosLazyLoadData filtros, string where)
+        {
+            var sortField = ObtenerColumnaOrdenDenominaciones(filtros.sortField);
+            var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
+
+            return $@"
+            SELECT
+                  cod_divisa
+                , Denominacion  AS denominacion
+                , Tipo          AS tipo
+                , descripcion
+                , Activa        AS activa
+                , Registro_Usuario AS registro_usuario
+                , Registro_Fecha   AS registro_fecha
+            FROM CAJAS_EFECTIVO_DENOMINACIONES
+            {where}
+            ORDER BY {sortField} {sortDirection};";
+        }
+
+        private static string ObtenerColumnaOrdenDenominaciones(string? sortField)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+            {
+                return "Denominacion";
+            }
+
+            return sortField.Trim().ToUpperInvariant() switch
+            {
+                "DENOMINACION" => "Denominacion",
+                "DESCRIPCION" => "descripcion",
+                "TIPO" => "Tipo",
+                _ => "Denominacion"
+            };
         }
         /// <summary>
         /// Inserta o actualiza una denominación de efectivo.
