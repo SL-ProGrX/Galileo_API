@@ -129,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                data ??= new CoControlReportesCuboRequestDto();
+                data ??= new CoControlReportesCuboRequestDto { todasFechas = true };
 
                 var usuarioEjecuta = (data.usuarioEjecuta ?? string.Empty).Trim().ToUpperInvariant();
                 var fechas = ResolverFechas(data.todasFechas, data.fechaInicio, data.fechaCorte, true);
