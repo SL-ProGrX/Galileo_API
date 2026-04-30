@@ -672,28 +672,86 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto Cambio_Aplicar(int codEmpresa, ArfOperacionCambioRequestDto request)
         {
-            const string sql = @"exec spARF_Operacion_Cambios
-                @Operacion, @Usuario, @TasaDescuento, @TasaInteres, @Monto, @Plazo, @Notas, @Periodo";
+            try
+            {
+                const string sql = @"exec spARF_Operacion_Cambios
+            @Operacion, @Usuario, @TasaDescuento, @TasaInteres, @Monto, @Plazo, @Notas, @Periodo";
 
-            return EjecutarProcesoOperacion(
-                codEmpresa,
-                sql,
-                new
+                var resp = DbHelper.ExecuteSingleQuery<dynamic>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    null,
+                    new
+                    {
+                        Operacion = request.operacion,
+                        Usuario = (request.usuario ?? string.Empty).Trim(),
+                        TasaDescuento = request.tasa_descuento,
+                        TasaInteres = request.tasa_interes,
+                        Monto = request.monto,
+                        Plazo = request.plazo,
+                        Notas = (request.notas ?? string.Empty).Trim(),
+                        Periodo = request.periodo
+                    });
+
+                var cambio = 0;
+
+                if (resp?.Result is not null)
                 {
-                    Operacion = request.operacion,
-                    Usuario = (request.usuario ?? string.Empty).Trim(),
-                    TasaDescuento = request.tasa_descuento,
-                    TasaInteres = request.tasa_interes,
-                    Monto = request.monto,
-                    Plazo = request.plazo,
-                    Notas = (request.notas ?? string.Empty).Trim(),
-                    Periodo = request.periodo
-                },
-                request.usuario,
-                $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}",
-                "Cambios aplicados satisfactoriamente.");
+                    try
+                    {
+                        cambio = Convert.ToInt32(resp.Result.Cambio);
+                    }
+                    catch
+                    {
+                        cambio = 0;
+                    }
+                }
+
+                if (cambio != 1)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = "No se detectó ningún cambio de condiciones al Plan Actual"
+                    };
+                }
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario!,
+                    "Aplica",
+                    $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}");
+
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = "Cambios aplicados satisfactoriamente."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = ex.Message
+                };
+            }
         }
 
+
+        /// <summary>
+        /// Finiquito aplicar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        /// <summary>
+        /// Finiquito aplicar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         /// <summary>
         /// Finiquito aplicar
         /// </summary>
@@ -702,22 +760,68 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto Finiquito_Aplicar(int codEmpresa, ArfOperacionFiniquitoRequestDto request)
         {
-            const string sql = @"exec spARF_Operacion_Finiquito @Operacion, @Usuario, @Notas, @Periodo";
+            try
+            {
+                const string sql = @"exec spARF_Operacion_Finiquito @Operacion, @Usuario, @Notas, @Periodo";
 
-            return EjecutarProcesoOperacion(
-                codEmpresa,
-                sql,
-                new
+                var resp = DbHelper.ExecuteSingleQuery<dynamic>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    null,
+                    new
+                    {
+                        Operacion = request.operacion,
+                        Usuario = (request.usuario ?? string.Empty).Trim(),
+                        Notas = (request.notas ?? string.Empty).Trim(),
+                        Periodo = request.periodo
+                    });
+
+                var cambio = 0;
+
+                if (resp?.Result is not null)
                 {
-                    Operacion = request.operacion,
-                    Usuario = (request.usuario ?? string.Empty).Trim(),
-                    Notas = (request.notas ?? string.Empty).Trim(),
-                    Periodo = request.periodo
-                },
-                request.usuario,
-                $"Finiquito de la Operación de Arrendamiento No.: {request.operacion}",
-                "Finiquito aplicado satisfactoriamente.");
+                    try
+                    {
+                        cambio = Convert.ToInt32(resp.Result.Cambio);
+                    }
+                    catch
+                    {
+                        cambio = 0;
+                    }
+                }
+
+                if (cambio != 1)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = "No se detectó una operación válida para el finiquito"
+                    };
+                }
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Aplica",
+                    $"Finiquito de la Operación de Arrendamiento No.: {request.operacion}");
+
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = "Finiquito aplicado satisfactoriamente."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = ex.Message
+                };
+            }
         }
+
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalleMovimiento)
         {
