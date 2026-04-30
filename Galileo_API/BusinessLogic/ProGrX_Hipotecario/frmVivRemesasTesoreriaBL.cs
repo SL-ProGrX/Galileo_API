@@ -17,5 +17,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         public ErrorDto<List<RemesasTesoreriaObtenerDto>> RemesasTesoreria_Obtener(int codEmpresa)
             => _db.RemesasTesoreria_Obtener(codEmpresa);
+
+        public ErrorDto<int> RemesasTesoreria_Insertar(int codEmpresa, RemesaTesoreriaUpsertDto dto)
+            => _db.RemesasTesoreria_Insertar(codEmpresa, dto);
+
+        public ErrorDto<bool> RemesasTesoreria_Actualizar(int codEmpresa, RemesaTesoreriaUpsertDto dto)
+            => _db.RemesasTesoreria_Actualizar(codEmpresa, dto);
+
+        public ErrorDto<bool> RemesasTesoreriaDetalle_Eliminar(int codEmpresa, int remesa)
+            => _db.RemesasTesoreriaDetalle_Eliminar(codEmpresa, remesa);
+
     }
 }
