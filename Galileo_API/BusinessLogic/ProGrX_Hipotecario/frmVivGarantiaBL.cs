@@ -126,7 +126,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var resp = _db.FrmVivGarantiaGuardar(codEmpresa, request);
             if (resp.Code < 0)
             {
-                return CrearErrorGuardar(resp.Description);
+                return CrearErrorGuardar(resp.Description!);
             }
 
             validacion = GuardarAvaluoPosteriorSiAplica(codEmpresa, request, resp.Result?.id_garantia ?? 0);
@@ -752,7 +752,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, numeroOperacion);
             if (estadoOperacion.Code < 0)
             {
-                return CrearErrorGuardar(estadoOperacion.Description);
+                return CrearErrorGuardar(estadoOperacion.Description!);
             }
 
             if ((estadoOperacion.Result ?? string.Empty).Trim() == "F")
@@ -779,7 +779,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
             if (validaDetalle.Code < 0)
             {
-                return CrearErrorGuardar(validaDetalle.Description);
+                return CrearErrorGuardar(validaDetalle.Description!);
             }
 
             return validaDetalle.Result
@@ -808,7 +808,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
             if (cantidadGarantias.Code < 0)
             {
-                return CrearErrorGuardar(cantidadGarantias.Description);
+                return CrearErrorGuardar(cantidadGarantias.Description!);
             }
 
             if (request.id_garantia > 0 || cantidadGarantias.Result > 0)
@@ -826,7 +826,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var existeIngeniero = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_ingeniero, "I");
             if (existeIngeniero.Code < 0)
             {
-                return CrearErrorGuardar(existeIngeniero.Description);
+                return CrearErrorGuardar(existeIngeniero.Description!);
             }
 
             if (!existeIngeniero.Result)
@@ -837,7 +837,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var existeAbogado = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_abogado, "A");
             if (existeAbogado.Code < 0)
             {
-                return CrearErrorGuardar(existeAbogado.Description);
+                return CrearErrorGuardar(existeAbogado.Description!);
             }
 
             return existeAbogado.Result
@@ -862,7 +862,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 request.avaluo_posterior);
 
             return respAvaluo.Code < 0
-                ? CrearErrorGuardar(respAvaluo.Description)
+                ? CrearErrorGuardar(respAvaluo.Description!)
                 : CrearOkGuardar();
         }
 

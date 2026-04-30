@@ -270,17 +270,17 @@ WHERE IdGarantia = @id_garantia
                 parametros.Add("@GradoHipoteca", request.grado_hipoteca.Trim(), DbType.String);
                 parametros.Add("@AreaFinca", request.area_finca.ToString(), DbType.String);
                 parametros.Add("@Estado", "S", DbType.String);
-                parametros.Add("@Direccion", string.IsNullOrWhiteSpace(request.direccion) ? null : request.direccion.Trim(), DbType.String);
-                parametros.Add("@AnotacionesFinca", string.IsNullOrWhiteSpace(request.anotaciones_finca) ? null : request.anotaciones_finca.Trim(), DbType.String);
-                parametros.Add("@Gravamenes", string.IsNullOrWhiteSpace(request.gravamenes) ? null : request.gravamenes.Trim(), DbType.String);
-                parametros.Add("@AnotacionesGravamen", string.IsNullOrWhiteSpace(request.anotaciones_gravamen) ? null : request.anotaciones_gravamen.Trim(), DbType.String);
+                parametros.Add("@Direccion", TextoONulo(request.direccion), DbType.String);
+                parametros.Add("@AnotacionesFinca", TextoONulo(request.anotaciones_finca), DbType.String);
+                parametros.Add("@Gravamenes", TextoONulo(request.gravamenes), DbType.String);
+                parametros.Add("@AnotacionesGravamen", TextoONulo(request.anotaciones_gravamen), DbType.String);
                 parametros.Add("@ObservacionAvaluo", null, DbType.String);
                 parametros.Add("@RegistroUsuario", request.registro_usuario.Trim(), DbType.String);
                 parametros.Add("@RegistroFecha", null, DbType.String);
-                parametros.Add("@CoberturaPrimerGrado", request.cobertura_primer_grado ? 1 : 0, DbType.Int16);
-                parametros.Add("@RegistraCalAvaluo", request.registrar_calculo_avaluo ? 1 : 0, DbType.Int16);
-                parametros.Add("@RegistraCalHonorarios", request.registrar_calculo_honorarios ? 1 : 0, DbType.Int16);
-                parametros.Add("@RegistraCalHonorariosDT", request.registrar_detalle_manual ? 1 : 0, DbType.Int16);
+                parametros.Add("@CoberturaPrimerGrado", BoolSmallInt(request.cobertura_primer_grado), DbType.Int16);
+                parametros.Add("@RegistraCalAvaluo", BoolSmallInt(request.registrar_calculo_avaluo), DbType.Int16);
+                parametros.Add("@RegistraCalHonorarios", BoolSmallInt(request.registrar_calculo_honorarios), DbType.Int16);
+                parametros.Add("@RegistraCalHonorariosDT", BoolSmallInt(request.registrar_detalle_manual), DbType.Int16);
                 parametros.Add("@Tipo_Poliza", request.tipo_poliza.Trim(), DbType.String);
                 parametros.Add("@CodPreanalisis", request.expediente.Trim(), DbType.String);
 
@@ -608,7 +608,7 @@ WHERE Cedula = @cedula;";
                 {
                     cedula = request.cedula.Trim()
                 }
-            );
+            )!;
         }
 
 
@@ -831,7 +831,7 @@ WHERE IdGarantia = @id_garantia
                     IdGarantia = idGarantia,
                     tipo = tipo.Trim()
                 }
-            );
+            )!;
         }
 
         #endregion
@@ -949,5 +949,25 @@ WHERE IdGarantia = @id_garantia
 
         #endregion
 
+        /// <summary>
+        /// Convierte valores booleanos a smallint para mantener compatibilidad con el SP legado.
+        /// </summary>
+        private static short BoolSmallInt(bool valor)
+        {
+            return Convert.ToInt16(valor);
+        }
+
+        /// <summary>
+        /// Normaliza textos vacíos como null para enviar a base de datos.
+        /// </summary>
+        private static string? TextoONulo(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            return valor.Trim();
+        }
     }
 }
