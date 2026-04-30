@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX_Hipotecario
 {
-    public class VivControlAsignacionGarantiaPendienteData
+    public abstract class VivControlGarantiaBaseData
     {
         public int idGarantia { get; set; } = 0;
         public int numeroOperacion { get; set; } = 0;
@@ -14,9 +14,20 @@
         public string descGradoHipoteca { get; set; } = string.Empty;
         public decimal areaFinca { get; set; } = 0;
         public string descZona { get; set; } = string.Empty;
+        public int idZona { get; set; } = 0;
+    }
+
+    public abstract class VivControlProfesionalActionRequestBase
+    {
+        public int idGarantia { get; set; } = 0;
+        public int idContacto { get; set; } = 0;
+        public string tipoProfesional { get; set; } = string.Empty;
+    }
+
+    public class VivControlAsignacionGarantiaPendienteData : VivControlGarantiaBaseData
+    {
         public string registroUsuario { get; set; } = string.Empty;
         public DateTime? registroFecha { get; set; }
-        public int idZona { get; set; } = 0;
     }
 
     public class VivControlAsignacionProfesionalData
@@ -36,41 +47,22 @@
         public string condicion { get; set; } = "N";
     }
 
-    public class VivControlAsignacionGarantiaAsignarRequest
+    public class VivControlAsignacionGarantiaAsignarRequest : VivControlProfesionalActionRequestBase
     {
-        public int idGarantia { get; set; } = 0;
-        public int idContacto { get; set; } = 0;
-        public string tipoProfesional { get; set; } = string.Empty;
         public DateTime? fecha_asignacion { get; set; }
     }
 
-    public class VivControlEntregaGarantiaData
+    public class VivControlEntregaGarantiaData : VivControlGarantiaBaseData
     {
-        public int idGarantia { get; set; } = 0;
-        public int numeroOperacion { get; set; } = 0;
-        public string cod_preanalisis { get; set; } = string.Empty;
-        public decimal montoapr { get; set; } = 0;
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string numeroFinca { get; set; } = string.Empty;
-        public string numPlanoCatastro { get; set; } = string.Empty;
-        public string tipoDerecho { get; set; } = string.Empty;
-        public string descGradoHipoteca { get; set; } = string.Empty;
-        public decimal areaFinca { get; set; } = 0;
-        public string descZona { get; set; } = string.Empty;
         public string asignacionUsuario { get; set; } = string.Empty;
         public DateTime? asignacionFecha { get; set; }
-        public int idZona { get; set; } = 0;
         public string condicion { get; set; } = "N";
         public int diasTransProfesional { get; set; } = 0;
         public DateTime? entregaFecha { get; set; }
     }
 
-    public class VivControlEntregaGarantiaRequest
+    public class VivControlEntregaGarantiaRequest : VivControlProfesionalActionRequestBase
     {
-        public int idGarantia { get; set; } = 0;
-        public int idContacto { get; set; } = 0;
-        public string tipoProfesional { get; set; } = string.Empty;
         public string aplicar { get; set; } = string.Empty;
     }
 
@@ -84,78 +76,44 @@
         public string numero_finca { get; set; } = string.Empty;
     }
 
-    public class VivControlRecibeGarantiaData
+    public class VivControlRecibeGarantiaData : VivControlGarantiaBaseData
     {
-        public int idGarantia { get; set; } = 0;
-        public int numeroOperacion { get; set; } = 0;
-        public string cod_preanalisis { get; set; } = string.Empty;
-        public decimal montoapr { get; set; } = 0;
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string numeroFinca { get; set; } = string.Empty;
-        public string numPlanoCatastro { get; set; } = string.Empty;
-        public string tipoDerecho { get; set; } = string.Empty;
-        public string descGradoHipoteca { get; set; } = string.Empty;
-        public decimal areaFinca { get; set; } = 0;
-        public string descZona { get; set; } = string.Empty;
         public string entregaUsuario { get; set; } = string.Empty;
         public DateTime? entregaFecha { get; set; }
-        public int idZona { get; set; } = 0;
         public string condicion { get; set; } = "N";
         public int diasTransProfesional { get; set; } = 0;
         public DateTime? recepcionFecha { get; set; }
         public DateTime? firmasFecha { get; set; }
     }
 
-    public class VivControlRecibeGarantiaRequest
+    public class VivControlRecibeGarantiaRequest : VivControlProfesionalActionRequestBase
     {
-        public int idGarantia { get; set; } = 0;
-        public int idContacto { get; set; } = 0;
-        public string tipoProfesional { get; set; } = string.Empty;
         public string aplicar { get; set; } = string.Empty;
     }
 
-    public class VivControlRegistroGarantiaData
+    public class VivControlRegistroGarantiaData : VivControlGarantiaBaseData
     {
-        public int idGarantia { get; set; } = 0;
-        public int numeroOperacion { get; set; } = 0;
-        public string cod_preanalisis { get; set; } = string.Empty;
-        public decimal montoapr { get; set; } = 0;
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string numeroFinca { get; set; } = string.Empty;
-        public string numPlanoCatastro { get; set; } = string.Empty;
-        public string tipoDerecho { get; set; } = string.Empty;
-        public string descGradoHipoteca { get; set; } = string.Empty;
-        public decimal areaFinca { get; set; } = 0;
-        public string descZona { get; set; } = string.Empty;
         public string asignacionUsuario { get; set; } = string.Empty;
         public DateTime? asignacionFecha { get; set; }
-        public int idZona { get; set; } = 0;
         public int diasTransProfesional { get; set; } = 0;
         public int diasTransAbogado { get; set; } = 0;
         public DateTime? firmasFecha { get; set; }
     }
 
-    public class VivControlRegistroGarantiaRequest
+    public class VivControlRegistroGarantiaRequest : VivControlProfesionalActionRequestBase
     {
-        public int idGarantia { get; set; } = 0;
-        public int idContacto { get; set; } = 0;
-        public string tipoProfesional { get; set; } = string.Empty;
         public string aplicar { get; set; } = string.Empty;
     }
 
     public class VivControlTiemposSeguimientoData
     {
         public string profesional { get; set; } = string.Empty;
-
         public int gTMaxEntregaAbogado { get; set; }
         public int gTAlertaEntregaAbogado { get; set; }
         public int gTMaxFirmasAbogado { get; set; }
         public int gTAlertaFirmasAbogado { get; set; }
         public int gTMaxInscripcionAbogado { get; set; }
         public int gTAlertaInscripcionAbogado { get; set; }
-
         public int gTMaxEntregaIngeniero { get; set; }
         public int gTAlertaEntregaIngeniero { get; set; }
         public int gTMaxRecepcionIngeniero { get; set; }
@@ -176,5 +134,4 @@
     {
         public bool registraHonorarios { get; set; } = false;
     }
-
 }
