@@ -25,7 +25,7 @@
         public int idContacto { get; set; } = 0;
         public int idGarantia { get; set; } = 0;
         public string identificacion { get; set; } = string.Empty;
-        public int idEmpresa { get; set; } = 0;
+        public string idEmpresa { get; set; } = string.Empty;
         public string tipoProfesional { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string profesional { get; set; } = string.Empty;
@@ -81,7 +81,7 @@
         public string usuario { get; set; } = string.Empty;
         public string fecha_registro { get; set; } = string.Empty;
         public string numero_operacion { get; set; } = string.Empty;
-        public string numeroFinca { get; set; } = string.Empty;
+        public string numero_finca { get; set; } = string.Empty;
     }
 
     public class VivControlRecibeGarantiaData
@@ -144,4 +144,37 @@
         public string tipoProfesional { get; set; } = string.Empty;
         public string aplicar { get; set; } = string.Empty;
     }
+
+    public class VivControlTiemposSeguimientoData
+    {
+        public string profesional { get; set; } = string.Empty;
+
+        public int gTMaxEntregaAbogado { get; set; }
+        public int gTAlertaEntregaAbogado { get; set; }
+        public int gTMaxFirmasAbogado { get; set; }
+        public int gTAlertaFirmasAbogado { get; set; }
+        public int gTMaxInscripcionAbogado { get; set; }
+        public int gTAlertaInscripcionAbogado { get; set; }
+
+        public int gTMaxEntregaIngeniero { get; set; }
+        public int gTAlertaEntregaIngeniero { get; set; }
+        public int gTMaxRecepcionIngeniero { get; set; }
+        public int gTAlertaRecepcionIngeniero { get; set; }
+        public int gTMaxRegistroIngeniero { get; set; }
+        public int gTAlertaRegistroIngeniero { get; set; }
+    }
+
+    public class VivControlTiempoSeguimientoRowData
+    {
+        public string profesional { get; set; } = string.Empty;
+        public string proceso { get; set; } = string.Empty;
+        public int tiempoMaximo { get; set; } = 0;
+        public int tiempoAlerta { get; set; } = 0;
+    }
+
+    public class VivControlHonorariosRegistraData
+    {
+        public bool registraHonorarios { get; set; } = false;
+    }
+
 }

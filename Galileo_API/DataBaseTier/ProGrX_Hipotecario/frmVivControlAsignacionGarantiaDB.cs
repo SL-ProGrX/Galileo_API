@@ -175,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             WHERE VGT.AsignacionFecha IS NOT NULL
               AND VGT.EntregaFecha IS NULL
               AND VGT.Tipo = @TipoProfesional
-            ORDER BY VC.Nombre;",
+            ORDER BY VGT.IdContacto;",
 
                 "RECEPCION_PROF" => @"
             SELECT DISTINCT
@@ -187,7 +187,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             WHERE VGT.EntregaFecha IS NOT NULL
               AND VGT.RecepcionFecha IS NULL
               AND VGT.Tipo = @TipoProfesional
-            ORDER BY VC.Nombre;",
+            ORDER BY VGT.IdContacto;",
 
                 "REGISTRO_PROF" => @"
             SELECT DISTINCT
@@ -200,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
               AND VGT.RecepcionFecha IS NOT NULL
               AND VGT.RegistroFecha IS NULL
               AND VGT.Tipo = @TipoProfesional
-            ORDER BY VC.Nombre;",
+            ORDER BY VGT.IdContacto;",
 
                 "FIRMAS_PROF" => @"
             SELECT DISTINCT
@@ -213,7 +213,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
               AND VGT.EntregaUsuario IS NOT NULL
               AND VGT.FirmasFecha IS NULL
               AND VGT.Tipo = @TipoProfesional
-            ORDER BY VC.Nombre;",
+            ORDER BY VGT.IdContacto;",
 
                 "RECIBO_PROF" => @"
             SELECT DISTINCT
@@ -226,7 +226,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
               AND VGT.FirmasFecha IS NOT NULL
               AND VGT.RegistroFecha IS NULL
               AND VGT.Tipo = @TipoProfesional
-            ORDER BY VC.Nombre;",
+            ORDER BY VGT.IdContacto;",
 
                 _ => string.Empty
             };
@@ -510,6 +510,170 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 Description = request.aplicar == "S"
                     ? "Informacion registrada satisfactoriamente..."
                     : "Informacion eliminada satisfactoriamente..."
+            };
+        }
+
+        /// <summary>
+        /// Obtiene los tiempos de seguimiento por profesional.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="profesional"></param>
+        /// <returns></returns>
+        public ErrorDto<VivControlTiemposSeguimientoData> VivControlAsignacionGarantia_ObtenerTiemposSeguimiento(
+            int codEmpresa, string profesional)
+        {
+            const string query = @"
+            SELECT
+                Profesional AS profesional,
+                Proceso AS proceso,
+                TiempoMaximo AS tiempoMaximo,
+                TiempoAlerta AS tiempoAlerta
+            FROM ViviendaTiemposSeguimiento
+            WHERE Profesional = @Profesional;";
+
+            var resp = DbHelper.ExecuteListQuery<VivControlTiempoSeguimientoRowData>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    Profesional = profesional?.Trim()
+                });
+
+            if (resp.Code < 0)
+            {
+                return new ErrorDto<VivControlTiemposSeguimientoData>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = null
+                };
+            }
+
+            var result = new VivControlTiemposSeguimientoData
+            {
+                profesional = profesional?.Trim() ?? string.Empty,
+
+                gTMaxEntregaAbogado = 0,
+                gTAlertaEntregaAbogado = 0,
+                gTMaxFirmasAbogado = 0,
+                gTAlertaFirmasAbogado = 0,
+                gTMaxInscripcionAbogado = 0,
+                gTAlertaInscripcionAbogado = 0,
+
+                gTMaxEntregaIngeniero = 0,
+                gTAlertaEntregaIngeniero = 0,
+                gTMaxRecepcionIngeniero = 0,
+                gTAlertaRecepcionIngeniero = 0,
+                gTMaxRegistroIngeniero = 0,
+                gTAlertaRegistroIngeniero = 0
+            };
+
+            foreach (var item in resp.Result ?? new List<VivControlTiempoSeguimientoRowData>())
+            {
+                if (item.profesional == "A")
+                {
+                    switch ((item.proceso ?? string.Empty).Trim())
+                    {
+                        case "E":
+                            result.gTMaxEntregaAbogado = item.tiempoMaximo;
+                            result.gTAlertaEntregaAbogado = item.tiempoAlerta;
+                            break;
+
+                        case "F":
+                            result.gTMaxFirmasAbogado = item.tiempoMaximo;
+                            result.gTAlertaFirmasAbogado = item.tiempoAlerta;
+                            break;
+
+                        case "I":
+                            result.gTMaxInscripcionAbogado = item.tiempoMaximo;
+                            result.gTAlertaInscripcionAbogado = item.tiempoAlerta;
+                            break;
+                    }
+                }
+                else if (item.profesional == "I")
+                {
+                    switch ((item.proceso ?? string.Empty).Trim())
+                    {
+                        case "E":
+                            result.gTMaxEntregaIngeniero = item.tiempoMaximo;
+                            result.gTAlertaEntregaIngeniero = item.tiempoAlerta;
+                            break;
+
+                        case "R":
+                            result.gTMaxRecepcionIngeniero = item.tiempoMaximo;
+                            result.gTAlertaRecepcionIngeniero = item.tiempoAlerta;
+                            break;
+
+                        case "X":
+                            result.gTMaxRegistroIngeniero = item.tiempoMaximo;
+                            result.gTAlertaRegistroIngeniero = item.tiempoAlerta;
+                            break;
+                    }
+                }
+            }
+
+            return new ErrorDto<VivControlTiemposSeguimientoData>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = result
+            };
+        }
+
+        /// <summary>
+        /// Obtiene el registro de calculo de honorarios
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="idGarantia"></param>
+        /// <returns></returns>
+        public ErrorDto<VivControlHonorariosRegistraData> VivControlAsignacionGarantia_Asignacion_ValidaHonorariosRegistra(
+            int codEmpresa, int idGarantia)
+        {
+            const string query = @"
+            SELECT
+                RegistraCalHonorarios,
+                RegistraCalHonorariosDt
+            FROM ViviendaGarantia
+            WHERE IdGarantia = @IdGarantia;";
+
+            var row = DbHelper.ExecuteSingleQuery<dynamic>(
+                _portalDb,
+                codEmpresa,
+                query,
+                null,
+                new
+                {
+                    IdGarantia = idGarantia
+                });
+
+            if (row.Code < 0)
+            {
+                return new ErrorDto<VivControlHonorariosRegistraData>
+                {
+                    Code = row.Code,
+                    Description = row.Description,
+                    Result = null
+                };
+            }
+
+            var registra = false;
+
+            if (row.Result != null)
+            {
+                var reg1 = Convert.ToInt32(row.Result.RegistraCalHonorarios ?? 0);
+                var reg2 = Convert.ToInt32(row.Result.RegistraCalHonorariosDt ?? 0);
+                registra = reg1 == 1 && reg2 == 1;
+            }
+
+            return new ErrorDto<VivControlHonorariosRegistraData>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new VivControlHonorariosRegistraData
+                {
+                    registraHonorarios = registra
+                }
             };
         }
 

@@ -72,5 +72,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         {
             return _db.VivControlAsignacionGarantia_Registro_Aplicar(codEmpresa, usuario, request);
         }
+
+        public ErrorDto<VivControlTiemposSeguimientoData> VivControlAsignacionGarantia_ObtenerTiemposSeguimiento(int codEmpresa, string profesional)
+        {
+            return _db.VivControlAsignacionGarantia_ObtenerTiemposSeguimiento(codEmpresa, profesional);
+        }
+
+        public ErrorDto<VivControlHonorariosRegistraData> VivControlAsignacionGarantia_Asignacion_ValidaHonorariosRegistra(int codEmpresa, int idGarantia)
+        {
+            return _db.VivControlAsignacionGarantia_Asignacion_ValidaHonorariosRegistra(codEmpresa, idGarantia);
+        }
     }
 }
