@@ -1,7 +1,9 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Hipotecario;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 {
@@ -85,6 +87,35 @@ WHERE P.COD_PREANALISIS = @expediente;";
         }
 
         /// <summary>
+        /// Obtiene la cantidad de garantías registradas para una operación.
+        /// Replica fxTraerNumGarantiasOperacion de VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="operacion">Número de operación.</param>
+        /// <returns>Cantidad de garantías.</returns>
+        public ErrorDto<int> FrmVivGarantiaCantidadGarantias_Obtener(
+            int codEmpresa,
+            long operacion)
+        {
+            const string query = @"
+SELECT
+    COUNT(1) AS cantidad
+FROM ViviendaGarantia
+WHERE NumeroOperacion = @operacion;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                0,
+                new
+                {
+                    operacion
+                }
+            )!;
+        }
+
+        /// <summary>
         /// Obtiene el catálogo de provincias para la garantía.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -125,6 +156,153 @@ ORDER BY Descripcion;";
                 query
             );
         }
+
+
+        /// <summary>
+        /// Obtiene el estado de una operación para validar si permite movimientos.
+        /// Replica la validación fxEstadoOperacion usada por VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="numeroOperacion">Número de operación.</param>
+        /// <returns>Estado de la operación.</returns>
+        public ErrorDto<string> FrmVivGarantiaEstadoOperacion_Obtener(
+            int codEmpresa,
+            long numeroOperacion)
+        {
+            const string query = @"
+SELECT TOP 1
+    RTRIM(ISNULL(R.ESTADOSOL, '')) AS estado
+FROM REG_CREDITOS AS R
+WHERE R.ID_SOLICITUD = @numero_operacion;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                string.Empty,
+                new
+                {
+                    numero_operacion = numeroOperacion
+                }
+            )!;
+        }
+
+        /// <summary>
+        /// Valida si el cambio de grado hipotecario permite continuar según detalle de acreedores.
+        /// Replica fxValidaDetalleGarantia de VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="idGarantia">Id de garantía.</param>
+        /// <param name="gradoHipoteca">Nuevo grado hipotecario.</param>
+        /// <returns>True si permite guardar.</returns>
+        public ErrorDto<bool> FrmVivGarantiaDetalleGrado_Validar(
+            int codEmpresa,
+            long idGarantia,
+            string gradoHipoteca)
+        {
+            string query = string.Empty;
+
+            if (gradoHipoteca == "P")
+            {
+                query = @"
+SELECT
+    CASE WHEN COUNT(1) > 0 THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS permite
+FROM ViviendaGarantiaDetalle
+WHERE IdGarantia = @id_garantia;";
+            }
+
+            if (gradoHipoteca == "S")
+            {
+                query = @"
+SELECT
+    CASE WHEN COUNT(1) > 0 THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS permite
+FROM ViviendaGarantiaDetalle
+WHERE IdGarantia = @id_garantia
+  AND GradoHipoteca IN ('S', 'T');";
+            }
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = 0,
+                    Description = string.Empty,
+                    Result = true
+                };
+            }
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                true,
+                new
+                {
+                    id_garantia = idGarantia
+                }
+            )!;
+        }
+
+        /// <summary>
+        /// Guarda o modifica una garantía hipotecaria.
+        /// Replica ObjAgregar.fxViviendaGarantia usando spCRDVivGarantia_A.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos de la garantía.</param>
+        /// <returns>Id de garantía generado o actualizado.</returns>
+        public ErrorDto<FrmVivGarantiaGuardarResponse> FrmVivGarantiaGuardar(
+            int codEmpresa,
+            FrmVivGarantiaGuardarRequest request)
+        {
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var parametros = new DynamicParameters();
+
+                parametros.Add("@IdGarantia", request.id_garantia, DbType.Int32, ParameterDirection.InputOutput);
+                parametros.Add("@IdZona", request.id_zona, DbType.Int32);
+                parametros.Add("@UbicacionProvincia", request.ubicacion_provincia.ToString(), DbType.String);
+                parametros.Add("@UbicacionCanton", request.ubicacion_canton.ToString(), DbType.String);
+                parametros.Add("@UbicacionDistrito", request.ubicacion_distrito?.ToString(), DbType.String);
+                parametros.Add("@NumeroOperacion", request.numero_operacion.ToString(), DbType.String);
+                parametros.Add("@NumeroFinca", request.numero_finca.Trim(), DbType.String);
+                parametros.Add("@TipoDerecho", request.tipo_derecho.Trim(), DbType.String);
+                parametros.Add("@NumPlanoCatastro", request.num_plano_catastro.Trim(), DbType.String);
+                parametros.Add("@GradoHipoteca", request.grado_hipoteca.Trim(), DbType.String);
+                parametros.Add("@AreaFinca", request.area_finca.ToString(), DbType.String);
+                parametros.Add("@Estado", "S", DbType.String);
+                parametros.Add("@Direccion", TextoONulo(request.direccion), DbType.String);
+                parametros.Add("@AnotacionesFinca", TextoONulo(request.anotaciones_finca), DbType.String);
+                parametros.Add("@Gravamenes", TextoONulo(request.gravamenes), DbType.String);
+                parametros.Add("@AnotacionesGravamen", TextoONulo(request.anotaciones_gravamen), DbType.String);
+                parametros.Add("@ObservacionAvaluo", null, DbType.String);
+                parametros.Add("@RegistroUsuario", request.registro_usuario.Trim(), DbType.String);
+                parametros.Add("@RegistroFecha", null, DbType.String);
+                parametros.Add("@CoberturaPrimerGrado", BoolSmallInt(request.cobertura_primer_grado), DbType.Int16);
+                parametros.Add("@RegistraCalAvaluo", BoolSmallInt(request.registrar_calculo_avaluo), DbType.Int16);
+                parametros.Add("@RegistraCalHonorarios", BoolSmallInt(request.registrar_calculo_honorarios), DbType.Int16);
+                parametros.Add("@RegistraCalHonorariosDT", BoolSmallInt(request.registrar_detalle_manual), DbType.Int16);
+                parametros.Add("@Tipo_Poliza", request.tipo_poliza.Trim(), DbType.String);
+                parametros.Add("@CodPreanalisis", request.expediente.Trim(), DbType.String);
+
+                long idGarantia = conn.QueryFirstOrDefault<long>(
+                    "dbo.spCRDVivGarantia_A",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (idGarantia <= 0)
+                {
+                    idGarantia = parametros.Get<int>("@IdGarantia");
+                }
+
+                return new FrmVivGarantiaGuardarResponse
+                {
+                    id_garantia = idGarantia
+                };
+            });
+        }
+
+
         #endregion
 
         #region General
@@ -186,51 +364,55 @@ ORDER BY Descripcion;";
             }
 
             const string query = @"
-SELECT
-    vGarantia.IdGarantia AS id_garantia,
-    RTRIM(ISNULL(vGarantia.NumeroFinca, '')) AS numero_finca,
-    RTRIM(ISNULL(vGarantia.TipoDerecho, '')) AS tipo_derecho,
-    RTRIM(ISNULL(vGarantia.NumPlanoCatastro, '')) AS num_plano_catastro,
-    ISNULL(vGarantia.AreaFinca, 0) AS area_finca,
-    RTRIM(ISNULL(vGarantia.GradoHipoteca, '')) AS grado_hipoteca,
+                    SELECT
+                        VGarantia.IdGarantia AS id_garantia,
+                        RTRIM(ISNULL(VGarantia.NumeroFinca, '')) AS numero_finca,
+                        RTRIM(ISNULL(VGarantia.TipoDerecho, '')) AS tipo_derecho,
+                        RTRIM(ISNULL(VGarantia.NumPlanoCatastro, '')) AS num_plano_catastro,
+                        ISNULL(VGarantia.AreaFinca, 0) AS area_finca,
+                        RTRIM(ISNULL(VGarantia.GradoHipoteca, '')) AS grado_hipoteca,
 
-    vGarantia.UbicacionProvincia AS ubicacion_provincia,
-    vGarantia.UbicacionCanton AS ubicacion_canton,
-    vGarantia.UbicacionDistrito AS ubicacion_distrito,
-    vGarantia.IdZona AS id_zona,
-    RTRIM(ISNULL(vGarantia.Direccion, '')) AS direccion,
+                        VGarantia.UbicacionProvincia AS ubicacion_provincia,
+                        VGarantia.UbicacionCanton AS ubicacion_canton,
+                        VGarantia.UbicacionDistrito AS ubicacion_distrito,
+                        VGarantia.IdZona AS id_zona,
+                        RTRIM(ISNULL(VGarantia.Direccion, '')) AS direccion,
 
-    RTRIM(ISNULL(vGarantia.tipo_poliza, '')) AS tipo_poliza,
-    RTRIM(ISNULL(vGarantia.AnotacionesFinca, '')) AS anotaciones_finca,
-    RTRIM(ISNULL(vGarantia.ObservacionAvaluo, '')) AS observacion_avaluo,
+                        RTRIM(ISNULL(VGarantia.Tipo_Poliza, '')) AS tipo_poliza,
+                        RTRIM(ISNULL(VGarantia.AnotacionesFinca, '')) AS anotaciones_finca,
+                        RTRIM(ISNULL(VGarantia.Gravamenes, '')) AS gravamenes,
+                        RTRIM(ISNULL(VGarantia.AnotacionesGravamen, '')) AS anotaciones_gravamen,
+                        RTRIM(ISNULL(VGarantia.ObservacionAvaluo, '')) AS observacion_avaluo,
 
-   -- CAST(ISNULL(vGarantia.AplicaCoberturaPrimerGrado, 0) AS bit) 
-   null AS cobertura_primer_grado,
-    CAST(ISNULL(vGarantia.RegistraCalAvaluo, 0) AS bit) AS registrar_calculo_avaluo,
-    CAST(ISNULL(vGarantia.RegistraCalHonorariosDT, 0) AS bit) AS registrar_calculo_honorarios,
-  --  CAST(ISNULL(vGarantia.RegistraDetalleManual, 0) AS bit) 
-    null AS registrar_detalle_manual,
+                        CAST(ISNULL(VGarantia.CoberturaPrimerGrado, 0) AS bit) AS cobertura_primer_grado,
+                        CAST(ISNULL(VGarantia.RegistraCalAvaluo, 0) AS bit) AS registrar_calculo_avaluo,
+                        CAST(ISNULL(VGarantia.RegistraCalHonorarios, 0) AS bit) AS registrar_calculo_honorarios,
+                        CAST(ISNULL(VGarantia.RegistraCalHonorariosDT, 0) AS bit) AS registrar_detalle_manual,
 
-    vGarantia.FechaInspeccion AS fecha_inspeccion,
-    ISNULL(vGarantia.Viaticos, 0) AS viaticos,
-    ISNULL(vGarantia.ValorTerreno, 0) AS valor_terreno,
-    ISNULL(vGarantia.ValorConstruccion, 0) AS valor_construccion,
-  --  ISNULL(vGarantia.ValorTotalInmueble, 0) AS 
-    null as valor_total_inmueble,
+                        CAST(NULL AS datetime) AS fecha_inspeccion,
+                        CAST(0 AS decimal(18, 2)) AS viaticos,
+                        ISNULL(VGarantia.ValorTerreno, 0) AS valor_terreno,
+                        CAST(0 AS decimal(18, 2)) AS valor_construccion,
+                        ISNULL(VGarantia.ValorTerreno, 0) AS valor_total_inmueble,
 
-  --  RTRIM(ISNULL(vGarantia.NombreIngeniero, '')) 
-  null AS ingeniero_nombre,
-  --  RTRIM(ISNULL(vGarantia.NombreAbogado, '')) 
-   null AS abogado_nombre,
-  --  RTRIM(ISNULL(vGarantia.TipoPolizaAvaluo, '')) 
-  null AS tipo_poliza_avaluo,
+                        CAST('' AS varchar(250)) AS ingeniero_nombre,
+                        CAST('' AS varchar(250)) AS abogado_nombre,
+                        CAST('' AS varchar(1)) AS tipo_poliza_avaluo,
 
-RTRIM(ISNULL(vGarantia.Gravamenes, '')) AS gravamenes,
-RTRIM(ISNULL(vGarantia.AnotacionesGravamen, '')) AS anotaciones_gravamen,
-ISNULL(vGarantia.MontoNoGravable, 0) AS monto_no_gravable
-
-FROM ViviendaGarantia AS vGarantia
-WHERE vGarantia.IdGarantia = @id_garantia;";
+                        ISNULL(VGarantia.MontoNoGravable, 0) AS monto_no_gravable
+                    FROM DISTRITOS AS D
+                    RIGHT JOIN ViviendaGarantia AS VGarantia
+                        INNER JOIN CANTONES AS C
+                            INNER JOIN PROVINCIAS AS P
+                                ON C.PROVINCIA = P.PROVINCIA
+                            ON VGarantia.UbicacionProvincia = C.PROVINCIA
+                            AND VGarantia.UbicacionCanton = C.CANTON
+                        ON D.DISTRITO = VGarantia.UbicacionDistrito
+                        AND D.CANTON = VGarantia.UbicacionCanton
+                        AND D.PROVINCIA = VGarantia.UbicacionProvincia
+                    LEFT JOIN ViviendaZonas AS vZonas
+                        ON VGarantia.IdZona = vZonas.IdZona
+                    WHERE VGarantia.IdGarantia = @id_garantia;";
 
             return DbHelper.ExecuteSingleQuery(
                 _portalDb,
@@ -301,6 +483,48 @@ ORDER BY DESCRIPCION;";
                 {
                     provincia = request.provincia,
                     canton = request.canton
+                }
+            );
+        }
+
+        /// <summary>
+        /// Busca profesionales de vivienda para frmBusquedas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtro, tipo profesional y paginación.</param>
+        /// <returns>Lista paginada de profesionales.</returns>
+        public ErrorDto<List<FrmVivGarantiaProfesionalItem>> FrmVivGarantiaProfesionales_Buscar(
+            int codEmpresa,
+            FrmVivGarantiaProfesionalesBuscarRequest request)
+        {
+            const string query = @"
+                    SELECT
+                        IdContacto AS id_contacto,
+                        RTRIM(ISNULL(Identificacion, '')) AS identificacion,
+                        RTRIM(ISNULL(Nombre, '')) AS nombre,
+                        COUNT(1) OVER() AS total
+                    FROM ViviendaContactos
+                    WHERE TipoProfesional = @tipo_profesional
+                      AND (
+                            @filtro = ''
+                            OR CONVERT(VARCHAR(30), IdContacto) LIKE '%' + @filtro + '%'
+                            OR Identificacion LIKE '%' + @filtro + '%'
+                            OR Nombre LIKE '%' + @filtro + '%'
+                          )
+                    ORDER BY Nombre
+                    OFFSET @first ROWS
+                    FETCH NEXT @rows ROWS ONLY;";
+
+            return DbHelper.ExecuteListQuery<FrmVivGarantiaProfesionalItem>(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    filtro = request.filtro.Trim(),
+                    tipo_profesional = request.tipo_profesional.Trim(),
+                    first = request.first,
+                    rows = request.rows <= 0 ? 30 : request.rows
                 }
             );
         }
@@ -384,7 +608,7 @@ WHERE Cedula = @cedula;";
                 {
                     cedula = request.cedula.Trim()
                 }
-            );
+            )!;
         }
 
 
@@ -423,6 +647,160 @@ FETCH NEXT @rows ROWS ONLY;";
                 }
             );
         }
+
+        /// <summary>
+        /// Guarda o modifica un dueño de garantía.
+        /// Replica ObjAgregar.fxDerechosGarantia usando spCRDVivDerechosGarantia_A.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos del dueño.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto FrmVivGarantiaDerecho_Guardar(
+            int codEmpresa,
+            FrmVivGarantiaDerechoGuardarRequest request)
+        {
+            const string query = @"
+EXEC dbo.spCRDVivDerechosGarantia_A
+    @Actualiza,
+    @Cedula,
+    @IdGarantia,
+    @Provincia,
+    @Canton,
+    @Distrito,
+    @Nombre,
+    @Direccion,
+    @RegistroUsuario,
+    @RegistroFecha;";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    Actualiza = request.actualiza,
+                    Cedula = request.cedula.Trim(),
+                    IdGarantia = request.id_garantia,
+                    Provincia = request.provincia.ToString(),
+                    Canton = request.canton.ToString(),
+                    Distrito = request.distrito?.ToString(),
+                    Nombre = request.nombre.Trim(),
+                    Direccion = string.IsNullOrWhiteSpace(request.direccion) ? null : request.direccion.Trim(),
+                    RegistroUsuario = request.registro_usuario.Trim(),
+                    RegistroFecha = (string?)null
+                }
+            );
+        }
+
+        /// <summary>
+        /// Borra un dueño registrado de una garantía.
+        /// Replica ObjBorrar.fxDerechoDeGarantia de VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Id de garantía y cédula.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto FrmVivGarantiaDerecho_Borrar(
+            int codEmpresa,
+            FrmVivGarantiaDerechoBorrarRequest request)
+        {
+            const string query = @"
+DELETE dbo.ViviendaDerechosGarantia
+WHERE IdGarantia = @id_garantia
+  AND Cedula = @cedula;";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    id_garantia = request.id_garantia,
+                    cedula = request.cedula.Trim()
+                }
+            );
+        }
+
+        /// <summary>
+        /// Valida si existe un contacto de vivienda por tipo profesional.
+        /// Replica fxTraerExisteContacto de VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="idContacto">Id del contacto.</param>
+        /// <param name="tipoProfesional">Tipo profesional: I ingeniero, A abogado.</param>
+        /// <returns>True si existe.</returns>
+        public ErrorDto<bool> FrmVivGarantiaContacto_Existe(
+            int codEmpresa,
+            long idContacto,
+            string tipoProfesional)
+        {
+            const string query = @"
+                SELECT
+                    CASE WHEN COUNT(1) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS existe
+                FROM ViviendaContactos
+                WHERE TipoProfesional = @tipo_profesional
+                  AND IdContacto = @id_contacto;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                false,
+                new
+                {
+                    id_contacto = idContacto,
+                    tipo_profesional = tipoProfesional.Trim()
+                }
+            )!;
+        }
+
+        /// <summary>
+        /// Guarda el avalúo posterior de una garantía.
+        /// Replica ObjAgregar.fxRegistroAvaluoPosterior usando spCRDVivGarantiaAvaluo_Posterior.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos del avalúo posterior.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto FrmVivGarantiaAvaluoPosterior_Guardar(
+            int codEmpresa,
+            FrmVivGarantiaAvaluoPosteriorRequest request)
+        {
+            const string query = @"
+                EXEC dbo.spCRDVivGarantiaAvaluo_Posterior
+                    @IdGarantia,
+                    @IdContacto,
+                    @FechaInspeccion,
+                    @ValorTerreno,
+                    @ValorConstruccion,
+                    @ObservacionesAvaluo,
+                    @RegistroUsuario,
+                    @RegistroFecha,
+                    @Viaticos,
+                    @Tipo_Poliza,
+                    @IdAbogado;";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    IdGarantia = request.id_garantia,
+                    IdContacto = request.id_ingeniero,
+                    FechaInspeccion = request.fecha_inspeccion?.ToString("yyyy-MM-dd"),
+                    ValorTerreno = request.valor_terreno,
+                    ValorConstruccion = request.valor_construccion,
+                    ObservacionesAvaluo = string.IsNullOrWhiteSpace(request.observaciones_avaluo)
+                        ? null
+                        : request.observaciones_avaluo.Trim(),
+                    RegistroUsuario = request.registro_usuario.Trim(),
+                    RegistroFecha = (string?)null,
+                    Viaticos = request.viaticos,
+                    Tipo_Poliza = request.tipo_poliza.Trim(),
+                    IdAbogado = request.id_abogado
+                }
+            );
+        }
+
         #endregion
 
         #region Historial del Tramite
@@ -453,7 +831,7 @@ FETCH NEXT @rows ROWS ONLY;";
                     IdGarantia = idGarantia,
                     tipo = tipo.Trim()
                 }
-            );
+            )!;
         }
 
         #endregion
@@ -555,7 +933,7 @@ FETCH NEXT @rows ROWS ONLY;";
             FrmVivGarantiaNotasRequest request)
         {
             const string query = @"
-EXEC spCrdViv_Garantia_TramiteNotas @GarantiaId, @TipoProfesional;";
+                EXEC spCrdViv_Garantia_TramiteNotas @GarantiaId, @TipoProfesional;";
 
             return DbHelper.ExecuteListQuery<FrmVivGarantiaNotaTramiteRawItem>(
                 _portalDb,
@@ -564,12 +942,32 @@ EXEC spCrdViv_Garantia_TramiteNotas @GarantiaId, @TipoProfesional;";
                 new
                 {
                     GarantiaId = request.id_garantia,
-                    TipoProfesionaltipo = request.tipo.Trim()
+                    TipoProfesional = request.tipo.Trim()
                 }
             );
         }
 
         #endregion
 
+        /// <summary>
+        /// Convierte valores booleanos a smallint para mantener compatibilidad con el SP legado.
+        /// </summary>
+        private static short BoolSmallInt(bool valor)
+        {
+            return Convert.ToInt16(valor);
+        }
+
+        /// <summary>
+        /// Normaliza textos vacíos como null para enviar a base de datos.
+        /// </summary>
+        private static string? TextoONulo(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            return valor.Trim();
+        }
     }
 }
