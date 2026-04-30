@@ -30,6 +30,14 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.FrmVivGarantiaPrincipal_Cargar(codEmpresa, request);
         }
 
+        [HttpPost("Viv_Garantia_Guardar")]
+        public ErrorDto<FrmVivGarantiaGuardarResponse> FrmVivGarantiaGuardar(
+    int codEmpresa,
+    FrmVivGarantiaGuardarRequest request)
+        {
+            return _bl.FrmVivGarantiaGuardar(codEmpresa, request);
+        }
+
         #endregion
 
         #region General
@@ -71,6 +79,13 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.FrmVivGarantiaDistritos_Obtener(codEmpresa, request);
         }
 
+        [HttpPost("Viv_GarantiaProfesionales_Buscar")]
+        public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> FrmVivGarantiaProfesionales_Buscar(
+    int codEmpresa,
+    FrmVivGarantiaProfesionalesBuscarRequest request)
+        {
+            return _bl.FrmVivGarantiaProfesionales_Buscar(codEmpresa, request);
+        }
         #endregion
 
         #region Derechos
@@ -97,6 +112,23 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         {
             return _bl.FrmVivGarantiaSocios_Buscar(codEmpresa, request);
         }
+
+        [HttpPost("Viv_GarantiaDerecho_Guardar")]
+        public ErrorDto FrmVivGarantiaDerecho_Guardar(
+    int codEmpresa,
+    FrmVivGarantiaDerechoGuardarRequest request)
+        {
+            return _bl.FrmVivGarantiaDerecho_Guardar(codEmpresa, request);
+        }
+
+        [HttpPost("Viv_GarantiaDerecho_Borrar")]
+        public ErrorDto FrmVivGarantiaDerecho_Borrar(
+            int codEmpresa,
+            FrmVivGarantiaDerechoBorrarRequest request)
+        {
+            return _bl.FrmVivGarantiaDerecho_Borrar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Historial del Tramite
