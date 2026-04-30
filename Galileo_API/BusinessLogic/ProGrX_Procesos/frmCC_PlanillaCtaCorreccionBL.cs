@@ -36,7 +36,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
 
         public ErrorDto<CcPlanillaCtaCorreccionListaResult> CC_PlanillaCtaCorreccion_Lista_Export(int CodEmpresa, CcPlanillaCtaCorreccionListaRequest parametros)
         {
-            parametros ??= new CcPlanillaCtaCorreccionListaRequest();
+            parametros ??= new CcPlanillaCtaCorreccionListaRequest
+            {
+                cod_institucion = 0, // Set a default or meaningful value here
+                proceso = 0          // Set a default or meaningful value here
+            };
             parametros.filtros ??= new FiltrosLazyLoadData();
             parametros.filtros.pagina = 0;
             parametros.filtros.paginacion = 0;

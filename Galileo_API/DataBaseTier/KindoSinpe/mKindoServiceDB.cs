@@ -541,10 +541,10 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                     if (string.IsNullOrEmpty(result.NombreTitular))
                     {
-                        result.NombreTitular = ValidoNombreCuenta(CodEmpresa, result.TipoId, result.CEDULA.Replace("-", "").Replace(" ", ""));
+                        result.NombreTitular = ValidoNombreCuenta(CodEmpresa, result.TipoId, result.CEDULA);
                     }
 
-                    result.IdTitular = MaskSinpeId(result.TipoId, result.CEDULA.Replace("-", "").Replace(" ", ""));
+                    result.IdTitular = MaskSinpeId(result.TipoId, result.CEDULA);
 
                     if (string.IsNullOrEmpty(result.NombreTitular))
                     {
@@ -555,7 +555,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         CuentaIBAN = result.CUENTA_IBAN,
                         DesProducto = result.DesProducto,
-                        Estado = (result.ESTADO == "A") ? 1 : 23,
+                        Estado = result.ESTADO,
                         IdTitular = result.IdTitular,
                         Moneda = result.MONEDA,
                         NombreTitular = result.NombreTitular,
@@ -608,45 +608,67 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                var query = $@"exec sp_Sinpe_ObtieneInfoCuenta @Identificacion, @CuentaIBAN ";
-                var result = connection.QueryFirstOrDefault<dynamic>(query, new { Identificacion = Identificacion, CuentaIBAN = CuentaIBAN });
-
-                if (result != null)
+                const string query = @"exec sp_Sinpe_ObtieneInfoCuenta @Identificacion, @CuentaIBAN";
+                var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    if (result.CodigoResultado > 0)
+                    Identificacion = Identificacion,
+                    CuentaIBAN = CuentaIBAN
+                });
+
+                if (result == null)
+                {
+                    return new CoreInterno.CL_ObtieneInfoCuenta
                     {
-                        return new CoreInterno.CL_ObtieneInfoCuenta
-                        {
-                            Resultado = CoreInterno.E_Resultado.Error,
-                            Estado = CoreInterno.E_Estado.Bloqueada,
-                            MotivoError = result.CodigoResultado,
-                        };
-                    }
+                        Resultado = CoreInterno.E_Resultado.Rechazo,
+                        Estado = CoreInterno.E_Estado.NoActiva,
+                        MotivoError = 28
+                    };
+                }
 
-                    var identificacion = Inferir(result.CEDULA).Codigo;
-                    string cedulaIBAN = result.CEDULA;
+                int codigoResultado = Convert.ToInt32(result.CodigoResultado);
 
-                    result.IdTitular = cedulaIBAN;
-                    result.TipoId = Convert.ToInt32(identificacion);
-
-                    if (string.IsNullOrEmpty(result.NOMBRE))
+                if (codigoResultado > 0)
+                {
+                    return new CoreInterno.CL_ObtieneInfoCuenta
                     {
-                        result.NOMBRE = ValidoNombreCuenta(CodEmpresa, result.TipoId, result.CEDULA.Replace("-", "").Replace(" ", ""));
-                    }
+                        Resultado = CoreInterno.E_Resultado.Rechazo,
+                        Estado = MapearEstadoObtieneInfoCuenta(codigoResultado),
+                        MotivoError = codigoResultado,
+                        Moneda = 0,
+                        NombreTitular = null
+                    };
+                }
 
-                    result.IdTitular = MaskSinpeId(result.TipoId, result.IdTitular.Trim().Replace("-", "").Replace(" ", ""));
+                var identificacion = Inferir((string)result.CEDULA).Codigo;
+                string cedulaIBAN = result.CEDULA;
 
-                    if (string.IsNullOrEmpty(result.NOMBRE))
-                    {
-                        result.NOMBRE = "Desconocido en " + result.IdTitular;
-                    }
+                result.IdTitular = cedulaIBAN;
+                result.TipoId = Convert.ToInt32(identificacion);
+
+                if (string.IsNullOrEmpty((string?)result.NOMBRE))
+                {
+                    result.NOMBRE = ValidoNombreCuenta(
+                        CodEmpresa,
+                        result.TipoId,
+                        ((string)result.CEDULA)
+                    );
+                }
+
+                result.IdTitular = MaskSinpeId(
+                    result.TipoId,
+                    ((string)result.IdTitular)
+                );
+
+                if (string.IsNullOrEmpty((string?)result.NOMBRE))
+                {
+                    result.NOMBRE = "Desconocido en " + result.IdTitular;
                 }
 
                 return new CoreInterno.CL_ObtieneInfoCuenta
                 {
                     Resultado = CoreInterno.E_Resultado.Exitoso,
                     Estado = CoreInterno.E_Estado.Activa,
-                    Moneda = result!.Moneda,
+                    Moneda = result.Moneda == null ? 0 : Convert.ToInt32(result.Moneda),
                     NombreTitular = result.NOMBRE,
                     MotivoError = 0
                 };
@@ -657,11 +679,22 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 {
                     Resultado = CoreInterno.E_Resultado.Error,
                     Estado = CoreInterno.E_Estado.NoActiva,
-                    MotivoError = 28,
+                    MotivoError = 28
                 };
             }
         }
 
+        private static CoreInterno.E_Estado MapearEstadoObtieneInfoCuenta(int codigoResultado)
+        {
+            return codigoResultado switch
+            {
+                23 => CoreInterno.E_Estado.Cerrada,
+                31 => CoreInterno.E_Estado.Bloqueada,
+                28 => CoreInterno.E_Estado.NoActiva,
+                32 => CoreInterno.E_Estado.NoActiva,
+                _ => CoreInterno.E_Estado.NoActiva
+            };
+        }
         public CoreInterno.CL_ValidaCuenta ValidaCuenta(int CodEmpresa, string? Identificacion, string? CuentaIBAN, int? CodigoMoneda)
         {
             var resultado = new CoreInterno.CL_ValidaCuenta();
@@ -1307,7 +1340,10 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
         public static TipoId Inferir(string cedula)
         {
-            var id = PrepararId(cedula);
+            if (string.IsNullOrEmpty(cedula)) return Desconocido();
+
+            var id = PrepararId(cedula.ToString().Trim().TrimStart('0'));
+
             if (id == null) return Desconocido();
 
             if (TieneLetras(id)) return ExtranjeroNoResidente();
@@ -1359,6 +1395,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
         public static string MaskSinpeId(int tipo, string id)
         {
+            id = id.Trim().Replace("-", "").Replace(" ", "");
             if (string.IsNullOrWhiteSpace(id))
                 return id;
 
@@ -1714,12 +1751,12 @@ WHERE COD_EMPRESA = @codEmpresa;";
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
+                Cedula = Cedula.Replace("-", "").Replace(" ", "");
                 if (TipoId == 3)
                 {
                     var empresa = connection.QueryFirstOrDefault<dynamic>(
                         "Select DESCRIPCION from CXP_PROVEEDORES WHERE REPLACE(CEDJUR, '-', '') = @cedjur",
-                        new { cedjur = Cedula.Replace("-", "") });
+                        new { cedjur = Cedula });
 
                     if (empresa != null)
                     {

@@ -8,6 +8,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
     public class FrmVivGarantiaBL
     {
         private readonly FrmVivGarantiaDB _db;
+        private readonly string pValidaGarantia = "Debe indicar una garantía válida.";
 
         public FrmVivGarantiaBL(IConfiguration config)
             => _db = new FrmVivGarantiaDB(config);
@@ -52,20 +53,97 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
+            var operacion = respOperacion.Result ?? new FrmVivGarantiaOperacionResponse();
+            var cantidadGarantias = 0;
+
+            if (operacion.id_solicitud > 0)
+            {
+                var respCantidad = _db.FrmVivGarantiaCantidadGarantias_Obtener(
+                    codEmpresa,
+                    operacion.id_solicitud);
+
+                if (respCantidad.Code < 0)
+                {
+                    return new ErrorDto<FrmVivGarantiaPrincipalResponse>
+                    {
+                        Code = respCantidad.Code,
+                        Description = respCantidad.Description,
+                        Result = new FrmVivGarantiaPrincipalResponse()
+                    };
+                }
+
+                cantidadGarantias = respCantidad.Result;
+            }
+
+            bool habilitaAvaluoPosterior =
+                (operacion.estadosol ?? string.Empty).Trim() == "F"
+                && cantidadGarantias == 0;
+
             return new ErrorDto<FrmVivGarantiaPrincipalResponse>
             {
                 Code = 0,
                 Description = string.Empty,
                 Result = new FrmVivGarantiaPrincipalResponse
                 {
-                    operacion = respOperacion.Result ?? new FrmVivGarantiaOperacionResponse(),
+                    operacion = operacion,
                     grados_hipoteca = ObtenerGradosHipoteca(),
                     tipos_poliza = ObtenerTiposPoliza(),
                     provincias = respProvincias.Result ?? [],
-                    zonas = respZonas.Result ?? []
+                    zonas = respZonas.Result ?? [],
+                    habilita_avaluo_posterior = habilitaAvaluoPosterior,
                 }
             };
         }
+
+        public ErrorDto<FrmVivGarantiaGuardarResponse> FrmVivGarantiaGuardar(
+    int codEmpresa,
+    FrmVivGarantiaGuardarRequest request)
+        {
+            var validacion = ValidarGarantiaGuardar(request);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            validacion = ValidarOperacionPermiteMovimiento(codEmpresa, request.numero_operacion);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            validacion = ValidarDetalleGradoSiEdita(codEmpresa, request);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            validacion = ValidarAvaluoPosteriorSiAplica(codEmpresa, request);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            var resp = _db.FrmVivGarantiaGuardar(codEmpresa, request);
+            if (resp.Code < 0)
+            {
+                return CrearErrorGuardar(resp.Description!);
+            }
+
+            validacion = GuardarAvaluoPosteriorSiAplica(codEmpresa, request, resp.Result?.id_garantia ?? 0);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            return new ErrorDto<FrmVivGarantiaGuardarResponse>
+            {
+                Code = 0,
+                Description = "Información de garantía guardada correctamente.",
+                Result = resp.Result ?? new FrmVivGarantiaGuardarResponse()
+            };
+        }
+
+
 
         #endregion
 
@@ -86,15 +164,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
     int codEmpresa,
     FrmVivGarantiaDetalleRequest request)
         {
-            if (request.id_garantia <= 0)
-            {
-                return new ErrorDto<FrmVivGarantiaDetalleResponse>
-                {
-                    Code = -1,
-                    Description = "Debe indicar una garantía válida.",
-                    Result = new FrmVivGarantiaDetalleResponse()
-                };
-            }
+            
 
             return _db.FrmVivGarantiaDetalle_Obtener(codEmpresa, request);
         }
@@ -134,18 +204,394 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             return _db.FrmVivGarantiaDistritos_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> FrmVivGarantiaProfesionales_Buscar(
+    int codEmpresa,
+    FrmVivGarantiaProfesionalesBuscarRequest request)
+        {
+            string tipo = request.tipo_profesional.Trim().ToUpperInvariant();
+
+            if (tipo != "I" && tipo != "A")
+            {
+                return new ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar un tipo de profesional válido.",
+                    Result = new FrmVivGarantiaProfesionalesBuscarResponse()
+                };
+            }
+
+            var resp = _db.FrmVivGarantiaProfesionales_Buscar(
+                codEmpresa,
+                new FrmVivGarantiaProfesionalesBuscarRequest
+                {
+                    filtro = request.filtro,
+                    tipo_profesional = tipo,
+                    first = request.first,
+                    rows = request.rows
+                });
+
+            if (resp.Code < 0)
+            {
+                return new ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = new FrmVivGarantiaProfesionalesBuscarResponse()
+                };
+            }
+
+            var lista = resp.Result ?? [];
+
+            return new ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaProfesionalesBuscarResponse
+                {
+                    value = lista,
+                    total = lista.FirstOrDefault()?.total ?? 0
+                }
+            };
+        }
+
+
         #endregion
 
         #region Derechos
+
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+            int codEmpresa,
+            FrmVivGarantiaIdGarantiaRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return new ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>>
+                {
+                    Code = -1,
+                    Description = pValidaGarantia,
+                    Result = []
+                };
+            }
+
+            return _db.FrmVivGarantiaDerechos_Listar(codEmpresa, request);
+        }
+
+        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+    int codEmpresa,
+    FrmVivGarantiaSocioRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return new ErrorDto<FrmVivGarantiaSocioItem>
+                {
+                    Code = -1,
+                    Description = "Debe indicar una cédula válida.",
+                    Result = new FrmVivGarantiaSocioItem()
+                };
+            }
+
+            return _db.FrmVivGarantiaSocio_Obtener(codEmpresa, request);
+        }
+
+        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> FrmVivGarantiaSocios_Buscar(
+    int codEmpresa,
+    FrmVivGarantiaSociosBuscarRequest request)
+        {
+            var resp = _db.FrmVivGarantiaSocios_Buscar(codEmpresa, request);
+            if (resp.Code < 0)
+            {
+                return new ErrorDto<FrmVivGarantiaSociosBuscarResponse>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = new FrmVivGarantiaSociosBuscarResponse()
+                };
+            }
+
+            var lista = resp.Result ?? [];
+
+            return new ErrorDto<FrmVivGarantiaSociosBuscarResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaSociosBuscarResponse
+                {
+                    value = lista,
+                    total = lista.FirstOrDefault()?.total ?? 0
+                }
+            };
+        }
+
+        public ErrorDto FrmVivGarantiaDerecho_Guardar(
+    int codEmpresa,
+    FrmVivGarantiaDerechoGuardarRequest request)
+        {
+            var validacion = ValidarDerechoGuardar(request);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.id_garantia);
+            if (estadoOperacion.Code < 0)
+            {
+                return new ErrorDto() {
+                    Code = -1,
+                    Description = $"No se pudo validar el estado de la operación: {estadoOperacion.Description}"
+                };
+            }
+
+            return _db.FrmVivGarantiaDerecho_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto FrmVivGarantiaDerecho_Borrar(
+            int codEmpresa,
+            FrmVivGarantiaDerechoBorrarRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return CrearErrorSimple(pValidaGarantia);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return CrearErrorSimple("Debe indicar una cédula válida.");
+            }
+
+            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
+            if (estadoOperacion.Code < 0)
+            {
+                return new ErrorDto
+                {
+                     Code = -1,
+                     Description = $"No se pudo validar el estado de la operación: {estadoOperacion.Description}"
+                } ;
+            }
+
+            if ((estadoOperacion.Result ?? string.Empty).Trim() == "F")
+            {
+                return CrearErrorSimple("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
+            }
+
+            return _db.FrmVivGarantiaDerecho_Borrar(codEmpresa, request);
+        }
+
+        private static ErrorDto ValidarDerechoGuardar(FrmVivGarantiaDerechoGuardarRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return CrearErrorSimple("Debe indicar una garantía válida.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cedula))
+            {
+                return CrearErrorSimple("Debe ingresar un número de cédula válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.nombre))
+            {
+                return CrearErrorSimple("Debe ingresar un nombre de dueño.");
+            }
+
+            if (request.provincia <= 0)
+            {
+                return CrearErrorSimple("Debe seleccionar una provincia.");
+            }
+
+            if (request.canton <= 0)
+            {
+                return CrearErrorSimple("Debe seleccionar un cantón.");
+            }
+
+            if (request.actualiza != -1 && request.actualiza != 1)
+            {
+                return CrearErrorSimple("Debe indicar una acción válida para el dueño.");
+            }
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "OK"
+            };
+        }
+
+        private static ErrorDto CrearErrorSimple(string mensaje)
+        {
+            return new ErrorDto
+            {
+                Code = -1,
+                Description = mensaje
+            };
+        }
+
         #endregion
 
         #region Historial del Tramite
+
+        public ErrorDto<FrmVivGarantiaHistorialResponse> FrmVivGarantiaHistorial_Obtener(
+    int codEmpresa,
+    FrmVivGarantiaIdGarantiaRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return new ErrorDto<FrmVivGarantiaHistorialResponse>
+                {
+                    Code = -1,
+                    Description = pValidaGarantia,
+                    Result = new FrmVivGarantiaHistorialResponse()
+                };
+            }
+
+            var respIngeniero = _db.FrmVivGarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "I");
+            if (respIngeniero.Code < 0)
+            {
+                return new ErrorDto<FrmVivGarantiaHistorialResponse>
+                {
+                    Code = respIngeniero.Code,
+                    Description = respIngeniero.Description,
+                    Result = new FrmVivGarantiaHistorialResponse()
+                };
+            }
+
+            var respAbogado = _db.FrmVivGarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "A");
+            if (respAbogado.Code < 0)
+            {
+                return new ErrorDto<FrmVivGarantiaHistorialResponse>
+                {
+                    Code = respAbogado.Code,
+                    Description = respAbogado.Description,
+                    Result = new FrmVivGarantiaHistorialResponse()
+                };
+            }
+
+            var ingeniero = respIngeniero.Result ?? new FrmVivGarantiaHistorialRawItem();
+            var abogado = respAbogado.Result ?? new FrmVivGarantiaHistorialRawItem();
+
+            return new ErrorDto<FrmVivGarantiaHistorialResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaHistorialResponse
+                {
+                    resumen = new FrmVivGarantiaHistorialResumenResponse
+                    {
+                        fecha_registro = ingeniero.RegistroFecha,
+                        usuario_registro = ingeniero.RegistroUsuario,
+                        estado_actual = ingeniero.GEstado
+                    },
+                    ingeniero = MapearHistorialProfesional(ingeniero, false),
+                    abogado = MapearHistorialProfesional(abogado, true)
+                }
+            };
+        }
+
+        private static FrmVivGarantiaHistorialProfesionalResponse MapearHistorialProfesional(
+            FrmVivGarantiaHistorialRawItem item,
+            bool incluirFirmas)
+        {
+            return new FrmVivGarantiaHistorialProfesionalResponse
+            {
+                nombre = item.Nombre,
+                estado = item.EstadoProf,
+                asignacion_fecha = item.AsignacionFecha,
+                asignacion_usuario = item.AsignacionUsuario,
+                entrega_fecha = item.EntregaFecha,
+                entrega_usuario = item.EntregaUsuario,
+                recepcion_fecha = incluirFirmas ? null : item.RecepcionFecha,
+                recepcion_usuario = incluirFirmas ? string.Empty : item.RecepcionUsuario,
+                firmas_fecha = incluirFirmas ? item.FirmasFecha : null,
+                firmas_usuario = incluirFirmas ? item.FirmasUsuario : string.Empty,
+                registro_fecha = item.RegistroFechaProf,
+                registro_usuario = item.RegistroUsuarioProf
+            };
+        }
+
         #endregion
 
         #region Fincas
+
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+    int codEmpresa,
+    FrmVivGarantiaCargaRequest request)
+        {
+            if (request.operacion <= 0 && string.IsNullOrWhiteSpace(request.expediente))
+            {
+                return new ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>>
+                {
+                    Code = -1,
+                    Description = "Debe indicar un número de operación o expediente válido.",
+                    Result = []
+                };
+            }
+
+            return _db.FrmVivGarantiaFincasAsociadas_Listar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Notas
+
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> FrmVivGarantiaNotas_Listar(
+    int codEmpresa,
+    FrmVivGarantiaNotasRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return new ErrorDto<List<FrmVivGarantiaNotaTramiteItem>>
+                {
+                    Code = -1,
+                    Description = pValidaGarantia,
+                    Result = []
+                };
+            }
+
+            string tipo = request.tipo.Trim().ToUpperInvariant();
+            if (tipo != "A" && tipo != "I")
+            {
+                return new ErrorDto<List<FrmVivGarantiaNotaTramiteItem>>
+                {
+                    Code = -1,
+                    Description = "Debe indicar un tipo de profesional válido.",
+                    Result = []
+                };
+            }
+
+            var resp = _db.FrmVivGarantiaNotas_Listar(
+                codEmpresa,
+                new FrmVivGarantiaNotasRequest
+                {
+                    id_garantia = request.id_garantia,
+                    tipo = tipo
+                });
+
+            if (resp.Code < 0)
+            {
+                return new ErrorDto<List<FrmVivGarantiaNotaTramiteItem>>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = []
+                };
+            }
+
+            return new ErrorDto<List<FrmVivGarantiaNotaTramiteItem>>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = (resp.Result ?? []).Select(x => new FrmVivGarantiaNotaTramiteItem
+                {
+                    id_nota = x.IdNota,
+                    tipo = x.Tipo,
+                    identificacion = x.Identificacion,
+                    nombre = x.Nombre,
+                    estado = x.Estado,
+                    nota = x.Nota,
+                    usuario = x.Usuario,
+                    fecha = x.Fecha
+                }).ToList()
+            };
+        }
+
         #endregion
 
         #region Helpers
@@ -187,6 +633,247 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                     descripcion = "Personal"
                 }
             ];
+        }
+
+        private static ErrorDto<FrmVivGarantiaGuardarResponse> ValidarGarantiaGuardar(
+            FrmVivGarantiaGuardarRequest request)
+        {
+            if (request.numero_operacion <= 0 && string.IsNullOrWhiteSpace(request.expediente))
+            {
+                return CrearErrorGuardar("Debe indicar una operación o expediente válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.numero_finca))
+            {
+                return CrearErrorGuardar("Debe ingresar un número de finca válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.tipo_derecho))
+            {
+                return CrearErrorGuardar("Debe ingresar un tipo de derecho.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.num_plano_catastro))
+            {
+                return CrearErrorGuardar("Debe ingresar un número de plano catastro.");
+            }
+
+            if (request.area_finca <= 0)
+            {
+                return CrearErrorGuardar("Debe ingresar el área en metros cuadrados.");
+            }
+
+            if (request.ubicacion_provincia <= 0)
+            {
+                return CrearErrorGuardar("Debe seleccionar una provincia.");
+            }
+
+            if (request.ubicacion_canton <= 0)
+            {
+                return CrearErrorGuardar("Debe seleccionar un cantón.");
+            }
+
+            if (!request.id_zona.HasValue || request.id_zona.Value <= 0)
+            {
+                return CrearErrorGuardar("Debe seleccionar una zona.");
+            }
+
+            string grado = request.grado_hipoteca.Trim().ToUpperInvariant();
+            if (grado != "P" && grado != "S" && grado != "T")
+            {
+                return CrearErrorGuardar("Debe seleccionar un grado de hipoteca válido.");
+            }
+
+            string tipoPoliza = request.tipo_poliza.Trim().ToUpperInvariant();
+            if (tipoPoliza != "P" && tipoPoliza != "C")
+            {
+                return CrearErrorGuardar("Debe seleccionar un tipo de póliza válido.");
+            }
+
+            return new ErrorDto<FrmVivGarantiaGuardarResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaGuardarResponse()
+            };
+        }
+
+        private static ErrorDto<FrmVivGarantiaGuardarResponse> CrearErrorGuardar(string mensaje)
+        {
+            return new ErrorDto<FrmVivGarantiaGuardarResponse>
+            {
+                Code = -1,
+                Description = mensaje,
+                Result = new FrmVivGarantiaGuardarResponse()
+            };
+        }
+
+        private static ErrorDto<FrmVivGarantiaGuardarResponse> ValidarAvaluoPosterior(
+    FrmVivGarantiaAvaluoPosteriorRequest? request)
+        {
+            if (request is null)
+            {
+                return CrearErrorGuardar("Debe indicar la información del avalúo posterior.");
+            }
+
+            if (request.id_ingeniero <= 0)
+            {
+                return CrearErrorGuardar("Información de avalúo: el ingeniero no puede estar en blanco.");
+            }
+
+            if (request.id_abogado <= 0)
+            {
+                return CrearErrorGuardar("Información de avalúo: el abogado no puede estar en blanco.");
+            }
+
+            if (!request.fecha_inspeccion.HasValue)
+            {
+                return CrearErrorGuardar("Información de avalúo: debe indicar la fecha de inspección.");
+            }
+
+            string tipoPoliza = request.tipo_poliza.Trim().ToUpperInvariant();
+            if (tipoPoliza != "P" && tipoPoliza != "C")
+            {
+                return CrearErrorGuardar("Información de avalúo: debe indicar un tipo de póliza válido.");
+            }
+
+            return new ErrorDto<FrmVivGarantiaGuardarResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaGuardarResponse()
+            };
+        }
+
+        private ErrorDto<FrmVivGarantiaGuardarResponse> ValidarOperacionPermiteMovimiento(
+    int codEmpresa,
+    long numeroOperacion)
+        {
+            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, numeroOperacion);
+            if (estadoOperacion.Code < 0)
+            {
+                return CrearErrorGuardar(estadoOperacion.Description!);
+            }
+
+            if ((estadoOperacion.Result ?? string.Empty).Trim() == "F")
+            {
+                return CrearErrorGuardar("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
+            }
+
+            return CrearOkGuardar();
+        }
+
+        private ErrorDto<FrmVivGarantiaGuardarResponse> ValidarDetalleGradoSiEdita(
+            int codEmpresa,
+            FrmVivGarantiaGuardarRequest request)
+        {
+            if (request.id_garantia <= 0)
+            {
+                return CrearOkGuardar();
+            }
+
+            var validaDetalle = _db.FrmVivGarantiaDetalleGrado_Validar(
+                codEmpresa,
+                request.id_garantia,
+                request.grado_hipoteca.Trim().ToUpperInvariant());
+
+            if (validaDetalle.Code < 0)
+            {
+                return CrearErrorGuardar(validaDetalle.Description!);
+            }
+
+            return validaDetalle.Result
+                ? CrearOkGuardar()
+                : CrearErrorGuardar("Antes de modificar el grado de la garantía, debe revisar el detalle de acreedores.");
+        }
+
+        private ErrorDto<FrmVivGarantiaGuardarResponse> ValidarAvaluoPosteriorSiAplica(
+            int codEmpresa,
+            FrmVivGarantiaGuardarRequest request)
+        {
+            if (!request.guardar_avaluo_posterior)
+            {
+                return CrearOkGuardar();
+            }
+
+            var validacion = ValidarAvaluoPosterior(request.avaluo_posterior);
+            if (validacion.Code < 0)
+            {
+                return validacion;
+            }
+
+            var cantidadGarantias = _db.FrmVivGarantiaCantidadGarantias_Obtener(
+                codEmpresa,
+                request.numero_operacion);
+
+            if (cantidadGarantias.Code < 0)
+            {
+                return CrearErrorGuardar(cantidadGarantias.Description!);
+            }
+
+            if (request.id_garantia > 0 || cantidadGarantias.Result > 0)
+            {
+                return CrearErrorGuardar("El avalúo posterior solo aplica al agregar la primera garantía de una operación formalizada.");
+            }
+
+            return ValidarContactosAvaluoPosterior(codEmpresa, request.avaluo_posterior!);
+        }
+
+        private ErrorDto<FrmVivGarantiaGuardarResponse> ValidarContactosAvaluoPosterior(
+            int codEmpresa,
+            FrmVivGarantiaAvaluoPosteriorRequest request)
+        {
+            var existeIngeniero = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_ingeniero, "I");
+            if (existeIngeniero.Code < 0)
+            {
+                return CrearErrorGuardar(existeIngeniero.Description!);
+            }
+
+            if (!existeIngeniero.Result)
+            {
+                return CrearErrorGuardar("Información de avalúo: el ingeniero no existe.");
+            }
+
+            var existeAbogado = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_abogado, "A");
+            if (existeAbogado.Code < 0)
+            {
+                return CrearErrorGuardar(existeAbogado.Description!);
+            }
+
+            return existeAbogado.Result
+                ? CrearOkGuardar()
+                : CrearErrorGuardar("Información de avalúo: el abogado no existe.");
+        }
+
+        private ErrorDto<FrmVivGarantiaGuardarResponse> GuardarAvaluoPosteriorSiAplica(
+            int codEmpresa,
+            FrmVivGarantiaGuardarRequest request,
+            long idGarantia)
+        {
+            if (!request.guardar_avaluo_posterior || request.avaluo_posterior is null)
+            {
+                return CrearOkGuardar();
+            }
+
+            request.avaluo_posterior.id_garantia = idGarantia;
+
+            var respAvaluo = _db.FrmVivGarantiaAvaluoPosterior_Guardar(
+                codEmpresa,
+                request.avaluo_posterior);
+
+            return respAvaluo.Code < 0
+                ? CrearErrorGuardar(respAvaluo.Description!)
+                : CrearOkGuardar();
+        }
+
+        private static ErrorDto<FrmVivGarantiaGuardarResponse> CrearOkGuardar()
+        {
+            return new ErrorDto<FrmVivGarantiaGuardarResponse>
+            {
+                Code = 0,
+                Description = string.Empty,
+                Result = new FrmVivGarantiaGuardarResponse()
+            };
         }
 
         #endregion
