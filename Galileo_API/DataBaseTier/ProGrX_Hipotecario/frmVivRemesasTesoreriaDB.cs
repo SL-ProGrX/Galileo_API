@@ -275,5 +275,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             var parametros = new { RemesaSeleccionada = remesaSeleccionada };
             return DbHelper.ExecuteListQuery<RemesaTesoreriaDesembolsoAsignadoDto>(_portalDb, codEmpresa, sql, parametros);
         }
+
+        /// <summary>
+        /// Obtiene las N remesas de tesorería más recientes, incluyendo los campos calculados Casos y Monto.
+        /// </summary>
+        public ErrorDto<List<RemesasTesoreriaObtenerDto>> RemesasTesoreria_Top(int codEmpresa, int cantidad)
+        {
+            var sql = @"select TOP (@Cantidad)
+                T.*, isnull(D.Casos, 0) as Casos, isnull(D.Monto, 0) as Monto
+                from viviendaRemesasTesoreria T
+                left join vCrd_Hipotecario_Remesa_Tes_Rsm D on T.Remesa = D.Remesa
+                order by T.RegistroFecha desc";
+            var parametros = new { Cantidad = cantidad };
+            return DbHelper.ExecuteListQuery<RemesasTesoreriaObtenerDto>(_portalDb, codEmpresa, sql, parametros);
+        }
     }
 }
