@@ -20,4 +20,25 @@
         public DateTime? FechaCorte { get; set; }
         public string Notas { get; set; } = string.Empty;
     }
+    public class RemesaTesoreriaDesembolsoDisponibleDto : RemesaTesoreriaDesembolsoAsignadoDto
+    {        
+        public DateTime? TES_SUPERVISION_FECHA { get; set; }
+        public int Duplicado { get; set; }
+    }
+    public class RemesaTesoreriaExisteDto
+    {
+        public int Existe { get; set; }
+    }
+    public class RemesaTesoreriaDesembolsoAsignadoDto
+    {
+        public int CodigoDesembolso { get; set; }
+        public int NumeroOperacion { get; set; }
+        public string Beneficiario { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public DateTime RegistroFecha { get; set; }
+        public string RegistroUsuario { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Codigo { get; set; } = string.Empty;
+    }
 }
