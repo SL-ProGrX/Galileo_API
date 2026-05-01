@@ -15,12 +15,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         #region Principal
 
-        public ErrorDto<FrmVivGarantiaPrincipalResponse> FrmVivGarantiaPrincipal_Cargar(
+        public ErrorDto<FrmVivGarantiaPrincipalResponse> Viv_GarantiaPrincipal_Cargar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
          {
  
-            var respOperacion = _db.FrmVivGarantiaOperacion_Obtener(codEmpresa, request);
+            var respOperacion = _db.Viv_GarantiaOperacion_Obtener(codEmpresa, request);
             if (respOperacion.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaPrincipalResponse>
@@ -31,7 +31,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var respProvincias = _db.FrmVivGarantiaProvincias_Obtener(codEmpresa);
+            var respProvincias = _db.Viv_GarantiaProvincias_Obtener(codEmpresa);
             if (respProvincias.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaPrincipalResponse>
@@ -42,7 +42,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var respZonas = _db.FrmVivGarantiaZonas_Obtener(codEmpresa);
+            var respZonas = _db.Viv_GarantiaZonas_Obtener(codEmpresa);
             if (respZonas.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaPrincipalResponse>
@@ -58,7 +58,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
             if (operacion.id_solicitud > 0)
             {
-                var respCantidad = _db.FrmVivGarantiaCantidadGarantias_Obtener(
+                var respCantidad = _db.Viv_GarantiaCantidadGarantias_Obtener(
                     codEmpresa,
                     operacion.id_solicitud);
 
@@ -95,7 +95,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             };
         }
 
-        public ErrorDto<FrmVivGarantiaGuardarResponse> FrmVivGarantiaGuardar(
+        public ErrorDto<FrmVivGarantiaGuardarResponse> Viv_GarantiaGuardar(
     int codEmpresa,
     FrmVivGarantiaGuardarRequest request)
         {
@@ -123,7 +123,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return validacion;
             }
 
-            var resp = _db.FrmVivGarantiaGuardar(codEmpresa, request);
+            var resp = _db.Viv_GarantiaGuardar(codEmpresa, request);
             if (resp.Code < 0)
             {
                 return CrearErrorGuardar(resp.Description!);
@@ -149,28 +149,28 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         #region General
 
-        public ErrorDto<List<FrmVivGarantiaGeneralItem>> FrmVivGarantiaGeneral_Listar(
+        public ErrorDto<List<FrmVivGarantiaGeneralItem>> Viv_GarantiaGeneral_Listar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
-            return _db.FrmVivGarantiaGeneral_Listar(codEmpresa, request);
+            return _db.Viv_GarantiaGeneral_Listar(codEmpresa, request);
         }
 
         #endregion
 
         #region Garantia
 
-        public ErrorDto<FrmVivGarantiaDetalleResponse> FrmVivGarantiaDetalle_Obtener(
+        public ErrorDto<FrmVivGarantiaDetalleResponse> Viv_GarantiaDetalle_Obtener(
     int codEmpresa,
     FrmVivGarantiaDetalleRequest request)
         {
             
 
-            return _db.FrmVivGarantiaDetalle_Obtener(codEmpresa, request);
+            return _db.Viv_GarantiaDetalle_Obtener(codEmpresa, request);
         }
 
 
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaCantones_Obtener(
     int codEmpresa,
     string provincia)
         {
@@ -184,10 +184,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaCantones_Obtener(codEmpresa, provincia);
+            return _db.Viv_GarantiaCantones_Obtener(codEmpresa, provincia);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaDistritos_Obtener(
     int codEmpresa,
     string provincia,
     string canton)
@@ -202,10 +202,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaDistritos_Obtener(codEmpresa, provincia, canton);
+            return _db.Viv_GarantiaDistritos_Obtener(codEmpresa, provincia, canton);
         }
 
-        public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> FrmVivGarantiaProfesionales_Buscar(
+        public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> Viv_GarantiaProfesionales_Buscar(
     int codEmpresa,
     FrmVivGarantiaProfesionalesBuscarRequest request)
         {
@@ -221,7 +221,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var resp = _db.FrmVivGarantiaProfesionales_Buscar(
+            var resp = _db.Viv_GarantiaProfesionales_Buscar(
                 codEmpresa,
                 new FrmVivGarantiaProfesionalesBuscarRequest
                 {
@@ -260,7 +260,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         #region Derechos
 
-        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> Viv_GarantiaDerechos_Listar(
             int codEmpresa,
             FrmVivGarantiaIdGarantiaRequest request)
         {
@@ -274,10 +274,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaDerechos_Listar(codEmpresa, request);
+            return _db.Viv_GarantiaDerechos_Listar(codEmpresa, request);
         }
 
-        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+        public ErrorDto<FrmVivGarantiaSocioItem> Viv_GarantiaSocio_Obtener(
     int codEmpresa,
     FrmVivGarantiaSocioRequest request)
         {
@@ -291,14 +291,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaSocio_Obtener(codEmpresa, request);
+            return _db.Viv_GarantiaSocio_Obtener(codEmpresa, request);
         }
 
-        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> FrmVivGarantiaSocios_Buscar(
+        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> Viv_GarantiaSocios_Buscar(
     int codEmpresa,
     FrmVivGarantiaSociosBuscarRequest request)
         {
-            var resp = _db.FrmVivGarantiaSocios_Buscar(codEmpresa, request);
+            var resp = _db.Viv_GarantiaSocios_Buscar(codEmpresa, request);
             if (resp.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaSociosBuscarResponse>
@@ -323,7 +323,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             };
         }
 
-        public ErrorDto FrmVivGarantiaDerecho_Guardar(
+        public ErrorDto Viv_GarantiaDerecho_Guardar(
     int codEmpresa,
     FrmVivGarantiaDerechoGuardarRequest request)
         {
@@ -333,7 +333,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return validacion;
             }
 
-            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
+            var estadoOperacion = _db.Viv_GarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
             if (estadoOperacion.Code < 0)
             {
                 return new ErrorDto() {
@@ -342,10 +342,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaDerecho_Guardar(codEmpresa, request);
+            return _db.Viv_GarantiaDerecho_Guardar(codEmpresa, request);
         }
 
-        public ErrorDto FrmVivGarantiaDerecho_Borrar(
+        public ErrorDto Viv_GarantiaDerecho_Borrar(
             int codEmpresa,
             FrmVivGarantiaDerechoBorrarRequest request)
         {
@@ -359,7 +359,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearErrorSimple("Debe indicar una cédula válida.");
             }
 
-            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
+            var estadoOperacion = _db.Viv_GarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
             if (estadoOperacion.Code < 0)
             {
                 return new ErrorDto
@@ -374,7 +374,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearErrorSimple("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
             }
 
-            return _db.FrmVivGarantiaDerecho_Borrar(codEmpresa, request);
+            return _db.Viv_GarantiaDerecho_Borrar(codEmpresa, request);
         }
 
         private static ErrorDto ValidarDerechoGuardar(FrmVivGarantiaDerechoGuardarRequest request)
@@ -429,7 +429,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         #region Historial del Tramite
 
-        public ErrorDto<FrmVivGarantiaHistorialResponse> FrmVivGarantiaHistorial_Obtener(
+        public ErrorDto<FrmVivGarantiaHistorialResponse> Viv_GarantiaHistorial_Obtener(
     int codEmpresa,
     FrmVivGarantiaIdGarantiaRequest request)
         {
@@ -443,7 +443,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var respIngeniero = _db.FrmVivGarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "I");
+            var respIngeniero = _db.Viv_GarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "I");
             if (respIngeniero.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaHistorialResponse>
@@ -454,7 +454,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var respAbogado = _db.FrmVivGarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "A");
+            var respAbogado = _db.Viv_GarantiaHistorial_ObtenerPorTipo(codEmpresa, request.id_garantia, "A");
             if (respAbogado.Code < 0)
             {
                 return new ErrorDto<FrmVivGarantiaHistorialResponse>
@@ -511,7 +511,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         #region Fincas
 
-        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> Viv_GarantiaFincasAsociadas_Listar(
     int codEmpresa,
     FrmVivGarantiaCargaRequest request)
         {
@@ -525,14 +525,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaFincasAsociadas_Listar(codEmpresa, request);
+            return _db.Viv_GarantiaFincasAsociadas_Listar(codEmpresa, request);
         }
 
         #endregion
 
         #region Notas
 
-        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> FrmVivGarantiaNotas_Listar(
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> Viv_GarantiaNotas_Listar(
     int codEmpresa,
     FrmVivGarantiaNotasRequest request)
         {
@@ -557,7 +557,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            var resp = _db.FrmVivGarantiaNotas_Listar(
+            var resp = _db.Viv_GarantiaNotas_Listar(
                 codEmpresa,
                 new FrmVivGarantiaNotasRequest
                 {
@@ -752,7 +752,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
     int codEmpresa,
     FrmVivGarantiaGuardarRequest request)
         {
-            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(
+            var estadoOperacion = _db.Viv_GarantiaEstadoOperacion_Obtener(
                 codEmpresa,
                 request.numero_operacion);
 
@@ -787,7 +787,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearOkGuardar();
             }
 
-            var validaDetalle = _db.FrmVivGarantiaDetalleGrado_Validar(
+            var validaDetalle = _db.Viv_GarantiaDetalleGrado_Validar(
                 codEmpresa,
                 request.id_garantia,
                 request.grado_hipoteca.Trim().ToUpperInvariant());
@@ -817,7 +817,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return validacion;
             }
 
-            var cantidadGarantias = _db.FrmVivGarantiaCantidadGarantias_Obtener(
+            var cantidadGarantias = _db.Viv_GarantiaCantidadGarantias_Obtener(
                 codEmpresa,
                 request.numero_operacion);
 
@@ -838,7 +838,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             int codEmpresa,
             FrmVivGarantiaAvaluoPosteriorRequest request)
         {
-            var existeIngeniero = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_ingeniero, "I");
+            var existeIngeniero = _db.Viv_GarantiaContacto_Existe(codEmpresa, request.id_ingeniero, "I");
             if (existeIngeniero.Code < 0)
             {
                 return CrearErrorGuardar(existeIngeniero.Description!);
@@ -849,7 +849,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearErrorGuardar("Información de avalúo: el ingeniero no existe.");
             }
 
-            var existeAbogado = _db.FrmVivGarantiaContacto_Existe(codEmpresa, request.id_abogado, "A");
+            var existeAbogado = _db.Viv_GarantiaContacto_Existe(codEmpresa, request.id_abogado, "A");
             if (existeAbogado.Code < 0)
             {
                 return CrearErrorGuardar(existeAbogado.Description!);
@@ -872,7 +872,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
             request.avaluo_posterior.id_garantia = idGarantia;
 
-            var respAvaluo = _db.FrmVivGarantiaAvaluoPosterior_Guardar(
+            var respAvaluo = _db.Viv_GarantiaAvaluoPosterior_Guardar(
                 codEmpresa,
                 request.avaluo_posterior);
 

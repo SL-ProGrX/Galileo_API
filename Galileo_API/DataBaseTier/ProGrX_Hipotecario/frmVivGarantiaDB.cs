@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<FrmVivGarantiaOperacionResponse> FrmVivGarantiaOperacion_Obtener(
+        public ErrorDto<FrmVivGarantiaOperacionResponse> Viv_GarantiaOperacion_Obtener(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
@@ -97,7 +97,7 @@ WHERE P.COD_PREANALISIS = @expediente;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="operacion">Número de operación.</param>
         /// <returns>Cantidad de garantías.</returns>
-        public ErrorDto<int> FrmVivGarantiaCantidadGarantias_Obtener(
+        public ErrorDto<int> Viv_GarantiaCantidadGarantias_Obtener(
             int codEmpresa,
             long operacion)
         {
@@ -124,7 +124,7 @@ WHERE NumeroOperacion = @operacion;";
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaProvincias_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaProvincias_Obtener(int codEmpresa)
         {
             const string query = @"
 SELECT
@@ -145,7 +145,7 @@ ORDER BY Descripcion;";
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaZonas_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaZonas_Obtener(int codEmpresa)
         {
             const string query = @"
 SELECT
@@ -169,7 +169,7 @@ ORDER BY Descripcion;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="numeroOperacion">Número de operación.</param>
         /// <returns>Estado de la operación.</returns>
-        public ErrorDto<string> FrmVivGarantiaEstadoOperacion_Obtener(
+        public ErrorDto<string> Viv_GarantiaEstadoOperacion_Obtener(
             int codEmpresa,
             long numeroOperacion)
         {
@@ -199,7 +199,7 @@ WHERE R.ID_SOLICITUD = @numero_operacion;";
         /// <param name="idGarantia">Id de garantía.</param>
         /// <param name="gradoHipoteca">Nuevo grado hipotecario.</param>
         /// <returns>True si permite guardar.</returns>
-        public ErrorDto<bool> FrmVivGarantiaDetalleGrado_Validar(
+        public ErrorDto<bool> Viv_GarantiaDetalleGrado_Validar(
             int codEmpresa,
             long idGarantia,
             string gradoHipoteca)
@@ -254,7 +254,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Datos de la garantía.</param>
         /// <returns>Id de garantía generado o actualizado.</returns>
-        public ErrorDto<FrmVivGarantiaGuardarResponse> FrmVivGarantiaGuardar(
+        public ErrorDto<FrmVivGarantiaGuardarResponse> Viv_GarantiaGuardar(
             int codEmpresa,
             FrmVivGarantiaGuardarRequest request)
         {
@@ -324,11 +324,11 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<List<FrmVivGarantiaGeneralItem>> FrmVivGarantiaGeneral_Listar(
+        public ErrorDto<List<FrmVivGarantiaGeneralItem>> Viv_GarantiaGeneral_Listar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
-           var general = _clsConsultar.FrmVivGarantiaTraerGarantiasxOperacion(codEmpresa, request);
+           var general = _clsConsultar.Viv_GarantiaTraerGarantiasxOperacion(codEmpresa, request);
 
             //mapeo los datos a la respuesta
             var result = new ErrorDto<List<FrmVivGarantiaGeneralItem>>
@@ -360,7 +360,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Id de la garantía.</param>
         /// <returns>Detalle de la garantía.</returns>
-        public ErrorDto<FrmVivGarantiaDetalleResponse> FrmVivGarantiaDetalle_Obtener(
+        public ErrorDto<FrmVivGarantiaDetalleResponse> Viv_GarantiaDetalle_Obtener(
             int codEmpresa,
             FrmVivGarantiaDetalleRequest request)
         {
@@ -412,7 +412,9 @@ WHERE IdGarantia = @id_garantia
                         CAST('' AS varchar(250)) AS abogado_nombre,
                         CAST('' AS varchar(1)) AS tipo_poliza_avaluo,
 
-                        ISNULL(VGarantia.MontoNoGravable, 0) AS monto_no_gravable
+                        ISNULL(VGarantia.MontoNoGravable, 0) AS monto_no_gravable,
+                        RTRIM(ISNULL(VGarantia.Estado, '')) AS estado,
+                        CAST(CASE WHEN VGarantia.ValorTerreno IS NULL THEN 0 ELSE 1 END AS bit) AS tiene_valor_terreno
                     FROM DISTRITOS AS D
                     RIGHT JOIN ViviendaGarantia AS VGarantia
                         INNER JOIN CANTONES AS C
@@ -445,7 +447,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Provincia a consultar.</param>
         /// <returns>Listado de cantones.</returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaCantones_Obtener(
             int codEmpresa,
             string provincia)
         {
@@ -475,7 +477,7 @@ ORDER BY DESCRIPCION;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Provincia y cantón a consultar.</param>
         /// <returns>Listado de distritos.</returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaDistritos_Obtener(
             int codEmpresa,
             string provincia,
             string canton)
@@ -507,7 +509,7 @@ ORDER BY DESCRIPCION;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Filtro, tipo profesional y paginación.</param>
         /// <returns>Lista paginada de profesionales.</returns>
-        public ErrorDto<List<FrmVivGarantiaProfesionalItem>> FrmVivGarantiaProfesionales_Buscar(
+        public ErrorDto<List<FrmVivGarantiaProfesionalItem>> Viv_GarantiaProfesionales_Buscar(
             int codEmpresa,
             FrmVivGarantiaProfesionalesBuscarRequest request)
         {
@@ -554,7 +556,7 @@ ORDER BY DESCRIPCION;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Id de garantía.</param>
         /// <returns>Lista de dueños de la garantía.</returns>
-        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> Viv_GarantiaDerechos_Listar(
             int codEmpresa,
             FrmVivGarantiaIdGarantiaRequest request)
         {
@@ -603,7 +605,7 @@ ORDER BY DESCRIPCION;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Cédula del socio.</param>
         /// <returns>Datos básicos del socio.</returns>
-        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+        public ErrorDto<FrmVivGarantiaSocioItem> Viv_GarantiaSocio_Obtener(
             int codEmpresa,
             FrmVivGarantiaSocioRequest request)
         {
@@ -633,7 +635,7 @@ WHERE Cedula = @cedula;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Filtro y paginación.</param>
         /// <returns>Lista paginada de socios.</returns>
-        public ErrorDto<List<FrmVivGarantiaSocioItem>> FrmVivGarantiaSocios_Buscar(
+        public ErrorDto<List<FrmVivGarantiaSocioItem>> Viv_GarantiaSocios_Buscar(
             int codEmpresa,
             FrmVivGarantiaSociosBuscarRequest request)
         {
@@ -670,7 +672,7 @@ FETCH NEXT @rows ROWS ONLY;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Datos del dueño.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FrmVivGarantiaDerecho_Guardar(
+        public ErrorDto Viv_GarantiaDerecho_Guardar(
             int codEmpresa,
             FrmVivGarantiaDerechoGuardarRequest request)
         {
@@ -726,7 +728,7 @@ EXEC dbo.spCRDVivDerechosGarantia_A
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Id de garantía y cédula.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FrmVivGarantiaDerecho_Borrar(
+        public ErrorDto Viv_GarantiaDerecho_Borrar(
             int codEmpresa,
             FrmVivGarantiaDerechoBorrarRequest request)
         {
@@ -767,7 +769,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="idContacto">Id del contacto.</param>
         /// <param name="tipoProfesional">Tipo profesional: I ingeniero, A abogado.</param>
         /// <returns>True si existe.</returns>
-        public ErrorDto<bool> FrmVivGarantiaContacto_Existe(
+        public ErrorDto<bool> Viv_GarantiaContacto_Existe(
             int codEmpresa,
             long idContacto,
             string tipoProfesional)
@@ -799,7 +801,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Datos del avalúo posterior.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FrmVivGarantiaAvaluoPosterior_Guardar(
+        public ErrorDto Viv_GarantiaAvaluoPosterior_Guardar(
             int codEmpresa,
             FrmVivGarantiaAvaluoPosteriorRequest request)
         {
@@ -852,7 +854,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="idGarantia">Id de garantía.</param>
         /// <param name="tipo">Tipo profesional: I ingeniero, A abogado.</param>
         /// <returns>Información del trámite.</returns>
-        public ErrorDto<FrmVivGarantiaHistorialRawItem> FrmVivGarantiaHistorial_ObtenerPorTipo(
+        public ErrorDto<FrmVivGarantiaHistorialRawItem> Viv_GarantiaHistorial_ObtenerPorTipo(
             int codEmpresa,
             long idGarantia,
             string tipo)
@@ -884,7 +886,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Operación o expediente.</param>
         /// <returns>Lista de fincas asociadas.</returns>
-        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> Viv_GarantiaFincasAsociadas_Listar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
@@ -967,7 +969,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Id de garantía y tipo profesional: A abogado, I ingeniero.</param>
         /// <returns>Lista de notas del trámite.</returns>
-        public ErrorDto<List<FrmVivGarantiaNotaTramiteRawItem>> FrmVivGarantiaNotas_Listar(
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteRawItem>> Viv_GarantiaNotas_Listar(
             int codEmpresa,
             FrmVivGarantiaNotasRequest request)
         {

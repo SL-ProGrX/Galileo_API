@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Request con operación o expediente.</param>
         /// <returns>Listado de garantías encontradas.</returns>
-        public ErrorDto<List<FrmVivGarantiaOperacionGarantiaItem>> FrmVivGarantiaTraerGarantiasxOperacion(
+        public ErrorDto<List<FrmVivGarantiaOperacionGarantiaItem>> Viv_GarantiaTraerGarantiasxOperacion(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
