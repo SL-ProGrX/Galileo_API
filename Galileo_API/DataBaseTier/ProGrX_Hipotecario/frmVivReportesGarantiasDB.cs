@@ -326,14 +326,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 var response = new VivReporteGarantiasResponse
                 {
                     Reporte = "Credito_Hipotecario_AuxiliarProdAcum",
-                    FechaCorte = request.FechaCorte.ToString(FechaFormatoPantalla, CultureInfo.InvariantCulture),
+                    FechaCorte = request.FechaCorte?.ToString(FechaFormatoPantalla, CultureInfo.InvariantCulture) ?? string.Empty,
                     Empresa = request.NombreEmpresa,
                     Titulo = WindowTitleReportes,
                     Fecha = DateTime.Now.ToString(FechaFormatoPantalla, CultureInfo.InvariantCulture),
                     Usuario = request.Usuario.ToUpper(),
                     StoredProcParams =
             {
-                request.FechaCorte.ToString(FechaHoraFinSql, CultureInfo.InvariantCulture)
+                request.FechaCorte?.ToString(FechaHoraFinSql, CultureInfo.InvariantCulture) ?? string.Empty
             }
                 };
 
