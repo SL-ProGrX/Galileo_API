@@ -4,7 +4,7 @@
     {
         public class VivReporteGarantiasRequest
         {
-            public int TabIndex { get; set; }
+            public int TabIndex { get; set; } = 0;
 
             public string FechaInicio { get; set; } = string.Empty;
 
@@ -39,7 +39,7 @@
 
         public class VivReporteGarantiasProdAcumRequest
         {
-            public DateTime FechaCorte { get; set; }
+            public DateTime? FechaCorte { get; set; }
 
             public string Usuario { get; set; } = string.Empty;
 

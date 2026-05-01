@@ -10,19 +10,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
     public class FrmVivReportesGarantiasDB
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain mProGrxDll;
+      
 
         public FrmVivReportesGarantiasDB(IConfiguration config)
         {
-            _portalDb = new PortalDB(config);
-            mProGrxDll = new MProGrxMain(config);
+            _portalDb = new PortalDB(config); 
         }
 
 
         private const string FechaFormatoPantalla = "dd/MM/yyyy";
         private const string FechaHoraFinSql = "yyyy-MM-dd 23:59:59.000";
         private const string WindowTitleReportes = "Reportes Admin Créditos Hipotecarios";
-
+        private const string OperadorAnd = " and ";
+        private const string VistaViviendaDesembolsoPendientes = "VISTA_ViviendaDesembolsoPendientes";
+        private const string CampoIdContacto = "IdContacto";
+        private const string VistaViviendaDuracionTramitesContacto = "VISTA_ViviendaDuracionTramitesContacto";
+        private const string VistaViviendaMontosContactos = "VISTA_ViviendaMontosContactos";
+        private const string VistaViviendaTramitesPContacto = "VISTA_ViviendaTramitesPContacto";
         private static VivReporteGarantiasResponse CrearRespuestaBase(VivReporteGarantiasRequest request)
         {
             return new VivReporteGarantiasResponse
@@ -119,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         };
 
                 AgregarFiltroEntero(filtros, "VISTA_ViviendaDuracionTramitesZona", "IdZona", request.IdZona);
-                response.SelectionFormula = string.Join(" and ", filtros);
+                response.SelectionFormula = string.Join(OperadorAnd, filtros);
                 return;
             }
 
@@ -141,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
     };
 
             AgregarFiltroEntero(filtrosMontos, "VISTA_ViviendaMontosZonas", "IdZona", request.IdZona);
-            response.SelectionFormula = string.Join(" and ", filtrosMontos);
+            response.SelectionFormula = string.Join(OperadorAnd, filtrosMontos);
         }
 
         /// <summary>
@@ -227,17 +231,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             var filtros = new List<string>
     {
         CrearFiltroFecha(
-            "VISTA_ViviendaDesembolsoPendientes",
+           VistaViviendaDesembolsoPendientes,
             "Fecha",
             request.FechaInicio,
             request.FechaCorte)
     };
 
-            AgregarFiltroTexto(filtros, "VISTA_ViviendaDesembolsoPendientes", "TipoProfesional", request.TipoContacto);
-            AgregarFiltroTexto(filtros, "VISTA_ViviendaDesembolsoPendientes", "Estado", request.Estado);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaDesembolsoPendientes", "IdContacto", request.IdContacto);
+            AgregarFiltroTexto(filtros, VistaViviendaDesembolsoPendientes, "TipoProfesional", request.TipoContacto);
+            AgregarFiltroTexto(filtros, VistaViviendaDesembolsoPendientes, "Estado", request.Estado);
+            AgregarFiltroEntero(filtros, VistaViviendaDesembolsoPendientes, CampoIdContacto, request.IdContacto);
 
-            response.SelectionFormula = string.Join(" and ", filtros);
+            response.SelectionFormula = string.Join(OperadorAnd, filtros);
         }
 
         /// <summary>
@@ -248,17 +252,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             var filtros = new List<string>
     {
         CrearFiltroFecha(
-            "VISTA_ViviendaDuracionTramitesContacto",
+            VistaViviendaDuracionTramitesContacto,
             "AsignacionFecha",
             request.FechaInicio,
             request.FechaCorte)
     };
 
-            AgregarFiltroTexto(filtros, "VISTA_ViviendaDuracionTramitesContacto", "IdTipo", request.Tipo);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaDuracionTramitesContacto", "IdContacto", request.IdContacto);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaDuracionTramitesContacto", "IdEmpresa", request.IdEmpresa);
+            AgregarFiltroTexto(filtros, VistaViviendaDuracionTramitesContacto, "IdTipo", request.Tipo);
+            AgregarFiltroEntero(filtros, VistaViviendaDuracionTramitesContacto, CampoIdContacto, request.IdContacto);
+            AgregarFiltroEntero(filtros, VistaViviendaDuracionTramitesContacto, "IdEmpresa", request.IdEmpresa);
 
-            return string.Join(" and ", filtros);
+            return string.Join(OperadorAnd, filtros);
         }
 
         /// <summary>
@@ -271,17 +275,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             var filtros = new List<string>
     {
         CrearFiltroFecha(
-            "VISTA_ViviendaMontosContactos",
+            VistaViviendaMontosContactos,
             "AsignacionFecha",
             request.FechaInicio,
             request.FechaCorte)
     };
 
-            AgregarFiltroTexto(filtros, "VISTA_ViviendaMontosContactos", "TipoProfesional", request.Tipo);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaMontosContactos", "IdContacto", request.IdContacto);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaMontosContactos", "IdEmpresa", request.IdEmpresa);
+            AgregarFiltroTexto(filtros, VistaViviendaMontosContactos, "TipoProfesional", request.Tipo);
+            AgregarFiltroEntero(filtros, VistaViviendaMontosContactos, CampoIdContacto , request.IdContacto);
+            AgregarFiltroEntero(filtros, VistaViviendaMontosContactos, "IdEmpresa", request.IdEmpresa);
 
-            return string.Join(" and ", filtros);
+            return string.Join(OperadorAnd, filtros);
         }
 
         /// <summary>
@@ -294,17 +298,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             var filtros = new List<string>
     {
         CrearFiltroFecha(
-            "VISTA_ViviendaTramitesPContacto",
+            VistaViviendaTramitesPContacto,
             "AsignacionFecha",
             request.FechaInicio,
             request.FechaCorte)
     };
 
-            AgregarFiltroTexto(filtros, "VISTA_ViviendaTramitesPContacto", "TipoProfesional", request.Tipo);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaTramitesPContacto", "IdContacto", request.IdContacto);
-            AgregarFiltroEntero(filtros, "VISTA_ViviendaTramitesPContacto", "IdEmpresa", request.IdEmpresa);
+            AgregarFiltroTexto(filtros, VistaViviendaTramitesPContacto, "TipoProfesional", request.Tipo);
+            AgregarFiltroEntero(filtros, VistaViviendaTramitesPContacto, CampoIdContacto, request.IdContacto);
+            AgregarFiltroEntero(filtros, VistaViviendaTramitesPContacto, "IdEmpresa", request.IdEmpresa);
 
-            return string.Join(" and ", filtros);
+            return string.Join(OperadorAnd, filtros);
         }
 
         /// <summary>
