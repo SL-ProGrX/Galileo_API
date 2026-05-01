@@ -90,5 +90,11 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] string usuario,
             [FromQuery] int idDesem)
             => _bl.RemesasTesoreria_ActualizarProceso(codEmpresa, remesaSeleccionada, usuario, idDesem);
+
+        [HttpGet("RemesasTesoreria_Top")]
+        public ActionResult<ErrorDto<List<RemesasTesoreriaObtenerDto>>> RemesasTesoreria_Top(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int cantidad)
+            => _bl.RemesasTesoreria_Top(codEmpresa, cantidad);
     }
 }
