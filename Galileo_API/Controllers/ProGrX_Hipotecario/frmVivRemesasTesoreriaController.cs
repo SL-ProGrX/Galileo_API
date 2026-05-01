@@ -38,5 +38,57 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int codEmpresa,
             [FromQuery] int remesa)
             => _bl.RemesasTesoreriaDetalle_Eliminar(codEmpresa, remesa);
+
+        [HttpGet("RemesasTesoreria_Filtrar")]
+        public ActionResult<ErrorDto<List<RemesasTesoreriaObtenerDto>>> RemesasTesoreria_Filtrar(
+            [FromQuery] int codEmpresa,
+            [FromQuery] string tipo)
+            => _bl.RemesasTesoreria_Filtrar(codEmpresa, tipo);
+
+        [HttpGet("RemesasTesoreria_DesembolsosDisponibles")]
+        public ActionResult<ErrorDto<List<RemesaTesoreriaDesembolsoDisponibleDto>>> RemesasTesoreria_DesembolsosDisponibles(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada)
+            => _bl.RemesasTesoreria_DesembolsosDisponibles(codEmpresa, remesaSeleccionada);
+
+        [HttpGet("RemesasTesoreria_ValidarAbierta")]
+        public ActionResult<ErrorDto<RemesaTesoreriaExisteDto>> RemesasTesoreria_ValidarAbierta(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada)
+            => _bl.RemesasTesoreria_ValidarAbierta(codEmpresa, remesaSeleccionada);
+
+        [HttpPut("RemesasTesoreria_CargarDesembolso")]
+        public ActionResult<ErrorDto<bool>> RemesasTesoreria_CargarDesembolso(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada,
+            [FromQuery] int codigoDesembolso)
+            => _bl.RemesasTesoreria_CargarDesembolso(codEmpresa, remesaSeleccionada, codigoDesembolso);
+
+        [HttpPut("RemesasTesoreria_Cerrar")]
+        public ActionResult<ErrorDto<bool>> RemesasTesoreria_Cerrar(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada,
+            [FromQuery] string usuario)
+            => _bl.RemesasTesoreria_Cerrar(codEmpresa, remesaSeleccionada, usuario);
+
+        [HttpGet("RemesasTesoreria_DesembolsosAsignados")]
+        public ActionResult<ErrorDto<List<RemesaTesoreriaDesembolsoAsignadoDto>>> RemesasTesoreria_DesembolsosAsignados(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada)
+            => _bl.RemesasTesoreria_DesembolsosAsignados(codEmpresa, remesaSeleccionada);
+
+        [HttpGet("RemesasTesoreria_ValidarCerrada")]
+        public ActionResult<ErrorDto<RemesaTesoreriaExisteDto>> RemesasTesoreria_ValidarCerrada(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada)
+            => _bl.RemesasTesoreria_ValidarCerrada(codEmpresa, remesaSeleccionada);
+
+        [HttpPut("RemesasTesoreria_ActualizarProceso")]
+        public ActionResult<ErrorDto<bool>> RemesasTesoreria_ActualizarProceso(
+            [FromQuery] int codEmpresa,
+            [FromQuery] int remesaSeleccionada,
+            [FromQuery] string usuario,
+            [FromQuery] int idDesem)
+            => _bl.RemesasTesoreria_ActualizarProceso(codEmpresa, remesaSeleccionada, usuario, idDesem);
     }
 }
