@@ -11,6 +11,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 3;
 
+        private const string MensajeRegistroExitoso = "Informacion registrada satisfactoriamente...";
+        private const string MensajeEliminacionExitosa = "Informacion eliminada satisfactoriamente...";
+
         public FrmVivControlAsignacionGarantiaDb(IConfiguration config)
            : this(
                  new PortalDB(config),
@@ -95,7 +98,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 usuario,
                 "Aplica - WEB",
                 $"Asignación Garantía Hipotecaria {request.idGarantia} Contacto: {request.idContacto}",
-                "Informacion registrada satisfactoriamente...");
+                MensajeRegistroExitoso);
         }
 
         /// <summary>
@@ -120,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 usuario,
                 "Borrar - WEB",
                 $"Asignación Garantía Hipotecaria {idGarantia} Contacto: {idContacto}",
-                "Informacion eliminada satisfactoriamente...");
+                MensajeEliminacionExitosa);
         }
 
         /// <summary>
@@ -189,8 +192,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 request.aplicar == "S" ? "APLICA - WEB" : "BORRA - WEB",
                 $"Entrega Garantía Hipotecaria {request.idGarantia} Contacto: {request.idContacto}",
                 request.aplicar == "S"
-                    ? "Informacion registrada satisfactoriamente..."
-                    : "Informacion eliminada satisfactoriamente...");
+                    ? MensajeRegistroExitoso
+                    : MensajeEliminacionExitosa);
         }
 
         /// <summary>
@@ -286,8 +289,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 request.aplicar == "S" ? "APLICA - WEB" : "BORRA - WEB",
                 detalle,
                 request.aplicar == "S"
-                    ? "Informacion registrada satisfactoriamente..."
-                    : "Informacion eliminada satisfactoriamente...");
+                    ? MensajeRegistroExitoso
+                    : MensajeEliminacionExitosa);
         }
 
         /// <summary>
@@ -340,8 +343,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 request.aplicar == "S" ? "APLICA - WEB" : "BORRA - WEB",
                 $"Asignación Garantía Hipotecaria(I): {request.idGarantia} Contacto: {request.idContacto}",
                 request.aplicar == "S"
-                    ? "Informacion registrada satisfactoriamente..."
-                    : "Informacion eliminada satisfactoriamente...");
+                    ? MensajeRegistroExitoso
+                    : MensajeEliminacionExitosa);
         }
 
         /// <summary>
@@ -384,7 +387,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return new ErrorDto<VivControlTiemposSeguimientoData>
             {
                 Code = 0,
-                Description = "OK",
                 Result = result
             };
         }
@@ -430,13 +432,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             return new ErrorDto<VivControlHonorariosRegistraData>
             {
                 Code = 0,
-                Description = "OK",
                 Result = new VivControlHonorariosRegistraData
                 {
                     registraHonorarios = registra
                 }
             };
         }
+
+        #region Helpers
 
         /// <summary>
         /// Registra en bitácora.
@@ -453,7 +456,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             });
         }
 
-        #region Helpers
         private static string NormalizarTexto(string? valor)
         {
             return valor?.Trim() ?? string.Empty;
@@ -662,6 +664,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
             };
         }
 
-        #endregion  
+        #endregion
     }
 }
