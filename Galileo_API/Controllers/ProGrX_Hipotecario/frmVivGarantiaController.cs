@@ -63,20 +63,21 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.FrmVivGarantiaDetalle_Obtener(codEmpresa, request);
         }
 
-        [HttpPost("Viv_GarantiaCantones_Obtener")]
+        [HttpGet("Viv_GarantiaCantones_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
     int codEmpresa,
-    FrmVivGarantiaProvinciaRequest request)
+    string provincia)
         {
-            return _bl.FrmVivGarantiaCantones_Obtener(codEmpresa, request);
+            return _bl.FrmVivGarantiaCantones_Obtener(codEmpresa, provincia);
         }
 
-        [HttpPost("Viv_GarantiaDistritos_Obtener")]
+        [HttpGet("Viv_GarantiaDistritos_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
-    int codEmpresa,
-    FrmVivGarantiaCantonRequest request)
+            int codEmpresa,
+            string provincia,
+            string canton)
         {
-            return _bl.FrmVivGarantiaDistritos_Obtener(codEmpresa, request);
+            return _bl.FrmVivGarantiaDistritos_Obtener(codEmpresa, provincia, canton);
         }
 
         [HttpPost("Viv_GarantiaProfesionales_Buscar")]

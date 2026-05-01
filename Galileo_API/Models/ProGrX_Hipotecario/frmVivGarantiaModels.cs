@@ -76,15 +76,19 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
     public class FrmVivGarantiaDetalleResponse
     {
         public long id_garantia { get; set; } = 0;
+
+        public long numero_operacion { get; set; } = 0;
+        public string expediente { get; set; } = string.Empty;
+
         public string numero_finca { get; set; } = string.Empty;
         public string tipo_derecho { get; set; } = string.Empty;
         public string num_plano_catastro { get; set; } = string.Empty;
         public decimal area_finca { get; set; } = 0;
         public string grado_hipoteca { get; set; } = string.Empty;
 
-        public int? ubicacion_provincia { get; set; }
-        public int? ubicacion_canton { get; set; }
-        public int? ubicacion_distrito { get; set; }
+        public string ubicacion_provincia { get; set; } = string.Empty;
+        public string ubicacion_canton { get; set; } = string.Empty;
+        public string? ubicacion_distrito { get; set; }
         public int? id_zona { get; set; }
         public string direccion { get; set; } = string.Empty;
 
@@ -111,18 +115,6 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string anotaciones_gravamen { get; set; } = string.Empty;
         public decimal monto_no_gravable { get; set; } = 0;
     }
-
-    public class FrmVivGarantiaProvinciaRequest
-    {
-        public int provincia { get; set; } = 0;
-    }
-
-    public class FrmVivGarantiaCantonRequest
-    {
-        public int provincia { get; set; } = 0;
-        public int canton { get; set; } = 0;
-    }
-
     public class FrmVivGarantiaIdGarantiaRequest
     {
         public long id_garantia { get; set; } = 0;
@@ -281,9 +273,9 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string expediente { get; set; } = string.Empty;
 
         public int? id_zona { get; set; }
-        public int ubicacion_provincia { get; set; } = 0;
-        public int ubicacion_canton { get; set; } = 0;
-        public int? ubicacion_distrito { get; set; }
+        public string ubicacion_provincia { get; set; } = string.Empty;
+        public string ubicacion_canton { get; set; } = string.Empty;
+        public string? ubicacion_distrito { get; set; }
 
         public string numero_finca { get; set; } = string.Empty;
         public string tipo_derecho { get; set; } = string.Empty;
@@ -318,9 +310,9 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public int actualiza { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public long id_garantia { get; set; } = 0;
-        public int provincia { get; set; } = 0;
-        public int canton { get; set; } = 0;
-        public int? distrito { get; set; }
+        public string provincia { get; set; } = string.Empty;
+        public string canton { get; set; } = string.Empty;
+        public string? distrito { get; set; }
         public string nombre { get; set; } = string.Empty;
         public string direccion { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
@@ -333,6 +325,7 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public long id_garantia { get; set; } = 0;
         public long numero_operacion { get; set; } = 0;
 
+        public string registro_usuario { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
     }
 

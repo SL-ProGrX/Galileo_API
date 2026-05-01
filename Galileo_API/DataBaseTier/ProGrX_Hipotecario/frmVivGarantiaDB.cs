@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Hipotecario;
 using System.Data;
 
@@ -11,11 +12,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
     {
         private readonly PortalDB _portalDb;
         private readonly ClsConsultarBD _clsConsultar;
+        private readonly MSecurityMainDb _bitacora;
+        private const int vModulo = 3;
 
         public FrmVivGarantiaDB(IConfiguration confi)
         {
             _portalDb = new PortalDB(confi);
             _clsConsultar = new ClsConsultarBD(confi);
+            _bitacora = new MSecurityMainDb(confi);
         }
 
         #region Principal
@@ -260,9 +264,9 @@ WHERE IdGarantia = @id_garantia
 
                 parametros.Add("@IdGarantia", request.id_garantia, DbType.Int32, ParameterDirection.InputOutput);
                 parametros.Add("@IdZona", request.id_zona, DbType.Int32);
-                parametros.Add("@UbicacionProvincia", request.ubicacion_provincia.ToString(), DbType.String);
-                parametros.Add("@UbicacionCanton", request.ubicacion_canton.ToString(), DbType.String);
-                parametros.Add("@UbicacionDistrito", request.ubicacion_distrito?.ToString(), DbType.String);
+                parametros.Add("@UbicacionProvincia", request.ubicacion_provincia.Trim(), DbType.String);
+                parametros.Add("@UbicacionCanton", request.ubicacion_canton.Trim(), DbType.String);
+                parametros.Add("@UbicacionDistrito", TextoONulo(request.ubicacion_distrito), DbType.String);
                 parametros.Add("@NumeroOperacion", request.numero_operacion.ToString(), DbType.String);
                 parametros.Add("@NumeroFinca", request.numero_finca.Trim(), DbType.String);
                 parametros.Add("@TipoDerecho", request.tipo_derecho.Trim(), DbType.String);
@@ -294,6 +298,13 @@ WHERE IdGarantia = @id_garantia
                 {
                     idGarantia = parametros.Get<int>("@IdGarantia");
                 }
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.registro_usuario,
+                    request.id_garantia > 0 ? "MODIFICA - WEB" : "REGISTRA - WEB",
+                    $"Garantía Hipotecaria Id: {idGarantia}, Operación: {request.numero_operacion}, Finca: {request.numero_finca.Trim()}"
+                );
 
                 return new FrmVivGarantiaGuardarResponse
                 {
@@ -366,6 +377,8 @@ WHERE IdGarantia = @id_garantia
             const string query = @"
                     SELECT
                         VGarantia.IdGarantia AS id_garantia,
+                        ISNULL(VGarantia.NumeroOperacion, 0) AS numero_operacion,
+                        RTRIM(ISNULL(VGarantia.COD_PREANALISIS, '')) AS expediente,
                         RTRIM(ISNULL(VGarantia.NumeroFinca, '')) AS numero_finca,
                         RTRIM(ISNULL(VGarantia.TipoDerecho, '')) AS tipo_derecho,
                         RTRIM(ISNULL(VGarantia.NumPlanoCatastro, '')) AS num_plano_catastro,
@@ -434,7 +447,7 @@ WHERE IdGarantia = @id_garantia
         /// <returns>Listado de cantones.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
             int codEmpresa,
-            FrmVivGarantiaProvinciaRequest request)
+            string provincia)
         {
             const string query = @"
 SELECT
@@ -450,7 +463,7 @@ ORDER BY DESCRIPCION;";
                 query,
                 new
                 {
-                    provincia = request.provincia
+                    provincia = provincia
                 }
             );
         }
@@ -464,7 +477,8 @@ ORDER BY DESCRIPCION;";
         /// <returns>Listado de distritos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
             int codEmpresa,
-            FrmVivGarantiaCantonRequest request)
+            string provincia,
+            string canton)
         {
             const string query = @"
 SELECT
@@ -481,8 +495,8 @@ ORDER BY DESCRIPCION;";
                 query,
                 new
                 {
-                    provincia = request.provincia,
-                    canton = request.canton
+                    provincia = provincia,
+                    canton = canton
                 }
             );
         }
@@ -545,31 +559,32 @@ ORDER BY DESCRIPCION;";
             FrmVivGarantiaIdGarantiaRequest request)
         {
             const string query = @"
-                    SELECT
-                        VDG.IdGarantia AS id_garantia,
-                        RTRIM(ISNULL(VDG.Cedula, '')) AS cedula,
-                        RTRIM(ISNULL(VDG.Nombre, '')) AS nombre,
-                        VDG.PROVINCIA AS provincia_id,
-                        VDG.CANTON AS canton_id,
-                        VDG.DISTRITO AS distrito_id,
-                        RTRIM(ISNULL(VDG.Direccion, '')) AS direccion,
-                        RTRIM(ISNULL(P.DESCRIPCION, '')) AS desc_provincia,
-                        RTRIM(ISNULL(C.DESCRIPCION, '')) AS desc_canton,
-                        RTRIM(ISNULL(D.DESCRIPCION, '')) AS desc_distrito,
-                        RTRIM(ISNULL(VDG.RegistroUsuario, '')) AS registro_usuario,
-                        VDG.RegistroFecha AS registro_fecha
-                    FROM CANTONES AS C
-                    INNER JOIN PROVINCIAS AS P
-                    INNER JOIN ViviendaDerechosGarantia AS VDG
-                        ON P.PROVINCIA = VDG.PROVINCIA
-                        ON C.CANTON = VDG.CANTON
-                        AND C.PROVINCIA = VDG.PROVINCIA
-                    LEFT JOIN DISTRITOS AS D
-                        ON VDG.PROVINCIA = D.PROVINCIA
-                        AND VDG.CANTON = D.CANTON
-                        AND VDG.DISTRITO = D.DISTRITO
-                    WHERE VDG.IdGarantia = @id_garantia
-                    ORDER BY VDG.Cedula;";
+                SELECT
+                    VDG.IdGarantia AS id_garantia,
+                    RTRIM(ISNULL(VDG.Cedula, '')) AS cedula,
+                    RTRIM(ISNULL(VDG.Nombre, '')) AS nombre,
+                    VDG.PROVINCIA AS provincia_id,
+                    VDG.CANTON AS canton_id,
+                    VDG.DISTRITO AS distrito_id,
+                    RTRIM(ISNULL(VDG.Direccion, '')) AS direccion,
+                    RTRIM(ISNULL(P.DESCRIPCION, '')) AS desc_provincia,
+                    RTRIM(ISNULL(C.DESCRIPCION, '')) AS desc_canton,
+                    RTRIM(ISNULL(D.DESCRIPCION, '')) AS desc_distrito,
+                    RTRIM(ISNULL(VDG.RegistroUsuario, '')) AS registro_usuario,
+                    VDG.RegistroFecha AS registro_fecha
+                FROM ViviendaDerechosGarantia AS VDG
+                LEFT JOIN PROVINCIAS AS P
+                    ON P.PROVINCIA = VDG.PROVINCIA
+                LEFT JOIN CANTONES AS C
+                    ON C.PROVINCIA = VDG.PROVINCIA
+                    AND C.CANTON = VDG.CANTON
+                LEFT JOIN DISTRITOS AS D
+                    ON D.PROVINCIA = VDG.PROVINCIA
+                    AND D.CANTON = VDG.CANTON
+                    AND D.DISTRITO = VDG.DISTRITO
+                WHERE VDG.IdGarantia = @id_garantia
+                ORDER BY VDG.Cedula;";
+
 
             return DbHelper.ExecuteListQuery<FrmVivGarantiaDerechoDuenoItem>(
                 _portalDb,
@@ -672,24 +687,36 @@ EXEC dbo.spCRDVivDerechosGarantia_A
     @RegistroUsuario,
     @RegistroFecha;";
 
-            return DbHelper.ExecuteNonQuery(
-                _portalDb,
-                codEmpresa,
-                query,
-                new
-                {
-                    Actualiza = request.actualiza,
-                    Cedula = request.cedula.Trim(),
-                    IdGarantia = request.id_garantia,
-                    Provincia = request.provincia.ToString(),
-                    Canton = request.canton.ToString(),
-                    Distrito = request.distrito?.ToString(),
-                    Nombre = request.nombre.Trim(),
-                    Direccion = string.IsNullOrWhiteSpace(request.direccion) ? null : request.direccion.Trim(),
-                    RegistroUsuario = request.registro_usuario.Trim(),
-                    RegistroFecha = (string?)null
-                }
-            );
+            var resp = DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    query,
+                    new
+                    {
+                        Actualiza = request.actualiza,
+                        Cedula = request.cedula.Trim(),
+                        IdGarantia = request.id_garantia,
+                        Provincia = request.provincia.Trim(),
+                        Canton = request.canton.Trim(),
+                        Distrito = TextoONulo(request.distrito),
+                        Nombre = request.nombre.Trim(),
+                        Direccion = TextoONulo(request.direccion),
+                        RegistroUsuario = request.registro_usuario.Trim(),
+                        RegistroFecha = DateTime.Now
+                    }
+                );
+
+            if (resp.Code >= 0)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.registro_usuario,
+                    request.actualiza == 1 ? "MODIFICA - WEB" : "REGISTRA - WEB",
+                    $"Dueño Garantía Id: {request.id_garantia}, Cédula: {request.cedula.Trim()}"
+                );
+            }
+
+            return resp;
         }
 
         /// <summary>
@@ -708,16 +735,28 @@ DELETE dbo.ViviendaDerechosGarantia
 WHERE IdGarantia = @id_garantia
   AND Cedula = @cedula;";
 
-            return DbHelper.ExecuteNonQuery(
-                _portalDb,
-                codEmpresa,
-                query,
-                new
-                {
-                    id_garantia = request.id_garantia,
-                    cedula = request.cedula.Trim()
-                }
-            );
+            var resp = DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    query,
+                    new
+                    {
+                        id_garantia = request.id_garantia,
+                        cedula = request.cedula.Trim()
+                    }
+                );
+
+            if (resp.Code >= 0)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.registro_usuario,
+                    "BORRA - WEB",
+                    $"Dueño Garantía Id: {request.id_garantia}, Cédula: {request.cedula.Trim()}"
+                );
+            }
+
+            return resp;
         }
 
         /// <summary>
@@ -968,6 +1007,21 @@ WHERE IdGarantia = @id_garantia
             }
 
             return valor.Trim();
+        }
+
+        /// <summary>
+        /// Registra movimientos de garantía hipotecaria en bitácora.
+        /// </summary>
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            _bitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario.Trim().ToUpperInvariant(),
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
     }
 }
