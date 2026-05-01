@@ -74,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     response.SubTitulo = "Duración por Contacto en Horas";
                     response.Reporte = "Credito_Hipotecario_DuracionGarantiasContacto";
                     response.SelectionFormula = CrearFiltroContactoDuracion(request);
-                    break; ;
+                    break;
 
                 case "MONTO_CREDITOS_CONTACTO":
                     response.Titulo = "Listado de Montos en Trámites";
