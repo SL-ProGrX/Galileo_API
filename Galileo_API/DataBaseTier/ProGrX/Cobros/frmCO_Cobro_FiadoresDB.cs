@@ -422,50 +422,68 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         private static IEnumerable<FrmCOCobroFiadoresPendienteData> OrdenarPendientes(IEnumerable<FrmCOCobroFiadoresPendienteData> data, FiltrosLazyLoadData filtros)
         {
             var asc = EsAscendente(filtros);
-            return NormalizarTexto(filtros.sortField) switch
-            {
-                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
-                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
-                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
-                "n_cuota" => asc ? data.OrderBy(x => x.n_cuota) : data.OrderByDescending(x => x.n_cuota),
-                "mora_financiera" => asc ? data.OrderBy(x => x.mora_financiera) : data.OrderByDescending(x => x.mora_financiera),
-                "saldo" => asc ? data.OrderBy(x => x.saldo) : data.OrderByDescending(x => x.saldo),
-                "notifica_fecha" => asc ? data.OrderBy(x => x.notifica_fecha ?? string.Empty) : data.OrderByDescending(x => x.notifica_fecha ?? string.Empty),
-                "estadoPersona_desc" => asc ? data.OrderBy(x => x.estadoPersona_desc ?? string.Empty) : data.OrderByDescending(x => x.estadoPersona_desc ?? string.Empty),
-                "linea_desc" => asc ? data.OrderBy(x => x.linea_desc ?? string.Empty) : data.OrderByDescending(x => x.linea_desc ?? string.Empty),
-                "institucion_desc" => asc ? data.OrderBy(x => x.institucion_desc ?? string.Empty) : data.OrderByDescending(x => x.institucion_desc ?? string.Empty),
-                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
-            };
+            var keySelector = ObtenerKeyPendientes(filtros.sortField);
+            return asc ? data.OrderBy(keySelector) : data.OrderByDescending(keySelector);
         }
 
         private static IEnumerable<FrmCOCobroFiadoresActivoData> OrdenarActivos(IEnumerable<FrmCOCobroFiadoresActivoData> data, FiltrosLazyLoadData filtros)
         {
             var asc = EsAscendente(filtros);
-            return NormalizarTexto(filtros.sortField) switch
-            {
-                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
-                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
-                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
-                "cuota" => asc ? data.OrderBy(x => x.cuota) : data.OrderByDescending(x => x.cuota),
-                "d_operacion" => asc ? data.OrderBy(x => x.d_operacion ?? string.Empty) : data.OrderByDescending(x => x.d_operacion ?? string.Empty),
-                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
-            };
+            var keySelector = ObtenerKeyActivos(filtros.sortField);
+            return asc ? data.OrderBy(keySelector) : data.OrderByDescending(keySelector);
         }
 
         private static IEnumerable<FrmCOCobroFiadoresConsultaData> OrdenarConsultas(IEnumerable<FrmCOCobroFiadoresConsultaData> data, FiltrosLazyLoadData filtros)
         {
             var asc = EsAscendente(filtros);
-            return NormalizarTexto(filtros.sortField) switch
+            var keySelector = ObtenerKeyConsultas(filtros.sortField);
+            return asc ? data.OrderBy(keySelector) : data.OrderByDescending(keySelector);
+        }
+
+        private static Func<FrmCOCobroFiadoresPendienteData, object> ObtenerKeyPendientes(string? sortField)
+        {
+            return NormalizarTexto(sortField) switch
             {
-                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
-                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
-                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
-                "n_cuota" => asc ? data.OrderBy(x => x.n_cuota) : data.OrderByDescending(x => x.n_cuota),
-                "mora_financiera" => asc ? data.OrderBy(x => x.mora_financiera) : data.OrderByDescending(x => x.mora_financiera),
-                "saldo_original" => asc ? data.OrderBy(x => x.saldo_original) : data.OrderByDescending(x => x.saldo_original),
-                "saldo_actual" => asc ? data.OrderBy(x => x.saldo_actual) : data.OrderByDescending(x => x.saldo_actual),
-                "accion_fecha" => asc ? data.OrderBy(x => x.accion_fecha ?? string.Empty) : data.OrderByDescending(x => x.accion_fecha ?? string.Empty),
-                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
+                "codigo" => x => x.codigo ?? string.Empty,
+                "cedula" => x => x.cedula ?? string.Empty,
+                "nombre" => x => x.nombre ?? string.Empty,
+                "n_cuota" => x => x.n_cuota,
+                "mora_financiera" => x => x.mora_financiera,
+                "saldo" => x => x.saldo,
+                "notifica_fecha" => x => x.notifica_fecha ?? string.Empty,
+                "estadoPersona_desc" => x => x.estadoPersona_desc ?? string.Empty,
+                "linea_desc" => x => x.linea_desc ?? string.Empty,
+                "institucion_desc" => x => x.institucion_desc ?? string.Empty,
+                _ => x => x.id_solicitud
+            };
+        }
+
+        private static Func<FrmCOCobroFiadoresActivoData, object> ObtenerKeyActivos(string? sortField)
+        {
+            return NormalizarTexto(sortField) switch
+            {
+                "codigo" => x => x.codigo ?? string.Empty,
+                "cedula" => x => x.cedula ?? string.Empty,
+                "nombre" => x => x.nombre ?? string.Empty,
+                "cuota" => x => x.cuota,
+                "d_operacion" => x => x.d_operacion ?? string.Empty,
+                _ => x => x.id_solicitud
+            };
+        }
+
+        private static Func<FrmCOCobroFiadoresConsultaData, object> ObtenerKeyConsultas(string? sortField)
+        {
+            return NormalizarTexto(sortField) switch
+            {
+                "codigo" => x => x.codigo ?? string.Empty,
+                "cedula" => x => x.cedula ?? string.Empty,
+                "nombre" => x => x.nombre ?? string.Empty,
+                "n_cuota" => x => x.n_cuota,
+                "mora_financiera" => x => x.mora_financiera,
+                "saldo_original" => x => x.saldo_original,
+                "saldo_actual" => x => x.saldo_actual,
+                "accion_fecha" => x => x.accion_fecha ?? string.Empty,
+                _ => x => x.id_solicitud
             };
         }
 

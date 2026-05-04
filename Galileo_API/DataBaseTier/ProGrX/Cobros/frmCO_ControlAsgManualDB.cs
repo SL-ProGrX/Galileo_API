@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Cobros;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Cobros
 {
@@ -82,53 +83,22 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
 
             try
             {
-                cedula = (cedula ?? "").Trim();
+                var ced = NormalizarTexto(cedula);
 
                 var data = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
                 {
-                    var detalle = new CoControlAsgManualExpedienteDetalle();
-
-                    detalle.cedula = cedula;
-                    detalle.nombre = conn.QueryFirstOrDefault<string>(
-                        "select top 1 rtrim(Nombre) from socios where Cedula = @cedula",
-                        new { cedula }) ?? "";
-
-                    var asg = conn.QueryFirstOrDefault<dynamic>(
-                        @"select top 1 rtrim(Usuario) as Usuario, fecha_asignacion as Fecha, isnull(mantener,1) as Mantener
-                          from cbr_asignacion where cedula = @cedula",
-                        new { cedula });
-
-                    if (asg == null)
+                    var detalle = new CoControlAsgManualExpedienteDetalle
                     {
-                        detalle.usuario_actual = "";
-                        detalle.mantener = 1;
-                        detalle.asignacion_texto = "** Este Expediente no ha sido asignado a ningún oficial **";
-                        detalle.oficina_agencia = detalle.asignacion_texto;
-                    }
-                    else
-                    {
-                        var usuario = ((string)asg.Usuario ?? "").Trim();
-                        var mantener = asg.Mantener != null ? Convert.ToInt32(asg.Mantener) : 1;
-                        var fecha = asg.Fecha != null ? (DateTime?)asg.Fecha : null;
+                        cedula = ced,
+                        nombre = ObtenerNombre(conn, ced)
+                    };
 
-                        detalle.usuario_actual = usuario;
-                        detalle.mantener = mantener;
+                    var asg = ObtenerAsignacion(conn, ced);
+                    AplicarAsignacion(detalle, asg);
 
-                        var fechaTxt = fecha.HasValue ? fecha.Value.ToString("dd/MM/yyyy") : "";
-                        var texto = $"Oficial : {usuario} / Fecha : {fechaTxt} / Mantener : {(mantener == 1 ? "SI" : "NO")}";
-
-                        detalle.asignacion_texto = texto;
-                        detalle.oficina_agencia = texto;
-                    }
-
-                    var mora = conn.QueryFirstOrDefault<int>(
-                        @"select top 1 1 from Vista_Morosidad Vm
-                          inner join Reg_Creditos Reg on Vm.Id_Solicitud = Reg.Id_Solicitud
-                          where Reg.Cedula = @cedula",
-                        new { cedula });
-
-                    detalle.tiene_morosidad = mora == 1 ? 1 : 0;
-                    detalle.estado_morosidad = detalle.tiene_morosidad == 1 ? "MOROSO" : "AL DÍA";
+                    var tieneMora = TieneMorosidad(conn, ced);
+                    detalle.tiene_morosidad = tieneMora ? 1 : 0;
+                    detalle.estado_morosidad = tieneMora ? "MOROSO" : "AL DÍA";
 
                     return detalle;
                 });
@@ -136,7 +106,7 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 if (data.Code != 0)
                     return DbHelper.CreateErrorResponse<CoControlAsgManualExpedienteDetalle>(data.Description ?? "Error al obtener detalle.");
 
-                result.Result = data.Result;
+                result.Result = data.Result ?? new CoControlAsgManualExpedienteDetalle();
             }
             catch (Exception ex)
             {
@@ -145,6 +115,62 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
 
             return result;
         }
+
+        private static string NormalizarTexto(string? valor)
+            => (valor ?? string.Empty).Trim();
+
+        private static string ObtenerNombre(SqlConnection conn, string cedula)
+        {
+            return conn.QueryFirstOrDefault<string>(
+                "select top 1 rtrim(Nombre) from socios where Cedula = @cedula",
+                new { cedula }) ?? string.Empty;
+        }
+
+        private static dynamic? ObtenerAsignacion(SqlConnection conn, string cedula)
+        {
+            return conn.QueryFirstOrDefault<dynamic>(
+                @"select top 1 rtrim(Usuario) as Usuario, fecha_asignacion as Fecha, isnull(mantener,1) as Mantener
+                  from cbr_asignacion where cedula = @cedula",
+                new { cedula });
+        }
+
+        private static void AplicarAsignacion(CoControlAsgManualExpedienteDetalle detalle, dynamic? asg)
+        {
+            if (asg == null)
+            {
+                const string msg = "** Este Expediente no ha sido asignado a ningún oficial **";
+                detalle.usuario_actual = string.Empty;
+                detalle.mantener = 1;
+                detalle.asignacion_texto = msg;
+                detalle.oficina_agencia = msg;
+                return;
+            }
+
+            var usuario = ((string?)asg.Usuario ?? string.Empty).Trim();
+            var mantener = asg.Mantener != null ? Convert.ToInt32(asg.Mantener) : 1;
+            var fecha = asg.Fecha != null ? (DateTime?)asg.Fecha : null;
+
+            detalle.usuario_actual = usuario;
+            detalle.mantener = mantener;
+
+            var fechaTxt = fecha.HasValue ? fecha.Value.ToString("dd/MM/yyyy") : string.Empty;
+            var texto = $"Oficial : {usuario} / Fecha : {fechaTxt} / Mantener : {(mantener == 1 ? "SI" : "NO")}";
+
+            detalle.asignacion_texto = texto;
+            detalle.oficina_agencia = texto;
+        }
+
+        private static bool TieneMorosidad(SqlConnection conn, string cedula)
+        {
+            var mora = conn.QueryFirstOrDefault<int>(
+                @"select top 1 1 from Vista_Morosidad Vm
+                  inner join Reg_Creditos Reg on Vm.Id_Solicitud = Reg.Id_Solicitud
+                  where Reg.Cedula = @cedula",
+                new { cedula });
+
+            return mora == 1;
+        }
+
         /// <summary>
         /// Ejecuta la asignación manual (spCBRControlAsg).
         /// <param name="CodEmpresa"></param>
