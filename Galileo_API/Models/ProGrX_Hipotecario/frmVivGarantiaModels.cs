@@ -114,6 +114,9 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string gravamenes { get; set; } = string.Empty;
         public string anotaciones_gravamen { get; set; } = string.Empty;
         public decimal monto_no_gravable { get; set; } = 0;
+
+        public string estado { get; set; } = string.Empty;
+        public bool tiene_valor_terreno { get; set; } = false;
     }
     public class FrmVivGarantiaIdGarantiaRequest
     {
@@ -126,8 +129,8 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public int? provincia_id { get; set; }
-        public int? canton_id { get; set; }
-        public int? distrito_id { get; set; }
+        public string? canton_id { get; set; }
+        public string? distrito_id { get; set; }
         public string direccion { get; set; } = string.Empty;
         public string desc_provincia { get; set; } = string.Empty;
         public string desc_canton { get; set; } = string.Empty;
