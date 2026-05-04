@@ -142,24 +142,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Usuario = usuario
                 });
 
-                int pass;
-                string mensaje;
-                string movimiento;
-                LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
+                var respuestaSp = LeerRespuestaSp(rs);
 
-                if (pass != 1)
-                    return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No existe el registro a eliminar." : mensaje, -2);
+                if (respuestaSp.Pass != 1)
+                    return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(respuestaSp.Mensaje) ? "No existe el registro a eliminar." : respuestaSp.Mensaje, -2);
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
                     DetalleMovimiento = $"Prioridad Apl. Pagos a Mora. Garantia: {cod}",
-                    Movimiento = string.IsNullOrWhiteSpace(movimiento) ? "ELIMINA - WEB" : (movimiento.Trim() + " - WEB"),
+                    Movimiento = string.IsNullOrWhiteSpace(respuestaSp.Movimiento)
+                        ? "ELIMINA - WEB"
+                        : (respuestaSp.Movimiento.Trim() + " - WEB"),
                     Modulo = CoAplFndPrioridadConst.vModulo
                 });
 
-                return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Eliminado satisfactoriamente." : mensaje);
+                return DbHelper.OkResponse(string.IsNullOrWhiteSpace(respuestaSp.Mensaje) ? "Eliminado satisfactoriamente." : respuestaSp.Mensaje);
             }
             catch (SqlException ex)
             {
@@ -438,38 +437,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// </summary>
         private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs, string movimientoDefault)
         {
-            int pass;
-            string mensaje;
-            string movimiento;
-            LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
+            var respuestaSp = LeerRespuestaSp(rs);
 
-            if (pass != 1)
-                return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible guardar el registro." : mensaje, -2);
+            if (respuestaSp.Pass != 1)
+                return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(respuestaSp.Mensaje) ? "No fue posible guardar el registro." : respuestaSp.Mensaje, -2);
 
             DBBitacora.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = CodEmpresa,
                 Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
                 DetalleMovimiento = $"Prioridad Apl. Pagos a Mora. Garantia: {codigo}",
-                Movimiento = string.IsNullOrWhiteSpace(movimiento) ? movimientoDefault : (movimiento.Trim() + " - WEB"),
+                Movimiento = string.IsNullOrWhiteSpace(respuestaSp.Movimiento)
+                        ? "Registro - WEB"
+                        : (respuestaSp.Movimiento.Trim() + " - WEB"),
                 Modulo = CoAplFndPrioridadConst.vModulo
             });
 
-            return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Guardado satisfactoriamente." : mensaje);
+            return DbHelper.OkResponse(string.IsNullOrWhiteSpace(respuestaSp.Mensaje) ? "Guardado satisfactoriamente." : respuestaSp.Mensaje);
         }
 
         /// <summary>
-        /// Lee Pass/Mensaje/Movimiento desde el resultado dinámico de un SP.
+        /// Lee Pass, Mensaje y Movimiento desde el resultado dinámico de un SP.
         /// </summary>
-        private static void LeerRespuestaSp(dynamic rs, out int pass, out string mensaje, out string movimiento)
+        private static RespuestaSpDto LeerRespuestaSp(dynamic rs)
         {
             string resultadoRaw = Convert.ToString(rs?.Pass ?? rs?.PASS ?? "0") ?? "0";
             string msgStr = Convert.ToString(rs?.Mensaje ?? rs?.MENSAJE ?? string.Empty) ?? string.Empty;
             string movStr = Convert.ToString(rs?.Movimiento ?? rs?.MOVIMIENTO ?? string.Empty) ?? string.Empty;
 
-            pass = Convert.ToInt32(resultadoRaw.Trim() == string.Empty ? "0" : resultadoRaw.Trim());
-            mensaje = msgStr;
-            movimiento = movStr;
+            return new RespuestaSpDto
+            {
+                Pass = Convert.ToInt32(resultadoRaw.Trim() == string.Empty ? "0" : resultadoRaw.Trim()),
+                Mensaje = msgStr,
+                Movimiento = movStr
+            };
         }
     }
 }
