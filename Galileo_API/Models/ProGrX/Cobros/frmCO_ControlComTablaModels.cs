@@ -8,11 +8,11 @@ namespace Galileo.Models.ProGrX.Cobros
 
     public class CoControlComTablaData
     {
-        public int id_linea { get; set; }
-        public int inicio { get; set; }
-        public int corte { get; set; }
+        public required int id_linea { get; set; }
+        public required int inicio { get; set; }
+        public required int corte { get; set; }
         public decimal porcentaje { get; set; } = 0;
-        public DateTime registro_fecha { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public bool isNew { get; set; } = false;
     }

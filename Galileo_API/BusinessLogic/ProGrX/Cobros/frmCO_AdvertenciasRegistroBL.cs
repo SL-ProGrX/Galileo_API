@@ -9,13 +9,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
     public class FrmCoAdvertenciasRegistroBL
     {
 
-        private readonly IConfiguration? _config;
         private readonly FrmCoAdvertenciasRegistroDB _db;
 
         public FrmCoAdvertenciasRegistroBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCoAdvertenciasRegistroDB(_config);
+            _db = new FrmCoAdvertenciasRegistroDB(config);
         }
 
         public ErrorDto<int> CoAdvertenciasRegistro_Guardar(int CodEmpresa, string usuario, CoAdvertenciasRegistroData datos)

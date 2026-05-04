@@ -333,8 +333,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         private static ErrorDto<DynamicParameters> CrearParametrosConsultas(FrmCOCobroFiadoresConsultasConsultaDto dto, string filtro)
         {
-            if (!DateTime.TryParse($"{NormalizarTexto(dto?.inicio)} 00:00:00", out var fechaInicio) ||
-                !DateTime.TryParse($"{NormalizarTexto(dto?.corte)} 23:59:59", out var fechaCorte))
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            if (!DateTime.TryParse($"{NormalizarTexto(dto?.inicio)} 00:00:00", culture, System.Globalization.DateTimeStyles.None, out var fechaInicio) ||
+                !DateTime.TryParse($"{NormalizarTexto(dto?.corte)} 23:59:59", culture, System.Globalization.DateTimeStyles.None, out var fechaCorte))
             {
                 return DbHelper.CreateErrorResponse("Rango de fechas inválido.", -2, new DynamicParameters());
             }

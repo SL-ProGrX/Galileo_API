@@ -7,13 +7,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
     public class FrmCoComisionesDocumentosBL
     {
 
-        private readonly IConfiguration? _config;
         private readonly FrmCoComisionesDocumentosDB _db;
 
         public FrmCoComisionesDocumentosBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCoComisionesDocumentosDB(_config);
+            _db = new FrmCoComisionesDocumentosDB(config);
         }
 
         public ErrorDto<List<CoComisionesDocumentosData>> CO_ComisionesDocumento_Obtener(int CodEmpresa)

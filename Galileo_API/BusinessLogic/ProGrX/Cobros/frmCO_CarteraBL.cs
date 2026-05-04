@@ -8,13 +8,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCOCarteraBL
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOCarteraDB _db;
 
         public FrmCOCarteraBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCOCarteraDB(_config);
+            _db = new FrmCOCarteraDB(config);
         }
 
         public ErrorDto<COCarteraListaResult> Co_CarteraLista_Obtener(int CodEmpresa, string jfiltros)

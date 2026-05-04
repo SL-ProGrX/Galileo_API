@@ -8,13 +8,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCONotificaEmailBL
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCONotificaEmailDB _db;
 
         public FrmCONotificaEmailBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCONotificaEmailDB(_config);
+            _db = new FrmCONotificaEmailDB(config);
         }
 
         public ErrorDto<FrmCONotificaEmailListaResult> Co_NotificaEmail_Lista_Obtener(int CodEmpresa, string jfiltros, FrmCONotificaEmailConsultaDto dto)

@@ -9,13 +9,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
     public class FrmCoAdvertenciasTiposBL
     {
 
-        private readonly IConfiguration? _config;
         private readonly FrmCoAdvertenciasTiposDB _db;
 
         public FrmCoAdvertenciasTiposBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCoAdvertenciasTiposDB(_config);
+            _db = new FrmCoAdvertenciasTiposDB(config);
         }
 
         public ErrorDto<CoAdvertenciasTiposLista> CoAdvertenciasTipos_Obtener(int CodEmpresa, string jfiltros)

@@ -8,13 +8,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCOCobroFiadoresBL
     {
-        private readonly IConfiguration _config;
         private readonly FrmCOCobroFiadoresDB _db;
 
         public FrmCOCobroFiadoresBL(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _db = new FrmCOCobroFiadoresDB(_config);
+            _db = new FrmCOCobroFiadoresDB(config);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Co_Instituciones_Dropdown_Obtener(int CodEmpresa)

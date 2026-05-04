@@ -6,13 +6,11 @@ namespace Galileo.BusinessLogic.ProGrX_Cobros
 {
     public class FrmCOControlAsgManualBL
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOControlAsgManualDB _db;
 
         public FrmCOControlAsgManualBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCOControlAsgManualDB(_config);
+            _db = new FrmCOControlAsgManualDB(config);
         }
         public ErrorDto<List<CoControlAsgManualExpedienteItem>> Co_ControlAsgManual_Expedientes_Obtener(int CodEmpresa, int soloSinAsignar,int soloMorosos)
         {

@@ -191,6 +191,7 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 return DbHelper.ErrorResponse("No se especificó el Ejecutivo de cobro a trasladar.", -2);
 
             var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
+
             {
                 var actual = conn.QueryFirstOrDefault<string>(
                     "select top 1 rtrim(Usuario) from cbr_asignacion where cedula = @cedula",
@@ -199,13 +200,13 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 if (!string.IsNullOrWhiteSpace(actual) &&
                     string.Equals(actual.Trim(), nuevo.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new Exception("Esta persona ya se encuentra asignada al Ejecutivo.");
+                    return DbHelper.ErrorResponse("Esta persona ya se encuentra asignada al Ejecutivo.");
                 }
 
                 conn.Execute("exec spCBRControlAsg @cedula, @nuevo, @mantener",
                     new { cedula, nuevo, mantener });
 
-                return true;
+                return DbHelper.OkResponse("Asignación Manual realizada satisfactoriamente.");
             });
 
             if (exec.Code != 0)
