@@ -9,7 +9,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [Route("api/[controller]")]
     [ApiController]
 
-    public class FrmCoComisionesDocumentosController : Controller
+    public class FrmCoComisionesDocumentosController : ControllerBase
     {
         private readonly IConfiguration? _config;
         private readonly FrmCoComisionesDocumentosBL _bl;

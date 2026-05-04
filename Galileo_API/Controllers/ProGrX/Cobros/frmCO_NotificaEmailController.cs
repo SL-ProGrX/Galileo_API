@@ -9,7 +9,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCONotificaEmailController : Controller
+    public class FrmCONotificaEmailController : ControllerBase
     {
         private readonly IConfiguration? _config;
         private readonly FrmCONotificaEmailBL _bl;

@@ -11,7 +11,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [Route("api/[controller]")]
     [ApiController]
 
-    public class FrmCoControlComTablaController : Controller
+    public class FrmCoControlComTablaController : ControllerBase
     {
         private readonly IConfiguration? _config;
         private readonly FrmCoControlComTablaBL _bl;

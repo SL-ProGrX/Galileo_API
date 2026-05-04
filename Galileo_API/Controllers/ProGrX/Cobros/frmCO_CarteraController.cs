@@ -9,7 +9,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCOCarteraController : Controller
+    public class FrmCOCarteraController : ControllerBase
     {
         private readonly IConfiguration? _config;
         private readonly FrmCOCarteraBL _bl;

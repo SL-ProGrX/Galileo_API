@@ -8,7 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCOControlAsgManualController : Controller
+    public class FrmCOControlAsgManualController : ControllerBase
     {
         private readonly IConfiguration? _config;
         private readonly FrmCOControlAsgManualBL _bl;
