@@ -61,126 +61,25 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <param name="dto"></param>
         /// <returns></returns>
 
-        public ErrorDto<FrmCOCobroFiadoresPendientesListaResult> Co_CobroFiadores_Pendientes_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,FrmCOCobroFiadoresPendientesConsultaDto dto)
+        public ErrorDto<FrmCOCobroFiadoresPendientesListaResult> Co_CobroFiadores_Pendientes_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, FrmCOCobroFiadoresPendientesConsultaDto dto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var filtrosSeguros = filtros ?? new FiltrosLazyLoadData();
+            var filtro = NormalizarTexto(filtrosSeguros.filtro);
+            var dataResult = DbHelper.ExecuteStoredProcedureList<FrmCOCobroFiadoresPendienteData>(
+                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
+                "dbo.spCBR_Cobro_Fiadores_Pendientes",
+                CrearParametrosPendientes(dto, filtro));
 
-            var result = new ErrorDto<FrmCOCobroFiadoresPendientesListaResult>()
+            if (dataResult.Code != 0)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmCOCobroFiadoresPendientesListaResult()
-                {
-                    total = 0,
-                    lista = new List<FrmCOCobroFiadoresPendienteData>()
-                }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                int pInstitucion = dto?.institucionId ?? 0;
-                int pEstadoPersona = dto?.estadoPersonaId ?? 0;
-                int pCuotas = dto?.cuotasAtrasadas ?? 2;
-                int pDisponibles = (dto?.mostrarDisponibles ?? false) ? 1 : 0;
-
-                string filtro = (filtros?.filtro ?? "").Trim();
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 0;
-
-                bool exportAll = pagina == 0 || paginacion == 0;
-
-                string sortFieldIn = (filtros?.sortField ?? "").Trim();
-                string sortField = sortFieldIn switch
-                {
-                    "codigo" => "codigo",
-                    "cedula" => "cedula",
-                    "nombre" => "nombre",
-                    "n_cuota" => "n_cuota",
-                    "mora_financiera" => "mora_financiera",
-                    "saldo" => "saldo",
-                    "notifica_fecha" => "notifica_fecha",
-                    "estadoPersona_desc" => "estadoPersona_desc",
-                    "linea_desc" => "linea_desc",
-                    "institucion_desc" => "institucion_desc",
-                    _ => "id_solicitud"
-                };
-
-                string sortOrder = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-
-                var p = new DynamicParameters();
-
-                if (pInstitucion == 0) p.Add("@Institucion", null);
-                else p.Add("@Institucion", pInstitucion);
-
-                if (pEstadoPersona == 0) p.Add("@EstadoPersona", null);
-                else p.Add("@EstadoPersona", pEstadoPersona);
-
-                p.Add("@Filtro", filtro);
-                p.Add("@NCuotas", pCuotas);
-                p.Add("@Disponible", pDisponibles);
-
-
-                var data = connection.Query<FrmCOCobroFiadoresPendienteData>(
-                    "dbo.spCBR_Cobro_Fiadores_Pendientes",
-                    p,
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
-
-
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    string q = filtro.Trim().ToUpper();
-                    data = data.Where(x =>
-                        ((x.codigo ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.cedula ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.nombre ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.notifica_fecha ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.estadoPersona_desc ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.linea_desc ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.institucion_desc ?? "").Trim().ToUpper().Contains(q))
-                    ).ToList();
-                }
-
-                result.Result.total = data.Count;
-
-   
-                bool asc = (sortOrder ?? "ASC").Trim().ToUpper() == "ASC";
-                if (sortField == "codigo") data = asc ? data.OrderBy(x => x.codigo ?? "").ToList() : data.OrderByDescending(x => x.codigo ?? "").ToList();
-                else if (sortField == "cedula") data = asc ? data.OrderBy(x => x.cedula ?? "").ToList() : data.OrderByDescending(x => x.cedula ?? "").ToList();
-                else if (sortField == "nombre") data = asc ? data.OrderBy(x => x.nombre ?? "").ToList() : data.OrderByDescending(x => x.nombre ?? "").ToList();
-                else if (sortField == "n_cuota") data = asc ? data.OrderBy(x => x.n_cuota).ToList() : data.OrderByDescending(x => x.n_cuota).ToList();
-                else if (sortField == "mora_financiera") data = asc ? data.OrderBy(x => x.mora_financiera).ToList() : data.OrderByDescending(x => x.mora_financiera).ToList();
-                else if (sortField == "saldo") data = asc ? data.OrderBy(x => x.saldo).ToList() : data.OrderByDescending(x => x.saldo).ToList();
-                else if (sortField == "notifica_fecha") data = asc ? data.OrderBy(x => x.notifica_fecha ?? "").ToList() : data.OrderByDescending(x => x.notifica_fecha ?? "").ToList();
-                else if (sortField == "estadoPersona_desc") data = asc ? data.OrderBy(x => x.estadoPersona_desc ?? "").ToList() : data.OrderByDescending(x => x.estadoPersona_desc ?? "").ToList();
-                else if (sortField == "linea_desc") data = asc ? data.OrderBy(x => x.linea_desc ?? "").ToList() : data.OrderByDescending(x => x.linea_desc ?? "").ToList();
-                else if (sortField == "institucion_desc") data = asc ? data.OrderBy(x => x.institucion_desc ?? "").ToList() : data.OrderByDescending(x => x.institucion_desc ?? "").ToList();
-                else data = asc ? data.OrderBy(x => x.id_solicitud).ToList() : data.OrderByDescending(x => x.id_solicitud).ToList();
-
-                if (exportAll)
-                {
-                    result.Result.lista = data;
-                    return result;
-                }
-
-                int offset = pagina;
-                int fetch = paginacion;
-                if (offset < 0) offset = 0;
-                if (fetch <= 0) fetch = 30;
-
-                result.Result.lista = data.Skip(offset).Take(fetch).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<FrmCOCobroFiadoresPendienteData>();
+                return CrearErrorPendientes(dataResult.Description ?? "Error al consultar pendientes de cobro a fiadores.");
             }
 
-            return result;
+            var data = FiltrarPendientes(dataResult.Result ?? new List<FrmCOCobroFiadoresPendienteData>(), filtro).ToList();
+            var total = data.Count;
+            data = OrdenarPendientes(data, filtrosSeguros).ToList();
+
+            return CrearOkPendientes(total, Paginar(data, filtrosSeguros).ToList());
         }
 
         // <summary>
@@ -191,111 +90,25 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <param name="dto"></param>
         /// <returns></returns>
 
-        public ErrorDto<FrmCOCobroFiadoresActivosListaResult> Co_CobroFiadores_Activos_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,FrmCOCobroFiadoresActivosConsultaDto dto)
+        public ErrorDto<FrmCOCobroFiadoresActivosListaResult> Co_CobroFiadores_Activos_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, FrmCOCobroFiadoresActivosConsultaDto dto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var filtrosSeguros = filtros ?? new FiltrosLazyLoadData();
+            var filtro = NormalizarTexto(filtrosSeguros.filtro);
+            var dataResult = DbHelper.ExecuteStoredProcedureList<FrmCOCobroFiadoresActivoData>(
+                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
+                "dbo.spCBR_Cobro_Fiadores_Activos",
+                CrearParametrosActivos(dto, filtro));
 
-            var result = new ErrorDto<FrmCOCobroFiadoresActivosListaResult>()
+            if (dataResult.Code != 0)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmCOCobroFiadoresActivosListaResult()
-                {
-                    total = 0,
-                    lista = new List<FrmCOCobroFiadoresActivoData>()
-                }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                int pInstitucion = dto?.institucionId ?? 0;
-                int pEstadoPersona = dto?.estadoPersonaId ?? 0;
-
-                string filtro = (filtros?.filtro ?? "").Trim();
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 0;
-
-                bool exportAll = pagina == 0 || paginacion == 0;
-
-                string sortFieldIn = (filtros?.sortField ?? "").Trim();
-                string sortField = sortFieldIn switch
-                {
-                    "codigo" => "codigo",
-                    "cedula" => "cedula",
-                    "nombre" => "nombre",
-                    "cuota" => "cuota",
-                    "d_operacion" => "d_operacion",
-                    _ => "id_solicitud"
-                };
-
-                string sortOrder = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-
-                var p = new DynamicParameters();
-
-                if (pInstitucion == 0) p.Add("@Institucion", null);
-                else p.Add("@Institucion", pInstitucion);
-
-                if (pEstadoPersona == 0) p.Add("@EstadoPersona", null);
-                else p.Add("@EstadoPersona", pEstadoPersona);
-
-                p.Add("@Filtro", filtro);
-
-                var data = connection.Query<FrmCOCobroFiadoresActivoData>(
-                    "dbo.spCBR_Cobro_Fiadores_Activos",
-                    p,
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
-
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    string q = filtro.Trim().ToUpper();
-                    data = data.Where(x =>
-                        ((x.codigo ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.cedula ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.nombre ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.d_operacion ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.d_codigo ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.d_cedula ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.d_nombre ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.estadoPersona_desc ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.linea_desc ?? "").Trim().ToUpper().Contains(q))
-                    ).ToList();
-                }
-
-                result.Result.total = data.Count;
-
-                bool asc = (sortOrder ?? "ASC").Trim().ToUpper() == "ASC";
-                if (sortField == "codigo") data = asc ? data.OrderBy(x => x.codigo ?? "").ToList() : data.OrderByDescending(x => x.codigo ?? "").ToList();
-                else if (sortField == "cedula") data = asc ? data.OrderBy(x => x.cedula ?? "").ToList() : data.OrderByDescending(x => x.cedula ?? "").ToList();
-                else if (sortField == "nombre") data = asc ? data.OrderBy(x => x.nombre ?? "").ToList() : data.OrderByDescending(x => x.nombre ?? "").ToList();
-                else if (sortField == "cuota") data = asc ? data.OrderBy(x => x.cuota).ToList() : data.OrderByDescending(x => x.cuota).ToList();
-                else if (sortField == "d_operacion") data = asc ? data.OrderBy(x => x.d_operacion ?? "").ToList() : data.OrderByDescending(x => x.d_operacion ?? "").ToList();
-                else data = asc ? data.OrderBy(x => x.id_solicitud).ToList() : data.OrderByDescending(x => x.id_solicitud).ToList();
-
-                if (exportAll)
-                {
-                    result.Result.lista = data;
-                    return result;
-                }
-
-                int offset = pagina;
-                int fetch = paginacion;
-                if (offset < 0) offset = 0;
-                if (fetch <= 0) fetch = 30;
-
-                result.Result.lista = data.Skip(offset).Take(fetch).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<FrmCOCobroFiadoresActivoData>();
+                return CrearErrorActivos(dataResult.Description ?? "Error al consultar activos de cobro a fiadores.");
             }
 
-            return result;
+            var data = FiltrarActivos(dataResult.Result ?? new List<FrmCOCobroFiadoresActivoData>(), filtro).ToList();
+            var total = data.Count;
+            data = OrdenarActivos(data, filtrosSeguros).ToList();
+
+            return CrearOkActivos(total, Paginar(data, filtrosSeguros).ToList());
         }
 
         // <summary>
@@ -306,119 +119,32 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <param name="dto"></param>
         /// <returns></returns>
 
-        public ErrorDto<FrmCOCobroFiadoresConsultasListaResult> Co_CobroFiadores_Consultas_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,FrmCOCobroFiadoresConsultasConsultaDto dto)
+        public ErrorDto<FrmCOCobroFiadoresConsultasListaResult> Co_CobroFiadores_Consultas_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, FrmCOCobroFiadoresConsultasConsultaDto dto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var filtrosSeguros = filtros ?? new FiltrosLazyLoadData();
+            var filtro = NormalizarTexto(filtrosSeguros.filtro);
+            var parametrosResult = CrearParametrosConsultas(dto, filtro);
 
-            var result = new ErrorDto<FrmCOCobroFiadoresConsultasListaResult>()
+            if (parametrosResult.Code != 0)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmCOCobroFiadoresConsultasListaResult()
-                {
-                    total = 0,
-                    lista = new List<FrmCOCobroFiadoresConsultaData>()
-                }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                string inicioIn = (dto?.inicio ?? "").Trim();
-                string corteIn = (dto?.corte ?? "").Trim();
-
-                DateTime dtInicio = Convert.ToDateTime(inicioIn + " 00:00:00");
-                DateTime dtCorte = Convert.ToDateTime(corteIn + " 23:59:59");
-
-                string accion = (dto?.accion ?? "A").Trim().ToUpper();
-                accion = string.IsNullOrWhiteSpace(accion) ? "A" : accion.Substring(0, 1);
-                if (accion != "A" && accion != "C") accion = "A";
-
-                string filtro = (filtros?.filtro ?? "").Trim();
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 0;
-
-                bool exportAll = pagina == 0 || paginacion == 0;
-
-                string sortFieldIn = (filtros?.sortField ?? "").Trim();
-                string sortField = sortFieldIn switch
-                {
-                    "codigo" => "codigo",
-                    "cedula" => "cedula",
-                    "nombre" => "nombre",
-                    "n_cuota" => "n_cuota",
-                    "mora_financiera" => "mora_financiera",
-                    "saldo_original" => "saldo_original",
-                    "saldo_actual" => "saldo_actual",
-                    "accion_fecha" => "accion_fecha",
-                    _ => "id_solicitud"
-                };
-
-                string sortOrder = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-
-                var p = new DynamicParameters();
-                p.Add("@fInicio", dtInicio);
-                p.Add("@fCorte", dtCorte);
-                p.Add("@Accion", accion);
-                p.Add("@Filtro", filtro);
-                var data = connection.Query<FrmCOCobroFiadoresConsultaData>(
-                    "dbo.spCBR_Cobro_Fiadores_Consulta",
-                    p,
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
-
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    string q = filtro.Trim().ToUpper();
-                    data = data.Where(x =>
-                        ((x.codigo ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.cedula ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.nombre ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.acccion_tipo ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.accion_fecha ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.notifica_fecha ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.estadoPersona_desc ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.linea_desc ?? "").Trim().ToUpper().Contains(q)) ||
-                        ((x.institucion_desc ?? "").Trim().ToUpper().Contains(q))
-                    ).ToList();
-                }
-
-                result.Result.total = data.Count;
-
-                bool asc = (sortOrder ?? "ASC").Trim().ToUpper() == "ASC";
-                if (sortField == "codigo") data = asc ? data.OrderBy(x => x.codigo ?? "").ToList() : data.OrderByDescending(x => x.codigo ?? "").ToList();
-                else if (sortField == "cedula") data = asc ? data.OrderBy(x => x.cedula ?? "").ToList() : data.OrderByDescending(x => x.cedula ?? "").ToList();
-                else if (sortField == "nombre") data = asc ? data.OrderBy(x => x.nombre ?? "").ToList() : data.OrderByDescending(x => x.nombre ?? "").ToList();
-                else if (sortField == "n_cuota") data = asc ? data.OrderBy(x => x.n_cuota).ToList() : data.OrderByDescending(x => x.n_cuota).ToList();
-                else if (sortField == "mora_financiera") data = asc ? data.OrderBy(x => x.mora_financiera).ToList() : data.OrderByDescending(x => x.mora_financiera).ToList();
-                else if (sortField == "saldo_original") data = asc ? data.OrderBy(x => x.saldo_original).ToList() : data.OrderByDescending(x => x.saldo_original).ToList();
-                else if (sortField == "saldo_actual") data = asc ? data.OrderBy(x => x.saldo_actual).ToList() : data.OrderByDescending(x => x.saldo_actual).ToList();
-                else if (sortField == "accion_fecha") data = asc ? data.OrderBy(x => x.accion_fecha ?? "").ToList() : data.OrderByDescending(x => x.accion_fecha ?? "").ToList();
-                else data = asc ? data.OrderBy(x => x.id_solicitud).ToList() : data.OrderByDescending(x => x.id_solicitud).ToList();
-
-                if (exportAll)
-                {
-                    result.Result.lista = data;
-                    return result;
-                }
-
-                int offset = pagina;
-                int fetch = paginacion;
-                if (offset < 0) offset = 0;
-                if (fetch <= 0) fetch = 30;
-
-                result.Result.lista = data.Skip(offset).Take(fetch).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<FrmCOCobroFiadoresConsultaData>();
+                return CrearErrorConsultas(parametrosResult.Description ?? "Error al preparar parámetros de consulta.");
             }
 
-            return result;
+            var dataResult = DbHelper.ExecuteStoredProcedureList<FrmCOCobroFiadoresConsultaData>(
+                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
+                "dbo.spCBR_Cobro_Fiadores_Consulta",
+                parametrosResult.Result);
+
+            if (dataResult.Code != 0)
+            {
+                return CrearErrorConsultas(dataResult.Description ?? "Error al consultar histórico de cobro a fiadores.");
+            }
+
+            var data = FiltrarConsultas(dataResult.Result ?? new List<FrmCOCobroFiadoresConsultaData>(), filtro).ToList();
+            var total = data.Count;
+            data = OrdenarConsultas(data, filtrosSeguros).ToList();
+
+            return CrearOkConsultas(total, Paginar(data, filtrosSeguros).ToList());
         }
 
         /// <summary>
@@ -431,46 +157,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         public ErrorDto Co_CobroFiadores_NotificaAdvertencia_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
-            if (dto?.ids == null || dto.ids.Count == 0)
-                return DbHelper.ErrorResponse("Debe Seleccionar al menos un caso!", -2);
-
-            var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
-            {
-                int existe25 = conn.QueryFirstOrDefault<int>(@"
-                    SELECT COUNT(*)
-                    FROM dbo.CATALOGO
-                    WHERE codigo IN (
-                        SELECT valor
-                        FROM dbo.CBR_PARAMETROS
-                        WHERE COD_PARAMETRO = '25'
-                    );");
-
-                if (existe25 == 0)
-                    throw new Exception("No se encuentra configurada la Línea/Retención para Cobro a Fiador.");
-
-                foreach (var id in dto.ids.Where(x => x > 0))
-                {
-                    conn.Execute("dbo.spCBR_Cobro_Fiadores_Notifica",
-                        new { Operacion = id, Usuario = usuario },
-                        commandType: System.Data.CommandType.StoredProcedure);
-                }
-
-                return true;
-            });
-
-            if (exec.Code != 0)
-                return DbHelper.ErrorResponse(exec.Description ?? "Error al notificar.");
-
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = $"Cobro a Fiadores: Notifica Advertencia - Casos {dto.ids.Count}",
-                Movimiento = "Procesa - WEB",
-                Modulo = vModulo
-            });
-
-            return DbHelper.OkResponse("Ok");
+            return EjecutarAccionBulk(
+                CodEmpresa,
+                usuario,
+                dto,
+                "dbo.spCBR_Cobro_Fiadores_Notifica",
+                "Operacion",
+                "Cobro a Fiadores: Notifica Advertencia",
+                "Error al notificar.");
         }
         /// <summary>
         /// Procesa cobros a fiadores.
@@ -482,46 +176,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         public ErrorDto Co_CobroFiadores_ProcesaCobros_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
-            if (dto?.ids == null || dto.ids.Count == 0)
-                return DbHelper.ErrorResponse("Debe Seleccionar al menos un caso!", -2);
-
-            var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
-            {
-                int existe25 = conn.QueryFirstOrDefault<int>(@"
-                    SELECT COUNT(*)
-                    FROM dbo.CATALOGO
-                    WHERE codigo IN (
-                        SELECT valor
-                        FROM dbo.CBR_PARAMETROS
-                        WHERE COD_PARAMETRO = '25'
-                    );");
-
-                if (existe25 == 0)
-                    throw new Exception("No se encuentra configurada la Línea/Retención para Cobro a Fiador.");
-
-                foreach (var id in dto.ids.Where(x => x > 0))
-                {
-                    conn.Execute("dbo.spCBR_Cobro_Fiadores_Procesa",
-                        new { Operacion = id, Usuario = usuario },
-                        commandType: System.Data.CommandType.StoredProcedure);
-                }
-
-                return true;
-            });
-
-            if (exec.Code != 0)
-                return DbHelper.ErrorResponse(exec.Description ?? "Error al procesar.");
-
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = $"Cobro a Fiadores: Procesa Cobros - Casos {dto.ids.Count}",
-                Movimiento = "Procesa - WEB",
-                Modulo = vModulo
-            });
-
-            return DbHelper.OkResponse("Ok");
+            return EjecutarAccionBulk(
+                CodEmpresa,
+                usuario,
+                dto,
+                "dbo.spCBR_Cobro_Fiadores_Procesa",
+                "Operacion",
+                "Cobro a Fiadores: Procesa Cobros",
+                "Error al procesar.");
         }
         /// <summary>
         /// Cancela cobros a fiadores.
@@ -533,26 +195,92 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         public ErrorDto Co_CobroFiadores_CancelaCobro_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            return EjecutarAccionBulk(
+                CodEmpresa,
+                usuario,
+                dto,
+                "dbo.spCbr_Cobro_Fiadores_Cancela",
+                "FIA_Operacion",
+                "Cobro a Fiadores: Cancela Cobro",
+                "Error al cancelar cobro.",
+                validarFondoDevolucion: true,
+                incluirNotas: true);
+        }
 
-            var result = new ErrorDto()
+        private ErrorDto EjecutarAccionBulk(
+            int codEmpresa,
+            string usuario,
+            FrmCOCobroFiadoresAccionBulkDto dto,
+            string procedimiento,
+            string parametroOperacion,
+            string detalleBase,
+            string mensajeError,
+            bool validarFondoDevolucion = false,
+            bool incluirNotas = false)
+        {
+            var ids = ObtenerIdsValidos(dto).ToList();
+            if (ids.Count == 0)
             {
-                Code = 0,
-                Description = "Ok"
-            };
+                return DbHelper.ErrorResponse("Debe Seleccionar al menos un caso!", -2);
+            }
 
-            try
+            var exec = DbHelper.WithConn(new PortalDB(_config), codEmpresa, conn =>
             {
-                using var connection = new SqlConnection(stringConn);
+                ValidarParametrosCobroFiador(conn, validarFondoDevolucion);
 
-                if (dto?.ids == null || dto.ids.Count == 0)
+                foreach (var id in ids)
                 {
-                    result.Code = -2;
-                    result.Description = "Debe Seleccionar al menos un caso!";
-                    return result;
+                    conn.Execute(
+                        procedimiento,
+                        CrearParametrosAccionBulk(parametroOperacion, id, usuario, incluirNotas),
+                        commandType: System.Data.CommandType.StoredProcedure);
                 }
-                var qExiste25 = @"
-                    SELECT COUNT(*) AS Existe
+
+                return true;
+            });
+
+            if (exec.Code != 0)
+            {
+                return DbHelper.ErrorResponse(exec.Description ?? mensajeError);
+            }
+
+            RegistrarBitacora(codEmpresa, usuario, $"{detalleBase} - Casos {ids.Count}", "Procesa - WEB");
+            return DbHelper.OkResponse("Ok");
+        }
+
+        private static IEnumerable<int> ObtenerIdsValidos(FrmCOCobroFiadoresAccionBulkDto dto)
+        {
+            return dto?.ids?.Where(id => id > 0).Select(id => (int)id) ?? Enumerable.Empty<int>();
+        }
+
+        private static DynamicParameters CrearParametrosAccionBulk(string parametroOperacion, int id, string usuario, bool incluirNotas)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add($"@{parametroOperacion}", id);
+            parametros.Add("@Usuario", usuario);
+
+            if (incluirNotas)
+            {
+                parametros.Add("@Notas", string.Empty);
+            }
+
+            return parametros;
+        }
+
+        private static void ValidarParametrosCobroFiador(SqlConnection conn, bool validarFondoDevolucion)
+        {
+            ValidarParametroCatalogo(conn);
+
+            if (validarFondoDevolucion)
+            {
+                ValidarParametroFondoDevolucion(conn);
+            }
+        }
+
+        private static void ValidarParametroCatalogo(SqlConnection conn)
+        {
+            const string query = @"
+                    SELECT COUNT(*)
                     FROM dbo.CATALOGO
                     WHERE codigo IN (
                         SELECT valor
@@ -560,15 +288,16 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         WHERE COD_PARAMETRO = '25'
                     );";
 
-                int existe25 = connection.QueryFirstOrDefault<int>(qExiste25);
-                if (existe25 == 0)
-                {
-                    result.Code = -2;
-                    result.Description = "No se encuentra configurada la Línea/Retención para Cobro a Fiador, verifique los parámetros de cobro [25]";
-                    return result;
-                }
-                var qExiste27 = @"
-                    SELECT COUNT(*) AS Existe
+            if (conn.QueryFirstOrDefault<int>(query) == 0)
+            {
+                throw new InvalidOperationException("No se encuentra configurada la Línea/Retención para Cobro a Fiador.");
+            }
+        }
+
+        private static void ValidarParametroFondoDevolucion(SqlConnection conn)
+        {
+            const string query = @"
+                    SELECT COUNT(*)
                     FROM dbo.FND_PLANES
                     WHERE COD_PLAN IN (
                         SELECT valor
@@ -576,46 +305,278 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         WHERE COD_PARAMETRO = '27'
                     );";
 
-                int existe27 = connection.QueryFirstOrDefault<int>(qExiste27);
-                if (existe27 == 0)
-                {
-                    result.Code = -2;
-                    result.Description = "No se encuentra configurado el Fondo de Devolución para Cobro a Fiador, verifique los parámetros de cobro [27]";
-                    return result;
-                }
-
-                foreach (var id in dto.ids)
-                {
-                    if (id <= 0) continue;
-
-                    var p = new DynamicParameters();
-                    p.Add("@FIA_Operacion", id);
-                    p.Add("@Usuario", usuario);
-                    p.Add("@Notas", "");
-
-                    connection.Execute(
-                        "dbo.spCbr_Cobro_Fiadores_Cancela",
-                        p,
-                        commandType: System.Data.CommandType.StoredProcedure
-                    );
-                }
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Cobro a Fiadores: Cancela Cobro - Casos {dto.ids.Count}",
-                    Movimiento = "Procesa - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            if (conn.QueryFirstOrDefault<int>(query) == 0)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                throw new InvalidOperationException("No se encuentra configurado el Fondo de Devolución para Cobro a Fiador, verifique los parámetros de cobro [27]");
+            }
+        }
+
+        private static DynamicParameters CrearParametrosPendientes(FrmCOCobroFiadoresPendientesConsultaDto dto, string filtro)
+        {
+            var parametros = new DynamicParameters();
+            AgregarParametroEnteroNulable(parametros, "@Institucion", dto?.institucionId ?? 0);
+            AgregarParametroEnteroNulable(parametros, "@EstadoPersona", dto?.estadoPersonaId ?? 0);
+            parametros.Add("@Filtro", filtro);
+            parametros.Add("@NCuotas", dto?.cuotasAtrasadas ?? 2);
+            parametros.Add("@Disponible", (dto?.mostrarDisponibles ?? false) ? 1 : 0);
+            return parametros;
+        }
+
+        private static DynamicParameters CrearParametrosActivos(FrmCOCobroFiadoresActivosConsultaDto dto, string filtro)
+        {
+            var parametros = new DynamicParameters();
+            AgregarParametroEnteroNulable(parametros, "@Institucion", dto?.institucionId ?? 0);
+            AgregarParametroEnteroNulable(parametros, "@EstadoPersona", dto?.estadoPersonaId ?? 0);
+            parametros.Add("@Filtro", filtro);
+            return parametros;
+        }
+
+        private static ErrorDto<DynamicParameters> CrearParametrosConsultas(FrmCOCobroFiadoresConsultasConsultaDto dto, string filtro)
+        {
+            if (!DateTime.TryParse($"{NormalizarTexto(dto?.inicio)} 00:00:00", out var fechaInicio) ||
+                !DateTime.TryParse($"{NormalizarTexto(dto?.corte)} 23:59:59", out var fechaCorte))
+            {
+                return DbHelper.CreateErrorResponse("Rango de fechas inválido.", -2, new DynamicParameters());
             }
 
-            return result;
+            var parametros = new DynamicParameters();
+            parametros.Add("@fInicio", fechaInicio);
+            parametros.Add("@fCorte", fechaCorte);
+            parametros.Add("@Accion", NormalizarAccion(dto?.accion));
+            parametros.Add("@Filtro", filtro);
+            return DbHelper.CreateOkResponse(parametros);
+        }
+
+        private static void AgregarParametroEnteroNulable(DynamicParameters parametros, string nombre, int valor)
+        {
+            parametros.Add(nombre, valor == 0 ? null : valor);
+        }
+
+        private static string NormalizarAccion(string? accion)
+        {
+            var valor = NormalizarCodigo(accion);
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return "A";
+            }
+
+            valor = valor[..1];
+            return valor is "A" or "C" ? valor : "A";
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresPendienteData> FiltrarPendientes(IEnumerable<FrmCOCobroFiadoresPendienteData> data, string filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return data;
+            }
+
+            var q = NormalizarCodigo(filtro);
+            return data.Where(item => Contiene(item.codigo, q) ||
+                                      Contiene(item.cedula, q) ||
+                                      Contiene(item.nombre, q) ||
+                                      Contiene(item.notifica_fecha, q) ||
+                                      Contiene(item.estadoPersona_desc, q) ||
+                                      Contiene(item.linea_desc, q) ||
+                                      Contiene(item.institucion_desc, q));
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresActivoData> FiltrarActivos(IEnumerable<FrmCOCobroFiadoresActivoData> data, string filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return data;
+            }
+
+            var q = NormalizarCodigo(filtro);
+            return data.Where(item => Contiene(item.codigo, q) ||
+                                      Contiene(item.cedula, q) ||
+                                      Contiene(item.nombre, q) ||
+                                      Contiene(item.d_operacion, q) ||
+                                      Contiene(item.d_codigo, q) ||
+                                      Contiene(item.d_cedula, q) ||
+                                      Contiene(item.d_nombre, q) ||
+                                      Contiene(item.estadoPersona_desc, q) ||
+                                      Contiene(item.linea_desc, q));
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresConsultaData> FiltrarConsultas(IEnumerable<FrmCOCobroFiadoresConsultaData> data, string filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return data;
+            }
+
+            var q = NormalizarCodigo(filtro);
+            return data.Where(item => Contiene(item.codigo, q) ||
+                                      Contiene(item.cedula, q) ||
+                                      Contiene(item.nombre, q) ||
+                                      Contiene(item.acccion_tipo, q) ||
+                                      Contiene(item.accion_fecha, q) ||
+                                      Contiene(item.notifica_fecha, q) ||
+                                      Contiene(item.estadoPersona_desc, q) ||
+                                      Contiene(item.linea_desc, q) ||
+                                      Contiene(item.institucion_desc, q));
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresPendienteData> OrdenarPendientes(IEnumerable<FrmCOCobroFiadoresPendienteData> data, FiltrosLazyLoadData filtros)
+        {
+            var asc = EsAscendente(filtros);
+            return NormalizarTexto(filtros.sortField) switch
+            {
+                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
+                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
+                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
+                "n_cuota" => asc ? data.OrderBy(x => x.n_cuota) : data.OrderByDescending(x => x.n_cuota),
+                "mora_financiera" => asc ? data.OrderBy(x => x.mora_financiera) : data.OrderByDescending(x => x.mora_financiera),
+                "saldo" => asc ? data.OrderBy(x => x.saldo) : data.OrderByDescending(x => x.saldo),
+                "notifica_fecha" => asc ? data.OrderBy(x => x.notifica_fecha ?? string.Empty) : data.OrderByDescending(x => x.notifica_fecha ?? string.Empty),
+                "estadoPersona_desc" => asc ? data.OrderBy(x => x.estadoPersona_desc ?? string.Empty) : data.OrderByDescending(x => x.estadoPersona_desc ?? string.Empty),
+                "linea_desc" => asc ? data.OrderBy(x => x.linea_desc ?? string.Empty) : data.OrderByDescending(x => x.linea_desc ?? string.Empty),
+                "institucion_desc" => asc ? data.OrderBy(x => x.institucion_desc ?? string.Empty) : data.OrderByDescending(x => x.institucion_desc ?? string.Empty),
+                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
+            };
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresActivoData> OrdenarActivos(IEnumerable<FrmCOCobroFiadoresActivoData> data, FiltrosLazyLoadData filtros)
+        {
+            var asc = EsAscendente(filtros);
+            return NormalizarTexto(filtros.sortField) switch
+            {
+                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
+                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
+                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
+                "cuota" => asc ? data.OrderBy(x => x.cuota) : data.OrderByDescending(x => x.cuota),
+                "d_operacion" => asc ? data.OrderBy(x => x.d_operacion ?? string.Empty) : data.OrderByDescending(x => x.d_operacion ?? string.Empty),
+                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
+            };
+        }
+
+        private static IEnumerable<FrmCOCobroFiadoresConsultaData> OrdenarConsultas(IEnumerable<FrmCOCobroFiadoresConsultaData> data, FiltrosLazyLoadData filtros)
+        {
+            var asc = EsAscendente(filtros);
+            return NormalizarTexto(filtros.sortField) switch
+            {
+                "codigo" => asc ? data.OrderBy(x => x.codigo ?? string.Empty) : data.OrderByDescending(x => x.codigo ?? string.Empty),
+                "cedula" => asc ? data.OrderBy(x => x.cedula ?? string.Empty) : data.OrderByDescending(x => x.cedula ?? string.Empty),
+                "nombre" => asc ? data.OrderBy(x => x.nombre ?? string.Empty) : data.OrderByDescending(x => x.nombre ?? string.Empty),
+                "n_cuota" => asc ? data.OrderBy(x => x.n_cuota) : data.OrderByDescending(x => x.n_cuota),
+                "mora_financiera" => asc ? data.OrderBy(x => x.mora_financiera) : data.OrderByDescending(x => x.mora_financiera),
+                "saldo_original" => asc ? data.OrderBy(x => x.saldo_original) : data.OrderByDescending(x => x.saldo_original),
+                "saldo_actual" => asc ? data.OrderBy(x => x.saldo_actual) : data.OrderByDescending(x => x.saldo_actual),
+                "accion_fecha" => asc ? data.OrderBy(x => x.accion_fecha ?? string.Empty) : data.OrderByDescending(x => x.accion_fecha ?? string.Empty),
+                _ => asc ? data.OrderBy(x => x.id_solicitud) : data.OrderByDescending(x => x.id_solicitud)
+            };
+        }
+
+        private static IEnumerable<T> Paginar<T>(IEnumerable<T> data, FiltrosLazyLoadData filtros)
+        {
+            var pagina = filtros.pagina;
+            var paginacion = filtros.paginacion;
+
+            if (pagina == 0 || paginacion == 0)
+            {
+                return data;
+            }
+
+            var offset = Math.Max(0, pagina);
+            var fetch = paginacion <= 0 ? 30 : paginacion;
+            return data.Skip(offset).Take(fetch);
+        }
+
+        private static bool Contiene(string? valor, string filtro)
+        {
+            return NormalizarCodigo(valor).Contains(filtro);
+        }
+
+        private static bool EsAscendente(FiltrosLazyLoadData filtros)
+        {
+            return filtros.sortOrder != 0;
+        }
+
+        private static string NormalizarCodigo(string? valor)
+        {
+            return (valor ?? string.Empty).Trim().ToUpper();
+        }
+
+        private static string NormalizarTexto(string? valor)
+        {
+            return (valor ?? string.Empty).Trim();
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresPendientesListaResult> CrearOkPendientes(int total, List<FrmCOCobroFiadoresPendienteData> lista)
+        {
+            return DbHelper.CreateOkResponse(new FrmCOCobroFiadoresPendientesListaResult
+            {
+                total = total,
+                lista = lista
+            });
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresPendientesListaResult> CrearErrorPendientes(string mensaje)
+        {
+            return DbHelper.CreateErrorResponse(
+                mensaje,
+                -1,
+                new FrmCOCobroFiadoresPendientesListaResult
+                {
+                    total = 0,
+                    lista = new List<FrmCOCobroFiadoresPendienteData>()
+                });
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresActivosListaResult> CrearOkActivos(int total, List<FrmCOCobroFiadoresActivoData> lista)
+        {
+            return DbHelper.CreateOkResponse(new FrmCOCobroFiadoresActivosListaResult
+            {
+                total = total,
+                lista = lista
+            });
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresActivosListaResult> CrearErrorActivos(string mensaje)
+        {
+            return DbHelper.CreateErrorResponse(
+                mensaje,
+                -1,
+                new FrmCOCobroFiadoresActivosListaResult
+                {
+                    total = 0,
+                    lista = new List<FrmCOCobroFiadoresActivoData>()
+                });
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresConsultasListaResult> CrearOkConsultas(int total, List<FrmCOCobroFiadoresConsultaData> lista)
+        {
+            return DbHelper.CreateOkResponse(new FrmCOCobroFiadoresConsultasListaResult
+            {
+                total = total,
+                lista = lista
+            });
+        }
+
+        private static ErrorDto<FrmCOCobroFiadoresConsultasListaResult> CrearErrorConsultas(string mensaje)
+        {
+            return DbHelper.CreateErrorResponse(
+                mensaje,
+                -1,
+                new FrmCOCobroFiadoresConsultasListaResult
+                {
+                    total = 0,
+                    lista = new List<FrmCOCobroFiadoresConsultaData>()
+                });
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalleMovimiento,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
     }
 }
