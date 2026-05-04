@@ -417,8 +417,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     CodEmpresa,
                     usuario,
                     codigo,
-                    rs,
-                    movimientoDefault);
+                    rs
+                    );
             }
             catch (SqlException ex)
             {
@@ -429,7 +429,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Procesa la respuesta de un SP de guardar y registra bitácora.
         /// </summary>
-        private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs, string movimientoDefault)
+        private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs)
         {
             var respuestaSp = LeerRespuestaSp(rs);
 

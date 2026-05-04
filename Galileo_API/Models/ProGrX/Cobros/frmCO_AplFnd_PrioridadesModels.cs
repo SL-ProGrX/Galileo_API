@@ -46,7 +46,7 @@ namespace Galileo_API.Models.ProGrX.Cobros
             public const string SP_PRIORIDAD_EJECUCION = @"EXEC spCBR_Pagos_Apl_Config_Prioridad_Ejecucion_Actualiza @Valor, @Usuario;";
         }
 
-        private sealed class RespuestaSpDto
+        public class RespuestaSpDto
         {
             public int Pass { get; set; }
             public string Mensaje { get; set; } = string.Empty;
