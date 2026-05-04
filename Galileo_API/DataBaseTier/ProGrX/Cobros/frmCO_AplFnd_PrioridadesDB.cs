@@ -417,7 +417,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     CodEmpresa,
                     usuario,
                     codigo,
-                    rs
+                    rs,
+                    movimientoDefault
                     );
             }
             catch (SqlException ex)
@@ -429,7 +430,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Procesa la respuesta de un SP de guardar y registra bitácora.
         /// </summary>
-        private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs)
+        private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs, string movimientoDefault)
         {
             var respuestaSp = LeerRespuestaSp(rs);
 
@@ -442,7 +443,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
                 DetalleMovimiento = $"Prioridad Apl. Pagos a Mora. Garantia: {codigo}",
                 Movimiento = string.IsNullOrWhiteSpace(respuestaSp.Movimiento)
-                        ? "Registro - WEB"
+                        ? movimientoDefault
                         : (respuestaSp.Movimiento.Trim() + " - WEB"),
                 Modulo = CoAplFndPrioridadConst.vModulo
             });
