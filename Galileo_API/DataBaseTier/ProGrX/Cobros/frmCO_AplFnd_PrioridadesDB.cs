@@ -112,13 +112,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     if (existe)
                         return DbHelper.ErrorResponse($"El registro con el código {codigo} ya existe.", -2);
 
-                    return Co_AplFnd_Prioridades_Insertar(conn, CodEmpresa, usuario, prioridad, orden);
+                    return Co_AplFnd_Prioridades_Persistir(conn, CodEmpresa, usuario, prioridad, orden, "REGISTRA - WEB");
                 }
 
                 if (!existe)
                     return DbHelper.ErrorResponse($"El registro con el código {codigo} no existe.", -2);
 
-                return Co_AplFnd_Prioridades_Actualizar(conn, CodEmpresa, usuario, prioridad, orden);
+                return Co_AplFnd_Prioridades_Persistir(conn, CodEmpresa, usuario, prioridad, orden, "ACTUALIZA - WEB");
             }
             catch (SqlException ex)
             {
@@ -397,9 +397,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Inserta una prioridad.
+        /// Inserta o actualiza una prioridad y procesa la respuesta del SP.
         /// </summary>
-        private ErrorDto Co_AplFnd_Prioridades_Insertar(SqlConnection conn, int CodEmpresa, string usuario, COAplFndPrioridadData prioridad, int orden)
+        private ErrorDto Co_AplFnd_Prioridades_Persistir(
+            SqlConnection conn,
+            int CodEmpresa,
+            string usuario,
+            COAplFndPrioridadData prioridad,
+            int orden,
+            string movimientoDefault)
         {
             try
             {
@@ -414,33 +420,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var rs = conn.QueryFirstOrDefault<dynamic>(CoAplFndPrioridadConst.SP_ADD, p);
 
-                return ProcesarRespuestaGuardar(CodEmpresa, usuario, codigo, rs, "REGISTRA - WEB");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Actualiza una prioridad.
-        /// </summary>
-        private ErrorDto Co_AplFnd_Prioridades_Actualizar(SqlConnection conn, int CodEmpresa, string usuario, COAplFndPrioridadData prioridad, int orden)
-        {
-            try
-            {
-                string codigo = (prioridad.codigo ?? string.Empty).Trim().ToUpperInvariant();
-                int activo = prioridad.activo ? 1 : 0;
-
-                var p = new DynamicParameters();
-                p.Add("@Codigo", codigo);
-                p.Add("@Orden", orden);
-                p.Add("@Activo", activo);
-                p.Add("@Usuario", usuario);
-
-                var rs = conn.QueryFirstOrDefault<dynamic>(CoAplFndPrioridadConst.SP_UPD, p);
-
-                return ProcesarRespuestaGuardar(CodEmpresa, usuario, codigo, rs, "ACTUALIZA - WEB");
+                return ProcesarRespuestaGuardar(
+                    CodEmpresa,
+                    usuario,
+                    codigo,
+                    rs,
+                    movimientoDefault);
             }
             catch (SqlException ex)
             {
