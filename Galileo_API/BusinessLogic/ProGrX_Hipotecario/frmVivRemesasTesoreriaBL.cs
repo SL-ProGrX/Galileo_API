@@ -51,5 +51,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         public ErrorDto<bool> RemesasTesoreria_ActualizarProceso(int codEmpresa, int remesaSeleccionada, string usuario, int idDesem)
             => _db.RemesasTesoreria_ActualizarProceso(codEmpresa, remesaSeleccionada, usuario, idDesem);
 
+        public ErrorDto<List<RemesasTesoreriaObtenerDto>> RemesasTesoreria_Top(int codEmpresa, int cantidad)
+            => _db.RemesasTesoreria_Top(codEmpresa, cantidad);
     }
 }
