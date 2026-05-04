@@ -4,8 +4,9 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Data.Common;
+using System.IO;
 using System.Text;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -45,19 +46,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var connection = new SqlConnection(stringConn);
                 await connection.OpenAsync();
 
-                using var transaction = connection.BeginTransaction();
+                await using var transaction = await connection.BeginTransactionAsync();
 
                 try
                 {
-                    await CC_ActualizaUpUt_EjecutarProceso(connection, transaction, usuario, lineas);
+                    await CC_ActualizaUpUt_EjecutarProceso(connection, transaction, lineas);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                     response.Code = 1;
                     response.Description = "Información actualizada correctamente.";
                 }
                 catch
                 {
-                    transaction.Rollback();
+                    await transaction.RollbackAsync();
                     throw;
                 }
             }
@@ -77,10 +78,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             using var reader = new StreamReader(stream, Encoding.UTF8, true, 1024, leaveOpen: true);
 
             int numeroLinea = 0;
+            string? rawLine;
 
-            while (!reader.EndOfStream)
+            while ((rawLine = await reader.ReadLineAsync()) is not null)
             {
-                string? rawLine = await reader.ReadLineAsync();
                 numeroLinea++;
 
                 if (string.IsNullOrWhiteSpace(rawLine))
@@ -92,7 +93,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (line.Length < 61)
                 {
-                    throw new ArgumentException($"La línea {numeroLinea} no cumple con la longitud mínima requerida.", nameof(line));
+                    throw new InvalidDataException(
+                        $"La línea {numeroLinea} no cumple con la longitud mínima requerida.");
                 }
 
                 var item = new CcActualizaUpUtLinea
@@ -104,17 +106,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (string.IsNullOrWhiteSpace(item.cedula))
                 {
-                    throw new ArgumentException($"La línea {numeroLinea} no contiene una cédula válida.", nameof(item.cedula));
+                    throw new InvalidDataException(
+                        $"La línea {numeroLinea} no contiene una cédula válida.");
                 }
 
                 if (string.IsNullOrWhiteSpace(item.unidad_programatica))
                 {
-                    throw new ArgumentException($"La línea {numeroLinea} no contiene una unidad programática válida.", nameof(item.unidad_programatica));
+                    throw new InvalidDataException(
+                        $"La línea {numeroLinea} no contiene una unidad programática válida.");
                 }
 
                 if (string.IsNullOrWhiteSpace(item.unidad_trabajo))
                 {
-                    throw new ArgumentException($"La línea {numeroLinea} no contiene una unidad de trabajo válida.", nameof(item.unidad_trabajo));
+                    throw new InvalidDataException(
+                        $"La línea {numeroLinea} no contiene una unidad de trabajo válida.");
                 }
 
                 resultado.Add(item);
@@ -130,8 +135,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
         private async Task CC_ActualizaUpUt_EjecutarProceso(
             SqlConnection connection,
-            SqlTransaction transaction,
-            string usuario,
+            DbTransaction transaction,
             List<CcActualizaUpUtLinea> lineas)
         {
             for (int i = 0; i < lineas.Count; i++)

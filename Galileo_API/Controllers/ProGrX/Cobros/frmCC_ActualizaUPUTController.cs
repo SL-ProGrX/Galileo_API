@@ -12,6 +12,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
     public class FrmCCActualizaUpUtController : ControllerBase
     {
         private readonly FrmCCActualizaUpUtBl _bl;
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
 
         public FrmCCActualizaUpUtController(IConfiguration config)
         {
@@ -77,7 +78,11 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
                 };
             }
 
-            if (!Regex.IsMatch(fileName, @"^[A-Za-z0-9._\-\s]+$"))
+            if (!Regex.IsMatch(
+                    fileName,
+                    @"^[A-Za-z0-9._\-\s]+$",
+                    RegexOptions.CultureInvariant,
+                    RegexTimeout))
             {
                 return new ErrorDto
                 {
