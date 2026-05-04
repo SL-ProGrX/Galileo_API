@@ -306,7 +306,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
             return result;
         }
- 
+
         /// <summary>
         /// Obtiene el catálogo de Carteras de Crédito para el dropdown.
         /// </summary>
@@ -580,7 +580,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             });
         }
     }
-}
 
     internal sealed class COCarteraConsultaParams
     {
@@ -590,3 +589,4 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         public string SortField { get; init; } = "COD_CLASIFICACION";
         public string SortOrder { get; init; } = "ASC";
     }
+}

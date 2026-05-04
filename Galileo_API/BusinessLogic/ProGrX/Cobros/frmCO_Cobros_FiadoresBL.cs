@@ -39,7 +39,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             FrmCOCobroFiadoresPendientesConsultaDto dto = JsonConvert.DeserializeObject<FrmCOCobroFiadoresPendientesConsultaDto>(jdto) ?? new FrmCOCobroFiadoresPendientesConsultaDto();
 
-            if (filtros == null) filtros = new FiltrosLazyLoadData();
+            filtros ??= new FiltrosLazyLoadData();
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
@@ -57,7 +57,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             FrmCOCobroFiadoresActivosConsultaDto dto = JsonConvert.DeserializeObject<FrmCOCobroFiadoresActivosConsultaDto>(jdto) ?? new FrmCOCobroFiadoresActivosConsultaDto();
 
-            if (filtros == null) filtros = new FiltrosLazyLoadData();
+            filtros ??= new FiltrosLazyLoadData();
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
@@ -76,7 +76,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             FrmCOCobroFiadoresConsultasConsultaDto dto = JsonConvert.DeserializeObject<FrmCOCobroFiadoresConsultasConsultaDto>(jdto) ?? new FrmCOCobroFiadoresConsultasConsultaDto();
 
-            if (filtros == null) filtros = new FiltrosLazyLoadData();
+            filtros ??= new FiltrosLazyLoadData();
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
