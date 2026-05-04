@@ -220,15 +220,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 conn.Execute(CoAplFndPrioridadConst.SP_PRIORIDAD_EJECUCION, p);
 
-                string detalleMovimiento;
-                if (prioridad == 0)
-                {
-                    detalleMovimiento = "Prioridad de Ejecución del Proceso de Aplicación de Fondos, Prioriza Pago a Creditos";
-                }
-                else
-                {
-                    detalleMovimiento = "Prioridad de Ejecución del Proceso de Aplicación de Fondos, Prioriza Pago a Ahorro Obrero";
-                }
+                string detalleMovimiento = prioridad == 0
+                    ? "Prioridad de Ejecución del Proceso de Aplicación de Fondos, Prioriza Pago a Creditos"
+                    : "Prioridad de Ejecución del Proceso de Aplicación de Fondos, Prioriza Pago a Ahorro Obrero";
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
