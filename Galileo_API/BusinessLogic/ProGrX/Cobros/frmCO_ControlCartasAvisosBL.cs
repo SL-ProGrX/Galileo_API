@@ -1,7 +1,6 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
-using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Newtonsoft.Json;
 using Galileo.DataBaseTier.ProGrX.Cobros;
 
