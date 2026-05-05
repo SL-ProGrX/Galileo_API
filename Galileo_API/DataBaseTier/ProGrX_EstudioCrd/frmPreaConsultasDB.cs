@@ -260,6 +260,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto<List<PreaConsultasResumenModel>> PreaConsultas_Resumen_Obtener(int CodEmpresa, PreaConsultasFiltroRequest request)
         {
+            if (request is null)
+            {
+                return DbHelper.CreateErrorResponse<List<PreaConsultasResumenModel>>(
+                    "Request inválido.",
+                    -1,
+                    []);
+            }
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
@@ -268,22 +275,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var where = PreaConsultas_Filtros_Build(request, parameters, false);
                 var (codigo, descripcion, groupBy, orderBy) = PreaConsultas_ResumenAgrupacion_Obtener(request.TipoResumen);
 
+                var query = PreaConsultas_ResumenSql_Build(
+                       codigo,
+                       descripcion,
+                       groupBy,
+                       orderBy,
+                       where);
 
-                var query = $@"
-                    SELECT
-                        {codigo} AS Codigo,
-                        {descripcion} AS Descripcion,
-                        COUNT(*) AS Casos,
-                        SUM(Monto) AS Monto,
-                        SUM(Refundiciones) AS Refundiciones,
-                        SUM(Desembolsos) AS Desembolsos,
-                        SUM(Monto - Refundiciones) AS MontoColocado
-                    FROM vCrd_Estudio_Crediticio
-                    WHERE {where}
-                    GROUP BY {groupBy}
-                    ORDER BY {orderBy}";
+                List<PreaConsultasResumenModel> result =
+            [.. connection.Query<PreaConsultasResumenModel>(query, parameters)];
 
-                var result = connection.Query<PreaConsultasResumenModel>(query, parameters).ToList();
+
 
                 return DbHelper.CreateOkResponse(result);
             }
@@ -294,6 +296,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     -1,
                     []);
             }
+        }
+        private static string PreaConsultas_ResumenSql_Build(string codigo, string descripcion,string groupBy,string orderBy, string where)
+        {
+            return $@"
+                SELECT
+                    {codigo} AS Codigo,
+                    {descripcion} AS Descripcion,
+                    COUNT(*) AS Casos,
+                    SUM(Monto) AS Monto,
+                    SUM(Refundiciones) AS Refundiciones,
+                    SUM(Desembolsos) AS Desembolsos,
+                    SUM(Monto - Refundiciones) AS MontoColocado
+                FROM vCrd_Estudio_Crediticio
+                WHERE {where}
+                GROUP BY {groupBy}
+                ORDER BY {orderBy}";
         }
 
         /// <summary>
