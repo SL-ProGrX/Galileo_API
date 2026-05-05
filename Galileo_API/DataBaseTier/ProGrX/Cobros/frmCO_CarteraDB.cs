@@ -186,15 +186,21 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto Co_Asignacion_Guardar(int CodEmpresa, string usuario, COCarteraAsignacionGuardarDto dto)
         {
-            var clasif = NormalizarCodigo(dto?.cod_clasificacion);
-            var codigo = NormalizarCodigo(dto?.codigo);
+            if (dto == null)
+            {
+                return DbHelper.ErrorResponse("Datos incompletos para asignación.", -2);
+            }
+
+            var clasif = NormalizarCodigo(dto.cod_clasificacion);
+            var codigo = NormalizarCodigo(dto.codigo);
 
             if (string.IsNullOrWhiteSpace(clasif) || string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.ErrorResponse("Datos incompletos para asignación.", -2);
             }
 
-            var result = dto!.asignar
+            var asignar = dto.asignar;
+            var result = asignar
                 ? GuardarAsignacionCodigo(CodEmpresa, clasif, codigo)
                 : EliminarAsignacionCodigo(CodEmpresa, clasif, codigo);
 
@@ -203,7 +209,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 return result;
             }
 
-            RegistrarBitacoraAsignacion(CodEmpresa, usuario, clasif, codigo, dto.asignar);
+            RegistrarBitacoraAsignacion(CodEmpresa, usuario, clasif, codigo, asignar);
             return result;
         }
 
