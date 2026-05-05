@@ -21,26 +21,32 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Principal
 
-        [Authorize]
         [HttpPost("Viv_Garantia_Principal_Cargar")]
-        public ErrorDto<FrmVivGarantiaPrincipalResponse> FrmVivGarantiaPrincipal_Cargar(
+        public ErrorDto<FrmVivGarantiaPrincipalResponse> Viv_GarantiaPrincipal_Cargar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
-            return _bl.FrmVivGarantiaPrincipal_Cargar(codEmpresa, request);
+            return _bl.Viv_GarantiaPrincipal_Cargar(codEmpresa, request);
+        }
+
+        [HttpPost("Viv_Garantia_Guardar")]
+        public ErrorDto<FrmVivGarantiaGuardarResponse> Viv_GarantiaGuardar(
+    int codEmpresa,
+    FrmVivGarantiaGuardarRequest request)
+        {
+            return _bl.Viv_GarantiaGuardar(codEmpresa, request);
         }
 
         #endregion
 
         #region General
 
-        [Authorize]
         [HttpPost("Viv_Garantia_General_Listar")]
-        public ErrorDto<List<FrmVivGarantiaGeneralItem>> FrmVivGarantiaGeneral_Listar(
+        public ErrorDto<List<FrmVivGarantiaGeneralItem>> Viv_GarantiaGeneral_Listar(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
-            return _bl.FrmVivGarantiaGeneral_Listar(codEmpresa, request);
+            return _bl.Viv_GarantiaGeneral_Listar(codEmpresa, request);
         }
 
         #endregion
@@ -48,65 +54,90 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #region Garantia
 
         [HttpPost("Viv_GarantiaDetalle_Obtener")]
-        public ErrorDto<FrmVivGarantiaDetalleResponse> FrmVivGarantiaDetalle_Obtener(
+        public ErrorDto<FrmVivGarantiaDetalleResponse> Viv_GarantiaDetalle_Obtener(
     int codEmpresa,
     FrmVivGarantiaDetalleRequest request)
         {
-            return _bl.FrmVivGarantiaDetalle_Obtener(codEmpresa, request);
+            return _bl.Viv_GarantiaDetalle_Obtener(codEmpresa, request);
         }
 
-        [HttpPost("Viv_GarantiaCantones_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
+        [HttpGet("Viv_GarantiaCantones_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaCantones_Obtener(
     int codEmpresa,
-    FrmVivGarantiaProvinciaRequest request)
+    string provincia)
         {
-            return _bl.FrmVivGarantiaCantones_Obtener(codEmpresa, request);
+            return _bl.Viv_GarantiaCantones_Obtener(codEmpresa, provincia);
         }
 
-        [HttpPost("Viv_GarantiaDistritos_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
+        [HttpGet("Viv_GarantiaDistritos_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaDistritos_Obtener(
+            int codEmpresa,
+            string provincia,
+            string canton)
+        {
+            return _bl.Viv_GarantiaDistritos_Obtener(codEmpresa, provincia, canton);
+        }
+
+        [HttpPost("Viv_GarantiaProfesionales_Buscar")]
+        public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> Viv_GarantiaProfesionales_Buscar(
     int codEmpresa,
-    FrmVivGarantiaCantonRequest request)
+    FrmVivGarantiaProfesionalesBuscarRequest request)
         {
-            return _bl.FrmVivGarantiaDistritos_Obtener(codEmpresa, request);
+            return _bl.Viv_GarantiaProfesionales_Buscar(codEmpresa, request);
         }
-
         #endregion
 
         #region Derechos
         [HttpPost("Viv_GarantiaDerechos_Listar")]
-        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> FrmVivGarantiaDerechos_Listar(
+        public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> Viv_GarantiaDerechos_Listar(
             int codEmpresa,
             FrmVivGarantiaIdGarantiaRequest request)
         {
-            return _bl.FrmVivGarantiaDerechos_Listar(codEmpresa, request);
+            return _bl.Viv_GarantiaDerechos_Listar(codEmpresa, request);
         }
 
         [HttpPost("Viv_GarantiaSocio_Obtener")]
-        public ErrorDto<FrmVivGarantiaSocioItem> FrmVivGarantiaSocio_Obtener(
+        public ErrorDto<FrmVivGarantiaSocioItem> Viv_GarantiaSocio_Obtener(
     int codEmpresa,
     FrmVivGarantiaSocioRequest request)
         {
-            return _bl.FrmVivGarantiaSocio_Obtener(codEmpresa, request);
+            return _bl.Viv_GarantiaSocio_Obtener(codEmpresa, request);
         }
 
         [HttpPost("Viv_GarantiaSocios_Buscar")]
-        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> FrmVivGarantiaSocios_Buscar(
+        public ErrorDto<FrmVivGarantiaSociosBuscarResponse> Viv_GarantiaSocios_Buscar(
     int codEmpresa,
     FrmVivGarantiaSociosBuscarRequest request)
         {
-            return _bl.FrmVivGarantiaSocios_Buscar(codEmpresa, request);
+            return _bl.Viv_GarantiaSocios_Buscar(codEmpresa, request);
         }
+
+        [HttpPost("Viv_GarantiaDerecho_Guardar")]
+        public ErrorDto Viv_GarantiaDerecho_Guardar(
+    int codEmpresa,
+    FrmVivGarantiaDerechoGuardarRequest request)
+        {
+            return _bl.Viv_GarantiaDerecho_Guardar(codEmpresa, request);
+        }
+
+        [HttpPost("Viv_GarantiaDerecho_Borrar")]
+        public ErrorDto Viv_GarantiaDerecho_Borrar(
+            int codEmpresa,
+            FrmVivGarantiaDerechoBorrarRequest request)
+        {
+            return _bl.Viv_GarantiaDerecho_Borrar(codEmpresa, request);
+        }
+
         #endregion
 
         #region Historial del Tramite
 
         [HttpPost("Viv_GarantiaHistorial_Obtener")]
-        public ErrorDto<FrmVivGarantiaHistorialResponse> FrmVivGarantiaHistorial_Obtener(
+        public ErrorDto<FrmVivGarantiaHistorialResponse> Viv_GarantiaHistorial_Obtener(
     int codEmpresa,
     FrmVivGarantiaIdGarantiaRequest request)
         {
-            return _bl.FrmVivGarantiaHistorial_Obtener(codEmpresa, request);
+            return _bl.Viv_GarantiaHistorial_Obtener(codEmpresa, request);
         }
 
         #endregion
@@ -114,11 +145,11 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #region Fincas
 
         [HttpPost("Viv_GarantiaFincasAsociadas_Listar")]
-        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> FrmVivGarantiaFincasAsociadas_Listar(
+        public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> Viv_GarantiaFincasAsociadas_Listar(
     int codEmpresa,
     FrmVivGarantiaCargaRequest request)
         {
-            return _bl.FrmVivGarantiaFincasAsociadas_Listar(codEmpresa, request);
+            return _bl.Viv_GarantiaFincasAsociadas_Listar(codEmpresa, request);
         }
 
         #endregion
@@ -126,11 +157,11 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #region Notas
 
         [HttpPost("Viv_GarantiaNotas_Listar")]
-        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> FrmVivGarantiaNotas_Listar(
+        public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> Viv_GarantiaNotas_Listar(
     int codEmpresa,
     FrmVivGarantiaNotasRequest request)
         {
-            return _bl.FrmVivGarantiaNotas_Listar(codEmpresa, request);
+            return _bl.Viv_GarantiaNotas_Listar(codEmpresa, request);
         }
 
         #endregion
