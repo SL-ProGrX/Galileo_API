@@ -10,14 +10,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
     {
         private readonly FrmVivRegistroAvaluoDb _db;
         private readonly ClsConsultarBD _clsConsultar;
-        private readonly clsAgregarBD _clsAgregar;
+        private readonly ClsAgregarBD _clsAgregar;
         private readonly string pValidaGarantia = "Debe indicar una garantía válida.";
 
         public FrmVivRegistroAvaluoBl(IConfiguration config)
         {
             _db = new FrmVivRegistroAvaluoDb(config);
             _clsConsultar = new ClsConsultarBD(config);
-            _clsAgregar = new clsAgregarBD(config);
+            _clsAgregar = new ClsAgregarBD(config);
         }
 
         public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse> Viv_GarantiaAvaluo_Obtener(

@@ -6,11 +6,11 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class clsAgregarBD
+    public class ClsAgregarBD
     {
         private readonly PortalDB _portalDB;
 
-        public clsAgregarBD(IConfiguration config)
+        public ClsAgregarBD(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }
