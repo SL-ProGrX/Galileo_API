@@ -10,13 +10,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [ApiController]
     public class FrmCOAntiguedadTiposController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOAntiguedadTiposBL _bl;
 
         public FrmCOAntiguedadTiposController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCOAntiguedadTiposBL(_config);
+            _bl = new FrmCOAntiguedadTiposBL(config);
         }
 
         [Authorize]

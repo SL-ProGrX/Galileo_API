@@ -10,13 +10,11 @@ namespace Galileo.Controllers
     [ApiController]
     public class FrmCOControlAsgManualController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOControlAsgManualBL _bl;
 
         public FrmCOControlAsgManualController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCOControlAsgManualBL(_config);
+            _bl = new FrmCOControlAsgManualBL(config);
         }
 
         [Authorize]

@@ -9,13 +9,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
     public class FrmCoControlComTablaBL
     {
 
-        private readonly IConfiguration? _config;
         private readonly FrmCoControlComTablaDB _db;
 
         public FrmCoControlComTablaBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmCoControlComTablaDB(_config);
+            _db = new FrmCoControlComTablaDB(config);
         }
         
         public ErrorDto<CoControlComTablaLista> CO_ControlComTabla_Obtener(int CodEmpresa, string jfiltros)

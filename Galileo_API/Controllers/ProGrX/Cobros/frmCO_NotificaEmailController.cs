@@ -11,13 +11,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [ApiController]
     public class FrmCONotificaEmailController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCONotificaEmailBL _bl;
 
         public FrmCONotificaEmailController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCONotificaEmailBL(_config);
+            _bl = new FrmCONotificaEmailBL(config);
         }
 
         [Authorize]

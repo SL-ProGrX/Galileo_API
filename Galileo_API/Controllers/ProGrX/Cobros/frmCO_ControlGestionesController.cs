@@ -11,13 +11,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [ApiController]
     public class FrmCOControlGestionesController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOControlGestionesBL _bl;
 
         public FrmCOControlGestionesController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCOControlGestionesBL(_config);
+            _bl = new FrmCOControlGestionesBL(config);
         }
 
         [Authorize]

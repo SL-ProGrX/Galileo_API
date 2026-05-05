@@ -11,13 +11,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
 
     public class FrmCoComisionesDocumentosController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCoComisionesDocumentosBL _bl;
 
         public FrmCoComisionesDocumentosController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCoComisionesDocumentosBL(_config);
+            _bl = new FrmCoComisionesDocumentosBL(config);
         }
 
         [Authorize]

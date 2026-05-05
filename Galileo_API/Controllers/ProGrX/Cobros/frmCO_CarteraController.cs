@@ -11,13 +11,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
     [ApiController]
     public class FrmCOCarteraController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCOCarteraBL _bl;
 
         public FrmCOCarteraController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCOCarteraBL(_config);
+            _bl = new FrmCOCarteraBL(config);
         }
 
         [Authorize]

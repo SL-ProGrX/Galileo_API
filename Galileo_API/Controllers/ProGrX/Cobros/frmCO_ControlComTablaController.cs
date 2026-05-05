@@ -13,13 +13,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
 
     public class FrmCoControlComTablaController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCoControlComTablaBL _bl;
 
         public FrmCoControlComTablaController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCoControlComTablaBL(_config);
+            _bl = new FrmCoControlComTablaBL(config);
         }
 
         [Authorize]

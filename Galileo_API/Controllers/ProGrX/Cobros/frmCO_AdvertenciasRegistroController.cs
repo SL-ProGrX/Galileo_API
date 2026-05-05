@@ -13,13 +13,11 @@ namespace Galileo.Controllers.ProGrX.Cobros
 
     public class FrmCoAdvertenciasRegistroController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmCoAdvertenciasRegistroBL _bl;
 
         public FrmCoAdvertenciasRegistroController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmCoAdvertenciasRegistroBL(_config);
+            _bl = new FrmCoAdvertenciasRegistroBL(config);
         }
 
         [Authorize]
