@@ -23,23 +23,19 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
 
     public class VivDetalleGarantiaGuardarDto
     {
-        public int id_garantia { get; set; }
-        public short linea { get; set; }
+        public int? id_garantia { get; set; }
+        public short? linea { get; set; }
         public string propietario { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public string grado_hipoteca { get; set; } = string.Empty;
         public string observaciones { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public bool? isNew { get; set; }
     }
 
     public class VivDetalleGarantiaEliminarDto
     {
-        public int id_garantia { get; set; }
-        public short linea { get; set; }
+        public int? id_garantia { get; set; }
+        public short? linea { get; set; }
         public string usuario { get; set; } = string.Empty;
-    }
-
-    public class VivDetalleGarantiaGradoItem : DropDownListaGenericaModel
-    {
     }
 }

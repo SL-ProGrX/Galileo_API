@@ -1,4 +1,5 @@
-﻿using Galileo.Models.ERROR;
+﻿using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Hipotecario;
 using Galileo_API.Models.ProGrX_Hipotecario;
 using Microsoft.AspNetCore.Authorization;
@@ -26,7 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         [Authorize]
         [HttpGet("Viv_DetalleGarantia_Grados_Dropdown_Obtener")]
-        public ErrorDto<List<VivDetalleGarantiaGradoItem>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(int CodEmpresa, string descGradoHipoteca)
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(int CodEmpresa, string descGradoHipoteca)
         {
             return BL.Viv_DetalleGarantia_Grados_Dropdown_Obtener(CodEmpresa, descGradoHipoteca);
         }

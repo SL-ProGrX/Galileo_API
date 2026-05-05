@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Hipotecario;
@@ -85,22 +86,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// <param name="CodEmpresa"></param>
         /// <param name="descGradoHipoteca"></param>
         /// <returns></returns>
-        public ErrorDto<List<VivDetalleGarantiaGradoItem>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(int CodEmpresa, string descGradoHipoteca)
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(
+            int CodEmpresa,
+            string descGradoHipoteca)
         {
             var grado = (descGradoHipoteca ?? string.Empty).Trim();
-            var lista = new List<VivDetalleGarantiaGradoItem>();
+            var lista = new List<DropDownListaGenericaModel>();
 
             if (grado.Equals("Segundo Grado", StringComparison.OrdinalIgnoreCase))
             {
-                lista.Add(new VivDetalleGarantiaGradoItem { item = "P", descripcion = "Primer Grado" });
+                lista.Add(new DropDownListaGenericaModel
+                {
+                    item = "P",
+                    descripcion = "Primer Grado"
+                });
             }
             else if (grado.Equals("Tercer Grado", StringComparison.OrdinalIgnoreCase))
             {
-                lista.Add(new VivDetalleGarantiaGradoItem { item = "P", descripcion = "Primer Grado" });
-                lista.Add(new VivDetalleGarantiaGradoItem { item = "S", descripcion = "Segundo Grado" });
+                lista.Add(new DropDownListaGenericaModel
+                {
+                    item = "P",
+                    descripcion = "Primer Grado"
+                });
+
+                lista.Add(new DropDownListaGenericaModel
+                {
+                    item = "S",
+                    descripcion = "Segundo Grado"
+                });
             }
 
-            return new ErrorDto<List<VivDetalleGarantiaGradoItem>>
+            return new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -123,7 +139,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
                 using var conn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(CodEmpresa));
 
-                var linea = data.isNew ? (short)-1 : data.linea;
+                var esNuevo = data.isNew == true;
+                var linea = esNuevo ? (short)-1 : data.linea;
 
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdGarantia", data.id_garantia);
@@ -141,11 +158,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     EmpresaId = CodEmpresa,
                     Usuario = usuario.Trim(),
                     DetalleMovimiento = $"Garantias vivienda hipoteca: {data.id_garantia} monto: {data.monto}",
-                    Movimiento = data.isNew ? "REGISTRA-WEB" : "MODIFICA-WEB",
+                    Movimiento = esNuevo ? "REGISTRA-WEB" : "MODIFICA-WEB",
                     Modulo = ModuloCreditos
                 });
 
-                return new ErrorDto { Code = 0, Description = "Operación realizada correctamente." };
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = esNuevo
+                        ? "Información fue registrada corretamente."
+                        : "Información fue actualizada correctamente."
+                };
             }
             catch (SqlException ex)
             {
@@ -162,7 +185,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             try
             {
-                if (OperacionFormalizada(CodEmpresa, data.id_garantia))
+                var idGarantia = data.id_garantia.GetValueOrDefault();
+
+                if (idGarantia <= 0)
+                    return DbHelper.ErrorResponse("Debe seleccionar una garantía antes de eliminar acreedores.", -2);
+
+                if (data.linea <= 0)
+                    return DbHelper.ErrorResponse("Debe seleccionar una línea válida para borrar.", -2);
+
+                if (OperacionFormalizada(CodEmpresa, idGarantia))
                     return DbHelper.ErrorResponse(MensajeFormalizada, -2);
 
                 using var conn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(CodEmpresa));
@@ -174,7 +205,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
                 var rows = conn.Execute(sql, new
                 {
-                    idGarantia = data.id_garantia,
+                    idGarantia,
                     linea = data.linea
                 });
 
@@ -185,7 +216,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = (data.usuario ?? string.Empty).Trim(),
-                    DetalleMovimiento = $"Garantias vivienda hipoteca: {data.id_garantia} linea: {data.linea}",
+                    DetalleMovimiento = $"Garantias vivienda hipoteca: {idGarantia} linea: {data.linea}",
                     Movimiento = "ELIMINA-WEB",
                     Modulo = ModuloCreditos
                 });
@@ -203,7 +234,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         }
         private ErrorDto ValidarGuardar(int CodEmpresa, VivDetalleGarantiaGuardarDto data)
         {
-            if (OperacionFormalizada(CodEmpresa, data.id_garantia))
+            var idGarantia = data.id_garantia.GetValueOrDefault();
+
+            if (idGarantia <= 0)
+                return DbHelper.ErrorResponse("Debe seleccionar una garantía antes de registrar acreedores.", -2);
+
+            if (OperacionFormalizada(CodEmpresa, idGarantia))
                 return DbHelper.ErrorResponse(MensajeFormalizada, -2);
 
             if (string.IsNullOrWhiteSpace(data.propietario))

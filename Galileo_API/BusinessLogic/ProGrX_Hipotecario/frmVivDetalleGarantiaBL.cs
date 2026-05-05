@@ -1,4 +1,5 @@
-﻿using Galileo.Models.ERROR;
+﻿using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Hipotecario;
 using Galileo_API.Models.ProGrX_Hipotecario;
 
@@ -18,7 +19,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             return DB.Viv_DetalleGarantia_Lista_Obtener(CodEmpresa, idGarantia, linea);
         }
 
-        public ErrorDto<List<VivDetalleGarantiaGradoItem>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(int CodEmpresa, string descGradoHipoteca)
+        public ErrorDto<List<DropDownListaGenericaModel>> Viv_DetalleGarantia_Grados_Dropdown_Obtener(int CodEmpresa, string descGradoHipoteca)
         {
             return DB.Viv_DetalleGarantia_Grados_Dropdown_Obtener(CodEmpresa, descGradoHipoteca);
         }
