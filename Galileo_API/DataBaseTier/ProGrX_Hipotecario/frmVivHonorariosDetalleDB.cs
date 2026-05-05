@@ -165,7 +165,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     @IdContacto,
                     @Profesional,
                     @AsingacionUsuario,
-                    @AsignacionFecha;";
+                    null;";
 
             return DbHelper.ExecuteNonQuery(
                 _portalDb,
@@ -176,8 +176,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     IdGarantia = idGarantia,
                     IdContacto = idContacto,
                     Profesional = NormalizarTexto(profesional),
-                    AsingacionUsuario = usuario,
-                    AsignacionFecha = DBNull.Value
+                    AsingacionUsuario = usuario
                 });
         }
 
