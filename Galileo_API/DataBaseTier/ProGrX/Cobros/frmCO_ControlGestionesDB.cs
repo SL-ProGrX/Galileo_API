@@ -11,6 +11,21 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         private readonly IConfiguration _config;
         private readonly int vModulo = 4;
         private readonly MSecurityMainDb _Security_MainDB;
+        private static readonly IReadOnlyDictionary<string, int> GestionesSortMap = new Dictionary<string, int>
+        {
+            ["cod_gestion"] = 1,
+            ["descripcion"] = 2,
+            ["codigo_referencia"] = 3,
+            ["monto"] = 4,
+            ["modifica_usuario"] = 5,
+            ["modifica_desviacion"] = 6,
+            ["cod_cuenta"] = 7,
+            ["nivel_gestion"] = 8,
+            ["acceso_restringido"] = 9,
+            ["mrecuperacion"] = 10,
+            ["iva_porcentaje"] = 11,
+            ["activo"] = 12
+        };
 
         public FrmCOControlGestionesDB(IConfiguration config)
         {
@@ -35,10 +50,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                var consulta = CrearParametrosConsultaGestiones(filtros);
+                var consulta = LazyLoadHelper.Build(filtros, GestionesSortMap, "cod_gestion");
                 var queryResult = DbHelper.WithConn(portalDb, CodEmpresa, connection =>
                 {
-                    using var multi = connection.QueryMultiple(CrearSqlListaGestiones(consulta), consulta.Parametros);
+                    using var multi = connection.QueryMultiple(CrearSqlListaGestiones(), consulta.Params);
 
                     return new CoControlGestionesLista
                     {
@@ -350,55 +365,19 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 lista = new List<CoControlGestionesData>()
             });
 
-        private static CoControlGestionesConsultaParams CrearParametrosConsultaGestiones(FiltrosLazyLoadData? filtros)
+        private static string CrearSqlListaGestiones()
         {
-            var filtroSeguro = (filtros?.filtro ?? string.Empty).Trim();
-            var pagina = filtros?.pagina ?? 0;
-            var paginacion = filtros?.paginacion ?? 0;
-            var exportAll = pagina == 0 || paginacion == 0;
-
-            var parametros = new DynamicParameters();
-            AgregarFiltroGestiones(parametros, filtroSeguro);
-            AgregarPaginacion(parametros, pagina, paginacion, exportAll);
-
-            return new CoControlGestionesConsultaParams
-            {
-                Parametros = parametros,
-                TieneFiltro = !string.IsNullOrWhiteSpace(filtroSeguro),
-                ExportAll = exportAll,
-                SortField = ObtenerSortField(filtros?.sortField),
-                SortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC"
-            };
-        }
-
-        private static void AgregarFiltroGestiones(DynamicParameters parametros, string filtro)
-        {
-            if (!string.IsNullOrWhiteSpace(filtro))
-            {
-                parametros.Add("@q", $"%{filtro}%");
-            }
-        }
-
-        private static void AgregarPaginacion(DynamicParameters parametros, int pagina, int paginacion, bool exportAll)
-        {
-            if (exportAll)
-            {
-                return;
-            }
-
-            parametros.Add("@offset", pagina);
-            parametros.Add("@fetch", paginacion);
-        }
-
-        private static string CrearSqlListaGestiones(CoControlGestionesConsultaParams consulta)
-        {
-            var whereSql = CrearWhereGestiones(consulta.TieneFiltro);
-            var paginacionSql = consulta.ExportAll ? string.Empty : "OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-            return $@"
+            return @"
                     SELECT COUNT(1)
                     FROM dbo.CBR_GESTIONES
-                    {whereSql};
+                    WHERE @hasFilter = 0 OR
+                    (
+                        UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
+                        UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
+                        UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
+                        UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
+                        UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
+                    );
 
                     SELECT
                         COD_GESTION         AS cod_gestion,
@@ -414,45 +393,41 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         ISNULL(IVA_PORCENTAJE,0) AS iva_porcentaje,
                         CASE WHEN ISNULL(ESTADO,1) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS activo
                     FROM dbo.CBR_GESTIONES
-                    {whereSql}
-                    ORDER BY {consulta.SortField} {consulta.SortOrder}
-                    {paginacionSql};";
-        }
-
-        private static string CrearWhereGestiones(bool tieneFiltro)
-        {
-            if (!tieneFiltro)
-            {
-                return string.Empty;
-            }
-
-            return @"WHERE (
-                        UPPER(COD_GESTION) LIKE UPPER(@q) OR
-                        UPPER(DESCRIPCION) LIKE UPPER(@q) OR
-                        UPPER(CODIGO_REFERENCIA) LIKE UPPER(@q) OR
-                        UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@q) OR
-                        UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@q)
-                    )";
-        }
-
-        private static string ObtenerSortField(string? sortField)
-        {
-            return (sortField ?? string.Empty).Trim() switch
-            {
-                "cod_gestion" => "COD_GESTION",
-                "descripcion" => "DESCRIPCION",
-                "codigo_referencia" => "CODIGO_REFERENCIA",
-                "monto" => "MONTO",
-                "modifica_usuario" => "MODIFICA_USUARIO",
-                "modifica_desviacion" => "MODIFICA_DESVIACION",
-                "cod_cuenta" => "COD_CUENTA",
-                "nivel_gestion" => "NIVEL_GESTION",
-                "acceso_restringido" => "ACCESO_RESTRINGIDO",
-                "mrecuperacion" => "MRECUPERACION",
-                "iva_porcentaje" => "IVA_PORCENTAJE",
-                "activo" => "ESTADO",
-                _ => "COD_GESTION"
-            };
+                    WHERE @hasFilter = 0 OR
+                    (
+                        UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
+                        UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
+                        UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
+                        UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
+                        UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
+                    )
+                    ORDER BY
+                        CASE WHEN @sortCode = 1  AND @isAsc = 1 THEN COD_GESTION END ASC,
+                        CASE WHEN @sortCode = 1  AND @isAsc = 0 THEN COD_GESTION END DESC,
+                        CASE WHEN @sortCode = 2  AND @isAsc = 1 THEN DESCRIPCION END ASC,
+                        CASE WHEN @sortCode = 2  AND @isAsc = 0 THEN DESCRIPCION END DESC,
+                        CASE WHEN @sortCode = 3  AND @isAsc = 1 THEN CODIGO_REFERENCIA END ASC,
+                        CASE WHEN @sortCode = 3  AND @isAsc = 0 THEN CODIGO_REFERENCIA END DESC,
+                        CASE WHEN @sortCode = 4  AND @isAsc = 1 THEN MONTO END ASC,
+                        CASE WHEN @sortCode = 4  AND @isAsc = 0 THEN MONTO END DESC,
+                        CASE WHEN @sortCode = 5  AND @isAsc = 1 THEN MODIFICA_USUARIO END ASC,
+                        CASE WHEN @sortCode = 5  AND @isAsc = 0 THEN MODIFICA_USUARIO END DESC,
+                        CASE WHEN @sortCode = 6  AND @isAsc = 1 THEN MODIFICA_DESVIACION END ASC,
+                        CASE WHEN @sortCode = 6  AND @isAsc = 0 THEN MODIFICA_DESVIACION END DESC,
+                        CASE WHEN @sortCode = 7  AND @isAsc = 1 THEN COD_CUENTA END ASC,
+                        CASE WHEN @sortCode = 7  AND @isAsc = 0 THEN COD_CUENTA END DESC,
+                        CASE WHEN @sortCode = 8  AND @isAsc = 1 THEN NIVEL_GESTION END ASC,
+                        CASE WHEN @sortCode = 8  AND @isAsc = 0 THEN NIVEL_GESTION END DESC,
+                        CASE WHEN @sortCode = 9  AND @isAsc = 1 THEN ACCESO_RESTRINGIDO END ASC,
+                        CASE WHEN @sortCode = 9  AND @isAsc = 0 THEN ACCESO_RESTRINGIDO END DESC,
+                        CASE WHEN @sortCode = 10 AND @isAsc = 1 THEN MRECUPERACION END ASC,
+                        CASE WHEN @sortCode = 10 AND @isAsc = 0 THEN MRECUPERACION END DESC,
+                        CASE WHEN @sortCode = 11 AND @isAsc = 1 THEN IVA_PORCENTAJE END ASC,
+                        CASE WHEN @sortCode = 11 AND @isAsc = 0 THEN IVA_PORCENTAJE END DESC,
+                        CASE WHEN @sortCode = 12 AND @isAsc = 1 THEN ESTADO END ASC,
+                        CASE WHEN @sortCode = 12 AND @isAsc = 0 THEN ESTADO END DESC,
+                        COD_GESTION ASC
+                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         }
 
 
@@ -511,12 +486,4 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         }
     }
 
-    internal sealed class CoControlGestionesConsultaParams
-    {
-        public DynamicParameters Parametros { get; init; } = new();
-        public bool TieneFiltro { get; init; }
-        public bool ExportAll { get; init; }
-        public string SortField { get; init; } = "COD_GESTION";
-        public string SortOrder { get; init; } = "ASC";
-    }
 }
