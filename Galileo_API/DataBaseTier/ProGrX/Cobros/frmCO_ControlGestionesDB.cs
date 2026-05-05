@@ -27,7 +27,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoControlGestionesLista> Co_GestionesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var portalDb = new PortalDB(_config);
-            var result = CrearResultadoListaGestiones();
+            var result = DbHelper.CreateOkResponse(new CoControlGestionesLista
+            {
+                total = 0,
+                lista = new List<CoControlGestionesData>()
+            });
 
             try
             {
@@ -45,7 +49,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
                 if (queryResult.Code != 0)
                 {
-                    return CrearErrorListaGestiones(queryResult.Description ?? "Error al consultar gestiones de cobro.");
+                    return CrearListaGestionesFallida(queryResult.Description ?? "Error al consultar gestiones de cobro.");
                 }
 
                 result.Result = queryResult.Result ?? new CoControlGestionesLista
@@ -56,7 +60,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             }
             catch (Exception ex)
             {
-                result = CrearErrorListaGestiones(ex.Message);
+                result = CrearListaGestionesFallida(ex.Message);
             }
 
             return result;
@@ -339,45 +343,31 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             return Co_Gestiones_Actualizar(codEmpresa, usuario, gestion);
         }
 
-        private static ErrorDto<CoControlGestionesLista> CrearResultadoListaGestiones()
-        {
-            return DbHelper.CreateOkResponse(new CoControlGestionesLista
+        private static ErrorDto<CoControlGestionesLista> CrearListaGestionesFallida(string mensaje) =>
+            DbHelper.CreateErrorResponse(mensaje, -1, new CoControlGestionesLista
             {
                 total = 0,
                 lista = new List<CoControlGestionesData>()
             });
-        }
 
-        private static ErrorDto<CoControlGestionesLista> CrearErrorListaGestiones(string mensaje)
+        private static CoControlGestionesConsultaParams CrearParametrosConsultaGestiones(FiltrosLazyLoadData? filtros)
         {
-            return DbHelper.CreateErrorResponse(
-                mensaje,
-                -1,
-                new CoControlGestionesLista
-                {
-                    total = 0,
-                    lista = new List<CoControlGestionesData>()
-                });
-        }
-
-        private static CoControlGestionesConsultaParams CrearParametrosConsultaGestiones(FiltrosLazyLoadData filtros)
-        {
-            var filtro = (filtros?.filtro ?? string.Empty).Trim();
+            var filtroSeguro = (filtros?.filtro ?? string.Empty).Trim();
             var pagina = filtros?.pagina ?? 0;
             var paginacion = filtros?.paginacion ?? 0;
             var exportAll = pagina == 0 || paginacion == 0;
 
             var parametros = new DynamicParameters();
-            AgregarFiltroGestiones(parametros, filtro);
+            AgregarFiltroGestiones(parametros, filtroSeguro);
             AgregarPaginacion(parametros, pagina, paginacion, exportAll);
 
             return new CoControlGestionesConsultaParams
             {
                 Parametros = parametros,
-                TieneFiltro = !string.IsNullOrWhiteSpace(filtro),
+                TieneFiltro = !string.IsNullOrWhiteSpace(filtroSeguro),
                 ExportAll = exportAll,
                 SortField = ObtenerSortField(filtros?.sortField),
-                SortOrder = ObtenerSortOrder(filtros?.sortOrder)
+                SortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC"
             };
         }
 
@@ -465,20 +455,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             };
         }
 
-        private static string ObtenerSortOrder(int? sortOrder)
-        {
-            return (sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-        }
 
-        private static string NormalizarCodigo(string? valor)
-        {
-            return (valor ?? string.Empty).Trim().ToUpper();
-        }
+        private static string NormalizarCodigo(string? valor) => (valor ?? string.Empty).Trim().ToUpper();
 
-        private static string NormalizarNivelGestion(string? nivelGestion)
-        {
-            return NormalizarCodigo(nivelGestion) == "S" ? "S" : "U";
-        }
+        private static string NormalizarNivelGestion(string? nivelGestion) => NormalizarCodigo(nivelGestion) == "S" ? "S" : "U";
 
         private static object CrearParametrosGestion(CoControlGestionesData gestion, string usuario, bool esActualizacion)
         {
@@ -520,21 +500,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         private void RegistrarBitacoraAsignacion(int codEmpresa, string usuario, string cod, string usr, bool asignar)
         {
-            var movimiento = asignar ? "Registra - WEB" : "Elimina - WEB";
             var accion = asignar ? "Asigna" : "Elimina";
-            RegistrarBitacora(codEmpresa, usuario, $"Gestión {cod} - {accion} usuario {usr}", movimiento);
+            RegistrarBitacora(codEmpresa, usuario, $"Gestión {cod} - {accion} usuario {usr}", asignar ? "Registra - WEB" : "Elimina - WEB");
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
         {
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = codEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = detalleMovimiento,
-                Movimiento = movimiento,
-                Modulo = vModulo
-            });
+            var bitacora = new BitacoraInsertarDto { EmpresaId = codEmpresa, Usuario = usuario, DetalleMovimiento = detalleMovimiento, Movimiento = movimiento, Modulo = vModulo };
+            _Security_MainDB.Bitacora(bitacora);
         }
     }
 
