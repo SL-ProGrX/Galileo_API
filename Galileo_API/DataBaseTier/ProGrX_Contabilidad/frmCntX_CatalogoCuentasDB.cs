@@ -251,24 +251,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         public ErrorDto<bool> CntXCatalogoCuentaEstadoGuardar(int codEmpresa, CntXCatalogoCuentaEstadoRequest request)
         {
-            var camposPermitidos = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            const string sqlAceptaMovimientos = @"
+                update CntX_Cuentas
+                set acepta_movimientos = @valor
+                where cod_contabilidad = @codContabilidad
+                  and cod_cuenta = @cuenta";
+
+            const string sqlPresupuesto = @"
+                update CntX_Cuentas
+                set presupuesto = @valor
+                where cod_contabilidad = @codContabilidad
+                  and cod_cuenta = @cuenta";
+
+            const string sqlBloqueada = @"
+                update CntX_Cuentas
+                set bloqueada = @valor
+                where cod_contabilidad = @codContabilidad
+                  and cod_cuenta = @cuenta";
+
+            const string sqlCuentaAuxiliar = @"
+                update CntX_Cuentas
+                set cuenta_auxiliar = @valor
+                where cod_contabilidad = @codContabilidad
+                  and cod_cuenta = @cuenta";
+
+            string? sql = request.Campo?.Trim().ToLowerInvariant() switch
             {
-                ["acepta_movimientos"] = "acepta_movimientos",
-                ["presupuesto"] = "presupuesto",
-                ["bloqueada"] = "bloqueada",
-                ["cuenta_auxiliar"] = "cuenta_auxiliar"
+                "acepta_movimientos" => sqlAceptaMovimientos,
+                "presupuesto" => sqlPresupuesto,
+                "bloqueada" => sqlBloqueada,
+                "cuenta_auxiliar" => sqlCuentaAuxiliar,
+                _ => null
             };
 
-            if (!camposPermitidos.TryGetValue(request.Campo, out string? campo))
+            if (sql == null)
             {
                 return new ErrorDto<bool> { Code = -1, Description = "Campo no permitido.", Result = false };
             }
-
-            string sql = $@"
-                update CntX_Cuentas
-                set {campo} = @valor
-                where cod_contabilidad = @codContabilidad
-                  and cod_cuenta = @cuenta";
 
             var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
@@ -283,7 +302,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta {request.Cuenta}, campo {campo}", "Modifica - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta {request.Cuenta}, campo {request.Campo}", "Modifica - WEB");
             }
 
             return result;
