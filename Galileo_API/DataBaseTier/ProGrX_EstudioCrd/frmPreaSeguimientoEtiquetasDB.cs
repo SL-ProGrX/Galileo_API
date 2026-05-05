@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
-        private const int ModuloCreditos = 1;
+        private const int ModuloCreditos = 3;
 
         public FrmPreaSeguimientoEtiquetasDB(IConfiguration config)
         {

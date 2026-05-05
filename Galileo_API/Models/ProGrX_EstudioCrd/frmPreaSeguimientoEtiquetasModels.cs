@@ -29,13 +29,13 @@
 
     public class PreaSeguimientoEtiquetasAplicarDto
     {
-        public int id_solicitud { get; set; }
+        public int? id_solicitud { get; set; }
         public string cod_preanalisis { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public string tag_codigo { get; set; } = string.Empty;
         public string asignado_a { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
-        public bool aviso_email { get; set; }
+        public bool? aviso_email { get; set; }
         public string emails { get; set; } = string.Empty;
     }
 }
