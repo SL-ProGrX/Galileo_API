@@ -27,6 +27,22 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             ["activo"] = 12
         };
 
+        private static readonly IReadOnlyDictionary<int, string> GestionesSortFields = new Dictionary<int, string>
+        {
+            [1] = "COD_GESTION",
+            [2] = "DESCRIPCION",
+            [3] = "CODIGO_REFERENCIA",
+            [4] = "MONTO",
+            [5] = "MODIFICA_USUARIO",
+            [6] = "MODIFICA_DESVIACION",
+            [7] = "COD_CUENTA",
+            [8] = "NIVEL_GESTION",
+            [9] = "ACCESO_RESTRINGIDO",
+            [10] = "MRECUPERACION",
+            [11] = "IVA_PORCENTAJE",
+            [12] = "ESTADO"
+        };
+
         public FrmCOControlGestionesDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -53,7 +69,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 var consulta = LazyLoadHelper.Build(filtros, GestionesSortMap, "cod_gestion");
                 var queryResult = DbHelper.WithConn(portalDb, CodEmpresa, connection =>
                 {
-                    using var multi = connection.QueryMultiple(CrearSqlListaGestiones(), consulta.Params);
+                    using var multi = connection.QueryMultiple(CrearSqlListaGestiones(ObtenerOrdenamientoGestiones(consulta)), consulta.Params);
 
                     return new CoControlGestionesLista
                     {
@@ -365,9 +381,9 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 lista = new List<CoControlGestionesData>()
             });
 
-        private static string CrearSqlListaGestiones()
+        private static string CrearSqlListaGestiones(string ordenamiento)
         {
-            return @"
+            return $@"
                     SELECT COUNT(1)
                     FROM dbo.CBR_GESTIONES
                     WHERE @hasFilter = 0 OR
@@ -401,33 +417,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
                         UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
                     )
-                    ORDER BY
-                        CASE WHEN @sortCode = 1  AND @isAsc = 1 THEN COD_GESTION END ASC,
-                        CASE WHEN @sortCode = 1  AND @isAsc = 0 THEN COD_GESTION END DESC,
-                        CASE WHEN @sortCode = 2  AND @isAsc = 1 THEN DESCRIPCION END ASC,
-                        CASE WHEN @sortCode = 2  AND @isAsc = 0 THEN DESCRIPCION END DESC,
-                        CASE WHEN @sortCode = 3  AND @isAsc = 1 THEN CODIGO_REFERENCIA END ASC,
-                        CASE WHEN @sortCode = 3  AND @isAsc = 0 THEN CODIGO_REFERENCIA END DESC,
-                        CASE WHEN @sortCode = 4  AND @isAsc = 1 THEN MONTO END ASC,
-                        CASE WHEN @sortCode = 4  AND @isAsc = 0 THEN MONTO END DESC,
-                        CASE WHEN @sortCode = 5  AND @isAsc = 1 THEN MODIFICA_USUARIO END ASC,
-                        CASE WHEN @sortCode = 5  AND @isAsc = 0 THEN MODIFICA_USUARIO END DESC,
-                        CASE WHEN @sortCode = 6  AND @isAsc = 1 THEN MODIFICA_DESVIACION END ASC,
-                        CASE WHEN @sortCode = 6  AND @isAsc = 0 THEN MODIFICA_DESVIACION END DESC,
-                        CASE WHEN @sortCode = 7  AND @isAsc = 1 THEN COD_CUENTA END ASC,
-                        CASE WHEN @sortCode = 7  AND @isAsc = 0 THEN COD_CUENTA END DESC,
-                        CASE WHEN @sortCode = 8  AND @isAsc = 1 THEN NIVEL_GESTION END ASC,
-                        CASE WHEN @sortCode = 8  AND @isAsc = 0 THEN NIVEL_GESTION END DESC,
-                        CASE WHEN @sortCode = 9  AND @isAsc = 1 THEN ACCESO_RESTRINGIDO END ASC,
-                        CASE WHEN @sortCode = 9  AND @isAsc = 0 THEN ACCESO_RESTRINGIDO END DESC,
-                        CASE WHEN @sortCode = 10 AND @isAsc = 1 THEN MRECUPERACION END ASC,
-                        CASE WHEN @sortCode = 10 AND @isAsc = 0 THEN MRECUPERACION END DESC,
-                        CASE WHEN @sortCode = 11 AND @isAsc = 1 THEN IVA_PORCENTAJE END ASC,
-                        CASE WHEN @sortCode = 11 AND @isAsc = 0 THEN IVA_PORCENTAJE END DESC,
-                        CASE WHEN @sortCode = 12 AND @isAsc = 1 THEN ESTADO END ASC,
-                        CASE WHEN @sortCode = 12 AND @isAsc = 0 THEN ESTADO END DESC,
-                        COD_GESTION ASC
+                    ORDER BY {ordenamiento}, COD_GESTION ASC
                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+        }
+
+        private static string ObtenerOrdenamientoGestiones(LazyLoadSpec consulta)
+        {
+            var campo = GestionesSortFields.TryGetValue(consulta.SortCode, out var sortField)
+                ? sortField
+                : "COD_GESTION";
+
+            return $"{campo} {(consulta.IsAsc ? "ASC" : "DESC")}";
         }
 
 
