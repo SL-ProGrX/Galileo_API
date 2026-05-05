@@ -344,6 +344,8 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
         public string registro_usuario { get; set; } = string.Empty;
         public decimal viaticos { get; set; } = 0;
         public string tipo_poliza { get; set; } = string.Empty;
+
+        public DateTime? registro_fecha { get; set; }
     }
 
     public class FrmVivGarantiaProfesionalesBuscarRequest

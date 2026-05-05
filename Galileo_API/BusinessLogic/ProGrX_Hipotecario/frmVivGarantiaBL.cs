@@ -1,4 +1,5 @@
-﻿using Galileo.Models;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Hipotecario;
 using Galileo_API.Models.ProGrX_Hipotecario;
@@ -351,12 +352,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         {
             if (request.id_garantia <= 0)
             {
-                return CrearErrorSimple(pValidaGarantia);
+                return DbHelper.ErrorResponse(pValidaGarantia);
             }
 
             if (string.IsNullOrWhiteSpace(request.cedula))
             {
-                return CrearErrorSimple("Debe indicar una cédula válida.");
+                return DbHelper.ErrorResponse("Debe indicar una cédula válida.");
             }
 
             var estadoOperacion = _db.Viv_GarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
@@ -371,7 +372,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
             if ((estadoOperacion.Result ?? string.Empty).Trim() == "F")
             {
-                return CrearErrorSimple("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
+                return DbHelper.ErrorResponse("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
             }
 
             return _db.Viv_GarantiaDerecho_Borrar(codEmpresa, request);
@@ -381,47 +382,38 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         {
             if (request.id_garantia <= 0)
             {
-                return CrearErrorSimple("Debe indicar una garantía válida.");
+                return DbHelper.ErrorResponse("Debe indicar una garantía válida.");
             }
 
             if (string.IsNullOrWhiteSpace(request.cedula))
             {
-                return CrearErrorSimple("Debe ingresar un número de cédula válido.");
+                return DbHelper.ErrorResponse("Debe ingresar un número de cédula válido.");
             }
 
             if (string.IsNullOrWhiteSpace(request.nombre))
             {
-                return CrearErrorSimple("Debe ingresar un nombre de dueño.");
+                return DbHelper.ErrorResponse("Debe ingresar un nombre de dueño.");
             }
 
             if (string.IsNullOrWhiteSpace(request.provincia))
             {
-                return CrearErrorSimple("Debe seleccionar una provincia.");
+                return DbHelper.ErrorResponse("Debe seleccionar una provincia.");
             }
 
             if (string.IsNullOrWhiteSpace(request.canton))
             {
-                return CrearErrorSimple("Debe seleccionar un cantón.");
+                return DbHelper.ErrorResponse("Debe seleccionar un cantón.");
             }
 
             if (request.actualiza != -1 && request.actualiza != 1)
             {
-                return CrearErrorSimple("Debe indicar una acción válida para el dueño.");
+                return DbHelper.ErrorResponse("Debe indicar una acción válida para el dueño.");
             }
 
             return new ErrorDto
             {
                 Code = 0,
                 Description = "OK"
-            };
-        }
-
-        private static ErrorDto CrearErrorSimple(string mensaje)
-        {
-            return new ErrorDto
-            {
-                Code = -1,
-                Description = mensaje
             };
         }
 
