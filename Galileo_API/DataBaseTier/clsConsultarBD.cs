@@ -86,5 +86,53 @@ WHERE (
                 }
             );
         }
+
+        public ErrorDto<string> fxEstadoOperacion(
+    int codEmpresa,
+    long numeroOperacion)
+        {
+            const string query = @"
+SELECT TOP 1
+    RTRIM(ISNULL(R.ESTADOSOL, '')) AS estado
+FROM REG_CREDITOS AS R
+WHERE R.ID_SOLICITUD = @numero_operacion;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                codEmpresa,
+                query,
+                string.Empty,
+                new
+                {
+                    numero_operacion = numeroOperacion
+                }
+            )!;
+        }
+
+        public ErrorDto<bool> fxTraerExisteContacto(
+    int codEmpresa,
+    long idContacto,
+    string tipoProfesional)
+        {
+            const string query = @"
+SELECT
+    CASE WHEN COUNT(1) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS existe
+FROM ViviendaContactos
+WHERE TipoProfesional = @tipo_profesional
+  AND IdContacto = @id_contacto;";
+
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                codEmpresa,
+                query,
+                false,
+                new
+                {
+                    id_contacto = idContacto,
+                    tipo_profesional = tipoProfesional.Trim()
+                }
+            )!;
+        }
+
     }
 }
