@@ -13,6 +13,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _dbBitacora;
         private const int VModulo = 20;
+        private const string MovimientoRegistraWeb = "Registra - WEB";
+        private const string MovimientoModificaWeb = "Modifica - WEB";
+        private const string MovimientoEliminaWeb = "Elimina - WEB";
+        private const string MovimientoAplicarWeb = "Aplicar - WEB";
 
         public FrmCntXCatalogoCuentasDB(IConfiguration config)
         {
@@ -91,7 +95,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         public ErrorDto<List<CntXCatalogoCuentaDto>> CntXCatalogoConsulta(int codEmpresa, CntXCatalogoCuentasFiltroRequest filtro)
         {
-            string sql = filtro.MostrarBalance ? @"
+            string sql = filtro.MostrarBalance.GetValueOrDefault() ? @"
                 select C.cod_cuenta,
                        C.cod_cuenta_mask,
                        space(C.nivel * 2) + ltrim(C.descripcion) as descripcion,
@@ -226,14 +230,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Add("@Contabilidad", request.CodContabilidad);
                 param.Add("@Cuenta", request.Cuenta);
                 param.Add("@Desc_Alter", request.DescripcionAlterna);
-                param.Add("@Ex_Ind", request.ExclusivaIndica ? 1 : 0);
+                param.Add("@Ex_Ind", request.ExclusivaIndica.GetValueOrDefault() ? 1 : 0);
                 param.Add("@Ex_Unidad", request.ExclusivaUnidad);
                 param.Add("@Ex_Centro", request.ExclusivaCentro);
-                param.Add("@Pr_Ind", request.ProrrateaIndica ? 1 : 0);
+                param.Add("@Pr_Ind", request.ProrrateaIndica.GetValueOrDefault() ? 1 : 0);
                 param.Add("@Pr_Unidad", request.ProrrateaUnidad);
                 param.Add("@Pr_Centro", request.ProrrateaCentro);
-                param.Add("@Pr_Total", request.ProrrateaTotal);
-                param.Add("@Dc_Ind", request.DcIndica ? 1 : 0);
+                param.Add("@Pr_Total", request.ProrrateaTotal.GetValueOrDefault());
+                param.Add("@Dc_Ind", request.DcIndica.GetValueOrDefault() ? 1 : 0);
                 param.Add("@Dc_Unidad", request.DcUnidad);
                 param.Add("@Dc_Centro", request.DcCentro);
                 param.Add("@Dc_Cta_Ing", request.DcCuentaIngreso);
@@ -241,7 +245,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Add("@Usuario", request.Usuario);
 
                 conn.Execute("spCntX_Cuenta_Detalle_Guardar", param, commandType: CommandType.StoredProcedure);
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuentas Info Adicional: {request.Cuenta}", "Registra - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuentas Info Adicional: {request.Cuenta}", MovimientoRegistraWeb);
                 return true;
             });
         }
@@ -295,14 +299,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 {
                     request.CodContabilidad,
                     request.Cuenta,
-                    valor = request.Valor ? 1 : 0
+                    valor = request.Valor.GetValueOrDefault() ? 1 : 0
                 });
                 return rows > 0;
             });
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta {request.Cuenta}, campo {request.Campo}", "Modifica - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta {request.Cuenta}, campo {request.Campo}", MovimientoModificaWeb);
             }
 
             return result;
@@ -312,6 +316,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Registra o modifica una cuenta del catÃ¡logo contable usando el procedimiento original.
         /// </summary>
         public ErrorDto<CntXCatalogoCuentaGuardarResponse> CntXCatalogoCuentaGuardar(int codEmpresa, CntXCatalogoCuentaGuardarRequest request)
+        {
+            var error = PrepararCuentaGuardarRequest(request);
+            if (error != null)
+            {
+                return error;
+            }
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                const string sql = @"
+                    exec spCntX_Cuentas_Registro
+                        @CodContabilidad,
+                        @Cuenta,
+                        @Descripcion,
+                        @CodDivisa,
+                        @TipoCuenta,
+                        @AceptaMovimientos,
+                        @Presupuesto,
+                        @CuentaAuxiliar,
+                        @Bloqueada,
+                        'A',
+                        @Usuario";
+
+                var result = conn.QueryFirstOrDefault<CntXCatalogoCuentaGuardarResponse>(sql, new
+                {
+                    request.CodContabilidad,
+                    request.Cuenta,
+                    request.Descripcion,
+                    request.CodDivisa,
+                    request.TipoCuenta,
+                    AceptaMovimientos = request.AceptaMovimientos.GetValueOrDefault() ? 1 : 0,
+                    Presupuesto = request.Presupuesto.GetValueOrDefault() ? 1 : 0,
+                    CuentaAuxiliar = request.CuentaAuxiliar.GetValueOrDefault() ? 1 : 0,
+                    Bloqueada = request.Bloqueada.GetValueOrDefault() ? 1 : 0,
+                    request.Usuario
+                }) ?? new CntXCatalogoCuentaGuardarResponse();
+
+                string cuentaBitacora = ObtenerCuentaBitacora(request, result);
+                string movimiento = ObtenerMovimientoCuentaGuardar(request, result);
+
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta en el Catalogo: {cuentaBitacora}", movimiento);
+
+                return result;
+            });
+        }
+
+        private static ErrorDto<CntXCatalogoCuentaGuardarResponse>? PrepararCuentaGuardarRequest(CntXCatalogoCuentaGuardarRequest request)
         {
             if (request == null)
             {
@@ -344,47 +395,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>("El tipo de cuenta es requerido.");
             }
 
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            return null;
+        }
+
+        private static string ObtenerCuentaBitacora(CntXCatalogoCuentaGuardarRequest request, CntXCatalogoCuentaGuardarResponse result)
+        {
+            if (string.IsNullOrWhiteSpace(result.Cod_Cuenta_Mask))
             {
-                const string sql = @"
-                    exec spCntX_Cuentas_Registro
-                        @CodContabilidad,
-                        @Cuenta,
-                        @Descripcion,
-                        @CodDivisa,
-                        @TipoCuenta,
-                        @AceptaMovimientos,
-                        @Presupuesto,
-                        @CuentaAuxiliar,
-                        @Bloqueada,
-                        'A',
-                        @Usuario";
+                return request.Cuenta;
+            }
 
-                var result = conn.QueryFirstOrDefault<CntXCatalogoCuentaGuardarResponse>(sql, new
-                {
-                    request.CodContabilidad,
-                    request.Cuenta,
-                    request.Descripcion,
-                    request.CodDivisa,
-                    request.TipoCuenta,
-                    AceptaMovimientos = request.AceptaMovimientos ? 1 : 0,
-                    Presupuesto = request.Presupuesto ? 1 : 0,
-                    CuentaAuxiliar = request.CuentaAuxiliar ? 1 : 0,
-                    Bloqueada = request.Bloqueada ? 1 : 0,
-                    request.Usuario
-                }) ?? new CntXCatalogoCuentaGuardarResponse();
+            return result.Cod_Cuenta_Mask;
+        }
 
-                string cuentaBitacora = string.IsNullOrWhiteSpace(result.Cod_Cuenta_Mask)
-                    ? request.Cuenta
-                    : result.Cod_Cuenta_Mask;
-                string movimiento = string.IsNullOrWhiteSpace(result.Movimiento)
-                    ? (request.IsNew ? "Registra - WEB" : "Modifica - WEB")
-                    : $"{result.Movimiento} - WEB";
+        private static string ObtenerMovimientoCuentaGuardar(CntXCatalogoCuentaGuardarRequest request, CntXCatalogoCuentaGuardarResponse result)
+        {
+            if (!string.IsNullOrWhiteSpace(result.Movimiento))
+            {
+                return $"{result.Movimiento} - WEB";
+            }
 
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta en el Catalogo: {cuentaBitacora}", movimiento);
+            if (request.IsNew.GetValueOrDefault())
+            {
+                return MovimientoRegistraWeb;
+            }
 
-                return result;
-            });
+            return MovimientoModificaWeb;
         }
 
         /// <summary>
@@ -401,10 +437,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 param.Add("@CtaNew", request.CuentaNueva);
                 param.Add("@Usuario", request.Usuario);
                 param.Add("@CambioCnf", 1);
-                param.Add("@CambioTrn", request.CambiarTransacciones ? 1 : 0);
+                param.Add("@CambioTrn", request.CambiarTransacciones.GetValueOrDefault() ? 1 : 0);
 
                 conn.Execute("spCntX_Mapeo_Cuentas", param, commandType: CommandType.StoredProcedure);
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Mapeo de Cuentas: {request.CuentaActual} -> {request.CuentaNueva}", "Aplicar - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Mapeo de Cuentas: {request.CuentaActual} -> {request.CuentaNueva}", MovimientoAplicarWeb);
                 return true;
             });
         }
@@ -426,7 +462,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     param,
                     commandType: CommandType.StoredProcedure) ?? new CntXCatalogoBajaNivelDto();
 
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Baja Nivel: {request.Cuenta} -> {result.Cuenta}", "Aplicar - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Baja Nivel: {request.Cuenta} -> {result.Cuenta}", MovimientoAplicarWeb);
                 return result;
             });
         }
@@ -455,7 +491,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         values
                             (@CodIdioma, @CodContabilidad, @Cuenta, @Descripcion, @Usuario, dbo.MyGetdate())";
                     conn.Execute(sqlInsert, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", "Registra - WEB");
+                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", MovimientoRegistraWeb);
                 }
                 else
                 {
@@ -466,7 +502,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                           and cod_cuenta = @Cuenta
                           and cod_idioma = @CodIdioma";
                     conn.Execute(sqlUpdate, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", "Modifica - WEB");
+                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", MovimientoModificaWeb);
                 }
 
                 return true;
@@ -488,7 +524,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", "Elimina - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Traducción: {request.CodIdioma} Conta.{request.CodContabilidad}, Cta: {request.Cuenta}", MovimientoEliminaWeb);
             }
 
             return result;
@@ -519,7 +555,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         values
                             (@CodContabilidad, @Cuenta, @CodUnidad, @CodCentroCosto, @Porcentaje, @Usuario, dbo.MyGetdate())";
                     conn.Execute(sqlInsert, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", "Registra - WEB");
+                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoRegistraWeb);
                 }
                 else
                 {
@@ -531,7 +567,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                           and cod_unidad = @CodUnidad
                           and cod_centro_costo = @CodCentroCosto";
                     conn.Execute(sqlUpdate, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", "Modifica - WEB");
+                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoModificaWeb);
                 }
 
                 return true;
@@ -554,7 +590,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", "Elimina - WEB");
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoEliminaWeb);
             }
 
             return result;

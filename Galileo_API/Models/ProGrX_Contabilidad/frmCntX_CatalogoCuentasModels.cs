@@ -4,14 +4,14 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 {
     public class CntXCatalogoCuentasFiltroRequest
     {
-        public int CodContabilidad { get; set; }
-        public int PeriodoAnio { get; set; }
-        public int PeriodoMes { get; set; }
+        public int? CodContabilidad { get; set; }
+        public int? PeriodoAnio { get; set; }
+        public int? PeriodoMes { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string CodDivisa { get; set; } = "TODOS";
-        public int Nivel { get; set; } = 8;
-        public bool MostrarBalance { get; set; }
+        public int? Nivel { get; set; } = 8;
+        public bool? MostrarBalance { get; set; }
     }
 
     public class CntXCatalogoCuentaDto
@@ -34,26 +34,26 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 
     public class CntXCatalogoCuentaEstadoRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string Campo { get; set; } = string.Empty;
-        public bool Valor { get; set; }
+        public bool? Valor { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class CntXCatalogoCuentaGuardarRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string CodDivisa { get; set; } = string.Empty;
         public string TipoCuenta { get; set; } = string.Empty;
-        public bool AceptaMovimientos { get; set; }
-        public bool Presupuesto { get; set; }
-        public bool Bloqueada { get; set; }
-        public bool CuentaAuxiliar { get; set; }
+        public bool? AceptaMovimientos { get; set; }
+        public bool? Presupuesto { get; set; }
+        public bool? Bloqueada { get; set; }
+        public bool? CuentaAuxiliar { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public bool IsNew { get; set; }
+        public bool? IsNew { get; set; }
     }
 
     public class CntXCatalogoCuentaGuardarResponse
@@ -114,17 +114,17 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 
     public class CntXCatalogoCuentaDetalleGuardarRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string DescripcionAlterna { get; set; } = string.Empty;
-        public bool ExclusivaIndica { get; set; }
+        public bool? ExclusivaIndica { get; set; }
         public string ExclusivaUnidad { get; set; } = string.Empty;
         public string ExclusivaCentro { get; set; } = string.Empty;
-        public bool ProrrateaIndica { get; set; }
+        public bool? ProrrateaIndica { get; set; }
         public string ProrrateaUnidad { get; set; } = string.Empty;
         public string ProrrateaCentro { get; set; } = string.Empty;
-        public decimal ProrrateaTotal { get; set; }
-        public bool DcIndica { get; set; }
+        public decimal? ProrrateaTotal { get; set; }
+        public bool? DcIndica { get; set; }
         public string DcUnidad { get; set; } = string.Empty;
         public string DcCentro { get; set; } = string.Empty;
         public string DcCuentaIngreso { get; set; } = string.Empty;
@@ -134,16 +134,16 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 
     public class CntXCatalogoMapeoRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string CuentaActual { get; set; } = string.Empty;
         public string CuentaNueva { get; set; } = string.Empty;
-        public bool CambiarTransacciones { get; set; }
+        public bool? CambiarTransacciones { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class CntXCatalogoBajaNivelRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
@@ -155,7 +155,7 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 
     public class CntXCatalogoTraduccionGuardarRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string CodIdioma { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -164,11 +164,11 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
 
     public class CntXCatalogoProrrataGuardarRequest
     {
-        public int CodContabilidad { get; set; }
+        public int? CodContabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string CodUnidad { get; set; } = string.Empty;
         public string CodCentroCosto { get; set; } = string.Empty;
-        public decimal Porcentaje { get; set; }
+        public decimal? Porcentaje { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 }
