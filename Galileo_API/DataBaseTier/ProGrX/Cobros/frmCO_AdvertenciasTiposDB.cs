@@ -341,18 +341,20 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                     )";
         }
 
+        private const string COD_ADVERTENCIA_FIELD = "COD_ADVERTENCIA";
+
         private static string ObtenerSortField(string? sortField)
         {
             return (sortField ?? string.Empty).Trim() switch
             {
-                "cod_advertencia" => "COD_ADVERTENCIA",
-                "COD_ADVERTENCIA" => "COD_ADVERTENCIA",
+                "cod_advertencia" => COD_ADVERTENCIA_FIELD,
+                "COD_ADVERTENCIA" => COD_ADVERTENCIA_FIELD,
                 "descripcion" => "descripcion",
                 "afecta_clasificacion" => "AFECTA_CLASIFICACION",
                 "AFECTA_CLASIFICACION" => "AFECTA_CLASIFICACION",
                 "activo" => "Activa",
                 "Activa" => "Activa",
-                _ => "COD_ADVERTENCIA"
+                _ => COD_ADVERTENCIA_FIELD
             };
         }
 

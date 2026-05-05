@@ -343,12 +343,15 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                     )";
         }
 
+
+        private const string IdLineaField = "Id_Linea";
+
         private static string ObtenerSortField(string? sortField)
         {
             return (sortField ?? string.Empty).Trim() switch
             {
-                "Id_Linea" => "Id_Linea",
-                "id_linea" => "Id_Linea",
+                IdLineaField => IdLineaField,
+                "id_linea" => IdLineaField,
                 "Inicio" => "Inicio",
                 "inicio" => "Inicio",
                 "Corte" => "Corte",
@@ -359,7 +362,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 "registro_fecha" => "Registro_Fecha",
                 "Registro_Usuario" => "Registro_Usuario",
                 "registro_usuario" => "Registro_Usuario",
-                _ => "Id_Linea"
+                _ => IdLineaField
             };
         }
 
