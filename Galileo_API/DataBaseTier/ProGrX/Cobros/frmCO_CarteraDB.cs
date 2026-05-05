@@ -222,14 +222,19 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto Co_Asignacion_Bulk_Guardar(int CodEmpresa, string usuario, COCarteraAsignacionBulkDto dto)
         {
-            var clasif = NormalizarCodigo(dto?.cod_clasificacion);
+            if (dto is null)
+            {
+                return DbHelper.ErrorResponse("Parámetros inválidos para asignación masiva.", -2);
+            }
+
+            var clasif = NormalizarCodigo(dto.cod_clasificacion);
 
             if (string.IsNullOrWhiteSpace(clasif))
             {
                 return DbHelper.ErrorResponse("Cartera inválida para asignación masiva.", -2);
             }
 
-            var result = dto!.asignar_todos
+            var result = dto.asignar_todos
                 ? GuardarAsignacionMasiva(CodEmpresa, clasif)
                 : EliminarAsignacionMasiva(CodEmpresa, clasif);
 
