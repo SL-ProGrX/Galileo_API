@@ -161,10 +161,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 CodEmpresa,
                 usuario,
                 dto,
-                "dbo.spCBR_Cobro_Fiadores_Notifica",
-                "Operacion",
-                "Cobro a Fiadores: Notifica Advertencia",
-                "Error al notificar.");
+                new CobroFiadoresBulkActionSpec
+                {
+                    Procedimiento = "dbo.spCBR_Cobro_Fiadores_Notifica",
+                    ParametroOperacion = "Operacion",
+                    DetalleBase = "Cobro a Fiadores: Notifica Advertencia",
+                    MensajeError = "Error al notificar."
+                });
         }
         /// <summary>
         /// Procesa cobros a fiadores.
@@ -180,10 +183,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 CodEmpresa,
                 usuario,
                 dto,
-                "dbo.spCBR_Cobro_Fiadores_Procesa",
-                "Operacion",
-                "Cobro a Fiadores: Procesa Cobros",
-                "Error al procesar.");
+                new CobroFiadoresBulkActionSpec
+                {
+                    Procedimiento = "dbo.spCBR_Cobro_Fiadores_Procesa",
+                    ParametroOperacion = "Operacion",
+                    DetalleBase = "Cobro a Fiadores: Procesa Cobros",
+                    MensajeError = "Error al procesar."
+                });
         }
         /// <summary>
         /// Cancela cobros a fiadores.
@@ -199,24 +205,22 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 CodEmpresa,
                 usuario,
                 dto,
-                "dbo.spCbr_Cobro_Fiadores_Cancela",
-                "FIA_Operacion",
-                "Cobro a Fiadores: Cancela Cobro",
-                "Error al cancelar cobro.",
-                validarFondoDevolucion: true,
-                incluirNotas: true);
+                new CobroFiadoresBulkActionSpec
+                {
+                    Procedimiento = "dbo.spCbr_Cobro_Fiadores_Cancela",
+                    ParametroOperacion = "FIA_Operacion",
+                    DetalleBase = "Cobro a Fiadores: Cancela Cobro",
+                    MensajeError = "Error al cancelar cobro.",
+                    ValidarFondoDevolucion = true,
+                    IncluirNotas = true
+                });
         }
 
         private ErrorDto EjecutarAccionBulk(
             int codEmpresa,
             string usuario,
             FrmCOCobroFiadoresAccionBulkDto dto,
-            string procedimiento,
-            string parametroOperacion,
-            string detalleBase,
-            string mensajeError,
-            bool validarFondoDevolucion = false,
-            bool incluirNotas = false)
+            CobroFiadoresBulkActionSpec spec)
         {
             var ids = ObtenerIdsValidos(dto).ToList();
             if (ids.Count == 0)
@@ -226,13 +230,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
             var exec = DbHelper.WithConn(new PortalDB(_config), codEmpresa, conn =>
             {
-                ValidarParametrosCobroFiador(conn, validarFondoDevolucion);
+                ValidarParametrosCobroFiador(conn, spec.ValidarFondoDevolucion);
 
                 foreach (var id in ids)
                 {
                     conn.Execute(
-                        procedimiento,
-                        CrearParametrosAccionBulk(parametroOperacion, id, usuario, incluirNotas),
+                        spec.Procedimiento,
+                        CrearParametrosAccionBulk(spec.ParametroOperacion, id, usuario, spec.IncluirNotas),
                         commandType: System.Data.CommandType.StoredProcedure);
                 }
 
@@ -241,10 +245,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
             if (exec.Code != 0)
             {
-                return DbHelper.ErrorResponse(exec.Description ?? mensajeError);
+                return DbHelper.ErrorResponse(exec.Description ?? spec.MensajeError);
             }
 
-            RegistrarBitacora(codEmpresa, usuario, $"{detalleBase} - Casos {ids.Count}", "Procesa - WEB");
+            RegistrarBitacora(codEmpresa, usuario, $"{spec.DetalleBase} - Casos {ids.Count}", "Procesa - WEB");
             return DbHelper.OkResponse("Ok");
         }
 
@@ -597,5 +601,14 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 Modulo = vModulo
             });
         }
+    }
+    internal sealed class CobroFiadoresBulkActionSpec
+    {
+        public string Procedimiento { get; init; } = string.Empty;
+        public string ParametroOperacion { get; init; } = string.Empty;
+        public string DetalleBase { get; init; } = string.Empty;
+        public string MensajeError { get; init; } = string.Empty;
+        public bool ValidarFondoDevolucion { get; init; }
+        public bool IncluirNotas { get; init; }
     }
 }
