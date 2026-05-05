@@ -28,7 +28,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         public ErrorDto<FrmCOAntiguedadTiposListaResult> Co_AntiguedadTipos_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var portalDb = new PortalDB(_config);
-            var result = CrearResultadoListaAntiguedad();
+            var result = DbHelper.CreateOkResponse(new FrmCOAntiguedadTiposListaResult
+            {
+                total = 0,
+                lista = new List<FrmCOAntiguedadTipoData>()
+            });
 
             try
             {
@@ -46,7 +50,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
                 if (queryResult.Code != 0)
                 {
-                    return CrearErrorListaAntiguedad(queryResult.Description ?? "Error al consultar tipos de antigüedad.");
+                    return CrearListaAntiguedadFallida(queryResult.Description ?? "Error al consultar tipos de antigüedad.");
                 }
 
                 result.Result = queryResult.Result ?? new FrmCOAntiguedadTiposListaResult
@@ -57,7 +61,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             }
             catch (Exception ex)
             {
-                result = CrearErrorListaAntiguedad(ex.Message);
+                result = CrearListaAntiguedadFallida(ex.Message);
             }
 
             return result;
@@ -316,41 +320,25 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             return Co_AntiguedadTipos_Actualizar(codEmpresa, usuario, tipo);
         }
 
-        private static ErrorDto<FrmCOAntiguedadTiposListaResult> CrearResultadoListaAntiguedad()
-        {
-            return DbHelper.CreateOkResponse(new FrmCOAntiguedadTiposListaResult
+        private static ErrorDto<FrmCOAntiguedadTiposListaResult> CrearListaAntiguedadFallida(string mensaje) =>
+            DbHelper.CreateErrorResponse(mensaje, -1, new FrmCOAntiguedadTiposListaResult
             {
                 total = 0,
                 lista = new List<FrmCOAntiguedadTipoData>()
             });
-        }
-
-        private static ErrorDto<FrmCOAntiguedadTiposListaResult> CrearErrorListaAntiguedad(string mensaje)
-        {
-            return DbHelper.CreateErrorResponse(
-                mensaje,
-                -1,
-                new FrmCOAntiguedadTiposListaResult
-                {
-                    total = 0,
-                    lista = new List<FrmCOAntiguedadTipoData>()
-                });
-        }
 
         private static FrmCOAntiguedadTiposConsultaParams CrearParametrosConsultaAntiguedad(FiltrosLazyLoadData? filtros)
         {
-            filtros ??= new FiltrosLazyLoadData();
-
-            var filtro = (filtros.filtro ?? string.Empty).Trim();
+            var filtroSeguro = (filtros?.filtro ?? string.Empty).Trim();
             var parametros = new DynamicParameters();
-            AgregarFiltroAntiguedad(parametros, filtro);
+            AgregarFiltroAntiguedad(parametros, filtroSeguro);
 
             return new FrmCOAntiguedadTiposConsultaParams
             {
                 Parametros = parametros,
-                TieneFiltro = !string.IsNullOrWhiteSpace(filtro),
-                SortField = ObtenerSortField(filtros.sortField),
-                SortOrder = ObtenerSortOrder(filtros.sortOrder)
+                TieneFiltro = !string.IsNullOrWhiteSpace(filtroSeguro),
+                SortField = ObtenerSortField(filtros?.sortField),
+                SortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC"
             };
         }
 
@@ -411,15 +399,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             };
         }
 
-        private static string ObtenerSortOrder(int sortOrder)
-        {
-            return sortOrder == 0 ? "DESC" : "ASC";
-        }
 
-        private static string NormalizarCodigo(string? valor)
-        {
-            return (valor ?? string.Empty).Trim().ToUpper();
-        }
+        private static string NormalizarCodigo(string? valor) => (valor ?? string.Empty).Trim().ToUpper();
 
         private static object CrearParametrosAntiguedad(FrmCOAntiguedadTipoData tipo, string usuario)
         {
@@ -457,14 +438,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
         {
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = codEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = detalleMovimiento,
-                Movimiento = movimiento,
-                Modulo = vModulo
-            });
+            var bitacora = new BitacoraInsertarDto { EmpresaId = codEmpresa, Usuario = usuario, DetalleMovimiento = detalleMovimiento, Movimiento = movimiento, Modulo = vModulo };
+            _Security_MainDB.Bitacora(bitacora);
         }
 
     }
