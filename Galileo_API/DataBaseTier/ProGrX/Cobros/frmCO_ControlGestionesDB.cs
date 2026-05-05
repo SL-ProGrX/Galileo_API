@@ -216,15 +216,20 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto Co_Seguridad_Asignacion_Guardar(int CodEmpresa, string usuario, CoControlGestionesSeguridadAsignacionDto dto)
         {
-            var cod = NormalizarCodigo(dto?.cod_gestion);
-            var usr = NormalizarCodigo(dto?.usuario_asignado);
+            if (dto is null)
+            {
+                return DbHelper.ErrorResponse("Datos incompletos para asignación de seguridad.", -2);
+            }
+
+            var cod = NormalizarCodigo(dto.cod_gestion);
+            var usr = NormalizarCodigo(dto.usuario_asignado);
 
             if (string.IsNullOrWhiteSpace(cod) || string.IsNullOrWhiteSpace(usr))
             {
                 return DbHelper.ErrorResponse("Datos incompletos para asignación de seguridad.", -2);
             }
 
-            var result = dto!.asignar
+            var result = dto.asignar
                 ? GuardarAsignacionUsuario(CodEmpresa, cod, usr)
                 : EliminarAsignacionUsuario(CodEmpresa, cod, usr);
 
