@@ -153,6 +153,21 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
         public string Cuenta { get; set; } = string.Empty;
     }
 
+    public class CntXCatalogoFormatoRequest
+    {
+        public int? CodContabilidad { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+    }
+
+    public class CntXCatalogoRevisionRequest
+    {
+        public int? CodContabilidad { get; set; }
+        public int? PeriodoAnio { get; set; }
+        public int? PeriodoMes { get; set; }
+        public int? RevisionTotal { get; set; } = 1;
+        public string Usuario { get; set; } = string.Empty;
+    }
+
     public class CntXCatalogoTraduccionGuardarRequest
     {
         public int? CodContabilidad { get; set; }
