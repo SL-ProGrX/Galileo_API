@@ -39,6 +39,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las divisas del catálogo de cuentas.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoDivisas(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
@@ -52,6 +55,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las unidades de negocio.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoUnidades(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
@@ -65,6 +71,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los centros de costo activos.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCosto(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
@@ -79,6 +88,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los tipos de cuenta del catÃ¡logo contable.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoTiposCuenta(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
@@ -93,6 +105,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Consulta el catálogo principal de cuentas.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXCatalogoCuentaDto>> CntXCatalogoConsulta(int codEmpresa, CntXCatalogoCuentasFiltroRequest filtro)
         {
             string sql = filtro.MostrarBalance.GetValueOrDefault() ? @"
@@ -175,6 +190,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene el detalle adicional de una cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="cuenta"></param>
+        /// <returns></returns>
         public ErrorDto<CntXCatalogoCuentaDetalleResponse> CntXCatalogoDetalle(int codEmpresa, int codContabilidad, string cuenta)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -222,6 +241,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Guarda la información adicional de una cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoDetalleGuardar(int codEmpresa, CntXCatalogoCuentaDetalleGuardarRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -253,6 +275,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Actualiza un indicador de cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoCuentaEstadoGuardar(int codEmpresa, CntXCatalogoCuentaEstadoRequest request)
         {
             const string sqlAceptaMovimientos = @"
@@ -315,6 +340,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Registra o modifica una cuenta del catÃ¡logo contable usando el procedimiento original.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXCatalogoCuentaGuardarResponse> CntXCatalogoCuentaGuardar(int codEmpresa, CntXCatalogoCuentaGuardarRequest request)
         {
             var error = PrepararCuentaGuardarRequest(request);
@@ -426,6 +454,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Ejecuta el mapeo de cuentas.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoMapeo(int codEmpresa, CntXCatalogoMapeoRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -448,6 +479,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Ejecuta la baja de nivel de una cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXCatalogoBajaNivelDto> CntXCatalogoBajaNivel(int codEmpresa, CntXCatalogoBajaNivelRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -468,8 +502,85 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Actualiza el formato/mÃ¡scara de las cuentas del catÃ¡logo contable.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> CntXCatalogoFormatoActualizar(int codEmpresa, CntXCatalogoFormatoRequest request)
+        {
+            if (request.CodContabilidad.GetValueOrDefault() <= 0)
+            {
+                return new ErrorDto<bool> { Code = -1, Description = "La contabilidad es requerida.", Result = false };
+            }
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                const string sql = "exec spCntX_Catalogo_Cuenta_Mask @CodContabilidad";
+
+                conn.Execute(sql, new { CodContabilidad = request.CodContabilidad.GetValueOrDefault() });
+                return true;
+            });
+
+            if (result.Code == 0)
+            {
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Formato de Cuentas: Conta.{request.CodContabilidad}", MovimientoAplicarWeb);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Reestructura los movimientos por cuenta y revisa el balance del periodo indicado.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> CntXCatalogoRevision(int codEmpresa, CntXCatalogoRevisionRequest request)
+        {
+            if (request.CodContabilidad.GetValueOrDefault() <= 0)
+            {
+                return new ErrorDto<bool> { Code = -1, Description = "La contabilidad es requerida.", Result = false };
+            }
+
+            if (request.PeriodoAnio.GetValueOrDefault() <= 0 || request.PeriodoMes.GetValueOrDefault() <= 0)
+            {
+                return new ErrorDto<bool> { Code = -1, Description = "El periodo contable es requerido.", Result = false };
+            }
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                const string sql = @"
+                    exec spCntX_BalanceRestructura
+                        @CodContabilidad,
+                        @PeriodoAnio,
+                        @PeriodoMes,
+                        @RevisionTotal";
+
+                conn.Execute(sql, new
+                {
+                    CodContabilidad = request.CodContabilidad.GetValueOrDefault(),
+                    PeriodoAnio = request.PeriodoAnio.GetValueOrDefault(),
+                    PeriodoMes = request.PeriodoMes.GetValueOrDefault(),
+                    RevisionTotal = request.RevisionTotal.GetValueOrDefault(1)
+                });
+                return true;
+            });
+
+            if (result.Code == 0)
+            {
+                RegistrarBitacora(codEmpresa, request.Usuario, $"RevisiÃ³n CatÃ¡logo Cuentas: {request.PeriodoAnio}/{request.PeriodoMes}", MovimientoAplicarWeb);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Guarda una traducción de cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoTraduccionGuardar(int codEmpresa, CntXCatalogoTraduccionGuardarRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -512,6 +623,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina una traducción de cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoTraduccionEliminar(int codEmpresa, CntXCatalogoTraduccionGuardarRequest request)
         {
             const string sql = @"
@@ -533,6 +647,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Guarda una prorrata de cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoProrrataGuardar(int codEmpresa, CntXCatalogoProrrataGuardarRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -577,6 +694,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina una prorrata de cuenta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoProrrataEliminar(int codEmpresa, CntXCatalogoProrrataGuardarRequest request)
         {
             const string sql = @"
