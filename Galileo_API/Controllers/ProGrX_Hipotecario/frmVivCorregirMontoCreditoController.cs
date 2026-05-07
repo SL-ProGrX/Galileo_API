@@ -9,7 +9,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmVivCorregirMontoCreditoController : Controller
+    public class FrmVivCorregirMontoCreditoController : ControllerBase
     {
         private readonly FrmVivCorregirMontoCreditoBL _bl;
 
