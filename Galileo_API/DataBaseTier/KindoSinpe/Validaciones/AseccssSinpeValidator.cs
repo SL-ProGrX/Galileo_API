@@ -12,6 +12,7 @@ using Sinpe_TFT;
 using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -851,8 +852,8 @@ namespace Galileo_API.DataBaseTier
 
                 transaccion.DatosTransaccion = new Sinpe_CCD.Transaccion();
                 transaccion.DatosTransaccion.Moneda = solicitud.Divisa == "DOL"
-                                                    ? Sinpe_CCD.E_Monedas.Dolares
-                                                    : Sinpe_CCD.E_Monedas.Colones;
+                                                    ? "Dolares"
+                                                    : "Colones";
 
                 solicitud.Divisa = solicitud.Divisa == "DOL" ? "USD" : "CRC";
                 transaccion.DatosTransaccion.Monto = solicitud.Monto;
@@ -870,16 +871,20 @@ namespace Galileo_API.DataBaseTier
 
                 transaccion.ClienteOrigen = new ClienteAS400();
                 transaccion.ClienteOrigen.Identificacion = solicitud.CedulaOrigen?.Replace("-", "");
-                transaccion.ClienteOrigen.Nombre = solicitud.NombreOrigen;
+                transaccion.ClienteOrigen.Nombre = solicitud.NombreOrigen ?? "ProGrX";
                 transaccion.ClienteOrigen.IBAN = solicitud.CuentaOrigen;
-                transaccion.ClienteOrigen.TipoCedula = (E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result;
+                transaccion.ClienteOrigen.TipoCedula =
+                                ((E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result)
+                                .ToString();
 
                 transaccion.ClienteDestino = new ClienteAS400();
                 transaccion.ClienteDestino.Identificacion = solicitud.Codigo?.Replace("-", "");
                 transaccion.ClienteDestino.Nombre = solicitud.Beneficiario;
                 transaccion.ClienteDestino.IBAN = solicitud.Cuenta;
-                transaccion.ClienteDestino.TipoCedula = (E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdDestino).Result ;
-                transaccion.TipoTransaccion = ServiciosSINPE.CCD;
+                transaccion.ClienteDestino.TipoCedula =
+                     ((E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result)
+                                .ToString(); 
+                transaccion.TipoTransaccion = "CCD";
 
                 try
                 {
@@ -887,7 +892,7 @@ namespace Galileo_API.DataBaseTier
 
                     bodyWCF.body = body;
                     bodyWCF.rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;
-
+                    string json = JsonSerializer.Serialize(bodyWCF);
                     response = _srvSinpeCcd.RegistrarDebitoCuentaAsync(bodyWCF).Result;
                     responseDetail = response.RegistrarDebitoCuentaResult[0];
                     
