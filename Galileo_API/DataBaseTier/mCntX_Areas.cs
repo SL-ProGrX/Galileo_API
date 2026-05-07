@@ -6,11 +6,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class mCntX_Areas
+    public class MCntXAreasDb
     {
         private readonly PortalDB _portalDb;
 
-        public mCntX_Areas(IConfiguration config)
+        public MCntXAreasDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }

@@ -7,11 +7,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class mCntX_Modulo
+    public class MCntXModuloDb
     {
         private readonly PortalDB _portalDb;
 
-        public mCntX_Modulo(IConfiguration config)
+        public MCntXModuloDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }
@@ -53,26 +53,10 @@ namespace Galileo_API.DataBaseTier
                     throw new InvalidOperationException("Esta Contabilidad a sido Eliminada o no tiene Acceso a ella, verifique...");
                 }
 
-                parametros.TotalChr = parametros.Nivel1 + parametros.Nivel2 + parametros.Nivel3 + parametros.Nivel4
-                    + parametros.Nivel5 + parametros.Nivel6 + parametros.Nivel7 + parametros.Nivel8;
-                parametros.Mascara = fxCntX_CuentaMascara(
-                    parametros.Nivel1,
-                    parametros.Nivel2,
-                    parametros.Nivel3,
-                    parametros.Nivel4,
-                    parametros.Nivel5,
-                    parametros.Nivel6,
-                    parametros.Nivel7,
-                    parametros.Nivel8);
-                parametros.MascaraCod = string.Concat(
-                    parametros.Nivel1,
-                    parametros.Nivel2,
-                    parametros.Nivel3,
-                    parametros.Nivel4,
-                    parametros.Nivel5,
-                    parametros.Nivel6,
-                    parametros.Nivel7,
-                    parametros.Nivel8);
+                var niveles = parametros.Niveles;
+                parametros.TotalChr = niveles.Valores.Sum();
+                parametros.Mascara = fxCntX_CuentaMascara(niveles);
+                parametros.MascaraCod = string.Concat(niveles.Valores);
 
                 var periodo = conn.QueryFirstOrDefault<CntXPeriodoDivisaDto>(sqlPeriodo, new { CodContabilidad = codContabilidad });
                 if (periodo?.Periodo != null)
@@ -195,19 +179,12 @@ namespace Galileo_API.DataBaseTier
         /// <summary>
         /// Genera la mascara de cuenta contable.
         /// </summary>
-        /// <param name="nivel1"></param>
-        /// <param name="nivel2"></param>
-        /// <param name="nivel3"></param>
-        /// <param name="nivel4"></param>
-        /// <param name="nivel5"></param>
-        /// <param name="nivel6"></param>
-        /// <param name="nivel7"></param>
-        /// <param name="nivel8"></param>
+        /// <param name="nivelesCuenta"></param>
         /// <param name="caracter"></param>
         /// <returns></returns>
-        public static string fxCntX_CuentaMascara(int nivel1, int nivel2, int nivel3, int nivel4, int nivel5, int nivel6, int nivel7, int nivel8, string caracter = "#")
+        public static string fxCntX_CuentaMascara(CntXCuentaNivelesDto nivelesCuenta, string caracter = "#")
         {
-            var niveles = new[] { nivel1, nivel2, nivel3, nivel4, nivel5, nivel6, nivel7, nivel8 };
+            int[] niveles = nivelesCuenta.Valores;
             var partes = niveles.Where(nivel => nivel > 0).Select(nivel => string.Concat(Enumerable.Repeat(caracter, nivel)));
             return string.Join("-", partes);
         }
@@ -221,17 +198,7 @@ namespace Galileo_API.DataBaseTier
         /// <returns></returns>
         public static string fxCntX_CuentaFormato(bool aplicaMascara, string cuenta, CntXParametrosDto parametros)
         {
-            return fxCntX_CuentaFormato(
-                aplicaMascara,
-                cuenta,
-                parametros.Nivel1,
-                parametros.Nivel2,
-                parametros.Nivel3,
-                parametros.Nivel4,
-                parametros.Nivel5,
-                parametros.Nivel6,
-                parametros.Nivel7,
-                parametros.Nivel8);
+            return fxCntX_CuentaFormato(aplicaMascara, cuenta, parametros.Niveles);
         }
 
         /// <summary>
@@ -239,18 +206,11 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="aplicaMascara"></param>
         /// <param name="cuenta"></param>
-        /// <param name="nivel1"></param>
-        /// <param name="nivel2"></param>
-        /// <param name="nivel3"></param>
-        /// <param name="nivel4"></param>
-        /// <param name="nivel5"></param>
-        /// <param name="nivel6"></param>
-        /// <param name="nivel7"></param>
-        /// <param name="nivel8"></param>
+        /// <param name="nivelesCuenta"></param>
         /// <returns></returns>
-        public static string fxCntX_CuentaFormato(bool aplicaMascara, string cuenta, int nivel1, int nivel2, int nivel3, int nivel4, int nivel5, int nivel6, int nivel7, int nivel8)
+        public static string fxCntX_CuentaFormato(bool aplicaMascara, string cuenta, CntXCuentaNivelesDto nivelesCuenta)
         {
-            var niveles = new[] { nivel1, nivel2, nivel3, nivel4, nivel5, nivel6, nivel7, nivel8 };
+            int[] niveles = nivelesCuenta.Valores;
             string cuentaLimpia = (cuenta ?? string.Empty).Trim().Replace("-", string.Empty);
             if (string.IsNullOrWhiteSpace(cuentaLimpia))
             {

@@ -18,6 +18,30 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
         public int PeriodoMes { get; set; }
         public int PeriodoAnio { get; set; }
         public string DivisaLocal { get; set; } = string.Empty;
+        public CntXCuentaNivelesDto Niveles => new()
+        {
+            Nivel1 = Nivel1,
+            Nivel2 = Nivel2,
+            Nivel3 = Nivel3,
+            Nivel4 = Nivel4,
+            Nivel5 = Nivel5,
+            Nivel6 = Nivel6,
+            Nivel7 = Nivel7,
+            Nivel8 = Nivel8
+        };
+    }
+
+    public class CntXCuentaNivelesDto
+    {
+        public int Nivel1 { get; set; }
+        public int Nivel2 { get; set; }
+        public int Nivel3 { get; set; }
+        public int Nivel4 { get; set; }
+        public int Nivel5 { get; set; }
+        public int Nivel6 { get; set; }
+        public int Nivel7 { get; set; }
+        public int Nivel8 { get; set; }
+        public int[] Valores => new[] { Nivel1, Nivel2, Nivel3, Nivel4, Nivel5, Nivel6, Nivel7, Nivel8 };
     }
 
     public class CntXPeriodoDivisaDto
