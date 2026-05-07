@@ -105,7 +105,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return validacion;
             }
 
-            validacion = ValidarOperacionPermiteMovimiento(codEmpresa, request.numero_operacion);
+            validacion = ValidarOperacionPermiteMovimiento(codEmpresa, request);
             if (validacion.Code < 0)
             {
                 return validacion;
@@ -172,9 +172,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaCantones_Obtener(
     int codEmpresa,
-    FrmVivGarantiaProvinciaRequest request)
+    string provincia)
         {
-            if (request.provincia <= 0)
+            if (string.IsNullOrEmpty(provincia))
             {
                 return new ErrorDto<List<DropDownListaGenericaModel>>
                 {
@@ -184,14 +184,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaCantones_Obtener(codEmpresa, request);
+            return _db.FrmVivGarantiaCantones_Obtener(codEmpresa, provincia);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> FrmVivGarantiaDistritos_Obtener(
     int codEmpresa,
-    FrmVivGarantiaCantonRequest request)
+    string provincia,
+    string canton)
         {
-            if (request.provincia <= 0 || request.canton <= 0)
+            if (string.IsNullOrEmpty(provincia) || string.IsNullOrEmpty(canton))
             {
                 return new ErrorDto<List<DropDownListaGenericaModel>>
                 {
@@ -201,7 +202,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
             }
 
-            return _db.FrmVivGarantiaDistritos_Obtener(codEmpresa, request);
+            return _db.FrmVivGarantiaDistritos_Obtener(codEmpresa, provincia, canton);
         }
 
         public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> FrmVivGarantiaProfesionales_Buscar(
@@ -332,7 +333,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return validacion;
             }
 
-            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.id_garantia);
+            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, request.numero_operacion);
             if (estadoOperacion.Code < 0)
             {
                 return new ErrorDto() {
@@ -393,12 +394,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearErrorSimple("Debe ingresar un nombre de dueño.");
             }
 
-            if (request.provincia <= 0)
+            if (string.IsNullOrWhiteSpace(request.provincia))
             {
                 return CrearErrorSimple("Debe seleccionar una provincia.");
             }
 
-            if (request.canton <= 0)
+            if (string.IsNullOrWhiteSpace(request.canton))
             {
                 return CrearErrorSimple("Debe seleccionar un cantón.");
             }
@@ -638,7 +639,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         private static ErrorDto<FrmVivGarantiaGuardarResponse> ValidarGarantiaGuardar(
             FrmVivGarantiaGuardarRequest request)
         {
-            if (request.numero_operacion <= 0 && string.IsNullOrWhiteSpace(request.expediente))
+            if (request.id_garantia <= 0
+                    && request.numero_operacion <= 0
+                    && string.IsNullOrWhiteSpace(request.expediente))
             {
                 return CrearErrorGuardar("Debe indicar una operación o expediente válido.");
             }
@@ -663,12 +666,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return CrearErrorGuardar("Debe ingresar el área en metros cuadrados.");
             }
 
-            if (request.ubicacion_provincia <= 0)
+            if (string.IsNullOrWhiteSpace(request.ubicacion_provincia))
             {
                 return CrearErrorGuardar("Debe seleccionar una provincia.");
             }
 
-            if (request.ubicacion_canton <= 0)
+            if (string.IsNullOrWhiteSpace(request.ubicacion_canton))
             {
                 return CrearErrorGuardar("Debe seleccionar un cantón.");
             }
@@ -747,15 +750,27 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         private ErrorDto<FrmVivGarantiaGuardarResponse> ValidarOperacionPermiteMovimiento(
     int codEmpresa,
-    long numeroOperacion)
+    FrmVivGarantiaGuardarRequest request)
         {
-            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(codEmpresa, numeroOperacion);
+            var estadoOperacion = _db.FrmVivGarantiaEstadoOperacion_Obtener(
+                codEmpresa,
+                request.numero_operacion);
+
             if (estadoOperacion.Code < 0)
             {
                 return CrearErrorGuardar(estadoOperacion.Description!);
             }
 
-            if ((estadoOperacion.Result ?? string.Empty).Trim() == "F")
+            string estado = (estadoOperacion.Result ?? string.Empty).Trim();
+
+            if (request.guardar_avaluo_posterior)
+            {
+                return estado == "F"
+                    ? CrearOkGuardar()
+                    : CrearErrorGuardar("El avalúo posterior solo aplica para operaciones en estado FORMALIZADA.");
+            }
+
+            if (estado == "F")
             {
                 return CrearErrorGuardar("No es posible realizar movimientos para un número de operación en estado FORMALIZADA.");
             }
