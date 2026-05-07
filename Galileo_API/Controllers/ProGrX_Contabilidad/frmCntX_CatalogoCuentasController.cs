@@ -41,6 +41,18 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCatalogoCentrosCosto(codEmpresa, codContabilidad);
         }
 
+        [HttpGet("CntXCatalogoCentrosCostoPorUnidad")]
+        public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> CntXCatalogoCentrosCostoPorUnidad([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string codUnidad)
+        {
+            return _bl.CntXCatalogoCentrosCostoPorUnidad(codEmpresa, codContabilidad, codUnidad);
+        }
+
+        [HttpGet("CntXCatalogoCuentaObtener")]
+        public ActionResult<ErrorDto<CntXCatalogoCuentaLookupDto>> CntXCatalogoCuentaObtener([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string cuenta)
+        {
+            return _bl.CntXCatalogoCuentaObtener(codEmpresa, codContabilidad, cuenta);
+        }
+
         [HttpPost("CntXCatalogoConsulta")]
         public ActionResult<ErrorDto<List<CntXCatalogoCuentaDto>>> CntXCatalogoConsulta([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentasFiltroRequest filtro)
         {
