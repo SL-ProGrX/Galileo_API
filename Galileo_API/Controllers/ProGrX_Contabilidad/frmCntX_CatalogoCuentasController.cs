@@ -83,6 +83,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCatalogoCuentaGuardar(codEmpresa, request);
         }
 
+        [HttpDelete("CntXCatalogoCuentaEliminar")]
+        public ActionResult<ErrorDto<bool>> CntXCatalogoCuentaEliminar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentaEliminarRequest request)
+        {
+            return _bl.CntXCatalogoCuentaEliminar(codEmpresa, request);
+        }
+
         [HttpPost("CntXCatalogoMapeo")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoMapeo([FromQuery] int codEmpresa, [FromBody] CntXCatalogoMapeoRequest request)
         {
