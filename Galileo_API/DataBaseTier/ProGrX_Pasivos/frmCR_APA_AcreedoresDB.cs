@@ -268,23 +268,9 @@ VALUES
     @banco_dc
 );";
 
-                conn.Execute(sql, new
-                {
-                    cod_acreedor = request.cod_acreedor.Trim(),
-                    descripcion = request.descripcion.Trim(),
-                    estado = request.estado.Trim(),
-                    telefono1 = request.telefono1.Trim(),
-                    telefono2 = request.telefono2.Trim(),
-                    direccion = request.direccion.Trim(),
-                    website = request.website.Trim(),
-                    cod_cuenta = request.cod_cuenta.Trim(),
-                    cod_cuenta_transitoria = request.cod_cuenta_transitoria.Trim(),
-                    cod_cuenta_gastos = request.cod_cuenta_gastos.Trim(),
-                    cod_cuenta_cargos = request.cod_cuenta_cargos.Trim(),
-                    cod_cuenta_comision = request.cod_cuenta_comision.Trim(),
-                    banco_ck = request.banco_ck,
-                    banco_dc = request.banco_dc
-                });
+                var parametros = CR_APA_Acreedor_CrearParametrosGuardar(request);
+
+                conn.Execute(sql, parametros);
 
                 return DbHelper.CreateOkResponse(1);
             }
@@ -323,23 +309,8 @@ SET
     BANCO_DC = @banco_dc
 WHERE COD_ACREEDOR = @cod_acreedor;";
 
-                var rows = conn.Execute(sql, new
-                {
-                    cod_acreedor = request.cod_acreedor.Trim(),
-                    descripcion = request.descripcion.Trim(),
-                    estado = request.estado.Trim(),
-                    telefono1 = request.telefono1.Trim(),
-                    telefono2 = request.telefono2.Trim(),
-                    direccion = request.direccion.Trim(),
-                    website = request.website.Trim(),
-                    cod_cuenta = request.cod_cuenta.Trim(),
-                    cod_cuenta_transitoria = request.cod_cuenta_transitoria.Trim(),
-                    cod_cuenta_gastos = request.cod_cuenta_gastos.Trim(),
-                    cod_cuenta_cargos = request.cod_cuenta_cargos.Trim(),
-                    cod_cuenta_comision = request.cod_cuenta_comision.Trim(),
-                    banco_ck = request.banco_ck,
-                    banco_dc = request.banco_dc
-                });
+                var parametros = CR_APA_Acreedor_CrearParametrosGuardar(request);
+                var rows = conn.Execute(sql, parametros);
 
                 if (rows == 0)
                 {
@@ -425,6 +396,33 @@ WHERE ID_BANCO = @id_banco;";
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaBancoDto>(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Construye los parámetros normalizados para insertar o actualizar acreedores APA.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private object CR_APA_Acreedor_CrearParametrosGuardar(
+            FrmCrApaAcreedorGuardarRequest request)
+        {
+            return new
+            {
+                cod_acreedor = (request.cod_acreedor ?? string.Empty).Trim(),
+                descripcion = (request.descripcion ?? string.Empty).Trim(),
+                estado = (request.estado ?? string.Empty).Trim(),
+                telefono1 = (request.telefono1 ?? string.Empty).Trim(),
+                telefono2 = (request.telefono2 ?? string.Empty).Trim(),
+                direccion = (request.direccion ?? string.Empty).Trim(),
+                website = (request.website ?? string.Empty).Trim(),
+                cod_cuenta = (request.cod_cuenta ?? string.Empty).Trim(),
+                cod_cuenta_transitoria = (request.cod_cuenta_transitoria ?? string.Empty).Trim(),
+                cod_cuenta_gastos = (request.cod_cuenta_gastos ?? string.Empty).Trim(),
+                cod_cuenta_cargos = (request.cod_cuenta_cargos ?? string.Empty).Trim(),
+                cod_cuenta_comision = (request.cod_cuenta_comision ?? string.Empty).Trim(),
+                banco_ck = request.banco_ck,
+                banco_dc = request.banco_dc
+            };
         }
     }
 }
