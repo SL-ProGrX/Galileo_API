@@ -13,6 +13,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _dbBitacora;
         private const int VModulo = 20;
+        private const string MensajeCuentaRequerida = "La cuenta es requerida.";
         private const string MovimientoRegistraWeb = "Registra - WEB";
         private const string MovimientoModificaWeb = "Modifica - WEB";
         private const string MovimientoEliminaWeb = "Elimina - WEB";
@@ -517,7 +518,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>("La cuenta es requerida.");
+                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>(MensajeCuentaRequerida);
             }
 
             request.Cuenta = (request.Cuenta ?? string.Empty).Trim();
@@ -528,7 +529,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (string.IsNullOrWhiteSpace(request.Cuenta))
             {
-                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>("La cuenta es requerida.");
+                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>(MensajeCuentaRequerida);
             }
 
             if (string.IsNullOrWhiteSpace(request.Descripcion))
@@ -645,7 +646,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse<bool>("La cuenta es requerida.");
+                return DbHelper.CreateErrorResponse<bool>(MensajeCuentaRequerida);
             }
 
             request.Cuenta = (request.Cuenta ?? string.Empty).Trim().Replace("-", string.Empty);
@@ -659,7 +660,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (string.IsNullOrWhiteSpace(request.Cuenta))
             {
-                return DbHelper.CreateErrorResponse<bool>("La cuenta es requerida.");
+                return DbHelper.CreateErrorResponse<bool>(MensajeCuentaRequerida);
             }
 
             return null;
