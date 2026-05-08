@@ -63,5 +63,58 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         {
             return _bl.CR_APA_Banco_Obtener(codEmpresa, id_banco);
         }
+
+        [HttpGet("CR_APA_Contactos_Obtener")]
+        public ErrorDto<FrmCrApaContactosListaDto> CR_APA_Contactos_Obtener(
+    int codEmpresa,
+    string cod_acreedor,
+    string filtro)
+        {
+            return _bl.CR_APA_Contactos_Obtener(codEmpresa, cod_acreedor, filtro);
+        }
+
+        [HttpPost("CR_APA_Contacto_Guardar")]
+        public ErrorDto<int> CR_APA_Contacto_Guardar(
+            int codEmpresa,
+            FrmCrApaContactoGuardarRequest request)
+        {
+            return _bl.CR_APA_Contacto_Guardar(codEmpresa, request);
+        }
+
+        [HttpDelete("CR_APA_Contacto_Eliminar")]
+        public ErrorDto<int> CR_APA_Contacto_Eliminar(
+            int codEmpresa,
+            string cod_acreedor,
+            string codigo)
+        {
+            return _bl.CR_APA_Contacto_Eliminar(codEmpresa, cod_acreedor, codigo);
+        }
+
+        [HttpGet("CR_APA_Autorizados_Obtener")]
+        public ErrorDto<FrmCrApaAutorizadosListaDto> CR_APA_Autorizados_Obtener(
+    int codEmpresa,
+    string cod_acreedor,
+    string filtro)
+        {
+            return _bl.CR_APA_Autorizados_Obtener(codEmpresa, cod_acreedor, filtro);
+        }
+
+        [HttpPost("CR_APA_Autorizado_Guardar")]
+        public ErrorDto<int> CR_APA_Autorizado_Guardar(
+            int codEmpresa,
+            FrmCrApaAutorizadoGuardarRequest request)
+        {
+            return _bl.CR_APA_Autorizado_Guardar(codEmpresa, request);
+        }
+
+        [HttpDelete("CR_APA_Autorizado_Eliminar")]
+        public ErrorDto<int> CR_APA_Autorizado_Eliminar(
+            int codEmpresa,
+            string cod_acreedor,
+            string cedula)
+        {
+            return _bl.CR_APA_Autorizado_Eliminar(codEmpresa, cod_acreedor, cedula);
+        }
+
     }
 }

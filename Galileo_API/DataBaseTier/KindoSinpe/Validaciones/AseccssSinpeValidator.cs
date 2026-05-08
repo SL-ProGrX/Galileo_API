@@ -286,14 +286,11 @@ namespace Galileo_API.DataBaseTier
             {
                 if (cedula.Contains("-"))
                 {
-                    ErrorDto.Code = 0;
-                    ErrorDto.Description = "";
-                    ErrorDto.Result = cedula;
-                    return ErrorDto;
+                    cedula = cedula.Replace("-", "").Trim();
                 }
 
                 cedula = cedula.Trim();
-                idSINPE = setCodigoSugefEstandar(tipoID).Result;
+                idSINPE = setCodigoSugefEstandar(tipoID, true).Result;
 
                 switch (idSINPE)
                 {
@@ -1148,20 +1145,20 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.Amount = solicitud.Monto;
                 TransferData.Transfer.CurrencyCode = solicitud.Divisa;
                 TransferData.Transfer.Description = detalle;
-                TransferData.Transfer.OriginEntityIBAN = "";
+                TransferData.Transfer.OriginEntityIBAN = ""; 
                 TransferData.Transfer.OriginCustomer = new Sinpe_PIN.OriginCustomer();
-                TransferData.Transfer.OriginCustomer.Id = fxFormatoIdentificacionSinpe(solicitud.CedulaOrigen!.Trim(), solicitud.tipoCedOrigen.GetHashCode()).Result;
-                TransferData.Transfer.OriginCustomer.IdType = PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, solicitud.tipoCedOrigen.GetHashCode()).Result;
+                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen!.Trim()); // fxFormatoIdentificacionSinpe(, solicitud.tipoCedOrigen.GetHashCode()).Result;
+                TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo);
                 TransferData.Transfer.OriginCustomer.Name = solicitud.NombreOrigen;
                 TransferData.Transfer.OriginCustomer.IBAN = solicitud.CuentaOrigen;
                 TransferData.Transfer.OriginCustomer.Email = "";
                 TransferData.Transfer.OriginCustomer.DebitIBAN = true;
                 TransferData.Transfer.DestinationCustomer = new DestinationCustomer();
-                TransferData.Transfer.DestinationCustomer.Id = fxFormatoIdentificacionSinpe(solicitud.Codigo!.Trim(), solicitud.tipoCedDestino.GetHashCode()).Result;
-                TransferData.Transfer.DestinationCustomer.IdType = PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, solicitud.tipoCedDestino.GetHashCode()).Result;
+                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo!.Trim()); //fxFormatoIdentificacionSinpe(, solicitud.tipoCedDestino.GetHashCode()).Result;
+                TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo);
                 TransferData.Transfer.DestinationCustomer.Name = solicitud.Beneficiario;
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
-                TransferData.Transfer.DestinationCustomer.Email = "";
+                TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica; ;
 
                 ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera!).Result!;
 
@@ -1192,7 +1189,7 @@ namespace Galileo_API.DataBaseTier
 
                 body.ReqPINSending = TransferData;
                 body.rastro = fxCrearRastroSINPESIF_PIN(vUsuario).Result;
-
+                string json = JsonSerializer.Serialize(body);
                 response = _srvSinpePin.SendTransferAsync(body).Result;
 
                 res.Result = response;
@@ -1206,7 +1203,7 @@ namespace Galileo_API.DataBaseTier
             return res;
         }
 
-        private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF)
+        private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF, bool isPin)
         {
            
             var response = new ErrorDto<int>
@@ -1219,12 +1216,20 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-                var query = @"
+
+                if (isPin)
+                {
+                    response.Result = CODIGO_SUGEF;
+                }
+                else
+                {
+                    var query = @"
                             SELECT CODIGO_PIN
                             FROM AFI_TIPOS_IDS
                             WHERE CODIGO_SUGEF = @CodigoSugef;";
 
-                response.Result = connection.QueryFirstOrDefault<int>(query, new { CodigoSugef = CODIGO_SUGEF });
+                    response.Result = connection.QueryFirstOrDefault<int>(query, new { CodigoSugef = CODIGO_SUGEF });
+                }
             }
             catch (Exception)
             {
@@ -1793,29 +1798,38 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="TipoId"></param>
         /// <returns></returns>
-        private ErrorDto<int> setCodigoSugefEstandar(int? TipoId)
+        private ErrorDto<int> setCodigoSugefEstandar(int? TipoId, bool? isPin = false)
         {
             var response = new ErrorDto<int>();
             try
             {
-                switch (TipoId)
+                if (isPin == true)
                 {
-                    case 1: // Cédula Nacional
-                        response.Result = 3;
-                        break;
-                    case 3: // Dimex
-                        response.Result = 1;
-                        break;
-                    case 4: // Jurídica
-                        response.Result = 5;
-                        break;
-                    case 5: // Institución autónoma
-                        response.Result = 4;
-                        break;
-                    default:
-                        response.Result = TipoId ?? 0;
-                        break;
+                    response.Result = TipoId ?? 0;
                 }
+                else
+                {
+                    switch (TipoId)
+                    {
+                        case 1: // Cédula Nacional
+                            response.Result = 3;
+                            break;
+                        case 3: // Dimex
+                            response.Result = 1;
+                            break;
+                        case 4: // Jurídica
+                            response.Result = 5;
+                            break;
+                        case 5: // Institución autónoma
+                            response.Result = 4;
+                            break;
+                        default:
+                            response.Result = TipoId ?? 0;
+                            break;
+                    }
+                }
+
+                
             }
             catch (Exception)
             {

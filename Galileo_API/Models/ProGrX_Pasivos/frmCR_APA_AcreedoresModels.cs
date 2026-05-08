@@ -69,4 +69,53 @@
         public string descripcion { get; set; } = string.Empty;
     }
 
+    public class FrmCrApaContactoGridDto
+    {
+        public string codigo { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string tel_celular { get; set; } = string.Empty;
+        public string tel_trabajo { get; set; } = string.Empty;
+        public string fax { get; set; } = string.Empty;
+        public string email { get; set; } = string.Empty;
+    }
+
+    public class FrmCrApaContactosListaDto
+    {
+        public int total { get; set; } = 0;
+        public List<FrmCrApaContactoGridDto> lista { get; set; } = new();
+    }
+
+    public class FrmCrApaContactoGuardarRequest
+    {
+        public string cod_acreedor { get; set; } = string.Empty;
+        public string codigo { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string tel_celular { get; set; } = string.Empty;
+        public string tel_trabajo { get; set; } = string.Empty;
+        public string fax { get; set; } = string.Empty;
+        public string email { get; set; } = string.Empty;
+        public bool isNew { get; set; }
+    }
+
+    public class FrmCrApaAutorizadoGridDto
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+    }
+
+    public class FrmCrApaAutorizadosListaDto
+    {
+        public int total { get; set; } = 0;
+        public List<FrmCrApaAutorizadoGridDto> lista { get; set; } = new();
+    }
+
+    public class FrmCrApaAutorizadoGuardarRequest
+    {
+        public string cod_acreedor { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public bool isNew { get; set; }
+    }
+
+
 }
