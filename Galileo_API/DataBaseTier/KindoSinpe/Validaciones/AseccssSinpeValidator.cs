@@ -892,7 +892,10 @@ namespace Galileo_API.DataBaseTier
 
                     bodyWCF.body = body;
                     bodyWCF.rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;
+                    /**
+                    Para pruebas de SINPE
                     string json = JsonSerializer.Serialize(bodyWCF);
+                    **/
                     response = _srvSinpeCcd.RegistrarDebitoCuentaAsync(bodyWCF).Result;
                     responseDetail = response.RegistrarDebitoCuentaResult[0];
                     
