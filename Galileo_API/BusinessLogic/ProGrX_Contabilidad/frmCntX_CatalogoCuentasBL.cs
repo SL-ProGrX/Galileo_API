@@ -69,6 +69,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCatalogoCuentaGuardar(codEmpresa, request);
         }
 
+        /// <summary>
+        /// Elimina una cuenta del catálogo contable y sus cuentas hijas inmediatas.
+        /// </summary>
+        public ErrorDto<bool> CntXCatalogoCuentaEliminar(int codEmpresa, CntXCatalogoCuentaEliminarRequest request)
+        {
+            return _db.CntXCatalogoCuentaEliminar(codEmpresa, request);
+        }
+
         public ErrorDto<bool> CntXCatalogoMapeo(int codEmpresa, CntXCatalogoMapeoRequest request)
         {
             return _db.CntXCatalogoMapeo(codEmpresa, request);

@@ -474,6 +474,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
+                ValidarLongitudCuenta(conn, request);
+
                 const string sql = @"
                     exec spCntX_Cuentas_Registro
                         @CodContabilidad,
@@ -547,6 +549,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return null;
         }
 
+        private static void ValidarLongitudCuenta(IDbConnection conn, CntXCatalogoCuentaGuardarRequest request)
+        {
+            const string sql = @"
+                select isnull(nivel1, 0) + isnull(nivel2, 0) + isnull(nivel3, 0) + isnull(nivel4, 0)
+                     + isnull(nivel5, 0) + isnull(nivel6, 0) + isnull(nivel7, 0) + isnull(nivel8, 0)
+                from CntX_Contabilidades
+                where cod_contabilidad = @CodContabilidad";
+
+            int totalChr = conn.ExecuteScalar<int>(sql, new { request.CodContabilidad });
+            string cuenta = request.Cuenta.Replace("-", string.Empty);
+
+            if (totalChr > 0 && cuenta.Length > totalChr)
+            {
+                throw new InvalidOperationException("La Cuenta Digitada sobrepasa el total de caracteres permitidos por la Mascara Contable Definida para esta compañía...");
+            }
+        }
+
         private static string ObtenerCuentaBitacora(CntXCatalogoCuentaGuardarRequest request, CntXCatalogoCuentaGuardarResponse result)
         {
             if (string.IsNullOrWhiteSpace(result.Cod_Cuenta_Mask))
@@ -570,6 +589,80 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
 
             return MovimientoModificaWeb;
+        }
+
+        /// <summary>
+        /// Elimina una cuenta del catálogo contable y sus cuentas hijas inmediatas.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> CntXCatalogoCuentaEliminar(int codEmpresa, CntXCatalogoCuentaEliminarRequest request)
+        {
+            var error = PrepararCuentaEliminarRequest(request);
+            if (error != null)
+            {
+                return error;
+            }
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                using var transaction = conn.BeginTransaction();
+                try
+                {
+                    const string sqlHijas = @"
+                        delete CntX_Cuentas
+                        where cuenta_madre = @Cuenta
+                          and cod_contabilidad = @CodContabilidad";
+
+                    const string sqlCuenta = @"
+                        delete CntX_Cuentas
+                        where cod_cuenta = @Cuenta
+                          and cod_contabilidad = @CodContabilidad";
+
+                    int rows = conn.Execute(sqlHijas, request, transaction);
+                    rows += conn.Execute(sqlCuenta, request, transaction);
+                    transaction.Commit();
+
+                    return rows > 0;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            });
+
+            if (result.Code == 0 && result.Result)
+            {
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Cuenta : {request.Descripcion}- COD : {request.Cuenta}", MovimientoEliminaWeb);
+            }
+
+            return result;
+        }
+
+        private static ErrorDto<bool>? PrepararCuentaEliminarRequest(CntXCatalogoCuentaEliminarRequest request)
+        {
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse<bool>("La cuenta es requerida.");
+            }
+
+            request.Cuenta = (request.Cuenta ?? string.Empty).Trim().Replace("-", string.Empty);
+            request.Descripcion = (request.Descripcion ?? string.Empty).Trim();
+            request.Usuario = (request.Usuario ?? string.Empty).Trim();
+
+            if (request.CodContabilidad.GetValueOrDefault() <= 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>("La contabilidad es requerida.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Cuenta))
+            {
+                return DbHelper.CreateErrorResponse<bool>("La cuenta es requerida.");
+            }
+
+            return null;
         }
 
         /// <summary>
