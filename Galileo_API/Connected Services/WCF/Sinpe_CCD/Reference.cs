@@ -202,7 +202,7 @@ namespace Sinpe_CCD
         
         private Sinpe_CCD.ClienteAS400 ClienteOrigenField;
         
-        private Sinpe_CCD.ServiciosSINPE TipoTransaccionField;
+        private string TipoTransaccionField;
         
         private string IdRequestField;
         
@@ -246,7 +246,7 @@ namespace Sinpe_CCD
         }
         
         [System.Runtime.Serialization.DataMemberAttribute(IsRequired=true, Order=3)]
-        public Sinpe_CCD.ServiciosSINPE TipoTransaccion
+        public string TipoTransaccion
         {
             get
             {
@@ -278,7 +278,7 @@ namespace Sinpe_CCD
     public partial class Transaccion : object
     {
         
-        private Sinpe_CCD.E_Monedas MonedaField;
+        private string MonedaField;
         
         private decimal MontoField;
         
@@ -301,7 +301,7 @@ namespace Sinpe_CCD
         private string IDCorrelationField;
         
         [System.Runtime.Serialization.DataMemberAttribute(IsRequired=true)]
-        public Sinpe_CCD.E_Monedas Moneda
+        public string Moneda
         {
             get
             {
@@ -456,7 +456,7 @@ namespace Sinpe_CCD
         
         private string IBANField;
         
-        private Sinpe_CCD.E_TipoIdentificacion TipoCedulaField;
+        private string TipoCedulaField;
         
         [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue=false)]
         public string Identificacion
@@ -498,7 +498,7 @@ namespace Sinpe_CCD
         }
         
         [System.Runtime.Serialization.DataMemberAttribute(IsRequired=true, Order=3)]
-        public Sinpe_CCD.E_TipoIdentificacion TipoCedula
+        public string TipoCedula
         {
             get
             {
@@ -908,7 +908,7 @@ namespace Sinpe_CCD
         {
             if ((endpointConfiguration == EndpointConfiguration.BasicHttpBinding_ISINPE_CCD))
             {
-                return new System.ServiceModel.EndpointAddress("http://172.16.70.55/Servicios/SINPE_CCD.svc");
+                return new System.ServiceModel.EndpointAddress("http://172.16.70.55:8080/Servicios/SINPE_CCD.svc");
             }
             throw new System.InvalidOperationException(string.Format("Could not find endpoint with name \'{0}\'.", endpointConfiguration));
         }
