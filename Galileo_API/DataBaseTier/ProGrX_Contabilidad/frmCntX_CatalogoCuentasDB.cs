@@ -86,6 +86,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Obtiene los centros de costo disponibles para una unidad.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCostoPorUnidad(int codEmpresa, int codContabilidad, string codUnidad)
+        {
+            const string sql = @"
+                select rtrim(C.cod_centro_costo) as item, rtrim(C.descripcion) as descripcion
+                from CntX_Centro_Costos C
+                where C.activo = 1
+                  and C.cod_contabilidad = @codContabilidad
+                  and C.cod_centro_costo in (
+                      select U.cod_centro_costo
+                      from CntX_Unidades_CC U
+                      where U.cod_unidad = @codUnidad
+                        and U.cod_contabilidad = @codContabilidad
+                  )
+                order by C.descripcion";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { codContabilidad, codUnidad });
+        }
+
+        /// <summary>
+        /// Obtiene una cuenta exacta por código para llenar descripciones al salir del campo.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="cuenta"></param>
+        /// <returns></returns>
+        public ErrorDto<CntXCatalogoCuentaLookupDto> CntXCatalogoCuentaObtener(int codEmpresa, int codContabilidad, string cuenta)
+        {
+            const string sql = @"
+                select rtrim(cod_cuenta) as cod_cuenta,
+                       rtrim(cod_cuenta_mask) as cod_cuenta_mask,
+                       rtrim(descripcion) as descripcion
+                from CntX_Cuentas
+                where cod_contabilidad = @codContabilidad
+                  and cod_cuenta = @cuenta";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<CntXCatalogoCuentaLookupDto>(sql, new { codContabilidad, cuenta }) ?? new CntXCatalogoCuentaLookupDto());
+        }
+
+        /// <summary>
         /// Obtiene los tipos de cuenta del catÃ¡logo contable.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -304,28 +348,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where cod_contabilidad = @codContabilidad
                   and cod_cuenta = @cuenta";
 
-            string? sql = request.Campo?.Trim().ToLowerInvariant() switch
-            {
-                "acepta_movimientos" => sqlAceptaMovimientos,
-                "presupuesto" => sqlPresupuesto,
-                "bloqueada" => sqlBloqueada,
-                "cuenta_auxiliar" => sqlCuentaAuxiliar,
-                _ => null
-            };
+            string campo = (request.Campo ?? string.Empty).Trim().ToLowerInvariant();
 
-            if (sql == null)
+            if (!EsCampoEstadoPermitido(campo))
             {
                 return new ErrorDto<bool> { Code = -1, Description = "Campo no permitido.", Result = false };
             }
 
+            if (campo == "acepta_movimientos")
+            {
+                var validacion = ValidarCambioAceptaMovimientos(codEmpresa, request);
+                if (validacion.Code != 0 || !validacion.Result)
+                {
+                    return validacion;
+                }
+            }
+
             var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                int rows = conn.Execute(sql, new
+                var parametros = new
                 {
                     request.CodContabilidad,
                     request.Cuenta,
                     valor = request.Valor.GetValueOrDefault() ? 1 : 0
-                });
+                };
+
+                int rows = campo switch
+                {
+                    "acepta_movimientos" => conn.Execute(sqlAceptaMovimientos, parametros),
+                    "presupuesto" => conn.Execute(sqlPresupuesto, parametros),
+                    "bloqueada" => conn.Execute(sqlBloqueada, parametros),
+                    "cuenta_auxiliar" => conn.Execute(sqlCuentaAuxiliar, parametros),
+                    _ => 0
+                };
+
                 return rows > 0;
             });
 
@@ -335,6 +391,71 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
 
             return result;
+        }
+
+        private static bool EsCampoEstadoPermitido(string campo)
+        {
+            return campo == "acepta_movimientos"
+                || campo == "presupuesto"
+                || campo == "bloqueada"
+                || campo == "cuenta_auxiliar";
+        }
+
+        private ErrorDto<bool> ValidarCambioAceptaMovimientos(int codEmpresa, CntXCatalogoCuentaEstadoRequest request)
+        {
+            const string sql = @"
+                select
+                    (select count(1)
+                     from CntX_Mov_Cuentas_Detallado
+                     where cod_contabilidad = @codContabilidad
+                       and cod_cuenta = @cuenta
+                       and (isnull(total_debitos, 0) <> 0 or isnull(total_creditos, 0) <> 0)) as movimientos,
+                    (select count(1)
+                     from Cntx_Asientos A
+                     inner join Cntx_Asientos_detalle D
+                       on A.tipo_asiento = D.tipo_asiento
+                      and A.num_asiento = D.num_asiento
+                      and A.cod_contabilidad = D.cod_contabilidad
+                     where A.cod_contabilidad = @codContabilidad
+                       and D.cod_cuenta = @cuenta
+                       and A.fecha_aplicado is null) as asientos_pendientes,
+                    (select count(1)
+                     from CntX_Cuentas
+                     where cod_contabilidad = @codContabilidad
+                       and cuenta_madre = @cuenta) as subcuentas";
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var estado = conn.QueryFirstOrDefault(sql, new
+                {
+                    request.CodContabilidad,
+                    request.Cuenta
+                });
+
+                var mensajes = new List<string>();
+                if ((int)(estado?.movimientos ?? 0) > 0)
+                {
+                    mensajes.Add("- Esta cuenta tiene movimientos registrados...");
+                }
+
+                if ((int)(estado?.asientos_pendientes ?? 0) > 0)
+                {
+                    mensajes.Add("- Esta cuenta tiene Cntx_Asientos registrados sin mayorizar...");
+                }
+
+                if ((int)(estado?.subcuentas ?? 0) > 0)
+                {
+                    mensajes.Add("- Esta cuenta tiene Sub-Cuentas registradas ...");
+                }
+
+                if (mensajes.Count == 0)
+                {
+                    return true;
+                }
+
+                var descripcion = "****** NO SE PUEDE GUARDAR ****** " + string.Join(" ", mensajes);
+                throw new InvalidOperationException(descripcion);
+            });
         }
 
         /// <summary>

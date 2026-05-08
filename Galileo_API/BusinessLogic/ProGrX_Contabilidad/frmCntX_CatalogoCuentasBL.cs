@@ -34,6 +34,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCatalogoCentrosCosto(codEmpresa, codContabilidad);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCostoPorUnidad(int codEmpresa, int codContabilidad, string codUnidad)
+        {
+            return _db.CntXCatalogoCentrosCostoPorUnidad(codEmpresa, codContabilidad, codUnidad);
+        }
+
+        public ErrorDto<CntXCatalogoCuentaLookupDto> CntXCatalogoCuentaObtener(int codEmpresa, int codContabilidad, string cuenta)
+        {
+            return _db.CntXCatalogoCuentaObtener(codEmpresa, codContabilidad, cuenta);
+        }
+
         public ErrorDto<List<CntXCatalogoCuentaDto>> CntXCatalogoConsulta(int codEmpresa, CntXCatalogoCuentasFiltroRequest filtro)
         {
             return _db.CntXCatalogoConsulta(codEmpresa, filtro);

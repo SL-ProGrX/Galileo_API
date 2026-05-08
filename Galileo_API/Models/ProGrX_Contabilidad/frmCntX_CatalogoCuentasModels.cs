@@ -32,6 +32,13 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
         public bool IsNew { get; set; }
     }
 
+    public class CntXCatalogoCuentaLookupDto
+    {
+        public string Cod_Cuenta { get; set; } = string.Empty;
+        public string Cod_Cuenta_Mask { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
     public class CntXCatalogoCuentaEstadoRequest
     {
         public int? CodContabilidad { get; set; }
