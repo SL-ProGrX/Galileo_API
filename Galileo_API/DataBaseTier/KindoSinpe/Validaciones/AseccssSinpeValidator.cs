@@ -1147,14 +1147,14 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.Description = detalle;
                 TransferData.Transfer.OriginEntityIBAN = ""; 
                 TransferData.Transfer.OriginCustomer = new Sinpe_PIN.OriginCustomer();
-                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen!.Trim()); // fxFormatoIdentificacionSinpe(, solicitud.tipoCedOrigen.GetHashCode()).Result;
+                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen!.Trim()); 
                 TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo);
                 TransferData.Transfer.OriginCustomer.Name = solicitud.NombreOrigen;
                 TransferData.Transfer.OriginCustomer.IBAN = solicitud.CuentaOrigen;
                 TransferData.Transfer.OriginCustomer.Email = "";
                 TransferData.Transfer.OriginCustomer.DebitIBAN = true;
                 TransferData.Transfer.DestinationCustomer = new DestinationCustomer();
-                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo!.Trim()); //fxFormatoIdentificacionSinpe(, solicitud.tipoCedDestino.GetHashCode()).Result;
+                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo!.Trim());
                 TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo);
                 TransferData.Transfer.DestinationCustomer.Name = solicitud.Beneficiario;
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;

@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Galileo_API.Models.ProGrX_Pasivos;
 using Galileo_API.Models.ProGrX_Polizas;
 using Org.BouncyCastle.Asn1.X500;
 
@@ -841,7 +842,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 var cod = (datos?.cod_acreedor ?? string.Empty).Trim().ToUpperInvariant();
                 if (string.IsNullOrWhiteSpace(cod))
                 {
-                    return DbHelper.ErrorResponse("El código del acreedor es requerido.");
+                    return DbHelper.ErrorResponse(CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
                 var identificacion = (datos?.identificacion ?? string.Empty).Trim();

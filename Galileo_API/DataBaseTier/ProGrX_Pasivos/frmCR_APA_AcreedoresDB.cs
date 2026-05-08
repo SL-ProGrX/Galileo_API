@@ -140,7 +140,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
                     return DbHelper.CreateErrorResponse<FrmCrApaAcreedorDatosDto>(
-                        "El código del acreedor es requerido.");
+                        CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
 
@@ -451,7 +451,7 @@ WHERE ID_BANCO = @id_banco;";
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
                     return DbHelper.CreateErrorResponse<FrmCrApaContactosListaDto>(
-                        "El código del acreedor es requerido.");
+                        CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
                 filtros ??= new FiltrosLazyLoadData();
@@ -571,7 +571,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
-                    return DbHelper.CreateErrorResponse<int>("El código del acreedor es requerido.");
+                    return DbHelper.CreateErrorResponse<int>(CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
                 if (string.IsNullOrWhiteSpace(codigo))
@@ -730,7 +730,7 @@ WHERE COD_ACREEDOR = @cod_acreedor
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
                     return DbHelper.CreateErrorResponse<FrmCrApaAutorizadosListaDto>(
-                        "El código del acreedor es requerido.");
+                        CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
                 filtros ??= new FiltrosLazyLoadData();
@@ -823,7 +823,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
-                    return DbHelper.CreateErrorResponse<int>("El código del acreedor es requerido.");
+                    return DbHelper.CreateErrorResponse<int>(CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
                 if (string.IsNullOrWhiteSpace(cedula))

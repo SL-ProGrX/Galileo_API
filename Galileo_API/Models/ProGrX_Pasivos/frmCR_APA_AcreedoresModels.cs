@@ -94,7 +94,7 @@
         public string tel_trabajo { get; set; } = string.Empty;
         public string fax { get; set; } = string.Empty;
         public string email { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public bool isNew { get; set; } = false;
     }
 
     public class FrmCrApaAutorizadoGridDto
@@ -114,8 +114,12 @@
         public string cod_acreedor { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public bool isNew { get; set; } = false;
     }
 
+    public static class CrApaAcreedoresVariables
+    {
+        public const string vCodAcreedor = "El código del acreedor es requerido.";
+    }
 
 }
