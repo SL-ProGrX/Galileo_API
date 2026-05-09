@@ -68,6 +68,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Obtiene la consolidación anterior o siguiente según el código actual.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConsolidaActual"></param>
+        /// <param name="direccion"></param>
+        /// <returns></returns>
+        public ErrorDto<CntXConsolidacionDefinicionData?> CntXConsolidaciones_Scroll_Obtener(
+            int codEmpresa, int codConsolidaActual, string direccion)
+        {
+            var dir = (direccion ?? string.Empty).Trim().ToLower();
+
+            var query = dir == "siguiente"
+                ? @"
+                select top 1 COD_CONSOLIDA 
+                from CNTX_CONSOLIDA_DEFINICION
+                where COD_CONSOLIDA > @codConsolidaActual
+                order by COD_CONSOLIDA asc;"
+                    : @"
+                select top 1 COD_CONSOLIDA 
+                from CNTX_CONSOLIDA_DEFINICION
+                where COD_CONSOLIDA < @codConsolidaActual
+                order by COD_CONSOLIDA desc;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int?>(
+                _portalDb,
+                codEmpresa,
+                query,
+                null,
+                new { codConsolidaActual });
+
+            if (resp.Code == -1 || resp.Result == null)
+            {
+                return new ErrorDto<CntXConsolidacionDefinicionData?>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = null
+                };
+            }
+            return CntXConsolidaciones_Consulta_Obtener(codEmpresa, resp.Result.Value);
+        }
+
+        /// <summary>
         /// Obtiene la lista de consolidaciones para búsqueda.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -235,7 +278,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new { codPortal }).ToList();
 
                 var marcadas = connection.Query<CntXPortalContaRelacionData>(
-                    @"select cod_portal, COD_CONTABILIDAD as cod_contabilidad
+                    @"select cod_portal, cod_contabilidad 
                       from CNTX_CONSOLIDA_PORTALES_CON
                       where cod_consolida = @codConsolida
                         and cod_portal = @codPortal",
@@ -245,19 +288,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 foreach (var portalConta in portales)
                 {
-                    var connectionString = _mCntXProfesional.FxPortalPrueba(
-                        portalConta.por_user,
-                        _mCntXProfesional.FxPortalCifrado(portalConta.por_password, "D"),
-                        portalConta.por_server,
-                        portalConta.por_database);
-
-                    if (string.IsNullOrWhiteSpace(connectionString))
-                    {
-                        continue;
-                    }
-
                     try
                     {
+                        var connectionString = _mCntXProfesional.FxPortalPrueba(
+                            portalConta.por_user,
+                            _mCntXProfesional.FxPortalCifrado(portalConta.por_password, "D"),
+                            portalConta.por_server,
+                            portalConta.por_database);
+
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                        {
+                            continue;
+                        }
+
                         using var externalConnection = new SqlConnection(connectionString);
                         externalConnection.Open();
 
@@ -299,7 +342,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }
                     catch
                     {
-                        // Si un portal no abre, se ignora igual que el VB6.
+                        continue;
                     }
                 }
 
@@ -445,12 +488,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 {
                     connection.Execute(
                         @"insert into CNTX_CONSOLIDA_PORTALES_CON
-                          (cod_consolida, cod_portal, COD_CONTABILIDAD, registro_usuario, registro_fecha)
+                          (cod_consolida, cod_portal, cod_Empresa, COD_CONTABILIDAD, registro_usuario, registro_fecha)
                           values
-                          (@codConsolida, @codPortal, @codContabilidad, @usuario, getdate())",
+                          (@codConsolida, @codPortal, @codEmpresa, @codContabilidad, @usuario, getdate())",
                         new
                         {
                             codConsolida,
+                            codEmpresa,
                             codPortal = item.cod_portal,
                             codContabilidad = item.cod_contabilidad,
                             usuario = usuario.Trim()

@@ -25,6 +25,19 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConsolidaciones_Consulta_Obtener(codEmpresa, codConsolida);
         }
 
+        [HttpGet("CntXConsolidaciones_Scroll_Obtener")]
+        public ErrorDto<CntXConsolidacionDefinicionData?> CntXConsolidaciones_Scroll_Obtener(
+            int codEmpresa,
+            int codConsolidaActual,
+            string direccion)
+        {
+            return _bl.CntXConsolidaciones_Scroll_Obtener(
+                codEmpresa,
+                codConsolidaActual,
+                direccion);
+        }
+
+
         [HttpGet("CntXConsolidaciones_Lista_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CntXConsolidaciones_Lista_Obtener(int codEmpresa)
         {
