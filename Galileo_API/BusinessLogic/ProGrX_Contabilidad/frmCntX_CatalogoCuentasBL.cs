@@ -34,6 +34,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCatalogoCentrosCosto(codEmpresa, codContabilidad);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCostoPorUnidad(int codEmpresa, int codContabilidad, string codUnidad)
+        {
+            return _db.CntXCatalogoCentrosCostoPorUnidad(codEmpresa, codContabilidad, codUnidad);
+        }
+
+        public ErrorDto<CntXCatalogoCuentaLookupDto> CntXCatalogoCuentaObtener(int codEmpresa, int codContabilidad, string cuenta)
+        {
+            return _db.CntXCatalogoCuentaObtener(codEmpresa, codContabilidad, cuenta);
+        }
+
         public ErrorDto<List<CntXCatalogoCuentaDto>> CntXCatalogoConsulta(int codEmpresa, CntXCatalogoCuentasFiltroRequest filtro)
         {
             return _db.CntXCatalogoConsulta(codEmpresa, filtro);
@@ -59,6 +69,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCatalogoCuentaGuardar(codEmpresa, request);
         }
 
+        public ErrorDto<bool> CntXCatalogoCuentaEliminar(int codEmpresa, CntXCatalogoCuentaEliminarRequest request)
+        {
+            return _db.CntXCatalogoCuentaEliminar(codEmpresa, request);
+        }
+
         public ErrorDto<bool> CntXCatalogoMapeo(int codEmpresa, CntXCatalogoMapeoRequest request)
         {
             return _db.CntXCatalogoMapeo(codEmpresa, request);
@@ -69,17 +84,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCatalogoBajaNivel(codEmpresa, request);
         }
 
-        /// <summary>
-        /// Actualiza el formato/mÃ¡scara de las cuentas del catÃ¡logo contable.
-        /// </summary>
+
         public ErrorDto<bool> CntXCatalogoFormatoActualizar(int codEmpresa, CntXCatalogoFormatoRequest request)
         {
             return _db.CntXCatalogoFormatoActualizar(codEmpresa, request);
         }
 
-        /// <summary>
-        /// Reestructura los movimientos por cuenta y revisa el balance del periodo indicado.
-        /// </summary>
         public ErrorDto<bool> CntXCatalogoRevision(int codEmpresa, CntXCatalogoRevisionRequest request)
         {
             return _db.CntXCatalogoRevision(codEmpresa, request);
