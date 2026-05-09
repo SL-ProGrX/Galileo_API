@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="vClave"></param>
         /// <param name="vTipo"></param>
         /// <returns></returns>
-        public string FxPortalCifrado(string vClave, string vTipo = "C")
+        public static string FxPortalCifrado(string vClave, string vTipo = "C")
         {
             vClave = (vClave ?? string.Empty).Trim();
 

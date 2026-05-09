@@ -292,7 +292,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     {
                         var connectionString = _mCntXProfesional.FxPortalPrueba(
                             portalConta.por_user,
-                            _mCntXProfesional.FxPortalCifrado(portalConta.por_password, "D"),
+                            MCntXProfesionalDb.FxPortalCifrado(portalConta.por_password, "D"),
                             portalConta.por_server,
                             portalConta.por_database);
 
@@ -342,7 +342,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }
                     catch
                     {
-                        continue;
+                        //si un portal externo falla, se ignora y se sigue con los demás.
                     }
                 }
 
