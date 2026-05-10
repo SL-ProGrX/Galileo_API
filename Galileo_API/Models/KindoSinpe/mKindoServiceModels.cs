@@ -136,6 +136,7 @@
             Rechazada = 3
         }
 
+
         #endregion
 
         public class ValidaTransRequest
