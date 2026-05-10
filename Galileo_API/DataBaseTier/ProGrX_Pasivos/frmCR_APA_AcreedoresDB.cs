@@ -415,11 +415,11 @@ WHERE ID_BANCO = @id_banco;";
                 telefono2 = (request.telefono2 ?? string.Empty).Trim(),
                 direccion = (request.direccion ?? string.Empty).Trim(),
                 website = (request.website ?? string.Empty).Trim(),
-                cod_cuenta = (request.cod_cuenta ?? string.Empty).Trim(),
-                cod_cuenta_transitoria = (request.cod_cuenta_transitoria ?? string.Empty).Trim(),
-                cod_cuenta_gastos = (request.cod_cuenta_gastos ?? string.Empty).Trim(),
-                cod_cuenta_cargos = (request.cod_cuenta_cargos ?? string.Empty).Trim(),
-                cod_cuenta_comision = (request.cod_cuenta_comision ?? string.Empty).Trim(),
+                cod_cuenta = (request.cod_cuenta ?? string.Empty).Trim().Replace("-",""),
+                cod_cuenta_transitoria = (request.cod_cuenta_transitoria ?? string.Empty).Replace("-", ""),
+                cod_cuenta_gastos = (request.cod_cuenta_gastos ?? string.Empty).Replace("-", ""),
+                cod_cuenta_cargos = (request.cod_cuenta_cargos ?? string.Empty).Replace("-", ""),
+                cod_cuenta_comision = (request.cod_cuenta_comision ?? string.Empty).Replace("-", ""),
                 banco_ck = request.banco_ck,
                 banco_dc = request.banco_dc
             };

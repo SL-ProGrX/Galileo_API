@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX_Pasivos
+﻿using Galileo.Models;
+
+namespace Galileo_API.Models.ProGrX_Pasivos
 {
     public class FrmCrApaAcreedoresGridItem
     {
@@ -120,6 +122,35 @@
     public static class CrApaAcreedoresVariables
     {
         public const string vCodAcreedor = "El código del acreedor es requerido.";
+    }
+
+    public class CrApaAcreedoresListaParameters
+    {
+        public int codEmpresa { get; set; } = 0;
+        public string? cod_acreedor { get; set; }
+        public FiltrosLazyLoadData? filtros { get; set; }
+        public string? defaultSortField { get; set; }
+        public Func<string, int>? resolveSortCode { get; set; }
+        public string? sqlCount { get; set; }
+        public string? sqlData { get; set; }
+    }
+
+    public class CrApaAcreedorDatosParameters
+    {
+        public int codEmpresa { get; set; } = 0;
+        public string codAcreedor { get; set; } = string.Empty;
+        public string identificador { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public bool isNew { get; set; } = false;
+        public object parametros { get; set; } = new();
+        public string mensajeIdentificadorRequerido { get; set; } = string.Empty;
+        public string mensajeNombreRequerido { get; set; } = string.Empty;
+        public string mensajeDuplicado { get; set; } = string.Empty;
+        public string mensajeNoEncontrado { get; set; } = string.Empty;
+        public string sqlExiste { get; set; } = string.Empty;
+        public string sqlInsert { get; set; } = string.Empty;
+        public string sqlUpdate { get; set; } = string.Empty;
+        public object parametrosExiste { get; set; } = new();
     }
 
 }

@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
         /// <summary>
         /// Crea los parámetros lazy comunes para listas por acreedor.
         /// </summary>
-        private DynamicParameters CR_APA_CrearParametrosLazyPorAcreedor(
+        private static DynamicParameters CR_APA_CrearParametrosLazyPorAcreedor(
             string codAcreedor,
             FiltrosLazyLoadData filtros,
             string defaultSortField,
@@ -49,24 +49,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
         /// Ejecuta una lista lazy común por acreedor.
         /// </summary>
         private ErrorDto<TResult> CR_APA_ObtenerListaPorAcreedor<TResult, TItem>(
-            int codEmpresa,
-            string cod_acreedor,
-            FiltrosLazyLoadData filtros,
-            Func<TResult> createResult,
-            Action<TResult, int> setTotal,
-            Action<TResult, List<TItem>> setLista,
-            string defaultSortField,
-            Func<string, int> resolveSortCode,
-            string sqlCount,
-            string sqlData)
+          CrApaAcreedoresListaParameters param,
+         Func<TResult> createResult ,
+         Action<TResult, int> setTotal,
+         Action<TResult, List<TItem>> setLista
+           )
         {
-            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDb, param.codEmpresa);
 
             var result = createResult();
 
             try
             {
-                var codAcreedor = (cod_acreedor ?? string.Empty).Trim();
+                var codAcreedor = (param.cod_acreedor ?? string.Empty).Trim();
 
                 if (string.IsNullOrWhiteSpace(codAcreedor))
                 {
@@ -75,12 +70,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 
                 var parameters = CR_APA_CrearParametrosLazyPorAcreedor(
                     codAcreedor,
-                    filtros,
-                    defaultSortField,
-                    resolveSortCode);
+                    param.filtros!,
+                    param.defaultSortField!,
+                    param.resolveSortCode!);
 
-                var total = conn.ExecuteScalar<int>(sqlCount, parameters);
-                var lista = conn.Query<TItem>(sqlData, parameters).ToList();
+                var total = conn.ExecuteScalar<int>(param.sqlCount!, parameters);
+                var lista = conn.Query<TItem>(param.sqlData!, parameters).ToList();
 
                 setTotal(result, total);
                 setLista(result, lista);
@@ -97,58 +92,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
         /// Ejecuta un guardado simple nuevo/edición para tablas hijas de acreedor.
         /// </summary>
         private ErrorDto<int> CR_APA_GuardarRegistroSimple(
-            int codEmpresa,
-            string codAcreedor,
-            string identificador,
-            string nombre,
-            bool isNew,
-            object parametros,
-            string mensajeIdentificadorRequerido,
-            string mensajeNombreRequerido,
-            string mensajeDuplicado,
-            string mensajeNoEncontrado,
-            string sqlExiste,
-            string sqlInsert,
-            string sqlUpdate,
-            object parametrosExiste)
+            CrApaAcreedorDatosParameters param)
         {
-            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDb, param.codEmpresa);
 
             try
             {
-                if (string.IsNullOrWhiteSpace(codAcreedor))
+                if (string.IsNullOrWhiteSpace(param.codAcreedor))
                 {
                     return DbHelper.CreateErrorResponse<int>(CrApaAcreedoresVariables.vCodAcreedor);
                 }
 
-                if (string.IsNullOrWhiteSpace(identificador))
+                if (string.IsNullOrWhiteSpace(param.identificador))
                 {
-                    return DbHelper.CreateErrorResponse<int>(mensajeIdentificadorRequerido);
+                    return DbHelper.CreateErrorResponse<int>(param.mensajeIdentificadorRequerido);
                 }
 
-                if (string.IsNullOrWhiteSpace(nombre))
+                if (string.IsNullOrWhiteSpace(param.nombre))
                 {
-                    return DbHelper.CreateErrorResponse<int>(mensajeNombreRequerido);
+                    return DbHelper.CreateErrorResponse<int>(param.mensajeNombreRequerido);
                 }
 
-                if (isNew)
+                if (param.isNew)
                 {
-                    var existe = conn.ExecuteScalar<int>(sqlExiste, parametrosExiste);
+                    var existe = conn.ExecuteScalar<int>(param.sqlExiste, param.parametrosExiste);
 
                     if (existe > 0)
                     {
-                        return DbHelper.CreateErrorResponse<int>(mensajeDuplicado);
+                        return DbHelper.CreateErrorResponse<int>(param.mensajeDuplicado);
                     }
 
-                    conn.Execute(sqlInsert, parametros);
+                    conn.Execute(param.sqlInsert, param.parametros);
                 }
                 else
                 {
-                    var rows = conn.Execute(sqlUpdate, parametros);
+                    var rows = conn.Execute(param.sqlUpdate, param.parametros);
 
                     if (rows == 0)
                     {
-                        return DbHelper.CreateErrorResponse<int>(mensajeNoEncontrado);
+                        return DbHelper.CreateErrorResponse<int>(param.mensajeNoEncontrado);
                     }
                 }
 
@@ -265,24 +247,29 @@ ORDER BY
 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
             return CR_APA_ObtenerListaPorAcreedor<FrmCrApaContactosListaDto, FrmCrApaContactoGridDto>(
-                codEmpresa,
-                cod_acreedor,
-                filtros,
+                new CrApaAcreedoresListaParameters
+                {
+                    codEmpresa = codEmpresa,
+                    cod_acreedor = cod_acreedor,
+                    filtros = filtros,
+                    defaultSortField = "codigo",
+                    resolveSortCode = sortField => sortField switch
+                    {
+                        "nombre" => 2,
+                        "tel_celular" => 3,
+                        "tel_trabajo" => 4,
+                        "fax" => 5,
+                        "email" => 6,
+                        _ => 1
+                    },
+                    sqlCount = sqlCount,
+                    sqlData = sqlData
+                },
+
                 () => new FrmCrApaContactosListaDto(),
                 (result, total) => result.total = total,
-                (result, lista) => result.lista = lista,
-                "codigo",
-                sortField => sortField switch
-                {
-                    "nombre" => 2,
-                    "tel_celular" => 3,
-                    "tel_trabajo" => 4,
-                    "fax" => 5,
-                    "email" => 6,
-                    _ => 1
-                },
-                sqlCount,
-                sqlData);
+                (result, lista) => result.lista = lista
+                );
         }
 
         /// <summary>
@@ -347,20 +334,23 @@ WHERE COD_ACREEDOR = @cod_acreedor
   AND COD_CONTACTO = @codigo;";
 
             return CR_APA_GuardarRegistroSimple(
-                codEmpresa,
-                codAcreedor,
-                codigo,
-                nombre,
-                request.isNew,
-                parametros,
-                "El código del contacto es requerido.",
-                "El nombre del contacto es requerido.",
-                "Ya existe un contacto con ese código para este acreedor.",
-                "No se encontró el contacto.",
-                sqlExiste,
-                sqlInsert,
-                sqlUpdate,
-                new { cod_acreedor = codAcreedor, codigo });
+                new CrApaAcreedorDatosParameters
+                {
+                    codEmpresa = codEmpresa,
+                    codAcreedor = codAcreedor,
+                    identificador = codigo,
+                    nombre = nombre,
+                    isNew = request.isNew,
+                    parametros = parametros,
+                    mensajeIdentificadorRequerido = "El código del contacto es requerido.",
+                    mensajeNombreRequerido = "El nombre del contacto es requerido.",
+                    mensajeDuplicado = "Ya existe un contacto con ese código para este acreedor.",
+                    mensajeNoEncontrado = "No se encontró el contacto.",
+                    sqlExiste = sqlExiste,
+                    sqlInsert = sqlInsert,
+                    sqlUpdate = sqlUpdate,
+                    parametrosExiste = new { cod_acreedor = codAcreedor, codigo }
+                });
         }
 
         /// <summary>
@@ -436,20 +426,23 @@ ORDER BY
 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
             return CR_APA_ObtenerListaPorAcreedor<FrmCrApaAutorizadosListaDto, FrmCrApaAutorizadoGridDto>(
-                codEmpresa,
-                cod_acreedor,
-                filtros,
+                new CrApaAcreedoresListaParameters
+                {
+                    codEmpresa = codEmpresa,
+                    cod_acreedor = cod_acreedor,
+                    filtros = filtros,
+                    defaultSortField = "cedula",
+                    resolveSortCode = sortField => sortField switch
+                    {
+                        "nombre" => 2,
+                        _ => 1
+                    },
+                    sqlCount = sqlCount,
+                    sqlData = sqlData
+                },
                 () => new FrmCrApaAutorizadosListaDto(),
                 (result, total) => result.total = total,
-                (result, lista) => result.lista = lista,
-                "cedula",
-                sortField => sortField switch
-                {
-                    "nombre" => 2,
-                    _ => 1
-                },
-                sqlCount,
-                sqlData);
+                (result, lista) => result.lista = lista);
         }
 
         /// <summary>
@@ -498,20 +491,23 @@ WHERE COD_ACREEDOR = @cod_acreedor
   AND CEDULA = @cedula;";
 
             return CR_APA_GuardarRegistroSimple(
-                codEmpresa,
-                codAcreedor,
-                cedula,
-                nombre,
-                request.isNew,
-                parametros,
-                "La cédula es requerida.",
-                "El nombre es requerido.",
-                "Ya existe un autorizado con esa cédula para este acreedor.",
-                "No se encontró el autorizado.",
-                sqlExiste,
-                sqlInsert,
-                sqlUpdate,
-                new { cod_acreedor = codAcreedor, cedula });
+                 new CrApaAcreedorDatosParameters
+                 {
+                     codEmpresa = codEmpresa,
+                     codAcreedor = codAcreedor,
+                     identificador = cedula,
+                     nombre = nombre,
+                     isNew = request.isNew,
+                     parametros = parametros,
+                     mensajeIdentificadorRequerido = "La cédula del autorizado es requerida.",
+                     mensajeNombreRequerido = "El nombre del autorizado es requerido.",
+                     mensajeDuplicado = "Ya existe un autorizado con esa cédula para este acreedor.",
+                     mensajeNoEncontrado = "No se encontró el autorizado.",
+                     sqlExiste = sqlExiste,
+                     sqlInsert = sqlInsert,
+                     sqlUpdate = sqlUpdate,
+                     parametrosExiste = new { cod_acreedor = codAcreedor, cedula }
+                 });
         }
 
         /// <summary>
