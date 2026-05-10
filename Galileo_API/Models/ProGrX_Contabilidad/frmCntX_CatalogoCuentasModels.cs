@@ -70,6 +70,14 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
         public string Mensaje { get; set; } = string.Empty;
     }
 
+    public class CntXCatalogoCuentaEliminarRequest
+    {
+        public int? CodContabilidad { get; set; }
+        public string Cuenta { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+    }
+
     public class CntXCatalogoCuentaDetalleDto
     {
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
