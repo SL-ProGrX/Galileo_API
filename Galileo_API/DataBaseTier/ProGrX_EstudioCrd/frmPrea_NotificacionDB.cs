@@ -119,7 +119,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var plantillaSms = ObtenerPlantillaMensajeSms(conn, tx, tipoPlantilla);
 
                 var cuerpoCorreo = CompletarPlantilla(plantillaCorreo.plantilla, datosPlantilla);
-                var cuerpoMensaje = CompletarPlantilla(plantillaMensaje.mensaje, datosPlantilla);
+               /**
+                * Se debe validar este dato en el flujo con la integracion a frmPreaEstudiov2
+                * var cuerpoMensaje = CompletarPlantilla(plantillaMensaje.mensaje, datosPlantilla);
+                **/
                 var cuerpoSms = CompletarPlantilla(plantillaSms.mensaje_sms, datosPlantilla);
 
                 var envioCorreo = permiso is "NMYC" or "NSCO";
