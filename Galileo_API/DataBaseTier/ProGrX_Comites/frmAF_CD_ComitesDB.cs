@@ -12,6 +12,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityMainDb;
         private const int VModulo = 40;
+        private const string TipoUnidad = "unidad";
+        private const string TipoActividad = "actividad";
+        private const string TipoEjecutivo = "ejecutivo";
+        private const string TipoAsociacionNoValido = "Tipo de asociacion no valido.";
 
         public FrmAfCdComitesDB(IConfiguration config)
         {
@@ -203,22 +207,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                if (tipo.Equals("unidad", StringComparison.OrdinalIgnoreCase))
+                if (tipo.Equals(TipoUnidad, StringComparison.OrdinalIgnoreCase))
                 {
                     ValidarUnidadLibre(conn, request.Codigo, request.Cod_Comite);
-                    InsertarSiNoExiste(conn, "unidad", request);
+                    InsertarSiNoExiste(conn, TipoUnidad, request);
                 }
-                else if (tipo.Equals("actividad", StringComparison.OrdinalIgnoreCase))
+                else if (tipo.Equals(TipoActividad, StringComparison.OrdinalIgnoreCase))
                 {
-                    InsertarSiNoExiste(conn, "actividad", request);
+                    InsertarSiNoExiste(conn, TipoActividad, request);
                 }
-                else if (tipo.Equals("ejecutivo", StringComparison.OrdinalIgnoreCase))
+                else if (tipo.Equals(TipoEjecutivo, StringComparison.OrdinalIgnoreCase))
                 {
-                    InsertarSiNoExiste(conn, "ejecutivo", request);
+                    InsertarSiNoExiste(conn, TipoEjecutivo, request);
                 }
                 else
                 {
-                    throw new ArgumentException("Tipo de asociacion no valido.");
+                    throw new ArgumentException(TipoAsociacionNoValido);
                 }
 
                 RegistrarBitacora(codEmpresa, request.Usuario, "Ingresa - WEB", $"{tipo}:{request.Codigo} Comite:{request.Cod_Comite}");
@@ -504,56 +508,56 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
 
         private static string ResolverEliminarAsociacionSql(string tipo)
         {
-            if (tipo.Equals("unidad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoUnidad, StringComparison.OrdinalIgnoreCase))
             {
                 return "DELETE FROM afi_cd_comites_unidades WHERE cod_comite = @Cod_Comite AND codigo_up = @Codigo";
             }
-            if (tipo.Equals("actividad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoActividad, StringComparison.OrdinalIgnoreCase))
             {
                 return "DELETE FROM afi_cd_comites_actividades WHERE cod_comite = @Cod_Comite AND cod_actividad = @Codigo";
             }
-            if (tipo.Equals("ejecutivo", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoEjecutivo, StringComparison.OrdinalIgnoreCase))
             {
                 return "DELETE FROM afi_cd_comites_ejecutivo WHERE cod_comite = @Cod_Comite AND id_promotor = @Codigo";
             }
 
-            throw new ArgumentException("Tipo de asociacion no valido.");
+            throw new ArgumentException(TipoAsociacionNoValido);
         }
 
         private static string ResolverExisteAsociacionSql(string tipo)
         {
-            if (tipo.Equals("unidad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoUnidad, StringComparison.OrdinalIgnoreCase))
             {
                 return "SELECT COUNT(1) FROM afi_cd_comites_unidades WHERE cod_comite = @Cod_Comite AND codigo_up = @Codigo";
             }
-            if (tipo.Equals("actividad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoActividad, StringComparison.OrdinalIgnoreCase))
             {
                 return "SELECT COUNT(1) FROM afi_cd_comites_actividades WHERE cod_comite = @Cod_Comite AND cod_actividad = @Codigo";
             }
-            if (tipo.Equals("ejecutivo", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoEjecutivo, StringComparison.OrdinalIgnoreCase))
             {
                 return "SELECT COUNT(1) FROM afi_cd_comites_ejecutivo WHERE cod_comite = @Cod_Comite AND id_promotor = @Codigo";
             }
 
-            throw new ArgumentException("Tipo de asociacion no valido.");
+            throw new ArgumentException(TipoAsociacionNoValido);
         }
 
         private static string ResolverInsertarAsociacionSql(string tipo)
         {
-            if (tipo.Equals("unidad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoUnidad, StringComparison.OrdinalIgnoreCase))
             {
                 return "INSERT INTO afi_cd_comites_unidades(cod_comite, codigo_up) VALUES(@Cod_Comite, @Codigo)";
             }
-            if (tipo.Equals("actividad", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoActividad, StringComparison.OrdinalIgnoreCase))
             {
                 return "INSERT INTO afi_cd_comites_actividades(cod_comite, cod_actividad) VALUES(@Cod_Comite, @Codigo)";
             }
-            if (tipo.Equals("ejecutivo", StringComparison.OrdinalIgnoreCase))
+            if (tipo.Equals(TipoEjecutivo, StringComparison.OrdinalIgnoreCase))
             {
                 return "INSERT INTO afi_cd_comites_ejecutivo(cod_comite, id_promotor) VALUES(@Cod_Comite, @Codigo)";
             }
 
-            throw new ArgumentException("Tipo de asociacion no valido.");
+            throw new ArgumentException(TipoAsociacionNoValido);
         }
 
         private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalle)
