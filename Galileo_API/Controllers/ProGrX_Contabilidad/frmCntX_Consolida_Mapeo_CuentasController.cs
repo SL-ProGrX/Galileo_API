@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         [HttpGet("ConsolidaMapeoCuentas_ObtenerUnidades")]
         public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> ConsolidaMapeoCuentas_ObtenerUnidades(
             [FromQuery] int codEmpresa, 
-            [FromQuery] int mContabilidad)
+            [FromQuery] int mContabilidad) 
             => _bl.ConsolidaMapeoCuentas_ObtenerUnidades(codEmpresa, mContabilidad);
     }
 }
