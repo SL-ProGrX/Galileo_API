@@ -83,8 +83,8 @@ namespace Galileo_API.Models.ProGrX_Comites
     {
         public string? Cod_Comite { get; set; }
         public string? Descripcion { get; set; }
-        public int Cod_Director { get; set; }
-        public bool Activo { get; set; }
+        public int? Cod_Director { get; set; }
+        public bool? Activo { get; set; }
         public string? Usuario { get; set; }
     }
 
@@ -99,10 +99,10 @@ namespace Galileo_API.Models.ProGrX_Comites
     {
         public string? Cod_Comite { get; set; }
         public string? Cedula { get; set; }
-        public int Cod_Puesto { get; set; }
+        public int? Cod_Puesto { get; set; }
         public string? Notas { get; set; }
-        public bool Apl_Desembolsos { get; set; }
-        public bool Activo { get; set; }
+        public bool? Apl_Desembolsos { get; set; }
+        public bool? Activo { get; set; }
         public string? Nombre_Jefe { get; set; }
         public string? Telefono_Jefe { get; set; }
         public string? Celular_Jefe { get; set; }
