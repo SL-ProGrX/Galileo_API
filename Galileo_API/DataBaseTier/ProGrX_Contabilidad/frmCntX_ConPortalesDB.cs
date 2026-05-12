@@ -304,7 +304,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var codPortal = request.cod_portal;
                 var usuarioTrim = (usuario ?? string.Empty).Trim().ToUpper();
-                var descripcion = (request.descripcion ?? string.Empty).Trim().ToUpper();
+                var descripcion = request.descripcion.Trim().ToUpper();
                 var observacion = (request.observacion ?? string.Empty).Trim();
                 var porUser = (request.por_user ?? string.Empty).Trim();
                 var porPassword = MCntXProfesionalDb.FxPortalCifrado(
