@@ -149,6 +149,8 @@
         public int SysDocVersion { get; set; } = 0;
         public int SysTesVersion { get; set; } = 0;
 
+        public int SysPreaVersion { get; set; } = 0;
+
         public bool SysASEVersion { get; set; } = false;
 
         public string GAppRuta { get; set; } = string.Empty;

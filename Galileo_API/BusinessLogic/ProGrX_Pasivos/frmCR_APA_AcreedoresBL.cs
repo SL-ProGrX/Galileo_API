@@ -57,5 +57,57 @@ namespace Galileo_API.BusinessLogic.ProGrX_Pasivos
         {
             return _db.CR_APA_Banco_Obtener(codEmpresa, id_banco);
         }
+
+        public ErrorDto<FrmCrApaContactosListaDto> CR_APA_Contactos_Obtener(
+    int codEmpresa,
+    string cod_acreedor,
+    string filtro)
+        {
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro)
+                          ?? new FiltrosLazyLoadData();
+
+            return _db.CR_APA_Contactos_Obtener(codEmpresa, cod_acreedor, filtros);
+        }
+
+        public ErrorDto<int> CR_APA_Contacto_Guardar(
+            int codEmpresa,
+            FrmCrApaContactoGuardarRequest request)
+        {
+            return _db.CR_APA_Contacto_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto<int> CR_APA_Contacto_Eliminar(
+            int codEmpresa,
+            string cod_acreedor,
+            string codigo)
+        {
+            return _db.CR_APA_Contacto_Eliminar(codEmpresa, cod_acreedor, codigo);
+        }
+
+        public ErrorDto<FrmCrApaAutorizadosListaDto> CR_APA_Autorizados_Obtener(
+    int codEmpresa,
+    string cod_acreedor,
+    string filtro)
+        {
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro)
+                          ?? new FiltrosLazyLoadData();
+
+            return _db.CR_APA_Autorizados_Obtener(codEmpresa, cod_acreedor, filtros);
+        }
+
+        public ErrorDto<int> CR_APA_Autorizado_Guardar(
+            int codEmpresa,
+            FrmCrApaAutorizadoGuardarRequest request)
+        {
+            return _db.CR_APA_Autorizado_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto<int> CR_APA_Autorizado_Eliminar(
+            int codEmpresa,
+            string cod_acreedor,
+            string cedula)
+        {
+            return _db.CR_APA_Autorizado_Eliminar(codEmpresa, cod_acreedor, cedula);
+        }
     }
 }

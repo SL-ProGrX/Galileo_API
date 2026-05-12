@@ -31,6 +31,8 @@ namespace Galileo.DataBaseTier
                 .ToList();
             modulosFavoritos = ObtenerModulosFavoritos(Usuario, Cliente);
 
+            Prea_frmPreaEstudio_AplicarVersionMenu(modulosHijos, modulosFavoritos, Cliente, Usuario);
+
             foreach (PrimeTreeDtoV2 opcion in primeTreeDtos)
             {
                 if (opcion.Key == "0")
@@ -50,6 +52,38 @@ namespace Galileo.DataBaseTier
             }
 
             return primeTreeDtos;
+        }
+
+        /// <summary>
+        /// Ajusta el formulario del menú Estudio de Crédito según SysPreaVersion.
+        /// </summary>
+        private void Prea_frmPreaEstudio_AplicarVersionMenu(
+            List<MenuDto> modulosHijos,
+            List<MenuDto> modulosFavoritos,
+            int codEmpresa,
+            string usuario)
+        {
+            var globalesResp = new MProGrxMain(_config).sbSifParametrosInicializa(codEmpresa, usuario);
+
+            if (globalesResp?.Code != 0 || globalesResp.Result == null)
+            {
+                return;
+            }
+
+            if (globalesResp.Result.SysPreaVersion != 2)
+            {
+                return;
+            }
+
+            foreach (var item in modulosHijos.Where(x => x.FORMULARIO == "frmPreaEstudio"))
+            {
+                item.FORMULARIO = "frmPreaEstudiov2";
+            }
+
+            foreach (var item in modulosFavoritos.Where(x => x.FORMULARIO == "frmPreaEstudio"))
+            {
+                item.FORMULARIO = "frmPreaEstudiov2";
+            }
         }
 
         private List<MenuDto> ObtenerModulosHijos(string usuario, int cliente)
