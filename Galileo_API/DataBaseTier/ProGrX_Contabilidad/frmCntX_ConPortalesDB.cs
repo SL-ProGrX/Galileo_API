@@ -183,9 +183,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto<List<CntXConPortalesContabilidadData>> CntXConPortales_Contabilidades_Obtener(
-            int codEmpresa, CntXConPortalesConexionRequest request)
+            int codEmpresa,
+            CntXConPortalesConexionRequest request)
         {
-            var connectionString = _mCntXProfesional.FxPortalPrueba(
+            var connectionString = CrearCadenaConexionSegura(
                 request.por_user,
                 request.por_password,
                 request.por_server,
@@ -214,19 +215,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var marcadas = request.cod_portal > 0
                     ? localConnection.Query<int>(
                         @"
-                        select COD_CONTABILIDAD
-                        from CNTX_CONSOLIDA_PORTALES_CONTAS
-                        where cod_portal = @codPortal;",
+                select COD_CONTABILIDAD
+                from CNTX_CONSOLIDA_PORTALES_CONTAS
+                where cod_portal = @codPortal;",
                         new { codPortal = request.cod_portal }).ToHashSet()
                     : new HashSet<int>();
 
                 var externas = portalConnection.Query<CntXConPortalesExternaData>(
                     @"
-                    select
-                        COD_CONTABILIDAD as cod_contabilidad,
-                        isnull(nombre, '') as nombre
-                    from CNTX_CONTABILIDADES
-                    order by COD_CONTABILIDAD;").ToList();
+                select
+                    COD_CONTABILIDAD as cod_contabilidad,
+                    isnull(nombre, '') as nombre
+                from CNTX_CONTABILIDADES
+                order by COD_CONTABILIDAD;").ToList();
 
                 var result = externas
                     .Select(x => new CntXConPortalesContabilidadData
@@ -505,6 +506,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 Movimiento = movimiento,
                 Modulo = vModulo
             });
+        }
+
+        private static bool TieneTextoConexionValido(string valor, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return false;
+            }
+
+            var limpio = valor.Trim();
+
+            if (limpio.Length > maxLength)
+            {
+                return false;
+            }
+
+            return !limpio.Contains('\0');
+        }
+
+        private static string CrearCadenaConexionSegura(
+            string usuario,
+            string clave,
+            string servidor,
+            string baseDatos)
+        {
+            if (!TieneTextoConexionValido(usuario, 30) ||
+                !TieneTextoConexionValido(clave, 128) ||
+                !TieneTextoConexionValido(servidor, 128) ||
+                !TieneTextoConexionValido(baseDatos, 128))
+            {
+                return string.Empty;
+            }
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = servidor.Trim(),
+                InitialCatalog = baseDatos.Trim(),
+                UserID = usuario.Trim(),
+                Password = clave.Trim(),
+                ConnectTimeout = 15,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
         }
     }
 }
