@@ -5,6 +5,7 @@ using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.ServiceModel.Channels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -126,15 +127,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 if (envioCorreo)
                 {
-                    RegistrarColaNotificacion(conn, tx, cuerpoCorreo, plantillaCorreo.asunto, "ECO", info.correo, request.usuario, string.Empty);
+                    RegistrarColaNotificacion(conn, tx,
+                        new RegistrarColaNotificacionRequest
+                        {
+                            mensaje = cuerpoCorreo,
+                            asunto = plantillaCorreo.asunto,
+                            tipoEnvio = "ECO",
+                            correo = info.correo,
+                            usuario = request.usuario,
+                            celular = string.Empty
+                        });
                 }
 
                 if (envioSms)
                 {
-                    RegistrarColaNotificacion(conn, tx, cuerpoSms, plantillaCorreo.asunto, "EMJ", info.correo, request.usuario, info.celular);
+                    RegistrarColaNotificacion(conn, tx, new RegistrarColaNotificacionRequest
+                    {
+                        mensaje = cuerpoSms,
+                        asunto = plantillaCorreo.asunto,
+                        tipoEnvio = "EMJ",
+                        correo = info.correo,
+                        usuario = request.usuario,
+                        celular = info.celular
+                    });
                 }
 
-                RegistrarBitacoraCorreo(conn, tx, info, cuerpoMensaje, cuerpoSms, envioSms, envioCorreo, request.usuario);
+                RegistrarBitacoraCorreo(conn, tx, info,
+                    new RegistrarBitacoraCorreoRequest
+                    {
+                        mensajeCorreo = cuerpoCorreo,
+                        mensajeSms = cuerpoSms,
+                        envioCorreo = envioCorreo,
+                        envioSms = envioSms,
+                        usuario = request.usuario
+                    });
                 RegistrarBitacoraSif(codEmpresa, request.usuario, info, plantillaCorreo.asunto);
 
                 tx.Commit();
@@ -159,7 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
         }
 
-        private string ObtenerTipoPlantilla(string estado, decimal montoSugerido)
+        private static string ObtenerTipoPlantilla(string estado, decimal montoSugerido)
         {
             if (estado.Trim().Equals("Denegado", StringComparison.OrdinalIgnoreCase))
                 return "DENEGA";
@@ -304,21 +330,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private static void RegistrarColaNotificacion(
             SqlConnection conn,
             SqlTransaction tx,
-            string mensaje,
-            string asunto,
-            string tipoEnvio,
-            string correo,
-            string usuario,
-            string celular)
+            RegistrarColaNotificacionRequest request
+            )
         {
             var parameters = new DynamicParameters();
-            parameters.Add("@pMensaje", mensaje ?? string.Empty, DbType.String);
-            parameters.Add("@pAsunto", asunto ?? string.Empty, DbType.String);
+            parameters.Add("@pMensaje", request.mensaje ?? string.Empty, DbType.String);
+            parameters.Add("@pAsunto", request.asunto ?? string.Empty, DbType.String);
             parameters.Add("@pEstado", "P", DbType.String);
-            parameters.Add("@pCorreo", correo?.Trim() ?? string.Empty, DbType.String);
-            parameters.Add("@pTipo", tipoEnvio?.Trim() ?? string.Empty, DbType.String);
-            parameters.Add("@pUsuario", usuario?.Trim() ?? string.Empty, DbType.String);
-            parameters.Add("@pCelular", celular?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@pCorreo", request.correo?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@pTipo", request.tipoEnvio?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@pUsuario", request.usuario?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@pCelular", request.celular?.Trim() ?? string.Empty, DbType.String);
 
             conn.Execute(
                 "spCRD_PREA_NOTIFICA_ENVIA_ALERTA",
@@ -331,21 +353,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             SqlConnection conn,
             SqlTransaction tx,
             FrmPreaNotificacionInfoInterna info,
-            string mensajeCorreo,
-            string mensajeSms,
-            bool envioSms,
-            bool envioCorreo,
-            string usuario)
+            RegistrarBitacoraCorreoRequest request
+            )
         {
             var parameters = new DynamicParameters();
             parameters.Add("@cod_preanalisis", info.cod_preanalisis?.Trim() ?? string.Empty, DbType.String);
-            parameters.Add("@mensaje", mensajeCorreo ?? string.Empty, DbType.String);
-            parameters.Add("@mensaje_sms", mensajeSms ?? string.Empty, DbType.String);
+            parameters.Add("@mensaje", request.mensajeCorreo ?? string.Empty, DbType.String);
+            parameters.Add("@mensaje_sms", request.mensajeSms ?? string.Empty, DbType.String);
             parameters.Add("@correo", info.correo?.Trim() ?? string.Empty, DbType.String);
             parameters.Add("@celular", info.celular?.Trim() ?? string.Empty, DbType.String);
-            parameters.Add("@ind_msj", envioSms ? "SI" : "NO", DbType.String);
-            parameters.Add("@ind_correo", envioCorreo ? "SI" : "NO", DbType.String);
-            parameters.Add("@usuario", usuario?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@ind_msj", request.envioSms ? "SI" : "NO", DbType.String);
+            parameters.Add("@ind_correo", request.envioCorreo ? "SI" : "NO", DbType.String);
+            parameters.Add("@usuario", request.usuario?.Trim() ?? string.Empty, DbType.String);
 
             conn.Execute(
                 "spCRD_PREA_RegistraBitacoraCorreo",

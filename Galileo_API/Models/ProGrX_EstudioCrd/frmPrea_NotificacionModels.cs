@@ -97,4 +97,23 @@
     {
         public string mensaje_sms { get; set; } = string.Empty;
     }
+
+    public class RegistrarColaNotificacionRequest
+    {
+        public string mensaje { get; set; } = string.Empty;
+        public string asunto { get; set; } = string.Empty;
+        public string tipoEnvio { get; set; } = string.Empty;
+        public string correo { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string celular { get; set; } = string.Empty;
+    }
+
+    public class RegistrarBitacoraCorreoRequest
+    {
+        public string mensajeCorreo { get; set; } = string.Empty;
+        public string mensajeSms { get; set; } = string.Empty;
+        public bool envioSms { get; set; } = false;
+        public bool envioCorreo { get; set; } = false;
+        public string usuario { get; set; } = string.Empty;
+    }
 }
