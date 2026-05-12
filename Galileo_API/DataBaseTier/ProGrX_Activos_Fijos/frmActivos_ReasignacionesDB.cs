@@ -42,16 +42,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MensajeBoletaNoGen  = "No se pudo generar la boleta de reasignación.";
         private const string MensajeTrasladoOk   = "Traslado realizado satisfactoriamente.";
 
-      
+
         // WHERE común para consultas de boletas
         private const string BoletasWhereBase = @"
-            FROM vActivos_TrasladosHistorico
-            WHERE 1 = 1
-              AND (@NumPlacaLike     IS NULL OR num_placa         LIKE @NumPlacaLike)
-              AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion  >= @FechaInicioDesde)
-              AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion  <= @FechaCorteHasta)
-              AND (@BoletaInicio     IS NULL OR cod_traslado      >= @BoletaInicio)
-              AND (@BoletaCorte      IS NULL OR cod_traslado      <= @BoletaCorte)";
+        FROM vActivos_TrasladosHistorico
+        WHERE 1 = 1
+          AND (@NumPlacaLike     IS NULL OR num_placa         LIKE @NumPlacaLike)
+          AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion  >= @FechaInicioDesde)
+          AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion  <= @FechaCorteHasta)
+          AND (@BoletaInicio     IS NULL OR cod_traslado      >= @BoletaInicio)
+          AND (@BoletaCorte      IS NULL OR cod_traslado      <= @BoletaCorte)
+          AND (
+                @filtro IS NULL
+                OR cod_traslado      LIKE @like
+                OR num_placa         LIKE @like
+                OR PLACA_ALTERNA     LIKE @like
+                OR Descripcion       LIKE @like
+                OR Registro_Usuario  LIKE @like
+                OR Persona           LIKE @like
+                OR Persona_Destino   LIKE @like
+                OR Motivo            LIKE @like
+                OR Estado_Desc       LIKE @like
+              )";
 
         // ORDER BY común para consultas de boletas
         private const string BoletasOrderBase = @"
@@ -84,6 +96,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             DateTime? FechaCorteHasta,
             string? BoletaInicio,
             string? BoletaCorte,
+            string? Filtro,
+            string? Like,
             int SortIndex,
             int SortDir
         );
@@ -166,7 +180,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 _                  => ColCodTraslado
             };
         }
+        private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
+        {
+            var texto = filtros?.filtro?.Trim();
 
+            if (string.IsNullOrWhiteSpace(texto))
+                return (null, null);
+
+            return (texto, $"%{texto}%");
+        }
         /// <summary>
         /// Construye parámetros comunes para consultas de boletas (lista y export).
         /// </summary>
@@ -191,13 +213,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
             var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
-
+            var (filtro, like) = BuildFiltroLike(filtros);
             return new BoletasFiltroInterno(
                 numPlacaLike,
                 fechaInicioDesde,
                 fechaCorteHasta,
                 boletaInicio,
                 boletaCorte,
+                filtro,
+                like,
                 sortIndex,
                 sortDir);
         }
@@ -563,8 +587,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 errores.Add("No se especificó el responsable nuevo.");
             if (string.IsNullOrWhiteSpace(data.cod_motivo))
                 errores.Add("No se indicó el motivo.");
-            if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
-                errores.Add("No se indicó la fecha de aplicación (YYYY-MM-DD).");
+            if (!data.fecha_aplicacion.HasValue)
+                errores.Add("No se indicó la fecha de aplicación.");
 
             return errores;
         }
@@ -616,10 +640,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@Usuario",         data.usuario);
                 p.Add("@Notas",           data.notas);
                 p.Add("@Estado",          "P");
-                p.Add("@FechaAplicacion", DateTime.ParseExact(
-                    data.fecha_aplicacion,
-                    FormatoFecha,
-                    CultureInfo.InvariantCulture));
+                p.Add("@FechaAplicacion", data.fecha_aplicacion, DbType.DateTime);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_ResponsableCambio",
@@ -697,10 +718,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     f.FechaCorteHasta,
                     f.BoletaInicio,
                     f.BoletaCorte,
+                    filtro = f.Filtro,
+                    like = f.Like,
                     sortIndex = f.SortIndex,
-                    sortDir   = f.SortDir,
+                    sortDir = f.SortDir,
                     offset,
-                    fetch     = filtros.paginacion
+                    fetch = filtros.paginacion
                 };
 
                 string qTotal = "SELECT COUNT(1) " + BoletasWhereBase + ";";
@@ -835,8 +858,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     f.FechaCorteHasta,
                     f.BoletaInicio,
                     f.BoletaCorte,
+                    filtro = f.Filtro,
+                    like = f.Like,
                     sortIndex = f.SortIndex,
-                    sortDir   = f.SortDir
+                    sortDir = f.SortDir
                 };
 
                 string qDatos = @"

@@ -15,7 +15,7 @@
             public string? cerrado_fecha { get; set; }
             public string? procesado_usuario { get; set; }
             public string? procesado_fecha { get; set; }
-            public string fecha_aplicacion { get; set; } = "";
+            public DateTime? fecha_aplicacion { get; set; }
             public string identificacion { get; set; } = "";
             public string persona { get; set; } = "";
             public string cod_departamento { get; set; } = "";
@@ -37,9 +37,9 @@
             public string identificacion { get; set; } = ""; 
             public string identificacion_destino { get; set; } = "";
             public string notas { get; set; } = "";            
-            public string usuario { get; set; } = "";            
-            public string fecha_aplicacion { get; set; } = "";  
-        }
+            public string usuario { get; set; } = "";
+            public DateTime? fecha_aplicacion { get; set; }
+    }
         public class ActivosReasignacionesBoletaResult
         {
             public string cod_traslado { get; set; } = "";
