@@ -17,8 +17,8 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
-        public int id_motivo { get; set; }
-        public bool activo { get; set; }
+        public int id_motivo { get; set; } = 0;
+        public bool activo { get; set; } = false
     }
 
     public class FrmPreaAbandonaMotivosRegistrarResponse

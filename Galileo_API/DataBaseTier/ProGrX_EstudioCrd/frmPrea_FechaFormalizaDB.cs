@@ -24,8 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCargarRequest request)
         {
-            var Result = new FrmPreaFechaFormalizaCargarResponse();
-
+           
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -36,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.StoredProcedure
                 ) ?? new FrmPreaFechaFormalizaBaseData();
 
-                Result = new FrmPreaFechaFormalizaCargarResponse
+                var Result = new FrmPreaFechaFormalizaCargarResponse
                 {
                     cod_preanalisis = request.cod_preanalisis.Trim(),
                     planilla_aplica = baseData.planilla_aplica,
@@ -65,8 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCalcularRequest request)
         {
-            var Result = new FrmPreaFechaFormalizaCalcularResponse();
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -91,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.StoredProcedure
                 ) ?? new FrmPreaFechaFormalizaCalculoSpData();
 
-                Result = new FrmPreaFechaFormalizaCalcularResponse
+                var Result = new FrmPreaFechaFormalizaCalcularResponse
                 {
                     fecha_corte = baseData.fecha_corte,
                     fecha_formaliza = request.fecha_formaliza,
@@ -115,8 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCambiarRequest request)
         {
-            var Result = new FrmPreaFechaFormalizaCambiarResponse();
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -133,7 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                        commandType: CommandType.StoredProcedure
                    );
 
-                Result = new FrmPreaFechaFormalizaCambiarResponse
+                var Result = new FrmPreaFechaFormalizaCambiarResponse
                 {
                     fecha_formaliza = request.fecha_formaliza,
                     monto_interes = request.monto_interes,

@@ -56,8 +56,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaAbandonaMotivosRegistrarRequest request)
         {
-            var Result = new FrmPreaAbandonaMotivosRegistrarResponse();
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -77,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.Text
                 );
 
-                Result = new FrmPreaAbandonaMotivosRegistrarResponse
+                var Result = new FrmPreaAbandonaMotivosRegistrarResponse
                 {
                     id_motivo = request.id_motivo,
                     activo = request.activo,
