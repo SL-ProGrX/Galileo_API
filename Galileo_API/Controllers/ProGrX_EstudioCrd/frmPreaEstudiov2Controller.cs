@@ -28,5 +28,13 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Hipotecario_Obtener(codEmpresa, request);
         }
 
+        [HttpPost("Prea_frmPreaEstudiov2_Abandonar")]
+        public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
+    int codEmpresa,
+    [FromBody] FrmPreaEstudiov2AbandonarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Abandonar(codEmpresa, request);
+        }
+
     }
 }
