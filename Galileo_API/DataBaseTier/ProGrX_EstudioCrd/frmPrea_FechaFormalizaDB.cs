@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX_EstudioCrd;
 using Galileo_API.Models.ProGrX_EstudioCrd.Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
 
@@ -23,13 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCargarRequest request)
         {
-            var response = new ErrorDto<FrmPreaFechaFormalizaCargarResponse>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmPreaFechaFormalizaCargarResponse()
-            };
-
+           
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -40,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.StoredProcedure
                 ) ?? new FrmPreaFechaFormalizaBaseData();
 
-                response.Result = new FrmPreaFechaFormalizaCargarResponse
+                var Result = new FrmPreaFechaFormalizaCargarResponse
                 {
                     cod_preanalisis = request.cod_preanalisis.Trim(),
                     planilla_aplica = baseData.planilla_aplica,
@@ -53,14 +48,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     monto_interes = 0
                 };
 
-                return response;
+                return DbHelper.CreateOkResponse<FrmPreaFechaFormalizaCargarResponse>(Result);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new FrmPreaFechaFormalizaCargarResponse();
-                return response;
+                return DbHelper.CreateErrorResponse<FrmPreaFechaFormalizaCargarResponse>(ex.Message);
             }
         }
 
@@ -72,13 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCalcularRequest request)
         {
-            var response = new ErrorDto<FrmPreaFechaFormalizaCalcularResponse>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmPreaFechaFormalizaCalcularResponse()
-            };
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -103,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.StoredProcedure
                 ) ?? new FrmPreaFechaFormalizaCalculoSpData();
 
-                response.Result = new FrmPreaFechaFormalizaCalcularResponse
+                var Result = new FrmPreaFechaFormalizaCalcularResponse
                 {
                     fecha_corte = baseData.fecha_corte,
                     fecha_formaliza = request.fecha_formaliza,
@@ -111,14 +97,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     monto_interes = calculo.monto_interes
                 };
 
-                return response;
+                return DbHelper.CreateOkResponse<FrmPreaFechaFormalizaCalcularResponse>(Result);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new FrmPreaFechaFormalizaCalcularResponse();
-                return response;
+                return DbHelper.CreateErrorResponse<FrmPreaFechaFormalizaCalcularResponse>(ex.Message);
             }
         }
 
@@ -130,13 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaFechaFormalizaCambiarRequest request)
         {
-            var response = new ErrorDto<FrmPreaFechaFormalizaCambiarResponse>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmPreaFechaFormalizaCambiarResponse()
-            };
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -153,21 +130,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                        commandType: CommandType.StoredProcedure
                    );
 
-                response.Result = new FrmPreaFechaFormalizaCambiarResponse
+                var Result = new FrmPreaFechaFormalizaCambiarResponse
                 {
                     fecha_formaliza = request.fecha_formaliza,
                     monto_interes = request.monto_interes,
                     mensaje = "Se ha realizado la acción correctamente."
                 };
 
-                return response;
+                return DbHelper.CreateOkResponse<FrmPreaFechaFormalizaCambiarResponse>(Result);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new FrmPreaFechaFormalizaCambiarResponse();
-                return response;
+                return DbHelper.CreateErrorResponse<FrmPreaFechaFormalizaCambiarResponse>(ex.Message);
             }
         }
     }
