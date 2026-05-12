@@ -806,6 +806,7 @@ namespace Galileo.DataBaseTier
                      SysCrdPlanPago,
                      SysDocVersion,
                      SysTesVersion,
+                     SysPreaVersion,
                      SYS_CCSS_IND
               FROM sif_empresa";
 
@@ -826,6 +827,7 @@ namespace Galileo.DataBaseTier
                 globales.SysDocVersion = empresa.SysDocVersion;
                 globales.SysTesVersion = empresa.SysTesVersion;
                 globales.SysASEVersion = empresa.SYS_CCSS_IND == 1;
+                globales.SysPreaVersion = empresa.SysPreaVersion;
 
                 // ============================================================
                 // 3. Cargar máscara contable
