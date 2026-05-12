@@ -21,7 +21,7 @@
         public string tipo { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public string cod_causas { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
     }
 
     public class FrmPreaSeguimientoCausasRegistrarResponse

@@ -77,8 +77,7 @@ ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
             int codEmpresa,
             FrmPreaSeguimientoCausasRegistrarRequest request)
         {
-            var Result = new FrmPreaSeguimientoCausasRegistrarResponse();
-
+            
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
@@ -141,7 +140,7 @@ WHERE cod_causas = @cod_causas
                     );
                 }
 
-                Result = new FrmPreaSeguimientoCausasRegistrarResponse
+                var Result = new FrmPreaSeguimientoCausasRegistrarResponse
                 {
                     cod_causas = request.cod_causas,
                     activo = request.activo,
