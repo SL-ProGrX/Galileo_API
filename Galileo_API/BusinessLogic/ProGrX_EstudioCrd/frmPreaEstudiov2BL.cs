@@ -40,6 +40,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             return _db.Prea_frmPreaEstudiov2_Hipotecario_Obtener(codEmpresa, request);
         }
 
+        public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
+    int codEmpresa,
+    FrmPreaEstudiov2AbandonarRequest request)
+        {
+            return _db.Prea_frmPreaEstudiov2_Abandonar(codEmpresa, request);
+        }
 
     }
 }
