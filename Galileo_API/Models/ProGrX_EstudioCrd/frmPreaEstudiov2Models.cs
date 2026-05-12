@@ -135,4 +135,22 @@
         }
     }
 
+    public class FrmPreaEstudiov2HipotecarioRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public long id_solicitud { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2HipotecarioResponse
+    {
+        public decimal monto_avaluo_factor_cfia { get; set; }
+        public bool habilita_montos_hipoteca { get; set; }
+        public bool habilita_sumar_avaluo_cfia { get; set; }
+        public bool habilita_garantia_hipoteca { get; set; }
+        public bool habilita_asignar_ingenieros { get; set; }
+        public bool habilita_cambio_estado { get; set; }
+        public string mensaje_bloqueo { get; set; } = string.Empty;
+    }
+
 }
