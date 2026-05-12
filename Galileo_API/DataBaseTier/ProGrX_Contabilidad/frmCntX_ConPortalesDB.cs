@@ -165,14 +165,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return new ErrorDto
                 {
                     Code = -2,
-                    Description = "No se pudo establecer conexión..."
+                    Description = "No se pudo establecer conexion..."
                 };
             }
 
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Conexión satisfactoria..."
+                Description = "Conexion satisfactoria..."
             };
         }
 
@@ -196,7 +196,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return new ErrorDto<List<CntXConPortalesContabilidadData>>
                 {
                     Code = -2,
-                    Description = "Verifique la conexión del portal.",
+                    Description = "Verifique la conexion del portal.",
                     Result = new List<CntXConPortalesContabilidadData>()
                 };
             }
@@ -262,15 +262,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
+        /// <summary>
         public ErrorDto CntXConPortales_Guardar(
-            int codEmpresa, string usuario, CntXConPortalesGuardarRequest request)
+            int codEmpresa,
+            string usuario,
+            CntXConPortalesGuardarRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.descripcion))
             {
                 return new ErrorDto
                 {
                     Code = -2,
-                    Description = "La descripción del portal no es válida."
+                    Description = "La descripci&oacute;n del portal no es v&aacute;lida."
                 };
             }
 
@@ -285,7 +288,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return new ErrorDto
                 {
                     Code = -2,
-                    Description = "La conexión del portal no es válida."
+                    Description = "La conexi&oacute;n del portal no es v&aacute;lida."
                 };
             }
 
@@ -294,116 +297,148 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             try
             {
                 using var connection = new SqlConnection(localConn);
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
 
                 var codPortal = request.cod_portal;
+                var usuarioTrim = (usuario ?? string.Empty).Trim().ToUpper();
+                var descripcion = (request.descripcion ?? string.Empty).Trim().ToUpper();
+                var observacion = (request.observacion ?? string.Empty).Trim();
+                var porUser = (request.por_user ?? string.Empty).Trim();
+                var porPassword = MCntXProfesionalDb.FxPortalCifrado(
+                    request.por_password,
+                    "C");
+                var porServer = (request.por_server ?? string.Empty).Trim();
+                var porDatabase = (request.por_database ?? string.Empty).Trim();
 
                 if (codPortal > 0)
                 {
                     connection.Execute(
                         @"
-                        update CNTX_CONSOLIDA_PORTALES
-                        set descripcion = @descripcion,
-                            observacion = @observacion,
-                            por_user = @porUser,
-                            por_password = @porPassword,
-                            por_server = @porServer,
-                            por_database = @porDatabase,
-                            modificado_usuario = @usuario,
-                            modificado_fecha = Getdate()
-                        where cod_portal = @codPortal;",
+                    update CNTX_CONSOLIDA_PORTALES
+                    set descripcion = @descripcion,
+                        observacion = @observacion,
+                        por_user = @porUser,
+                        por_password = @porPassword,
+                        por_server = @porServer,
+                        por_database = @porDatabase,
+                        modificado_usuario = @usuario,
+                        modificado_fecha = getdate()
+                    where cod_portal = @codPortal;",
                         new
                         {
-                            descripcion = request.descripcion.Trim().ToUpper(),
-                            observacion = (request.observacion ?? string.Empty).Trim(),
-                            porUser = (request.por_user ?? string.Empty).Trim(),
-                            porPassword = MCntXProfesionalDb.FxPortalCifrado(request.por_password, "C"),
-                            porServer = (request.por_server ?? string.Empty).Trim(),
-                            porDatabase = (request.por_database ?? string.Empty).Trim(),
-                            usuario = usuario.Trim(),
+                            descripcion,
+                            observacion,
+                            porUser,
+                            porPassword,
+                            porServer,
+                            porDatabase,
+                            usuario = usuarioTrim,
                             codPortal
-                        });
+                        },
+                        transaction);
 
-                    RegistrarBitacora(codEmpresa, usuario, "Modifica - WEB", $"Portal Codigo : {codPortal}");
+                    RegistrarBitacora(
+                        codEmpresa,
+                        usuarioTrim,
+                        "Modifica - WEB",
+                        $"Portal Codigo : {codPortal}");
                 }
                 else
                 {
-                    connection.Execute(
+                    codPortal = connection.ExecuteScalar<int>(
                         @"
-                        insert into CNTX_CONSOLIDA_PORTALES
-                        (
-                            descripcion,
-                            observacion,
-                            por_user,
-                            por_password,
-                            por_server,
-                            por_database,
-                            creado_usuario,
-                            creado_fecha
-                        )
-                        values
-                        (
-                            @codPortal,
-                            @descripcion,
-                            @observacion,
-                            @porUser,
-                            @porPassword,
-                            @porServer,
-                            @porDatabase,
-                            @usuario,
-                            getdate()
-                        );",
+                    insert into CNTX_CONSOLIDA_PORTALES
+                    (
+                        descripcion,
+                        observacion,
+                        por_user,
+                        por_password,
+                        por_server,
+                        por_database,
+                        creado_usuario,
+                        creado_fecha
+                    )
+                    output inserted.cod_portal
+                    values
+                    (
+                        @descripcion,
+                        @observacion,
+                        @porUser,
+                        @porPassword,
+                        @porServer,
+                        @porDatabase,
+                        @usuario,
+                        getdate()
+                    );",
                         new
                         {
-                            descripcion = request.descripcion.Trim().ToUpper(),
-                            observacion = (request.observacion ?? string.Empty).Trim(),
-                            porUser = (request.por_user ?? string.Empty).Trim(),
-                            porPassword = MCntXProfesionalDb.FxPortalCifrado(request.por_password, "C"),
-                            porServer = (request.por_server ?? string.Empty).Trim(),
-                            porDatabase = (request.por_database ?? string.Empty).Trim(),
-                            usuario = usuario.Trim()
-                        });
+                            descripcion,
+                            observacion,
+                            porUser,
+                            porPassword,
+                            porServer,
+                            porDatabase,
+                            usuario = usuarioTrim
+                        },
+                        transaction);
 
-                    RegistrarBitacora(codEmpresa, usuario, "Registra - WEB", $"Portal Codigo : {codPortal}");
-
-                    codPortal = connection.ExecuteScalar<int>(
-                        "select isnull(max(cod_portal), 0) + 1 from CNTX_CONSOLIDA_PORTALES");
+                    RegistrarBitacora(
+                        codEmpresa,
+                        usuarioTrim,
+                        "Registra - WEB",
+                        $"Portal Codigo : {codPortal}");
                 }
 
                 connection.Execute(
-                    "delete CNTX_CONSOLIDA_PORTALES_CONTAS where cod_portal = @codPortal",
-                    new { codPortal });
+                    "delete CNTX_CONSOLIDA_PORTALES_CON where cod_portal = @codPortal",
+                    new { codPortal },
+                    transaction);
 
-                foreach (var codContabilidad in request.contabilidades.Distinct().Where(x => x > 0))
+                connection.Execute(
+                    "delete CNTX_CONSOLIDA_PORTALES_CONTAS where cod_portal = @codPortal",
+                    new { codPortal },
+                    transaction);
+
+                var contabilidadesSeleccionadas = request.contabilidades
+                    .Where(x => x > 0)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var codContabilidad in contabilidadesSeleccionadas)
                 {
                     connection.Execute(
                         @"
-                        insert into CNTX_CONSOLIDA_PORTALES_CONTAS
-                        (
-                            cod_portal,
-                            COD_CONTABILIDAD,
-                            registro_usuario,
-                            registro_fecha
-                        )
-                        values
-                        (
-                            @codPortal,
-                            @codContabilidad,
-                            @usuario,
-                            getdate()
-                        );",
+                    insert into CNTX_CONSOLIDA_PORTALES_CONTAS
+                    (
+                        cod_portal,
+                        COD_CONTABILIDAD,
+                        registro_usuario,
+                        registro_fecha
+                    )
+                    values
+                    (
+                        @codPortal,
+                        @codContabilidad,
+                        @usuario,
+                        getdate()
+                    );",
                         new
                         {
                             codPortal,
                             codContabilidad,
-                            usuario = usuario.Trim()
-                        });
+                            usuario = usuarioTrim
+                        },
+                        transaction);
                 }
 
+                transaction.Commit();
 
                 return new ErrorDto
                 {
                     Code = codPortal,
-                    Description = "Información guardada satisfactoriamente..."
+                    Description = "Informacion guardada satisfactoriamente..."
                 };
             }
             catch (Exception ex)
@@ -426,21 +461,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto CntXConPortales_Borrar(
             int codEmpresa, int codPortal, string usuario)
         {
-            if (codPortal <= 0)
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar un portal válido."
-                };
-            }
-
             const string query = @"
-                delete CNTX_CONSOLIDA_PORTALES_CONTAS
-                where cod_portal = @codPortal;
+            delete CNTX_CONSOLIDA_PORTALES_CON
+            where cod_portal = @codPortal;
 
-                delete CNTX_CONSOLIDA_PORTALES
-                where cod_portal = @codPortal;";
+            delete CNTX_CONSOLIDA_PORTALES_CONTAS
+            where cod_portal = @codPortal;
+
+            delete CNTX_CONSOLIDA_PORTALES
+            where cod_portal = @codPortal;";
 
             var resp = DbHelper.ExecuteNonQuery(
                 _portalDb,
