@@ -138,7 +138,7 @@
     public class FrmPreaEstudiov2HipotecarioRequest
     {
         public string cod_preanalisis { get; set; } = string.Empty;
-        public long id_solicitud { get; set; }
+        public long id_solicitud { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
     }
 
