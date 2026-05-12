@@ -3,10 +3,12 @@ using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class FrmCntXCatalogoCuentasController : ControllerBase
     {
