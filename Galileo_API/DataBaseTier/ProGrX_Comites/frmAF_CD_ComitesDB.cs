@@ -40,6 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Ejecutivos = ObtenerEjecutivos(conn, codComite),
                     Miembros = ObtenerMiembros(conn, codComite, true),
                     Liquidaciones = ObtenerLiquidaciones(conn, codComite),
+                    LiquidacionesHistorico = ObtenerLiquidacionesHistorico(conn, codComite),
                     Mensajes = ObtenerMensajes(conn, codComite)
                 };
                 result.Result = detalle;
@@ -55,6 +56,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         }
 
         /// <summary>
+        /// Busca comites por codigo o descripcion.
+        /// </summary>
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarComites(int codEmpresa, string? filtro)
+        {
+            const string sql = @"
+                SELECT TOP 100 cod_comite AS Codigo, descripcion AS Descripcion
+                FROM afi_cd_comites
+                WHERE cod_comite LIKE @Filtro OR descripcion LIKE @Filtro
+                ORDER BY cod_comite";
+            return DbHelper.ExecuteListQuery<AfCdComiteListaDto>(_portalDb, codEmpresa, sql, new { Filtro = $"%{NormalizarFiltro(filtro)}%" });
+        }
+
+        /// <summary>
         /// Lista directores disponibles para el formulario.
         /// </summary>
         public ErrorDto<List<AfCdDirectorDto>> AfCdComites_DirectoresLista(int codEmpresa)
@@ -66,7 +80,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca unidades programaticas por codigo o descripcion.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarUnidades(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarUnidades(int codEmpresa, string? filtro)
         {
             const string sql = @"
                 SELECT TOP 100 codigo AS Codigo, descripcion AS Descripcion
@@ -79,7 +93,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca actividades por descripcion o codigo.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarActividades(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarActividades(int codEmpresa, string? filtro)
         {
             const string sql = @"
                 SELECT TOP 100 CAST(cod_actividad AS varchar(20)) AS Codigo, descripcion AS Descripcion
@@ -92,7 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca promotores ejecutivos activos por nombre o codigo.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarEjecutivos(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarEjecutivos(int codEmpresa, string? filtro)
         {
             const string sql = @"
                 SELECT TOP 100 CAST(id_promotor AS varchar(20)) AS Codigo, nombre AS Descripcion
@@ -100,6 +114,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 WHERE tipo = 'P' AND (CAST(id_promotor AS varchar(20)) LIKE @Filtro OR nombre LIKE @Filtro)
                 ORDER BY nombre";
             return DbHelper.ExecuteListQuery<AfCdComiteListaDto>(_portalDb, codEmpresa, sql, new { Filtro = $"%{NormalizarFiltro(filtro)}%" });
+        }
+
+        /// <summary>
+        /// Busca asociados disponibles para miembros del comite.
+        /// </summary>
+        public ErrorDto<List<AfCdComiteMiembroDto>> AfCdComites_BuscarMiembros(int codEmpresa, string? filtro)
+        {
+            const string sql = @"
+                SELECT TOP 100 cedula AS Cedula, nombre AS Nombre, af_email AS Af_Email
+                FROM socios
+                WHERE estadoactual = 'S'
+                  AND (cedula LIKE @Filtro OR nombre LIKE @Filtro)
+                ORDER BY nombre";
+            return DbHelper.ExecuteListQuery<AfCdComiteMiembroDto>(_portalDb, codEmpresa, sql, new { Filtro = $"%{NormalizarFiltro(filtro)}%" });
         }
 
         /// <summary>
@@ -154,6 +182,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Ejecutivos = ObtenerEjecutivos(conn, codComiteSiguiente),
                     Miembros = ObtenerMiembros(conn, codComiteSiguiente, true),
                     Liquidaciones = ObtenerLiquidaciones(conn, codComiteSiguiente),
+                    LiquidacionesHistorico = ObtenerLiquidacionesHistorico(conn, codComiteSiguiente),
                     Mensajes = ObtenerMensajes(conn, codComiteSiguiente)
                 };
             }
@@ -255,9 +284,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene datos de un asociado y su nombramiento actual si existe.
         /// </summary>
-        public ErrorDto<AfCdComiteMiembroDto?> AfCdComites_DatosMiembro(int codEmpresa, string cedula)
+        public ErrorDto<AfCdComiteMiembroDto?> AfCdComites_DatosMiembro(int codEmpresa, string cedula, string? codComite)
         {
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn => ObtenerDatosMiembro(conn, cedula));
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn => ObtenerDatosMiembro(conn, cedula, codComite));
         }
 
         /// <summary>
@@ -444,6 +473,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return conn.Query<AfCdComiteLiquidacionDto>(sql, new { CodComite = codComite }).ToList();
         }
 
+        private static List<AfCdComiteLiquidacionDto> ObtenerLiquidacionesHistorico(SqlConnection conn, string codComite)
+        {
+            const string sql = @"
+                SELECT A.noperacion AS Noperacion, C.notas AS Notas, SUM(A.monto) AS Monto,
+                       C.tesoreria_nsolicitud AS Tesoreria_Nsolicitud, C.liquida_fecha AS Liquida_Fecha
+                FROM afi_cd_cuentas C
+                INNER JOIN afi_cd_cuentas_actividades A ON C.noperacion = A.noperacion
+                WHERE C.cod_comite = @CodComite AND C.estado = 'L'
+                GROUP BY C.notas, A.noperacion, C.estado, C.tesoreria_nsolicitud, C.liquida_fecha
+                ORDER BY C.liquida_fecha DESC, A.noperacion";
+            return conn.Query<AfCdComiteLiquidacionDto>(sql, new { CodComite = codComite }).ToList();
+        }
+
         private static List<AfCdComiteMensajeDto> ObtenerMensajes(SqlConnection conn, string codComite)
         {
             const string sql = @"
@@ -454,7 +496,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             return conn.Query<AfCdComiteMensajeDto>(sql, new { CodComite = codComite }).ToList();
         }
 
-        private static AfCdComiteMiembroDto? ObtenerDatosMiembro(SqlConnection conn, string cedula)
+        private static AfCdComiteMiembroDto? ObtenerDatosMiembro(SqlConnection conn, string cedula, string? codComite)
         {
             const string sql = @"
                 SELECT TOP 1 S.cedula AS Cedula, S.nombre AS Nombre, UT.ut_descripcion AS Ut_Descripcion,
@@ -463,10 +505,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                        N.telefono_jefe AS Telefono_Jefe, N.celular_jefe AS Celular_Jefe, N.correo_jefe AS Correo_Jefe,
                        N.rango_jefe AS Rango_Jefe, N.fecha_eleccion AS Fecha_Eleccion
                 FROM socios S
-                LEFT JOIN afi_cd_nombramientos N ON N.cedula = S.cedula
+                LEFT JOIN afi_cd_nombramientos N ON N.cedula = S.cedula AND N.cod_comite = @CodComite
                 LEFT JOIN utrabajo UT ON UT.ut_codigo = S.ut
                 WHERE S.cedula = @Cedula";
-            var miembro = conn.QueryFirstOrDefault<AfCdComiteMiembroDto>(sql, new { Cedula = cedula });
+            var miembro = conn.QueryFirstOrDefault<AfCdComiteMiembroDto>(sql, new { Cedula = cedula, CodComite = codComite });
             if (miembro == null)
             {
                 return null;
@@ -588,7 +630,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             };
         }
 
-        private static string NormalizarFiltro(string filtro)
+        private static string NormalizarFiltro(string? filtro)
         {
             return (filtro ?? string.Empty).Trim();
         }

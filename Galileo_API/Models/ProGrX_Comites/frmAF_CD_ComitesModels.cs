@@ -76,6 +76,7 @@ namespace Galileo_API.Models.ProGrX_Comites
         public List<AfCdComiteListaDto> Ejecutivos { get; set; } = new();
         public List<AfCdComiteMiembroDto> Miembros { get; set; } = new();
         public List<AfCdComiteLiquidacionDto> Liquidaciones { get; set; } = new();
+        public List<AfCdComiteLiquidacionDto> LiquidacionesHistorico { get; set; } = new();
         public List<AfCdComiteMensajeDto> Mensajes { get; set; } = new();
     }
 
