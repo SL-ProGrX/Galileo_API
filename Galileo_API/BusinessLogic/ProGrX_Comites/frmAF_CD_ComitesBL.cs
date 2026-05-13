@@ -20,6 +20,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
             => _db.AfCdComites_Detalle(codEmpresa, codComite);
 
         /// <summary>
+        /// Busca comites por filtro.
+        /// </summary>
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarComites(int codEmpresa, string? filtro)
+            => _db.AfCdComites_BuscarComites(codEmpresa, filtro);
+
+        /// <summary>
         /// Lista directores disponibles.
         /// </summary>
         public ErrorDto<List<AfCdDirectorDto>> AfCdComites_DirectoresLista(int codEmpresa)
@@ -28,20 +34,26 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
         /// <summary>
         /// Busca unidades programaticas por filtro.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarUnidades(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarUnidades(int codEmpresa, string? filtro)
             => _db.AfCdComites_BuscarUnidades(codEmpresa, filtro);
 
         /// <summary>
         /// Busca actividades por filtro.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarActividades(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarActividades(int codEmpresa, string? filtro)
             => _db.AfCdComites_BuscarActividades(codEmpresa, filtro);
 
         /// <summary>
         /// Busca ejecutivos por filtro.
         /// </summary>
-        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarEjecutivos(int codEmpresa, string filtro)
+        public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarEjecutivos(int codEmpresa, string? filtro)
             => _db.AfCdComites_BuscarEjecutivos(codEmpresa, filtro);
+
+        /// <summary>
+        /// Busca asociados disponibles para miembros.
+        /// </summary>
+        public ErrorDto<List<AfCdComiteMiembroDto>> AfCdComites_BuscarMiembros(int codEmpresa, string? filtro)
+            => _db.AfCdComites_BuscarMiembros(codEmpresa, filtro);
 
         /// <summary>
         /// Busca el comite asociado a una unidad.
@@ -82,8 +94,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Comites
         /// <summary>
         /// Obtiene datos de un miembro.
         /// </summary>
-        public ErrorDto<AfCdComiteMiembroDto?> AfCdComites_DatosMiembro(int codEmpresa, string cedula)
-            => _db.AfCdComites_DatosMiembro(codEmpresa, cedula);
+        public ErrorDto<AfCdComiteMiembroDto?> AfCdComites_DatosMiembro(int codEmpresa, string cedula, string? codComite)
+            => _db.AfCdComites_DatosMiembro(codEmpresa, cedula, codComite);
 
         /// <summary>
         /// Guarda datos de un miembro.

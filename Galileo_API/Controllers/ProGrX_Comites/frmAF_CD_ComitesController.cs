@@ -20,21 +20,29 @@ namespace Galileo_API.Controllers.ProGrX_Comites
         public ActionResult<ErrorDto<AfCdComiteDetalleDto>> AfCdComites_Detalle([FromQuery] int codEmpresa, [FromQuery] string codComite)
             => _bl.AfCdComites_Detalle(codEmpresa, codComite);
 
+        [HttpGet("AfCdComites_BuscarComites")]
+        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarComites([FromQuery] int codEmpresa, [FromQuery] string? filtro)
+            => _bl.AfCdComites_BuscarComites(codEmpresa, filtro);
+
         [HttpGet("AfCdComites_DirectoresLista")]
         public ActionResult<ErrorDto<List<AfCdDirectorDto>>> AfCdComites_DirectoresLista([FromQuery] int codEmpresa)
             => _bl.AfCdComites_DirectoresLista(codEmpresa);
 
         [HttpGet("AfCdComites_BuscarUnidades")]
-        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarUnidades([FromQuery] int codEmpresa, [FromQuery] string filtro)
+        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarUnidades([FromQuery] int codEmpresa, [FromQuery] string? filtro)
             => _bl.AfCdComites_BuscarUnidades(codEmpresa, filtro);
 
         [HttpGet("AfCdComites_BuscarActividades")]
-        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarActividades([FromQuery] int codEmpresa, [FromQuery] string filtro)
+        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarActividades([FromQuery] int codEmpresa, [FromQuery] string? filtro)
             => _bl.AfCdComites_BuscarActividades(codEmpresa, filtro);
 
         [HttpGet("AfCdComites_BuscarEjecutivos")]
-        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarEjecutivos([FromQuery] int codEmpresa, [FromQuery] string filtro)
+        public ActionResult<ErrorDto<List<AfCdComiteListaDto>>> AfCdComites_BuscarEjecutivos([FromQuery] int codEmpresa, [FromQuery] string? filtro)
             => _bl.AfCdComites_BuscarEjecutivos(codEmpresa, filtro);
+
+        [HttpGet("AfCdComites_BuscarMiembros")]
+        public ActionResult<ErrorDto<List<AfCdComiteMiembroDto>>> AfCdComites_BuscarMiembros([FromQuery] int codEmpresa, [FromQuery] string? filtro)
+            => _bl.AfCdComites_BuscarMiembros(codEmpresa, filtro);
 
         [HttpGet("AfCdComites_BuscarPorUnidad")]
         public ActionResult<ErrorDto<string?>> AfCdComites_BuscarPorUnidad([FromQuery] int codEmpresa, [FromQuery] string codigoUp)
@@ -61,8 +69,8 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             => _bl.AfCdComites_Miembros(codEmpresa, codComite, activos);
 
         [HttpGet("AfCdComites_DatosMiembro")]
-        public ActionResult<ErrorDto<AfCdComiteMiembroDto?>> AfCdComites_DatosMiembro([FromQuery] int codEmpresa, [FromQuery] string cedula)
-            => _bl.AfCdComites_DatosMiembro(codEmpresa, cedula);
+        public ActionResult<ErrorDto<AfCdComiteMiembroDto?>> AfCdComites_DatosMiembro([FromQuery] int codEmpresa, [FromQuery] string cedula, [FromQuery] string? codComite)
+            => _bl.AfCdComites_DatosMiembro(codEmpresa, cedula, codComite);
 
         [HttpPost("AfCdComites_GuardarMiembro")]
         public ActionResult<ErrorDto<bool>> AfCdComites_GuardarMiembro([FromQuery] int codEmpresa, [FromBody] AfCdComiteMiembroGuardarRequest request)
