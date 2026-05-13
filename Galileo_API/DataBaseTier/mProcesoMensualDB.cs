@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using Dapper;
+using static Galileo_API.Models.MProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -74,7 +75,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="cuenta"></param>
         /// <param name="usuario"></param>
         /// <param name="numeroDocumento"></param>
-        public static void SbFndAsiento(IDbConnection connection, decimal proceso, int codInstitucion, int operadora, string plan, string cuenta, string usuario, string numeroDocumento = "")
+        public static void SbFndAsiento(IDbConnection connection, ProcesoMensualFndAsientoRequest request)
         {
             const string query = @"
                 EXEC spPrmFndAsiento
@@ -88,13 +89,13 @@ namespace Galileo_API.DataBaseTier
 
             connection.Execute(query, new
             {
-                Proceso = proceso,
-                CodInstitucion = codInstitucion,
-                Operadora = operadora,
-                Plan = plan?.Trim() ?? string.Empty,
-                Cuenta = cuenta?.Trim() ?? string.Empty,
-                NumeroDocumento = numeroDocumento ?? string.Empty,
-                Usuario = usuario
+                request.Proceso,
+                request.CodInstitucion,
+                request.Operadora,
+                Plan = request.Plan.Trim(),
+                Cuenta = request.Cuenta.Trim(),
+                NumeroDocumento = request.NumeroDocumento ?? string.Empty,
+                request.Usuario
             });
         }
     }
