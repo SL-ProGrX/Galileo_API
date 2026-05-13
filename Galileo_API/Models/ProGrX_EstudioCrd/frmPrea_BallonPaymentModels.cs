@@ -57,12 +57,12 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
-        public int periodicidad { get; set; }
-        public decimal tasa { get; set; }
-        public int plazo { get; set; }
-        public decimal cuota_balloon { get; set; }
-        public decimal cuota { get; set; }
-        public decimal monto { get; set; }
+        public int periodicidad { get; set; } = 0;
+        public decimal tasa { get; set; } = 0;
+        public int plazo { get; set; } = 0;
+        public decimal cuota_balloon { get; set; } = 0;
+        public decimal cuota { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
     }
 
     public class FrmPreaBallonPaymentGuardarResponse
@@ -78,16 +78,16 @@
 
     public class FrmPreaBallonPaymentTablaPagoItem
     {
-        public int id_cuota { get; set; }
-        public decimal monto_cuota { get; set; }
-        public decimal amortiza { get; set; }
-        public decimal intereses { get; set; }
-        public decimal monto_principal { get; set; }
+        public int id_cuota { get; set; } = 0;
+        public decimal monto_cuota { get; set; } = 0;
+        public decimal amortiza { get; set; } = 0;
+        public decimal intereses { get; set; } = 0;
+        public decimal monto_principal { get; set; } = 0;
     }
 
     public class FrmPreaBallonPaymentPeriodicidadItem
     {
-        public int idx { get; set; }
+        public int idx { get; set; } = 0;
         public string itmx { get; set; } = string.Empty;
     }
 }

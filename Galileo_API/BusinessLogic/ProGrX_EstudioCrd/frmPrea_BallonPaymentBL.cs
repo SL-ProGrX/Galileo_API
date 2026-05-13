@@ -7,7 +7,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
     public class FrmPreaBallonPaymentBL
     {
         private readonly FrmPreaBallonPaymentDB _db;
-
+        private const string validaExpediente = "Debe indicar el expediente.";
         public FrmPreaBallonPaymentBL(IConfiguration config)
         {
             _db = new FrmPreaBallonPaymentDB(config);
@@ -23,7 +23,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaBallonPaymentCargarResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente.",
+                    Description = validaExpediente,
                     Result = new FrmPreaBallonPaymentCargarResponse()
                 };
             }
@@ -41,7 +41,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaBallonPaymentTablaPagosResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente.",
+                    Description = validaExpediente,
                     Result = new FrmPreaBallonPaymentTablaPagosResponse()
                 };
             }
@@ -58,7 +58,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaBallonPaymentCalcularResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente.",
+                    Description = validaExpediente,
                     Result = new FrmPreaBallonPaymentCalcularResponse()
                 };
             }
@@ -125,7 +125,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaBallonPaymentCondicionesGuardarResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente.",
+                    Description = validaExpediente,
                     Result = new FrmPreaBallonPaymentCondicionesGuardarResponse()
                 };
             }
@@ -142,7 +142,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaBallonPaymentGuardarResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente.",
+                    Description = validaExpediente,
                     Result = new FrmPreaBallonPaymentGuardarResponse()
                 };
             }
