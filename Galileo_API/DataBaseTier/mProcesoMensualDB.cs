@@ -98,5 +98,91 @@ namespace Galileo_API.DataBaseTier
                 request.Usuario
             });
         }
+
+        /// <summary>
+        /// Metodo para ejecutar el proceso de envío a tránsito con planilla, que incluye la creación del espejo, la aplicación de masivo y abonos restantes en falso, y la generación de resultados para cuotas ordinarias y morosas.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="codInstitucion"></param>
+        /// <param name="fechaProceso"></param>
+        public static void SbCrEnviaConPlanillaTransito(IDbConnection connection, int codInstitucion, decimal glngFechaCR, decimal fechaProceso)
+        {
+
+            CrearEspejoPlanillaTransito(connection, codInstitucion, fechaProceso);
+            AplicarMasivoEnFalso(connection, codInstitucion, fechaProceso);
+            AplicarAbonosRestantesEnFalso(connection, codInstitucion, glngFechaCR);
+            GenerarResultadosCuotasOrdinarias(connection, codInstitucion, fechaProceso);
+            GenerarResultadosCuotasMorosas(connection, codInstitucion, fechaProceso);
+        }
+        private static void CrearEspejoPlanillaTransito(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @" EXEC spPrmCreditoEnviaTransitoEspejo @CodInstitucion, @FechaProceso";
+
+            connection.Execute(query, new
+            {
+                CodInstitucion = codInstitucion,
+                FechaProceso = fechaProceso
+            });
+        }
+        private static void AplicarMasivoEnFalso(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @" EXEC spPrmCreditoEnviaTransitoAplicaMasivo @CodInstitucion, @FechaProceso";
+
+            connection.Execute(query, new
+            {
+                CodInstitucion = codInstitucion,
+                FechaProceso = fechaProceso
+            });
+        }
+        private static void AplicarAbonosRestantesEnFalso(IDbConnection connection, int codInstitucion, decimal glngFechaCR)
+        {
+            var estado = EjecutarBloqueRestante(connection, codInstitucion, glngFechaCR);
+
+            while (estado.Pendientes > 0)
+            {
+                estado = EjecutarBloqueRestante(connection, codInstitucion, glngFechaCR);
+            }
+        }
+        private static SbCrEnviaConPlanillaTransitoModel EjecutarBloqueRestante(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @"
+                EXEC spPrmCreditoEnviaTransitoAplicaRestante @CodInstitucion,  @FechaProceso,  @Bloque";
+
+            return connection.QueryFirstOrDefault<SbCrEnviaConPlanillaTransitoModel>(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaProceso = fechaProceso,
+                    Bloque = 300
+                }) ?? new SbCrEnviaConPlanillaTransitoModel();
+        }
+        private static void GenerarResultadosCuotasOrdinarias(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @"
+                EXEC spPrmCreditoEnviaTransitoCuotaOrdinaria
+                    @FechaProceso,
+                    @CodInstitucion";
+
+            connection.Execute(query, new
+            {
+                FechaProceso = fechaProceso,
+                CodInstitucion = codInstitucion
+            });
+        }
+        private static void GenerarResultadosCuotasMorosas(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @"
+                EXEC spPrmCreditoEnviaTransitoCuotaMorosa
+                    @FechaProceso,
+                    @CodInstitucion";
+
+            connection.Execute(query, new
+            {
+                FechaProceso = fechaProceso,
+                CodInstitucion = codInstitucion
+            });
+        }
+
     }
 }

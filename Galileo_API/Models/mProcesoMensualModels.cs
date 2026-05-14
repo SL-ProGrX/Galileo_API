@@ -12,5 +12,11 @@
             public string Usuario { get; set; } = string.Empty;
             public string NumeroDocumento { get; set; } = string.Empty;
         }
+        public class SbCrEnviaConPlanillaTransitoModel
+        {
+            public int Total { get; set; }
+            public int Pendientes { get; set; }
+            public int Procesados { get; set; }
+        }
     }
 }
