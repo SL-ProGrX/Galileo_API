@@ -33,104 +33,104 @@
         public required string estado { get; set; }
         public required string cod_moneda { get; set; }
         public string? tipoplan { get; set; }
-        public int codtipoplan { get; set; }
+        public required int codtipoplan { get; set; }
         public string? grupo { get; set; }
         public string? codgrupo { get; set; }
         public string? tipodeduc { get; set; }
-        public decimal porc_deduc { get; set; }
-        public int plazo_minimo { get; set; }
+        public required decimal porc_deduc { get; set; }
+        public required int plazo_minimo { get; set; }
         public required string plazo_tipo { get; set; }
-        public decimal monto_minimo { get; set; }
-        public decimal inversion_minimo { get; set; }
+        public required decimal monto_minimo { get; set; }
+        public required decimal inversion_minimo { get; set; }
         public string? linea_codigo { get; set; }
         public string? linea_descripcion { get; set; }
-        public bool deducir_planilla { get; set; }
-        public bool genera_mora { get; set; }
-        public bool cdp { get; set; }
-        public bool controla_saldo { get; set; }
-        public bool cuenta_maestra { get; set; }
-        public int subcuentas_max { get; set; }
-        public decimal tasa_margen_negociacion { get; set; }
-        public bool requiere_beneficiarios { get; set; }
-        public bool deduce_independiente { get; set; }
-        public bool calcula_rend { get; set; }
-        public int base_calculo { get; set; }
-        public decimal tasa_base { get; set; }
-        public bool tasa_fluctuante { get; set; }
-        public bool capitaliza_rend { get; set; }
-        public bool utiliza_tbp { get; set; }
-        public bool sirve_garantia { get; set; }
-        public decimal garantia_porc_disp { get; set; }
-        public decimal garantia_tasa_ad { get; set; }
-        public bool garantia_integrada { get; set; }
-        public bool mov_cajas { get; set; }
+        public required bool deducir_planilla { get; set; }
+        public required bool genera_mora { get; set; }
+        public required bool cdp { get; set; }
+        public required bool controla_saldo { get; set; }
+        public required bool cuenta_maestra { get; set; }
+        public required int subcuentas_max { get; set; }
+        public required decimal tasa_margen_negociacion { get; set; }
+        public required bool requiere_beneficiarios { get; set; }
+        public required bool deduce_independiente { get; set; }
+        public required bool calcula_rend { get; set; }
+        public required int base_calculo { get; set; }
+        public required decimal tasa_base { get; set; }
+        public required bool tasa_fluctuante { get; set; }
+        public required bool capitaliza_rend { get; set; }
+        public required bool utiliza_tbp { get; set; }
+        public required bool sirve_garantia { get; set; }
+        public required decimal garantia_porc_disp { get; set; }
+        public required decimal garantia_tasa_ad { get; set; }
+        public required bool garantia_integrada { get; set; }
+        public required bool mov_cajas { get; set; }
         public string? mov_sinpe_tipos { get; set; }
-        public bool retiros_cajas { get; set; }
-        public bool giro_terceros { get; set; }
-        public bool website { get; set; }
-        public bool web_liquida { get; set; }
+        public required bool retiros_cajas { get; set; }
+        public required bool giro_terceros { get; set; }
+        public required bool website { get; set; }
+        public required bool web_liquida { get; set; }
         public DateTime? web_vence { get; set; }
-        public bool renta_global { get; set; }
+        public required bool renta_global { get; set; }
         public string? patrimonio_tipo { get; set; }
         public string? lineadesc { get; set; }
         public string? codigo_ase { get; set; }
-        public bool mov_sinpe { get; set; }
+        public required bool mov_sinpe { get; set; }
         public string resumen_cont_tasa { get; set; } = "";
-        public int num_contratos_activos { get; set; }
+        public required int num_contratos_activos { get; set; }
         public DateTime? ulttasa { get; set; }
-        public int contratos_activos_vb6 { get; set; }
+        public required int contratos_activos_vb6 { get; set; }
         public DateTime? ultima_tasa_vb6 { get; set; }
         public int? contador_tasas_vb6 { get; set; }
         public decimal? ulttasa_vb6 { get; set; }
         public decimal? consecutivo { get; set; }
-        public bool tipo_cdp { get; set; }
-        public bool pago_cupones { get; set; }
-        public bool sinpe_cuenta { get; set; }
-        public bool apl_rend_automatico { get; set; }
-        public bool utiliza_tasa_fluctuante { get; set; }
-        public bool capitaliza_rendimientos { get; set; }
-        public bool tasa_ajuste_vencimiento { get; set; }
-        public decimal tasa_ajuste { get; set; }
-        public bool permite_mov_cajas { get; set; }
-        public bool forma_pago_pos { get; set; }
-        public bool permite_retiros_cajas { get; set; }
-        public bool permite_giro_terceros { get; set; }
-        public bool mov_entre_fondos { get; set; }
-        public bool mov_entre_fondos_terceros { get; set; }
+        public required bool tipo_cdp { get; set; }
+        public required bool pago_cupones { get; set; }
+        public required bool sinpe_cuenta { get; set; }
+        public required bool apl_rend_automatico { get; set; }
+        public required bool utiliza_tasa_fluctuante { get; set; }
+        public required bool capitaliza_rendimientos { get; set; }
+        public required bool tasa_ajuste_vencimiento { get; set; }
+        public required decimal tasa_ajuste { get; set; }
+        public required bool permite_mov_cajas { get; set; }
+        public required bool forma_pago_pos { get; set; }
+        public required bool permite_retiros_cajas { get; set; }
+        public required bool permite_giro_terceros { get; set; }
+        public required bool mov_entre_fondos { get; set; }
+        public required bool mov_entre_fondos_terceros { get; set; }
         // ====== GENERAL ======
-        public bool apl_liq_socio { get; set; }
-        public bool liq_desde_ahorros { get; set; }
-        public bool permite_retiros_terceros { get; set; }
-        public bool visible_ec { get; set; }
+        public required bool apl_liq_socio { get; set; }
+        public required bool liq_desde_ahorros { get; set; }
+        public required bool permite_retiros_terceros { get; set; }
+        public required bool visible_ec { get; set; }
 
         // ====== AUTO GESTIÓN ======
         //public bool vence_plan { get; set; }                  // Checkbox "Vence?"
-        public bool web_crear { get; set; }                   // Crear nuevos contratos
-        public bool web_modifica_couta { get; set; }          // Modifica cuota
-        public bool permite_ret_parcial { get; set; }         // Permite retiros parciales
+        public required bool web_crear { get; set; }                   // Crear nuevos contratos
+        public required bool web_modifica_couta { get; set; }          // Modifica cuota
+        public required bool permite_ret_parcial { get; set; }         // Permite retiros parciales
 
         // ====== SINPE / PATRIMONIO ======
-        public bool patrimonio_enlace { get; set; }           // Enlazado a Patrimonio
-        public bool patrimonio_unifica { get; set; }          // Unificar en estado de cuenta patrimonio
+        public required bool patrimonio_enlace { get; set; }           // Enlazado a Patrimonio
+        public required bool patrimonio_unifica { get; set; }          // Unificar en estado de cuenta patrimonio
 
         // ====== COMISIONES ======
-        public decimal tasa_comision_aportes { get; set; }
-        public decimal impuesto_rendimientos { get; set; }
-        public decimal tasa_comision_rend { get; set; }
+        public required decimal tasa_comision_aportes { get; set; }
+        public required decimal impuesto_rendimientos { get; set; }
+        public required decimal tasa_comision_rend { get; set; }
 
         // ====== OTROS ======
-        public decimal comision_vta_inv { get; set; }
-        public decimal comision_vta_monto { get; set; }
+        public required decimal comision_vta_inv { get; set; }
+        public required decimal comision_vta_monto { get; set; }
         // ====== CAMPOS SINPE EXTRA ======
         public string sinpe_producto { get; set; } = "";
         // ====== CAMPOS DE RESUMEN VB6 ======
-        public bool sif_liquida { get; set; }
+        public required bool sif_liquida { get; set; }
         public DateTime? fechaserver { get; set; }
-        public decimal impuesto_renta { get; set; }
-        public bool aplicar_tasa_cont_vencidos { get; set; }
-        public bool aplicar_en_procs_contrs_vencidos { get; set; }
-        public bool vence_renueva { get; set; }
-        public bool vence_notifica { get; set; }
+        public required decimal impuesto_renta { get; set; }
+        public required bool aplicar_tasa_cont_vencidos { get; set; }
+        public required bool aplicar_en_procs_contrs_vencidos { get; set; }
+        public required bool vence_renueva { get; set; }
+        public required bool vence_notifica { get; set; }
         public string vence_accion { get; set; } = "";
         public string? ctaplan { get; set; }
         public string? ctaplandesc { get; set; }
