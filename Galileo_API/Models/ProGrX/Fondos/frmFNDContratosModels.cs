@@ -428,12 +428,12 @@ namespace Galileo.Models.ProGrX.Fondos
         public int idx { get; set; }
         public string? cedula { get; set; }
         public string? nombre { get; set; }
-        public decimal cuota { get; set; }
+        public required decimal cuota { get; set; }
 
-        public int cod_operadora { get; set; }
+        public required int cod_operadora { get; set; }
         public string? cod_plan { get; set; }
-        public long cod_contrato { get; set; }
-        public bool isNew { get; set; }
+        public required long cod_contrato { get; set; }
+        public required bool isNew { get; set; }
     }
 
     public class FndContratoBeneficiariosData
@@ -447,13 +447,13 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndContratoDestinoData
     {
-        public int id_destino { get; set; }
+        public required int id_destino { get; set; }
         public string? descripcion { get; set; }
         public int? id_registro { get; set; }
         public string? cod_plan { get; set; }
-        public long cod_contrato { get; set; }
+        public required long cod_contrato { get; set; }
         public string? observaciones { get; set; }
-        public DateTime fec_registro { get; set; }
+        public required DateTime fec_registro { get; set; }
         public string? usu_registro { get; set; }
         public Nullable<DateTime> fec_modifica { get; set; }
         public string? usu_modifica { get; set; }
@@ -506,10 +506,10 @@ namespace Galileo.Models.ProGrX.Fondos
     public sealed class FndContratoTasaRefParams
     {
         /// <summary>Código de empresa.</summary>
-        public int CodEmpresa { get; init; }
+        public required int CodEmpresa { get; init; }
 
         /// <summary>Plazo del contrato.</summary>
-        public long Plazo { get; init; }
+        public required long Plazo { get; init; }
 
         /// <summary>Tipo de plazo.</summary>
         public string? Tipo { get; init; }
@@ -518,13 +518,13 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? Plan { get; init; }
 
         /// <summary>Código de operadora.</summary>
-        public int Operadora { get; init; }
+        public required int Operadora { get; init; }
 
         /// <summary>Indica si el cupón paga.</summary>
-        public bool ChkCuponPaga { get; init; }
+        public required bool ChkCuponPaga { get; init; }
 
         /// <summary>Tipo de CDP.</summary>
-        public int TipoCdp { get; init; }
+        public required int TipoCdp { get; init; }
 
         /// <summary>Frecuencia de cupón.</summary>
         public string? CuponFrecuencia { get; init; }
@@ -533,7 +533,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? PlazoInversion { get; init; }
 
         /// <summary>Tasa ingresada manualmente.</summary>
-        public decimal Tasa { get; init; }
+        public required decimal Tasa { get; init; }
     }
 
 }

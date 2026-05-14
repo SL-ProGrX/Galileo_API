@@ -115,6 +115,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 cedula = $"{NormalizarTexto(cedula)}-{consec:00}",
                 nombre = "0",
                 cuota = 0,
+                cod_operadora = pOperadora,
+                cod_contrato = pContrato,
+                isNew = true
             });
 
             return response;
