@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -183,9 +184,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private void ProcesarMovimientos(SqlConnection connection, int anio, int mes, string sqlMovimientos)
         {
-            foreach (var mov in connection.Query(sqlMovimientos, new { anio, mes }))
+            foreach (var movimiento in connection.Query(sqlMovimientos, new { anio, mes }).Select(CrearMovimientoCuenta))
             {
-                var movimiento = CrearMovimientoCuenta(mov);
                 AplicarMovimientoCuenta(connection, anio, mes, movimiento);
             }
         }
