@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly IConfiguration _config;
 
         private const string SpTesTokenConsulta = "spTes_Token_Consulta";
-        private const string AppProductNameParam = "AppProductName";
+        private const string vfiltro = "Los parámetros de filtro son requeridos.";
         private const string AppProductNameDot = "App.ProductName";
 
         private const string SqlBancos = @"
@@ -82,12 +82,192 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 });
         }
 
-        private static string ObtenerEstadoWhere(string estado)
-        {
-            return estado?.StartsWith('P') == true
-                ? "L.Traspaso_tesoreria is Null"
-                : "L.Traspaso_tesoreria is not Null";
-        }
+
+        private const string SqlLiquidacionBancos = @"
+                    SELECT
+                        L.cod_banco AS item,
+                        ISNULL(B.descripcion, 'Sin Banco') AS descripcion
+                    FROM dbo.Fnd_Liquidacion L
+                    LEFT JOIN dbo.Tes_Bancos B
+                        ON L.cod_Banco = B.id_Banco
+                    WHERE L.Fecha BETWEEN @Desde AND @Hasta
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                    GROUP BY
+                        L.cod_banco,
+                        B.descripcion;";
+
+        private const string SqlLiquidacionUsuarios = @"
+                    SELECT
+                        L.USUARIO AS item,
+                        L.USUARIO AS descripcion
+                    FROM dbo.Fnd_Liquidacion L
+                    WHERE L.Fecha BETWEEN @Desde AND @Hasta
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                    GROUP BY L.usuario;";
+
+        private const string SqlLiquidacionSistemas = @"
+                    SELECT
+                        ISNULL(L.COD_APP, @AppProductName) AS descripcion,
+                        ISNULL(L.COD_APP, @AppProductName) AS item
+                    FROM dbo.Fnd_Liquidacion L
+                    WHERE L.Fecha BETWEEN @Desde AND @Hasta
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                    GROUP BY ISNULL(L.COD_APP, @AppProductName);";
+
+        private const string SqlLiquidacionTokens = @"
+                    SELECT
+                        ISNULL(L.ID_TOKEN, '') AS descripcion,
+                        ISNULL(L.ID_TOKEN, '') AS item
+                    FROM dbo.Fnd_Liquidacion L
+                    WHERE L.Fecha BETWEEN @Desde AND @Hasta
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                    GROUP BY ISNULL(L.ID_TOKEN, '');";
+
+        private const string SqlLiquidacionOficinas = @"
+                    SELECT
+                        RTRIM(L.cod_Oficina) AS item,
+                        ISNULL(O.descripcion, '') AS descripcion
+                    FROM dbo.Fnd_Liquidacion L
+                    LEFT JOIN dbo.SIF_Oficinas O
+                        ON L.cod_oficina = O.cod_oficina
+                    WHERE L.Fecha BETWEEN @Desde AND @Hasta
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                    GROUP BY
+                        L.cod_Oficina,
+                        O.descripcion;";
+
+        private const string SqlLiquidacionConsulta = @"
+                    SELECT
+                        @Todos AS Valor,
+                        L.Consec,
+                        C.Cedula,
+                        S.nombre,
+                        L.Cod_Plan,
+                        L.Cod_Contrato,
+                        CASE WHEN L.Total_Girar IS NULL
+                            THEN L.Aportes_Liq + L.Rendi_Liq - (ISNULL(L.multa_retiro, 0) + ISNULL(L.ISR_MONTO, 0) + ISNULL(L.OTROS_REBAJOS, 0))
+                            ELSE L.Total_Girar
+                        END AS Total_Girar,
+                        L.Usuario,
+                        ISNULL(L.cod_Oficina, '') AS Oficina,
+                        L.Tipo,
+                        L.Cta_Ahorros,
+                        B.descripcion,
+                        L.Fecha,
+                        dbo.fxTesSupervisa(C.cedula, S.nombre, ISNULL(L.Total_Girar, L.Aportes_Liq + L.Rendi_Liq - ISNULL(L.multa_retiro, 0)), 0, 'C') AS Duplicado,
+                        TES_SUPERVISION_FECHA,
+                        L.PAGO_TERCERO_APL,
+                        L.PAGO_TERCERO_TIPO,
+                        L.PAGO_TERCERO_ID,
+                        L.PAGO_TERCERO_NOMBRE,
+                        L.ID_TOKEN
+                    FROM dbo.Fnd_Liquidacion L
+                    INNER JOIN dbo.Fnd_Contratos C
+                        ON L.Cod_Operadora = C.Cod_Operadora
+                       AND L.Cod_Plan = C.Cod_Plan
+                       AND L.Cod_Contrato = C.Cod_Contrato
+                    INNER JOIN dbo.Socios S
+                        ON C.cedula = S.cedula
+                    LEFT JOIN dbo.Tes_Bancos B
+                        ON L.cod_Banco = B.id_Banco
+                    WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
+                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
+                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
+                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
+                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
+                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta);";
+
+        private const string SqlDuplicadosRemesa = @"
+                    SELECT
+                        COUNT(*) AS Liquidaciones,
+                        C.Cedula,
+                        S.nombre,
+                        L.Cta_Ahorros,
+                        B.descripcion,
+                        SUM(CASE WHEN L.Total_Girar IS NULL
+                            THEN L.Aportes_Liq + L.Rendi_Liq - (ISNULL(L.multa_retiro, 0) + ISNULL(L.ISR_MONTO, 0) + ISNULL(L.OTROS_REBAJOS, 0))
+                            ELSE L.Total_Girar
+                        END) AS Total_Girar
+                    FROM dbo.Fnd_Liquidacion L
+                    INNER JOIN dbo.Fnd_Contratos C
+                        ON L.Cod_Operadora = C.Cod_Operadora
+                       AND L.Cod_Plan = C.Cod_Plan
+                       AND L.Cod_Contrato = C.Cod_Contrato
+                    INNER JOIN dbo.Socios S
+                        ON C.cedula = S.cedula
+                    LEFT JOIN dbo.Tes_Bancos B
+                        ON L.cod_Banco = B.id_Banco
+                    WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
+                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
+                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
+                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
+                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
+                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta)
+                    GROUP BY C.Cedula, S.nombre, L.Cta_Ahorros, B.descripcion
+                    HAVING COUNT(*) > 1;";
+
+        private const string SqlLiquidacionDetalle = @"
+                    SELECT
+                        L.Consec,
+                        C.Cedula,
+                        S.Nombre,
+                        L.Cod_Plan,
+                        L.Cod_Contrato,
+                        CASE WHEN L.Total_Girar IS NULL
+                            THEN L.Aportes_Liq + L.Rendi_Liq - (ISNULL(L.multa_retiro, 0) + ISNULL(L.ISR_MONTO, 0) + ISNULL(L.OTROS_REBAJOS, 0))
+                            ELSE L.Total_Girar
+                        END AS Total_Girar,
+                        L.Usuario,
+                        ISNULL(L.cod_Oficina, '') AS Oficina,
+                        L.Tipo,
+                        L.Cta_Ahorros,
+                        B.Descripcion,
+                        L.Fecha,
+                        dbo.fxTesSupervisa(C.cedula, S.nombre, ISNULL(L.Total_Girar, L.Aportes_Liq + L.Rendi_Liq - ISNULL(L.multa_retiro, 0)), 0, 'C') AS Duplicado,
+                        TES_SUPERVISION_FECHA,
+                        L.PAGO_TERCERO_APL,
+                        L.PAGO_TERCERO_TIPO,
+                        L.PAGO_TERCERO_ID,
+                        L.PAGO_TERCERO_NOMBRE,
+                        L.ID_TOKEN
+                    FROM dbo.Fnd_Liquidacion L
+                    INNER JOIN dbo.Fnd_Contratos C
+                        ON L.Cod_Operadora = C.Cod_Operadora
+                       AND L.Cod_Plan = C.Cod_Plan
+                       AND L.Cod_Contrato = C.Cod_Contrato
+                    INNER JOIN dbo.Socios S
+                        ON C.cedula = S.cedula
+                    LEFT JOIN dbo.Tes_Bancos B
+                        ON L.cod_Banco = B.id_Banco
+                    WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
+                      AND C.Cedula = @Cedula
+                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
+                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
+                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
+                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
+                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta);";
 
         /// <summary>
         /// Obtiene la lista de bancos de liquidaciones según filtros.
@@ -96,43 +276,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de bancos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionBancos_Obtener(FndTraspasoTesoreriaFiltroParams param)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                    Select 
-                        L.cod_banco as item,
-                        isnull(B.descripcion,'Sin Banco') as descripcion
-                    From Fnd_Liquidacion L
-                        left join Tes_Bancos B on L.cod_Banco = B.id_Banco
-                    Where 
-                        L.Fecha between @Desde and @Hasta
-                        And {ObtenerEstadoWhere(param.Estado)}
-                    Group by 
-                        L.cod_banco,
-                        B.descripcion";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                {
-                    Desde = param.FechaDesde.Date,
-                    Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                }).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<DropDownListaGenericaModel>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionBancos,
+                CrearParametrosFiltroLiquidacion(param));
         }
 
         /// <summary>
@@ -142,41 +295,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de usuarios.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionUsuarios_Obtener(FndTraspasoTesoreriaFiltroParams param)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                    Select 
-                        L.USUARIO as item,
-                        L.USUARIO as descripcion
-                    From Fnd_Liquidacion L
-                    Where 
-                        L.Fecha between @Desde and @Hasta
-                        And {ObtenerEstadoWhere(param.Estado)}
-                    Group by 
-                        L.usuario";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                {
-                    Desde = param.FechaDesde.Date,
-                    Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                }).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<DropDownListaGenericaModel>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionUsuarios,
+                CrearParametrosFiltroLiquidacion(param));
         }
 
         /// <summary>
@@ -186,41 +314,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de sistemas.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionSistemas_Obtener(FndTraspasoTesoreriaFiltroParams param)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                    Select 
-                        ISNULL(L.COD_APP,'App.ProductName') as descripcion,
-                        ISNULL(L.COD_APP,'App.ProductName') as item
-                    From Fnd_Liquidacion L
-                    Where 
-                        L.Fecha between @Desde and @Hasta
-                        And {ObtenerEstadoWhere(param.Estado)}
-                    Group by 
-                        ISNULL(L.COD_APP,'App.ProductName')";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                {
-                    Desde = param.FechaDesde.Date,
-                    Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                }).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<DropDownListaGenericaModel>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionSistemas,
+                CrearParametrosFiltroLiquidacion(param));
         }
 
         /// <summary>
@@ -230,41 +333,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de tokens.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionTokens_Obtener(FndTraspasoTesoreriaFiltroParams param)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                    Select 
-                        ISNULL(L.ID_TOKEN,'') as descripcion,
-                        ISNULL(L.ID_TOKEN,'') as item
-                    From Fnd_Liquidacion L
-                    Where 
-                        L.Fecha between @Desde and @Hasta
-                        And {ObtenerEstadoWhere(param.Estado)}
-                    Group by 
-                        ISNULL(L.ID_TOKEN,'')";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                {
-                    Desde = param.FechaDesde.Date,
-                    Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                }).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<DropDownListaGenericaModel>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionTokens,
+                CrearParametrosFiltroLiquidacion(param));
         }
 
         /// <summary>
@@ -274,43 +352,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de oficinas.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionOficinas_Obtener(FndTraspasoTesoreriaFiltroParams param)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                    Select 
-                        rtrim(L.cod_Oficina) as item,
-                        isnull(O.descripcion,'') as descripcion
-                    From Fnd_Liquidacion L
-                        left join SIF_Oficinas O on L.cod_oficina = O.cod_oficina
-                    Where 
-                        L.Fecha between @Desde and @Hasta
-                        And {ObtenerEstadoWhere(param.Estado)}
-                    Group by 
-                        L.cod_Oficina,
-                        O.descripcion";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                {
-                    Desde = param.FechaDesde.Date,
-                    Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                }).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<DropDownListaGenericaModel>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionOficinas,
+                CrearParametrosFiltroLiquidacion(param));
         }
 
         /// <summary>
@@ -428,110 +479,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de liquidaciones.</returns>
         public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionConsulta(FndTraspasoTesoreriaLiquidacionConsultaParams param)
         {
-            var result = new ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<FndTraspasoTesoreriaLiquidacionConsultaResult>()
-            };
-
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var sql = @"
-                    Select 
-                        @Todos as Valor,
-                        L.Consec,
-                        C.Cedula,
-                        S.nombre,
-                        L.Cod_Plan,
-                        L.Cod_Contrato,
-                        case when L.Total_Girar is null 
-                            then L.Aportes_Liq + L.Rendi_Liq - (isnull(L.multa_retiro,0) + isnull(L.ISR_MONTO,0) + isnull(L.OTROS_REBAJOS,0)) 
-                            else L.Total_Girar 
-                        end as Total_Girar,
-                        L.Usuario,
-                        isnull(L.cod_Oficina,'') as Oficina,
-                        L.Tipo,
-                        L.Cta_Ahorros,
-                        B.descripcion,
-                        L.Fecha,
-                        dbo.fxTesSupervisa(C.cedula, S.nombre, isnull(L.Total_Girar, L.Aportes_Liq + L.Rendi_Liq - isnull(L.multa_retiro,0)), 0, 'C') as Duplicado,
-                        TES_SUPERVISION_FECHA,
-                        L.PAGO_TERCERO_APL,
-                        L.PAGO_TERCERO_TIPO,
-                        L.PAGO_TERCERO_ID,
-                        L.PAGO_TERCERO_NOMBRE,
-                        L.ID_TOKEN
-                    From Fnd_Liquidacion L
-                        inner join Fnd_Contratos C on L.Cod_Operadora = C.Cod_Operadora and L.Cod_Plan = C.Cod_Plan and L.Cod_Contrato = C.Cod_Contrato
-                        inner join Socios S on C.cedula = S.cedula
-                        left join Tes_Bancos B on L.cod_Banco = B.id_Banco
-                    Where 
-                        L.Fecha between @FechaDesde and @FechaHasta
-                    ";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("Todos", param.Todos);
-                parameters.Add("FechaDesde", param.FechaDesde.Date);
-                parameters.Add("FechaHasta", param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59));
-
-                if (!string.IsNullOrEmpty(param.SifParam) && param.SifParam == "S")
-                {
-                    sql += " And L.Analista_Revision = 'S'";
-                }
-
-                if (!string.IsNullOrEmpty(param.Estado))
-                {
-                    if (param.Estado.StartsWith('P'))
-                        sql += " And L.Traspaso_tesoreria is Null";
-                    else
-                        sql += " And L.Traspaso_tesoreria is not Null";
-                }
-                                if (param.Filtros)
-                                {
-                                    if (param.BancoId.HasValue)
-                                        sql += " And L.cod_banco = @BancoId";
-                                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                                        sql += " And L.cod_oficina = @Oficina";
-                                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                                        sql += " And L.usuario like @Usuario";
-                                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                                        sql += $" And isnull(L.cod_app, @{AppProductNameParam}) like @Sistema";
-                                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                                        sql += " And isnull(L.ID_Token, '') like @TokenConsulta";
-
-                                    if (param.BancoId.HasValue)
-                                        parameters.Add("BancoId", param.BancoId.Value);
-                                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                                        parameters.Add("Oficina", param.Oficina);
-                                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                                        parameters.Add("Usuario", param.Usuario + "%");
-                                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                                        parameters.Add("Sistema", param.Sistema + "%");
-                                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                                        parameters.Add("TokenConsulta", param.TokenConsulta + "%");
-                                    if (!string.IsNullOrWhiteSpace(param.AppProductName))
-                                        parameters.Add(AppProductNameParam, param.AppProductName);
-                                    else
-                                        parameters.Add(AppProductNameParam, AppProductNameDot);
-                                }
-                                else
-                                {
-                                    parameters.Add(AppProductNameParam, AppProductNameDot);
-                                }
-
-                result.Result = connection.Query<FndTraspasoTesoreriaLiquidacionConsultaResult>(sql, parameters).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<FndTraspasoTesoreriaLiquidacionConsultaResult>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<FndTraspasoTesoreriaLiquidacionConsultaResult>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionConsulta,
+                CrearParametrosConsultaLiquidacion(param));
         }
 
         /// <summary>
@@ -541,99 +498,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de duplicados.</returns>
         public ErrorDto<List<FndTraspasoTesoreriaDuplicadosResult>> RevisaDuplicadosEnLaRemesa(FndTraspasoTesoreriaDuplicadosParams param)
         {
-            var result = new ErrorDto<List<FndTraspasoTesoreriaDuplicadosResult>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<FndTraspasoTesoreriaDuplicadosResult>()
-            };
-
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-
-                var sql = @"
-                    Select 
-                        count(*) as Liquidaciones,
-                        C.Cedula,
-                        S.nombre,
-                        L.Cta_Ahorros,
-                        B.descripcion,
-                        sum(case when L.Total_Girar is null 
-                            then L.Aportes_Liq + L.Rendi_Liq - (isnull(L.multa_retiro,0) + isnull(L.ISR_MONTO,0) + isnull(L.OTROS_REBAJOS,0)) 
-                            else L.Total_Girar end) as Total_Girar
-                    From Fnd_Liquidacion L
-                        inner join Fnd_Contratos C on L.Cod_Operadora = C.Cod_Operadora and L.Cod_Plan = C.Cod_Plan and L.Cod_Contrato = C.Cod_Contrato
-                        inner join Socios S on C.cedula = S.cedula
-                        left join Tes_Bancos B on L.cod_Banco = B.id_Banco
-                    Where 
-                        L.Fecha between @FechaDesde and @FechaHasta
-                    ";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("FechaDesde", param.FechaDesde.Date);
-                parameters.Add("FechaHasta", param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59));
-
-                if (!string.IsNullOrEmpty(param.SifParam) && param.SifParam == "S")
-                {
-                    sql += " And L.Analista_Revision = 'S'";
-                }
-
-                if (!string.IsNullOrEmpty(param.Estado))
-                {
-                    if (param.Estado.StartsWith('P'))
-                        sql += " And L.Traspaso_tesoreria is Null";
-                    else
-                        sql += " And L.Traspaso_tesoreria is not Null";
-                }
-
-                if (param.Filtros)
-                {
-                    if (param.BancoId.HasValue)
-                        sql += " And L.cod_banco = @BancoId";
-                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                        sql += " And L.cod_oficina = @Oficina";
-                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                        sql += " And L.usuario like @Usuario";
-                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                        sql += " And isnull(L.cod_app, @AppProductName) like @Sistema";
-                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                        sql += " And isnull(L.ID_Token, '') like @TokenConsulta";
-
-                    if (param.BancoId.HasValue)
-                        parameters.Add("BancoId", param.BancoId.Value);
-                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                        parameters.Add("Oficina", param.Oficina);
-                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                        parameters.Add("Usuario", param.Usuario + "%");
-                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                        parameters.Add("Sistema", param.Sistema + "%");
-                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                        parameters.Add("TokenConsulta", param.TokenConsulta + "%");
-                    if (!string.IsNullOrWhiteSpace(param.AppProductName))
-                        parameters.Add(AppProductNameParam, param.AppProductName);
-                    else
-                        parameters.Add(AppProductNameParam, AppProductNameDot);
-                }
-                else
-                {
-                    parameters.Add(AppProductNameParam, AppProductNameDot);
-                }
-
-                sql += @"
-                     group by C.Cedula, S.nombre, L.Cta_Ahorros, B.descripcion
-                     having count(*) > 1";
-
-                result.Result = connection.Query<FndTraspasoTesoreriaDuplicadosResult>(sql, parameters).ToList();
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<FndTraspasoTesoreriaDuplicadosResult>());
             }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<FndTraspasoTesoreriaDuplicadosResult>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlDuplicadosRemesa,
+                CrearParametrosConsultaLiquidacion(param));
         }
 
         /// <summary>
@@ -767,130 +641,106 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>ErrorDto con la lista de liquidaciones detalle.</returns>
         public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionDetalle(FndTraspasoTesoreriaDetalleParams param)
         {
-            var result = new ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>>()
+            if (param is null)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<FndTraspasoTesoreriaLiquidacionConsultaResult>()
+                return DbHelper.CreateErrorResponse(vfiltro, -2, new List<FndTraspasoTesoreriaLiquidacionConsultaResult>());
+            }
+
+            return DbHelper.ExecuteListQuery<FndTraspasoTesoreriaLiquidacionConsultaResult>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlLiquidacionDetalle,
+                CrearParametrosDetalleLiquidacion(param));
+        }
+
+        private static object CrearParametrosFiltroLiquidacion(FndTraspasoTesoreriaFiltroParams param)
+        {
+            return new
+            {
+                Desde = param.FechaDesde.Date,
+                Hasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
+                AppProductName = ObtenerAppProductName(null)
             };
+        }
 
-            try
+        private static object CrearParametrosConsultaLiquidacion(FndTraspasoTesoreriaLiquidacionConsultaParams param)
+        {
+            return new
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(param.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
+                param.Todos,
+                FechaDesde = param.FechaDesde.Date,
+                FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
+                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
+                AplicarFiltros = param.Filtros ? 1 : 0,
+                BancoId = param.BancoId,
+                Oficina = NormalizarTexto(param.Oficina),
+                Usuario = CrearLikeInicio(param.Usuario),
+                Sistema = CrearLikeInicio(param.Sistema),
+                TokenConsulta = CrearLikeInicio(param.TokenConsulta),
+                AppProductName = ObtenerAppProductName(param.AppProductName)
+            };
+        }
 
-                var sql = @"
-            SELECT
-                L.Consec,
-                C.Cedula,
-                S.Nombre,
-                L.Cod_Plan,
-                L.Cod_Contrato,
-                CASE 
-                    WHEN L.Total_Girar IS NULL THEN
-                        L.Aportes_Liq + L.Rendi_Liq
-                        - (ISNULL(L.multa_retiro,0)
-                           + ISNULL(L.ISR_MONTO,0)
-                           + ISNULL(L.OTROS_REBAJOS,0))
-                    ELSE
-                        L.Total_Girar
-                END AS Total_Girar,
-                L.Usuario,
-                ISNULL(L.cod_Oficina,'') AS Oficina,
-                L.Tipo,
-                L.Cta_Ahorros,
-                B.Descripcion,
-                L.Fecha,
-                dbo.fxTesSupervisa(
-                    C.cedula,
-                    S.nombre,
-                    ISNULL(
-                        L.Total_Girar,
-                        L.Aportes_Liq+L.Rendi_Liq - ISNULL(L.multa_retiro,0)
-                    ),
-                    0,
-                    'C'
-                ) AS Duplicado,
-                TES_SUPERVISION_FECHA,
-                L.PAGO_TERCERO_APL,
-                L.PAGO_TERCERO_TIPO,
-                L.PAGO_TERCERO_ID,
-                L.PAGO_TERCERO_NOMBRE,
-                L.ID_TOKEN
-            FROM Fnd_Liquidacion L
-                INNER JOIN Fnd_Contratos C
-                    ON L.Cod_Operadora = C.Cod_Operadora
-                   AND L.Cod_Plan      = C.Cod_Plan
-                   AND L.Cod_Contrato  = C.Cod_Contrato
-                INNER JOIN Socios S
-                    ON C.cedula = S.cedula
-                LEFT JOIN Tes_Bancos B
-                    ON L.cod_Banco = B.id_Banco
-            WHERE
-                L.Fecha BETWEEN @FechaDesde AND @FechaHasta
-                AND C.Cedula = @Cedula
-        ";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("FechaDesde", param.FechaDesde.Date);
-                parameters.Add("FechaHasta", param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59));
-                parameters.Add("Cedula", param.Cedula);
-
-                if (!string.IsNullOrEmpty(param.SifParam) && param.SifParam == "S")
-                {
-                    sql += " AND L.Analista_Revision = 'S'";
-                }
-
-                if (!string.IsNullOrEmpty(param.Estado))
-                {
-                    if (param.Estado.StartsWith('P'))
-                        sql += " AND L.Traspaso_tesoreria is Null";
-                    else
-                        sql += " AND L.Traspaso_tesoreria is not Null";
-                }
-
-                if (param.Filtros)
-                {
-                    if (param.BancoId.HasValue)
-                        sql += " AND L.cod_banco = @BancoId";
-                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                        sql += " AND L.cod_oficina = @Oficina";
-                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                        sql += " AND L.usuario like @Usuario";
-                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                        sql += " AND isnull(L.cod_app, @AppProductName) like @Sistema";
-                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                        sql += " AND isnull(L.ID_Token, '') like @TokenConsulta";
-
-                    if (param.BancoId.HasValue)
-                        parameters.Add("BancoId", param.BancoId.Value);
-                    if (!string.IsNullOrWhiteSpace(param.Oficina))
-                        parameters.Add("Oficina", param.Oficina);
-                    if (!string.IsNullOrWhiteSpace(param.Usuario))
-                        parameters.Add("Usuario", param.Usuario + "%");
-                    if (!string.IsNullOrWhiteSpace(param.Sistema))
-                        parameters.Add("Sistema", param.Sistema + "%");
-                    if (!string.IsNullOrWhiteSpace(param.TokenConsulta))
-                        parameters.Add("TokenConsulta", param.TokenConsulta + "%");
-                    if (!string.IsNullOrWhiteSpace(param.AppProductName))
-                        parameters.Add(AppProductNameParam, param.AppProductName);
-                    else
-                        parameters.Add(AppProductNameParam, AppProductNameDot);
-                }
-                else
-                {
-                    parameters.Add(AppProductNameParam, AppProductNameDot);
-                }
-
-                result.Result = connection.Query<FndTraspasoTesoreriaLiquidacionConsultaResult>(sql, parameters).ToList();
-            }
-            catch (Exception ex)
+        private static object CrearParametrosConsultaLiquidacion(FndTraspasoTesoreriaDuplicadosParams param)
+        {
+            return new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
+                FechaDesde = param.FechaDesde.Date,
+                FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
+                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
+                AplicarFiltros = param.Filtros ? 1 : 0,
+                BancoId = param.BancoId,
+                Oficina = NormalizarTexto(param.Oficina),
+                Usuario = CrearLikeInicio(param.Usuario),
+                Sistema = CrearLikeInicio(param.Sistema),
+                TokenConsulta = CrearLikeInicio(param.TokenConsulta),
+                AppProductName = ObtenerAppProductName(param.AppProductName)
+            };
+        }
+
+        private static object CrearParametrosDetalleLiquidacion(FndTraspasoTesoreriaDetalleParams param)
+        {
+            return new
+            {
+                FechaDesde = param.FechaDesde.Date,
+                FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                Cedula = NormalizarTexto(param.Cedula),
+                AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
+                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
+                AplicarFiltros = param.Filtros ? 1 : 0,
+                BancoId = param.BancoId,
+                Oficina = NormalizarTexto(param.Oficina),
+                Usuario = CrearLikeInicio(param.Usuario),
+                Sistema = CrearLikeInicio(param.Sistema),
+                TokenConsulta = CrearLikeInicio(param.TokenConsulta),
+                AppProductName = ObtenerAppProductName(param.AppProductName)
+            };
+        }
+
+        private static int? ObtenerEstadoPendiente(string? estado)
+        {
+            var estadoSeguro = NormalizarTexto(estado);
+            if (string.IsNullOrWhiteSpace(estadoSeguro))
+            {
+                return null;
             }
-            return result;
+
+            return estadoSeguro.StartsWith('P') ? 1 : 0;
+        }
+
+        private static string CrearLikeInicio(string? valor)
+        {
+            var texto = NormalizarTexto(valor);
+            return string.IsNullOrWhiteSpace(texto) ? string.Empty : $"{texto}%";
+        }
+
+        private static string ObtenerAppProductName(string? valor)
+        {
+            var texto = NormalizarTexto(valor);
+            return string.IsNullOrWhiteSpace(texto) ? AppProductNameDot : texto;
         }
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
     }
