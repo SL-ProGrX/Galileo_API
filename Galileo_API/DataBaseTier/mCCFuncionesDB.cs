@@ -1,9 +1,8 @@
 ﻿namespace Galileo_API.DataBaseTier
 {
-    public class MCCFuncionesDB
-    {
-
-        public  string ObtenerNombreMes(int mes)
+    public class MccFuncionesDb
+    { 
+        public static string ObtenerNombreMes(int mes)
         {
             return mes switch
             {
@@ -23,7 +22,7 @@
             };
         }
 
-        public  int? ObtenerNumeroMes(string mes)
+        public static int? ObtenerNumeroMes(string mes)
         {
             return mes?.Trim() switch
             {

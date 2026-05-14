@@ -65,8 +65,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
          
         private sealed class CcProcesoMensualAhorroReporteDbModel
         {
-            public decimal Porcentaje { get; set; }
-            public decimal PorcAhorro { get; set; }
+            public decimal Porcentaje { get; set; } = 0;
+            public decimal PorcAhorro { get; set; } = 0;
         }
     }
 }

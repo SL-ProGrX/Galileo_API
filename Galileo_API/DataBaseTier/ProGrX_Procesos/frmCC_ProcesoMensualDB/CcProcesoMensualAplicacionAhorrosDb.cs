@@ -204,60 +204,87 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 EjecutarDevolucionFondo(
                     connection,
-                    parametros,
-                    socio.Cedula,
-                    socio.Monto,
-                    codInstitucion,
-                    fechaProceso,
-                    documento,
-                    parametros.FndApPlan,
-                    "A",
-                    fecha);
+                    new CcProcesoMensualDevolucionFondoRequest
+                    {
+                        CodInstitucion = codInstitucion,
+                        FechaProceso = fechaProceso,
+                        Operadora = parametros.FndApOperadora,
+                        Plan = parametros.FndApPlan,
+                        Cedula = socio.Cedula,
+                        Monto = socio.Monto,
+                        Documento = documento,
+                        CuentaInconsistencia = parametros.CtaInconsistencia,
+                        Tipo = "A",
+                        Fecha = fecha
+                    });
             }
 
             if (socio.Aporte > 0)
             {
                 EjecutarDevolucionFondo(
                     connection,
-                    parametros,
-                    socio.Cedula,
-                    socio.Aporte,
-                    codInstitucion,
-                    fechaProceso,
-                    documento,
-                    parametros.FndApPlanP,
-                    "P",
-                    fecha);
+                    new CcProcesoMensualDevolucionFondoRequest
+                    {
+                        CodInstitucion = codInstitucion,
+                        FechaProceso = fechaProceso,
+                        Operadora = parametros.FndApOperadora,
+                        Plan = parametros.FndApPlan,
+                        Cedula = socio.Cedula,
+                        Monto = socio.Aporte,
+                        Documento = documento,
+                        CuentaInconsistencia = parametros.CtaInconsistencia,
+                        Tipo = "A",
+                        Fecha = fecha
+                    }   );
+            }
+
+            if (socio.Aporte > 0)
+            {
+                EjecutarDevolucionFondo(
+                    connection,
+                    new CcProcesoMensualDevolucionFondoRequest
+                    {
+                        CodInstitucion = codInstitucion,
+                        FechaProceso = fechaProceso,
+                        Operadora = parametros.FndApOperadora,
+                        Plan = parametros.FndApPlanP,
+                        Cedula = socio.Cedula,
+                        Monto = socio.Aporte,
+                        Documento = documento,
+                        CuentaInconsistencia = parametros.CtaInconsistencia,
+                        Tipo = "P",
+                        Fecha = fecha
+                    });
             }
         }
 
-        private static void EjecutarDevolucionFondo( IDbConnection connection,CcProcesoMensualAhorroParametrosDbModel parametros,string cedula, decimal monto,int codInstitucion,decimal fechaProceso,string documento,string plan,string tipo, DateTime fecha)
+        private static void EjecutarDevolucionFondo( IDbConnection connection, CcProcesoMensualDevolucionFondoRequest request)
         {
             const string query = @"
-                EXEC spPrmDevFondos
-                    @CodInstitucion,
-                    @FechaProceso,
-                    @Operadora,
-                    @Plan,
-                    @Cedula,
-                    @Monto,
-                    @Documento,
-                    @CuentaInconsistencia,
-                    @Tipo,
-                    @Fecha";
+        EXEC spPrmDevFondos
+            @CodInstitucion,
+            @FechaProceso,
+            @Operadora,
+            @Plan,
+            @Cedula,
+            @Monto,
+            @Documento,
+            @CuentaInconsistencia,
+            @Tipo,
+            @Fecha";
 
             connection.Execute(query, new
             {
-                CodInstitucion = codInstitucion,
-                FechaProceso = fechaProceso,
-                Operadora = parametros.FndApOperadora,
-                Plan = plan.Trim(),
-                Cedula = cedula.Trim(),
-                Monto = monto,
-                Documento = documento,
-                CuentaInconsistencia = parametros.CtaInconsistencia.Trim(),
-                Tipo = tipo,
-                Fecha = fecha
+                request.CodInstitucion,
+                request.FechaProceso,
+                request.Operadora,
+                Plan = request.Plan.Trim(),
+                Cedula = request.Cedula.Trim(),
+                request.Monto,
+                Documento = request.Documento.Trim(),
+                CuentaInconsistencia = request.CuentaInconsistencia.Trim(),
+                Tipo = request.Tipo.Trim(),
+                request.Fecha
             });
         }
 
@@ -312,8 +339,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
         private sealed class CcProcesoMensualAhorroParametrosDbModel
         {
-            public int FndApAplica { get; set; }
-            public int FndApOperadora { get; set; }
+            public int FndApAplica { get; set; } =0;
+            public int FndApOperadora { get; set; } = 0;
             public string FndApPlan { get; set; } = string.Empty;
             public string FndApPlanP { get; set; } = string.Empty;
             public string CtaInconsistencia { get; set; } = string.Empty;
@@ -322,8 +349,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private sealed class CcProcesoMensualSocioDevolucionDbModel
         {
             public string Cedula { get; set; } = string.Empty;
-            public decimal Monto { get; set; }
-            public decimal Aporte { get; set; }
+            public decimal Monto { get; set; } = 0;
+            public decimal Aporte { get; set; } = 0;
         }
     }
 }

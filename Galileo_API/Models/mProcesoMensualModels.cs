@@ -18,5 +18,19 @@
             public int Pendientes { get; set; }
             public int Procesados { get; set; }
         }
+        public class CcProcesoMensualDevolucionFondoRequest
+        {
+            public int CodInstitucion { get; set; }
+            public decimal FechaProceso { get; set; }
+            public int Operadora { get; set; }
+            public string Plan { get; set; } = string.Empty;
+            public string Cedula { get; set; } = string.Empty;
+            public decimal Monto { get; set; }
+            public string Documento { get; set; } = string.Empty;
+            public string CuentaInconsistencia { get; set; } = string.Empty;
+            public string Tipo { get; set; } = string.Empty;
+            public DateTime Fecha { get; set; }
+        }
+
     }
 }

@@ -8,11 +8,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     public class CcProcesoMensualReportesRecepcionDb
     {
 
-        private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrx;
         public CcProcesoMensualReportesRecepcionDb(IConfiguration config)
         {
-            _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
         }
         public ErrorDto<CcProcesoMensualReporteModel> CcProcesoMensual_CargadoNoLocalizadoReporte_Obtener(int codEmpresa, string usuario, decimal vFecha)

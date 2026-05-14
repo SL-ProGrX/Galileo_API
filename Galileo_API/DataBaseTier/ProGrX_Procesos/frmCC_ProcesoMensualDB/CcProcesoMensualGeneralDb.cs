@@ -15,8 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         }
         public void CcProcesoMensual_ProcesosAdd_Ejecutar(IDbConnection connection, int codEmpresa, string transaccion, string tipo, string usuario, int gInstitucion, decimal proceso = 0)
         {
-            //var tipoNormalizado = tipo?.Trim().ToUpperInvariant() ?? string.Empty;
-
+           
             if (proceso == 0)
             {
                 var globalesResp = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario);
@@ -90,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         {
             public string Descripcion { get; set; } = string.Empty;
             public string Procedimiento { get; set; } = string.Empty;
-            public int ParametrosPlanillas { get; set; }
+            public int ParametrosPlanillas { get; set; } = 0;
             public string ParametrosAdd { get; set; } = string.Empty;
         }
     }

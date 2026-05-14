@@ -12,8 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     public class CcProcesoMensualEstadoDB
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain _mProGrx;
-        private readonly MCCFuncionesDB _mCCFuncionesDb; 
+        private readonly MProGrxMain _mProGrx; 
         private const string FrecuenciaQuincenalId = "Q";
         private const string Mensual = "Mensual";
         private const string PrimeraQuincena = "1er Quincena";
@@ -24,8 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public CcProcesoMensualEstadoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
-            _mProGrx = new MProGrxMain(config);
-            _mCCFuncionesDb = new MCCFuncionesDB();
+            _mProGrx = new MProGrxMain(config); 
         }
 
         public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, string usuario)
@@ -147,27 +145,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualEstadoResponse());
             }
         }
-        private CcProcesoMensualEstadoResponse CrearEstadoResponse(CcProcesoMensualInstitucionParametrosModel parametros, string nombreInstitucion, decimal fechaCr)
+        private static CcProcesoMensualEstadoResponse CrearEstadoResponse(CcProcesoMensualInstitucionParametrosModel parametros, string nombreInstitucion, decimal fechaCr)
         {
             var fechaProcesoBase = Math.Truncate(fechaCr).ToString(CultureInfo.InvariantCulture);
             var ano = ObtenerAnoProceso(fechaProcesoBase);
             var mes = ObtenerMesProceso(fechaProcesoBase);
-            var frecuenciaSeleccionada = ObtenerFrecuencia(parametros.Frecuencia_Id, fechaCr);
-            //var fechaProceso = ObtenerFechaProcesoTexto(fechaCr, parametros.Frecuencia_Id);
+            var frecuenciaSeleccionada = ObtenerFrecuencia(parametros.Frecuencia_Id, fechaCr); 
 
             return new CcProcesoMensualEstadoResponse
             {
                 ExisteParametroProceso = true,
-                Institucion = nombreInstitucion,
-                //FechaProceso = fechaProceso,
+                Institucion = nombreInstitucion, 
                 Ano = ano,
                 Mes = mes,
-                MesDescripcion = _mCCFuncionesDb.ObtenerNombreMes(mes),
+                MesDescripcion = MccFuncionesDb.ObtenerNombreMes(mes),
                 FrecuenciaId = parametros.Frecuencia_Id,
                 Frecuencias = ObtenerFrecuencias(parametros.Frecuencia_Id),
                 FrecuenciaSeleccion = frecuenciaSeleccionada,
-                Indicadores = CrearIndicadores(parametros),
-                //Reportes = CrearReportesVisibles()
+                Indicadores = CrearIndicadores(parametros), 
             };
         }
         private static CcProcesoMensualInstitucionParametrosModel? ObtenerParametrosInstitucion(IDbConnection connection, int codInstitucion)

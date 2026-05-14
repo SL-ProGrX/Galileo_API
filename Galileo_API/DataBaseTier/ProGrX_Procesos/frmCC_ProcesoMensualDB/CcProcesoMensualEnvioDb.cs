@@ -16,6 +16,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly CcProcesoMensualEstadoDB _mEstado;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
+        public const string PlanillaEnvioAya = "08";
+        public const string PlanillaEnvioSpa = "09";
+        public const string PlanillaEnvioIna = "13";
+
         public CcProcesoMensualEnvioDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -29,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public ErrorDto<bool> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, string usuario, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
+         
             try
             {
                 var globalesDto = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario); //codContabilidad
@@ -64,10 +68,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
                 RegistrarBitacoraGeneracion( connection, codEmpresa,request);
 
-
-                // Pendiente: cuando migremos sbGeneraArchivo_Main,
-                // llamar aquí al helper/DB correspondiente.
-                // CcProcesoMensualGeneraArchivoHelper.Generar(...);
+             
                 _mEstado.CcProcesoMensual_EstadoActualProceso_Obtener( codEmpresa, request.Usuario);
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "02", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
@@ -337,14 +338,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         {
             switch (config.PlanillaEnvio)
             {
-                case "08":
-                    RedondearPlanilla(connection, request);
-                    break;
-                case "13":
+                case PlanillaEnvioAya:
+                case PlanillaEnvioIna:
                     RedondearPlanilla(connection, request);
                     break;
 
-                case "09":
+                case PlanillaEnvioSpa:
                     RedondearPlanillaSpaSiAplica(connection, request, config);
                     break;
             }
@@ -423,14 +422,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         {
             public string CodigoAportesEnv { get; set; } = string.Empty;
             public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public int HistoricoCobroEnvio { get; set; }
+            public int HistoricoCobroEnvio { get; set; } = 0;
         }
 
         private sealed class CcProcesoMensualPlanillaEnvioConfigDbModel
         {
             public string Planilla { get; set; } = string.Empty;
             public string PlanillaEnvio { get; set; } = string.Empty;
-            public int ComparaIndicador { get; set; }
+            public int ComparaIndicador { get; set; } = 0;
             public string ComparaValor { get; set; } = string.Empty;
         }
 
