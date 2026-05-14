@@ -17,7 +17,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _bl = new FrmCntXErEspecialBl(config);
 
         [HttpGet("CntX_EREspecial_Consulta_Obtener")]
-        public ErrorDto<CntXEREspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
+        public ErrorDto<CntXErEspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
             int codEmpresa,
             int codContabilidad,
             int codErEspecial)
@@ -29,7 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("CntX_EREspecial_Lista_Obtener")]
-        public ErrorDto<List<CntXEREspecialDefinicionData>> CntX_EREspecial_Lista_Obtener(
+        public ErrorDto<List<CntXErEspecialDefinicionData>> CntX_EREspecial_Lista_Obtener(
             int codEmpresa,
             int codContabilidad)
         {
@@ -43,7 +43,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             int codEmpresa,
             int codContabilidad,
             string usuario,
-            CntXEREspecialDefinicionData request)
+            CntXErEspecialDefinicionData request)
         {
             return _bl.CntX_EREspecial_Guardar(
                 codEmpresa,
@@ -67,10 +67,10 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpPost("CntX_EREspecial_Arbol_Obtener")]
-        public ErrorDto<List<CntXEREspecialCuentaNodeData>> CntX_EREspecial_Arbol_Obtener(
+        public ErrorDto<List<CntXErEspecialCuentaNodeData>> CntX_EREspecial_Arbol_Obtener(
             int codEmpresa,
             int codContabilidad,
-            CntXEREspecialArbolRequest request)
+            CntXErEspecialArbolRequest request)
         {
             return _bl.CntX_EREspecial_Arbol_Obtener(
                 codEmpresa,
@@ -82,7 +82,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ErrorDto CntX_EREspecial_Cuentas_Guardar(
             int codEmpresa,
             int codContabilidad,
-            CntXEREspecialCuentasGuardarRequest request)
+            CntXErEspecialCuentasGuardarRequest request)
         {
             return _bl.CntX_EREspecial_Cuentas_Guardar(
                 codEmpresa,

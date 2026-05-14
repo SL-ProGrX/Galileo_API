@@ -36,7 +36,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codContabilidad"></param>
         /// <param name="codErEspecial"></param>
         /// <returns></returns>
-        public ErrorDto<CntXEREspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
+        public ErrorDto<CntXErEspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
             int codEmpresa,
             int codContabilidad,
             int codErEspecial)
@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where cod_contabilidad = @codContabilidad
                   and cod_er_especial = @codErEspecial;";
 
-            return DbHelper.ExecuteSingleQuery<CntXEREspecialDefinicionData>(
+            return DbHelper.ExecuteSingleQuery<CntXErEspecialDefinicionData>(
                 _portalDb,
                 codEmpresa,
                 query,
@@ -66,7 +66,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<CntXEREspecialDefinicionData>> CntX_EREspecial_Lista_Obtener(
+        public ErrorDto<List<CntXErEspecialDefinicionData>> CntX_EREspecial_Lista_Obtener(
             int codEmpresa,
             int codContabilidad)
         {
@@ -76,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where cod_contabilidad = @codContabilidad
                 order by cod_er_especial;";
 
-            return DbHelper.ExecuteListQuery<CntXEREspecialDefinicionData>(
+            return DbHelper.ExecuteListQuery<CntXErEspecialDefinicionData>(
                 _portalDb,
                 codEmpresa,
                 query,
@@ -92,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto CntX_EREspecial_Guardar(
-            int codEmpresa, int codContabilidad, string usuario, CntXEREspecialDefinicionData request)
+            int codEmpresa, int codContabilidad, string usuario, CntXErEspecialDefinicionData request)
         {
             var localConn = _portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
 
@@ -245,10 +245,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codContabilidad"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<List<CntXEREspecialCuentaNodeData>> CntX_EREspecial_Arbol_Obtener(
+        public ErrorDto<List<CntXErEspecialCuentaNodeData>> CntX_EREspecial_Arbol_Obtener(
             int codEmpresa,
             int codContabilidad,
-            CntXEREspecialArbolRequest request)
+            CntXErEspecialArbolRequest request)
         {
             var localConn = _portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
 
@@ -257,7 +257,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var connection = new SqlConnection(localConn);
                 connection.Open();
 
-                var tipos = connection.Query<CntXEREspecialTipoCuentaData>(
+                var tipos = connection.Query<CntXErEspecialTipoCuentaData>(
                     @"
                     select
                         tipo_cuenta,
@@ -267,7 +267,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     order by tipo_cuenta;",
                     new { codContabilidad }).ToList();
 
-                var cuentas = connection.Query<CntXEREspecialCuentaData>(
+                var cuentas = connection.Query<CntXErEspecialCuentaData>(
                     @"
                     select
                         cod_cuenta,
@@ -280,7 +280,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new { codContabilidad }).ToList();
 
                 var marcadas = request.cod_er_especial > 0
-                    ? connection.Query<CntXEREspecialCuentaMarcadaData>(
+                    ? connection.Query<CntXErEspecialCuentaMarcadaData>(
                         @"
                         select cod_cuenta
                         from CNTX_ER_ESPECIAL_DETALLE
@@ -297,7 +297,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         }).Select(x => x.cod_cuenta).ToHashSet()
                     : new HashSet<string>();
 
-                var root = new CntXEREspecialCuentaNodeData
+                var root = new CntXErEspecialCuentaNodeData
                 {
                     key = "CntX_Cuentas",
                     label = "CntX_Cuentas",
@@ -307,7 +307,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 foreach (var tipo in tipos)
                 {
-                    var tipoNode = new CntXEREspecialCuentaNodeData
+                    var tipoNode = new CntXErEspecialCuentaNodeData
                     {
                         key = $"0x0{tipo.tipo_cuenta}T",
                         label = tipo.descripcion,
@@ -330,20 +330,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     root.children.Add(tipoNode);
                 }
 
-                return new ErrorDto<List<CntXEREspecialCuentaNodeData>>
+                return new ErrorDto<List<CntXErEspecialCuentaNodeData>>
                 {
                     Code = 0,
                     Description = string.Empty,
-                    Result = new List<CntXEREspecialCuentaNodeData> { root }
+                    Result = new List<CntXErEspecialCuentaNodeData> { root }
                 };
             }
             catch (Exception ex)
             {
-                return new ErrorDto<List<CntXEREspecialCuentaNodeData>>
+                return new ErrorDto<List<CntXErEspecialCuentaNodeData>>
                 {
                     Code = -1,
                     Description = ex.Message,
-                    Result = new List<CntXEREspecialCuentaNodeData>()
+                    Result = new List<CntXErEspecialCuentaNodeData>()
                 };
             }
         }
@@ -358,7 +358,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto CntX_EREspecial_Cuentas_Guardar(
             int codEmpresa,
             int codContabilidad,
-            CntXEREspecialCuentasGuardarRequest request)
+            CntXErEspecialCuentasGuardarRequest request)
         {
             if (request.cod_er_especial <= 0)
             {
@@ -449,18 +449,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        private List<CntXEREspecialCuentaNodeData> ConstruirNodosCuenta(
-            List<CntXEREspecialCuentaData> todas,
-            List<CntXEREspecialCuentaData> actuales,
+        private List<CntXErEspecialCuentaNodeData> ConstruirNodosCuenta(
+            List<CntXErEspecialCuentaData> todas,
+            List<CntXErEspecialCuentaData> actuales,
             HashSet<string> marcadas)
         {
-            var result = new List<CntXEREspecialCuentaNodeData>();
+            var result = new List<CntXErEspecialCuentaNodeData>();
 
             foreach (var cuenta in actuales)
             {
                 var codigo = cuenta.cod_cuenta?.Trim() ?? string.Empty;
 
-                var node = new CntXEREspecialCuentaNodeData
+                var node = new CntXErEspecialCuentaNodeData
                 {
                     key = $"0x0{codigo}C",
                     label = $"{codigo} - {cuenta.descripcion}",
