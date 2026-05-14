@@ -48,13 +48,13 @@
     /// </summary>
     public sealed class CalculadoraTasaRefParams
     {
-        public int PlazoDias { get; init; }
+        public required int PlazoDias { get; init; }
         public string Tipo { get; init; } = string.Empty;
         public string Plan { get; init; } = string.Empty;
-        public int Operadora { get; init; }
-        public bool ChkCupon { get; init; }
-        public int RpTipo { get; init; }
-        public int PlazoInv { get; init; }
+        public required int Operadora { get; init; }
+        public required bool ChkCupon { get; init; }
+        public required int RpTipo { get; init; }
+        public required int PlazoInv { get; init; }
         public int? CuponId { get; init; }
     }
 }
