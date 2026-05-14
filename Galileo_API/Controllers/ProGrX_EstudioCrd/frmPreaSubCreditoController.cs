@@ -9,7 +9,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmPreaSubCreditoController : Controller
+    public class FrmPreaSubCreditoController : ControllerBase
     {
         private readonly FrmPreaSubCreditoBL _bl;
 
