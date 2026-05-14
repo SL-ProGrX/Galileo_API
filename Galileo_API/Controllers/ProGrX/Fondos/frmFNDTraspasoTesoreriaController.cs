@@ -1,0 +1,140 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Galileo.BusinessLogic.ProGrX.Fondos;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Fondos;
+
+namespace Galileo.Controllers.ProGrX.Fondos
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FrmFndTraspasoTesoreriaController : ControllerBase
+    {
+        private readonly FrmFndTraspasoTesoreriaBl _bl;
+
+        public FrmFndTraspasoTesoreriaController(IConfiguration config)
+        {
+            _bl = new FrmFndTraspasoTesoreriaBl(config);
+        }
+
+        [Authorize]
+        [HttpGet("TraspasoTesoreria_Bancos_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_Bancos_Obtener(int codEmpresa)
+        {
+            return _bl.TraspasoTesoreria_Bancos_Obtener(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("TraspasoTesoreria_ConceptosRetencion_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_ConceptosRetencion_Obtener(int codEmpresa)
+        {
+            return _bl.TraspasoTesoreria_ConceptosRetencion_Obtener(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpPost("Tes_Token_Consulta")]
+        public ErrorDto<List<TesTokenConsultaResult>> Tes_Token_Consulta([FromBody] TesTokenConsultaParams param)
+        {
+            return _bl.Tes_Token_Consulta(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionBancos_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionBancos_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionBancos_Obtener(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionUsuarios_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionUsuarios_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionUsuarios_Obtener(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionSistemas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionSistemas_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionSistemas_Obtener(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionTokens_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionTokens_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionTokens_Obtener(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionOficinas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionOficinas_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionOficinas_Obtener(param);
+        }
+
+        [Authorize]
+        [HttpPost("Tes_Token_New")]
+        public ErrorDto<TesTokenNewResult> Tes_Token_New([FromBody] TesTokenNewParams param)
+        {
+            return _bl.Tes_Token_New(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_Fix")]
+        public ErrorDto<FndTraspasoTesoreriaFixResult> TraspasoTesoreria_Fix([FromQuery] int codEmpresa)
+        {
+            return _bl.TraspasoTesoreria_Fix(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("TraspasoTesoreria_ParametroValor_Obtener")]
+        public ErrorDto<string> TraspasoTesoreria_ParametroValor_Obtener(int codEmpresa, string codigo)
+        {
+            return _bl.TraspasoTesoreria_ParametroValor_Obtener(codEmpresa, codigo);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionConsulta")]
+        public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionConsulta([FromBody] FndTraspasoTesoreriaLiquidacionConsultaParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionConsulta(param);
+        }
+
+        [Authorize]
+        [HttpPost("RevisaDuplicadosEnLaRemesa")]
+        public ErrorDto<List<FndTraspasoTesoreriaDuplicadosResult>> RevisaDuplicadosEnLaRemesa([FromBody] FndTraspasoTesoreriaDuplicadosParams param)
+        {
+            return _bl.RevisaDuplicadosEnLaRemesa(param);
+        }
+
+        [Authorize]
+        [HttpPost("RetLiqTesoreria")]
+        public ErrorDto<bool> RetLiqTesoreria([FromBody] FndRetLiqTesoreriaParams param)
+        {
+            return _bl.RetLiqTesoreria(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_Update")]
+        public ErrorDto<bool> TraspasoTesoreria_Update([FromBody] FndTraspasoTesoreriaUpdateParams param)
+        {
+            return _bl.TraspasoTesoreria_Update(param);
+        }
+
+        [Authorize]
+        [HttpPost("RetLiqTesoreria_Unificado")]
+        public ErrorDto<bool> RetLiqTesoreria_Unificado([FromBody] FndRetLiqTesoreriaUnificadoParams param)
+        {
+            return _bl.RetLiqTesoreria_Unificado(param);
+        }
+
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_LiquidacionDetalle")]
+        public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionDetalle([FromBody] FndTraspasoTesoreriaDetalleParams param)
+        {
+            return _bl.TraspasoTesoreria_LiquidacionDetalle(param);
+        }
+    }
+}

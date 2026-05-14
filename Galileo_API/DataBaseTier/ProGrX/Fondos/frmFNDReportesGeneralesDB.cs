@@ -178,6 +178,5 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 new { fechaInicioStr, fechaCorteStr }
             );
         }
-
     }
 }
