@@ -313,6 +313,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 base_calculo = 0,
                 tasa_base = 0,
                 tasa_fluctuante = false,
+                codoperadora = 0,
                 capitaliza_rend = false,
                 utiliza_tbp = false,
                 sirve_garantia = false,

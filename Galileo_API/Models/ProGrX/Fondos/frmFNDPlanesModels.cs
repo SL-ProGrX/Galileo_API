@@ -27,7 +27,7 @@
     public class FndPlanDto
     {
         public required string codplan { get; set; }
-        public int codoperadora { get; set; }
+        public required int codoperadora { get; set; }
         public required string descripcion { get; set; }
         public required string notas { get; set; }
         public required string estado { get; set; }
@@ -161,12 +161,12 @@
 
     public class FndPlanRetiroDto
     {
-        public int id { get; set; }
-        public int desde { get; set; }
-        public int hasta { get; set; }
-        public decimal porcentaje { get; set; }
+        public required int id { get; set; }
+        public required int desde { get; set; }
+        public required int hasta { get; set; }
+        public required decimal porcentaje { get; set; }
         public string aplicar { get; set; } = string.Empty;
-        public int cod_operadora { get; set; }
+        public required int cod_operadora { get; set; }
         public string cod_plan { get; set; } = string.Empty;
         public string? registro_usuario { get; set; }
         public DateTime? registro_fecha { get; set; }
@@ -227,7 +227,7 @@
     public class FndPlanPuntoDto
     {
         public int? id { get; set; }
-        public int cod_operadora { get; set; }
+        public required int cod_operadora { get; set; }
         public string? cod_plan { get; set; }
         public string? vigente { get; set; }
         public string? tipo { get; set; }
@@ -238,23 +238,23 @@
 
     public class FndPlanPuntoDetalleDto
     {
-        public int id { get; set; } // COD_TABLA_AUM
-        public int cod_operadora { get; set; }
+        public required int id { get; set; } // COD_TABLA_AUM
+        public required int cod_operadora { get; set; }
         public required string cod_plan { get; set; }
         public string tipo_tasa { get; set; } = "";
-        public int desde { get; set; }
-        public int hasta { get; set; }
-        public decimal plus { get; set; }
-        public int id_per_tasa { get; set; } // regla padre
+        public required int desde { get; set; }
+        public required int hasta { get; set; }
+        public required decimal plus { get; set; }
+        public required int id_per_tasa { get; set; } // regla padre
         public string usuario { get; set; } = "";
     }
 
     public class FndPlanDestinoGuardarDto
     {
-        public int id { get; set; }
+        public required int id { get; set; }
         public string cod_plan { get; set; } = "";
         public string descripcion { get; set; } = "";
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
         public string usuario { get; set; } = "";
     }
 
@@ -262,9 +262,9 @@
     {
         public required string id_destino { get; set; }
         public string cod_plan { get; set; } = "";
-        public int asociado { get; set; }  // 1 = asociar, 0 = desasociar
+        public required int asociado { get; set; }  // 1 = asociar, 0 = desasociar
         public string usuario { get; set; } = "";
-        public int cod_operadora { get; set; }  // 1 = asociar, 0 = desasociar
+        public required int cod_operadora { get; set; }  // 1 = asociar, 0 = desasociar
     }
 
     public class EstadoAsignadoDto
@@ -282,7 +282,7 @@
     public class FndPlanesVencimientosGuardarDto
     {
         public string cod_plan { get; set; } = "";
-        public int cod_operadora { get; set; }
+        public required int cod_operadora { get; set; }
         public string usuario { get; set; } = "";
         public List<EstadoAsignadoDto> estados { get; set; } = new();
         public List<PlazoAsignadoDto> plazos { get; set; } = new();
@@ -290,7 +290,7 @@
 
     public class FndReglaActivarDto
     {
-        public int id_regla { get; set; }
+        public required int id_regla { get; set; }
         public string usuario { get; set; } = "";
     }
 }
