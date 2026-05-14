@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.DataBaseTier
 {
-    public class MccFuncionesDb
+    public static class MccFuncionesDb
     { 
         public static string ObtenerNombreMes(int mes)
         {

@@ -51,23 +51,60 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
 
         }
-        private static void EjecutarProcesoAdd(IDbConnection connection, CcProcesoMensualProcesoGeneralDbModel item, int codInstitucion, decimal proceso)
+        private static void EjecutarProcesoAdd(IDbConnection connection,CcProcesoMensualProcesoGeneralDbModel item,int codInstitucion, decimal proceso)
         {
             var procedimiento = item.Procedimiento.Trim();
 
-            if (string.IsNullOrWhiteSpace(procedimiento))
+            if (!EsNombreProcedimientoValido(procedimiento))
             {
-                return;
+                throw new InvalidOperationException(
+                    $"El procedimiento configurado no es válido: {procedimiento}");
             }
 
-            var parametros = CrearParametrosProcedimiento(
-                item,
-                codInstitucion,
-                proceso);
+            if (!SonParametrosAdicionalesValidos(item.ParametrosAdd))
+            {
+                throw new InvalidOperationException(
+                    $"Los parámetros adicionales del procedimiento {procedimiento} no son válidos.");
+            }
 
-            var query = $"EXEC {procedimiento} {parametros}";
+            var parametrosAdd = item.ParametrosAdd?.Trim();
 
-            connection.Execute(query);
+            var query = string.IsNullOrWhiteSpace(parametrosAdd)
+                ? $"EXEC {procedimiento} @CodInstitucion, @Proceso"
+                : $"EXEC {procedimiento} @CodInstitucion, @Proceso, {parametrosAdd}";
+
+            connection.Execute(query, new
+            {
+                CodInstitucion = codInstitucion,
+                Proceso = proceso
+            });
+        }
+        private static bool EsNombreProcedimientoValido(string procedimiento)
+        {
+            return !string.IsNullOrWhiteSpace(procedimiento)
+                && procedimiento.Length <= 128
+                && procedimiento.All(c =>
+                    char.IsLetterOrDigit(c)
+                    || c == '_'
+                    || c == '.');
+        }
+
+        private static bool SonParametrosAdicionalesValidos(string parametros)
+        {
+            if (string.IsNullOrWhiteSpace(parametros))
+            {
+                return true;
+            }
+
+            return parametros.All(c =>
+                char.IsLetterOrDigit(c)
+                || char.IsWhiteSpace(c)
+                || c == '_'
+                || c == '.'
+                || c == ','
+                || c == '-'
+                || c == '\''
+                || c == '/');
         }
         private static string CrearParametrosProcedimiento(CcProcesoMensualProcesoGeneralDbModel item, int codInstitucion, decimal proceso)
         {
