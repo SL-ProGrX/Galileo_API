@@ -5,6 +5,7 @@ using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo.Models.ERROR;
 using System.Collections.Generic;
 using Galileo.Models.Security;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -18,6 +19,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             _portalDb = new PortalDB(config);
             _mSecurityMainDb = new MSecurityMainDb(config);
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalle)
+        {
+            _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = "Aplica - Web",
+                Modulo = vModulo
+            });
         }
 
         /// <summary>
@@ -105,15 +118,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             var result = DbHelper.ExecuteSingleQuery<ConsolidaMapeoImportaResultDto?>(_portalDb, codEmpresa, sql, default, parametros);
             if (result.Result != null && result.Result.Pass == 1)
             {
-                var bitacora = new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = Usuario,
-                    DetalleMovimiento = $"Importación del Mapeo de Cuentas de la Contabilidad Id: [{Consolidadora}]  Unidad: {Unidad}",
-                    Movimiento = "Aplica - Web",
-                    Modulo = vModulo
-                };
-                _mSecurityMainDb.Bitacora(bitacora);
+                RegistrarBitacora(codEmpresa, Usuario, $"Importación del Mapeo de Cuentas de la Contabilidad Id: [{Consolidadora}]  Unidad: {Unidad}");
             }
             return result;
         }
@@ -128,15 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             var result = DbHelper.ExecuteSingleQuery<ConsolidaMapeoImportaResultDto?>(_portalDb, codEmpresa, sql, default, parametros);
             if (result.Result != null && result.Result.Pass == 1)
             {
-                var bitacora = new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = Usuario,
-                    DetalleMovimiento = $"Inicialización del Mapeo de Cuentas de la Contabilidad Id: [{Consolidadora}]  , Unidad: {Unidad}",
-                    Movimiento = "Aplica - Web",
-                    Modulo = vModulo
-                };
-                _mSecurityMainDb.Bitacora(bitacora);
+                RegistrarBitacora(codEmpresa, Usuario, $"Inicialización del Mapeo de Cuentas de la Contabilidad Id: [{Consolidadora}]  , Unidad: {Unidad}");
             }
             return result;
         }
@@ -180,17 +177,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 using var conn = _portalDb.CreateConnection(codEmpresa);
                 conn.Execute(sql, parametros, commandType: System.Data.CommandType.StoredProcedure);
-                _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = Usuario,
-                    DetalleMovimiento = $"Importación del Mapeo de Cuentas de la Contabilidad Base de: {Consolidadora}",
-                    Movimiento = "Aplica - Web",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, Usuario, $"Importación del Mapeo de Cuentas de la Contabilidad Base de: {Consolidadora}");
                 return new ErrorDto<bool> { Result = true, Code = 0, Description = "Ok" };
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return new ErrorDto<bool> { Result = false, Code = -1, Description = ex.Message };
+            }
+            catch (InvalidOperationException ex)
             {
                 return new ErrorDto<bool> { Result = false, Code = -1, Description = ex.Message };
             }
