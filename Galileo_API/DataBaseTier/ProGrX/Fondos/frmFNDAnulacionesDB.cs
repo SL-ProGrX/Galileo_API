@@ -281,10 +281,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateOkResponse(false);
             }
 
-            return ValidarSeguridadAnulacion(codEmpresa, parametros, connection);
+            return ValidarSeguridadAnulacion(parametros, connection);
         }
 
-        private static ErrorDto<bool> ValidarSeguridadAnulacion(int codEmpresa, FndAnulacionesParams parametros, SqlConnection connection)
+        private static ErrorDto<bool> ValidarSeguridadAnulacion( FndAnulacionesParams parametros, SqlConnection connection)
         {
             var autoriza = connection.QueryFirstOrDefault<int>(
                 SpSeguridadAnulacion,

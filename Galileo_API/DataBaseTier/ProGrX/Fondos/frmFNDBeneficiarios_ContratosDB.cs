@@ -87,8 +87,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
 
             var result = data.isNew
-                ? FNDBeneficiarios_Contratos_Insertar(CodEmpresa, usuario, data)
-                : FNDBeneficiarios_Contratos_Actualizar(CodEmpresa, usuario, data);
+                ? FNDBeneficiarios_Contratos_Insertar(CodEmpresa, data)
+                : FNDBeneficiarios_Contratos_Actualizar(CodEmpresa, data);
 
             if (result.Code != 0)
             {
@@ -137,10 +137,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para insertar un nuevo beneficiario de un contrato
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, string usuario, FndBeneficiariosContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, FndBeneficiariosContratosData data)
         {
             const string query = @"
                     INSERT INTO dbo.FND_CONTRATOS_BENEFICIARIOS
@@ -190,7 +189,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa, string usuario, FndBeneficiariosContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa,FndBeneficiariosContratosData data)
         {
             const string query = @"
                     UPDATE dbo.FND_CONTRATOS_BENEFICIARIOS
