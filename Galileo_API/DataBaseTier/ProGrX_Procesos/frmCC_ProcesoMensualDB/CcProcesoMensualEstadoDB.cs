@@ -130,7 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     });
                 }
 
-                var response = this.CrearEstadoResponse(
+                var response = CrearEstadoResponse(
                     parametros,
                     globalesResp?.Result?.GNombreInstitucion ?? string.Empty,
                     globalesResp?.Result?.GlngFechaCR ?? 0);
