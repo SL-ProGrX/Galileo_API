@@ -431,14 +431,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     pCuponPaga = "0";
                 }
 
-                if (!contrato.isNew)
-                {
-                    response = actualizarContrato(CodEmpresa, usuario, vCambios, contrato);
-                }
-                else
-                {
-                    response = insertarContrato(CodEmpresa, usuario, contrato);
-                }
+                response = !contrato.isNew
+                    ? actualizarContrato(CodEmpresa, usuario, vCambios, contrato)
+                    : insertarContrato(CodEmpresa, usuario, contrato);
 
                 if (response.Code == 0 && contrato.tipo_cdp)
                 {
