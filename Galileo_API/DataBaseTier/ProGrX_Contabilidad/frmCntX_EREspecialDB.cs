@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Data;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
@@ -7,20 +8,20 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmCntXEREspecialDb
+    public class FrmCntXErEspecialDb
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurityMain;
         private const int vModulo = 20;
 
-        public FrmCntXEREspecialDb(IConfiguration config)
+        public FrmCntXErEspecialDb(IConfiguration config)
             : this(
                   new PortalDB(config),
                   new MSecurityMainDb(config))
         {
         }
 
-        public FrmCntXEREspecialDb(
+        public FrmCntXErEspecialDb(
             PortalDB portalDb,
             MSecurityMainDb mSecurityMain)
         {
@@ -29,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Obtiene un ER especial por código.
+        /// Obtiene un ER especial por codigo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
@@ -95,6 +96,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             var localConn = _portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
 
+            string user = (usuario ?? string.Empty).Trim().ToUpper();
             try
             {
                 using var connection = new SqlConnection(localConn);
@@ -121,21 +123,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                     RegistrarBitacora(
                         codEmpresa,
-                        usuario,
+                        user,
                         "Modifica - WEB",
                         $"ER ESPECIAL: {codErEspecial} EMP: {codContabilidad}");
                 }
                 else
                 {
+                    using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+
                     codErEspecial = connection.ExecuteScalar<int>(
                         @"
                         select isnull(max(cod_er_especial), 0) + 1
-                        from CNTX_ER_ESPECIAL
+                        from CNTX_ER_ESPECIAL with (updlock, holdlock)
                         where cod_contabilidad = @codContabilidad;",
-                        new { codContabilidad });
+                                        new { codContabilidad },
+                                        transaction);
 
-                    connection.Execute(
-                        @"
+                                    connection.Execute(
+                                        @"
                         insert into CNTX_ER_ESPECIAL
                         (
                             cod_contabilidad,
@@ -160,12 +165,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                             codErEspecial,
                             descripcion = request.descripcion.Trim().ToUpper(),
                             titulo = request.titulo.Trim(),
-                            usuario = (usuario ?? string.Empty).Trim().ToUpper()
-                        });
+                            usuario = user
+                        },
+                        transaction);
+
+                    transaction.Commit();
 
                     RegistrarBitacora(
                         codEmpresa,
-                        usuario,
+                        user,
                         "Registra - WEB",
                         $"ER ESPECIAL: {codErEspecial} EMP: {codContabilidad}");
                 }
@@ -231,7 +239,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Obtiene el árbol inicial de cuentas con selección por grupo y acción.
+        /// Obtiene el arbol inicial de cuentas con seleccion por grupo y accion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
@@ -341,7 +349,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Guarda la selección de cuentas de un grupo y acción del ER especial.
+        /// Guarda la seleccion de cuentas de un grupo y accion del ER especial.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>

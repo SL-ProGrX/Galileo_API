@@ -4,12 +4,12 @@ using Galileo_API.Models.ProGrX_Contabilidad;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 {
-    public class FrmCntXEREspecialBl
+    public class FrmCntXErEspecialBl
     {
-        private readonly FrmCntXEREspecialDb _db;
+        private readonly FrmCntXErEspecialDb _db;
 
-        public FrmCntXEREspecialBl(IConfiguration config) =>
-            _db = new FrmCntXEREspecialDb(config);
+        public FrmCntXErEspecialBl(IConfiguration config) =>
+            _db = new FrmCntXErEspecialDb(config);
 
         public ErrorDto<CntXEREspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
             int codEmpresa,

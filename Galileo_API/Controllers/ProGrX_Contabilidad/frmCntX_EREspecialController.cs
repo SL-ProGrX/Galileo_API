@@ -9,12 +9,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class FrmCntXEREspecialController : ControllerBase
+    public class FrmCntXErEspecialController : ControllerBase
     {
-        private readonly FrmCntXEREspecialBl _bl;
+        private readonly FrmCntXErEspecialBl _bl;
 
-        public FrmCntXEREspecialController(IConfiguration config) =>
-            _bl = new FrmCntXEREspecialBl(config);
+        public FrmCntXErEspecialController(IConfiguration config) =>
+            _bl = new FrmCntXErEspecialBl(config);
 
         [HttpGet("CntX_EREspecial_Consulta_Obtener")]
         public ErrorDto<CntXEREspecialDefinicionData?> CntX_EREspecial_Consulta_Obtener(
