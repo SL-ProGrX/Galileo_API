@@ -139,14 +139,22 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select ltrim(rtrim(Descripcion)) as 'Descripcion' from CntX_Cuentas where cod_cuenta = '{pCuenta}' and cod_contabilidad = {CodConta}";
 
-                    var info = connection.Query<CntDescripCuentaDto>(query).FirstOrDefault();
-                    if(info != null)
-                    {
-                        result = info.Descripcion ?? "";
-                    }
+                const string sql = @"
+                    SELECT LTRIM(RTRIM(Descripcion)) AS Descripcion
+                    FROM CntX_Cuentas
+                    WHERE cod_cuenta = @Cuenta
+                      AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntDescripCuentaDto>(sql, new
+                {
+                    Cuenta = pCuenta,
+                    Contabilidad = CodConta
+                });
+
+                if (info != null)
+                {
+                    result = info.Descripcion ?? string.Empty;
                 }
             }
             catch (Exception ex)
@@ -155,7 +163,6 @@ namespace Galileo.DataBaseTier
             }
 
             return result;
-
         }
         public bool fxgCntCuentaValida(int codEmpresa, string vCuenta)
         {
