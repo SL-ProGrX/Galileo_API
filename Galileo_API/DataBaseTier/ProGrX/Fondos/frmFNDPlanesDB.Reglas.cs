@@ -44,7 +44,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         result.Code.GetValueOrDefault(-1));
                 }
 
-                if ((object?)result.Result is null || (result.Result?.Pass ?? 0) != 1)
+                if ((object?)result.Result is null || result.Result.Pass != 1)
                 {
                     return DbHelper.ErrorResponse("No se pudo activar la regla.", -1);
                 }
