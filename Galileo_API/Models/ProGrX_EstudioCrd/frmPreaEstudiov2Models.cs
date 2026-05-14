@@ -153,4 +153,18 @@
         public string mensaje_bloqueo { get; set; } = string.Empty;
     }
 
+    public class FrmPreaEstudiov2AbandonarRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string cod_preanalisis { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2AbandonarResponse
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public string estado { get; set; } = "B";
+        public string estado_desc { get; set; } = "Abandonado";
+        public string mensaje { get; set; } = "Se ha ABANDONADO el expediente correctamente.";
+    }
+
 }

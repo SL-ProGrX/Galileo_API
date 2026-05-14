@@ -58,5 +58,52 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return result;
         }
 
+        /// <summary>
+        /// Cambia el expediente a estado abandonado.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
+            int codEmpresa,
+            FrmPreaEstudiov2AbandonarRequest request)
+        {
+            var response = new ErrorDto<FrmPreaEstudiov2AbandonarResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2AbandonarResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                connection.Open();
+
+                const string sql = @"EXEC spCrdPreaCambiaEstadoPreanalisis @cod_preanalisis, @estado";
+
+                connection.Execute(
+                    sql,
+                    new
+                    {
+                        cod_preanalisis = request.cod_preanalisis.Trim(),
+                        estado = "B"
+                    },
+                    commandType: CommandType.Text
+                );
+
+                response.Result = new FrmPreaEstudiov2AbandonarResponse
+                {
+                    cod_preanalisis = request.cod_preanalisis.Trim()
+                };
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = new FrmPreaEstudiov2AbandonarResponse();
+                return response;
+            }
+        }
+
     }
 }

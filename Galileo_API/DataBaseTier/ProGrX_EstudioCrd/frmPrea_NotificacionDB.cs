@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_EstudioCrd;
+using Galileo_API.Models.ProGrX_EstudioCrd.Galileo_API.Models.ProGrX_EstudioCrd;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.ServiceModel.Channels;
@@ -184,10 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new FrmPreaNotificacionEnviarResponse();
-                return response;
+                return DbHelper.CreateErrorResponse<FrmPreaNotificacionEnviarResponse>(ex.Message);
             }
         }
 
