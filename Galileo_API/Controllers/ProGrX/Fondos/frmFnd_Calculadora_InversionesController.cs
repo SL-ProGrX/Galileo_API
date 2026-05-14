@@ -54,10 +54,10 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
-        [HttpGet("Fnd_Calculadora_TasaRef_Obtener")]
-        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, int PlazoDias, string Tipo, string Plan, int Operadora, bool chkCupon, int rpTipo, int PlazoInv, int? CuponId)
+        [HttpPost("Fnd_Calculadora_TasaRef_Obtener")]
+        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, CalculadoraTasaRefParams request)
         {
-            return _BL.Fnd_Calculadora_TasaRef_Obtener(CodEmpresa, PlazoDias, Tipo, Plan, Operadora, chkCupon, rpTipo, PlazoInv, CuponId);
+            return _BL.Fnd_Calculadora_TasaRef_Obtener(CodEmpresa, request);
         }
 
         [Authorize]

@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
@@ -359,44 +358,68 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         /// <summary>
+        /// Parámetros para registrar bitácora de planilla.
+        /// </summary>
+        public sealed class BitacoraPlanillaParams
+        {
+            public string Transaccion { get; init; } = string.Empty;
+            public int Institucion { get; init; }
+            public int Proceso { get; init; }
+            public string Gestion { get; init; } = string.Empty;
+            public decimal Monto { get; init; }
+            public string Plan { get; init; } = string.Empty;
+            public int Casos { get; init; }
+            public string Usuario { get; init; } = string.Empty;
+            public string Documento { get; init; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Parámetros para generar asiento de planilla.
+        /// </summary>
+        public sealed class PlanillaAsientoParams
+        {
+            public int CodInstitucion { get; init; }
+            public int Proceso { get; init; }
+            public int Operadora { get; init; }
+            public string Plan { get; init; } = string.Empty;
+            public string CuentaPlanilla { get; init; } = string.Empty;
+            public string Comprobante { get; init; } = string.Empty;
+            public string Usuario { get; init; } = string.Empty;
+        }
+
+        /// <summary>
         /// Agregar a la Bitacora Planilla
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="Transaccion"></param>
-        /// <param name="Institucion"></param>
-        /// <param name="Proceso"></param>
-        /// <param name="Gestion"></param>
-        /// <param name="Monto"></param>
-        /// <param name="Plan"></param>
-        /// <param name="Casos"></param>
-        /// <param name="Usuario"></param>
-        /// <param name="Documento"></param>
+        /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto sbBitacoraPlanilla(int CodEmpresa, string Transaccion, int Institucion, int Proceso,
-            string Gestion, decimal Monto, string Plan, int Casos, string Usuario,
-            string Documento = "")
+        public ErrorDto sbBitacoraPlanilla(int CodEmpresa, BitacoraPlanillaParams request)
         {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse("Los parámetros de bitácora son requeridos.", -2);
+            }
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
             {
                 var consecutivo = connection.QueryFirstOrDefault<int>(SqlBitacoraConsecutivo, new
                 {
-                    Institucion,
-                    Plan = NormalizarTexto(Plan),
-                    Proceso
+                    Institucion = request.Institucion,
+                    Plan = NormalizarTexto(request.Plan),
+                    Proceso = request.Proceso
                 });
 
                 connection.Execute(SqlBitacoraInsert, new
                 {
                     IdSeq = consecutivo,
-                    Institucion,
-                    Proceso,
-                    Plan = NormalizarTexto(Plan),
-                    Gestion = NormalizarTexto(Gestion),
-                    Transaccion = NormalizarTexto(Transaccion),
-                    Documento = NormalizarTexto(Documento),
-                    Usuario = NormalizarTexto(Usuario),
-                    Casos,
-                    Monto
+                    Institucion = request.Institucion,
+                    Proceso = request.Proceso,
+                    Plan = NormalizarTexto(request.Plan),
+                    Gestion = NormalizarTexto(request.Gestion),
+                    Transaccion = NormalizarTexto(request.Transaccion),
+                    Documento = NormalizarTexto(request.Documento),
+                    Usuario = NormalizarTexto(request.Usuario),
+                    Casos = request.Casos,
+                    Monto = request.Monto
                 });
 
                 return true;
@@ -425,21 +448,24 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return result.Code == 0 && result.Result > 0;
         }
 
-        public ErrorDto SbFndAsiento(int CodEmpresa, int CodInstitucion, int Proceso, int Operadora, string Plan,
-            string CuentaPlanilla, string Comprobante, string Usuario)
+        public ErrorDto SbFndAsiento(int CodEmpresa, PlanillaAsientoParams request)
         {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse("Los parámetros del asiento son requeridos.", -2);
+            }
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 connection.Execute(
                     SpPlanillaDirectaAsiento,
                     new
                     {
-                        Proceso,
-                        Institucion = CodInstitucion,
-                        Operadora,
-                        Plan = NormalizarTexto(Plan),
-                        CuentaPlanilla = NormalizarTexto(CuentaPlanilla),
-                        Comprobante = NormalizarTexto(Comprobante),
-                        Usuario = NormalizarTexto(Usuario)
+                        Proceso = request.Proceso,
+                        Institucion = request.CodInstitucion,
+                        Operadora = request.Operadora,
+                        Plan = NormalizarTexto(request.Plan),
+                        CuentaPlanilla = NormalizarTexto(request.CuentaPlanilla),
+                        Comprobante = NormalizarTexto(request.Comprobante),
+                        Usuario = NormalizarTexto(request.Usuario)
                     },
                     commandType: CommandType.StoredProcedure));
 

@@ -39,9 +39,9 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _Db.Fnd_Calculadora_PlazosDias_Obtener(CodEmpresa, Plazo, CodPlan);
         }
 
-        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, int PlazoDias, string Tipo, string Plan, int Operadora, bool chkCupon, int rpTipo, int PlazoInv, int? CuponId)
+        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, CalculadoraTasaRefParams request)
         {
-            return _Db.Fnd_Calculadora_TasaRef_Obtener(CodEmpresa, PlazoDias, Tipo, Plan, Operadora, chkCupon, rpTipo, PlazoInv, CuponId);
+            return _Db.Fnd_Calculadora_TasaRef_Obtener(CodEmpresa, request);
         }
 
         public ErrorDto<List<FndCalculadoraInversionesFlujoData>> Fnd_Calculadora_Inversiones_Calcular(int CodEmpresa, string FiltrosCalculadora)

@@ -123,6 +123,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 : DbHelper.CreateErrorResponse("No se encontraron resultados para el plazo especificado.", -1, 0);
         }
 
+        
+
         /// <summary>
         /// Obtener tasa de referencia
         /// </summary>
@@ -136,9 +138,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="PlazoInv"></param>
         /// <param name="CuponId"></param>
         /// <returns></returns>
-        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, int PlazoDias, string Tipo, string Plan, int Operadora, bool chkCupon, int rpTipo, int PlazoInv, int? CuponId )
+        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, CalculadoraTasaRefParams request)
         {
-            if (!chkCupon || rpTipo == 0)
+            if (request is null)
+            {
+                return DbHelper.CreateErrorResponse("Los parámetros de tasa son requeridos.", -2, 0m);
+            }
+
+            if (!request.ChkCupon || request.RpTipo == 0)
             {
                 const string query = @"SELECT dbo.fxFNDCalcularTasaRefContrato(@Operadora, @Plan, @PlazoDias, @Tipo, NULL, NULL, 0) AS TASA;";
 
@@ -147,14 +154,26 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     CodEmpresa,
                     query,
                     0m,
-                    new { Operadora, Plan = NormalizarTexto(Plan), PlazoDias, Tipo = NormalizarTexto(Tipo) });
+                    new
+                    {
+                        request.Operadora,
+                        Plan = NormalizarTexto(request.Plan),
+                        request.PlazoDias,
+                        Tipo = NormalizarTexto(request.Tipo)
+                    });
             }
 
             return DbHelper.ExecuteStoredProcedureSingle<decimal>(
                 new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
                 "dbo.spFnd_Inversion_Tasas_Condiciones",
                 0m,
-                new { Operadora, Plan = NormalizarTexto(Plan), PlazoInv, CuponId });
+                new
+                {
+                    request.Operadora,
+                    Plan = NormalizarTexto(request.Plan),
+                    request.PlazoInv,
+                    request.CuponId
+                });
         }
 
         /// <summary>

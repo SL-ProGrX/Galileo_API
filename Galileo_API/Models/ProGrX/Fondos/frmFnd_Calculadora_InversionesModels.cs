@@ -42,4 +42,19 @@
         public string? Plan { get; set; }
         public string? Usuario { get; set; }
     }
+
+    /// <summary>
+    /// Parámetros para consultar la tasa de referencia de inversión.
+    /// </summary>
+    public sealed class CalculadoraTasaRefParams
+    {
+        public int PlazoDias { get; init; }
+        public string Tipo { get; init; } = string.Empty;
+        public string Plan { get; init; } = string.Empty;
+        public int Operadora { get; init; }
+        public bool ChkCupon { get; init; }
+        public int RpTipo { get; init; }
+        public int PlazoInv { get; init; }
+        public int? CuponId { get; init; }
+    }
 }
