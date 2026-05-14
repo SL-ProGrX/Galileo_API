@@ -12,6 +12,9 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly MReportingServicesDB _reportingServicesDB;
+        private const string TRANSFERENCIA = "Transferencia";
+        private const string CHEQUE = "Cheque";
+
 
         public MFndFuncionesDb(IConfiguration config)
         {
@@ -72,6 +75,7 @@ namespace Galileo.DataBaseTier
 
         // ========= Funciones de negocio =========
 
+
         public static string fxgFNDTipoPago(string vModo, string vTipo)
         {
             if (string.IsNullOrWhiteSpace(vTipo))
@@ -89,12 +93,13 @@ namespace Galileo.DataBaseTier
                 };
             }
 
+
             if (vModo == "C")
             {
                 return tipo switch
                 {
-                    "TE" => "Transferencia",
-                    "CK" => "Cheque",
+                    "TE" => TRANSFERENCIA,
+                    "CK" => CHEQUE,
                     _ => string.Empty
                 };
             }
@@ -109,37 +114,34 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                if (vModo == "D")
                 {
-                    if (vModo == "D")
+                    switch (vTipo.Trim().ToUpper())
                     {
-                        switch (vTipo.Trim().ToUpper())
-                        {
-                            case "TRANSFERENCIA":
-                                result = "TE";
-                                break;
-                            case "CHEQUE":
-                                result = "CK";
-                                break;
-                        }
+                        case "TRANSFERENCIA":
+                            result = "TE";
+                            break;
+                        case "CHEQUE":
+                            result = "CK";
+                            break;
                     }
-                    else if (vModo == "C")
+                }
+                else if (vModo == "C")
+                {
+                    switch (vTipo.Trim().ToUpper())
                     {
-                        switch (vTipo.Trim().ToUpper())
-                        {
-                            case "TE":
-                                result = "Transferencia";
-                                break;
-                            case "CK":
-                                result = "Cheque";
-                                break;
-                        }
+                        case "TE":
+                            result = TRANSFERENCIA;
+                            break;
+                        case "CK":
+                            result = CHEQUE;
+                            break;
                     }
-
                 }
             }
             catch (Exception)
             {
-                return null;
+                return string.Empty;
             }
             return result;
         }
@@ -156,14 +158,14 @@ namespace Galileo.DataBaseTier
         }
 
 
-        
+
         public static string fxTipoDocumento(string vTipo)
         {
             return vTipo switch
             {
                 // códigos -> descripción
-                "CK" => "Cheque",
-                "TE" => "Transferencia",
+                "CK" => CHEQUE,
+                "TE" => TRANSFERENCIA,
                 "EF" => "Efectivo",
                 "RE" => "Efectivo",
                 "ND" => "Nota Debito",
@@ -176,8 +178,8 @@ namespace Galileo.DataBaseTier
                 "TS" => "Transferencia SINPE",
 
                 // descripción -> códigos
-                "Cheque" => "CK",
-                "Transferencia" => "TE",
+                CHEQUE => "CK",
+                TRANSFERENCIA => "TE",
                 "Efectivo" => "EF",
                 "Nota Debito" => "ND",
                 "Nota Credito" => "NC",
