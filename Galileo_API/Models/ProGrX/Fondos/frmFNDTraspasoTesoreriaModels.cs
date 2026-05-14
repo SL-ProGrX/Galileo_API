@@ -1,8 +1,10 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿using Org.BouncyCastle.Ocsp;
+
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class TesTokenConsultaParams
     {
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
         public string Token { get; set; } = string.Empty;
         public string Estado { get; set; } = "A";
         public string Usuario { get; set; } = string.Empty;
@@ -22,15 +24,15 @@
 
     public class FndTraspasoTesoreriaFiltroParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaDesde { get; set; }
+        public required DateTime FechaHasta { get; set; }
         public string Estado { get; set; } = "P"; // "P" = Pendiente, otro = Generado
     }
 
     public class TesTokenNewParams
     {
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
@@ -49,13 +51,13 @@
 
     public class FndTraspasoTesoreriaLiquidacionConsultaParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
-        public bool Todos { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaDesde { get; set; }
+        public required DateTime FechaHasta { get; set; }
+        public required bool Todos { get; set; }
         public string? SifParam { get; set; }
         public string Estado { get; set; } = "P"; // "P" = Pendiente, otro = Generado
-        public bool Filtros { get; set; }
+        public required bool Filtros { get; set; }
         public int? BancoId { get; set; }
         public string? Oficina { get; set; }
         public string? Usuario { get; set; }
@@ -90,12 +92,12 @@
 
     public class FndTraspasoTesoreriaDuplicadosParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaDesde { get; set; }
+        public required DateTime FechaHasta { get; set; }
         public string? SifParam { get; set; }
         public string Estado { get; set; } = "P";
-        public bool Filtros { get; set; }
+        public required bool Filtros { get; set; }
         public int? BancoId { get; set; }
         public string? Oficina { get; set; }
         public string? Usuario { get; set; }
@@ -116,39 +118,39 @@
 
     public class FndRetLiqTesoreriaParams
     {
-        public int CodEmpresa { get; set; }
-        public int LiqNum { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int LiqNum { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
     }
 
     public class FndTraspasoTesoreriaUpdateParams
     {
-        public int CodEmpresa { get; set; }
-        public int Consec { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int Consec { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string RetencionCodigo { get; set; } = string.Empty;
     }
 
     public class FndRetLiqTesoreriaUnificadoParams
     {
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public string IdToken { get; set; } = string.Empty;
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
+        public required DateTime FechaDesde { get; set; }
+        public required DateTime FechaHasta { get; set; }
     }
 
     public class FndTraspasoTesoreriaDetalleParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaDesde { get; set; }
+        public required DateTime FechaHasta { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string? SifParam { get; set; }
         public string Estado { get; set; } = "P";
-        public bool Filtros { get; set; }
+        public required bool Filtros { get; set; }
         public int? BancoId { get; set; }
         public string? Oficina { get; set; }
         public string? Usuario { get; set; }
