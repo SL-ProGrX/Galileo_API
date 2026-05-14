@@ -73,7 +73,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 conn.Execute(sql, parametros, commandType: System.Data.CommandType.StoredProcedure);
                 return new ErrorDto<bool> { Result = true, Code = 0, Description = "Ok" };
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return new ErrorDto<bool> { Result = false, Code = -1, Description = ex.Message };
+            }
+            catch (InvalidOperationException ex)
             {
                 return new ErrorDto<bool> { Result = false, Code = -1, Description = ex.Message };
             }
@@ -92,7 +96,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var result = conn.Query<ConsolidaMapeoImportaResultadoDto?>(sql, parametros, commandType: System.Data.CommandType.StoredProcedure).AsList();
                 return new ErrorDto<List<ConsolidaMapeoImportaResultadoDto?>> { Result = result, Code = 0, Description = "Ok" };
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return new ErrorDto<List<ConsolidaMapeoImportaResultadoDto?>> { Result = null, Code = -1, Description = ex.Message };
+            }
+            catch (InvalidOperationException ex)
             {
                 return new ErrorDto<List<ConsolidaMapeoImportaResultadoDto?>> { Result = null, Code = -1, Description = ex.Message };
             }
@@ -151,7 +159,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var result = conn.Query<ConsolidaMapeoActualDto?>(sql, parametros, commandType: System.Data.CommandType.StoredProcedure).AsList();
                 return new ErrorDto<List<ConsolidaMapeoActualDto?>> { Result = result, Code = 0, Description = "Ok" };
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return new ErrorDto<List<ConsolidaMapeoActualDto?>> { Result = null, Code = -1, Description = ex.Message };
+            }
+            catch (InvalidOperationException ex)
             {
                 return new ErrorDto<List<ConsolidaMapeoActualDto?>> { Result = null, Code = -1, Description = ex.Message };
             }
