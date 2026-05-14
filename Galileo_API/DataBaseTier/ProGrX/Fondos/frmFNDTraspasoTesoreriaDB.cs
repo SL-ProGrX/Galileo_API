@@ -14,6 +14,21 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string vfiltro = "Los parámetros de filtro son requeridos.";
         private const string AppProductNameDot = "App.ProductName";
 
+        private const string SqlFiltroEstadoLiquidacion = @"
+                      AND (@EstadoPendiente IS NULL OR
+                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
+                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))";
+
+        private const string SqlFiltroRevisionLiquidacion = @"
+                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')";
+
+        private const string SqlFiltroAvanzadoLiquidacion = @"
+                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
+                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
+                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
+                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
+                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta)";
+
         private const string SqlBancos = @"
                     SELECT
                         id_banco AS item,
@@ -83,7 +98,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
 
-        private const string SqlLiquidacionBancos = @"
+        private static readonly string SqlLiquidacionBancos = $@"
                     SELECT
                         L.cod_banco AS item,
                         ISNULL(B.descripcion, 'Sin Banco') AS descripcion
@@ -91,47 +106,39 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     LEFT JOIN dbo.Tes_Bancos B
                         ON L.cod_Banco = B.id_Banco
                     WHERE L.Fecha BETWEEN @Desde AND @Hasta
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      {SqlFiltroEstadoLiquidacion}
                     GROUP BY
                         L.cod_banco,
                         B.descripcion;";
 
-        private const string SqlLiquidacionUsuarios = @"
+        private static readonly string SqlLiquidacionUsuarios = $@"
                     SELECT
                         L.USUARIO AS item,
                         L.USUARIO AS descripcion
                     FROM dbo.Fnd_Liquidacion L
                     WHERE L.Fecha BETWEEN @Desde AND @Hasta
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      {SqlFiltroEstadoLiquidacion}
                     GROUP BY L.usuario;";
 
-        private const string SqlLiquidacionSistemas = @"
+        private static readonly string SqlLiquidacionSistemas = $@"
                     SELECT
                         ISNULL(L.COD_APP, @AppProductName) AS descripcion,
                         ISNULL(L.COD_APP, @AppProductName) AS item
                     FROM dbo.Fnd_Liquidacion L
                     WHERE L.Fecha BETWEEN @Desde AND @Hasta
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      {SqlFiltroEstadoLiquidacion}
                     GROUP BY ISNULL(L.COD_APP, @AppProductName);";
 
-        private const string SqlLiquidacionTokens = @"
+        private static readonly string SqlLiquidacionTokens = $@"
                     SELECT
                         ISNULL(L.ID_TOKEN, '') AS descripcion,
                         ISNULL(L.ID_TOKEN, '') AS item
                     FROM dbo.Fnd_Liquidacion L
                     WHERE L.Fecha BETWEEN @Desde AND @Hasta
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      {SqlFiltroEstadoLiquidacion}
                     GROUP BY ISNULL(L.ID_TOKEN, '');";
 
-        private const string SqlLiquidacionOficinas = @"
+        private static readonly string SqlLiquidacionOficinas = $@"
                     SELECT
                         RTRIM(L.cod_Oficina) AS item,
                         ISNULL(O.descripcion, '') AS descripcion
@@ -139,14 +146,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     LEFT JOIN dbo.SIF_Oficinas O
                         ON L.cod_oficina = O.cod_oficina
                     WHERE L.Fecha BETWEEN @Desde AND @Hasta
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
+                      {SqlFiltroEstadoLiquidacion}
                     GROUP BY
                         L.cod_Oficina,
                         O.descripcion;";
 
-        private const string SqlLiquidacionConsulta = @"
+        private static readonly string SqlLiquidacionConsulta = $@"
                     SELECT
                         @Todos AS Valor,
                         L.Consec,
@@ -181,17 +186,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     LEFT JOIN dbo.Tes_Bancos B
                         ON L.cod_Banco = B.id_Banco
                     WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
-                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
-                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
-                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
-                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
-                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
-                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta);";
+                      {SqlFiltroRevisionLiquidacion}
+                      {SqlFiltroEstadoLiquidacion}
+                      {SqlFiltroAvanzadoLiquidacion};";
 
-        private const string SqlDuplicadosRemesa = @"
+        private static readonly string SqlDuplicadosRemesa = $@"
                     SELECT
                         COUNT(*) AS Liquidaciones,
                         C.Cedula,
@@ -212,19 +211,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     LEFT JOIN dbo.Tes_Bancos B
                         ON L.cod_Banco = B.id_Banco
                     WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
-                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
-                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
-                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
-                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
-                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
-                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta)
+                      {SqlFiltroRevisionLiquidacion}
+                      {SqlFiltroEstadoLiquidacion}
+                      {SqlFiltroAvanzadoLiquidacion}
                     GROUP BY C.Cedula, S.nombre, L.Cta_Ahorros, B.descripcion
                     HAVING COUNT(*) > 1;";
 
-        private const string SqlLiquidacionDetalle = @"
+        private static readonly string SqlLiquidacionDetalle = $@"
                     SELECT
                         L.Consec,
                         C.Cedula,
@@ -259,15 +252,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         ON L.cod_Banco = B.id_Banco
                     WHERE L.Fecha BETWEEN @FechaDesde AND @FechaHasta
                       AND C.Cedula = @Cedula
-                      AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')
-                      AND (@EstadoPendiente IS NULL OR
-                          (@EstadoPendiente = 1 AND L.Traspaso_tesoreria IS NULL) OR
-                          (@EstadoPendiente = 0 AND L.Traspaso_tesoreria IS NOT NULL))
-                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
-                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
-                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
-                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
-                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta);";
+                      {SqlFiltroRevisionLiquidacion}
+                      {SqlFiltroEstadoLiquidacion}
+                      {SqlFiltroAvanzadoLiquidacion};";
 
         /// <summary>
         /// Obtiene la lista de bancos de liquidaciones según filtros.
@@ -666,52 +653,89 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private static object CrearParametrosConsultaLiquidacion(FndTraspasoTesoreriaLiquidacionConsultaParams param)
         {
-            return new
+            return CrearParametrosLiquidacionBase(new LiquidacionFiltroBaseParams
             {
-                param.Todos,
-                FechaDesde = param.FechaDesde.Date,
-                FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
-                AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
-                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
-                AplicarFiltros = param.Filtros ? 1 : 0,
+                FechaDesde = param.FechaDesde,
+                FechaHasta = param.FechaHasta,
+                SifParam = param.SifParam,
+                Estado = param.Estado,
+                Filtros = param.Filtros,
                 BancoId = param.BancoId,
-                Oficina = NormalizarTexto(param.Oficina),
-                Usuario = CrearLikeInicio(param.Usuario),
-                Sistema = CrearLikeInicio(param.Sistema),
-                TokenConsulta = CrearLikeInicio(param.TokenConsulta),
-                AppProductName = ObtenerAppProductName(param.AppProductName)
-            };
+                Oficina = param.Oficina,
+                Usuario = param.Usuario,
+                Sistema = param.Sistema,
+                TokenConsulta = param.TokenConsulta,
+                AppProductName = param.AppProductName,
+                Todos = param.Todos
+            });
         }
 
         private static object CrearParametrosConsultaLiquidacion(FndTraspasoTesoreriaDuplicadosParams param)
         {
-            return new
+            return CrearParametrosLiquidacionBase(new LiquidacionFiltroBaseParams
             {
-                FechaDesde = param.FechaDesde.Date,
-                FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
-                AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
-                EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
-                AplicarFiltros = param.Filtros ? 1 : 0,
+                FechaDesde = param.FechaDesde,
+                FechaHasta = param.FechaHasta,
+                SifParam = param.SifParam,
+                Estado = param.Estado,
+                Filtros = param.Filtros,
                 BancoId = param.BancoId,
-                Oficina = NormalizarTexto(param.Oficina),
-                Usuario = CrearLikeInicio(param.Usuario),
-                Sistema = CrearLikeInicio(param.Sistema),
-                TokenConsulta = CrearLikeInicio(param.TokenConsulta),
-                AppProductName = ObtenerAppProductName(param.AppProductName)
-            };
+                Oficina = param.Oficina,
+                Usuario = param.Usuario,
+                Sistema = param.Sistema,
+                TokenConsulta = param.TokenConsulta,
+                AppProductName = param.AppProductName
+            });
         }
 
         private static object CrearParametrosDetalleLiquidacion(FndTraspasoTesoreriaDetalleParams param)
         {
+            return CrearParametrosLiquidacionBase(new LiquidacionFiltroBaseParams
+            {
+                FechaDesde = param.FechaDesde,
+                FechaHasta = param.FechaHasta,
+                SifParam = param.SifParam,
+                Estado = param.Estado,
+                Filtros = param.Filtros,
+                BancoId = param.BancoId,
+                Oficina = param.Oficina,
+                Usuario = param.Usuario,
+                Sistema = param.Sistema,
+                TokenConsulta = param.TokenConsulta,
+                AppProductName = param.AppProductName,
+                Cedula = param.Cedula
+            });
+        }
+
+        private sealed class LiquidacionFiltroBaseParams
+        {
+            public DateTime FechaDesde { get; init; }
+            public DateTime FechaHasta { get; init; }
+            public string? SifParam { get; init; }
+            public string? Estado { get; init; }
+            public bool Filtros { get; init; }
+            public int? BancoId { get; init; }
+            public string? Oficina { get; init; }
+            public string? Usuario { get; init; }
+            public string? Sistema { get; init; }
+            public string? TokenConsulta { get; init; }
+            public string? AppProductName { get; init; }
+            public bool? Todos { get; init; }
+            public string? Cedula { get; init; }
+        }
+
+        private static object CrearParametrosLiquidacionBase(LiquidacionFiltroBaseParams param)
+        {
             return new
             {
+                param.Todos,
+                Cedula = NormalizarTexto(param.Cedula),
                 FechaDesde = param.FechaDesde.Date,
                 FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
-                Cedula = NormalizarTexto(param.Cedula),
                 AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
                 EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
                 AplicarFiltros = param.Filtros ? 1 : 0,
-                BancoId = param.BancoId,
+                param.BancoId,
                 Oficina = NormalizarTexto(param.Oficina),
                 Usuario = CrearLikeInicio(param.Usuario),
                 Sistema = CrearLikeInicio(param.Sistema),
@@ -742,6 +766,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var texto = NormalizarTexto(valor);
             return string.IsNullOrWhiteSpace(texto) ? AppProductNameDot : texto;
         }
+
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
     }
 }
