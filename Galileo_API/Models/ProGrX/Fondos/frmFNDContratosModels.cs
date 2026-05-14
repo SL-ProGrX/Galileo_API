@@ -498,4 +498,42 @@ namespace Galileo.Models.ProGrX.Fondos
         public long? gestion_id { get; set; }
         public string? gestion_estado { get; set; }
     }
+
+
+    /// <summary>
+    /// Parámetros necesarios para calcular la tasa de referencia de un contrato.
+    /// </summary>
+    public sealed class FndContratoTasaRefParams
+    {
+        /// <summary>Código de empresa.</summary>
+        public int CodEmpresa { get; init; }
+
+        /// <summary>Plazo del contrato.</summary>
+        public long Plazo { get; init; }
+
+        /// <summary>Tipo de plazo.</summary>
+        public string? Tipo { get; init; }
+
+        /// <summary>Código del plan.</summary>
+        public string? Plan { get; init; }
+
+        /// <summary>Código de operadora.</summary>
+        public int Operadora { get; init; }
+
+        /// <summary>Indica si el cupón paga.</summary>
+        public bool ChkCuponPaga { get; init; }
+
+        /// <summary>Tipo de CDP.</summary>
+        public int TipoCdp { get; init; }
+
+        /// <summary>Frecuencia de cupón.</summary>
+        public string? CuponFrecuencia { get; init; }
+
+        /// <summary>Plazo de inversión.</summary>
+        public string? PlazoInversion { get; init; }
+
+        /// <summary>Tasa ingresada manualmente.</summary>
+        public decimal Tasa { get; init; }
+    }
+
 }

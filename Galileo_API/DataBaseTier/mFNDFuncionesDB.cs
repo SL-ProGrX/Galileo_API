@@ -84,8 +84,8 @@ namespace Galileo.DataBaseTier
                 return tipo switch
                 {
                     "TRANSFERENCIA" => "TE",
-                    "CHEQUE"        => "CK",
-                    _               => string.Empty
+                    "CHEQUE" => "CK",
+                    _ => string.Empty
                 };
             }
 
@@ -95,13 +95,54 @@ namespace Galileo.DataBaseTier
                 {
                     "TE" => "Transferencia",
                     "CK" => "Cheque",
-                    _    => string.Empty
+                    _ => string.Empty
                 };
             }
 
             return string.Empty;
         }
 
+        public string fxgFNDTipoPago(int CodEmpresa, string vModo, string vTipo)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string result = "";
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                {
+                    if (vModo == "D")
+                    {
+                        switch (vTipo.Trim().ToUpper())
+                        {
+                            case "TRANSFERENCIA":
+                                result = "TE";
+                                break;
+                            case "CHEQUE":
+                                result = "CK";
+                                break;
+                        }
+                    }
+                    else if (vModo == "C")
+                    {
+                        switch (vTipo.Trim().ToUpper())
+                        {
+                            case "TE":
+                                result = "Transferencia";
+                                break;
+                            case "CK":
+                                result = "Cheque";
+                                break;
+                        }
+                    }
+
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            return result;
+        }
         public decimal fxgFNDCodigoMulta(int CodEmpresa, int vOperadora, string vPlan, int vContrato, decimal vMonto)
         {
             const string query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as Multa";
@@ -114,6 +155,8 @@ namespace Galileo.DataBaseTier
             );
         }
 
+
+        
         public static string fxTipoDocumento(string vTipo)
         {
             return vTipo switch
@@ -133,17 +176,17 @@ namespace Galileo.DataBaseTier
                 "TS" => "Transferencia SINPE",
 
                 // descripción -> códigos
-                "Cheque"                => "CK",
-                "Transferencia"         => "TE",
-                "Efectivo"              => "EF",
-                "Nota Debito"           => "ND",
-                "Nota Credito"          => "NC",
-                "Otro..."               => "OT",
-                "Ctrl Desembolsos"      => "CD",
-                "Proveedor"             => "CP",
-                "Retiro en Caja"        => "RC",
-                "Fondo Transitorio"     => "FD",
-                "Transferencia SINPE"   => "TS",
+                "Cheque" => "CK",
+                "Transferencia" => "TE",
+                "Efectivo" => "EF",
+                "Nota Debito" => "ND",
+                "Nota Credito" => "NC",
+                "Otro..." => "OT",
+                "Ctrl Desembolsos" => "CD",
+                "Proveedor" => "CP",
+                "Retiro en Caja" => "RC",
+                "Fondo Transitorio" => "FD",
+                "Transferencia SINPE" => "TS",
 
                 _ => string.Empty
             };

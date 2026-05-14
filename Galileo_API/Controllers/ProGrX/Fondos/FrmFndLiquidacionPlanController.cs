@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX.Fondos;
 using Galileo.Models.ProGrX.Fondos;
 
-
 namespace Galileo_API.Controllers.ProGrX.Fondos
 {
     [Route("api/[controller]")]
@@ -50,8 +49,6 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
             return _bl.FND_LiquidacionPlan_Operadora_Obtener(CodEmpresa);
         }
 
-       
-
         [Authorize]
         [HttpPost("FND_LiquidacionPlanContratos_Buscar")]
         public ErrorDto<List<FndConsultaPlanRowDto>> FND_LiquidacionPlanContratos_Buscar(
@@ -85,6 +82,5 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         {
             return _bl.FND_LiquidacionPlan_ArchivoRef_Cargar(codEmpresa, request);
         }
-
     }
 }
