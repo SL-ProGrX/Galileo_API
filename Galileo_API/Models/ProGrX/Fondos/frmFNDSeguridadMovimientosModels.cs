@@ -23,8 +23,8 @@
     {
         public string cod_grupo_aprtanul { get; set; } = "";
         public string descripcion { get; set; } = "";
-        public decimal aporte_autorizado { get; set; }
-        public decimal anulacion_autorizado { get; set; }
-        public bool activo { get; set; }
+        public required decimal aporte_autorizado { get; set; }
+        public required decimal anulacion_autorizado { get; set; }
+        public required bool activo { get; set; }
     }
 }

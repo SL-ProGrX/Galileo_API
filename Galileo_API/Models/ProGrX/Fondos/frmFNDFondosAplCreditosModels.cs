@@ -9,11 +9,11 @@
 
     public class FndFondosAplCreditosListaParams
     {
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string? CodPlan { get; set; }
         public string? Tipo { get; set; } // 'M' o 'E'
-        public int CodInstitucion { get; set; }
-        public int CodEmpresa { get; set; }
+        public required int CodInstitucion { get; set; }
+        public required int CodEmpresa { get; set; }
     }
 
     public class FndFondosAplCreditosListaResult
@@ -32,7 +32,7 @@
         public short AplicaCtaTransito { get; set; } = 1;
         public short AplicaExtra { get; set; } = 0;
         public int Institucion { get; set; } = 0;
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
     }
 
     public class FndFondosAplCreditosAplicacionGeneralResult
@@ -43,7 +43,7 @@
 
     public class FndFondosAplCreditosAplicacionParams
     {
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string CodPlan { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public short AplicaMora { get; set; } = 1;

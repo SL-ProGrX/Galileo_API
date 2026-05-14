@@ -20,10 +20,10 @@
         public string tipo_mov_desc { get; set; } = string.Empty;
 
         // rs!RANGO (en VB se formatea "Standard")
-        public decimal rango { get; set; }  // si en BD es numérico con decimales, decimal es lo más seguro
+        public required decimal rango { get; set; }  // si en BD es numérico con decimales, decimal es lo más seguro
 
         // rs!ACTIVO (0/1 -> bool)
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
 
         // rs!NOTIFICACION1 & ""
         public string? notificacion1 { get; set; } = string.Empty;

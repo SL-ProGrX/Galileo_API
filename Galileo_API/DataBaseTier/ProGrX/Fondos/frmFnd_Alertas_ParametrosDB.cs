@@ -145,7 +145,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 new PortalDB(_config),
                 codEmpresa,
                 query,
-                new FndalertasData(),
+                new FndalertasData {
+                    idregistro = 0, // Valor por defecto, ajustar si es necesario
+                    cod_operadora = codOperadora
+                },
                 new
                 {
                     CodOperadora = codOperadora,
@@ -198,14 +201,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 new PortalDB(_config),
                 CodEmpresa,
                 query,
-                new FndalertasData(),
+                new FndalertasData {
+                    idregistro = 0, // Valor por defecto, ajustar si es necesario
+                    cod_operadora = CodOperadora // Usar el valor pasado como parámetro
+                },
                 new { CodOperadora, CodPlan = NormalizarTexto(CodPlan) });
 
             return new ErrorDto<FndalertasData>
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result.Result ?? new FndalertasData()
+                Result = result.Result ?? new FndalertasData {
+                    idregistro = 0, // Valor por defecto, ajustar si es necesario
+                    cod_operadora = CodOperadora // Usar el valor pasado como parámetro
+                }
             };
         }
 

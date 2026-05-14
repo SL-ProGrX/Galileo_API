@@ -8,8 +8,8 @@ namespace Galileo.Models.ProGrX.Fondos
         public string cod_grupo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string categoria { get; set; } = string.Empty;
-        public bool interno { get; set; }
-        public int prioridad { get; set; }
+        public required bool interno { get; set; }
+        public required int prioridad { get; set; }
     }
 
     public class FndPlanGrupoDto

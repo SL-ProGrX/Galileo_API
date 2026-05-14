@@ -207,7 +207,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result.Result ?? new FndNotificacionData()
+                Result = result.Result ?? new FndNotificacionData { rango = default, activo = default }
             };
         }
 
@@ -320,11 +320,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private static void AplicarDescripcionPlan(List<FndNotificacionData> notificaciones, PlanScrollResult plan)
         {
             if (notificaciones.Count == 0)
+
             {
                 notificaciones.Add(new FndNotificacionData
                 {
                     cod_plan = plan.cod_plan,
-                    plan_descripcion = plan.descripcion
+                    plan_descripcion = plan.descripcion,
+                    rango = 0, // Valor por defecto, ajustar si es necesario
+                    activo = false        // Valor por defecto, ajustar si es necesario
                 });
                 return;
             }

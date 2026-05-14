@@ -45,10 +45,10 @@
     }
     public class FndLiqAutoPlanesAddRequestDto
     {
-        public int codEmpresa { get; set; }
+        public required int codEmpresa { get; set; }
         public string operadora { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
-        public bool patrimonio { get; set; }
+        public required bool patrimonio { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = string.Empty; // 'A' | 'B'
     }

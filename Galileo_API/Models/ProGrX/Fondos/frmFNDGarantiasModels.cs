@@ -4,8 +4,8 @@
     {
         public string Garantia_FND { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activa { get; set; }
-        public bool IsNew { get; set; } // Para saber si es insert o update
+        public required bool Activa { get; set; }
+        public required bool IsNew { get; set; } // Para saber si es insert o update
         public string? Usuario { get; set; }
     }
 
@@ -47,13 +47,13 @@
     {
         public string Garantia_FND { get; set; } = string.Empty;
         public string Cod_Estado { get; set; } = string.Empty;
-        public int Linea_Id { get; set; }
-        public int Membresia_Inicio { get; set; }
-        public int Membresia_Corte { get; set; }
-        public bool Patrimonio { get; set; }
-        public int Cod_Operadora { get; set; }
+        public required int Linea_Id { get; set; }
+        public required int Membresia_Inicio { get; set; }
+        public required int Membresia_Corte { get; set; }
+        public required bool Patrimonio { get; set; }
+        public required int Cod_Operadora { get; set; }
         public string Cod_Plan { get; set; } = string.Empty;
-        public decimal Porcentaje { get; set; }
+        public required decimal Porcentaje { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Accion { get; set; } = "A"; // "A"=Agregar, "E"=Editar
     }

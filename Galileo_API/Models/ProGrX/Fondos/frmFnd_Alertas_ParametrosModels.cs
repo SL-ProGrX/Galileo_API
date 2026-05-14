@@ -2,8 +2,8 @@
 {
     public class FndalertasData
     {
-        public int idregistro { get; set; }
-        public int cod_operadora { get; set; }
+        public required int idregistro { get; set; }
+        public required int cod_operadora { get; set; }
         public string cod_plan { get; set; } = string.Empty;
         public string? unidadtiempo { get; set; } = string.Empty;
         public int? alertaroja { get; set; }
@@ -22,9 +22,9 @@
 
     public class FndAlertasContactosDto
     {
-        public int idregistro { get; set; }
+        public required int idregistro { get; set; }
         public string email { get; set; } = string.Empty;
-        public DateTime fechainserta { get; set; }
+        public DateTime? fechainserta { get; set; }
         public string usuarioinserta { get; set; } = string.Empty;
     }
 

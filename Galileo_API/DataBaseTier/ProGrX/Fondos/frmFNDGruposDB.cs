@@ -108,7 +108,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse(
                     "Los datos del grupo son requeridos.",
                     -2,
-                    new FndGrupoDto());
+                    new FndGrupoDto { interno = false, prioridad = 0 });
             }
 
             var existe = DbHelper.ExecuteSingleQuery(

@@ -10,8 +10,8 @@
 
     public class FndBancosXUpdateParam
     {
-        public int IdBanco { get; set; }
+        public required int IdBanco { get; set; }
         public string Campo { get; set; } = string.Empty; // "cheque" o "transferencia"
-        public bool Valor { get; set; }
+        public required bool Valor { get; set; }
     }
 }

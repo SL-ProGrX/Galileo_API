@@ -2,12 +2,12 @@
 {
     public class FndRendimientoRequestDto
     {
-        public int operadora { get; set; }
+        public required int operadora { get; set; }
         public required string plan { get; set; }
         public required string usuario { get; set; }
-        public DateTime fecha_corte { get; set; }
-        public decimal tasa { get; set; }
-        public decimal tcp { get; set; }
+        public required DateTime fecha_corte { get; set; }
+        public required decimal tasa { get; set; }
+        public required decimal tcp { get; set; }
         public string? aplicacion { get; set; }
     }
 

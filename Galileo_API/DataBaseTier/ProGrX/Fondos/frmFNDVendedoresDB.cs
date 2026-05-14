@@ -110,14 +110,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 new PortalDB(_config),
                 CodEmpresa,
                 SqlObtenerVendedor,
-                new FndVendedorDto(),
+                new FndVendedorDto { cod_vendedor = cod_vendedor, aplica_comision = false },
                 new { cod_vendedor });
 
             return new ErrorDto<FndVendedorDto>
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result.Result ?? new FndVendedorDto()
+                Result = result.Result ?? new FndVendedorDto { cod_vendedor = cod_vendedor, aplica_comision = false }
             };
         }
 
@@ -222,7 +222,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var response = new ErrorDto<FndVendedorDto>
             {
                 Code = 0,
-                Result = new FndVendedorDto()
+                Result = new FndVendedorDto
+                {
+                    cod_vendedor = 0, // Set default or appropriate value
+                    aplica_comision = false // Set default or appropriate value
+                }
             };
 
             try

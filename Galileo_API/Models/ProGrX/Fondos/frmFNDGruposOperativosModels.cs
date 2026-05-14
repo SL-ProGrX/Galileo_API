@@ -5,10 +5,10 @@
         public string Grupo_Codigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Tipo_Grupo { get; set; } = string.Empty;
-        public bool Estado { get; set; }
+        public required bool Estado { get; set; }
         public DateTime? Fecha_Registra { get; set; }
         public string Usuario_Registra { get; set; } = string.Empty;
-        public bool IsNew { get; set; } 
+        public required bool IsNew { get; set; } 
     }
 
     public class FndGruposOperativosLista
@@ -55,26 +55,26 @@
 
     public class FndGrupoOperativoAsignarPlanRequest
     {
-        public int Cod_Operadora { get; set; }
+        public required int Cod_Operadora { get; set; }
         public string Plan_Codigo { get; set; } = string.Empty;
-        public int Grupo_Codigo { get; set; }
+        public required int Grupo_Codigo { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public bool Asignar { get; set; } 
+        public required bool Asignar { get; set; } 
     }
 
     public class FndGrupoOperativoAsignarUsuarioRequest
     {
         public string Usuario_Codigo { get; set; } = string.Empty;
-        public int Grupo_Codigo { get; set; }
+        public required int Grupo_Codigo { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public bool Asignar { get; set; }
+        public required bool Asignar { get; set; }
     }
 
     public class FndGrupoOperativoAsignarConceptoRequest
     {
         public string Retencion_Codigo { get; set; } = string.Empty;
-        public int Grupo_Codigo { get; set; }
+        public required int Grupo_Codigo { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public bool Asignar { get; set; }
+        public required bool Asignar { get; set; }
     }
 }

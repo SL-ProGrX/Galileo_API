@@ -6,7 +6,7 @@
         public string descripcion { get; set; } = string.Empty;
         public string cod_cuenta { get; set; } = string.Empty;
         public string cod_cuenta_tra { get; set; } = string.Empty;
-        public bool activa { get; set; }
+        public required bool activa { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
         public string cta_reserva { get; set; } = string.Empty;
@@ -32,12 +32,12 @@
 
     public class FndReservaContenidoDto
     {
-        public int linea_id { get; set; }
+        public required int linea_id { get; set; }
         public string? cod_operadora { get; set; }
         public string? cod_plan { get; set; }
         public string? descripcion { get; set; }
-        public decimal porcentaje { get; set; }
-        public bool patrimonio { get; set; } 
+        public required decimal porcentaje { get; set; }
+        public required bool patrimonio { get; set; } 
     }
 
     public class FndReservaCorteDto

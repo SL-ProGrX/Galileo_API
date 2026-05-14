@@ -15,12 +15,12 @@
 
     public class FndVendedorDto
     {
-        public int cod_vendedor { get; set; }
+        public required int cod_vendedor { get; set; }
         public string? nombre { get; set; } = string.Empty;
         public int? cod_banco { get; set; }
         public string? tipo_pago { get; set; } = string.Empty;
         public string? cuenta_ahorros { get; set; } = string.Empty;
-        public bool aplica_comision { get; set; }
+        public required bool aplica_comision { get; set; }
         public int? minimo { get; set; }
         public decimal? porc_comision { get; set; }
         public string? cedula { get; set; } = string.Empty;

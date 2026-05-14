@@ -44,7 +44,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? cod_plan { get; set; } = string.Empty;
         public int? cod_contrato { get; set; }
         public string? cedula { get; set; } = string.Empty;
-        public bool excluye { get; set; }
+        public required bool excluye { get; set; }
         public string? usuario { get; set; } = string.Empty;
     }
 }

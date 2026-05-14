@@ -2,10 +2,10 @@
 {
     public class FndConciliacionTeledolarSinpeParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
-        public bool SoloDiferencias { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaInicio { get; set; }
+        public required DateTime FechaCorte { get; set; }
+        public required bool SoloDiferencias { get; set; }
     }
 
     public class FndConciliacionTeledolarSinpeResult

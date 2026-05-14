@@ -28,10 +28,10 @@
 
     public class FndCuponesGestionVencimientoParams
     {
-        public int CodEmpresa { get; set; }
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required DateTime FechaInicio { get; set; }
+        public required DateTime FechaCorte { get; set; }
+        public required int CodOperadora { get; set; }
         public string CodPlan { get; set; } = "";
         public string Proceso { get; set; } = "D"; // 'D' o 'R'
         public string TipoPago { get; set; } = "TE"; // "TE","CK","RC","FD","RT"
@@ -41,11 +41,11 @@
 
     public class FndCuponesGestionLiquidaParams
     {
-        public int CodEmpresa { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int CodOperadora { get; set; }
         public string? CodPlan { get; set; }
-        public int Contrato { get; set; }
-        public int CuponId { get; set; }
+        public required int Contrato { get; set; }
+        public required int CuponId { get; set; }
         public string? Usuario { get; set; }
         public string? Proceso { get; set; } // 'D' o 'R'
         public string RetencionCodigo { get; set; } = "";

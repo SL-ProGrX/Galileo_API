@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace Galileo.Models.ProGrX.Fondos
 {
@@ -425,7 +426,7 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndContratoSubCuentasData
     {
-        public int idx { get; set; }
+        public required int idx { get; set; }
         public string? cedula { get; set; }
         public string? nombre { get; set; }
         public required decimal cuota { get; set; }

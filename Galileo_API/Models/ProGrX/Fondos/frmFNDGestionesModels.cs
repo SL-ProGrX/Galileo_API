@@ -9,7 +9,7 @@
         public int? Cod_Contrato { get; set; }
         public string? Cedula { get; set; }
         public string? Nombre { get; set; }
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
     }
 
     public class FndGestionesBuscarContratosResult
@@ -25,9 +25,9 @@
 
     public class FndGestionesContratoParams
     {
-        public int CodEmpresa { get; set; }
-        public int CodContrato { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int CodContrato { get; set; }
+        public required int CodOperadora { get; set; }
         public string CodPlan { get; set; } = string.Empty;
     }
 
@@ -47,8 +47,8 @@
 
     public class FndGestionesContratosRenovacionParams
     {
-        public int CodEmpresa { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int CodOperadora { get; set; }
         public string Gestion { get; set; } = "O"; // "O", "P", "C"
         public string? CodPlan { get; set; }
         public int? CodContrato { get; set; }
@@ -75,8 +75,8 @@
 
     public class FndGestionesContratoActualizarParams
     {
-        public int CodEmpresa { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int CodOperadora { get; set; }
         public List<FndGestionesContratoActualizarItem> Contratos { get; set; } = new();
     }
 
