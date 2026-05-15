@@ -70,6 +70,5 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         {
             return _BL.FND_ConsultaContratos_Reversar(CodEmpresa, usuario, boleta);
         }
-
     }
 }
