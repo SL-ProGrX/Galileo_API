@@ -9,11 +9,11 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class frmCntXTipoCambioController : ControllerBase
+    public class FrmCntXTipoCambioController : ControllerBase
     {
         private readonly FrmCntXTipoCambioBl _bl;
 
-        public frmCntXTipoCambioController(IConfiguration config)
+        public FrmCntXTipoCambioController(IConfiguration config)
             => _bl = new FrmCntXTipoCambioBl(config);
 
         [HttpPost("CntX_TipoCambio_Inicializa")]
