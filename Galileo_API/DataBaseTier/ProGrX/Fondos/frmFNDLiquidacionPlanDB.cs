@@ -1,8 +1,6 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Humanizer;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ProGrX.Fondos;
 using System.Data;

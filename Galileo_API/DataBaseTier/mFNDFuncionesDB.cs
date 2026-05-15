@@ -12,6 +12,9 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly MReportingServicesDB _reportingServicesDB;
+        private const string TRANSFERENCIA = "Transferencia";
+        private const string CHEQUE = "Cheque";
+
 
         public MFndFuncionesDb(IConfiguration config)
         {
@@ -72,6 +75,7 @@ namespace Galileo.DataBaseTier
 
         // ========= Funciones de negocio =========
 
+
         public static string fxgFNDTipoPago(string vModo, string vTipo)
         {
             if (string.IsNullOrWhiteSpace(vTipo))
@@ -84,24 +88,63 @@ namespace Galileo.DataBaseTier
                 return tipo switch
                 {
                     "TRANSFERENCIA" => "TE",
-                    "CHEQUE"        => "CK",
-                    _               => string.Empty
+                    "CHEQUE" => "CK",
+                    _ => string.Empty
                 };
             }
+
 
             if (vModo == "C")
             {
                 return tipo switch
                 {
-                    "TE" => "Transferencia",
-                    "CK" => "Cheque",
-                    _    => string.Empty
+                    "TE" => TRANSFERENCIA,
+                    "CK" => CHEQUE,
+                    _ => string.Empty
                 };
             }
 
             return string.Empty;
         }
 
+        public string fxgFNDTipoPago(int CodEmpresa, string vModo, string vTipo)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string result = "";
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                if (vModo == "D")
+                {
+                    switch (vTipo.Trim().ToUpper())
+                    {
+                        case "TRANSFERENCIA":
+                            result = "TE";
+                            break;
+                        case "CHEQUE":
+                            result = "CK";
+                            break;
+                    }
+                }
+                else if (vModo == "C")
+                {
+                    switch (vTipo.Trim().ToUpper())
+                    {
+                        case "TE":
+                            result = TRANSFERENCIA;
+                            break;
+                        case "CK":
+                            result = CHEQUE;
+                            break;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+            return result;
+        }
         public decimal fxgFNDCodigoMulta(int CodEmpresa, int vOperadora, string vPlan, int vContrato, decimal vMonto)
         {
             const string query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as Multa";
@@ -114,13 +157,15 @@ namespace Galileo.DataBaseTier
             );
         }
 
+
+
         public static string fxTipoDocumento(string vTipo)
         {
             return vTipo switch
             {
                 // códigos -> descripción
-                "CK" => "Cheque",
-                "TE" => "Transferencia",
+                "CK" => CHEQUE,
+                "TE" => TRANSFERENCIA,
                 "EF" => "Efectivo",
                 "RE" => "Efectivo",
                 "ND" => "Nota Debito",
@@ -133,17 +178,17 @@ namespace Galileo.DataBaseTier
                 "TS" => "Transferencia SINPE",
 
                 // descripción -> códigos
-                "Cheque"                => "CK",
-                "Transferencia"         => "TE",
-                "Efectivo"              => "EF",
-                "Nota Debito"           => "ND",
-                "Nota Credito"          => "NC",
-                "Otro..."               => "OT",
-                "Ctrl Desembolsos"      => "CD",
-                "Proveedor"             => "CP",
-                "Retiro en Caja"        => "RC",
-                "Fondo Transitorio"     => "FD",
-                "Transferencia SINPE"   => "TS",
+                CHEQUE => "CK",
+                TRANSFERENCIA => "TE",
+                "Efectivo" => "EF",
+                "Nota Debito" => "ND",
+                "Nota Credito" => "NC",
+                "Otro..." => "OT",
+                "Ctrl Desembolsos" => "CD",
+                "Proveedor" => "CP",
+                "Retiro en Caja" => "RC",
+                "Fondo Transitorio" => "FD",
+                "Transferencia SINPE" => "TS",
 
                 _ => string.Empty
             };

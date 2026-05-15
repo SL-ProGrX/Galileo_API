@@ -131,6 +131,39 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        public string fxgCntCuentaDesc(int CodEmpresa, string pCuenta, int CodConta)
+        {
+            string result = "";
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                const string sql = @"
+                    SELECT LTRIM(RTRIM(Descripcion)) AS Descripcion
+                    FROM CntX_Cuentas
+                    WHERE cod_cuenta = @Cuenta
+                      AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntDescripCuentaDto>(sql, new
+                {
+                    Cuenta = pCuenta,
+                    Contabilidad = CodConta
+                });
+
+                if (info != null)
+                {
+                    result = info.Descripcion ?? string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+
+            return result;
+        }
         public bool fxgCntCuentaValida(int codEmpresa, string vCuenta)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
