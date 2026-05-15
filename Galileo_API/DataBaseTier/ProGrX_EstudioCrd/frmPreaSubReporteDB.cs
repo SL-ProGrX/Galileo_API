@@ -111,11 +111,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         codEmpresa,
                         request.usuario,
                         expedienteMaestro.cod_preanalisis?.Trim() ?? codPreanalisis,
-                        request.chk_resumen,
-                        request.chk_detalle,
-                        request.chk_ficha_convenio,
-                        request.chk_estado_cuenta,
-                        request.chk_deducciones
+                        new AgregaRepExpedienteParametros 
+                        { 
+                            chkResumen = request.chk_resumen,
+                            chkDetalle = request.chk_detalle,
+                            chkFichaConvenio = request.chk_ficha_convenio,
+                            chkEstadoCuenta = request.chk_estado_cuenta,
+                            chkDeducciones = request.chk_deducciones
+                        }
                     );
                 }
 
@@ -140,11 +143,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                             codEmpresa,
                             request.usuario,
                             item.cod_preanalisis?.Trim() ?? string.Empty,
-                            request.chk_sub_expediente_resumen,
-                            request.chk_sub_expediente_detalle,
-                            false,
-                            request.chk_sub_expediente_estado && estadoActual == "S",
-                            false
+                            new AgregaRepExpedienteParametros
+                            {
+                                chkResumen = request.chk_sub_expediente_resumen,
+                                chkDetalle = request.chk_sub_expediente_detalle,
+                                chkFichaConvenio = false,
+                                chkEstadoCuenta = request.chk_sub_expediente_estado && estadoActual == "S",
+                                chkDeducciones = false
+                            }
                         );
                     }
                 }
@@ -165,28 +171,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             string? usuario,
             string codPreanalisis,
-            bool chkResumen,
-            bool chkDetalle,
-            bool chkFichaConvenio,
-            bool chkEstadoCuenta,
-            bool chkDeducciones)
+            AgregaRepExpedienteParametros boolRequest
+            )
         {
             if (string.IsNullOrWhiteSpace(codPreanalisis))
             {
                 return;
             }
 
-            if (chkResumen)
+            if (boolRequest.chkResumen)
             {
                 reportes.Add(CrearReporte(
                     codEmpresa,
                     usuario,
-                    chkDeducciones ? "Credito_Analisis_FichaResumenWsec" : "Credito_Analisis_FichaResumen",
+                    boolRequest.chkDeducciones ? "Credito_Analisis_FichaResumenWsec" : "Credito_Analisis_FichaResumen",
                     codPreanalisis
                 ));
             }
 
-            if (chkFichaConvenio)
+            if (boolRequest.chkFichaConvenio)
             {
                 reportes.Add(CrearReporte(
                     codEmpresa,
@@ -196,7 +199,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ));
             }
 
-            if (chkDetalle)
+            if (boolRequest.chkDetalle)
             {
                 reportes.Add(CrearReporte(
                     codEmpresa,
@@ -206,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ));
             }
 
-            if (chkEstadoCuenta)
+            if (boolRequest.chkEstadoCuenta)
             {
                 reportes.Add(CrearReporte(
                     codEmpresa,

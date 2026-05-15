@@ -70,4 +70,13 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string? fecha_nacimiento { get; set; }
         public string? estado_actual { get; set; }
     }
+
+    public class AgregaRepExpedienteParametros
+    {
+        public bool chkResumen { get; set; } = false;
+        public bool chkDetalle { get; set; } = false;
+        public bool chkFichaConvenio { get; set; } = false;
+        public bool chkEstadoCuenta { get; set; } = false;
+        public bool chkDeducciones { get; set; } = false;
+    }
 }
