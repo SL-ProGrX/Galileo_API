@@ -65,5 +65,3 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
     }
 }
-
-

@@ -204,6 +204,5 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
                         }).ToList();
             });
         }
-
     }
 }
