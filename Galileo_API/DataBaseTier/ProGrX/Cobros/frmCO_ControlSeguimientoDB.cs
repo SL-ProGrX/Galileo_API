@@ -257,34 +257,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (string.IsNullOrWhiteSpace(cedula))
                 {
-                    response.Result.total = 0;
-                    response.Result.lista = new List<CoControlSegHistGestionDto>();
                     return response;
                 }
 
                 var texto = ExtractKeyFromFiltro(filtros.filtro, FiltroTexto);
                 texto = (texto ?? string.Empty).Trim();
+
                 bool hasTexto = !string.IsNullOrWhiteSpace(texto);
                 var like = hasTexto ? $"%{texto}%" : null;
 
                 int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
                 int fetch = filtros.paginacion < 0 ? 0 : filtros.paginacion;
                 bool usarPaginacion = fetch > 0;
-                int offset = usarPaginacion ? (pagina * fetch) : 0;
+                int offset = usarPaginacion ? pagina * fetch : 0;
 
                 string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 int sortOrder = filtros.sortOrder == 1 ? 1 : 0;
 
+                const string filtroSql = @"
+          and (
+               @texto is null
+            or cast(S.cod_seg as nvarchar(50)) like @like
+            or rtrim(S.usuario) like @like
+            or S.notas like @like
+            or rtrim(S.cod_gestion) like @like
+            or isnull(rtrim(G.descripcion),'') like @like
+            or rtrim(S.cod_arreglo) like @like
+            or isnull(rtrim(A.descripcion),'') like @like
+            or rtrim(S.cod_causa) like @like
+            or isnull(rtrim(C.descripcion),'') like @like
+            or cast(isnull(S.monto,0) as nvarchar(50)) like @like
+          )";
+
                 const string sqlCount = @"
-            select count(1)
-            from CBR_Seguimiento S
-            where S.cedula = @cedula
-              and (
-                   @texto is null
-                or S.usuario like @like
-                or S.notas like @like
-                or cast(S.cod_seg as nvarchar(50)) like @like
-              );";
+        select count(1)
+        from CBR_Seguimiento S
+        left join cbr_gestiones G
+               on S.cod_gestion = G.cod_gestion
+        left join CBR_CAUSAS_MOROSIDAD C
+               on S.cod_causa = C.cod_causa
+        left join CBR_TIPOS_ARREGLOS A
+               on S.cod_arreglo = A.cod_arreglo
+        where S.cedula = @cedula" + filtroSql + ";";
 
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
                 {
@@ -294,63 +308,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 });
 
                 var sql = @"
-            select
-                S.cod_seg,
-                S.fecha,
-                S.tiempo_resolucion,
+        select
+            S.cod_seg,
+            S.fecha,
+            S.tiempo_resolucion,
+            dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) as vence,
+            rtrim(S.cod_gestion) as cod_gestion,
+            isnull(rtrim(G.descripcion),'') as gestion,
+            S.notas,
+            rtrim(S.usuario) as usuario,
+            S.monto,
+            rtrim(S.cod_arreglo) as cod_arreglo,
+            isnull(rtrim(A.descripcion),'') as arreglo,
+            S.arreglo_vence,
+            rtrim(S.cod_causa) as cod_causa,
+            isnull(rtrim(C.descripcion),'') as causa
+        from CBR_Seguimiento S
+        left join cbr_gestiones G
+               on S.cod_gestion = G.cod_gestion
+        left join CBR_CAUSAS_MOROSIDAD C
+               on S.cod_causa = C.cod_causa
+        left join CBR_TIPOS_ARREGLOS A
+               on S.cod_arreglo = A.cod_arreglo
+        where S.cedula = @cedula" + filtroSql + @"
+        order by
+            case when @sf = 'cod_seg' and @so = 1 then S.cod_seg end asc,
+            case when @sf = 'cod_seg' and @so = 0 then S.cod_seg end desc,
 
-                dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) as vence,
+            case when @sf = 'fecha' and @so = 1 then S.fecha end asc,
+            case when @sf = 'fecha' and @so = 0 then S.fecha end desc,
 
-                rtrim(S.cod_gestion) as cod_gestion,
-                isnull(rtrim(G.descripcion),'') as gestion,
-                S.notas,
-                rtrim(S.usuario) as usuario,
-                S.monto,
-                rtrim(S.cod_arreglo) as cod_arreglo,
-                isnull(rtrim(A.descripcion),'') as arreglo,
-                S.arreglo_vence,
-                rtrim(S.cod_causa) as cod_causa,
-                isnull(rtrim(C.descripcion),'') as causa
-            from CBR_Seguimiento S
-            left join cbr_gestiones G
-                   on S.cod_gestion = G.cod_gestion
-            left join CBR_CAUSAS_MOROSIDAD C
-                   on S.cod_causa = C.cod_causa
-            left join CBR_TIPOS_ARREGLOS A
-                   on S.cod_arreglo = A.cod_arreglo
-            where S.cedula = @cedula
-              and (
-                   @texto is null
-                or S.usuario like @like
-                or S.notas like @like
-                or cast(S.cod_seg as nvarchar(50)) like @like
-              )
-            order by
-                case when @sf = 'cod_seg'  and @so = 1 then S.cod_seg  end asc,
-                case when @sf = 'cod_seg'  and @so = 0 then S.cod_seg  end desc,
+            case when @sf = 'vence' and @so = 1 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end asc,
+            case when @sf = 'vence' and @so = 0 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end desc,
 
-                case when @sf = 'fecha'    and @so = 1 then S.fecha    end asc,
-                case when @sf = 'fecha'    and @so = 0 then S.fecha    end desc,
+            case when @sf = 'usuario' and @so = 1 then S.usuario end asc,
+            case when @sf = 'usuario' and @so = 0 then S.usuario end desc,
 
-                case when @sf = 'vence'    and @so = 1 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end asc,
-                case when @sf = 'vence'    and @so = 0 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end desc,
+            case when @sf = 'gestion' and @so = 1 then G.descripcion end asc,
+            case when @sf = 'gestion' and @so = 0 then G.descripcion end desc,
 
-                case when @sf = 'usuario'  and @so = 1 then S.usuario  end asc,
-                case when @sf = 'usuario'  and @so = 0 then S.usuario  end desc,
+            case when @sf = 'arreglo' and @so = 1 then A.descripcion end asc,
+            case when @sf = 'arreglo' and @so = 0 then A.descripcion end desc,
 
-                case when @sf = 'monto'    and @so = 1 then S.monto    end asc,
-                case when @sf = 'monto'    and @so = 0 then S.monto    end desc,
+            case when @sf = 'causa' and @so = 1 then C.descripcion end asc,
+            case when @sf = 'causa' and @so = 0 then C.descripcion end desc,
 
-                case when @sf = 'notas'    and @so = 1 then S.notas    end asc,
-                case when @sf = 'notas'    and @so = 0 then S.notas    end desc,
+            case when @sf = 'monto' and @so = 1 then S.monto end asc,
+            case when @sf = 'monto' and @so = 0 then S.monto end desc,
 
-                S.cod_seg desc";
+            case when @sf = 'notas' and @so = 1 then S.notas end asc,
+            case when @sf = 'notas' and @so = 0 then S.notas end desc,
+
+            S.cod_seg desc";
 
                 if (usarPaginacion)
                 {
                     sql += @"
-            OFFSET @offset ROWS
-            FETCH NEXT @fetch ROWS ONLY";
+        OFFSET @offset ROWS
+        FETCH NEXT @fetch ROWS ONLY";
                 }
 
                 response.Result.lista = conn.Query<CoControlSegHistGestionDto>(sql, new
