@@ -46,5 +46,4 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
             return _bl.ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(codEmpresa, idPerHistorico);
         }
     }
-
 }
