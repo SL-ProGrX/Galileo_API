@@ -488,10 +488,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         {
             return (sortField ?? string.Empty).Trim() switch
             {
-                "cod_clasificacion" => "COD_CLASIFICACION",
+                "cod_clasificacion" => "CASE WHEN ISNUMERIC(COD_CLASIFICACION) = 1 THEN CONVERT(INT, COD_CLASIFICACION) ELSE 0 END",
                 "descripcion" => "DESCRIPCION",
                 "estado" => "ESTADO",
-                _ => "COD_CLASIFICACION"
+                _ => "CASE WHEN ISNUMERIC(COD_CLASIFICACION) = 1 THEN CONVERT(INT, COD_CLASIFICACION) ELSE 0 END"
             };
         }
 

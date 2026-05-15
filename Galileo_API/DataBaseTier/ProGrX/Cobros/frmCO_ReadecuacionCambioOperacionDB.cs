@@ -566,7 +566,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (ctas == null)
                 return;
             var lineas = ConstruirLineas(ctx, mov);
-            if (ctx.sysDocVersion == 1)
+            if (ctx.sysDocVersion != 2)
             {
                 InsertarAsientosTmpSiAplica(conn, tx, ctx, ctas, mov);
                 return;
@@ -1219,14 +1219,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (sysDocVersion == 2)
                 return ResolverDocumentoV2(conn, tx, tipoDoc, usuario);
 
-            if (sysDocVersion == 1)
-                return new DocumentoInfo(TipoMov: "4", NumDocStr: "8889", Error: null);
-
             return new DocumentoInfo(
-                TipoMov: string.Empty,
-                NumDocStr: string.Empty,
-                Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
-                    $"SysDocVersion={sysDocVersion} no soportado en este proceso.", -2));
+                TipoMov: "4",
+                NumDocStr: "8889",
+                Error: null);
         }
         private static DocumentoInfo ResolverDocumentoV2(SqlConnection conn,SqlTransaction tx,string tipoDoc,string usuario)
         {
