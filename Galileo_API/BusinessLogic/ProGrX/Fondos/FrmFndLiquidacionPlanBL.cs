@@ -2,7 +2,6 @@
 using Galileo.Models.ERROR;
 using Galileo.DataBaseTier.ProGrX.Fondos;
 using Galileo.Models.ProGrX.Fondos;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo.BusinessLogic.ProGrX.Fondos
 {
@@ -33,7 +32,6 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         {
             return _db.FND_LiquidacionPlan_Plan_Scroll_Obtener(CodEmpresa, codOperadora, codPlanActual, scrollCode);
         }
-
 
         public ErrorDto<List<DropDownListaGenericaModel>> FND_LiquidacionPlan_Operadora_Obtener(int CodEmpresa)
         {
