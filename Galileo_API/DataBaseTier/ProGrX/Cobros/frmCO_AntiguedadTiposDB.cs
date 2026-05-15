@@ -2,8 +2,10 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
-using System.Data;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX.Cobros
 {
@@ -207,7 +209,10 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <param name="cod_antiguedad"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<FrmCOAntiguedadGarantiaMitigadorData>> Co_AntiguedadTipos_Detalle_Obtener(int CodEmpresa,string cod_antiguedad, string usuario)
+        public ErrorDto<List<FrmCOAntiguedadGarantiaMitigadorData>> Co_AntiguedadTipos_Detalle_Obtener(
+            int CodEmpresa,
+            string cod_antiguedad,
+            string usuario)
         {
             var codigo = NormalizarCodigo(cod_antiguedad);
             var user = (usuario ?? string.Empty).Trim();
@@ -220,16 +225,55 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                     new List<FrmCOAntiguedadGarantiaMitigadorData>());
             }
 
-            var parameters = CrearParametrosDetalleConsulta(codigo, user);
-            var result = DbHelper.ExecuteStoredProcedureList<FrmCOAntiguedadGarantiaMitigadorData>(
-                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
-                "spCbr_Garantia_Mitigador_Consulta",
-                parameters);
+            try
+            {
+                var portalDb = new PortalDB(_config);
 
-            result.Result ??= new List<FrmCOAntiguedadGarantiaMitigadorData>();
-            return result;
+                var result = DbHelper.WithConn(portalDb, CodEmpresa, conn =>
+                {
+                    const string sql = "exec spCbr_Garantia_Mitigador_Consulta @Codigo, @Tipo, @Usuario;";
+
+                    var rows = conn.Query(sql, new
+                    {
+                        Codigo = codigo,
+                        Tipo = "AS",
+                        Usuario = user
+                    });
+
+                    return rows.Select(MapDetalleGarantiaMitigador).ToList();
+                });
+
+                if (result.Code != 0)
+                {
+                    return DbHelper.CreateErrorResponse<List<FrmCOAntiguedadGarantiaMitigadorData>>(
+                        result.Description ?? "Error al consultar detalle.",
+                        -1,
+                        new List<FrmCOAntiguedadGarantiaMitigadorData>());
+                }
+
+                return DbHelper.CreateOkResponse(result.Result ?? new List<FrmCOAntiguedadGarantiaMitigadorData>());
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCOAntiguedadGarantiaMitigadorData>>(
+                    ex.Message,
+                    -1,
+                    new List<FrmCOAntiguedadGarantiaMitigadorData>());
+            }
         }
+        private static FrmCOAntiguedadGarantiaMitigadorData MapDetalleGarantiaMitigador(dynamic row)
+        {
+            var d = (IDictionary<string, object?>)row;
+            var values = d.Values.ToList();
 
+            return new FrmCOAntiguedadGarantiaMitigadorData
+            {
+                codigo = Convert.ToString(values.ElementAtOrDefault(0), CultureInfo.InvariantCulture)?.Trim() ?? string.Empty,
+                garantia = Convert.ToString(values.ElementAtOrDefault(1), CultureInfo.InvariantCulture)?.Trim() ?? string.Empty,
+                mitigador = Convert.ToDecimal(values.ElementAtOrDefault(2) ?? 0, CultureInfo.InvariantCulture),
+                isNew = false
+            };
+        }
         /// <summary>
         /// Registra o actualiza una línea del detalle (Garantía/Mitigador) para un tipo de antigüedad.
         /// </summary>

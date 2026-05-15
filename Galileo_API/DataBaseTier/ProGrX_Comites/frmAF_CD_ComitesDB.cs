@@ -26,6 +26,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene el detalle completo de un comite con sus listas relacionadas.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite a consultar.</param>
         public ErrorDto<AfCdComiteDetalleDto> AfCdComites_Detalle(int codEmpresa, string codComite)
         {
             var result = DbHelper.CreateOkResponse(new AfCdComiteDetalleDto());
@@ -58,6 +60,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca comites por codigo o descripcion.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="filtro">Texto usado para filtrar codigo o descripcion.</param>
         public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarComites(int codEmpresa, string? filtro)
         {
             const string sql = @"
@@ -71,6 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Lista directores disponibles para el formulario.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
         public ErrorDto<List<AfCdDirectorDto>> AfCdComites_DirectoresLista(int codEmpresa)
         {
             const string sql = @"SELECT cod_director AS Cod_Director, nombre AS Nombre, puesto AS Puesto, activo AS Activo FROM afi_cd_directores ORDER BY nombre";
@@ -80,6 +85,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca unidades programaticas por codigo o descripcion.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="filtro">Texto usado para filtrar codigo o descripcion.</param>
         public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarUnidades(int codEmpresa, string? filtro)
         {
             const string sql = @"
@@ -93,6 +100,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca actividades por descripcion o codigo.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="filtro">Texto usado para filtrar codigo o descripcion.</param>
         public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarActividades(int codEmpresa, string? filtro)
         {
             const string sql = @"
@@ -106,6 +115,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca promotores ejecutivos activos por nombre o codigo.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="filtro">Texto usado para filtrar identificador o nombre.</param>
         public ErrorDto<List<AfCdComiteListaDto>> AfCdComites_BuscarEjecutivos(int codEmpresa, string? filtro)
         {
             const string sql = @"
@@ -119,6 +130,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca asociados disponibles para miembros del comite.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="filtro">Texto usado para filtrar cedula o nombre.</param>
         public ErrorDto<List<AfCdComiteMiembroDto>> AfCdComites_BuscarMiembros(int codEmpresa, string? filtro)
         {
             const string sql = @"
@@ -133,6 +146,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Busca comite por unidad programatica asociada.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codigoUp">Codigo de unidad programatica.</param>
         public ErrorDto<string?> AfCdComites_BuscarPorUnidad(int codEmpresa, string codigoUp)
         {
             const string sql = "SELECT cod_comite FROM afi_cd_comites_unidades WHERE codigo_up = @CodigoUp";
@@ -142,6 +157,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene el comite anterior o siguiente al comite actual.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite actual.</param>
+        /// <param name="direccion">Direccion del desplazamiento: anterior o siguiente.</param>
         public ErrorDto<AfCdComiteDetalleDto?> AfCdComites_Scroll(int codEmpresa, string? codComite, int direccion)
         {
             var result = DbHelper.CreateOkResponse<AfCdComiteDetalleDto?>(null);
@@ -198,6 +216,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Inserta o actualiza la cabecera del comite.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="request">Datos del comite a guardar.</param>
         public ErrorDto<bool> AfCdComites_Guardar(int codEmpresa, AfCdComiteGuardarRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -232,6 +252,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Asocia una unidad, actividad o ejecutivo al comite.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="tipo">Tipo de asociacion a guardar.</param>
+        /// <param name="request">Datos de la asociacion.</param>
         public ErrorDto<bool> AfCdComites_Asociar(int codEmpresa, string tipo, AfCdComiteAsociacionRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -262,6 +285,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Elimina una asociacion de unidad, actividad o ejecutivo.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="tipo">Tipo de asociacion a eliminar.</param>
+        /// <param name="request">Datos de la asociacion.</param>
         public ErrorDto<bool> AfCdComites_EliminarAsociacion(int codEmpresa, string tipo, AfCdComiteAsociacionRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -276,6 +302,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene miembros del comite filtrando activos o inactivos.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite.</param>
+        /// <param name="activos">Indica si se consultan miembros activos.</param>
         public ErrorDto<List<AfCdComiteMiembroDto>> AfCdComites_Miembros(int codEmpresa, string codComite, bool activos)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn => ObtenerMiembros(conn, codComite, activos));
@@ -284,6 +313,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene datos de un asociado y su nombramiento actual si existe.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="cedula">Cedula del asociado.</param>
+        /// <param name="codComite">Codigo del comite relacionado.</param>
         public ErrorDto<AfCdComiteMiembroDto?> AfCdComites_DatosMiembro(int codEmpresa, string cedula, string? codComite)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn => ObtenerDatosMiembro(conn, cedula, codComite));
@@ -292,6 +324,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Guarda o actualiza el nombramiento de un miembro y registra historico.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="request">Datos del miembro a guardar.</param>
         public ErrorDto<bool> AfCdComites_GuardarMiembro(int codEmpresa, AfCdComiteMiembroGuardarRequest request)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -355,6 +389,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Elimina el nombramiento de un miembro del comite.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite.</param>
+        /// <param name="cedula">Cedula del miembro.</param>
+        /// <param name="usuario">Usuario que ejecuta la eliminacion.</param>
         public ErrorDto<bool> AfCdComites_EliminarMiembro(int codEmpresa, string codComite, string cedula, string usuario)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -368,6 +406,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene historial de nombramientos de un comite.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite.</param>
         public ErrorDto<List<AfCdComiteMiembroHistorialDto>> AfCdComites_HistorialMiembros(int codEmpresa, string codComite)
         {
             const string sql = @"
@@ -386,6 +426,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Obtiene mensajes vigentes del plan de trabajo.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa activa.</param>
+        /// <param name="codComite">Codigo del comite.</param>
         public ErrorDto<List<AfCdComiteMensajeDto>> AfCdComites_Mensajes(int codEmpresa, string codComite)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn => ObtenerMensajes(conn, codComite));
@@ -403,12 +445,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             var resumen = conn.QueryFirstOrDefault<AfCdComiteResumenDto>(sql, new { CodComite = codComite });
             if (resumen != null)
             {
+                resumen.Validacion_Unidad = ObtenerValidacionUnidad(conn, codComite);
                 return resumen;
             }
 
             const string unidadSql = "SELECT codigo AS Cod_Comite, descripcion AS Descripcion, CAST(0 AS bit) AS Existe FROM uprogramatica WHERE codigo = @CodComite";
-            return conn.QueryFirstOrDefault<AfCdComiteResumenDto>(unidadSql, new { CodComite = codComite })
+            var unidad = conn.QueryFirstOrDefault<AfCdComiteResumenDto>(unidadSql, new { CodComite = codComite })
                 ?? new AfCdComiteResumenDto { Cod_Comite = codComite, Existe = false };
+            unidad.Validacion_Unidad = ObtenerValidacionUnidad(conn, codComite);
+            return unidad;
+        }
+
+        /// <summary>
+        /// Obtiene el mensaje de validacion cuando la unidad ya pertenece a otro comite.
+        /// </summary>
+        /// <param name="conn">Conexion SQL activa.</param>
+        /// <param name="codComite">Codigo del comite o unidad a validar.</param>
+        private static string? ObtenerValidacionUnidad(SqlConnection conn, string codComite)
+        {
+            const string sql = @"
+                SELECT TOP 1 U.cod_comite AS Codigo, C.descripcion AS Descripcion
+                FROM afi_cd_comites_unidades U
+                INNER JOIN afi_cd_comites C ON U.cod_comite = C.cod_comite
+                WHERE U.codigo_up = @CodComite
+                  AND U.cod_comite <> U.codigo_up";
+            var unidad = conn.QueryFirstOrDefault<AfCdComiteListaDto>(sql, new { CodComite = codComite });
+            if (unidad == null)
+            {
+                return null;
+            }
+
+            return $"Esta unidad ya pertenece al comite <{unidad.Codigo} {unidad.Descripcion}>";
         }
 
         private static List<AfCdComiteListaDto> ObtenerUnidades(SqlConnection conn, string codComite)
