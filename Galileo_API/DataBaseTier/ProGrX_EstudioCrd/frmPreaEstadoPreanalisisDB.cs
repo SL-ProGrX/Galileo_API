@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -43,7 +44,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 return DbHelper.CreateOkResponse(response);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCargarResponse());
+            }
+            catch (DataException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCargarResponse());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCargarResponse());
             }
@@ -111,7 +120,19 @@ WHERE COD_PREANALISIS = @cod_preanalisis
                     mensaje = "La informacion fue actualizada correctamente."
                 });
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisGuardarResponse());
+            }
+            catch (DataException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisGuardarResponse());
+            }
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisGuardarResponse());
+            }
+            catch (ArgumentException ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisGuardarResponse());
             }
@@ -182,7 +203,19 @@ WHERE COD_CAUSAS = @cod_causas
                     mensaje = request.activo == true ? "Causa registrada correctamente." : "Causa eliminada correctamente."
                 });
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
+            }
+            catch (DataException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
+            }
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
+            }
+            catch (ArgumentException ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
             }
