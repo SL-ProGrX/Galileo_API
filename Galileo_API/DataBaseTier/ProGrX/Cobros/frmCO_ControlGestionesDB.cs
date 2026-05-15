@@ -29,7 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
 
         private static readonly IReadOnlyDictionary<int, string> GestionesSortFields = new Dictionary<int, string>
         {
-            [1] = "COD_GESTION",
+            [1] = "CASE WHEN ISNUMERIC(COD_GESTION) = 1 THEN CONVERT(INT, COD_GESTION) ELSE 0 END",
             [2] = "DESCRIPCION",
             [3] = "CODIGO_REFERENCIA",
             [4] = "MONTO",
@@ -67,9 +67,17 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             try
             {
                 var consulta = LazyLoadHelper.Build(filtros, GestionesSortMap, "cod_gestion");
+                var usarPaginacion = filtros.paginacion > 0;
+
                 var queryResult = DbHelper.WithConn(portalDb, CodEmpresa, connection =>
                 {
-                    using var multi = connection.QueryMultiple(CrearSqlListaGestiones(ObtenerOrdenamientoGestiones(consulta)), consulta.Params);
+                    using var multi = connection.QueryMultiple(
+                        CrearSqlListaGestiones(
+                            ObtenerOrdenamientoGestiones(consulta),
+                            usarPaginacion
+                        ),
+                        consulta.Params
+                    );
 
                     return new CoControlGestionesLista
                     {
@@ -386,44 +394,48 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 lista = new List<CoControlGestionesData>()
             });
 
-        private static string CrearSqlListaGestiones(string ordenamiento)
+        private static string CrearSqlListaGestiones(string ordenamiento, bool usarPaginacion)
         {
-            return $@"
-                    SELECT COUNT(1)
-                    FROM dbo.CBR_GESTIONES
-                    WHERE @hasFilter = 0 OR
-                    (
-                        UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
-                        UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
-                        UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
-                        UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
-                        UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
-                    );
+            var paginacionSql = usarPaginacion
+                ? "OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY"
+                : string.Empty;
 
-                    SELECT
-                        COD_GESTION         AS cod_gestion,
-                        DESCRIPCION         AS descripcion,
-                        CODIGO_REFERENCIA   AS codigo_referencia,
-                        ISNULL(MONTO,0)     AS monto,
-                        CASE WHEN ISNULL(MODIFICA_USUARIO,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS modifica_usuario,
-                        ISNULL(MODIFICA_DESVIACION,0) AS modifica_desviacion,
-                        ISNULL(COD_CUENTA,'') AS cod_cuenta,
-                        ISNULL(NIVEL_GESTION,'U') AS nivel_gestion,
-                        CASE WHEN ISNULL(ACCESO_RESTRINGIDO,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS acceso_restringido,
-                        CASE WHEN ISNULL(MRECUPERACION,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS mrecuperacion,
-                        ISNULL(IVA_PORCENTAJE,0) AS iva_porcentaje,
-                        CASE WHEN ISNULL(ESTADO,1) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS activo
-                    FROM dbo.CBR_GESTIONES
-                    WHERE @hasFilter = 0 OR
-                    (
-                        UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
-                        UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
-                        UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
-                        UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
-                        UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
-                    )
-                    ORDER BY {ordenamiento}, COD_GESTION ASC
-                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+            return $@"
+            SELECT COUNT(1)
+            FROM dbo.CBR_GESTIONES
+            WHERE @hasFilter = 0 OR
+            (
+                UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
+                UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
+                UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
+                UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
+                UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
+            );
+
+            SELECT
+                COD_GESTION AS cod_gestion,
+                DESCRIPCION AS descripcion,
+                CODIGO_REFERENCIA AS codigo_referencia,
+                ISNULL(MONTO,0) AS monto,
+                CASE WHEN ISNULL(MODIFICA_USUARIO,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS modifica_usuario,
+                ISNULL(MODIFICA_DESVIACION,0) AS modifica_desviacion,
+                ISNULL(COD_CUENTA,'') AS cod_cuenta,
+                ISNULL(NIVEL_GESTION,'U') AS nivel_gestion,
+                CASE WHEN ISNULL(ACCESO_RESTRINGIDO,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS acceso_restringido,
+                CASE WHEN ISNULL(MRECUPERACION,0) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS mrecuperacion,
+                ISNULL(IVA_PORCENTAJE,0) AS iva_porcentaje,
+                CASE WHEN ISNULL(ESTADO,1) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS activo
+            FROM dbo.CBR_GESTIONES
+            WHERE @hasFilter = 0 OR
+            (
+                UPPER(COD_GESTION) LIKE UPPER(@filtro) OR
+                UPPER(DESCRIPCION) LIKE UPPER(@filtro) OR
+                UPPER(CODIGO_REFERENCIA) LIKE UPPER(@filtro) OR
+                UPPER(ISNULL(COD_CUENTA,'')) LIKE UPPER(@filtro) OR
+                UPPER(ISNULL(NIVEL_GESTION,'')) LIKE UPPER(@filtro)
+            )
+            ORDER BY {CrearOrderByGestiones(ordenamiento)}
+            {paginacionSql};";
         }
 
         private static string ObtenerOrdenamientoGestiones(LazyLoadSpec consulta)
@@ -435,7 +447,15 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             return $"{campo} {(consulta.IsAsc ? "ASC" : "DESC")}";
         }
 
+        private static string CrearOrderByGestiones(string ordenamiento)
+        {
+            if (ordenamiento.Contains("COD_GESTION", StringComparison.OrdinalIgnoreCase))
+            {
+                return ordenamiento;
+            }
 
+            return $"{ordenamiento}, CASE WHEN ISNUMERIC(COD_GESTION) = 1 THEN CONVERT(INT, COD_GESTION) ELSE 0 END ASC";
+        }
         private static string NormalizarCodigo(string? valor) => (valor ?? string.Empty).Trim().ToUpper();
 
         private static string NormalizarNivelGestion(string? nivelGestion) => NormalizarCodigo(nivelGestion) == "S" ? "S" : "U";
