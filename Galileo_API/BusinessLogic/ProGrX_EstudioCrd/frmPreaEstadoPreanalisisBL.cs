@@ -118,6 +118,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                     new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
             }
 
+            if (!request.activo.HasValue)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar si la causa queda activa.",
+                    -1,
+                    new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
+            }
+
             return _db.Prea_frmPreaEstadoPreanalisis_Causa_Registrar(codEmpresa, request);
         }
 

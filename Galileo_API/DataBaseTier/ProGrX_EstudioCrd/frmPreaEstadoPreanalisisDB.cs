@@ -129,7 +129,7 @@ WHERE COD_PREANALISIS = @cod_preanalisis
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
 
-                if (request.activo)
+                if (request.activo == true)
                 {
                     const string insertSql = @"
 IF NOT EXISTS (
@@ -178,8 +178,8 @@ WHERE COD_CAUSAS = @cod_causas
                 return DbHelper.CreateOkResponse(new FrmPreaEstadoPreanalisisCausaRegistrarResponse
                 {
                     cod_causas = request.cod_causas.Trim(),
-                    activo = request.activo,
-                    mensaje = request.activo ? "Causa registrada correctamente." : "Causa eliminada correctamente."
+                    activo = request.activo == true,
+                    mensaje = request.activo == true ? "Causa registrada correctamente." : "Causa eliminada correctamente."
                 });
             }
             catch (Exception ex)
