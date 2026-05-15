@@ -45,16 +45,16 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
 
-        public bool chk_resumen { get; set; }
-        public bool chk_detalle { get; set; }
-        public bool chk_ficha_convenio { get; set; }
-        public bool chk_estado_cuenta { get; set; }
-        public bool chk_deducciones { get; set; }
+        public bool chk_resumen { get; set; } = false;
+        public bool chk_detalle { get; set; } = false;
+        public bool chk_ficha_convenio { get; set; } = false;
+        public bool chk_estado_cuenta { get; set; } = false;
+        public bool chk_deducciones { get; set; } = false;
 
-        public bool chk_sub_expediente { get; set; }
-        public bool chk_sub_expediente_resumen { get; set; }
-        public bool chk_sub_expediente_detalle { get; set; }
-        public bool chk_sub_expediente_estado { get; set; }
+        public bool chk_sub_expediente { get; set; } = false;
+        public bool chk_sub_expediente_resumen { get; set; } = false;
+        public bool chk_sub_expediente_detalle { get; set; } = false;
+        public bool chk_sub_expediente_estado { get; set; } = false;
     }
 
     public class FrmPreaSubReporteImprimirResponse
