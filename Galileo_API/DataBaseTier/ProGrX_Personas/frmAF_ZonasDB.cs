@@ -32,7 +32,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
             try
             {
                 string where = string.IsNullOrWhiteSpace(filtro) ? "" : "WHERE descripcion LIKE @Filtro";
-                string order = string.IsNullOrWhiteSpace(sortField) ? "cod_zona" : sortField;
+                // Lista blanca de columnas permitidas para ordenamiento
+                var allowedSortFields = new HashSet<string> { "cod_zona", "descripcion", "activa", "registro_usuario", "registro_fecha" };
+                string order = allowedSortFields.Contains(sortField?.ToLowerInvariant()) ? sortField : "cod_zona";
                 string sortOrderStr = sortOrder == 0 ? "DESC" : "ASC";
 
                 string sqlTotal = $"SELECT COUNT(cod_zona) FROM afi_zonas {where}";
@@ -77,32 +79,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="filtros">Filtros de búsqueda y orden.</param>
         public ErrorDto<List<ZonasData>> AF_Zonas_Obtener(int codEmpresa, FiltrosLazyLoadData filtros)
         {
-            try
+            string where = "";
+            object parametros = null;
+            if (!string.IsNullOrEmpty(filtros.filtro))
             {
-                string where = "";
-                object parametros = null;
-                if (!string.IsNullOrEmpty(filtros.filtro))
-                {
-                    where = " WHERE (cod_zona LIKE @Filtro OR descripcion LIKE @Filtro) ";
-                    parametros = new { Filtro = "%" + filtros.filtro + "%" };
-                }
-
-                string query = $@"SELECT cod_zona AS Cod_Zona, descripcion AS Descripcion, activa AS Activa, registro_usuario AS Registro_Usuario, registro_fecha AS Registro_Fecha
-                                  FROM afi_zonas
-                                  {where}
-                                  ORDER BY cod_zona";
-
-                return DbHelper.ExecuteListQuery<ZonasData>(_portalDb, codEmpresa, query, parametros);
+                where = " WHERE (cod_zona LIKE @Filtro OR descripcion LIKE @Filtro) ";
+                parametros = new { Filtro = "%" + filtros.filtro + "%" };
             }
-            catch (Exception ex)
-            {
-                return new ErrorDto<List<ZonasData>>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = null
-                };
-            }
+
+            string query = $@"SELECT cod_zona AS Cod_Zona, descripcion AS Descripcion, activa AS Activa, registro_usuario AS Registro_Usuario, registro_fecha AS Registro_Fecha
+                              FROM afi_zonas
+                              {where}
+                              ORDER BY cod_zona";
+
+            return DbHelper.ExecuteListQuery<ZonasData>(_portalDb, codEmpresa, query, parametros);
         }
 
         
@@ -208,20 +198,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="codZona">Código de la zona a validar.</param>
         public ErrorDto<int> AF_Zonas_Valida(int codEmpresa, string codZona)
         {
-            try
-            {
-                string sql = "SELECT COALESCE(COUNT(*), 0) AS Existe FROM afi_zonas WHERE cod_zona = @cod_zona";
-                return DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { cod_zona = codZona });
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<int>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = 0
-                };
-            }
+            string sql = "SELECT COALESCE(COUNT(*), 0) AS Existe FROM afi_zonas WHERE cod_zona = @cod_zona";
+            return DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { cod_zona = codZona });
         }
 
         /// <summary>
@@ -231,22 +209,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="codZona">Código de la zona.</param>
         public ErrorDto<List<ZonaUsuarioAsignadoData>> AF_Zonas_UsuariosAsignados_Obtener(int codEmpresa, string codZona)
         {
-            try
-            {
-                string sp = "spAfi_Zonas_Usuario_Asigna_Consulta";
-                var parametros = new { cod_zona = codZona };
-                return DbHelper.ExecuteStoredProcedureList<ZonaUsuarioAsignadoData>(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<List<ZonaUsuarioAsignadoData>>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = null
-                };
-            }
+            string sp = "spAfi_Zonas_Usuario_Asigna_Consulta";
+            var parametros = new { cod_zona = codZona };
+            return DbHelper.ExecuteStoredProcedureList<ZonaUsuarioAsignadoData>(
+                _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
 
         /// <summary>
@@ -256,22 +222,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="codZona">Código de la zona.</param>
         public ErrorDto<List<ZonaInstitucionAsignadaData>> AF_Zonas_InstitucionesAsignadas_Obtener(int codEmpresa, string codZona)
         {
-            try
-            {
-                string sp = "spAfi_Zonas_Inst_Asigna_Consulta";
-                var parametros = new { cod_zona = codZona };
-                return DbHelper.ExecuteStoredProcedureList<ZonaInstitucionAsignadaData>(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<List<ZonaInstitucionAsignadaData>>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = null
-                };
-            }
+            string sp = "spAfi_Zonas_Inst_Asigna_Consulta";
+            var parametros = new { cod_zona = codZona };
+            return DbHelper.ExecuteStoredProcedureList<ZonaInstitucionAsignadaData>(
+                _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
 
         /// <summary>
@@ -284,26 +238,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación.</param>
         public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, string codInstitucion, bool asignar, string usuario)
         {
-            try
+            string sp = "spAfi_Zonas_Inst_Asigna_Registra";
+            var parametros = new
             {
-                string sp = "spAfi_Zonas_Inst_Asigna_Registra";
-                var parametros = new
-                {
-                    cod_zona = codZona,
-                    cod_institucion = codInstitucion,
-                    asignar = asignar ? 1 : 0,
-                    usuario
-                };
-                return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = ex.Message
-                };
-            }
+                cod_zona = codZona,
+                cod_institucion = codInstitucion,
+                asignar = asignar ? 1 : 0,
+                usuario
+            };
+            return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
 
         /// <summary>
@@ -316,26 +259,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación.</param>
         public ErrorDto AF_Zonas_UsuarioAsignar_Registrar(int codEmpresa, string codZona, string codUsuario, bool asignar, string usuario)
         {
-            try
+            string sp = "spAfi_Zonas_Usuario_Asigna_Registra";
+            var parametros = new
             {
-                string sp = "spAfi_Zonas_Usuario_Asigna_Registra";
-                var parametros = new
-                {
-                    cod_zona = codZona,
-                    cod_usuario = codUsuario,
-                    asignar = asignar ? 1 : 0,
-                    usuario
-                };
-                return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = ex.Message
-                };
-            }
+                cod_zona = codZona,
+                cod_usuario = codUsuario,
+                asignar = asignar ? 1 : 0,
+                usuario
+            };
+            return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
 
 
