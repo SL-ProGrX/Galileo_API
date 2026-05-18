@@ -26,13 +26,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtrosObj)
         {
             string filtro = filtrosObj.filtro ?? string.Empty;
-            var allowedSortFields = new HashSet<string> { "cod_zona", "descripcion", "activa", "registro_usuario", "registro_fecha" };
-            string order = allowedSortFields.Contains(filtrosObj.sortField?.ToLowerInvariant()) ? filtrosObj.sortField : "cod_zona";
+            // Switch seguro para columna de ordenamiento (evita SQL Injection)
+            string order = filtrosObj.sortField?.ToLowerInvariant() switch
+            {
+                "cod_zona" => "cod_zona",
+                "descripcion" => "descripcion",
+                "activa" => "activa",
+                "registro_usuario" => "registro_usuario",
+                "registro_fecha" => "registro_fecha",
+                _ => "cod_zona"
+            };
             string sortOrderStr = filtrosObj.sortOrder == 0 ? "DESC" : "ASC";
             int pagina = filtrosObj.pagina;
             int paginacion = filtrosObj.paginacion;
 
             string where = string.IsNullOrWhiteSpace(filtro) ? "" : "WHERE descripcion LIKE @Filtro";
+            // Solo columnas permitidas pueden llegar aquí. Revisado por switch seguro arriba.
             string sqlTotal = $"SELECT COUNT(cod_zona) FROM afi_zonas {where}";
             string sqlLista = $@"
                 SELECT cod_zona AS Cod_Zona, descripcion AS Descripcion, activa AS Activa, registro_usuario AS Registro_Usuario, registro_fecha AS Registro_Fecha
