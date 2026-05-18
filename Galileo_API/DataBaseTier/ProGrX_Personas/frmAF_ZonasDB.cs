@@ -146,7 +146,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                     return resp;
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return new ErrorDto
                 {
@@ -176,7 +176,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
 
                 return resp;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return new ErrorDto
                 {
