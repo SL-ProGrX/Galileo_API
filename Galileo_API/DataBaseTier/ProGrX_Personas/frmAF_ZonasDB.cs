@@ -3,7 +3,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Personas;
 using Microsoft.Data.SqlClient;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Personas
 {
@@ -22,54 +21,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Obtiene la lista de zonas con total y paginación.
         /// </summary>
-        /// <param name="filtro">Filtro de búsqueda por descripción.</param>
-        /// <param name="sortField">Campo de ordenamiento.</param>
-        /// <param name="sortOrder">Orden (0: DESC, 1: ASC).</param>
-        /// <param name="pagina">Página de paginación.</param>
-        /// <param name="paginacion">Cantidad de registros por página.</param>
-        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(string filtro, string sortField, int sortOrder, int pagina, int paginacion)
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="filtros">JSON con filtros de búsqueda, orden y paginación.</param>
+        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtrosObj)
         {
-            try
+            string filtro = filtrosObj.filtro ?? string.Empty;
+            var allowedSortFields = new HashSet<string> { "cod_zona", "descripcion", "activa", "registro_usuario", "registro_fecha" };
+            string order = allowedSortFields.Contains(filtrosObj.sortField?.ToLowerInvariant()) ? filtrosObj.sortField : "cod_zona";
+            string sortOrderStr = filtrosObj.sortOrder == 0 ? "DESC" : "ASC";
+            int pagina = filtrosObj.pagina;
+            int paginacion = filtrosObj.paginacion;
+
+            string where = string.IsNullOrWhiteSpace(filtro) ? "" : "WHERE descripcion LIKE @Filtro";
+            string sqlTotal = $"SELECT COUNT(cod_zona) FROM afi_zonas {where}";
+            string sqlLista = $@"
+                SELECT cod_zona AS Cod_Zona, descripcion AS Descripcion, activa AS Activa, registro_usuario AS Registro_Usuario, registro_fecha AS Registro_Fecha
+                FROM afi_zonas
+                {where}
+                ORDER BY {order} {sortOrderStr}
+                OFFSET @Pagina ROWS FETCH NEXT @Paginacion ROWS ONLY";
+
+            var total = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb, codEmpresa, sqlTotal, 0, new { Filtro = "%" + filtro + "%" });
+            var lista = DbHelper.ExecuteListQuery<ZonasData>(
+                _portalDb, codEmpresa, sqlLista, new { Filtro = "%" + filtro + "%", Pagina = pagina, Paginacion = paginacion });
+
+            return new ErrorDto<ZonasLista>
             {
-                string where = string.IsNullOrWhiteSpace(filtro) ? "" : "WHERE descripcion LIKE @Filtro";
-                // Lista blanca de columnas permitidas para ordenamiento
-                var allowedSortFields = new HashSet<string> { "cod_zona", "descripcion", "activa", "registro_usuario", "registro_fecha" };
-                string order = allowedSortFields.Contains(sortField?.ToLowerInvariant()) ? sortField : "cod_zona";
-                string sortOrderStr = sortOrder == 0 ? "DESC" : "ASC";
-
-                string sqlTotal = $"SELECT COUNT(cod_zona) FROM afi_zonas {where}";
-                string sqlLista = $@"
-                    SELECT cod_zona AS Cod_Zona, descripcion AS Descripcion, activa AS Activa, registro_usuario AS Registro_Usuario, registro_fecha AS Registro_Fecha
-                    FROM afi_zonas
-                    {where}
-                    ORDER BY {order} {sortOrderStr}
-                    OFFSET @Pagina ROWS FETCH NEXT @Paginacion ROWS ONLY";
-
-                var total = DbHelper.ExecuteSingleQuery<int>(
-                    _portalDb, 0, sqlTotal, 0, new { Filtro = "%" + filtro + "%" });
-                var lista = DbHelper.ExecuteListQuery<ZonasData>(
-                    _portalDb, 0, sqlLista, new { Filtro = "%" + filtro + "%", Pagina = pagina, Paginacion = paginacion });
-
-                return new ErrorDto<ZonasLista>
+                Code = 0,
+                Description = "OK",
+                Result = new ZonasLista
                 {
-                    Code = 0,
-                    Description = "OK",
-                    Result = new ZonasLista
-                    {
-                        Total = total.Result,
-                        Lista = lista.Result ?? new List<ZonasData>()
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<ZonasLista>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = null
-                };
-            }
+                    Total = total.Result,
+                    Lista = lista.Result ?? new List<ZonasData>()
+                }
+            };
         }
 
         /// <summary>

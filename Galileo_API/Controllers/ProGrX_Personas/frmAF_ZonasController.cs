@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Personas;
 using Galileo_API.Models.ProGrX_Personas;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
         
@@ -18,21 +19,18 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             _bl = new FrmAfZonasBL(config);
         }
 
+
         [HttpGet("AF_ZonasLista_Obtener")]
-        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(
-            string filtro = "",
-            string sortField = "cod_zona",
-            int sortOrder = 0,
-            int pagina = 0,
-            int paginacion = 10)
+        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, string filtros)
         {
-            return _bl.AF_ZonasLista_Obtener(filtro, sortField, sortOrder, pagina, paginacion);
+            return _bl.AF_ZonasLista_Obtener(codEmpresa, filtros);
         }
 
-        [HttpPost("AF_Zonas_Obtener")]
-        public ErrorDto<List<ZonasData>> AF_Zonas_Obtener(int codEmpresa, [FromBody] FiltrosLazyLoadData filtros)
+        [Authorize]
+        [HttpGet("AF_Zonas_Obtener")]
+        public ErrorDto <List<ZonasData>> AF_Zonas_Obtener(int CodEmpresa, string filtros)
         {
-            return _bl.AF_Zonas_Obtener(codEmpresa, filtros);
+            return _bl.AF_Zonas_Obtener(CodEmpresa, filtros);
         }
 
         [HttpPost("AF_Zonas_Guardar")]
