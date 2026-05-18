@@ -7,7 +7,7 @@
         public bool Activa { get; set; } = false;
         public string Registro_Usuario { get; set; } = string.Empty;
         public DateTime? Registro_Fecha { get; set; }
-        public bool isNew { get; set; }
+        public bool? isNew { get; set; }
     }
 
     public class ZonasLista
