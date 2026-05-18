@@ -65,12 +65,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 // Normalizo textos
                 var documento = solicitud.documento?.Trim();
-                var codigoTxt = solicitud.codigo?.Trim();
-                var ndocumentoTxt = solicitud.ndocumento?.Trim();
-                var beneficiarioTxt = solicitud.beneficiario?.Trim();
-                var ctaAhorrosTxt = solicitud.cta_ahorros?.Trim();
-                var codPlanTxt = solicitud.cod_plan?.Trim();
-
+                var codigoTxt = string.IsNullOrWhiteSpace(solicitud.codigo?.Trim()) ? null : solicitud.codigo.Trim();
+                var ndocumentoTxt = string.IsNullOrWhiteSpace(solicitud.ndocumento?.Trim()) ? null : solicitud.ndocumento.Trim();
+                var beneficiarioTxt = string.IsNullOrWhiteSpace(solicitud.beneficiario?.Trim()) ? null : solicitud.beneficiario.Trim();
+                var ctaAhorrosTxt = string.IsNullOrWhiteSpace(solicitud.cta_ahorros?.Trim()) ? null : solicitud.cta_ahorros.Trim();
+                var codPlanTxt = string.IsNullOrWhiteSpace(solicitud.cod_plan?.Trim()) ? null : solicitud.cod_plan.Trim();
                 var hasDocumento = !string.IsNullOrWhiteSpace(documento);
 
                 // Si documento es obligatorio para este endpoint, mejor fallar rápido
@@ -98,9 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                             -- Mantengo tu lógica: si no viene cod_plan, usar '-sp-' y comparar con ISNULL(cod_Plan,'-sp-')
                             AND (ISNULL(cod_Plan,'-sp-') = @CodPlan)
-                            AND REFERENCIA_SINPE NOT IN (
-    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO
-                                );";
+                            AND REFERENCIA_SINPE IS NULL;";
 
                 var parameters = new
                 {
