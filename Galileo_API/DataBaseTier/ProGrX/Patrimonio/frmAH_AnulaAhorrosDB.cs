@@ -133,7 +133,7 @@ order by fecha desc;";
                         response);
                 }
 
-                var destino = Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(conn, tx, codEmpresa, request, response);
+                var destino = Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(conn, tx, codEmpresa, request);
                 if (!destino.EsValido)
                     return DbHelper.CreateErrorResponse(destino.MensajeError, -2, response);
 
@@ -151,13 +151,16 @@ order by fecha desc;";
                     conn,
                     tx,
                     request,
-                    globales.GOficinaTitular,
-                    numDocumento,
-                    tipoDocumento,
-                    nombreCliente,
-                    monto,
-                    detalle,
-                    lineas);
+                    new InsertarTransaccionParametrosRequest
+                    {
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numDocumento,
+                        monto = monto,
+                        detalle = detalle,
+                        nombreCliente = nombreCliente,
+                        oficinaTitular = globales.GOficinaTitular,
+                        lineas = lineas
+                    });
 
                 decimal montoAsiento = monto * factorAplicado;
 
@@ -205,23 +208,29 @@ order by fecha desc;";
                     conn,
                     tx,
                     request,
-                    consulta.cod_divisa,
-                    globales.GOficinaUnidad,
-                    tipoDocumento,
-                    numDocumento,
-                    monto,
-                    nombreCliente,
+                    new RegistrarSaldoFavorSiAplicaParametrosRequest
+                    {
+                        codDivisa = consulta.cod_divisa,
+                        oficinaUnidad = globales.GOficinaUnidad,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numDocumento,
+                        monto = monto,
+                        nombreCliente = nombreCliente
+                    },
                     destino);
 
                 Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
                     conn,
                     tx,
-                    request.cedula,
-                    request.tipo_rubro,
-                    monto,
-                    tipoDocumento,
-                    numDocumento,
-                    request.usuario);
+                    new EjecutarAnulacionParametrosRequest
+                    {
+                        cedula = request.cedula,
+                        tipoRubro = request.tipo_rubro,
+                        monto = monto,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numDocumento,
+                        usuario = request.usuario
+                    });
 
                 tx.Commit();
 
@@ -423,13 +432,8 @@ exec spSIFDocsAsiento
             SqlConnection conn,
             SqlTransaction tx,
             FrmAhAnulaAhorrosProcesarRequest request,
-            string oficinaTitular,
-            string numDocumento,
-            string tipoDocumento,
-            string nombreCliente,
-            decimal monto,
-            string detalle,
-            string[] lineas)
+            InsertarTransaccionParametrosRequest parametros
+            )
         {
             conn.Execute(@"
 insert into SIF_TRANSACCIONES
@@ -449,25 +453,25 @@ values
     @detalle, @documento, @cod_caja
 );", new
             {
-                cod_transaccion = numDocumento,
-                tipo_documento = tipoDocumento,
+                cod_transaccion = parametros.numDocumento,
+                tipo_documento = parametros.tipoDocumento,
                 registro_usuario = request.usuario,
                 cliente_identificacion = request.cedula,
-                cliente_nombre = nombreCliente,
-                monto = monto * -1,
+                cliente_nombre = parametros.nombreCliente,
+                monto = parametros.monto * -1,
                 referencia_01 = request.cedula,
-                cod_oficina = oficinaTitular,
-                linea1 = lineas[0],
-                linea2 = lineas[1],
-                linea3 = lineas[2],
-                linea4 = lineas[3],
-                linea5 = lineas[4],
-                linea6 = lineas[5],
-                linea7 = lineas[6],
-                linea8 = lineas[7],
-                linea9 = lineas[8],
-                linea10 = lineas[9],
-                detalle = detalle,
+                cod_oficina = parametros.oficinaTitular,
+                linea1 = parametros.lineas[0],
+                linea2 = parametros.lineas[1],
+                linea3 = parametros.lineas[2],
+                linea4 = parametros.lineas[3],
+                linea5 = parametros.lineas[4],
+                linea6 = parametros.lineas[5],
+                linea7 = parametros.lineas[6],
+                linea8 = parametros.lineas[7],
+                linea9 = parametros.lineas[8],
+                linea10 = parametros.lineas[9],
+                detalle = parametros.detalle,
                 documento = string.Empty,
                 cod_caja = string.Empty
             }, tx);
@@ -476,12 +480,8 @@ values
         private void Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
             SqlConnection conn,
             SqlTransaction tx,
-            string cedula,
-            string tipoRubro,
-            decimal monto,
-            string tipoDocumento,
-            string numDocumento,
-            string usuario)
+            EjecutarAnulacionParametrosRequest request
+            )
         {
             conn.Execute(@"
 exec spPAT_Anulacion
@@ -495,12 +495,12 @@ exec spPAT_Anulacion
     '',
     0;", new
             {
-                Cedula = cedula,
-                Tipo = tipoRubro,
-                Monto = monto,
-                TipoDoc = tipoDocumento,
-                NumDoc = numDocumento,
-                Usuario = usuario
+                Cedula = request.cedula,
+                Tipo = request.tipoRubro,
+                Monto = request.monto,
+                TipoDoc = request.tipoDocumento,
+                NumDoc = request.numDocumento,
+                Usuario = request.usuario
             }, tx);
         }
 
@@ -508,12 +508,7 @@ exec spPAT_Anulacion
             SqlConnection conn,
             SqlTransaction tx,
             FrmAhAnulaAhorrosProcesarRequest request,
-            string codDivisa,
-            string oficinaUnidad,
-            string tipoDocumento,
-            string numDocumento,
-            decimal monto,
-            string nombreCliente,
+            RegistrarSaldoFavorSiAplicaParametrosRequest parametro,
             PatrimoniofrmAHAnulaAhorrosCuentaDestino destino)
         {
             if (!destino.RequiereSaldoFavor)
@@ -530,12 +525,12 @@ exec spCajas_SaldoFavor_Registra
     @Divisa;", new
             {
                 FormaPago = destino.FormaPagoSaldoFavor,
-                Referencia = $"{tipoDocumento}-{numDocumento}",
-                Monto = monto,
+                Referencia = $"{parametro.tipoDocumento}-{parametro.numDocumento}",
+                Monto = parametro.monto,
                 Cedula = request.cedula,
-                Nombre = nombreCliente,
+                Nombre = parametro.nombreCliente,
                 Usuario = request.usuario,
-                Divisa = codDivisa
+                Divisa = parametro.codDivisa
             }, tx);
 
             conn.Execute(@"
@@ -551,15 +546,15 @@ exec spPAT_Anulacion_Saldo_Favor
     @Referencia,
     @SfId;", new
             {
-                TipoDoc = tipoDocumento,
-                NumDoc = numDocumento,
+                TipoDoc = parametro.tipoDocumento,
+                NumDoc = parametro.numDocumento,
                 Usuario = request.usuario,
                 FormaPago = destino.FormaPagoSaldoFavor,
-                Divisa = codDivisa,
-                Monto = monto,
-                Unidad = oficinaUnidad,
+                Divisa = parametro.codDivisa,
+                Monto = parametro.monto,
+                Unidad = parametro.oficinaUnidad,
                 Cuenta = destino.CuentaDestino,
-                Referencia = $"{tipoDocumento}-{numDocumento}",
+                Referencia = $"{parametro.tipoDocumento}-{parametro.numDocumento}",
                 SfId = sfId
             }, tx);
         }
@@ -568,8 +563,8 @@ exec spPAT_Anulacion_Saldo_Favor
             SqlConnection conn,
             SqlTransaction tx,
             int codEmpresa,
-            FrmAhAnulaAhorrosProcesarRequest request,
-            FrmAhAnulaAhorrosProcesarResponse response)
+            FrmAhAnulaAhorrosProcesarRequest request
+            )
         {
             if (Patrimonio_frmAH_AnulaAhorros_EsAccionSaldoFavor(request.accion))
             {

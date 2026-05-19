@@ -189,7 +189,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (!string.IsNullOrWhiteSpace(etiquetaFiltro))
                 {
                     sql += """
-                and dbo.fxCRDValidaTag(@etiqueta_filtro, R.id_solicitud) > 0
+                 and dbo.fxCRDValidaTag(@etiqueta_filtro, R.id_solicitud) > 0
                 """;
                     parametros.Add("@etiqueta_filtro", etiquetaFiltro);
                 }
@@ -197,20 +197,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (request.solo_creditos_espera)
                 {
                     sql += """
-                and R.EN_ESPERA_FECHA is not null
+                 and R.EN_ESPERA_FECHA is not null
                 """;
                 }
 
                 if (bancosNormalizados.Count > 0)
                 {
                     sql += """
-                and R.COD_BANCO in @bancos
+                 and R.COD_BANCO in @bancos
                 """;
                     parametros.Add("@bancos", bancosNormalizados);
                 }
 
                 sql += """
-            order by R.id_solicitud
+             order by R.id_solicitud
             """;
 
                 var lista = conn.Query<CrSeguimientoRevisionesTagOperacionRow>(sql, parametros).ToList();

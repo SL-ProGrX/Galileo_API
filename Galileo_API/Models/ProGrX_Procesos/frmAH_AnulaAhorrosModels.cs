@@ -76,5 +76,36 @@ namespace Galileo.Models.AH
         public string referencia3 { get; set; } = string.Empty;
     }
 
+    public class RegistrarSaldoFavorSiAplicaParametrosRequest
+    {
+        public string codDivisa { get; set; } = string.Empty;
+        public string oficinaUnidad { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string nombreCliente { get; set; } = string.Empty;
+    }
+
+    public class EjecutarAnulacionParametrosRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string tipoRubro { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class InsertarTransaccionParametrosRequest
+    {
+        public string oficinaTitular { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string nombreCliente { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string detalle { get; set; } = string.Empty;
+        public string[] lineas { get; set; } = [];
+    }
+
     #endregion
 }
