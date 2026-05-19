@@ -1,13 +1,9 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
-using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
-using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
-using Sinpe_TFT;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
