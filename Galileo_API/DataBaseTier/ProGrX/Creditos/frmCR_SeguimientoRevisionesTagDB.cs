@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public class FrmCrSeguimientoRevisionesTagDB
     {
         private readonly PortalDB _portalDB;
+        private const string validaSolicitud = "Debe indicar una operación válida.";
 
         public FrmCrSeguimientoRevisionesTagDB(IConfiguration config)
         {
@@ -239,7 +240,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request == null || request.id_solicitud <= 0)
             {
                 return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagDetalleCreditoResponse>(
-                    "Debe indicar una operación válida.");
+                    validaSolicitud);
             }
 
             try
@@ -300,7 +301,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request == null || request.id_solicitud <= 0)
             {
                 return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagSeguimientoResponse>(
-                    "Debe indicar una operación válida.");
+                    validaSolicitud);
             }
 
             try
@@ -426,7 +427,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request == null || request.id_solicitud <= 0)
             {
                 return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagRevisionResponse>(
-                    "Debe indicar una operación válida.");
+                    validaSolicitud);
             }
 
             try
@@ -501,7 +502,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request.id_solicitud <= 0)
             {
                 return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagAplicarResponse>(
-                    "Debe indicar una operación válida.");
+                    validaSolicitud);
             }
 
             if (string.IsNullOrWhiteSpace(request.tag_codigo))

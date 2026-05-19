@@ -90,14 +90,14 @@
         public List<TransferenciaSolicitudData> lista { get; set; } = new List<TransferenciaSolicitudData>();
     }
 
-    public class TES_TransferenciaReversaFiltrosObtener
+    public class TesTransferenciaReversaFiltrosObtener
     {
-        public string Documento { get; set; }
-        public string Codigo { get; set; }
-        public string Ndocumento { get; set; }
-        public string Beneficiario { get; set; }
-        public string CtaAhorros { get; set; }
-        public string CodPlan { get; set; }
+        public string Documento { get; set; } = string.Empty;
+        public string Codigo { get; set; } = string.Empty;
+        public string Ndocumento { get; set; } = string.Empty;
+        public string Beneficiario { get; set; } = string.Empty; 
+        public string CtaAhorros { get; set; } = string.Empty;
+        public string CodPlan { get; set; } = string.Empty;
     }
 
 }

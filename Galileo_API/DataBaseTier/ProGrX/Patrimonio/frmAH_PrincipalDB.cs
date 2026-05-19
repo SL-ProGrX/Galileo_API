@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
     {
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrx;
+        private const string validaCedula = "La cédula es requerida.";
 
         public FrmAHPrincipalDB(IConfiguration config)
         {
@@ -25,7 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             string usuario)
         {
             if (string.IsNullOrWhiteSpace(cedula))
-                return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>("La cédula es requerida.");
+                return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>(validaCedula);
 
             if (string.IsNullOrWhiteSpace(usuario))
                 return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>("El usuario es requerido.");
@@ -37,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
                 var acceso = _mProGrx.fxSys_RA_Consulta(codEmpresa, cedulaNormalizada, usuarioNormalizado);
                 if (acceso.Code == -1)
-                    return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>(acceso.Description);
+                    return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>(acceso.Description!);
 
                 if (!acceso.Result)
                 {
@@ -95,7 +96,7 @@ where cedula = @cedula;";
                 return DbHelper.CreateErrorResponse<List<FrmAhPrincipalDetallePatrimonioResponse>>("La solicitud es requerida.");
 
             if (string.IsNullOrWhiteSpace(request.cedula))
-                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalDetallePatrimonioResponse>>("La cédula es requerida.");
+                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalDetallePatrimonioResponse>>(validaCedula);
 
             var tipos = new List<string>();
 
@@ -164,7 +165,7 @@ order by A.fecha desc, A.consec desc;";
             string cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula))
-                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalExcedentesResponse>>("La cédula es requerida.");
+                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalExcedentesResponse>>(validaCedula);
 
             const string sql = @"
 select
@@ -195,7 +196,7 @@ order by P.CORTE desc, P.Inicio desc;";
             string cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula))
-                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalHistoricoResponse>>("La cédula es requerida.");
+                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalHistoricoResponse>>(validaCedula);
 
             const string sql = @"
 select
@@ -228,7 +229,7 @@ order by A.anio desc, A.mes desc;";
             string cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula))
-                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalLiquidacionesResponse>>("La cédula es requerida.");
+                return DbHelper.CreateErrorResponse<List<FrmAhPrincipalLiquidacionesResponse>>(validaCedula);
 
             const string sql = @"
 select

@@ -110,7 +110,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static object TES_TransferenciaReversa_CrearParametrosObtener(
     TransferenciaSolicitudData solicitud,
-    TES_TransferenciaReversaFiltrosObtener filtros)
+    TesTransferenciaReversaFiltrosObtener filtros)
         {
             return new
             {
@@ -133,28 +133,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             };
         }
 
-        private static TES_TransferenciaReversaFiltrosObtener TES_TransferenciaReversa_NormalizarFiltrosObtener(
+        private static TesTransferenciaReversaFiltrosObtener TES_TransferenciaReversa_NormalizarFiltrosObtener(
             TransferenciaSolicitudData solicitud)
         {
-            return new TES_TransferenciaReversaFiltrosObtener
+            return new TesTransferenciaReversaFiltrosObtener
             {
-                Documento = solicitud.documento?.Trim(),
-                Codigo = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo),
-                Ndocumento = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento),
-                Beneficiario = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario),
-                CtaAhorros = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros),
-                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan) ?? "-sp-"
+                Documento = solicitud.documento!.Trim(),
+                Codigo = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo!),
+                Ndocumento = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento!),
+                Beneficiario = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario!),
+                CtaAhorros = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros!),
+                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan!) ?? "-sp-"
             };
         }
 
         private static string TES_TransferenciaReversa_NormalizarTexto(string valor)
         {
-            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+            return string.IsNullOrWhiteSpace(valor) ? string.Empty : valor.Trim();
         }
 
         private static string TES_TransferenciaReversa_CrearLike(string valor)
         {
-            return string.IsNullOrWhiteSpace(valor) ? null : $"%{valor}%";
+            return string.IsNullOrWhiteSpace(valor) ? string.Empty : $"%{valor}%";
         }
 
        
