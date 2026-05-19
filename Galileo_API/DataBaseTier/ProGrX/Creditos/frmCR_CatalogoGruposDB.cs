@@ -786,7 +786,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Normaliza la lista de grupos seleccionados para calculos.
         /// </summary>
-        private List<string> NormalizarGrupos(List<string>? grupos)
+        private static List<string> NormalizarGrupos(List<string>? grupos)
         {
             return (grupos ?? new List<string>())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
