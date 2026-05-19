@@ -248,7 +248,7 @@ order by fecha desc;";
             }
             catch (Exception ex)
             {
-                try { tx.Rollback(); } catch { 
+                try { tx.Rollback(); } catch (Exception) { 
                     return DbHelper.CreateErrorResponse($"Error al procesar la anulación: {ex.Message}. Además, no se pudo revertir la transacción.", -1, response);
                 }
                 return DbHelper.CreateErrorResponse(ex.Message, -1, response);
