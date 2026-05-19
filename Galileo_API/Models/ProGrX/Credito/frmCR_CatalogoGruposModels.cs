@@ -38,8 +38,8 @@ namespace Galileo_API.Models.ProGrX.Credito
     public class CrCatalogoGrupoConsultaRequest
     {
         public string referencia { get; set; } = string.Empty;
-        public DateTime? fecha_inicio { get; set; }
-        public DateTime? fecha_corte { get; set; }
+        public DateTime fecha_inicio { get; set; } = DateTime.Now;
+        public DateTime fecha_corte { get; set; } = DateTime.Now;
         public bool activos { get; set; } = false;
         public List<string> grupos { get; set; } = new();
     }
@@ -56,7 +56,7 @@ namespace Galileo_API.Models.ProGrX.Credito
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_grupo { get; set; } = string.Empty;
-        public DateTime? fecha { get; set; }
+        public DateTime fecha { get; set; } = DateTime.Now;
         public decimal presupuesto { get; set; } = 0;
         public bool reemplazar { get; set; } = false;
     }
