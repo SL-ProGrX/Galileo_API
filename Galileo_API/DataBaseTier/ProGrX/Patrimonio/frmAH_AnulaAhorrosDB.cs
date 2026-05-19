@@ -125,7 +125,7 @@ order by fecha desc;";
                     return DbHelper.CreateErrorResponse("No se pudieron obtener los parámetros globales del usuario.", -2, response);
 
                 var cuentaAporte = ConsultarCuentaAporte(conn, tx, request.cedula, request.tipo_rubro);
-                if (cuentaAporte == (null, null) || string.IsNullOrWhiteSpace(cuentaAporte.cuenta))
+                if (cuentaAporte == null || string.IsNullOrWhiteSpace(cuentaAporte.cuenta))
                 {
                     return DbHelper.CreateErrorResponse(
                         "No se pudo resolver la cuenta contable del rubro de patrimonio.",
@@ -328,7 +328,7 @@ exec spSIFDocsAsiento
             }, tx);
         }
 
-        private static (decimal aporte, string cuenta) ConsultarCuentaAporte(
+        private static ConsultarCuentaAporteResult ConsultarCuentaAporte(
             SqlConnection conn,
             SqlTransaction tx,
             string cedula,
@@ -345,10 +345,10 @@ exec spSIFDocsAsiento
                 from vPAT_Consolidado
                 where cedula = @cedula;";
 
-            return conn.QueryFirstOrDefault<(decimal aporte, string cuenta)>(
+            return conn.QueryFirstOrDefault<ConsultarCuentaAporteResult>(
                 sql,
                 new { cedula },
-                tx);
+                tx) ?? new ConsultarCuentaAporteResult();
         }
 
         private static (string ColumnaAporte, string ColumnaCuenta)? Patrimonio_frmAH_AnulaAhorros_ObtenerColumnasRubro(string tipoRubro)

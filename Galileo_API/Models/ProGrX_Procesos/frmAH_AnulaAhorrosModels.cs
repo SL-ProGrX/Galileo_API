@@ -57,6 +57,12 @@ namespace Galileo.Models.AH
         public string? reporte_resultado { get; set; }
     }
 
+    public class ConsultarCuentaAporteResult
+    {
+        public decimal aporte { get; set; } = 0;
+        public string cuenta { get; set; } = string.Empty;
+    }
+
     #region Parametros 
 
     public class EjecutarAsientoParametrosRequest
