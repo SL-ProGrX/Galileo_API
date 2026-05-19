@@ -62,5 +62,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         {
             return _db.CrCatalogoGrupos_Diario_Guardar(codEmpresa, request);
         }
+
+        public ErrorDto CrCatalogoGrupos_Eliminar(
+            int codEmpresa,
+            string usuario,
+            string codGrupo)
+        {
+            return _db.CrCatalogoGrupos_Eliminar(codEmpresa, usuario, codGrupo);
+        }
     }
 }

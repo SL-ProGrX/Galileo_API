@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la lista de grupos del catálogo.
+        /// Obtiene la lista de grupos del catalogo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="activos"></param>
@@ -83,7 +83,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto<List<CrCatalogoGrupoConsultaData>>
                 {
                     Code = -1,
-                    Description = "La referencia enviada no es válida."
+                    Description = "La referencia enviada no es valida."
                 };
             }
 
@@ -172,7 +172,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda la definición de un grupo, insertando o actualizando según corresponda.
+        /// Guarda la definicion de un grupo, insertando o actualizando segun corresponda.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="usuario"></param>
@@ -191,7 +191,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del grupo."
+                    Description = "Debe indicar el codigo del grupo."
                 };
             }
 
@@ -200,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar la descripción del grupo."
+                    Description = "Debe indicar la descripcion del grupo."
                 };
             }
 
@@ -219,7 +219,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene los catálogos asignados y no asignados al grupo seleccionado.
+        /// Obtiene los catalogos asignados y no asignados al grupo seleccionado.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codGrupo"></param>
@@ -260,7 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Asigna o desasigna un catálogo al grupo indicado.
+        /// Asigna o desasigna un catalogo al grupo indicado.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -279,7 +279,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar el grupo y el catálogo a procesar."
+                    Description = "Debe indicar el grupo y el catalogo a procesar."
                 };
             }
 
@@ -318,18 +318,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 codEmpresa,
                 request.usuario,
                 request.isChecked ? "Registra - WEB" : "Borrar - WEB",
-                $"Asignación catálogo: {request.codigo} al grupo: {request.cod_grupo}"
+                $"Asignacion catalogo: {request.codigo} al grupo: {request.cod_grupo}"
             );
 
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = "Informacion guardada satisfactoriamente..."
             };
         }
 
         /// <summary>
-        /// Obtiene el histórico reciente del presupuesto diario de un grupo.
+        /// Obtiene el historico reciente del presupuesto diario de un grupo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codGrupo"></param>
@@ -360,7 +360,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda el presupuesto diario de un grupo, insertando o reemplazando según la solicitud.
+        /// Guarda el presupuesto diario de un grupo, insertando o reemplazando segun la solicitud.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -415,7 +415,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = 0,
-                    Description = "Información guardada satisfactoriamente..."
+                    Description = "Informacion guardada satisfactoriamente..."
                 };
             }
 
@@ -423,8 +423,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return new ErrorDto
                 {
-                    Code = 1,
-                    Description = "Ya existe un monto presupuestario definido para este día."
+                    Code = -2,
+                    Description = "Ya existe un monto presupuestario definido para este dia."
                 };
             }
 
@@ -462,12 +462,111 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = "Informacion guardada satisfactoriamente..."
             };
         }
 
         /// <summary>
-        /// Verifica si el grupo ya existe en el catálogo.
+        /// Elimina un grupo del catalogo.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codGrupo"></param>
+        /// <returns></returns>
+        public ErrorDto CrCatalogoGrupos_Eliminar(
+            int codEmpresa,
+            string usuario,
+            string codGrupo)
+        {
+            codGrupo = (codGrupo ?? string.Empty).Trim();
+            usuario = (usuario ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(codGrupo))
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Debe indicar el codigo del grupo."
+                };
+            }
+
+            if (!ExisteGrupo(codEmpresa, codGrupo))
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "El grupo indicado no existe."
+                };
+            }
+
+            const string sqlDeleteGrp = @"
+            delete from CATALOGO_ASIGNAGRP
+            where cod_grupo = @CodGrupo";
+
+
+            const string sqlDeleteGrDia = @"
+            delete from CATALOGO_GRUPO_DIARIO
+            where cod_grupo = @CodGrupo";
+
+            const string sqlDelete = @"
+            delete from catalogo_grupos
+            where cod_grupo = @CodGrupo";
+
+            var respDeleteGrp = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDeleteGrp,
+                new
+                {
+                    CodGrupo = codGrupo
+                }
+            );
+
+            if (respDeleteGrp.Code < 0)
+                return respDeleteGrp;
+
+            var respDeleteGrDia = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDeleteGrDia,
+                new
+                {
+                    CodGrupo = codGrupo
+                }
+            );
+
+            if (respDeleteGrDia.Code < 0)
+                return respDeleteGrDia;
+
+            var respDelete = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlDelete,
+                new
+                {
+                    CodGrupo = codGrupo
+                }
+            );
+
+            if (respDelete.Code < 0)
+                return respDelete;
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                "Borrar - WEB",
+                $"Grupo Catalogo Cod: {codGrupo}"
+            );
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Informacion eliminada satisfactoriamente..."
+            };
+        }
+
+        /// <summary>
+        /// Verifica si el grupo ya existe en el catalogo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codGrupo"></param>
@@ -520,7 +619,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Inserta un grupo nuevo en el catálogo.
+        /// Inserta un grupo nuevo en el catalogo.
         /// </summary>
         private ErrorDto InsertarGrupo(int codEmpresa, string usuario, CrCatalogoGrupoData request)
         {
@@ -556,7 +655,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Actualiza un grupo existente del catálogo.
+        /// Actualiza un grupo existente del catalogo.
         /// </summary>
         private ErrorDto ActualizarGrupo(int codEmpresa, string usuario, CrCatalogoGrupoData request)
         {
@@ -684,7 +783,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Normaliza la lista de grupos seleccionados para cálculos.
+        /// Normaliza la lista de grupos seleccionados para calculos.
         /// </summary>
         private List<string> NormalizarGrupos(List<string>? grupos)
         {
@@ -696,7 +795,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Registra movimiento en bitácora.
+        /// Registra movimiento en bitacora.
         /// </summary>
         private void RegistrarBitacora(
             int codEmpresa,

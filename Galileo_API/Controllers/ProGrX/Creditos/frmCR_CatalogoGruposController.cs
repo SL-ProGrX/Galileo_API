@@ -74,5 +74,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             return _bl.CrCatalogoGrupos_Diario_Guardar(codEmpresa, request);
         }
+
+        [HttpDelete("CrCatalogoGrupos_Eliminar")]
+        public ErrorDto CrCatalogoGrupos_Eliminar(
+            int codEmpresa, 
+            string usuario,
+            string codGrupo)
+        {
+            return _bl.CrCatalogoGrupos_Eliminar(codEmpresa, usuario, codGrupo);
+        }
     }
 }
