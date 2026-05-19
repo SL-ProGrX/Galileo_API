@@ -49,62 +49,6 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_DetalleCredito_Obtener(codEmpresa, request);
         }
 
-        //[HttpPost("Cr_SeguimientoRevisionesTag_Patrimonio_Obtener")]
-        //public ErrorDto<CrSeguimientoRevisionesTagPatrimonioResponse> Cr_SeguimientoRevisionesTag_Patrimonio_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagDetalleRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_Patrimonio_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_Deudas_Obtener")]
-        //public ErrorDto<List<CrSeguimientoRevisionesTagDeudaRow>> Cr_SeguimientoRevisionesTag_Deudas_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagDetalleRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_Deudas_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_Fianzas_Obtener")]
-        //public ErrorDto<List<CrSeguimientoRevisionesTagFianzaRow>> Cr_SeguimientoRevisionesTag_Fianzas_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagDetalleRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_Fianzas_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_Refundiciones_Obtener")]
-        //public ErrorDto<List<CrSeguimientoRevisionesTagRefundicionRow>> Cr_SeguimientoRevisionesTag_Refundiciones_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagDetalleRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_Refundiciones_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_Desembolsos_Obtener")]
-        //public ErrorDto<List<CrSeguimientoRevisionesTagDesembolsoRow>> Cr_SeguimientoRevisionesTag_Desembolsos_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagDetalleRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_Desembolsos_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener")]
-        //public ErrorDto<CrSeguimientoRevisionesTagFiadorResponse> Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagFiadorRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener(codEmpresa, request);
-        //}
-
-        //[HttpPost("Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener")]
-        //public ErrorDto<List<CrSeguimientoRevisionesTagClasificacionRow>> Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener(
-        //    int codEmpresa,
-        //    [FromBody] CrSeguimientoRevisionesTagFiadorRequest request)
-        //{
-        //    return _bl.Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener(codEmpresa, request);
-        //}
-
         [HttpPost("Cr_SeguimientoRevisionesTag_Seguimiento_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagSeguimientoResponse> Cr_SeguimientoRevisionesTag_Seguimiento_Obtener(
             int codEmpresa,

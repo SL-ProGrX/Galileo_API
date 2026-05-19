@@ -87,12 +87,15 @@ order by fecha desc;";
         /// <summary>
         /// Procesa la anulación de ahorros con generación de documento, asiento, saldo a favor e impresión.
         /// </summary>
-        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_Procesar(int codEmpresa, FrmAhAnulaAhorrosProcesarRequest request)
+        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_Procesar(
+    int codEmpresa,
+    FrmAhAnulaAhorrosProcesarRequest request)
         {
             var response = new FrmAhAnulaAhorrosProcesarResponse();
 
-            if (request == null || string.IsNullOrWhiteSpace(request.cedula) || string.IsNullOrWhiteSpace(request.usuario))
-                return DbHelper.CreateErrorResponse("La solicitud es inválida.", -2, response);
+            var validacionRequest = Patrimonio_frmAH_AnulaAhorros_ValidarRequestProcesar(request, response);
+            if (validacionRequest != null)
+                return validacionRequest;
 
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
             conn.Open();
@@ -100,36 +103,22 @@ order by fecha desc;";
 
             try
             {
-                var consulta = conn.QueryFirstOrDefault<FrmAhAnulaAhorrosConsultaResponse>(@"
-select
-    rtrim(cedula) as cedula,
-    rtrim(nombre) as nombre,
-    isnull(obrero,0) as obrero,
-    isnull(patronal,0) as patronal,
-    isnull(custodia,0) as custodia,
-    isnull(capitaliza,0) as capitaliza,
-    rtrim((select top 1 COD_DIVISA from vSys_Divisas where DIVISA_LOCAL = 1)) as cod_divisa,
-    isnull(obrero,0) + isnull(patronal,0) + isnull(custodia,0) + isnull(capitaliza,0) as total,
-    fecAhorro as fec_ahorro,
-    fecAporte as fec_aporte,
-    fecCustodia as fec_custodia,
-    fecCapitaliza as fec_capitaliza
-from vPAT_Consolidado
-where cedula = @cedula;", new { request.cedula }, tx);
-
+                var consulta = Patrimonio_frmAH_AnulaAhorros_ConsultarPersona(conn, tx, request.cedula);
                 if (consulta == null)
                     return DbHelper.CreateErrorResponse("No se localizó la persona o sus registros de aportes.", -2, response);
 
-                decimal monto = request.tipo_anulacion?.Trim().ToUpper() == "MOV" && request.movimientos.Count > 0
-                    ? request.movimientos.Sum(x => x.monto)
-                    : request.monto;
-
+                decimal monto = Patrimonio_frmAH_AnulaAhorros_ObtenerMontoProcesar(request);
                 if (monto <= 0)
                     return DbHelper.CreateErrorResponse("El monto debe ser mayor que cero.", -2, response);
 
                 decimal saldoRubro = ObtenerSaldoRubro(consulta, request.tipo_rubro);
                 if (monto > saldoRubro)
-                    return DbHelper.CreateErrorResponse("El monto de la anulación no puede exceder el saldo del rubro seleccionado.", -2, response);
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El monto de la anulación no puede exceder el saldo del rubro seleccionado.",
+                        -2,
+                        response);
+                }
 
                 var globales = _mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario).Result;
                 if (globales == null)
@@ -137,163 +126,102 @@ where cedula = @cedula;", new { request.cedula }, tx);
 
                 var cuentaAporte = ConsultarCuentaAporte(conn, tx, request.cedula, request.tipo_rubro);
                 if (cuentaAporte == null || string.IsNullOrWhiteSpace(cuentaAporte.Value.cuenta))
-                    return DbHelper.CreateErrorResponse("No se pudo resolver la cuenta contable del rubro de patrimonio.", -2, response);
-
-                string cuentaDestino;
-                string formaPagoSaldoFavor = string.Empty;
-
-                if ((request.accion ?? "C").Trim().ToUpper() == "S")
                 {
-                    var saldoFavor = conn.QueryFirstOrDefault<(string cod_forma_pago, string cod_cuenta)>(@"
-select top 1
-    rtrim(COD_FORMA_PAGO) as cod_forma_pago,
-    rtrim(COD_CUENTA) as cod_cuenta
-from SIF_FORMAS_PAGO
-where TIPO = 'S' and Activa = 1;", transaction: tx);
-
-                    if (string.IsNullOrWhiteSpace(saldoFavor.cod_cuenta))
-                        return DbHelper.CreateErrorResponse("No existe una forma de pago activa para saldo a favor.", -2, response);
-
-                    cuentaDestino = saldoFavor.cod_cuenta;
-                    formaPagoSaldoFavor = saldoFavor.cod_forma_pago;
-                }
-                else
-                {
-                    cuentaDestino = _mRecibos.FxDocumentoCuenta(codEmpresa, "ND").Trim();
-                    if (string.IsNullOrWhiteSpace(cuentaDestino))
-                        return DbHelper.CreateErrorResponse("No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.", -2, response);
+                    return DbHelper.CreateErrorResponse(
+                        "No se pudo resolver la cuenta contable del rubro de patrimonio.",
+                        -2,
+                        response);
                 }
 
-                string tipoDocumento = "ND";
+                var destino = Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(conn, tx, codEmpresa, request, response);
+                if (!destino.EsValido)
+                    return DbHelper.CreateErrorResponse(destino.MensajeError, -2, response);
+
+                const string tipoDocumento = "ND";
                 string numDocumento = _mRecibos.FxDocumentoConsecutivo(codEmpresa, tipoDocumento).ToString();
                 decimal tipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, consulta.cod_divisa);
                 decimal factorAplicado = TipoCambioApl(tipoCambio);
-
                 decimal saldoActual = saldoRubro - monto;
-                string[] lineas =
-                [
-                    $"Plan            : {ObtenerTextoRubro(request.tipo_rubro)}",
-                    " ",
-                    $"Saldo Anterior  : {cuentaAporte.Value.aporte:N2}",
-                    $"Monto Anulación : {monto:N2}",
-                    $"Saldo Actual    : {saldoActual:N2}",
-                    " ",
-                    $"Divisa          : {consulta.cod_divisa}",
-                    " ",
-                    $"Usuario         : {request.usuario}",
-                    $"Acción          : {ObtenerTextoAccion(request.accion!)}"
-                ];
 
-                conn.Execute(@"
-insert into SIF_TRANSACCIONES
-(
-    COD_TRANSACCION, TIPO_DOCUMENTO, REGISTRO_FECHA, REGISTRO_USUARIO,
-    Cliente_IDENTIFICACION, CLIENTE_NOMBRE, cod_concepto, monto, estado,
-    Referencia_01, Referencia_02, Referencia_03, cod_oficina,
-    linea1, linea2, linea3, linea4, linea5, linea6, linea7, linea8, linea9, linea10,
-    detalle, documento, cod_caja
-)
-values
-(
-    @cod_transaccion, @tipo_documento, dbo.MyGetdate(), @registro_usuario,
-    @cliente_identificacion, @cliente_nombre, 'PAT002', @monto, 'P',
-    @referencia_01, '', '', @cod_oficina,
-    @linea1, @linea2, @linea3, @linea4, @linea5, @linea6, @linea7, @linea8, @linea9, @linea10,
-    @detalle, @documento, @cod_caja
-);", new
-                {
-                    cod_transaccion = numDocumento,
-                    tipo_documento = tipoDocumento,
-                    registro_usuario = request.usuario,
-                    cliente_identificacion = request.cedula,
-                    cliente_nombre = string.IsNullOrWhiteSpace(request.nombre) ? consulta.nombre : request.nombre,
-                    monto = monto * -1,
-                    referencia_01 = request.cedula,
-                    cod_oficina = globales.GOficinaTitular,
-                    linea1 = lineas[0],
-                    linea2 = lineas[1],
-                    linea3 = lineas[2],
-                    linea4 = lineas[3],
-                    linea5 = lineas[4],
-                    linea6 = lineas[5],
-                    linea7 = lineas[6],
-                    linea8 = lineas[7],
-                    linea9 = lineas[8],
-                    linea10 = lineas[9],
-                    detalle = string.IsNullOrWhiteSpace(request.notas) ? "Anulación de ahorro" : request.notas.Trim(),
-                    documento = string.Empty,
-                    cod_caja = string.Empty
-                }, tx);
+                string nombreCliente = string.IsNullOrWhiteSpace(request.nombre) ? consulta.nombre : request.nombre;
+                string detalle = string.IsNullOrWhiteSpace(request.notas) ? "Anulación de ahorro" : request.notas.Trim();
+                string[] lineas = Patrimonio_frmAH_AnulaAhorros_ConstruirLineasProcesar(request, consulta, cuentaAporte.Value.aporte, monto, saldoActual);
 
-                EjecutarAsiento(conn, tx, tipoDocumento, numDocumento, monto * factorAplicado, "D", consulta.cod_divisa, tipoCambio, globales.GEnlace, globales.GOficinaUnidad, string.Empty, cuentaAporte.Value.cuenta, $"Pat:{request.tipo_rubro}", request.cedula, string.Empty);
-                EjecutarAsiento(conn, tx, tipoDocumento, numDocumento, monto * factorAplicado, "C", consulta.cod_divisa, tipoCambio, globales.GEnlace, globales.GOficinaUnidad, string.Empty, cuentaDestino, $"Pat:{request.tipo_rubro}", request.cedula, string.Empty);
+                Patrimonio_frmAH_AnulaAhorros_InsertarTransaccion(
+                    conn,
+                    tx,
+                    request,
+                    globales.GOficinaTitular,
+                    numDocumento,
+                    tipoDocumento,
+                    nombreCliente,
+                    monto,
+                    detalle,
+                    lineas);
 
-                if ((request.accion ?? "C").Trim().ToUpper() == "S")
-                {
-                    var sfId = conn.QueryFirstOrDefault<int>(@"
-exec spCajas_SaldoFavor_Registra
-    @FormaPago,
-    @Referencia,
-    @Monto,
-    @Cedula,
-    @Nombre,
-    @Usuario,
-    @Divisa;", new
+                decimal montoAsiento = monto * factorAplicado;
+
+                EjecutarAsiento(
+                    conn,
+                    tx,
+                    new EjecutarAsientoParametrosRequest
                     {
-                        FormaPago = formaPagoSaldoFavor,
-                        Referencia = $"{tipoDocumento}-{numDocumento}",
-                        Monto = monto,
-                        Cedula = request.cedula,
-                        Nombre = string.IsNullOrWhiteSpace(request.nombre) ? consulta.nombre : request.nombre,
-                        Usuario = request.usuario,
-                        Divisa = consulta.cod_divisa
-                    }, tx);
+                         tipoDocumento = tipoDocumento,
+                         numDocumento = numDocumento,
+                         monto = montoAsiento,
+                         dc = "D",
+                         codDivisa = consulta.cod_divisa,
+                         tipoCambio = tipoCambio,
+                         enlace = globales.GEnlace,
+                         codUnidad = globales.GOficinaUnidad,
+                         codCentroCosto = string.Empty,
+                         cuenta = cuentaAporte.Value.cuenta,
+                         referencia1 = $"Pat:{request.tipo_rubro}",
+                         referencia2 = request.cedula,
+                         referencia3 = string.Empty
+                    });
 
-                    conn.Execute(@"
-exec spPAT_Anulacion_Saldo_Favor
-    @TipoDoc,
-    @NumDoc,
-    @Usuario,
-    @FormaPago,
-    @Divisa,
-    @Monto,
-    @Unidad,
-    @Cuenta,
-    @Referencia,
-    @SfId;", new
+                EjecutarAsiento(
+                    conn,
+                    tx,
+                    new EjecutarAsientoParametrosRequest
                     {
-                        TipoDoc = tipoDocumento,
-                        NumDoc = numDocumento,
-                        Usuario = request.usuario,
-                        FormaPago = formaPagoSaldoFavor,
-                        Divisa = consulta.cod_divisa,
-                        Monto = monto,
-                        Unidad = globales.GOficinaUnidad,
-                        Cuenta = cuentaDestino,
-                        Referencia = $"{tipoDocumento}-{numDocumento}",
-                        SfId = sfId
-                    }, tx);
-                }
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numDocumento,
+                        monto = montoAsiento,
+                        dc = "C",
+                        codDivisa = consulta.cod_divisa,
+                        tipoCambio = tipoCambio,
+                        enlace = globales.GEnlace,
+                        codUnidad = globales.GOficinaUnidad,
+                        codCentroCosto = string.Empty,
+                        cuenta = destino.CuentaDestino,
+                        referencia1 = $"Pat:{request.tipo_rubro}",
+                        referencia2 = request.cedula,
+                        referencia3 = string.Empty
+                    });
 
-                conn.Execute(@"
-exec spPAT_Anulacion
-    @Cedula,
-    @Tipo,
-    @Monto,
-    @TipoDoc,
-    @NumDoc,
-    @Usuario,
-    '',
-    '',
-    0;", new
-                {
-                    Cedula = request.cedula,
-                    Tipo = request.tipo_rubro,
-                    Monto = monto,
-                    TipoDoc = tipoDocumento,
-                    NumDoc = numDocumento,
-                    Usuario = request.usuario
-                }, tx);
+                Patrimonio_frmAH_AnulaAhorros_RegistrarSaldoFavorSiAplica(
+                    conn,
+                    tx,
+                    request,
+                    consulta.cod_divisa,
+                    globales.GOficinaUnidad,
+                    tipoDocumento,
+                    numDocumento,
+                    monto,
+                    nombreCliente,
+                    destino);
+
+                Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
+                    conn,
+                    tx,
+                    request.cedula,
+                    request.tipo_rubro,
+                    monto,
+                    tipoDocumento,
+                    numDocumento,
+                    request.usuario);
 
                 tx.Commit();
 
@@ -320,7 +248,9 @@ exec spPAT_Anulacion
             }
             catch (Exception ex)
             {
-                try { tx.Rollback(); } catch { }
+                try { tx.Rollback(); } catch { 
+                    return DbHelper.CreateErrorResponse($"Error al procesar la anulación: {ex.Message}. Además, no se pudo revertir la transacción.", -1, response);
+                }
                 return DbHelper.CreateErrorResponse(ex.Message, -1, response);
             }
         }
@@ -355,7 +285,7 @@ exec spPAT_Anulacion
             return tipoCambio > 0 ? tipoCambio : 1 / Math.Abs(tipoCambio);
         }
 
-        private static void EjecutarAsiento(SqlConnection conn, SqlTransaction tx, string tipoDocumento, string numDocumento, decimal monto, string dc, string codDivisa, decimal tipoCambio, int enlace, string codUnidad, string codCentroCosto, string cuenta, string referencia1, string referencia2, string referencia3)
+        private static void EjecutarAsiento(SqlConnection conn, SqlTransaction tx, EjecutarAsientoParametrosRequest request)
         {
             conn.Execute(@"
 exec spSIFDocsAsiento
@@ -373,19 +303,19 @@ exec spSIFDocsAsiento
     @referencia_02,
     @referencia_03;", new
             {
-                tipo_documento = tipoDocumento,
-                num_documento = numDocumento,
-                monto,
-                dc,
-                cod_divisa = codDivisa,
-                tipo_cambio = tipoCambio,
-                enlace,
-                cod_unidad = codUnidad,
-                cod_centro_costo = codCentroCosto,
-                cuenta,
-                referencia_01 = referencia1,
-                referencia_02 = referencia2,
-                referencia_03 = referencia3
+                tipo_documento = request.tipoDocumento,
+                num_documento = request.numDocumento,
+                request.monto,
+                request.dc,
+                cod_divisa = request.codDivisa,
+                tipo_cambio = request.tipoCambio,
+                request.enlace,
+                cod_unidad = request.codUnidad,
+                cod_centro_costo = request.codCentroCosto,
+                request.cuenta,
+                referencia_01 = request.referencia1,
+                referencia_02 = request.referencia2,
+                referencia_03 = request.referencia3
             }, tx);
         }
 
@@ -425,6 +355,303 @@ from vPAT_Consulta_Integrada P
 where P.cedula = @cedula;";
 
             return conn.QueryFirstOrDefault<(decimal aporte, string cuenta)>(sql, new { cedula }, tx);
+        }
+
+        private ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_ValidarRequestProcesar(
+    FrmAhAnulaAhorrosProcesarRequest request,
+    FrmAhAnulaAhorrosProcesarResponse response)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.cedula) || string.IsNullOrWhiteSpace(request.usuario))
+                return DbHelper.CreateErrorResponse("La solicitud es inválida.", -2, response);
+
+            return null;
+        }
+
+        private FrmAhAnulaAhorrosConsultaResponse Patrimonio_frmAH_AnulaAhorros_ConsultarPersona(
+            SqlConnection conn,
+            SqlTransaction tx,
+            string cedula)
+        {
+            return conn.QueryFirstOrDefault<FrmAhAnulaAhorrosConsultaResponse>(@"
+select
+    rtrim(cedula) as cedula,
+    rtrim(nombre) as nombre,
+    isnull(obrero,0) as obrero,
+    isnull(patronal,0) as patronal,
+    isnull(custodia,0) as custodia,
+    isnull(capitaliza,0) as capitaliza,
+    rtrim((select top 1 COD_DIVISA from vSys_Divisas where DIVISA_LOCAL = 1)) as cod_divisa,
+    isnull(obrero,0) + isnull(patronal,0) + isnull(custodia,0) + isnull(capitaliza,0) as total,
+    fecAhorro as fec_ahorro,
+    fecAporte as fec_aporte,
+    fecCustodia as fec_custodia,
+    fecCapitaliza as fec_capitaliza
+from vPAT_Consolidado
+where cedula = @cedula;", new { cedula }, tx);
+        }
+
+        private decimal Patrimonio_frmAH_AnulaAhorros_ObtenerMontoProcesar(FrmAhAnulaAhorrosProcesarRequest request)
+        {
+            bool esMov = string.Equals(request.tipo_anulacion?.Trim(), "MOV", StringComparison.OrdinalIgnoreCase);
+            bool tieneMovimientos = request.movimientos != null && request.movimientos.Count > 0;
+
+            return esMov && tieneMovimientos
+                ? request.movimientos.Sum(x => x.monto)
+                : request.monto;
+        }
+
+        private string[] Patrimonio_frmAH_AnulaAhorros_ConstruirLineasProcesar(
+            FrmAhAnulaAhorrosProcesarRequest request,
+            FrmAhAnulaAhorrosConsultaResponse consulta,
+            decimal aporte,
+            decimal monto,
+            decimal saldoActual)
+        {
+            return
+            [
+                $"Plan            : {ObtenerTextoRubro(request.tipo_rubro)}",
+        " ",
+        $"Saldo Anterior  : {aporte:N2}",
+        $"Monto Anulación : {monto:N2}",
+        $"Saldo Actual    : {saldoActual:N2}",
+        " ",
+        $"Divisa          : {consulta.cod_divisa}",
+        " ",
+        $"Usuario         : {request.usuario}",
+        $"Acción          : {ObtenerTextoAccion(request.accion!)}"
+            ];
+        }
+
+        private void Patrimonio_frmAH_AnulaAhorros_InsertarTransaccion(
+            SqlConnection conn,
+            SqlTransaction tx,
+            FrmAhAnulaAhorrosProcesarRequest request,
+            string oficinaTitular,
+            string numDocumento,
+            string tipoDocumento,
+            string nombreCliente,
+            decimal monto,
+            string detalle,
+            string[] lineas)
+        {
+            conn.Execute(@"
+insert into SIF_TRANSACCIONES
+(
+    COD_TRANSACCION, TIPO_DOCUMENTO, REGISTRO_FECHA, REGISTRO_USUARIO,
+    Cliente_IDENTIFICACION, CLIENTE_NOMBRE, cod_concepto, monto, estado,
+    Referencia_01, Referencia_02, Referencia_03, cod_oficina,
+    linea1, linea2, linea3, linea4, linea5, linea6, linea7, linea8, linea9, linea10,
+    detalle, documento, cod_caja
+)
+values
+(
+    @cod_transaccion, @tipo_documento, dbo.MyGetdate(), @registro_usuario,
+    @cliente_identificacion, @cliente_nombre, 'PAT002', @monto, 'P',
+    @referencia_01, '', '', @cod_oficina,
+    @linea1, @linea2, @linea3, @linea4, @linea5, @linea6, @linea7, @linea8, @linea9, @linea10,
+    @detalle, @documento, @cod_caja
+);", new
+            {
+                cod_transaccion = numDocumento,
+                tipo_documento = tipoDocumento,
+                registro_usuario = request.usuario,
+                cliente_identificacion = request.cedula,
+                cliente_nombre = nombreCliente,
+                monto = monto * -1,
+                referencia_01 = request.cedula,
+                cod_oficina = oficinaTitular,
+                linea1 = lineas[0],
+                linea2 = lineas[1],
+                linea3 = lineas[2],
+                linea4 = lineas[3],
+                linea5 = lineas[4],
+                linea6 = lineas[5],
+                linea7 = lineas[6],
+                linea8 = lineas[7],
+                linea9 = lineas[8],
+                linea10 = lineas[9],
+                detalle = detalle,
+                documento = string.Empty,
+                cod_caja = string.Empty
+            }, tx);
+        }
+
+        private void Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
+            SqlConnection conn,
+            SqlTransaction tx,
+            string cedula,
+            string tipoRubro,
+            decimal monto,
+            string tipoDocumento,
+            string numDocumento,
+            string usuario)
+        {
+            conn.Execute(@"
+exec spPAT_Anulacion
+    @Cedula,
+    @Tipo,
+    @Monto,
+    @TipoDoc,
+    @NumDoc,
+    @Usuario,
+    '',
+    '',
+    0;", new
+            {
+                Cedula = cedula,
+                Tipo = tipoRubro,
+                Monto = monto,
+                TipoDoc = tipoDocumento,
+                NumDoc = numDocumento,
+                Usuario = usuario
+            }, tx);
+        }
+
+        private void Patrimonio_frmAH_AnulaAhorros_RegistrarSaldoFavorSiAplica(
+            SqlConnection conn,
+            SqlTransaction tx,
+            FrmAhAnulaAhorrosProcesarRequest request,
+            string codDivisa,
+            string oficinaUnidad,
+            string tipoDocumento,
+            string numDocumento,
+            decimal monto,
+            string nombreCliente,
+            Patrimonio_frmAH_AnulaAhorrosCuentaDestino destino)
+        {
+            if (!destino.RequiereSaldoFavor)
+                return;
+
+            var sfId = conn.QueryFirstOrDefault<int>(@"
+exec spCajas_SaldoFavor_Registra
+    @FormaPago,
+    @Referencia,
+    @Monto,
+    @Cedula,
+    @Nombre,
+    @Usuario,
+    @Divisa;", new
+            {
+                FormaPago = destino.FormaPagoSaldoFavor,
+                Referencia = $"{tipoDocumento}-{numDocumento}",
+                Monto = monto,
+                Cedula = request.cedula,
+                Nombre = nombreCliente,
+                Usuario = request.usuario,
+                Divisa = codDivisa
+            }, tx);
+
+            conn.Execute(@"
+exec spPAT_Anulacion_Saldo_Favor
+    @TipoDoc,
+    @NumDoc,
+    @Usuario,
+    @FormaPago,
+    @Divisa,
+    @Monto,
+    @Unidad,
+    @Cuenta,
+    @Referencia,
+    @SfId;", new
+            {
+                TipoDoc = tipoDocumento,
+                NumDoc = numDocumento,
+                Usuario = request.usuario,
+                FormaPago = destino.FormaPagoSaldoFavor,
+                Divisa = codDivisa,
+                Monto = monto,
+                Unidad = oficinaUnidad,
+                Cuenta = destino.CuentaDestino,
+                Referencia = $"{tipoDocumento}-{numDocumento}",
+                SfId = sfId
+            }, tx);
+        }
+
+        private Patrimonio_frmAH_AnulaAhorrosCuentaDestino Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(
+            SqlConnection conn,
+            SqlTransaction tx,
+            int codEmpresa,
+            FrmAhAnulaAhorrosProcesarRequest request,
+            FrmAhAnulaAhorrosProcesarResponse response)
+        {
+            if (Patrimonio_frmAH_AnulaAhorros_EsAccionSaldoFavor(request.accion))
+            {
+                var saldoFavor = conn.QueryFirstOrDefault<(string cod_forma_pago, string cod_cuenta)>(@"
+select top 1
+    rtrim(COD_FORMA_PAGO) as cod_forma_pago,
+    rtrim(COD_CUENTA) as cod_cuenta
+from SIF_FORMAS_PAGO
+where TIPO = 'S' and Activa = 1;", transaction: tx);
+
+                if (string.IsNullOrWhiteSpace(saldoFavor.cod_cuenta))
+                {
+                    return Patrimonio_frmAH_AnulaAhorrosCuentaDestino.CrearInvalido(
+                        "No existe una forma de pago activa para saldo a favor.");
+                }
+
+                return Patrimonio_frmAH_AnulaAhorrosCuentaDestino.CrearSaldoFavor(
+                    saldoFavor.cod_cuenta,
+                    saldoFavor.cod_forma_pago);
+            }
+
+            string cuentaDestino = _mRecibos.FxDocumentoCuenta(codEmpresa, "ND").Trim();
+            if (string.IsNullOrWhiteSpace(cuentaDestino))
+            {
+                return Patrimonio_frmAH_AnulaAhorrosCuentaDestino.CrearInvalido(
+                    "No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.");
+            }
+
+            return Patrimonio_frmAH_AnulaAhorrosCuentaDestino.CrearNormal(cuentaDestino);
+        }
+
+        private bool Patrimonio_frmAH_AnulaAhorros_EsAccionSaldoFavor(string accion)
+        {
+            return string.Equals((accion ?? "C").Trim(), "S", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private sealed class Patrimonio_frmAH_AnulaAhorrosCuentaDestino
+        {
+            public bool EsValido { get; private set; }
+            public bool RequiereSaldoFavor { get; private set; }
+            public string CuentaDestino { get; private set; }
+            public string FormaPagoSaldoFavor { get; private set; }
+            public string MensajeError { get; private set; }
+
+            public static Patrimonio_frmAH_AnulaAhorrosCuentaDestino CrearNormal(string cuentaDestino)
+            {
+                return new Patrimonio_frmAH_AnulaAhorrosCuentaDestino
+                {
+                    EsValido = true,
+                    CuentaDestino = cuentaDestino,
+                    FormaPagoSaldoFavor = string.Empty,
+                    RequiereSaldoFavor = false,
+                    MensajeError = string.Empty
+                };
+            }
+
+            public static Patrimonio_frmAH_AnulaAhorrosCuentaDestino CrearSaldoFavor(string cuentaDestino, string formaPagoSaldoFavor)
+            {
+                return new Patrimonio_frmAH_AnulaAhorrosCuentaDestino
+                {
+                    EsValido = true,
+                    CuentaDestino = cuentaDestino,
+                    FormaPagoSaldoFavor = formaPagoSaldoFavor,
+                    RequiereSaldoFavor = true,
+                    MensajeError = string.Empty
+                };
+            }
+
+            public static Patrimonio_frmAH_AnulaAhorrosCuentaDestino CrearInvalido(string mensajeError)
+            {
+                return new Patrimonio_frmAH_AnulaAhorrosCuentaDestino
+                {
+                    EsValido = false,
+                    CuentaDestino = string.Empty,
+                    FormaPagoSaldoFavor = string.Empty,
+                    RequiereSaldoFavor = false,
+                    MensajeError = mensajeError
+                };
+            }
         }
     }
 }

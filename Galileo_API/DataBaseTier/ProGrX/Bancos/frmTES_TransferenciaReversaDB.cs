@@ -61,20 +61,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                solicitud ??= new TransferenciaSolicitudData();
+                var request = solicitud ?? new TransferenciaSolicitudData();
+                var filtros = TES_TransferenciaReversa_NormalizarFiltrosObtener(request);
 
-                // Normalizo textos
-                var documento = solicitud.documento?.Trim();
-                var codigoTxt = string.IsNullOrWhiteSpace(solicitud.codigo?.Trim()) ? null : solicitud.codigo.Trim();
-                var ndocumentoTxt = string.IsNullOrWhiteSpace(solicitud.ndocumento?.Trim()) ? null : solicitud.ndocumento.Trim();
-                var beneficiarioTxt = string.IsNullOrWhiteSpace(solicitud.beneficiario?.Trim()) ? null : solicitud.beneficiario.Trim();
-                var ctaAhorrosTxt = string.IsNullOrWhiteSpace(solicitud.cta_ahorros?.Trim()) ? null : solicitud.cta_ahorros.Trim();
-                var codPlanTxt = string.IsNullOrWhiteSpace(solicitud.cod_plan?.Trim()) ? null : solicitud.cod_plan.Trim();
-                var hasDocumento = !string.IsNullOrWhiteSpace(documento);
-
-                // Si documento es obligatorio para este endpoint, mejor fallar rápido
-                if (!hasDocumento)
-                    return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>("Debe indicar el documento base.");
+                if (string.IsNullOrWhiteSpace(filtros.Documento))
+                {
+                    return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(
+                        "Debe indicar el documento base.");
+                }
 
                 const string query = @"
                         SELECT
@@ -99,39 +93,71 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             AND (ISNULL(cod_Plan,'-sp-') = @CodPlan)
                             AND REFERENCIA_SINPE IS NULL;";
 
-                var parameters = new
-                {
-                    documento,
-                    id_banco = solicitud.id_banco,
-
-                    Codigo = string.IsNullOrWhiteSpace(codigoTxt) ? null : codigoTxt,
-                    CodigoLike = string.IsNullOrWhiteSpace(codigoTxt) ? null : $"%{codigoTxt}%",
-
-                    Ndocumento = string.IsNullOrWhiteSpace(ndocumentoTxt) ? null : ndocumentoTxt,
-                    NdocumentoLike = string.IsNullOrWhiteSpace(ndocumentoTxt) ? null : $"%{ndocumentoTxt}%",
-
-                    Beneficiario = string.IsNullOrWhiteSpace(beneficiarioTxt) ? null : beneficiarioTxt,
-                    BeneficiarioLike = string.IsNullOrWhiteSpace(beneficiarioTxt) ? null : $"%{beneficiarioTxt}%",
-
-                    CtaAhorros = string.IsNullOrWhiteSpace(ctaAhorrosTxt) ? null : ctaAhorrosTxt,
-                    CtaAhorrosLike = string.IsNullOrWhiteSpace(ctaAhorrosTxt) ? null : $"%{ctaAhorrosTxt}%",
-
-                    CodPlan = string.IsNullOrWhiteSpace(codPlanTxt) ? "-sp-" : codPlanTxt
-                };
+                var parameters = TES_TransferenciaReversa_CrearParametrosObtener(request, filtros);
 
                 var response = conn.Query<TransferenciaSolicitudData>(query, parameters).ToList();
 
-                if (response.Count == 0)
-                    return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(
-                        "No se encontraron datos para la solicitud especificada.");
-
-                return DbHelper.CreateOkResponse(response);
+                return response.Count == 0
+                    ? DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(
+                        "No se encontraron datos para la solicitud especificada.")
+                    : DbHelper.CreateOkResponse(response);
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(ex.Message);
             }
         }
+
+        private static object TES_TransferenciaReversa_CrearParametrosObtener(
+    TransferenciaSolicitudData solicitud,
+    TES_TransferenciaReversaFiltrosObtener filtros)
+        {
+            return new
+            {
+                documento = filtros.Documento,
+                id_banco = solicitud.id_banco,
+
+                Codigo = filtros.Codigo,
+                CodigoLike = TES_TransferenciaReversa_CrearLike(filtros.Codigo),
+
+                Ndocumento = filtros.Ndocumento,
+                NdocumentoLike = TES_TransferenciaReversa_CrearLike(filtros.Ndocumento),
+
+                Beneficiario = filtros.Beneficiario,
+                BeneficiarioLike = TES_TransferenciaReversa_CrearLike(filtros.Beneficiario),
+
+                CtaAhorros = filtros.CtaAhorros,
+                CtaAhorrosLike = TES_TransferenciaReversa_CrearLike(filtros.CtaAhorros),
+
+                CodPlan = filtros.CodPlan
+            };
+        }
+
+        private static TES_TransferenciaReversaFiltrosObtener TES_TransferenciaReversa_NormalizarFiltrosObtener(
+            TransferenciaSolicitudData solicitud)
+        {
+            return new TES_TransferenciaReversaFiltrosObtener
+            {
+                Documento = solicitud.documento?.Trim(),
+                Codigo = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo),
+                Ndocumento = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento),
+                Beneficiario = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario),
+                CtaAhorros = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros),
+                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan) ?? "-sp-"
+            };
+        }
+
+        private static string TES_TransferenciaReversa_NormalizarTexto(string valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        }
+
+        private static string TES_TransferenciaReversa_CrearLike(string valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? null : $"%{valor}%";
+        }
+
+       
 
         /// <summary>
         /// Obtiene los planes de banco disponibles para la reversa de transferencias.
