@@ -338,18 +338,40 @@ exec spSIFDocsAsiento
             if (columnas == null)
                 return default;
 
+            var columnaAporte = ObtenerColumnaAporte(columnas.Value.ColumnaCuenta);
+
+
+
+            var columnaCuenta = ObtenerColumnaCuenta(columnas.Value.ColumnaCuenta);
+
             var sql = $@"
-                select top 1
-                    isnull({columnas.Value.ColumnaAporte}, 0) as aporte,
-                    rtrim(isnull({columnas.Value.ColumnaCuenta}, '')) as cuenta
-                from vPAT_Consolidado
-                where cedula = @cedula;";
+                    select top 1
+                        isnull({columnaAporte}, 0) as aporte,
+                        rtrim(isnull({columnaCuenta}, '')) as cuenta
+                    from vPAT_Consolidado
+                    where cedula = @cedula;";
 
             return conn.QueryFirstOrDefault<ConsultarCuentaAporteResult>(
                 sql,
                 new { cedula },
                 tx) ?? new ConsultarCuentaAporteResult();
         }
+
+        private static string ObtenerColumnaAporte(string tipo) => tipo switch
+        {
+            "PAT" => "aporte_patronal",
+            "OBR" => "aporte_obrero",
+            "TOT" => "aporte_total",
+            _ => throw new ArgumentException("Tipo de aporte no permitido.")
+        };
+
+        private static string ObtenerColumnaCuenta(string tipo) => tipo switch
+        {
+            "PAT" => "cuenta_patronal",
+            "OBR" => "cuenta_obrero",
+            "TOT" => "cuenta_total",
+            _ => throw new ArgumentException("Tipo de cuenta no permitido.")
+        };
 
         private static (string ColumnaAporte, string ColumnaCuenta)? Patrimonio_frmAH_AnulaAhorros_ObtenerColumnasRubro(string tipoRubro)
         {
