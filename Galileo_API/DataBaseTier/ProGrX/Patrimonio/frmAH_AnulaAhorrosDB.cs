@@ -329,62 +329,39 @@ exec spSIFDocsAsiento
         }
 
         private static ConsultarCuentaAporteResult ConsultarCuentaAporte(
-            SqlConnection conn,
-            SqlTransaction tx,
-            string cedula,
-            string tipoRubro)
+    SqlConnection conn,
+    SqlTransaction tx,
+    string cedula,
+    string tipoRubro)
         {
-            var columnas = Patrimonio_frmAH_AnulaAhorros_ObtenerColumnasRubro(tipoRubro);
-            if (columnas == null)
-                return default;
-
-            var columnaAporte = ObtenerColumnaAporte(columnas.Value.ColumnaCuenta);
-
-
-
-            var columnaCuenta = ObtenerColumnaCuenta(columnas.Value.ColumnaCuenta);
-
-            var sql = $@"
-                    select top 1
-                        isnull({columnaAporte}, 0) as aporte,
-                        rtrim(isnull({columnaCuenta}, '')) as cuenta
-                    from vPAT_Consolidado
-                    where cedula = @cedula;";
+            var sql = @"
+        select top 1
+            case @tipoRubro
+                when 'PAT' then isnull(aporte_patronal, 0)
+                when 'OBR' then isnull(aporte_obrero, 0)
+                when 'TOT' then isnull(aporte_total, 0)
+                else 0
+            end as aporte,
+            case @tipoRubro
+                when 'PAT' then rtrim(isnull(cuenta_patronal, ''))
+                when 'OBR' then rtrim(isnull(cuenta_obrero, ''))
+                when 'TOT' then rtrim(isnull(cuenta_total, ''))
+                else ''
+            end as cuenta
+        from vPAT_Consolidado
+        where cedula = @cedula;";
 
             return conn.QueryFirstOrDefault<ConsultarCuentaAporteResult>(
                 sql,
-                new { cedula },
+                new
+                {
+                    cedula,
+                    tipoRubro
+                },
                 tx) ?? new ConsultarCuentaAporteResult();
         }
 
-        private static string ObtenerColumnaAporte(string tipo) => tipo switch
-        {
-            "PAT" => "aporte_patronal",
-            "OBR" => "aporte_obrero",
-            "TOT" => "aporte_total",
-            _ => throw new ArgumentException("Tipo de aporte no permitido.")
-        };
-
-        private static string ObtenerColumnaCuenta(string tipo) => tipo switch
-        {
-            "PAT" => "cuenta_patronal",
-            "OBR" => "cuenta_obrero",
-            "TOT" => "cuenta_total",
-            _ => throw new ArgumentException("Tipo de cuenta no permitido.")
-        };
-
-        private static (string ColumnaAporte, string ColumnaCuenta)? Patrimonio_frmAH_AnulaAhorros_ObtenerColumnasRubro(string tipoRubro)
-        {
-            return (tipoRubro ?? string.Empty).Trim().ToUpperInvariant() switch
-            {
-                "OBR" => ("obrero", "cta_obrero"),
-                "PAT" => ("patronal", "cta_patronal"),
-                "CUS" => ("custodia", "cta_custodia"),
-                "CAP" => ("capitaliza", "cta_capitaliza"),
-                _ => null
-            };
-        }
-
+       
         private static ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_ValidarRequestProcesar(
     FrmAhAnulaAhorrosProcesarRequest request,
     FrmAhAnulaAhorrosProcesarResponse response)
