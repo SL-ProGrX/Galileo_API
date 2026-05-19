@@ -12,6 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private const string ReferenciaFormalizacion = "01";
         private const string ReferenciaDesembolso = "02";
+        private const string guardadoExisto = "Informacion guardada satisfactoriamente...";
 
         public FrmCrCatalogoGruposDb(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config))
@@ -214,7 +215,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Informacion guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
@@ -324,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Informacion guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
@@ -415,7 +416,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = 0,
-                    Description = "Informacion guardada satisfactoriamente..."
+                    Description = guardadoExisto
                 };
             }
 
@@ -462,7 +463,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Informacion guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
