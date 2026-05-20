@@ -9,8 +9,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public partial class FrmCoControlComPagoDB
     {
         /// <summary>
-        /// Consulta las operaciones pendientes de traslado a tesorería para una remesa cerrada.
+        /// Consulta las operaciones pendientes de traslado a tesoreria para una remesa cerrada.
         /// </summary>
+        /// <param name="CodEmpresa">Codigo de empresa utilizado para obtener la conexion.</param>
+        /// <param name="cod_remesa">Codigo de la remesa que se consulta.</param>
         public ErrorDto<List<CoControlComPagoTrasladoData>> CO_ControlComPago_TrasladoPendientes_Obtener(int CodEmpresa, int cod_remesa)
         {
             const string sql = @"
@@ -39,8 +41,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Traslada a tesorería los pagos de comisión seleccionados.
+        /// Traslada a tesoreria los pagos de comision seleccionados.
         /// </summary>
+        /// <param name="CodEmpresa">Codigo de empresa utilizado para obtener la conexion.</param>
+        /// <param name="usuario">Usuario que ejecuta el traslado.</param>
+        /// <param name="request">Datos de la remesa y usuarios seleccionados para trasladar.</param>
         public ErrorDto<CoControlComPagoProcesoResult> CO_ControlComPago_Traslado_Aplicar(int CodEmpresa, string usuario, CoControlComPagoTrasladoAplicarRequest request)
         {
             if (request is null || request.cod_remesa <= 0 || request.usuarios.Count == 0)
@@ -61,8 +66,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 foreach (var item in pendientes)
                 {
                     var solicitud = CO_ControlComPago_TesoreriaMaestro_Insertar(conn, tran, usuario, request.cod_remesa, parametros, item);
-                    CO_ControlComPago_TesoreriaDetalle_Insertar(conn, tran, solicitud, item.cta_conta, item.comision, "H", 1, parametros.unidad);
-                    CO_ControlComPago_TesoreriaDetalle_Insertar(conn, tran, solicitud, parametros.cuenta_gasto, item.comision, "D", 2, parametros.unidad);
+                    CO_ControlComPago_TesoreriaDetalle_Insertar(conn, tran, new CoControlComPagoTesoreriaDetalleRequest
+                    {
+                        solicitud = solicitud,
+                        cuenta = item.cta_conta,
+                        monto = item.comision,
+                        debe_haber = "H",
+                        linea = 1,
+                        unidad = parametros.unidad
+                    });
+                    CO_ControlComPago_TesoreriaDetalle_Insertar(conn, tran, new CoControlComPagoTesoreriaDetalleRequest
+                    {
+                        solicitud = solicitud,
+                        cuenta = parametros.cuenta_gasto,
+                        monto = item.comision,
+                        debe_haber = "D",
+                        linea = 2,
+                        unidad = parametros.unidad
+                    });
                     CO_ControlComPago_RemesaPago_MarcarTesoreria(conn, tran, request.cod_remesa, item.usuario, solicitud, usuario);
 
                     RegistrarBitacora(CodEmpresa, usuario, $"Traspaso de Remesa de Cobros a Tesoreria:{item.usuario}", "Registra - WEB");
@@ -88,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
         }
 
-        private List<CoControlComPagoTrasladoData> CO_ControlComPago_TrasladoPendientesSeleccionados(
+        private static List<CoControlComPagoTrasladoData> CO_ControlComPago_TrasladoPendientesSeleccionados(
             SqlConnection conn,
             SqlTransaction tran,
             CoControlComPagoTrasladoAplicarRequest request)
@@ -115,7 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var usuarios = request.usuarios.Select(NormalizarUsuario).Where(x => x.Length > 0).Distinct().ToList();
             if (usuarios.Count == 0)
             {
-                throw new InvalidOperationException("Debe seleccionar al menos un usuario válido.");
+                throw new InvalidOperationException("Debe seleccionar al menos un usuario valido.");
             }
 
             var pendientes = conn.Query<CoControlComPagoTrasladoData>(
@@ -125,7 +146,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             if (pendientes.Count == 0)
             {
-                throw new InvalidOperationException("No se encontraron pagos pendientes de traslado para la selección.");
+                throw new InvalidOperationException("No se encontraron pagos pendientes de traslado para la seleccion.");
             }
 
             return pendientes;
@@ -144,7 +165,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 || string.IsNullOrWhiteSpace(parametros.concepto)
                 || string.IsNullOrWhiteSpace(parametros.cuenta_gasto))
             {
-                throw new InvalidOperationException("No se encontraron todos los parámetros de cobros requeridos para el traslado.");
+                throw new InvalidOperationException("No se encontraron todos los parametros de cobros requeridos para el traslado.");
             }
 
             return parametros;
@@ -200,7 +221,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     'CC',
                     'C',
                     @cuenta_ahorros,
-                    'Módulo de Cobros',
+                    'Modulo de Cobros',
                     @detalle2,
                     0,
                     0,
@@ -239,12 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private static void CO_ControlComPago_TesoreriaDetalle_Insertar(
             SqlConnection conn,
             SqlTransaction tran,
-            long solicitud,
-            string cuenta,
-            decimal monto,
-            string debeHaber,
-            int linea,
-            string unidad)
+            CoControlComPagoTesoreriaDetalleRequest request)
         {
             const string sql = @"
                 INSERT INTO dbo.Tes_Trans_Asiento
@@ -266,7 +282,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     @unidad
                 );";
 
-            conn.Execute(sql, new { solicitud, cuenta = cuenta.Trim(), monto, debeHaber, linea, unidad }, tran);
+            conn.Execute(
+                sql,
+                new
+                {
+                    solicitud = request.solicitud,
+                    cuenta = request.cuenta.Trim(),
+                    monto = request.monto,
+                    debeHaber = request.debe_haber,
+                    linea = request.linea,
+                    unidad = request.unidad
+                },
+                tran);
         }
 
         private static void CO_ControlComPago_RemesaPago_MarcarTesoreria(
@@ -305,5 +332,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public string unidad { get; init; } = string.Empty;
         public string concepto { get; init; } = string.Empty;
         public string cuenta_gasto { get; init; } = string.Empty;
+    }
+
+    internal sealed class CoControlComPagoTesoreriaDetalleRequest
+    {
+        public long solicitud { get; init; }
+        public string cuenta { get; init; } = string.Empty;
+        public decimal monto { get; init; }
+        public string debe_haber { get; init; } = string.Empty;
+        public int linea { get; init; }
+        public string unidad { get; init; } = string.Empty;
     }
 }
