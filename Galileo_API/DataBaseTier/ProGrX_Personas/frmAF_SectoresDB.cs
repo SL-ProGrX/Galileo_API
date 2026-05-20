@@ -53,16 +53,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         {
             var queryExiste = "SELECT COUNT(*) FROM afi_sectores WHERE cod_sector = @cod_sector";
             var existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryExiste, 0, new { cod_sector = sector.Cod_Sector });
-            ErrorDto result;
-            if (existe.Result == 0)
-            {
-                result = AF_Sectores_Insertar(codEmpresa, usuario, sector);
-            }
-            else
-            {
-                result = AF_Sectores_Actualizar(codEmpresa, usuario, sector);
-            }
-            return result;
+            return existe.Result == 0
+                 ? AF_Sectores_Insertar(codEmpresa, usuario, sector)
+                 : AF_Sectores_Actualizar(codEmpresa, usuario, sector);
         }
 
         /// <summary>
