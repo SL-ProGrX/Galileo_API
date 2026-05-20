@@ -89,12 +89,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 FROM dbo.CBR_REMESAS
                 WHERE cod_remesa = @cod_remesa;";
 
-            return DbHelper.ExecuteSingleQuery<CoControlComPagoRemesaData>(
+            var result = DbHelper.ExecuteSingleQuery<CoControlComPagoRemesaData>(
                 _portalDB,
                 CodEmpresa,
                 sql,
                 new CoControlComPagoRemesaData(),
                 new { cod_remesa });
+
+            return new ErrorDto<CoControlComPagoRemesaData>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? new CoControlComPagoRemesaData()
+            };
         }
 
         /// <summary>

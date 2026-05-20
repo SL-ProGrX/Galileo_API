@@ -15,9 +15,9 @@ namespace Galileo.Models.ProGrX.Cobros
 
     public class CoControlComPagoRemesaGuardarRequest
     {
-        public int cod_remesa { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public required int cod_remesa { get; set; }
+        public required DateTime fecha_inicio { get; set; }
+        public required DateTime fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
     }
 
@@ -59,7 +59,7 @@ namespace Galileo.Models.ProGrX.Cobros
 
     public class CoControlComPagoCargaAplicarRequest
     {
-        public int cod_remesa { get; set; }
+        public required int cod_remesa { get; set; }
         public List<string> usuarios { get; set; } = new();
     }
 
@@ -78,7 +78,7 @@ namespace Galileo.Models.ProGrX.Cobros
 
     public class CoControlComPagoTrasladoAplicarRequest
     {
-        public int cod_remesa { get; set; }
+        public required int cod_remesa { get; set; }
         public List<string> usuarios { get; set; } = new();
     }
 
