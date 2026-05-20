@@ -101,7 +101,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             if (string.IsNullOrWhiteSpace(request.usuario)
                 || string.IsNullOrWhiteSpace(request.cod_preanalisis)
                 || string.IsNullOrWhiteSpace(request.tipo)
-                || string.IsNullOrWhiteSpace(request.codigo)
                 || string.IsNullOrWhiteSpace(request.cod_causas))
             {
                 return DbHelper.CreateErrorResponse(
@@ -110,10 +109,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                     new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
             }
 
-            if (request.tipo.Trim().ToUpperInvariant() is not ("P" or "D"))
+            if (!EsEstadoValido(request.tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "Las causas solo aplican para estados Pendiente o Denegado.",
+                    "Debe indicar un estado valido.",
                     -1,
                     new FrmPreaEstadoPreanalisisCausaRegistrarResponse());
             }
