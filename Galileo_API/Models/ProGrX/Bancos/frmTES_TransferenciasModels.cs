@@ -32,6 +32,7 @@
         public int maximo { get; set; } = 0;
         public DateTime? fecha_inicio { get; set; } = null;
         public DateTime? fecha_corte { get; set; } = null;
+        public int cantidad { get; set; } = 0;
 
     }
 }

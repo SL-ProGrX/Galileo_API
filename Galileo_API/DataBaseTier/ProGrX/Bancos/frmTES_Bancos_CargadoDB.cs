@@ -317,17 +317,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var querySP = "";
                 foreach (var item in lista)
                 {
-                    querySP = "exec spTes_Bancos_Mov_Registro @LineaId, @Usuario, @AutoId, @Concepto, @Unidad, @Centro, @Cuenta";
+                    querySP = "spTes_Bancos_Mov_Registro";
                     conn.Execute(querySP, new
                     {
                         LineaId = item.Linea_Id,
-                        item.Usuario,
+                        Usuario = item.Usuario,
                         AutoId = item.Auto_Id,
-                        item.Concepto,
-                        item.Unidad,
-                        item.Centro,
-                        item.Cuenta
-                    });
+                        Concepto = item.Concepto,
+                        Unidad = item.Unidad,
+                        Centro = item.Centro,
+                        Cuenta = item.Cuenta
+                    },
+                    commandType: CommandType.StoredProcedure);
                 }
 
                 return DbHelper.OkResponse("Registro procesado correctamente!");
@@ -347,11 +348,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 foreach (var item in lista)
                 {
-                    var querySP = "exec spTes_Bancos_Mov_Elimina @LineaId ";
+                    var querySP = "spTes_Bancos_Mov_Elimina";
                     conn.Execute(querySP, new
                     {
                         LineaId = item.Linea_Id
-                    });
+                    },
+                    commandType: CommandType.StoredProcedure);
                 }
                 return DbHelper.OkResponse("Registro procesado correctamente!");
             }

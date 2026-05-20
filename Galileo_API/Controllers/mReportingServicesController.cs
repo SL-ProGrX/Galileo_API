@@ -23,43 +23,32 @@ namespace Galileo.Controllers
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
             var result = _reportingServicesBL.ReporteRDLC_v2(data);
-         
+
             if (result is FileContentResult fcr)
             {
-                var nombreReporte = data.nombreReporte + ".pdf";
-                // Forzar inline:
-                Response.Headers["Content-Disposition"] =
-                    $"inline; filename={nombreReporte}";
-                // Opcional: anular FileDownloadName para evitar "attachment"
+                var nombreReporte = $"{data.nombreReporte}.pdf";
+                Response.Headers["Content-Disposition"] = $"inline; filename={nombreReporte}";
                 fcr.FileDownloadName = nombreReporte;
                 return fcr;
             }
 
-            if (result is ObjectResult objectResult && objectResult.Value != null)
+            if (result is ObjectResult objectResult)
             {
-                var j = JObject.FromObject(objectResult.Value);
-
-                var code = j["Code"]?.Value<int?>() ?? 0;
-                var desc = j["Description"]?.Value<string>() ?? string.Empty;
-
-                return new ObjectResult(new ErrorDto<IActionResult>
+                return new ObjectResult(objectResult.Value)
                 {
-                    Code = code,
-                    Description = desc
-                })
-                {
-                    StatusCode = 200
+                    StatusCode = StatusCodes.Status200OK
                 };
             }
 
             return new ObjectResult(new ErrorDto<IActionResult>
             {
-                Code = 0,
+                Code = -1,
                 Description = "Unexpected result type"
             })
             {
-                StatusCode = 200
+                StatusCode = StatusCodes.Status200OK
             };
+            
         }
 
         [HttpPost("ReporteRDLC")]
