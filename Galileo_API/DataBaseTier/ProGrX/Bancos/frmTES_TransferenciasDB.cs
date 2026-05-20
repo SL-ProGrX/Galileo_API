@@ -51,7 +51,7 @@ namespace Galileo_API.DataBaseTier
                 // 2) Ejecutar SOLO SQL permitido
                 var result = conn.Query<TransferenciasData>(allowedSql.Trim('(', ')'), new
                 {
-                    top = transferencia.parametros.maximo,
+                    top = transferencia.parametros.cantidad,
                     banco = transferencia.parametros.banco,
                     tipoDoc = transferencia.parametros.tipoDoc,
                     minimo = transferencia.parametros.minimo,
