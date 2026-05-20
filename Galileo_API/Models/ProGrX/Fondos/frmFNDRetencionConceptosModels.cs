@@ -4,11 +4,11 @@
     {
         public string RetencionCodigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public required bool Activo { get; set; }
         public string CodCuenta { get; set; } = string.Empty;
         public string CuentaMask { get; set; } = string.Empty;
         public string CtaDesc { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public required bool isNew { get; set; }
     }
 
     public class FndRetencionConceptoLista
