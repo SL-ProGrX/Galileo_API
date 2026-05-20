@@ -24,12 +24,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Operaciones_Listar(codEmpresa);
         }
 
-        public ErrorDto<ArfOperacionRegistroDto> Consultar(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionRegistroDto?> Consultar(int codEmpresa, int operacion)
         {
             return _db.Consultar(codEmpresa, operacion);
         }
 
-        public ErrorDto<ArfOperacionRegistroDto> Scroll(int codEmpresa, int operacion, int direccion)
+        public ErrorDto<ArfOperacionRegistroDto?> Scroll(int codEmpresa, int operacion, int direccion)
         {
             return _db.Scroll(codEmpresa, operacion, direccion);
         }
@@ -87,7 +87,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Cambios_Listar(codEmpresa, operacion);
         }
 
-        public ErrorDto<ArfOperacionFiniquitoPreviewDto> CierreActual_Obtener(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionFiniquitoPreviewDto?> CierreActual_Obtener(int codEmpresa, int operacion)
         {
             return _db.CierreActual_Obtener(codEmpresa, operacion);
         }
