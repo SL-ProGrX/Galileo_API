@@ -205,7 +205,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         public ErrorDto<List<ZonaUsuarioAsignadoData>> AF_Zonas_UsuariosAsignados_Obtener(int codEmpresa, string codZona)
         {
             string sp = "spAfi_Zonas_Usuario_Asigna_Consulta";
-            var parametros = new { cod_zona = codZona };
+            var parametros = new { Zona = codZona };
             return DbHelper.ExecuteStoredProcedureList<ZonaUsuarioAsignadoData>(
                 _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
@@ -218,7 +218,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         public ErrorDto<List<ZonaInstitucionAsignadaData>> AF_Zonas_InstitucionesAsignadas_Obtener(int codEmpresa, string codZona)
         {
             string sp = "spAfi_Zonas_Inst_Asigna_Consulta";
-            var parametros = new { cod_zona = codZona };
+            var parametros = new { Zona = codZona };
             return DbHelper.ExecuteStoredProcedureList<ZonaInstitucionAsignadaData>(
                 _portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
@@ -231,15 +231,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="codInstitucion">Código de la institución.</param>
         /// <param name="asignar">True para asignar, false para desasignar.</param>
         /// <param name="usuario">Usuario que realiza la operación.</param>
-        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, string codInstitucion, bool asignar, string usuario)
+        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, int codInstitucion, bool asignar, string usuario)
         {
+            // El SP espera: @Zona (varchar), @Codigo (int), @Usuario (varchar), @Movimiento (char)
             string sp = "spAfi_Zonas_Inst_Asigna_Registra";
             var parametros = new
             {
-                cod_zona = codZona,
-                cod_institucion = codInstitucion,
-                asignar = asignar ? 1 : 0,
-                usuario
+                Zona = codZona,
+                Codigo = codInstitucion,
+                Usuario = usuario,
+                Movimiento = asignar ? "I" : "E"
             };
             return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
@@ -254,13 +255,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación.</param>
         public ErrorDto AF_Zonas_UsuarioAsignar_Registrar(int codEmpresa, string codZona, string codUsuario, bool asignar, string usuario)
         {
+            // El SP espera: @Zona (varchar), @Codigo (varchar), @Usuario (varchar), @Movimiento (char)
             string sp = "spAfi_Zonas_Usuario_Asigna_Registra";
             var parametros = new
             {
-                cod_zona = codZona,
-                cod_usuario = codUsuario,
-                asignar = asignar ? 1 : 0,
-                usuario
+                Zona = codZona,
+                Codigo = codUsuario,
+                Usuario = usuario,
+                Movimiento = asignar ? "I" : "E"
             };
             return DbHelper.ExecuteNonQuery(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa), sp, parametros);
         }
