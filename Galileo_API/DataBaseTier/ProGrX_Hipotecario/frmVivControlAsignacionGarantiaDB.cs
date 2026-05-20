@@ -417,7 +417,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
             if (row.Code < 0)
             {
-                return MapearError<dynamic, VivControlHonorariosRegistraData>(row);
+                return new ErrorDto<VivControlHonorariosRegistraData>
+                {
+                    Code = row.Code,
+                    Description = row.Description,
+                    Result = default
+                };
             }
 
             var registra = false;
