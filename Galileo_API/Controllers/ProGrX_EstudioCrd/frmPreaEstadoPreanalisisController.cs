@@ -31,7 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         [HttpPut("Prea_frmPreaEstadoPreanalisis_Guardar")]
         public ErrorDto<FrmPreaEstadoPreanalisisGuardarResponse> Prea_frmPreaEstadoPreanalisis_Guardar(
             int codEmpresa,
-            [FromBody] FrmPreaEstadoPreanalisisGuardarRequest request)
+            FrmPreaEstadoPreanalisisGuardarRequest request)
         {
             return _bl.Prea_frmPreaEstadoPreanalisis_Guardar(codEmpresa, request);
         }
@@ -39,7 +39,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         [HttpPost("Prea_frmPreaEstadoPreanalisis_Causa_Registrar")]
         public ErrorDto<FrmPreaEstadoPreanalisisCausaRegistrarResponse> Prea_frmPreaEstadoPreanalisis_Causa_Registrar(
             int codEmpresa,
-            [FromBody] FrmPreaEstadoPreanalisisCausaRegistrarRequest request)
+            FrmPreaEstadoPreanalisisCausaRegistrarRequest request)
         {
             return _bl.Prea_frmPreaEstadoPreanalisis_Causa_Registrar(codEmpresa, request);
         }
