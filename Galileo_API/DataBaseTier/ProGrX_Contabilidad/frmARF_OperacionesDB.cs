@@ -78,7 +78,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <returns></returns>
-        public ErrorDto<ArfOperacionRegistroDto> Consultar(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionRegistroDto?> Consultar(int codEmpresa, int operacion)
         {
             const string sql = @"
                 select
@@ -132,15 +132,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 left join vSys_Divisas D on D.COD_DIVISA = O.COD_DIVISA
                 where O.Operacion = @operacion";
 
-            var result = DbHelper.ExecuteSingleQuery(
+            return DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
                 new ArfOperacionRegistroDto(),
                 new { operacion });
-
-            result.Result ??= null;
-            return result;
         }
 
         /// <summary>
@@ -150,7 +147,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="operacion"></param>
         /// <param name="direccion"></param>
         /// <returns></returns>
-        public ErrorDto<ArfOperacionRegistroDto> Scroll(int codEmpresa, int operacion, int direccion)
+        public ErrorDto<ArfOperacionRegistroDto?> Scroll(int codEmpresa, int operacion, int direccion)
         {
             var sql = "select top 1 Operacion from ARF_OPERACIONES ";
 
@@ -167,7 +164,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (idResp.Result is null || idResp.Result <= 0)
             {
-                return new ErrorDto<ArfOperacionRegistroDto>
+                return new ErrorDto<ArfOperacionRegistroDto?>
                 {
                     Code = -2,
                     Description = "No se encontraron más registros",
@@ -656,12 +653,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <returns></returns>
-        public ErrorDto<ArfOperacionFiniquitoPreviewDto> CierreActual_Obtener(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionFiniquitoPreviewDto?> CierreActual_Obtener(int codEmpresa, int operacion)
         {
             const string sql = @"exec spARF_Cierre_Actual @operacion";
-            var result = DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, sql, new ArfOperacionFiniquitoPreviewDto(), new { operacion });
-            result.Result ??= null;
-            return result;
+            return DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, sql, new ArfOperacionFiniquitoPreviewDto(), new { operacion });
         }
 
         /// <summary>
@@ -746,18 +741,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        /// <summary>
-        /// Finiquito aplicar
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        /// <summary>
-        /// Finiquito aplicar
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto Finiquito_Aplicar(int codEmpresa, ArfOperacionFiniquitoRequestDto request)
         {
             try
@@ -823,12 +806,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalleMovimiento)
+        private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalleMovimiento)
         {
             _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
-                Usuario = usuario,
+                Usuario = usuario ?? string.Empty,
                 Movimiento = movimiento,
                 Modulo = vModulo,
                 DetalleMovimiento = detalleMovimiento

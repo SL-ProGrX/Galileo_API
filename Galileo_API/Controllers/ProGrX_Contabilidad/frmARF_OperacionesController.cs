@@ -32,13 +32,13 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("Consultar")]
-        public ErrorDto<ArfOperacionRegistroDto> Consultar(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionRegistroDto?> Consultar(int codEmpresa, int operacion)
         {
             return _bl.Consultar(codEmpresa, operacion);
         }
 
         [HttpGet("Scroll")]
-        public ErrorDto<ArfOperacionRegistroDto> Scroll(int codEmpresa, int operacion, int direccion)
+        public ErrorDto<ArfOperacionRegistroDto?> Scroll(int codEmpresa, int operacion, int direccion)
         {
             return _bl.Scroll(codEmpresa, operacion, direccion);
         }
@@ -106,7 +106,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("CierreActual_Obtener")]
-        public ErrorDto<ArfOperacionFiniquitoPreviewDto> CierreActual_Obtener(int codEmpresa, int operacion)
+        public ErrorDto<ArfOperacionFiniquitoPreviewDto?> CierreActual_Obtener(int codEmpresa, int operacion)
         {
             return _bl.CierreActual_Obtener(codEmpresa, operacion);
         }
