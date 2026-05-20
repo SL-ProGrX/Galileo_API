@@ -64,7 +64,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [HttpPost("AF_Zonas_InstitucionAsignar_Registrar")]
-        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, string codInstitucion, bool asignar, string usuario)
+        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, int codInstitucion, bool asignar, string usuario)
         {
             return _bl.AF_Zonas_InstitucionAsignar_Registrar(codEmpresa, codZona, codInstitucion, asignar, usuario);
         }

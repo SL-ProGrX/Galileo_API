@@ -53,7 +53,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Personas
             return _db.AF_Zonas_InstitucionesAsignadas_Obtener(codEmpresa, codZona);
         }
 
-        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, string codInstitucion, bool asignar, string usuario)
+        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, int codInstitucion, bool asignar, string usuario)
         {
             return _db.AF_Zonas_InstitucionAsignar_Registrar(codEmpresa, codZona, codInstitucion, asignar, usuario);
         }
