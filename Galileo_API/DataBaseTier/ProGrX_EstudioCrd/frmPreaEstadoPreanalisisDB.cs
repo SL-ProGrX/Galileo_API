@@ -19,6 +19,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Carga el estado actual, linea, validaciones de autorizadores y causas del expediente.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa usado para resolver la conexion del cliente.</param>
+        /// <param name="usuario">Usuario de sesion que solicita la carga del formulario.</param>
+        /// <param name="cod_preanalisis">Codigo de expediente de preanalisis.</param>
+        /// <param name="tipo">Tipo de resolucion usado para cargar las causas.</param>
+        /// <returns>Respuesta con encabezado, estado actual y causas de la resolucion.</returns>
         public ErrorDto<FrmPreaEstadoPreanalisisCargarResponse> Prea_frmPreaEstadoPreanalisis_Cargar(
             int codEmpresa,
             string usuario,
@@ -40,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 var tipoCausas = string.IsNullOrWhiteSpace(tipo) ? response.estado : tipo.Trim().ToUpperInvariant();
-                response.causas = ObtenerCausas(connection, response.cod_preanalisis, tipoCausas, response.cod_linea);
+                response.causas = ObtenerCausas(connection, cod_preanalisis, tipoCausas);
 
                 return DbHelper.CreateOkResponse(response);
             }
@@ -61,6 +66,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Actualiza el estado del preanalisis, aplica la validacion de resolucion e inserta el tag del movimiento.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa usado para resolver la conexion del cliente.</param>
+        /// <param name="request">Datos del expediente, usuario y estado seleccionado.</param>
+        /// <returns>Resultado del guardado del estado y bandera para abrir notificacion.</returns>
         public ErrorDto<FrmPreaEstadoPreanalisisGuardarResponse> Prea_frmPreaEstadoPreanalisis_Guardar(
             int codEmpresa,
             FrmPreaEstadoPreanalisisGuardarRequest request)
@@ -96,20 +104,22 @@ SET ESTADO = @estado,
     FECHA_GESTION = dbo.MyGetdate()
 WHERE COD_PREANALISIS = @cod_preanalisis
    OR COD_PREANALISIS_REF = @cod_preanalisis;";
+                var parameters = new
+                {
+                    estado,
+                    estado_v2 = estadoV2,
+                    usuario = request.usuario.Trim(),
+                    cod_preanalisis = expediente
+                };
 
                 connection.Execute(
                     updateSql,
-                    new
-                    {
-                        estado,
-                        estado_v2 = estadoV2,
-                        usuario = request.usuario.Trim(),
-                        cod_preanalisis = expediente
-                    },
+                    parameters,
                     transaction,
                     commandType: CommandType.Text);
 
                 InsertarTag(connection, transaction, expediente, estado, request.usuario);
+                var abrirNotificacion = Prea_frmPreaEstadoPreanalisis_Notificacion_Abrir(connection, transaction);
                 transaction.Commit();
 
                 return DbHelper.CreateOkResponse(new FrmPreaEstadoPreanalisisGuardarResponse
@@ -117,6 +127,7 @@ WHERE COD_PREANALISIS = @cod_preanalisis
                     cod_preanalisis = expediente,
                     estado = estado,
                     estado_desc = ObtenerEstadoDescripcion(estado),
+                    abrir_notificacion = abrirNotificacion,
                     mensaje = "La informacion fue actualizada correctamente."
                 });
             }
@@ -141,6 +152,9 @@ WHERE COD_PREANALISIS = @cod_preanalisis
         /// <summary>
         /// Registra o elimina una causa de gestion para el estado seleccionado.
         /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa usado para resolver la conexion del cliente.</param>
+        /// <param name="request">Datos de la causa seleccionada y marca de activacion.</param>
+        /// <returns>Resultado del registro o eliminacion de la causa.</returns>
         public ErrorDto<FrmPreaEstadoPreanalisisCausaRegistrarResponse> Prea_frmPreaEstadoPreanalisis_Causa_Registrar(
             int codEmpresa,
             FrmPreaEstadoPreanalisisCausaRegistrarRequest request)
@@ -149,6 +163,7 @@ WHERE COD_PREANALISIS = @cod_preanalisis
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
+                var parameters = CrearParametrosCausa(request);
 
                 if (request.activo == true)
                 {
@@ -159,7 +174,6 @@ IF NOT EXISTS (
     WHERE COD_CAUSAS = @cod_causas
       AND TIPO = @tipo
       AND COD_PREANALISIS = @cod_preanalisis
-      AND CODIGO = @codigo
 )
 BEGIN
     INSERT INTO CRD_PREA_GESTION
@@ -182,7 +196,7 @@ BEGIN
     );
 END;";
 
-                    connection.Execute(insertSql, CrearParametrosCausa(request), commandType: CommandType.Text);
+                    connection.Execute(insertSql, parameters, commandType: CommandType.Text);
                 }
                 else
                 {
@@ -190,10 +204,9 @@ END;";
 DELETE FROM CRD_PREA_GESTION
 WHERE COD_CAUSAS = @cod_causas
   AND TIPO = @tipo
-  AND COD_PREANALISIS = @cod_preanalisis
-  AND CODIGO = @codigo;";
+  AND COD_PREANALISIS = @cod_preanalisis;";
 
-                    connection.Execute(deleteSql, CrearParametrosCausa(request), commandType: CommandType.Text);
+                    connection.Execute(deleteSql, parameters, commandType: CommandType.Text);
                 }
 
                 return DbHelper.CreateOkResponse(new FrmPreaEstadoPreanalisisCausaRegistrarResponse
@@ -252,48 +265,48 @@ OUTER APPLY (
 ) PA
 WHERE P.COD_PREANALISIS = @cod_preanalisis
    OR P.COD_PREANALISIS_REF = @cod_preanalisis;";
+            var parameters = new
+            {
+                cod_preanalisis = codPreanalisis.Trim()
+            };
 
             return connection.QueryFirstOrDefault<FrmPreaEstadoPreanalisisCargarResponse>(
                 sql,
-                new { cod_preanalisis = codPreanalisis.Trim() },
+                parameters,
                 commandType: CommandType.Text) ?? new FrmPreaEstadoPreanalisisCargarResponse();
         }
 
         private static List<FrmPreaEstadoPreanalisisCausaDto> ObtenerCausas(
             IDbConnection connection,
             string codPreanalisis,
-            string estado,
-            string codigo)
+            string estado)
         {
-            if (estado is not ("P" or "D"))
-            {
-                return [];
-            }
-
             const string sql = @"
 SELECT
     Cg.COD_CAUSAS AS cod_causas,
     Cg.DESCRIPCION AS descripcion,
     CASE WHEN ISNULL(Pa.COD_CAUSAS, '') = '' THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS activo,
-    ISNULL(CONVERT(varchar(19), Pa.REGISTRO_FECHA, 120), '') AS registro_fecha,
+    CASE
+        WHEN Pa.REGISTRO_FECHA IS NULL THEN ''
+        ELSE CONVERT(varchar(10), Pa.REGISTRO_FECHA, 103) + ' ' + CONVERT(varchar(8), Pa.REGISTRO_FECHA, 108)
+    END AS registro_fecha,
     ISNULL(Pa.REGISTRO_USUARIO, '') AS registro_usuario
 FROM OPERACION_CAUSAS Cg
 LEFT JOIN CRD_PREA_GESTION Pa
-    ON Cg.COD_CAUSAS = Pa.COD_CAUSAS
-    AND Cg.TIPO = Pa.TIPO
-    AND Pa.COD_PREANALISIS = @cod_preanalisis
-    AND Pa.CODIGO = @codigo
-WHERE Cg.TIPO = @tipo
+    ON LTRIM(RTRIM(Cg.COD_CAUSAS)) = LTRIM(RTRIM(Pa.COD_CAUSAS))
+    AND LTRIM(RTRIM(Cg.TIPO)) = LTRIM(RTRIM(Pa.TIPO))
+    AND LTRIM(RTRIM(Pa.COD_PREANALISIS)) = @cod_preanalisis
+WHERE LTRIM(RTRIM(Cg.TIPO)) = @tipo
 ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
+            var parameters = new
+            {
+                cod_preanalisis = codPreanalisis.Trim(),
+                tipo = estado.Trim().ToUpperInvariant()
+            };
 
             return connection.Query<FrmPreaEstadoPreanalisisCausaDto>(
                 sql,
-                new
-                {
-                    cod_preanalisis = codPreanalisis.Trim(),
-                    tipo = estado.Trim(),
-                    codigo = codigo.Trim()
-                },
+                parameters,
                 commandType: CommandType.Text).ToList();
         }
 
@@ -307,14 +320,15 @@ ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
 SELECT dbo.fxCrd_Comites_Valida_Resolucion(ID_COMITE, COD_LINEA, GARANTIA, MONTO, @usuario) AS mensaje
 FROM CRD_PREA_PREANALISIS
 WHERE COD_PREANALISIS = @cod_preanalisis;";
+            var parameters = new
+            {
+                cod_preanalisis = codPreanalisis.Trim(),
+                usuario = usuario.Trim()
+            };
 
             return connection.QueryFirstOrDefault<string>(
                 sql,
-                new
-                {
-                    cod_preanalisis = codPreanalisis.Trim(),
-                    usuario = usuario.Trim()
-                },
+                parameters,
                 transaction,
                 commandType: CommandType.Text) ?? string.Empty;
         }
@@ -333,9 +347,14 @@ WHERE COD_PREANALISIS = @cod_preanalisis;";
             }
 
             const string existeTagSql = "SELECT COUNT(*) FROM CRD_TAGS WHERE TAG_CODIGO = @tag;";
+            var existeTagParameters = new
+            {
+                tag
+            };
+
             var existeTag = connection.QueryFirstOrDefault<int>(
                 existeTagSql,
-                new { tag },
+                existeTagParameters,
                 transaction,
                 commandType: CommandType.Text);
 
@@ -378,16 +397,17 @@ VALUES
     @usuario,
     @nota
 );";
+            var parameters = new
+            {
+                cod_preanalisis = codPreanalisis.Trim(),
+                tag,
+                usuario = usuario.Trim(),
+                nota = ObtenerNotaTag(estado, usuario)
+            };
 
             connection.Execute(
                 insertSql,
-                new
-                {
-                    cod_preanalisis = codPreanalisis.Trim(),
-                    tag,
-                    usuario = usuario.Trim(),
-                    nota = ObtenerNotaTag(estado, usuario)
-                },
+                parameters,
                 transaction,
                 commandType: CommandType.Text);
         }
@@ -411,12 +431,35 @@ VALUES
 SELECT ISNULL(VALOR, '') AS valor
 FROM CRD_COMITES_PARAMETROS
 WHERE COD_PARAMETRO = @cod_parametro;";
+            var parameters = new
+            {
+                cod_parametro = codParametro
+            };
 
             return connection.QueryFirstOrDefault<string>(
                 sql,
-                new { cod_parametro = codParametro },
+                parameters,
                 transaction,
                 commandType: CommandType.Text) ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Indica si debe abrirse el flujo de notificación de resolución posterior al guardado.
+        /// </summary>
+        /// <param name="connection">Conexion activa de la empresa.</param>
+        /// <param name="transaction">Transaccion activa del guardado de resolucion.</param>
+        /// <returns>Valor que indica si debe abrirse frmPrea_Notificacion.</returns>
+        private static bool Prea_frmPreaEstadoPreanalisis_Notificacion_Abrir(
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            const string sql = "SELECT ISNULL(SysPreaVersion, 2) FROM SIF_EMPRESA;";
+            var preaVersion = connection.QueryFirstOrDefault<int>(
+                sql,
+                transaction: transaction,
+                commandType: CommandType.Text);
+
+            return preaVersion == 2;
         }
 
         private static object CrearParametrosCausa(FrmPreaEstadoPreanalisisCausaRegistrarRequest request)

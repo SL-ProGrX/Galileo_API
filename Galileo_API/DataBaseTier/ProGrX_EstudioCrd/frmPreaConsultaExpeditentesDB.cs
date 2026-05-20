@@ -56,7 +56,7 @@ ORDER BY COD_PREANALISIS DESC;";
 
             if (queryResult.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<FrmPreaConsultaExpeditentesListaResponse>(queryResult.Description);
+                return DbHelper.CreateErrorResponse<FrmPreaConsultaExpeditentesListaResponse>(queryResult.Description!);
             }
 
             var result = new FrmPreaConsultaExpeditentesListaResponse
