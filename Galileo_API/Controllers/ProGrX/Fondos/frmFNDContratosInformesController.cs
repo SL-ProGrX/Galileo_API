@@ -6,15 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers.ProGrX.Fondos
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmFNDContratosInformes")]
     [ApiController]
-    public class FrmFNDContratosInformesController : ControllerBase
+    public class FrmFndContratosInformesController : ControllerBase
     {
-        private readonly FrmFNDContratosInformesBL _bl;
+        private readonly FrmFndContratosInformesBl _bl;
 
-        public FrmFNDContratosInformesController(IConfiguration? config)
+        public FrmFndContratosInformesController(IConfiguration? config)
         {
-            _bl = new FrmFNDContratosInformesBL(config);
+            _bl = new FrmFndContratosInformesBl(config);
         }
 
         [Authorize]

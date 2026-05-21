@@ -5,7 +5,7 @@ using Galileo.Models.ProGrX.Fondos;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
-    public class FrmFNDContratosInformesDB
+    public class FrmFndContratosInformesDb
     {
         private const string SpContratoConsulta = "spFnd_Contrato_Consulta";
         private const string SpContratoNotificaEmail = "spFnd_Contrato_Notifica_Email";
@@ -45,7 +45,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private readonly PortalDB _portalDB;
 
-        public FrmFNDContratosInformesDB(IConfiguration config)
+        public FrmFndContratosInformesDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }

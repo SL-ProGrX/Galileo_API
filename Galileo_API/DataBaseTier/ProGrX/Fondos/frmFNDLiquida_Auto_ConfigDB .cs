@@ -306,42 +306,69 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var tipoNormalizado = NormalizarTexto(tipo).ToUpperInvariant();
             tipoNormalizado = tipoNormalizado.Length > 3 ? tipoNormalizado[..3] : tipoNormalizado;
 
-            switch (tipoNormalizado)
+            return tipoNormalizado switch
             {
-                case "DEC":
-                case "INT":
-                case "POR":
-                    return decimal.TryParse(valorNormalizado, NumberStyles.Number, CultureInfo.CurrentCulture, out var decimalValor)
-                        || decimal.TryParse(valorNormalizado, NumberStyles.Number, CultureInfo.InvariantCulture, out decimalValor)
-                            ? (true, decimalValor.ToString(CultureInfo.InvariantCulture), string.Empty)
-                            : (false, valorNormalizado, "El valor indicado no es válido.");
+                "DEC" or "INT" or "POR" => NormalizarDecimal(valorNormalizado),
+                "NUM" => NormalizarEntero(valorNormalizado),
+                "CHR" => NormalizarTextoParametro(valorNormalizado),
+                "PSN" => NormalizarSiNo(valorNormalizado),
+                "DTS" => NormalizarFecha(valorNormalizado),
+                _ => (true, valorNormalizado, string.Empty)
+            };
+        }
 
-                case "NUM":
-                    return long.TryParse(valorNormalizado, NumberStyles.Integer, CultureInfo.CurrentCulture, out var enteroValor)
-                        || long.TryParse(valorNormalizado, NumberStyles.Integer, CultureInfo.InvariantCulture, out enteroValor)
-                            ? (true, enteroValor.ToString(CultureInfo.InvariantCulture), string.Empty)
-                            : (false, valorNormalizado, "El valor indicado no es válido.");
+        private static (bool Valido, string Valor, string Mensaje) NormalizarDecimal(string valor)
+        {
+            return TryParseDecimal(valor, out var decimalValor)
+                ? (true, decimalValor.ToString(CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "El valor indicado no es válido.");
+        }
 
-                case "CHR":
-                    return valorNormalizado.Contains('\'')
-                        ? (false, valorNormalizado, "El valor indicado contiene caracteres no válidos.")
-                        : (true, valorNormalizado, string.Empty);
+        private static bool TryParseDecimal(string valor, out decimal decimalValor)
+        {
+            return decimal.TryParse(valor, NumberStyles.Number, CultureInfo.CurrentCulture, out decimalValor)
+                || decimal.TryParse(valor, NumberStyles.Number, CultureInfo.InvariantCulture, out decimalValor);
+        }
 
-                case "PSN":
-                    var opcion = valorNormalizado.Length > 0 ? valorNormalizado[..1].ToUpperInvariant() : string.Empty;
-                    return opcion is "S" or "N"
-                        ? (true, opcion, string.Empty)
-                        : (false, valorNormalizado, "El valor indicado no es válido. Indique S o N.");
+        private static (bool Valido, string Valor, string Mensaje) NormalizarEntero(string valor)
+        {
+            return TryParseEntero(valor, out var enteroValor)
+                ? (true, enteroValor.ToString(CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "El valor indicado no es válido.");
+        }
 
-                case "DTS":
-                    return DateTime.TryParse(valorNormalizado, CultureInfo.CurrentCulture, DateTimeStyles.None, out var fecha)
-                        || DateTime.TryParse(valorNormalizado, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha)
-                            ? (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), string.Empty)
-                            : (false, valorNormalizado, "La fecha indicada no es válida.");
+        private static bool TryParseEntero(string valor, out long enteroValor)
+        {
+            return long.TryParse(valor, NumberStyles.Integer, CultureInfo.CurrentCulture, out enteroValor)
+                || long.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out enteroValor);
+        }
 
-                default:
-                    return (true, valorNormalizado, string.Empty);
-            }
+        private static (bool Valido, string Valor, string Mensaje) NormalizarTextoParametro(string valor)
+        {
+            return valor.Contains('\'')
+                ? (false, valor, "El valor indicado contiene caracteres no válidos.")
+                : (true, valor, string.Empty);
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarSiNo(string valor)
+        {
+            var opcion = valor.Length > 0 ? valor[..1].ToUpperInvariant() : string.Empty;
+            return opcion is "S" or "N"
+                ? (true, opcion, string.Empty)
+                : (false, valor, "El valor indicado no es válido. Indique S o N.");
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarFecha(string valor)
+        {
+            return TryParseFecha(valor, out var fecha)
+                ? (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "La fecha indicada no es válida.");
+        }
+
+        private static bool TryParseFecha(string valor, out DateTime fecha)
+        {
+            return DateTime.TryParse(valor, CultureInfo.CurrentCulture, DateTimeStyles.None, out fecha)
+                || DateTime.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();

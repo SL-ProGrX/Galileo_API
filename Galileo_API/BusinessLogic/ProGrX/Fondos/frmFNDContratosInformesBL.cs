@@ -6,14 +6,14 @@ using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic.ProGrX.Fondos
 {
-    public class FrmFNDContratosInformesBL
+    public class FrmFndContratosInformesBl
     {
-        private readonly FrmFNDContratosInformesDB _db;
+        private readonly FrmFndContratosInformesDb _db;
 
-        public FrmFNDContratosInformesBL(IConfiguration? config)
+        public FrmFndContratosInformesBl(IConfiguration? config)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
-            _db = new FrmFNDContratosInformesDB(config);
+            _db = new FrmFndContratosInformesDb(config);
         }
 
         public ErrorDto<FndContratosInformesContrato> Fnd_ContratosInformes_Contrato_Obtener(

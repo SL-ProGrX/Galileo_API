@@ -47,6 +47,7 @@
     {
         public string operadora { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public required bool patrimonio { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = string.Empty; // 'A' | 'B'
