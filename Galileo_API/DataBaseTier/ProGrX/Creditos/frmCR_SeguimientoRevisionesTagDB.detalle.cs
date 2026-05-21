@@ -264,7 +264,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
-        private void Cr_SeguimientoRevisionesTag_Deudas_CargarResumen(
+        private static void Cr_SeguimientoRevisionesTag_Deudas_CargarResumen(
     DbConnection conn,
     string cedula,
     CrSeguimientoRevisionesTagDeudasResponse response)
@@ -350,7 +350,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
-        private string Cr_SeguimientoRevisionesTag_Deudas_ResolverSemaforo(dynamic row)
+        private static string Cr_SeguimientoRevisionesTag_Deudas_ResolverSemaforo(dynamic row)
         {
             decimal moraCuota = row.MoraCuota ?? 0;
             string procesoCod = (row.ProcesoCod ?? string.Empty).ToString().Trim();
@@ -378,7 +378,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return "reversado";
             }
 
-            if (estado.StartsWith("C"))
+            if (estado.StartsWith('C'))
             {
                 return "cancelado";
             }
@@ -386,7 +386,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return "verde";
         }
 
-        private string Cr_SeguimientoRevisionesTag_Deudas_FormatearPrimerMovimiento(dynamic priDeduc)
+        private static string Cr_SeguimientoRevisionesTag_Deudas_FormatearPrimerMovimiento(dynamic priDeduc)
         {
             if (priDeduc == null)
             {
