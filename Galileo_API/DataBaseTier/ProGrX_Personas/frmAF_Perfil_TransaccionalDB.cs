@@ -78,16 +78,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         {
             string queryExiste = "SELECT ISNULL(COUNT(*),0) AS Existe FROM AFI_PERFIL_TRANSACCIONAL WHERE PT_Id = @PT_Id";
             var existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryExiste, 0, new { perfil.PT_Id });
-            ErrorDto result;
-            if (existe.Result == 0)
-            {
-                result = AF_PerfilTransaccional_Insertar(codEmpresa, usuario, perfil);
-            }
-            else
-            {
-                result = AF_PerfilTransaccional_Actualizar(codEmpresa, usuario, perfil);
-            }
-            return result;
+            return existe.Result == 0
+                ? AF_PerfilTransaccional_Insertar(codEmpresa, usuario, perfil)
+                : AF_PerfilTransaccional_Actualizar(codEmpresa, usuario, perfil);
         }
 
         /// <summary>
