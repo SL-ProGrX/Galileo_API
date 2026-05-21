@@ -11,6 +11,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
         private const int VModulo = 3;
+        private const string guardadoExisto = "Informacion guardada satisfactoriamente...";
+        private const string eliminadoExisto = "Informacion eliminada satisfactoriamente...";
 
         public FrmCrCatalogoCargosDb(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config))
@@ -67,10 +69,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.cargo.plazo_tipo = Limpiar(request.cargo.plazo_tipo);
             request.cargo.diferido_cod_cuenta = CuentaSinFormato(request.cargo.diferido_cod_cuenta);
 
-            var validacion = ValidarCargo(codEmpresa, request.cargo);
-            if (validacion.Code < 0)
-                return validacion;
-
             return ExisteCargo(codEmpresa, request.cargo.cod_cargo)
                 ? ActualizarCargo(codEmpresa, request)
                 : InsertarCargo(codEmpresa, request);
@@ -94,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del cargo."
+                    Description = "Debe indicar el codigo del cargo."
                 };
             }
 
@@ -131,12 +129,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información eliminada satisfactoriamente..."
+                Description = eliminadoExisto
             };
         }
 
         /// <summary>
-        /// Obtiene el árbol de líneas, destinos y garantías para asignación.
+        /// Obtiene el arbol de lineas, destinos y garantias para asignacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
@@ -227,7 +225,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene los cargos asignables para una combinación línea-destino-garantía.
+        /// Obtiene los cargos asignables para una combinacion linea-destino-garantia.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -265,7 +263,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda o elimina la asignación de un cargo.
+        /// Guarda o elimina la asignacion de un cargo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -287,7 +285,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar el cargo, línea, destino y garantía."
+                    Description = "Debe indicar el cargo, linea, destino y garantia."
                 };
             }
 
@@ -352,7 +350,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la tabla de aplicación del cargo seleccionado.
+        /// Obtiene la tabla de aplicacion del cargo seleccionado.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -383,7 +381,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda una fila de tabla de aplicación.
+        /// Guarda una fila de tabla de aplicacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -395,24 +393,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.usuario = Limpiar(request.usuario);
             request.cod_cargo = Limpiar(request.cod_cargo);
             request.tipo = Limpiar(request.tipo);
-
-            if (string.IsNullOrWhiteSpace(request.cod_cargo))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el código del cargo."
-                };
-            }
-
-            if (!EsUnoDe(request.tipo, "P", "M"))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar un tipo válido."
-                };
-            }
 
             if (request.id_tabla <= 0)
             {
@@ -477,7 +457,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = 0,
-                    Description = "Información guardada satisfactoriamente..."
+                    Description = guardadoExisto
                 };
             }
 
@@ -522,12 +502,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
         /// <summary>
-        /// Elimina una fila de tabla de aplicación.
+        /// Elimina una fila de tabla de aplicacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -568,53 +548,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información eliminada satisfactoriamente..."
+                Description = eliminadoExisto
             };
-        }
-
-        private ErrorDto ValidarCargo(int codEmpresa, CrCatalogoCargoData cargo)
-        {
-            if (string.IsNullOrWhiteSpace(cargo.cod_cargo))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar el código del cargo." };
-            }
-
-            if (string.IsNullOrWhiteSpace(cargo.descripcion))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar la descripción del cargo." };
-            }
-
-            if (!EsUnoDe(cargo.base_calculo, "C", "A", "P"))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar una base válida." };
-            }
-
-            if (!EsUnoDe(cargo.tipo, "P", "M", "T"))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar un tipo válido." };
-            }
-
-            if (!CuentaExiste(codEmpresa, cargo.cod_cuenta))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar una cuenta contable válida." };
-            }
-
-            if (!EsUnoDe(cargo.tipo_deduccion, "P", "F"))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar un tipo de deducción válido." };
-            }
-
-            if (!EsUnoDe(cargo.plazo_tipo, "PZ", "PF", "PC", "PD"))
-            {
-                return new ErrorDto { Code = -1, Description = "Debe indicar un tipo de plazo válido." };
-            }
-
-            if (cargo.diferido_cargo && !CuentaExiste(codEmpresa, cargo.diferido_cod_cuenta))
-            {
-                return new ErrorDto { Code = -1, Description = "La cuenta contable para diferir no es válida." };
-            }
-
-            return new ErrorDto { Code = 0 };
         }
 
         private ErrorDto InsertarCargo(int codEmpresa, CrCatalogoCargoGuardarRequest request)
@@ -700,7 +635,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
@@ -765,7 +700,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = guardadoExisto
             };
         }
 
