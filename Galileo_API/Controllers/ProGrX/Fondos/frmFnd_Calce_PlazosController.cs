@@ -23,5 +23,17 @@ namespace Galileo.Controllers.ProGrX.Fondos
         {
             return _BL.Periodos_Lista(CodEmpresa);
         }
+
+        [HttpPost("Proyeccion_Presupuesto")]
+        public ErrorDto Proyeccion_Presupuesto(int CodEmpresa, int Anio, string Usuario, int Tipo)
+        {
+            return _BL.Proyeccion_Presupuesto(CodEmpresa, Anio, Usuario, Tipo);
+        }
+
+        [HttpGet("Proyeccion_Presupuesto_Export")]
+        public ErrorDto<List<Dictionary<string, object?>>> Proyeccion_Presupuesto_Export(int CodEmpresa, int Anio)
+        {
+            return _BL.Proyeccion_Presupuesto_Export(CodEmpresa, Anio);
+        }
     }
 }

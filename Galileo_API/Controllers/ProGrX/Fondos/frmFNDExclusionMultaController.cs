@@ -27,9 +27,9 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpGet("FND_Planes_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa, string cod_operadora)
         {
-            return _BL.FND_Planes_Obtener(CodEmpresa);
+            return _BL.FND_Planes_Obtener(CodEmpresa, cod_operadora);
         }
 
         [Authorize]

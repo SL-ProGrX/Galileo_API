@@ -27,7 +27,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _Db.AF_Operadoras_Obtener(CodEmpresa);
         }
 
-        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
+        public ErrorDto<FndOperadoraDto> AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
         {
             return _Db.AF_Operadora_Guardar(codEmpresa, request);
         }

@@ -21,9 +21,9 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _Db.FND_Operadoras_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa, string cod_operadora)
         {
-            return _Db.FND_Planes_Obtener(CodEmpresa);
+            return _Db.FND_Planes_Obtener(CodEmpresa, cod_operadora);
         }
 
         public ErrorDto<List<FndContratoDto>> FND_Contratos_Obtener(int CodEmpresa, string cod_operadora, string cod_plan)
