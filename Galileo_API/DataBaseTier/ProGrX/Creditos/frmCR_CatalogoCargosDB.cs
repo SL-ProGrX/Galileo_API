@@ -69,6 +69,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.cargo.plazo_tipo = Limpiar(request.cargo.plazo_tipo);
             request.cargo.diferido_cod_cuenta = CuentaSinFormato(request.cargo.diferido_cod_cuenta);
 
+            if (!CuentaExiste(codEmpresa, request.cargo.cod_cuenta))
+            {
+                return new ErrorDto { Code = -1, Description = "La cuenta contable no es válida." };
+            }
+            if (!CuentaExiste(codEmpresa, request.cargo.diferido_cod_cuenta))
+            {
+                return new ErrorDto { Code = -1, Description = "La cuenta contable para diferir no es válida." };
+            }
+
             return ExisteCargo(codEmpresa, request.cargo.cod_cargo)
                 ? ActualizarCargo(codEmpresa, request)
                 : InsertarCargo(codEmpresa, request);
@@ -771,11 +780,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return (cuenta ?? string.Empty)
                 .Replace("-", string.Empty)
                 .Trim();
-        }
-
-        private static bool EsUnoDe(string valor, params string[] permitidos)
-        {
-            return permitidos.Contains(Limpiar(valor));
         }
 
         private void RegistrarBitacora(
