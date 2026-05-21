@@ -25,6 +25,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         cod_plan AS item,
                         RTRIM(descripcion) AS descripcion
                     FROM dbo.fnd_planes
+                    WHERE cod_operadora = @cod_operadora
                     ORDER BY descripcion;";
 
         private const string SqlContratos = @"
@@ -61,12 +62,21 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa, string cod_operadora)
         {
+            if (string.IsNullOrWhiteSpace(cod_operadora))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "La operadora es requerida para buscar planes.",
+                    -2,
+                    new List<DropDownListaGenericaModel>());
+            }
+
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 new PortalDB(_config),
                 CodEmpresa,
-                SqlPlanes);
+                SqlPlanes,
+                new { cod_operadora = NormalizarTexto(cod_operadora) });
         }
 
         /// <summary>

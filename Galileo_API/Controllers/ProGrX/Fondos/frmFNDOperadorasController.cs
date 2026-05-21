@@ -34,7 +34,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpPost("AF_Operadora_Guardar")]
-        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
+        public ErrorDto<FndOperadoraDto> AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
         {
             return _BL.AF_Operadora_Guardar(codEmpresa, request);
         }

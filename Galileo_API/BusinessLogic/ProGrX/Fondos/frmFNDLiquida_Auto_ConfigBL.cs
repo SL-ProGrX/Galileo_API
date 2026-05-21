@@ -50,9 +50,19 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _Db.PlanesReporte_Lista(codEmpresa);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> PlanesBuscar_Lista(int codEmpresa, string operadora)
+        {
+            return _Db.PlanesBuscar_Lista(codEmpresa, operadora);
+        }
+
         public ErrorDto<bool> Planes_Guardar(int CodEmpresa, FndLiqAutoPlanesAddRequestDto dto)
         {
             return _Db.Planes_Guardar(CodEmpresa, dto);
+        }
+
+        public ErrorDto<bool> Parametros_Guardar(int CodEmpresa, FndLiqAutoParametroGuardarRequestDto dto)
+        {
+            return _Db.Parametros_Guardar(CodEmpresa, dto);
         }
     }
 }

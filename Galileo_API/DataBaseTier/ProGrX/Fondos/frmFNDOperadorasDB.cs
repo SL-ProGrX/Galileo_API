@@ -11,13 +11,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SqlOperadoraObtener = @"
                     SELECT
                         cod_operadora,
-                        Descripcion,
-                        Activa,
-                        Notas,
-                        Cta_Fondo,
-                        Cta_Retiros,
-                        Cta_Ingresos,
-                        MULTA_MNT_TOPE
+                        Descripcion AS descripcion,
+                        Activa AS activa,
+                        Notas AS notas,
+                        Cta_Fondo AS ctaplan,
+                        Cta_Retiros AS ctaret,
+                        Cta_Ingresos AS ctaing,
+                        MULTA_MNT_TOPE AS multa_mnt_tope
                     FROM dbo.vFnd_Operadoras
                     WHERE cod_Operadora = @CodOperadora;";
 
@@ -29,6 +29,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     ORDER BY item DESC;";
 
         private const string SqlInsertOperadora = @"
+                    DECLARE @MaxCodigo int;
+
+                    SELECT @MaxCodigo = ISNULL(MAX(cod_operadora), 0)
+                    FROM dbo.FND_OPERADORAS WITH (UPDLOCK, HOLDLOCK);
+
+                    DBCC CHECKIDENT ('dbo.FND_OPERADORAS', RESEED, @MaxCodigo) WITH NO_INFOMSGS;
+
                     INSERT INTO dbo.Fnd_Operadoras
                     (
                         Descripcion,
@@ -140,11 +147,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
+        public ErrorDto<FndOperadoraDto> AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
         {
             if (request is null)
             {
-                return DbHelper.ErrorResponse("Los datos de la operadora son requeridos.", -2);
+                return DbHelper.CreateErrorResponse(
+                    "Los datos de la operadora son requeridos.",
+                    -2,
+                    new FndOperadoraDto());
             }
 
             if (request.cod_operadora == null)
@@ -158,14 +168,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 if (insertResult.Code != 0)
                 {
-                    return DbHelper.ErrorResponse(insertResult.Description ?? "Error al registrar operadora.", insertResult.Code.GetValueOrDefault(-1));
+                    return DbHelper.CreateErrorResponse(
+                        insertResult.Description ?? "Error al registrar operadora.",
+                        insertResult.Code.GetValueOrDefault(-1),
+                        new FndOperadoraDto());
                 }
 
                 request.cod_operadora = insertResult.Result;
-                return new ErrorDto
+                return new ErrorDto<FndOperadoraDto>
                 {
                     Code = request.cod_operadora.GetValueOrDefault(),
-                    Description = "Operadora registrada correctamente."
+                    Description = "Operadora registrada correctamente.",
+                    Result = request
                 };
             }
 
@@ -176,8 +190,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 request);
 
             return updateResult.Code == 0
-                ? DbHelper.OkResponse("Operadora actualizada correctamente.")
-                : updateResult;
+                ? new ErrorDto<FndOperadoraDto>
+                {
+                    Code = 0,
+                    Description = "Operadora actualizada correctamente.",
+                    Result = request
+                }
+                : DbHelper.CreateErrorResponse(
+                    updateResult.Description ?? "Error al actualizar operadora.",
+                    updateResult.Code.GetValueOrDefault(-1),
+                    new FndOperadoraDto());
         }
 
 
