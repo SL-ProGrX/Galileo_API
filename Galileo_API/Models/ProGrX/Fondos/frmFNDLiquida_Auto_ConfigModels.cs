@@ -45,11 +45,20 @@
     }
     public class FndLiqAutoPlanesAddRequestDto
     {
-        public required int codEmpresa { get; set; }
         public string operadora { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public required bool patrimonio { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = string.Empty; // 'A' | 'B'
+    }
+
+    public class FndLiqAutoParametroGuardarRequestDto
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public required int idregistro { get; set; }
+        public string valor { get; set; } = string.Empty;
+        public string tipodato { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 }

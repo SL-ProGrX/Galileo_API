@@ -3,8 +3,6 @@ using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Personas;
 using Galileo_API.Models.ProGrX_Personas;
 using Newtonsoft.Json;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Personas
 {
@@ -18,13 +16,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Personas
 
         public ErrorDto <ZonasLista> AF_ZonasLista_Obtener(int CodEmpresa, string jfiltros)
         {
-            FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+            FiltrosLazyLoadData? filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
             return _db.AF_ZonasLista_Obtener(CodEmpresa, filtros);
         }
 
         public ErrorDto <List<ZonasData>> AF_Zonas_Obtener(int CodEmpresa, string jfiltros)
         {
-            FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+            FiltrosLazyLoadData? filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
             return _db.AF_Zonas_Obtener(CodEmpresa, filtros);
         }
 

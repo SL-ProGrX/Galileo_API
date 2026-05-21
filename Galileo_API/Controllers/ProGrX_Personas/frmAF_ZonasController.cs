@@ -1,10 +1,8 @@
-﻿using Galileo.Models;
-using Galileo.Models.ERROR;
+﻿using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Personas;
 using Galileo_API.Models.ProGrX_Personas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
         
 namespace Galileo_API.Controllers.ProGrX_Personas
 {

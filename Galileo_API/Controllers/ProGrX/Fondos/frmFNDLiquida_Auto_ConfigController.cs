@@ -69,10 +69,24 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [HttpGet("PlanesBuscar_Lista")]
+        public ErrorDto<List<DropDownListaGenericaModel>> PlanesBuscar_Lista(int CodEmpresa, string Operadora)
+        {
+            return _BL.PlanesBuscar_Lista(CodEmpresa, Operadora);
+        }
+
+        [Authorize]
         [HttpPost("Planes_Guardar")]
         public ErrorDto<bool> Planes_Guardar(int CodEmpresa, FndLiqAutoPlanesAddRequestDto dto)
         {
             return _BL.Planes_Guardar(CodEmpresa, dto);
+        }
+
+        [Authorize]
+        [HttpPost("Parametros_Guardar")]
+        public ErrorDto<bool> Parametros_Guardar(int CodEmpresa, FndLiqAutoParametroGuardarRequestDto dto)
+        {
+            return _BL.Parametros_Guardar(CodEmpresa, dto);
         }
     }
 }
