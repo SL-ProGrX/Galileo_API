@@ -26,18 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <returns>ErrorDto con la lista de rangos</returns>
         public ErrorDto<NoCotizaRangosLista> AF_NoCotizaRangos_Obtener(int codEmpresa, FiltrosLazyLoadData? filtros)
         {
-            string where = "";
-            if (filtros != null && !string.IsNullOrEmpty(filtros.filtro))
-            {
-                where = " WHERE ( " +
-                    "CAST(Linea_Id AS VARCHAR) LIKE @Filtro OR " +
-                    "CAST(Dia_Desde AS VARCHAR) LIKE @Filtro OR " +
-                    "CAST(Dia_Hasta AS VARCHAR) LIKE @Filtro OR " +
-                    "Descripcion LIKE @Filtro OR " +
-                    "CONVERT(VARCHAR, Registro_Fecha, 120) LIKE @Filtro OR " +
-                    "Registro_Usuario LIKE @Filtro ) ";
-            }
-
+            var (where, parametros) = BuildWhereFiltros(filtros);
             string sortField = string.IsNullOrEmpty(filtros?.sortField) ? "Dia_Desde" : filtros.sortField;
             string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
             int pagina = filtros?.pagina ?? 0;
@@ -51,7 +40,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                                OFFSET {pagina} ROWS 
                                FETCH NEXT {paginacion} ROWS ONLY";
 
-            var parametros = (filtros != null && !string.IsNullOrEmpty(filtros.filtro)) ? new { Filtro = "%" + filtros.filtro + "%" } : null;
             var total = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryTotal, 0, parametros);
             var lista = DbHelper.ExecuteListQuery<NoCotizaRangosData>(_portalDb, codEmpresa, queryLista, parametros);
 
@@ -159,22 +147,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <returns>ErrorDto con la lista de rangos</returns>
         public ErrorDto<NoCotizaRangosLista> AF_NoCotizaRangos_Exportar(int codEmpresa, FiltrosLazyLoadData? filtros)
         {
-            string where = "";
-            if (filtros != null && !string.IsNullOrEmpty(filtros.filtro))
-            {
-                where = " WHERE ( " +
-                    "CAST(Linea_Id AS VARCHAR) LIKE @Filtro OR " +
-                    "CAST(Dia_Desde AS VARCHAR) LIKE @Filtro OR " +
-                    "CAST(Dia_Hasta AS VARCHAR) LIKE @Filtro OR " +
-                    "Descripcion LIKE @Filtro OR " +
-                    "CONVERT(VARCHAR, Registro_Fecha, 120) LIKE @Filtro OR " +
-                    "Registro_Usuario LIKE @Filtro ) ";
-            }
+            var (where, parametros) = BuildWhereFiltros(filtros);
             string query = $@"SELECT Linea_Id, Dia_Desde, Dia_Hasta, Descripcion, Activo, Registro_Fecha, Registro_Usuario
                                FROM AFI_SOCIOS_SIN_APORTES_RANGOS
                                {where}
                                ORDER BY Dia_Desde ASC";
-            var parametros = (filtros != null && !string.IsNullOrEmpty(filtros.filtro)) ? new { Filtro = "%" + filtros.filtro + "%" } : null;
             var lista = DbHelper.ExecuteListQuery<NoCotizaRangosData>(_portalDb, codEmpresa, query, parametros);
             return new ErrorDto<NoCotizaRangosLista>
             {
@@ -205,6 +182,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 Movimiento = movimiento,
                 Modulo = vModulo
             });
+        }
+
+        /// <summary>
+        /// Construye el WHERE y los parámetros para los filtros de búsqueda.
+        /// </summary>
+        private (string where, object? parametros) BuildWhereFiltros(FiltrosLazyLoadData? filtros)
+        {
+            if (filtros != null && !string.IsNullOrEmpty(filtros.filtro))
+            {
+                string where = " WHERE ( " +
+                    "CAST(Linea_Id AS VARCHAR) LIKE @Filtro OR " +
+                    "CAST(Dia_Desde AS VARCHAR) LIKE @Filtro OR " +
+                    "CAST(Dia_Hasta AS VARCHAR) LIKE @Filtro OR " +
+                    "Descripcion LIKE @Filtro OR " +
+                    "CONVERT(VARCHAR, Registro_Fecha, 120) LIKE @Filtro OR " +
+                    "Registro_Usuario LIKE @Filtro ) ";
+                var parametros = new { Filtro = "%" + filtros.filtro + "%" };
+                return (where, parametros);
+            }
+            return ("", null);
         }
     }
 }
