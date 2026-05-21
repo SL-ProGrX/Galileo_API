@@ -55,7 +55,8 @@
 
     public class FndLiqAutoParametroGuardarRequestDto
     {
-        public int idregistro { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
+        public required int idregistro { get; set; }
         public string valor { get; set; } = string.Empty;
         public string tipodato { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
