@@ -36,10 +36,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 ? "WHERE (ESTADO_LABORAL LIKE @filtro OR descripcion LIKE @filtro OR Registro_Usuario LIKE @filtro)"
                 : "";
             string queryTotal = $"SELECT COUNT(ESTADO_LABORAL) FROM AFI_ESTADO_LABORAL {where}";
+            string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "ESTADO_LABORAL" : filtros.sortField;
             string queryLista = $@"SELECT ESTADO_LABORAL, descripcion, activo, Registro_Fecha, Registro_Usuario
                                FROM AFI_ESTADO_LABORAL
                                {where}
-                               ORDER BY {(filtros?.sortField ?? "ESTADO_LABORAL")} {(spec.IsAsc ? "ASC" : "DESC")}
+                               ORDER BY {sortField} {(spec.IsAsc ? "ASC" : "DESC")}
                                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY";
             var total = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryTotal, 0, spec.Params);
             var lista = DbHelper.ExecuteListQuery<EstadoLaboralData>(_portalDb, codEmpresa, queryLista, spec.Params);
