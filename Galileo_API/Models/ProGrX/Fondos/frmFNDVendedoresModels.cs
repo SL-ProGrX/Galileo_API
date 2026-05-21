@@ -36,4 +36,10 @@
         public string nombre { get; set; } = string.Empty;
     }
 
+    public class FndVendedoresBancoSpDto
+    {
+        public int IDX { get; set; }
+        public string ITMX { get; set; } = string.Empty;
+    }
+
 }

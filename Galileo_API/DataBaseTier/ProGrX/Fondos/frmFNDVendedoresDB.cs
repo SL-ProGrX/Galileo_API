@@ -131,7 +131,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Bancos_Obtener(int CodEmpresa, string Usuario)
         {
-            var result = DbHelper.ExecuteStoredProcedureList<DropDownListaGenericaModel>(
+            var result = DbHelper.ExecuteStoredProcedureList<FndVendedoresBancoSpDto>(
                 new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa),
                 SpBancos,
                 new { Usuario = NormalizarTexto(Usuario) });
@@ -140,7 +140,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result.Result ?? new List<DropDownListaGenericaModel>()
+                Result = result.Result?
+                    .Select(banco => new DropDownListaGenericaModel
+                    {
+                        item = banco.IDX,
+                        descripcion = banco.ITMX.Trim()
+                    })
+                    .ToList() ?? new List<DropDownListaGenericaModel>()
             };
         }
 
