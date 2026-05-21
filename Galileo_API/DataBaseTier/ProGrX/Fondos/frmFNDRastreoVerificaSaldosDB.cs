@@ -24,8 +24,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private const string SqlPeriodo = @"
                     SELECT
-                        anio,
-                        mes
+                        CAST(anio AS int) AS anio,
+                        CAST(mes AS int) AS mes
                     FROM dbo.fnd_per_historico
                     WHERE id_per_historico = @PeriodoId;";
 
@@ -62,8 +62,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                        AND D.cod_contrato = M.cod_contrato
                        AND D.anio = M.anio
                        AND D.mes = M.mes
-                    WHERE (@TodosLosPlanes = 1 OR D.cod_plan = @Plan)
-                    ORDER BY C.cod_operadora, C.cod_plan, C.cod_contrato;";
+                    WHERE (@TodosLosPlanes = 1 OR D.cod_plan = @Plan);";
 
         public FrmFndRastreoVerificaSaldosDB(IConfiguration config)
         {
@@ -172,6 +171,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
 
-        private sealed record PeriodoSaldo(int anio, int mes);
+        private sealed class PeriodoSaldo
+        {
+            public PeriodoSaldo()
+            {
+            }
+
+            public PeriodoSaldo(int anio, int mes)
+            {
+                this.anio = anio;
+                this.mes = mes;
+            }
+
+            public int anio { get; set; }
+            public int mes { get; set; }
+        }
     }
 }
