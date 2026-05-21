@@ -13,7 +13,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
         private readonly int vModulo = 1;
-        
+        private readonly string EscolaridadTipoField = "Escolaridad_Tipo";
+
         public FrmAfEscolaridadDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -30,19 +31,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         {
             var sortMap = new Dictionary<string, int>
             {
-                ["ESCOLARIDAD_TIPO"] = 1,
+                [EscolaridadTipoField] = 1,
                 ["descripcion"] = 2,
                 ["ACTIVO"] = 3,
                 ["Registro_Fecha"] = 4,
                 ["Registro_Usuario"] = 5
             };
-            var spec = Galileo.DataBaseTier.LazyLoadHelper.Build(filtros, sortMap, "ESCOLARIDAD_TIPO");
+            var spec = Galileo.DataBaseTier.LazyLoadHelper.Build(filtros, sortMap, EscolaridadTipoField);
             string where = spec.HasFilter
-                ? "WHERE (ESCOLARIDAD_TIPO LIKE @filtro OR descripcion LIKE @filtro OR Registro_Usuario LIKE @filtro)"
+                ? $"WHERE ({EscolaridadTipoField} LIKE @filtro OR descripcion LIKE @filtro OR Registro_Usuario LIKE @filtro)"
                 : "";
-            string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "ESCOLARIDAD_TIPO" : filtros.sortField;
-            string queryTotal = $"SELECT COUNT(ESCOLARIDAD_TIPO) FROM AFI_ESCOLARIDAD_TIPOS {where}";
-            string queryLista = $@"SELECT ESCOLARIDAD_TIPO, descripcion, ACTIVO, Registro_Fecha, Registro_Usuario
+            string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? EscolaridadTipoField : filtros.sortField;
+            string queryTotal = $"SELECT COUNT({EscolaridadTipoField}) FROM AFI_ESCOLARIDAD_TIPOS {where}";
+            string queryLista = $@"SELECT {EscolaridadTipoField}, descripcion, ACTIVO, Registro_Fecha, Registro_Usuario
                                FROM AFI_ESCOLARIDAD_TIPOS
                                {where}
                                ORDER BY {sortField} {(spec.IsAsc ? "ASC" : "DESC")}
@@ -70,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <returns>ErrorDto con el resultado de la operación</returns>
         public ErrorDto AF_EscolaridadTipos_Guardar(int codEmpresa, string usuario, NivelEscolaridadData escolaridad)
         {
-            string queryExiste = "SELECT ISNULL(COUNT(*),0) AS Existe FROM AFI_ESCOLARIDAD_TIPOS WHERE ESCOLARIDAD_TIPO = @ESCOLARIDAD_TIPO";
+            string queryExiste = $"SELECT ISNULL(COUNT(*),0) AS Existe FROM AFI_ESCOLARIDAD_TIPOS WHERE {EscolaridadTipoField} = @{EscolaridadTipoField}";
             var existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryExiste, 0, new { escolaridad.Escolaridad_Tipo });
             return existe.Result == 0
                 ? AF_EscolaridadTipos_Insertar(codEmpresa, usuario, escolaridad)
@@ -79,8 +80,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
 
         private ErrorDto AF_EscolaridadTipos_Insertar(int codEmpresa, string usuario, NivelEscolaridadData escolaridad)
         {
-            string query = @"INSERT INTO AFI_ESCOLARIDAD_TIPOS (ESCOLARIDAD_TIPO, Descripcion, ACTIVO, registro_fecha, registro_usuario)
-                              VALUES (@ESCOLARIDAD_TIPO, @Descripcion, @ACTIVO, GETDATE(), @Usuario)";
+            string query = $@"INSERT INTO AFI_ESCOLARIDAD_TIPOS ({EscolaridadTipoField}, Descripcion, ACTIVO, registro_fecha, registro_usuario)
+                              VALUES (@Escolaridad_Tipo, @Descripcion, @ACTIVO, GETDATE(), @Usuario)";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new {
                 escolaridad.Escolaridad_Tipo,
                 escolaridad.Descripcion,
@@ -96,10 +97,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
 
         private ErrorDto AF_EscolaridadTipos_Actualizar(int codEmpresa, string usuario, NivelEscolaridadData escolaridad)
         {
-            string query = @"UPDATE AFI_ESCOLARIDAD_TIPOS
+            string query = $@"UPDATE AFI_ESCOLARIDAD_TIPOS
                               SET Descripcion = @Descripcion,
                                   ACTIVO = @ACTIVO
-                              WHERE ESCOLARIDAD_TIPO = @ESCOLARIDAD_TIPO";
+                              WHERE {EscolaridadTipoField} = @Escolaridad_Tipo";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new {
                 escolaridad.Escolaridad_Tipo,
                 escolaridad.Descripcion,
@@ -121,8 +122,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <returns>ErrorDto con el resultado de la eliminación</returns>
         public ErrorDto AF_EscolaridadTipos_Eliminar(int codEmpresa, string usuario, string escolaridadTipo)
         {
-            string query = "DELETE FROM AFI_ESCOLARIDAD_TIPOS WHERE ESCOLARIDAD_TIPO = @ESCOLARIDAD_TIPO";
-            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new { ESCOLARIDAD_TIPO = escolaridadTipo });
+            string query = $"DELETE FROM AFI_ESCOLARIDAD_TIPOS WHERE {EscolaridadTipoField} = @Escolaridad_Tipo";
+            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new { Escolaridad_Tipo = escolaridadTipo });
             if (result.Code == 0)
             {
                 RegistrarBitacora(codEmpresa, usuario, "Elimina - WEB", $"Tipo de Escolaridad : {escolaridadTipo}");
@@ -138,8 +139,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// <returns>ErrorDto indicando si el tipo de escolaridad existe o es válido</returns>
         public ErrorDto AF_EscolaridadTipos_Valida(int codEmpresa, string escolaridadTipo)
         {
-            string query = "SELECT ISNULL(COUNT(*),0) AS Existe FROM AFI_ESCOLARIDAD_TIPOS WHERE ESCOLARIDAD_TIPO = @ESCOLARIDAD_TIPO";
-            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, query, 0, new { ESCOLARIDAD_TIPO = escolaridadTipo }).Result;
+            string query = $"SELECT ISNULL(COUNT(*),0) AS Existe FROM AFI_ESCOLARIDAD_TIPOS WHERE {EscolaridadTipoField} = @Escolaridad_Tipo";
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, query, 0, new { Escolaridad_Tipo = escolaridadTipo }).Result;
             return existe > 0
                 ? new ErrorDto { Code = -1, Description = "El tipo de escolaridad ya existe." }
                 : new ErrorDto { Code = 0, Description = "El tipo de escolaridad es válido." };
@@ -166,7 +167,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 ? "WHERE (ESCOLARIDAD_TIPO LIKE @filtro OR descripcion LIKE @filtro OR Registro_Usuario LIKE @filtro)"
                 : "";
             string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "ESCOLARIDAD_TIPO" : filtros.sortField;
-            string query = $@"SELECT ESCOLARIDAD_TIPO, descripcion, ACTIVO, Registro_Fecha, Registro_Usuario
+            string query = $@"SELECT {EscolaridadTipoField}, descripcion, ACTIVO, Registro_Fecha, Registro_Usuario
                                FROM AFI_ESCOLARIDAD_TIPOS
                                {where}
                                ORDER BY {sortField} {(spec.IsAsc ? "ASC" : "DESC")}";
