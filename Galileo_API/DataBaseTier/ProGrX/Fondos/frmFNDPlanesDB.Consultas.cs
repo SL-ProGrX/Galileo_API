@@ -29,29 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         P.DESCRIPCION;";
 
         private const string SqlPlanDetalle = @"
-                    SELECT
-                        cod_operadora,
-                        cod_plan,
-                        descripcion,
-                        estado,
-                        cod_moneda,
-                        consecutivo,
-                        tasa_base,
-                        utiliza_tbp,
-                        tipo_cdp,
-                        monto_minimo,
-                        plazo_minimo,
-                        plazo_tipo,
-                        inversion_minimo,
-                        cuenta_maestra,
-                        web_vence,
-                        permite_giro_terceros,
-                        pago_cupones,
-                        tasa_margen_negociacion,
-                        tipo_deduc,
-                        porc_deduc,
-                        deducir_planilla,
-                        subCuentasMax,
+                    SELECT *,
                         LTRIM(RTRIM(cod_moneda)) AS cod_moneda
                     FROM dbo.vFnd_Planes
                     WHERE cod_operadora = @CodOperadora
@@ -147,16 +125,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>Listado de plazos configurados para el plan.</returns>
         public ErrorDto<List<PlanPlazoDto>> Fnd_Planes_Plazos_Obtener(int codEmpresa, int codOperadora, string codPlan)
         {
+            const string sql = $@"
+                    EXEC {SpPlanesPlazosConsulta}
+                        @Operadora,
+                        @Plan,
+                        'T';";
+
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
                 connection.Query<PlanPlazoDto>(
-                    SpPlanesPlazosConsulta,
+                    sql,
                     new
                     {
-                        CodOperadora = codOperadora,
-                        CodPlan = NormalizarTexto(codPlan),
-                        Tipo = "T"
-                    },
-                    commandType: CommandType.StoredProcedure).ToList());
+                        Operadora = codOperadora,
+                        Plan = NormalizarTexto(codPlan)
+                    }).ToList());
 
             return new ErrorDto<List<PlanPlazoDto>>
             {
@@ -177,6 +159,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
             {
+                Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
                 var parametros = new
                 {
                     CodOperadora = codOperadora,

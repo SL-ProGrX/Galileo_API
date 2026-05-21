@@ -83,15 +83,19 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<List<FndReglaTasaDto>> Fnd_ReglasTasas_List(int CodEmpresa, int codOperadora, string codPlan)
         {
+            const string sql = $@"
+                    EXEC {SpReglasTasasList}
+                        @Operadora,
+                        @Plan;";
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query<FndReglaTasaDto>(
-                    SpReglasTasasList,
+                    sql,
                     new
                     {
-                        CodOperadora = codOperadora,
-                        CodPlan = NormalizarTexto(codPlan)
-                    },
-                    commandType: CommandType.StoredProcedure).ToList());
+                        Operadora = codOperadora,
+                        Plan = NormalizarTexto(codPlan)
+                    }).ToList());
 
             return new ErrorDto<List<FndReglaTasaDto>>
             {

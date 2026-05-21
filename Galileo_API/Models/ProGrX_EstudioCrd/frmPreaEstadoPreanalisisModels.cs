@@ -34,6 +34,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string cod_preanalisis { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string estado_desc { get; set; } = string.Empty;
+        public bool abrir_notificacion { get; set; }
         public string mensaje { get; set; } = "La informacion fue actualizada correctamente.";
     }
 

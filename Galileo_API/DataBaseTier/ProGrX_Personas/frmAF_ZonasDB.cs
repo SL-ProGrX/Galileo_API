@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
-        private readonly int vModulo = 3;        
+        private readonly int vModulo = 1;        
 
         public FrmAfZonasDB(IConfiguration config)
         {
@@ -23,11 +23,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="filtros">JSON con filtros de búsqueda, orden y paginación.</param>
-        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtrosObj)
+        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, FiltrosLazyLoadData? filtrosObj)
         {
-            string filtro = filtrosObj.filtro ?? string.Empty;
+            string filtro = filtrosObj?.filtro ?? string.Empty;
             // Switch seguro para columna de ordenamiento (evita SQL Injection)
-            string order = filtrosObj.sortField?.ToLowerInvariant() switch
+            string order = filtrosObj?.sortField?.ToLowerInvariant() switch
             {
                 "cod_zona" => "cod_zona",
                 "descripcion" => "descripcion",
@@ -36,9 +36,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 "registro_fecha" => "registro_fecha",
                 _ => "cod_zona"
             };
-            string sortOrderStr = filtrosObj.sortOrder == 0 ? "DESC" : "ASC";
-            int pagina = filtrosObj.pagina;
-            int paginacion = filtrosObj.paginacion;
+            string sortOrderStr = filtrosObj?.sortOrder == 0 ? "DESC" : "ASC";
+            int pagina = filtrosObj?.pagina ?? 0;
+            int paginacion = filtrosObj?.paginacion ?? 10;
 
             string where = string.IsNullOrWhiteSpace(filtro) ? "" : "WHERE descripcion LIKE @Filtro";
             // Solo columnas permitidas pueden llegar aquí. Revisado por switch seguro arriba.
@@ -62,7 +62,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 Result = new ZonasLista
                 {
                     Total = total.Result,
-                    Lista = lista.Result ?? new List<ZonasData>()
+                    Lista = lista.Result ?? []
                 }
             };
         }
@@ -72,11 +72,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="filtros">Filtros de búsqueda y orden.</param>
-        public ErrorDto<List<ZonasData>> AF_Zonas_Obtener(int codEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ZonasData>> AF_Zonas_Obtener(int codEmpresa, FiltrosLazyLoadData? filtros)
         {
             string where = "";
-            object parametros = null;
-            if (!string.IsNullOrEmpty(filtros.filtro))
+            object? parametros = null;
+            if (!string.IsNullOrEmpty(filtros?.filtro))
             {
                 where = " WHERE (cod_zona LIKE @Filtro OR descripcion LIKE @Filtro) ";
                 parametros = new { Filtro = "%" + filtros.filtro + "%" };

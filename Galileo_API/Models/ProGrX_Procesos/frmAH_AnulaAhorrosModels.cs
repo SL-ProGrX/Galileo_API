@@ -56,4 +56,62 @@ namespace Galileo.Models.AH
         public string mensaje { get; set; } = string.Empty;
         public string? reporte_resultado { get; set; }
     }
+
+    public class ConsultarCuentaAporteResult
+    {
+        public decimal aporte { get; set; } = 0;
+        public string cuenta { get; set; } = string.Empty;
+    }
+
+    #region Parametros 
+
+    public class EjecutarAsientoParametrosRequest
+    {
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string dc { get; set; } = string.Empty;
+        public string codDivisa { get; set; } = string.Empty;
+        public decimal tipoCambio { get; set; } = 0;
+        public int enlace { get; set; } = 0;
+        public string codUnidad { get; set; } = string.Empty;
+        public string codCentroCosto { get; set; } = string.Empty;
+        public string cuenta { get; set; } = string.Empty;
+        public string referencia1 { get; set; } = string.Empty;
+        public string referencia2 { get; set; } = string.Empty;
+        public string referencia3 { get; set; } = string.Empty;
+    }
+
+    public class RegistrarSaldoFavorSiAplicaParametrosRequest
+    {
+        public string codDivisa { get; set; } = string.Empty;
+        public string oficinaUnidad { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string nombreCliente { get; set; } = string.Empty;
+    }
+
+    public class EjecutarAnulacionParametrosRequest
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string tipoRubro { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class InsertarTransaccionParametrosRequest
+    {
+        public string oficinaTitular { get; set; } = string.Empty;
+        public string numDocumento { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string nombreCliente { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public string detalle { get; set; } = string.Empty;
+        public string[] lineas { get; set; } = [];
+    }
+
+    #endregion
 }

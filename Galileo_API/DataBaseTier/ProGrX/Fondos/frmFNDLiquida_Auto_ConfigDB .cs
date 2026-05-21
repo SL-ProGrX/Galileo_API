@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -15,6 +16,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         private const string SpPlanesGuardar = "spFnd_LiqAuto_Planes_Add";
+        private const string SpPlanesPatronalGuardar = "spFnd_LiqAuto_Planes_PAT_Add";
+
+        private const string SqlParametroGuardar = @"
+                UPDATE dbo.FND_LIQUIDACION_AUTOMATICA_PARAMETROS
+                   SET UsuarioActualiza = @Usuario,
+                       FechaActualiza = dbo.MyGetdate(),
+                       Valor = @Valor
+                 WHERE IdRegistro = @IdRegistro;";
 
         private const string SqlParametros = @"
                 SELECT
@@ -98,6 +107,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     ON C.Operadora = P.COD_OPERADORA
                    AND C.CodPlan = P.COD_PLAN
                 ORDER BY P.Descripcion;";
+
+        private const string SqlPlanesBuscar = @"
+                SELECT
+                    COD_PLAN AS item,
+                    DESCRIPCION AS descripcion
+                FROM dbo.FND_PLANES
+                WHERE COD_OPERADORA = @Operadora
+                ORDER BY COD_PLAN;";
 
         /// <summary>
         /// Obtiene los parametroas de liquidacion automatica
@@ -202,6 +219,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return result;
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> PlanesBuscar_Lista(int codEmpresa, string operadora)
+        {
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                new PortalDB(_config),
+                codEmpresa,
+                SqlPlanesBuscar,
+                new { Operadora = operadora });
+        }
+
         /// <summary>
         /// Guarda o elimina un plan de liquidacion automatica
         /// </summary>
@@ -215,15 +241,51 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse("Los datos del plan son requeridos.", -2, false);
             }
 
+            var procedimiento = dto.patrimonio ? SpPlanesPatronalGuardar : SpPlanesGuardar;
+
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 connection.Execute(
-                    SpPlanesGuardar,
+                    procedimiento,
                     CrearParametrosPlan(dto),
                     commandType: System.Data.CommandType.StoredProcedure));
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(true)
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al guardar plan de liquidación automática.", result.Code.GetValueOrDefault(-1), false);
+        }
+
+        public ErrorDto<bool> Parametros_Guardar(int CodEmpresa, FndLiqAutoParametroGuardarRequestDto dto)
+        {
+            if (dto is null)
+            {
+                return DbHelper.CreateErrorResponse("Los datos del parámetro son requeridos.", -2, false);
+            }
+
+            var validacion = NormalizarValorParametro(dto.valor, dto.tipodato);
+            if (!validacion.Valido)
+            {
+                return DbHelper.CreateErrorResponse(validacion.Mensaje, -2, false);
+            }
+
+            var result = DbHelper.ExecuteNonQueryWithResult(
+                new PortalDB(_config),
+                CodEmpresa,
+                SqlParametroGuardar,
+                new
+                {
+                    IdRegistro = dto.idregistro,
+                    Valor = validacion.Valor,
+                    Usuario = NormalizarTexto(dto.usuario)
+                });
+
+            if (result.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(result.Description ?? "Error al guardar parámetro de liquidación automática.", result.Code.GetValueOrDefault(-1), false);
+            }
+
+            return result.Result > 0
+                ? DbHelper.CreateOkResponse(true)
+                : DbHelper.CreateErrorResponse("No se encontró el parámetro indicado.", -2, false);
         }
 
         private static object CrearParametrosPlan(FndLiqAutoPlanesAddRequestDto dto)
@@ -236,6 +298,77 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Usuario = NormalizarTexto(dto.usuario),
                 Mov = NormalizarTexto(dto.accion)
             };
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarValorParametro(string? valor, string? tipo)
+        {
+            var valorNormalizado = NormalizarTexto(valor);
+            var tipoNormalizado = NormalizarTexto(tipo).ToUpperInvariant();
+            tipoNormalizado = tipoNormalizado.Length > 3 ? tipoNormalizado[..3] : tipoNormalizado;
+
+            return tipoNormalizado switch
+            {
+                "DEC" or "INT" or "POR" => NormalizarDecimal(valorNormalizado),
+                "NUM" => NormalizarEntero(valorNormalizado),
+                "CHR" => NormalizarTextoParametro(valorNormalizado),
+                "PSN" => NormalizarSiNo(valorNormalizado),
+                "DTS" => NormalizarFecha(valorNormalizado),
+                _ => (true, valorNormalizado, string.Empty)
+            };
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarDecimal(string valor)
+        {
+            return TryParseDecimal(valor, out var decimalValor)
+                ? (true, decimalValor.ToString(CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "El valor indicado no es válido.");
+        }
+
+        private static bool TryParseDecimal(string valor, out decimal decimalValor)
+        {
+            return decimal.TryParse(valor, NumberStyles.Number, CultureInfo.CurrentCulture, out decimalValor)
+                || decimal.TryParse(valor, NumberStyles.Number, CultureInfo.InvariantCulture, out decimalValor);
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarEntero(string valor)
+        {
+            return TryParseEntero(valor, out var enteroValor)
+                ? (true, enteroValor.ToString(CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "El valor indicado no es válido.");
+        }
+
+        private static bool TryParseEntero(string valor, out long enteroValor)
+        {
+            return long.TryParse(valor, NumberStyles.Integer, CultureInfo.CurrentCulture, out enteroValor)
+                || long.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out enteroValor);
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarTextoParametro(string valor)
+        {
+            return valor.Contains('\'')
+                ? (false, valor, "El valor indicado contiene caracteres no válidos.")
+                : (true, valor, string.Empty);
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarSiNo(string valor)
+        {
+            var opcion = valor.Length > 0 ? valor[..1].ToUpperInvariant() : string.Empty;
+            return opcion is "S" or "N"
+                ? (true, opcion, string.Empty)
+                : (false, valor, "El valor indicado no es válido. Indique S o N.");
+        }
+
+        private static (bool Valido, string Valor, string Mensaje) NormalizarFecha(string valor)
+        {
+            return TryParseFecha(valor, out var fecha)
+                ? (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), string.Empty)
+                : (false, valor, "La fecha indicada no es válida.");
+        }
+
+        private static bool TryParseFecha(string valor, out DateTime fecha)
+        {
+            return DateTime.TryParse(valor, CultureInfo.CurrentCulture, DateTimeStyles.None, out fecha)
+                || DateTime.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();

@@ -5,6 +5,7 @@
         public required int operadora { get; set; }
         public required string plan { get; set; }
         public required string usuario { get; set; }
+        public required string oficina { get; set; }
         public required DateTime fecha_corte { get; set; }
         public required decimal tasa { get; set; }
         public required decimal tcp { get; set; }
