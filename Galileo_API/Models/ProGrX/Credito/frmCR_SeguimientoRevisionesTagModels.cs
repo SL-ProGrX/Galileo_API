@@ -75,6 +75,7 @@
             public string nombre { get; set; } = string.Empty;
             public long id_solicitud { get; set; } = 0;
             public string garantia { get; set; } = string.Empty;
+            public decimal montosol { get; set; } = 0;
             public decimal montoapr { get; set; } = 0;
             public decimal cuota { get; set; } = 0;
             public decimal monto_girado { get; set; } = 0;
@@ -120,50 +121,84 @@
         public class CrSeguimientoRevisionesTagDeudaRow
         {
             public bool seleccionado { get; set; } = false;
-            public string acreedor { get; set; } = string.Empty;
+            public string semaforo { get; set; } = string.Empty;
             public string operacion { get; set; } = string.Empty;
-            public string estado { get; set; } = string.Empty;
-            public decimal cuota { get; set; } = 0;
+            public string linea { get; set; } = string.Empty;
+            public decimal plazo { get; set; } = 0;
+            public decimal monto { get; set; } = 0;
             public decimal saldo { get; set; } = 0;
-            public decimal salario_base { get; set; } = 0;
-            public decimal porcentaje { get; set; } = 0;
-            public string tipo { get; set; } = string.Empty;
-            public string observacion { get; set; } = string.Empty;
+            public decimal cuota { get; set; } = 0;
+            public string primero { get; set; } = string.Empty;
+            public decimal mora { get; set; } = 0;
+            public string garantia { get; set; } = string.Empty;
+        }
+
+        public class CrSeguimientoRevisionesTagDeudasResponse
+        {
+            public decimal total_saldo { get; set; } = 0;
+            public decimal total_cuota { get; set; } = 0;
+            public decimal deducciones { get; set; } = 0;
+            public List<CrSeguimientoRevisionesTagDeudaRow> lista { get; set; } = new();
         }
 
         public class CrSeguimientoRevisionesTagFianzaRow
         {
-            public string cedula { get; set; } = string.Empty;
+            public string operacion { get; set; } = string.Empty;
+            public string linea { get; set; } = string.Empty;
+            public string fiador { get; set; } = string.Empty;
+            public decimal monto { get; set; } = 0;
+            public decimal saldo { get; set; } = 0;
+            public decimal cuota { get; set; } = 0;
+
+            public string cedula_deudor { get; set; } = string.Empty;
             public string nombre { get; set; } = string.Empty;
-            public decimal salario_liquido { get; set; } = 0;
-            public decimal liquidez_simple { get; set; } = 0;
-            public decimal liquidez_cfianzas { get; set; } = 0;
-            public decimal liquidez_simple_porc { get; set; } = 0;
-            public decimal liquidez_cfianzas_porc { get; set; } = 0;
+        }
+
+        public class CrSeguimientoRevisionesTagFianzasResponse
+        {
+            public decimal monto { get; set; } = 0;
+            public decimal saldo { get; set; } = 0;
+            public decimal cuota { get; set; } = 0;
+            public List<CrSeguimientoRevisionesTagFianzaRow> lista { get; set; } = new();
         }
 
         public class CrSeguimientoRevisionesTagRefundicionRow
         {
             public string operacion { get; set; } = string.Empty;
-            public string descripcion { get; set; } = string.Empty;
+            public string linea { get; set; } = string.Empty;
+            public decimal plazo { get; set; } = 0;
             public decimal monto { get; set; } = 0;
+            public decimal refundicion { get; set; } = 0;
             public decimal cuota { get; set; } = 0;
+            public string garantia { get; set; } = string.Empty;
         }
 
         public class CrSeguimientoRevisionesTagDesembolsoRow
         {
-            public string fecha { get; set; } = string.Empty;
-            public string documento { get; set; } = string.Empty;
+            public string concepto { get; set; } = string.Empty;
             public decimal monto { get; set; } = 0;
             public decimal cuota { get; set; } = 0;
         }
 
+        //public class CrSeguimientoRevisionesTagDesembolsoRow
+        //{
+        //    public string fecha { get; set; } = string.Empty;
+        //    public string documento { get; set; } = string.Empty;
+        //    public decimal monto { get; set; } = 0;
+        //    public decimal cuota { get; set; } = 0;
+        //}
+
         public class CrSeguimientoRevisionesTagPatrimonioResponse
         {
             public decimal aporte_obrero { get; set; } = 0;
+            public decimal patronal { get; set; } = 0;
             public decimal capitalizacion { get; set; } = 0;
+            public decimal ahorros_extra { get; set; } = 0;
+            public DateTime? fecha_corte { get; set; }
+            public decimal ahorros_fecha { get; set; } = 0;
             public decimal saldo_prestamos { get; set; } = 0;
             public decimal disponible_bruto { get; set; } = 0;
+            public decimal total { get; set; } = 0;
             public decimal disponible { get; set; } = 0;
         }
 
@@ -175,6 +210,15 @@
             public List<CrSeguimientoRevisionesTagFianzaRow> fianzas { get; set; } = new();
             public List<CrSeguimientoRevisionesTagRefundicionRow> refundiciones { get; set; } = new();
             public List<CrSeguimientoRevisionesTagDesembolsoRow> desembolsos { get; set; } = new();
+        }
+
+        public class CrSeguimientoRevisionesTagPersonaRow
+        {
+            public string cedula { get; set; } = string.Empty;
+            public string nombre { get; set; } = string.Empty;
+            public string estado { get; set; } = string.Empty;
+            public string calidad { get; set; } = string.Empty;
+            public string est_lab { get; set; } = string.Empty;
         }
 
         #endregion
