@@ -23,20 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// </summary>
         public ErrorDto<EstadoLaboralLista> AF_EstadoLaboral_Obtener(int codEmpresa, FiltrosLazyLoadData? filtros)
         {
-            var (where, parametros) = BuildWhereFiltros(filtros);
-            string sortField = string.IsNullOrEmpty(filtros?.sortField) ? "ESTADO_LABORAL" : filtros.sortField;
-            string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
-            int pagina = filtros?.pagina ?? 0;
-            int paginacion = filtros?.paginacion ?? 10;
-
-            string queryTotal = "SELECT COUNT(ESTADO_LABORAL) FROM AFI_ESTADO_LABORAL" + where;
-            string queryLista = $@"SELECT ESTADO_LABORAL, descripcion, activo, Registro_Fecha, Registro_Usuario
-                               FROM AFI_ESTADO_LABORAL
-                               {where}
-                               ORDER BY {sortField} {sortOrder}
-                               OFFSET {pagina} ROWS 
-                               FETCH NEXT {paginacion} ROWS ONLY";
-
+            var (queryTotal, queryLista, parametros) = BuildEstadoLaboralPagedQuery(filtros);
             var total = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryTotal, 0, parametros);
             var lista = DbHelper.ExecuteListQuery<EstadoLaboralData>(_portalDb, codEmpresa, queryLista, parametros);
 
@@ -157,6 +144,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                 return (where, parametros);
             }
             return ("", null);
+        }
+
+        /// <summary>
+        /// Construye la consulta paginada y los parámetros para Estado Laboral.
+        /// </summary>
+        private static (string queryTotal, string queryLista, object? parametros) BuildEstadoLaboralPagedQuery(FiltrosLazyLoadData? filtros)
+        {
+            var (where, parametros) = BuildWhereFiltros(filtros);
+            string sortField = string.IsNullOrEmpty(filtros?.sortField) ? "ESTADO_LABORAL" : filtros.sortField;
+            string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+            int pagina = filtros?.pagina ?? 0;
+            int paginacion = filtros?.paginacion ?? 10;
+
+            string queryTotal = "SELECT COUNT(ESTADO_LABORAL) FROM AFI_ESTADO_LABORAL" + where;
+            string queryLista = $@"SELECT ESTADO_LABORAL, descripcion, activo, Registro_Fecha, Registro_Usuario
+                               FROM AFI_ESTADO_LABORAL
+                               {where}
+                               ORDER BY {sortField} {sortOrder}
+                               OFFSET {pagina} ROWS 
+                               FETCH NEXT {paginacion} ROWS ONLY";
+            return (queryTotal, queryLista, parametros);
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
