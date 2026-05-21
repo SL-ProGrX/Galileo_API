@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Dapper;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -72,7 +73,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         .ToDictionary(col => col.Key, col => col.Value))
                     .ToList();
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (InvalidOperationException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
