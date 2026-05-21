@@ -9,6 +9,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrSeguimientoRevisionesTagDB
     {
+        private const string validaCedula = "No se encontró la cédula asociada a la operación indicada.";
+
+
         /// <summary>
         /// Obtiene el encabezado y montos principales del detalle de la operación.
         /// </summary>
@@ -105,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (string.IsNullOrWhiteSpace(cedula))
                 {
                     return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagPatrimonioResponse>(
-                        "No se encontró la cédula asociada a la operación indicada.");
+                        validaCedula);
                 }
 
                 const string sqlPorcentajeObrero = """
@@ -225,8 +228,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request">Solicitud con la operación seleccionada.</param>
         /// <returns>Resumen y lista de deudas activas.</returns>
         public ErrorDto<CrSeguimientoRevisionesTagDeudasResponse> Cr_SeguimientoRevisionesTag_Deudas_Obtener(
-            int codEmpresa,
-            CrSeguimientoRevisionesTagDetalleRequest request)
+    int codEmpresa,
+    CrSeguimientoRevisionesTagDetalleRequest request)
         {
             if (request == null || request.id_solicitud <= 0)
             {
@@ -243,98 +246,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (string.IsNullOrWhiteSpace(cedula))
                 {
                     return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagDeudasResponse>(
-                        "No se encontró la cédula asociada a la operación indicada.");
+                        validaCedula);
                 }
 
                 var response = new CrSeguimientoRevisionesTagDeudasResponse();
+                var cedulaNormalizada = cedula.Trim();
 
-                const string sqlResumen = """
-            select
-                isnull(sum(R.SALDO), 0) as total_saldo,
-                isnull(sum(R.CUOTA), 0) as total_cuota
-            from REG_CREDITOS R
-            where R.SALDO > 0
-              and R.ESTADO = 'A'
-              and R.CEDULA = @cedula
-            """;
-
-                var resumen = conn.QueryFirstOrDefault(sqlResumen, new { cedula = cedula.Trim() });
-
-                if (resumen != null)
-                {
-                    response.total_saldo = resumen.total_saldo ?? 0;
-                    response.total_cuota = resumen.total_cuota ?? 0;
-                }
-
-                var codPreanalisis = Cr_SeguimientoRevisionesTag_ObtenerPreanalisisOperacion(conn, request.id_solicitud);
-
-                if (!string.IsNullOrWhiteSpace(codPreanalisis) && codPreanalisis != "0")
-                {
-                    const string sqlDeducciones = """
-                select isnull(sum(CUOTA_MENSUAL), 0)
-                from CRD_PREA_DETALLE_DEDUC
-                where COD_PREANALISIS = @cod_preanalisis
-                """;
-
-                    response.deducciones = conn.QueryFirstOrDefault<decimal>(
-                        sqlDeducciones,
-                        new { cod_preanalisis = codPreanalisis });
-                }
-
-                const string sqlLista = """
-            exec spSIFEstadoCreditos @cedula
-            """;
-
-                var rows = conn.Query(sqlLista, new { cedula = cedula.Trim() }).ToList();
-
-                foreach (var row in rows)
-                {
-                    decimal moraCuota = row.MoraCuota ?? 0;
-                    string procesoCod = (row.ProcesoCod ?? string.Empty).ToString().Trim();
-                    string estado = (row.Estado ?? string.Empty).ToString().Trim();
-                    string referencia = (row.Referencia ?? string.Empty).ToString().Trim();
-                    decimal indicadorCbr = row.IndicadorCbr ?? 0;
-
-                    var semaforo = "verde";
-
-                    if (moraCuota > 0 && procesoCod != "J")
-                    {
-                        semaforo = "rojo";
-                    }
-                    else if (procesoCod == "J")
-                    {
-                        semaforo = "judicial";
-                    }
-                    else if (!string.IsNullOrWhiteSpace(referencia) && moraCuota == 0)
-                    {
-                        semaforo = "amarillo";
-                    }
-                    else if (indicadorCbr > 0)
-                    {
-                        semaforo = "reversado";
-                    }
-                    else if (estado.StartsWith("C"))
-                    {
-                        semaforo = "cancelado";
-                    }
-
-                    response.lista.Add(new CrSeguimientoRevisionesTagDeudaRow
-                    {
-                        seleccionado = false,
-                        semaforo = semaforo,
-                        operacion = (row.id_solicitud ?? string.Empty).ToString().Trim(),
-                        linea = (row.codigo ?? string.Empty).ToString().Trim(),
-                        plazo = row.plazo ?? 0,
-                        monto = row.MontoApr ?? 0,
-                        saldo = row.Saldo ?? 0,
-                        cuota = row.Cuota ?? 0,
-                        primero = row.prideduc == null
-                            ? string.Empty
-                            : Convert.ToDecimal(row.prideduc).ToString("0000-00"),
-                        mora = (row.MoraPrincipal ?? 0) + (row.MoraInt ?? 0),
-                        garantia = (row.Garantia ?? string.Empty).ToString().Trim(),
-                    });
-                }
+                Cr_SeguimientoRevisionesTag_Deudas_CargarResumen(conn, cedulaNormalizada, response);
+                Cr_SeguimientoRevisionesTag_Deudas_CargarDeducciones(conn, request.id_solicitud, response);
+                response.lista = Cr_SeguimientoRevisionesTag_Deudas_CargarLista(conn, cedulaNormalizada);
 
                 return DbHelper.CreateOkResponse(response);
             }
@@ -342,6 +262,138 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagDeudasResponse>(ex.Message);
             }
+        }
+
+        private void Cr_SeguimientoRevisionesTag_Deudas_CargarResumen(
+    DbConnection conn,
+    string cedula,
+    CrSeguimientoRevisionesTagDeudasResponse response)
+        {
+            const string sqlResumen = """
+        select
+            isnull(sum(R.SALDO), 0) as total_saldo,
+            isnull(sum(R.CUOTA), 0) as total_cuota
+        from REG_CREDITOS R
+        where R.SALDO > 0
+          and R.ESTADO = 'A'
+          and R.CEDULA = @cedula
+        """;
+
+            var resumen = conn.QueryFirstOrDefault(sqlResumen, new { cedula });
+
+            if (resumen == null)
+            {
+                return;
+            }
+
+            response.total_saldo = resumen.total_saldo ?? 0;
+            response.total_cuota = resumen.total_cuota ?? 0;
+        }
+
+        private void Cr_SeguimientoRevisionesTag_Deudas_CargarDeducciones(
+            DbConnection conn,
+            long idSolicitud,
+            CrSeguimientoRevisionesTagDeudasResponse response)
+        {
+            var codPreanalisis = Cr_SeguimientoRevisionesTag_ObtenerPreanalisisOperacion(conn, idSolicitud);
+
+            if (string.IsNullOrWhiteSpace(codPreanalisis) || codPreanalisis == "0")
+            {
+                return;
+            }
+
+            const string sqlDeducciones = """
+        select isnull(sum(CUOTA_MENSUAL), 0)
+        from CRD_PREA_DETALLE_DEDUC
+        where COD_PREANALISIS = @cod_preanalisis
+        """;
+
+            response.deducciones = conn.QueryFirstOrDefault<decimal>(
+                sqlDeducciones,
+                new { cod_preanalisis = codPreanalisis });
+        }
+
+        private List<CrSeguimientoRevisionesTagDeudaRow> Cr_SeguimientoRevisionesTag_Deudas_CargarLista(
+            DbConnection conn,
+            string cedula)
+        {
+            const string sqlLista = """
+        exec spSIFEstadoCreditos @cedula
+        """;
+
+            var rows = conn.Query(sqlLista, new { cedula }).ToList();
+            var lista = new List<CrSeguimientoRevisionesTagDeudaRow>();
+
+            foreach (var row in rows)
+            {
+                lista.Add(Cr_SeguimientoRevisionesTag_Deudas_MapearRow(row));
+            }
+
+            return lista;
+        }
+
+        private CrSeguimientoRevisionesTagDeudaRow Cr_SeguimientoRevisionesTag_Deudas_MapearRow(dynamic row)
+        {
+            return new CrSeguimientoRevisionesTagDeudaRow
+            {
+                seleccionado = false,
+                semaforo = Cr_SeguimientoRevisionesTag_Deudas_ResolverSemaforo(row),
+                operacion = (row.id_solicitud ?? string.Empty).ToString().Trim(),
+                linea = (row.codigo ?? string.Empty).ToString().Trim(),
+                plazo = row.plazo ?? 0,
+                monto = row.MontoApr ?? 0,
+                saldo = row.Saldo ?? 0,
+                cuota = row.Cuota ?? 0,
+                primero = Cr_SeguimientoRevisionesTag_Deudas_FormatearPrimerMovimiento(row.prideduc),
+                mora = (row.MoraPrincipal ?? 0) + (row.MoraInt ?? 0),
+                garantia = (row.Garantia ?? string.Empty).ToString().Trim(),
+            };
+        }
+
+        private string Cr_SeguimientoRevisionesTag_Deudas_ResolverSemaforo(dynamic row)
+        {
+            decimal moraCuota = row.MoraCuota ?? 0;
+            string procesoCod = (row.ProcesoCod ?? string.Empty).ToString().Trim();
+            string estado = (row.Estado ?? string.Empty).ToString().Trim();
+            string referencia = (row.Referencia ?? string.Empty).ToString().Trim();
+            decimal indicadorCbr = row.IndicadorCbr ?? 0;
+
+            if (moraCuota > 0 && procesoCod != "J")
+            {
+                return "rojo";
+            }
+
+            if (procesoCod == "J")
+            {
+                return "judicial";
+            }
+
+            if (!string.IsNullOrWhiteSpace(referencia) && moraCuota == 0)
+            {
+                return "amarillo";
+            }
+
+            if (indicadorCbr > 0)
+            {
+                return "reversado";
+            }
+
+            if (estado.StartsWith("C"))
+            {
+                return "cancelado";
+            }
+
+            return "verde";
+        }
+
+        private string Cr_SeguimientoRevisionesTag_Deudas_FormatearPrimerMovimiento(dynamic priDeduc)
+        {
+            if (priDeduc == null)
+            {
+                return string.Empty;
+            }
+
+            return Convert.ToDecimal(priDeduc).ToString("0000-00");
         }
 
         /// <summary>
@@ -369,7 +421,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (string.IsNullOrWhiteSpace(cedula))
                 {
                     return DbHelper.CreateErrorResponse<CrSeguimientoRevisionesTagFianzasResponse>(
-                        "No se encontró la cédula asociada a la operación indicada.");
+                        validaCedula);
                 }
 
                 var response = new CrSeguimientoRevisionesTagFianzasResponse();
@@ -740,7 +792,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (string.IsNullOrWhiteSpace(cedula))
                 {
                     return DbHelper.CreateErrorResponse<List<CrSeguimientoRevisionesTagPersonaRow>>(
-                        "No se encontró la cédula asociada a la operación indicada.");
+                        validaCedula);
                 }
 
                 const string sql = """

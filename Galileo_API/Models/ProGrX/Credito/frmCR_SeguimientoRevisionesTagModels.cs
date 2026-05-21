@@ -180,14 +180,6 @@
             public decimal cuota { get; set; } = 0;
         }
 
-        //public class CrSeguimientoRevisionesTagDesembolsoRow
-        //{
-        //    public string fecha { get; set; } = string.Empty;
-        //    public string documento { get; set; } = string.Empty;
-        //    public decimal monto { get; set; } = 0;
-        //    public decimal cuota { get; set; } = 0;
-        //}
-
         public class CrSeguimientoRevisionesTagPatrimonioResponse
         {
             public decimal aporte_obrero { get; set; } = 0;
