@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
-        private readonly int vModulo = 3;        
+        private readonly int vModulo = 1;        
 
         public FrmAfZonasDB(IConfiguration config)
         {
