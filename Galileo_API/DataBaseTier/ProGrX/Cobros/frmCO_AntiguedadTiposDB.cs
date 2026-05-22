@@ -459,16 +459,6 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 usuario
             };
         }
-
-        private static DynamicParameters CrearParametrosDetalleConsulta(string codigo, string usuario)
-        {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Codigo", codigo);
-            parameters.Add("@Tipo", "AS");
-            parameters.Add("@Usuario", usuario);
-            return parameters;
-        }
-
         private static DynamicParameters CrearParametrosDetalleGuardar(string codigo, string garantia, decimal porcentaje, string usuario)
         {
             var parameters = new DynamicParameters();
