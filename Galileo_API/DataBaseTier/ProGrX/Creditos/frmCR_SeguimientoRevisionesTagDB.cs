@@ -1,8 +1,4 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
-using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX.Credito.Galileo_API.Models.ProGrX.Credito;
-using System.Data.Common;
+﻿using Galileo.DataBaseTier;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {

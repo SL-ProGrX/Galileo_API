@@ -20,13 +20,15 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         
         [HttpPost("TES_Transferencia_Aceptar")]
-        public ErrorDto TES_Transferencia_Aceptar(int CodEmpresa,TesTransferenciasInfo transferencia)
+        public ErrorDto TES_Transferencia_Aceptar([FromQuery] int CodEmpresa,
+            [FromBody] TesTransferenciasInfo transferencia)
         {
             return _transferenciasBL.TES_Transferencia_Aceptar(CodEmpresa, transferencia);
         }
 
         [HttpPost("TES_Transferencia_Reversar")]
-        public ErrorDto TES_Transferencia_Reversar(int CodEmpresa,TesTransferenciasInfo transferencia)
+        public ErrorDto TES_Transferencia_Reversar([FromQuery] int CodEmpresa,
+            [FromBody] TesTransferenciasInfo transferencia)
         {
             return _transferenciasBL.TES_Transferencia_Reversar(CodEmpresa, transferencia);
         }

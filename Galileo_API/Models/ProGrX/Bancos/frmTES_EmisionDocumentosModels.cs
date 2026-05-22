@@ -90,6 +90,14 @@ namespace Galileo.Models.TES
         public FileContentResult? FileResultBoleta { get; set; }
     }
 
+    public class TesSolicitudesFormatoRequest
+    {
+        public int CodEmpresa { get; init; } = 0;
+        public TesEmisionDocFiltros Filtro { get; init; } = default!;
+        public List<TesSolicitudesGenData> Solicitudes { get; init; } = new();
+        public long ConsecutivoInterno { get; init; } = 0;
+    }
+
 }
 
 

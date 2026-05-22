@@ -100,4 +100,10 @@
         public string CodPlan { get; set; } = string.Empty;
     }
 
+    public class SinpeReversaResultado
+    {
+        public string? DescripcionRechazo { get; set; }
+        public int Resultado { get; set; }
+    }
+
 }

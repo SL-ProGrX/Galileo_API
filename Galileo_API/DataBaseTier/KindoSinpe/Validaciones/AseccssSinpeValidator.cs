@@ -99,50 +99,64 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
-                            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(CodEmpresa, solicitud, LaInformacionDeLaCuentaPIN.Account!.CurrencyCode ?? "X");
-                            if(valOrigen.Code == -1)
+                            if(LaInformacionDeLaCuentaPIN.Account.AccountNumber == null)
                             {
-                                response = valOrigen;
+                                var respustaError = _mKindo.fxTesConsultaMotivo(CodEmpresa, Convert.ToInt32(LaInformacionDeLaCuentaPIN.Account.State.ToString())).Result;
+                                response = new ErrorDto
+                                {
+                                    Code = -1,
+                                    Description = respustaError
+                                };
                             }
                             else
                             {
-                                if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
-                                LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
-                                LaInformacionDeLaCuentaPIN.Account.State != "1")
+                                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(CodEmpresa, solicitud, LaInformacionDeLaCuentaPIN.Account!.CurrencyCode ?? "X");
+                                if (valOrigen.Code == -1)
                                 {
-                                    if (LaInformacionDeLaCuentaPIN.Errors.Length > 0)
-                                    {
-                                        response.Code = -1;
-                                        response.Description = LaInformacionDeLaCuentaPIN.Errors[0].Message;
-                                    }
-                                    else
-                                    {
-                                        response.Code = -1;
-                                        response.Description = "Error de estado " + LaInformacionDeLaCuentaPIN.Account.State;
-                                    }
-
-                                    if (!string.IsNullOrEmpty(response.Description))
-                                    {
-                                        response.Code = -1;
-                                        response.Description = solicitud.ToString() + " - " + response.Description;
-                                    }
+                                    response = valOrigen;
                                 }
                                 else
                                 {
-                                    var cedulaFormateada = fxFormatoIdentificacionSinpe(info.Cedula.Trim(), info.tipoID).Result;
-                                    if (cedulaFormateada != LaInformacionDeLaCuentaPIN.Account.HolderId)
+                                    if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
+                                    LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
+                                    LaInformacionDeLaCuentaPIN.Account.State != "1")
                                     {
-                                        response.Code = -1;
-                                        response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                                        if (LaInformacionDeLaCuentaPIN.Errors.Length > 0)
+                                        {
+                                            response.Code = -1;
+                                            response.Description = LaInformacionDeLaCuentaPIN.Errors[0].Message;
+                                        }
+                                        else
+                                        {
+                                            response.Code = -1;
+                                            response.Description = "Error de estado " + LaInformacionDeLaCuentaPIN.Account.State;
+                                        }
+
+                                        if (!string.IsNullOrEmpty(response.Description))
+                                        {
+                                            response.Code = -1;
+                                            response.Description = solicitud.ToString() + " - " + response.Description;
+                                        }
                                     }
                                     else
                                     {
-                                        response.Code = 0;
-                                        response.Description = $@"La cuenta IBAN {info.CuentaIBAN} registrada a 
+                                        var cedulaFormateada = fxFormatoIdentificacionSinpe(info.Cedula.Trim(), info.tipoID).Result;
+                                        if (cedulaFormateada != LaInformacionDeLaCuentaPIN.Account.HolderId)
+                                        {
+                                            response.Code = -1;
+                                            response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                                        }
+                                        else
+                                        {
+                                            response.Code = 0;
+                                            response.Description = $@"La cuenta IBAN {info.CuentaIBAN} registrada a 
                                         nombre de {LaInformacionDeLaCuentaPIN.Account.Holder} cédula: {LaInformacionDeLaCuentaPIN.Account.HolderId} Tipo Id: {info.tipoID} Tipo de Moneda: @moneda";
+                                        }
                                     }
                                 }
                             }
+
+                           
                         }
                     }
                     else
@@ -719,7 +733,7 @@ namespace Galileo_API.DataBaseTier
                             datos.estadoSinpe = estadoSinpe;
                             datos.IdMotivoRechazo = idRechazo;
                             datos.CodigoReferencia = respuesta.CodigoReferencia;
-                            datos.DocumentoBase = doc_base.ToString();
+                            datos.DocumentoBase = respuesta.ComprobanteTransaccion.ToString();
                             datos.contador = contador.ToString();
 
                             if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
@@ -867,7 +881,7 @@ namespace Galileo_API.DataBaseTier
                 transaccion.DatosTransaccion.eMAIL = solicitud.CorreoNotifica?.Trim();
 
                 transaccion.ClienteOrigen = new ClienteAS400();
-                transaccion.ClienteOrigen.Identificacion = solicitud.CedulaOrigen?.Replace("-", "");
+                transaccion.ClienteOrigen.Identificacion = solicitud.CedulaOrigen?.Replace("-", "").Trim();
                 transaccion.ClienteOrigen.Nombre = solicitud.NombreOrigen ?? "ProGrX";
                 transaccion.ClienteOrigen.IBAN = solicitud.CuentaOrigen;
                 transaccion.ClienteOrigen.TipoCedula =
@@ -875,11 +889,11 @@ namespace Galileo_API.DataBaseTier
                                 .ToString();
 
                 transaccion.ClienteDestino = new ClienteAS400();
-                transaccion.ClienteDestino.Identificacion = solicitud.Codigo?.Replace("-", "");
+                transaccion.ClienteDestino.Identificacion = solicitud.Codigo?.Replace("-", "").Trim();
                 transaccion.ClienteDestino.Nombre = solicitud.Beneficiario;
                 transaccion.ClienteDestino.IBAN = solicitud.Cuenta;
                 transaccion.ClienteDestino.TipoCedula =
-                     ((E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result)
+                     ((E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdDestino).Result)
                                 .ToString(); 
                 transaccion.TipoTransaccion = "CCD";
 
@@ -891,8 +905,9 @@ namespace Galileo_API.DataBaseTier
                     bodyWCF.rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;
                     /**
                     Para pruebas de SINPE
-                    string json = JsonSerializer.Serialize(bodyWCF);
                     **/
+                    string json = JsonSerializer.Serialize(bodyWCF);
+                    
                     response = _srvSinpeCcd.RegistrarDebitoCuentaAsync(bodyWCF).Result;
                     responseDetail = response.RegistrarDebitoCuentaResult[0];
                     
