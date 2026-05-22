@@ -73,7 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return new ErrorDto { Code = -1, Description = "La cuenta contable no es válida." };
             }
-            if (!CuentaExiste(codEmpresa, request.cargo.diferido_cod_cuenta))
+            if (request.cargo.diferido_cargo && !CuentaExiste(codEmpresa, request.cargo.diferido_cod_cuenta))
             {
                 return new ErrorDto { Code = -1, Description = "La cuenta contable para diferir no es válida." };
             }
