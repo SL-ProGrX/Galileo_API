@@ -8,6 +8,7 @@ namespace Galileo_API.Models.ProGrX_Comites
         public string? Director { get; set; }
         public bool Activo { get; set; }
         public string? Unidad_Relacionada { get; set; }
+        public string? Validacion_Unidad { get; set; }
         public bool Existe { get; set; }
     }
 

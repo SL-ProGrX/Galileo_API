@@ -40,7 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             if (queryResult.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<FrmPreaHipotecaMontoListaResponse>(queryResult.Description);
+                return DbHelper.CreateErrorResponse<FrmPreaHipotecaMontoListaResponse>(queryResult.Description!);
             }
 
             var result = new FrmPreaHipotecaMontoListaResponse

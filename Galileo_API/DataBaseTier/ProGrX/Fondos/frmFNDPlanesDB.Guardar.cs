@@ -306,8 +306,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 notas = NormalizarTexto(dto.notas),
                 dto.plazo_minimo,
                 dto.monto_minimo,
-                cuenta_conta = NormalizarTexto(dto.ctaplan),
-                cuenta_gasto = NormalizarTexto(dto.ctagasto),
+                cuenta_conta = NormalizarCuentaContable(dto.ctaplan),
+                cuenta_gasto = NormalizarCuentaContable(dto.ctagasto),
                 dto.codigo_ase,
                 estado = NormalizarTexto(dto.estado),
                 dto.sirve_garantia,
@@ -337,12 +337,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 dto.num_contratos_activos,
                 dto.tasa_comision_aportes,
                 dto.tasa_comision_rend,
-                dto.ctacomisionadm,
-                dto.ctaingretiros,
-                dto.ctagstcomision,
+                ctacomisionadm = NormalizarCuentaContable(dto.ctacomisionadm),
+                ctaingretiros = NormalizarCuentaContable(dto.ctaingretiros),
+                ctagstcomision = NormalizarCuentaContable(dto.ctagstcomision),
                 dto.comision_vta_monto,
                 dto.comision_vta_inv,
-                dto.ctarnd,
+                ctarnd = NormalizarCuentaContable(dto.ctarnd),
                 dto.deduce_independiente,
                 tipodeduc = dto.tipodeduc,
                 dto.requiere_beneficiarios,
@@ -354,9 +354,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 dto.web_liquida,
                 dto.permite_giro_terceros,
                 dto.permite_retiros_cajas,
-                dto.ctaimpuesto,
+                ctaimpuesto = NormalizarCuentaContable(dto.ctaimpuesto),
                 dto.impuesto_renta,
-                sinpe_cuenta = NormalizarTexto(dto.sinpe_cuenta.ToString()),
+                sinpe_cuenta = dto.sinpe_cuenta,
                 sinpe_producto = NormalizarTexto(dto.sinpe_producto),
                 dto.mov_entre_fondos,
                 dto.forma_pago_pos,
@@ -381,6 +381,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 dto.vence_notifica,
                 dto.subcuentas_max
             };
+        }
+
+        private static string NormalizarCuentaContable(string? cuenta)
+        {
+            var texto = NormalizarTexto(cuenta);
+            return texto.Length == 0
+                ? string.Empty
+                : new string(texto.Where(char.IsLetterOrDigit).ToArray());
         }
 
         #endregion

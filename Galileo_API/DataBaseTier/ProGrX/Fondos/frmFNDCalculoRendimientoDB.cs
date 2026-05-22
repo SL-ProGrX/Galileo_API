@@ -10,7 +10,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration _config;
         private const string SpAjusteTasaContratosVencidos = "dbo.spFndAjusteTasaCntVencidos";
-        private const string SpGenerarRendimientoPlan = "dbo.spFndRndGenPlanMain";
+        private const string SpGenerarRendimientoPlanSql = @"
+            EXEC dbo.spFndRndGenPlanMain
+                @Operadora,
+                @Plan,
+                @Usuario,
+                @Oficina,
+                @Corte,
+                @Tasa,
+                @Modo,
+                @AppProductName,
+                @TCP";
 
         public FrmFndCalculoRendimientoDb(IConfiguration config)
         {
@@ -294,8 +304,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 SpAjusteTasaContratosVencidos,
                 new
                 {
-                    CodOperadora = dto.operadora,
-                    CodPlan = NormalizarTexto(dto.plan)
+                    Operadora = dto.operadora,
+                    Plan = NormalizarTexto(dto.plan)
                 },
                 commandType: CommandType.StoredProcedure);
         }
@@ -307,10 +317,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             parametros.Add("@Operadora", dto.operadora, DbType.Int32);
             parametros.Add("@Plan", NormalizarTexto(dto.plan), DbType.String);
             parametros.Add("@Usuario", NormalizarTexto(dto.usuario), DbType.String);
-            parametros.Add("@FechaCorte", dto.fecha_corte, DbType.DateTime);
+            parametros.Add("@Oficina", NormalizarTexto(dto.oficina), DbType.String);
+            parametros.Add("@Corte", dto.fecha_corte, DbType.DateTime);
             parametros.Add("@Tasa", dto.tasa, DbType.Decimal);
             parametros.Add("@TCP", dto.tcp, DbType.Decimal);
-            parametros.Add("@Aplicacion", dto.aplicacion, DbType.String);
+            parametros.Add("@AppProductName", dto.aplicacion, DbType.String);
             parametros.Add("@Modo", modo, DbType.Int32);
 
             return parametros;
@@ -331,9 +342,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             int modo)
         {
             return connection.QueryFirst<FndRendimientoResultadoDto>(
-                SpGenerarRendimientoPlan,
-                CrearParametrosRendimiento(dto, modo),
-                commandType: CommandType.StoredProcedure);
+                SpGenerarRendimientoPlanSql,
+                CrearParametrosRendimiento(dto, modo));
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();

@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<List<CoAplExcAcuerdosData>> CoAplExcAcuerdos_Lista_Obtener(int codEmpresa, string filtro, string estado)
         {
-            object activo;
+            object? activo;
             switch (estado)
             {
                 case "Activos":
