@@ -94,7 +94,7 @@ ORDER BY nsolicitud DESC;";
 
                 return connection.QueryFirstOrDefault<long>(sqlFallback, new { Codigo = tesoreria.vCodigo, OP = tesoreria.vOP });
             }
-            catch
+            catch (DbException)
             {
                 return 0;
             }
