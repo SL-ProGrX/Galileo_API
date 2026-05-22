@@ -186,7 +186,7 @@ VALUES (@Token, GETDATE(), @Usuario, 'A');";
 
                 return token;
             }
-            catch
+            catch (DbException)
             {
                 return string.Empty;
             }
