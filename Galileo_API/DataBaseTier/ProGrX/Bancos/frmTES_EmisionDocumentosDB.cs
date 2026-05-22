@@ -458,7 +458,7 @@ where B.estado = 'A'
                         {
                             especial = filtro.especial,
                             usuario = filtro.usuario,
-                            generarPor = "solicitudes",
+                            generarPor = nSolicitudes,
                             minimo = item.nsolicitud,
                             maximo = item.nsolicitud,
                             banco = item.id_banco ?? filtro.banco,
@@ -641,11 +641,11 @@ where B.estado = 'A'
             List<TesTransaccionDto> Trans()
                 => ctx.Conn.Query<TesTransaccionDto>(ctx.Q.QueryTransac, ctx.Q.Parametros).ToList();
 
-            var solInicio = ctx.Filtro.generarPor == "solicitudes"
+            var solInicio = ctx.Filtro.generarPor == nSolicitudes
                 ? ctx.Filtro.minimo
                 : (int?)null;
 
-            var solCorte = ctx.Filtro.generarPor == "solicitudes"
+            var solCorte = ctx.Filtro.generarPor == nSolicitudes
                 ? ctx.Filtro.maximo
                 : (int?)null;
 
@@ -683,14 +683,17 @@ where B.estado = 'A'
                 "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(
                     DbHelper.OpenConnection(_portalDB, ctx.CodEmpresa),
                     ctx.CodEmpresa,
-                    ctx.Filtro.banco,
-                    ctx.Filtro.tipoDoc,
-                    ctx.Filtro.cantidad,
-                            solInicio,
-                            solCorte,
-                            fechaInicio,
-                            fechaCorte,
-                            () => ResolverBancoConsecTransferencia(ctx)),
+                    new SbTeBcrParametros
+                    {
+                        vBanco = ctx.Filtro.banco,
+                        vTipoDoc = ctx.Filtro.tipoDoc,
+                        cantidadSolicitudes = ctx.Filtro.cantidad,
+                        solInicio = solInicio,
+                        solCorte = solCorte,
+                        fechaInicio = fechaInicio,
+                        fechaCorte = fechaCorte
+                    },
+                    () => ResolverBancoConsecTransferencia(ctx)),
 
                 "E" => sbTeBCT_Enlace(
                     ctx.CodEmpresa,
@@ -700,13 +703,16 @@ where B.estado = 'A'
                 "F" => mTesFunciones.SbTeBcrComercial(
                     DbHelper.OpenConnection(_portalDB, ctx.CodEmpresa),
                             ctx.CodEmpresa,
-                            ctx.Filtro.banco,
-                            ctx.Filtro.tipoDoc,
-                            ctx.Filtro.cantidad,
-                            solInicio,
-                            solCorte,
-                            fechaInicio,
-                            fechaCorte,
+                            new SbTeBcrParametros
+                            {
+                                vBanco = ctx.Filtro.banco,
+                                vTipoDoc = ctx.Filtro.tipoDoc,
+                                cantidadSolicitudes = ctx.Filtro.cantidad,
+                                solInicio = solInicio,
+                                solCorte = solCorte,
+                                fechaInicio = fechaInicio,
+                                fechaCorte = fechaCorte
+                            },
                             () => ResolverBancoConsecTransferencia(ctx)),
 
                 "G" => sbTeBNCR_Sinpe(
@@ -1272,7 +1278,7 @@ where nsolicitud in ";
             int? mSolInicio = null;
             int? mSolCorte = null;
 
-            if (filtros.generarPor == "solicitudes")
+            if (filtros.generarPor == nSolicitudes)
             {
                 mSolInicio = filtros.minimo;
                 mSolCorte = filtros.maximo;

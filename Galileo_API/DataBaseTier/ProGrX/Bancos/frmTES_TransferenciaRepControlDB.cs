@@ -134,13 +134,16 @@ Order by Nsolicitud";
                     "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(
                             conn,
                             CodEmpresa,
-                            Banco,
-                            TipoDoc,
-                            100000,
-                            null,
-                            null,
-                            null,
-                            null,
+                            new SbTeBcrParametros
+                            {
+                                vBanco = Banco,
+                                vTipoDoc = TipoDoc,
+                                cantidadSolicitudes = 100000,
+                                solInicio = null,
+                                solCorte = null,
+                                fechaInicio = null,
+                                fechaCorte = null
+                            },
                             resolveConsecutivo: () => NTransac),
 
                     "E" => sbTeBCT_Enlace(CodEmpresa, Banco, TipoDoc, NTransac),
@@ -148,13 +151,16 @@ Order by Nsolicitud";
                     "F" => mTesFunciones.SbTeBcrComercial(
                         conn,
                         CodEmpresa,
-                        Banco,
-                        TipoDoc,
-                        100000,
-                        null,
-                        null,
-                        null,
-                        null,
+                        new SbTeBcrParametros
+                        {
+                            vBanco = Banco,
+                            vTipoDoc = TipoDoc,
+                            cantidadSolicitudes = 100000,
+                            solInicio = null,
+                            solCorte = null,
+                            fechaInicio = null,
+                            fechaCorte = null
+                        },
                         resolveConsecutivo: () => NTransac),
 
                     "G" => sbTeBNCR_Sinpe(CodEmpresa, Banco, TipoDoc, NTransac),

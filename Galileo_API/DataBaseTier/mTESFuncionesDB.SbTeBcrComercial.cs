@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using System.Globalization;
@@ -9,23 +10,17 @@ namespace Galileo.DataBaseTier
     public partial class MTesFuncionesDb
     {
         public ErrorDto<object> SbTeBcrComercial(
-   SqlConnection conn,
-   int CodEmpresa,
-   int vBanco,
-   string vTipoDoc,
-   int cantidadSolicitudes,
-   int? solInicio,
-   int? solCorte,
-   DateTime? fechaInicio,
-   DateTime? fechaCorte,
-   Func<long> resolveConsecutivo)
+               SqlConnection conn,
+               int CodEmpresa,
+               SbTeBcrParametros parametros,
+               Func<long> resolveConsecutivo)
         {
             try
             {
                 var (numNegocio, cedulaReg) = GetEmpresaNumNegocioYReg(conn);
 
-                int bancoId = vBanco;
-                string bancoTDoc = vTipoDoc;
+                int bancoId = parametros.vBanco;
+                string bancoTDoc = parametros.vTipoDoc;
                 long bancoConsec = resolveConsecutivo();
                 DateTime fecha = DateTime.Now;
 
@@ -61,11 +56,11 @@ namespace Galileo.DataBaseTier
                         bancoTDoc,
                         numNegocio,
                         bancoConsec,
-                        cantidadSolicitudes,
-                        mSolInicio = solInicio,
-                        mSolCorte = solCorte,
-                        mFechaInicio = fechaInicio,
-                        mFechaCorte = fechaCorte
+                        parametros.cantidadSolicitudes,
+                        mSolInicio = parametros.solInicio,
+                        mSolCorte = parametros.solCorte,
+                        mFechaInicio = parametros.fechaInicio,
+                        mFechaCorte = parametros.fechaCorte
                     });
 
                 foreach (var linea in lineasCredito)
