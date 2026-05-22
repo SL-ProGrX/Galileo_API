@@ -248,5 +248,48 @@ namespace Galileo_API.DataBaseTier
 
             return resultado;
         }
+
+
+        /// <summary>
+        /// Homologa la descripción del tipo de comprobante siguiendo la lógica VB6 de mCobro.
+        /// </summary>
+        public static string fxTipoComprobante(
+            string? tipo,
+            string? nCon = "0",
+            string? operacion = "0")
+        {
+            var tipoNormalizado = (tipo ?? string.Empty).Trim().ToUpperInvariant();
+            var numeroConcepto = string.IsNullOrWhiteSpace(nCon) ? "0" : nCon.Trim();
+            var numeroOperacion = string.IsNullOrWhiteSpace(operacion) ? "0" : operacion.Trim();
+
+            return tipoNormalizado switch
+            {
+                "1" => "Ded.Pla",
+                "2" or "RE" => "Recibo",
+                "3" => "Refundición",
+                "4" => fxTipoComprobanteCasoCuatro(numeroConcepto, numeroOperacion),
+                "5" => "Liq.Ahorros",
+                "6" => "Liq.Reversión",
+                "7" or "NC" => "Nota de Crédito",
+                "8" or "ND" => "Nota de Débito",
+                _ => tipoNormalizado
+            };
+        }
+
+        private static string fxTipoComprobanteCasoCuatro(
+            string numeroConcepto,
+            string numeroOperacion)
+        {
+            if (numeroConcepto == numeroOperacion)
+                return "Traspaso Deuda";
+
+            return numeroConcepto switch
+            {
+                "8889" => "Readecuación",
+                "8888" => "Traspaso Deuda",
+                _ => "Apl.Deudas"
+            };
+        }
+
     }
 }
