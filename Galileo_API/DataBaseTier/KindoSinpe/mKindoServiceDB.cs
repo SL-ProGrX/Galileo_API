@@ -3,7 +3,9 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
+using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
@@ -1695,6 +1697,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 if (response.Result is not null)
                 {
                     response.Result.Codigo = infoSinpe?.Cedula?.ToString();
+                    response.Result.NombreOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, Convert.ToInt32(response.Result.id_banco)).Result!.cuenta_desc;
                 }
             }
             catch
@@ -1704,6 +1707,31 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 response.Result = null;
             }
             return response;
+        }
+
+        private ErrorDto<TesCuentasBancarias> TES_TransaccionesCtaInterna_Obtener(int CodEmpresa, int id_banco)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            var query = @"
+                    SELECT B.descripcion as cuenta_desc,
+                           B.cta as cuenta_interna,
+                           (SELECT se.CEDULA_JURIDICA FROM SIF_EMPRESA se where portal_id = @empresa) as itmx
+                    FROM TES_BANCOS B
+                    WHERE B.ID_BANCO = @banco";
+
+            var nonbre = connection.QueryFirstOrDefault<TesCuentasBancarias>(query, new
+            {
+                banco = id_banco,
+                empresa = CodEmpresa
+            }) ?? new TesCuentasBancarias();
+
+            return new ErrorDto<TesCuentasBancarias>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = nonbre
+            };
         }
 
         public int ValidoTipoMonedaBCCR(int CodEmpresa, string CuentaIBAN)

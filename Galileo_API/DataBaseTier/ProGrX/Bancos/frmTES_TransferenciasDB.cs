@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier
         private readonly PortalDB _portalDB;
         private readonly MTesoreria _mTesoreria;
 
-
+        const int commandTimeoutSeconds = 600;
         public FrmTesTransferenciasDB(IConfiguration config)
         {
             _mTesoreria = new MTesoreria(config);
@@ -48,17 +48,38 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 var vFecha = DateTime.Now;
 
+                if(transferencia.tipoDoc == "TS")
+                {
+                    allowedSql= allowedSql.Replace("Estado = 'P'", "Estado IN ('P', 'I')");
+                }
+
+                var cantidadSolicitudes = transferencia.parametros!.cantidad;
+
+                if (cantidadSolicitudes <= 0 &&
+                    transferencia.parametros.maximo >= transferencia.parametros.minimo &&
+                    transferencia.parametros.minimo > 0)
+                {
+                    cantidadSolicitudes =
+                        (transferencia.parametros.maximo - transferencia.parametros.minimo) + 1;
+                }
+
+                if (cantidadSolicitudes <= 0)
+                {
+                    cantidadSolicitudes = int.MaxValue;
+                }
+
                 // 2) Ejecutar SOLO SQL permitido
                 var result = conn.Query<TransferenciasData>(allowedSql.Trim('(', ')'), new
                 {
-                    top = transferencia.parametros.cantidad,
+                    top = cantidadSolicitudes,
                     banco = transferencia.parametros.banco,
                     tipoDoc = transferencia.parametros.tipoDoc,
                     minimo = transferencia.parametros.minimo,
                     maximo = transferencia.parametros.maximo,
                     fechaInicio = transferencia.parametros.fecha_inicio,
                     fechaCorte = transferencia.parametros.fecha_corte
-                }).ToList();
+                },
+                commandTimeout: commandTimeoutSeconds).ToList();
 
                 if (result.Count > 0)
                 {
@@ -78,7 +99,8 @@ namespace Galileo_API.DataBaseTier
                             bancoConsec = transferencia.bancoConsec,
                             plan = transferencia.plan,
                             nSolicitud = item.nSolicitud
-                        });
+                        },
+                        commandTimeout: commandTimeoutSeconds);
 
                         const string qryBitacora = @"EXEC spTesBitacora @Solicitud, '10', @Detalle, @Usuario;";
                         conn.Execute(qryBitacora, new
@@ -86,10 +108,12 @@ namespace Galileo_API.DataBaseTier
                             Solicitud = item.nSolicitud,
                             Detalle = $"Transferencia...:{transferencia.bancoConsec}",
                             Usuario = transferencia.usuario
-                        });
+                        },
+                        commandTimeout: commandTimeoutSeconds
+                        );
 
                         const string qrySaldos = @"EXEC spTESAfectaBancos @NSOLICITUD, 'E';";
-                        conn.Execute(qrySaldos, new { NSOLICITUD = item.nSolicitud });
+                        conn.Execute(qrySaldos, new { NSOLICITUD = item.nSolicitud }, commandTimeout: commandTimeoutSeconds);
 
                         if (item.modulo == "CC" && item.subModulo == "C")
                         {
@@ -100,7 +124,8 @@ namespace Galileo_API.DataBaseTier
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
                 }
 
-                return DbHelper.OkResponse("Transferencias Aceptadas Correctamente");
+                return DbHelper.OkResponse(
+                     $"Transferencias procesadas {result.Count} Correctamente");
             }
             catch (Exception ex)
             {
@@ -121,10 +146,17 @@ namespace Galileo_API.DataBaseTier
         {
             var inc = NormalizeSql(incomingSql);
 
-            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base);
-            if (inc == NormalizeSql(FrmTesAutorizacionSql.BaseQuery_Base)) return NormalizeSql(FrmTesAutorizacionSql.BaseQuery_Base);
-            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes);
-            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas);
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base))
+                return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base);
+
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.BaseQuery_Base))
+                return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base);
+
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes))
+                return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes);
+
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas))
+                return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas);
 
             return null;
         }
@@ -152,46 +184,58 @@ namespace Galileo_API.DataBaseTier
         /// <param name="conn"></param>
         /// <param name="vDocumento"></param>
         /// <param name="item"></param>
-        private void ActualizaReferencia(SqlConnection conn, string vDocumento,  TransferenciasData item)
+        private void ActualizaReferencia(SqlConnection conn, string vDocumento, TransferenciasData item)
         {
-            var QueryCC = "";
-            string documento = string.Empty;
-            if (item.detalle1 != null || item.detalle1 != "")
+            if (string.IsNullOrWhiteSpace(item.detalle1))
+                return;
+
+            if (!int.TryParse(item.detalle1.Trim(), out var idSolicitud))
+                return;
+
+            var tieneReferencia =
+                !string.IsNullOrWhiteSpace(item.referencia) &&
+                int.TryParse(item.referencia.Trim(), out var referencia) &&
+                referencia > 0;
+
+            if (tieneReferencia)
             {
-                if (item.referencia != null)
-                {
-                    documento = vDocumento;
-                    
-                    //'TIENE REFERENCIA
-                    QueryCC = $@"Update DesemBolsos Set 
-                                                    Cod_Banco= @CodBanco,
-                                                    TDocumento= @tipo,
-                                                    NDocumento= @Documento 
-                                                    Where ID_Desembolso= @IdDesembolso";
+                if (string.IsNullOrWhiteSpace(item.codigo))
+                    return;
 
-                   
-                }
-                else
-                {
-                    documento = item.tipo + "-" + vDocumento;
-                    //'NO TIENE REFERENCIA
-                    QueryCC = $@"Update Reg_Creditos Set 
-                                                            Cod_Banco = @CodBanco,
-                                                            Documento_Referido = @Documento 
-                                                            Where ID_Solicitud= @IdSolicitud";
-                }
+                if (!int.TryParse(item.codigo.Trim(), out var idDesembolso))
+                    return;
 
-                var parametros = new
+                const string queryDesembolso = @"
+Update DesemBolsos Set
+    Cod_Banco = @CodBanco,
+    TDocumento = @Tipo,
+    NDocumento = @Documento
+Where ID_Desembolso = @IdDesembolso";
+
+                conn.Execute(queryDesembolso, new
                 {
                     CodBanco = item.id_Banco,
-                    tipo = item.tipo,
-                    Documento = documento,
-                    IdDesembolso = item.codigo,
-                    IdSolicitud = item.detalle1
-                };
+                    Tipo = item.tipo,
+                    Documento = vDocumento,
+                    IdDesembolso = idDesembolso
+                }, commandTimeout: commandTimeoutSeconds);
 
-                conn.Execute(QueryCC, parametros);
+                return;
             }
+
+            const string queryRegCreditos = @"
+Update Reg_Creditos Set
+    Cod_Banco = @CodBanco,
+    Documento_Referido = @Documento
+Where ID_Solicitud = @IdSolicitud";
+
+            conn.Execute(queryRegCreditos, new
+            {
+                CodBanco = item.id_Banco,
+                Documento = $"{item.tipo}-{vDocumento}",
+                IdSolicitud = idSolicitud
+            },
+            commandTimeout: commandTimeoutSeconds);
         }
 
         //Helper class para la consulta de transferencias
@@ -201,7 +245,8 @@ namespace Galileo_API.DataBaseTier
             var queryConsec = $@"update tes_banco_docs set CONSECUTIVO_DET = @cons
                                          where Tipo = @tipo and id_banco = @id_banco";
 
-            conn.Execute(queryConsec, new { cons = consc, tipo = transferencia.tipoDoc, id_banco = transferencia.id_Banco });
+            conn.Execute(queryConsec, new { cons = consc, tipo = transferencia.tipoDoc, id_banco = transferencia.id_Banco }
+            , commandTimeout: commandTimeoutSeconds);
         }
 
 
@@ -217,6 +262,14 @@ namespace Galileo_API.DataBaseTier
         {
             try
             {
+                if(transferencia.tipoDoc == "TS")
+                {
+                    return new ErrorDto{
+                        Code = 0,
+                        Description = "Transferencias SINPE deben ser reversadas por otra via."
+                         };
+                }
+
                 _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, "-", transferencia.plan!);
                 return DbHelper.OkResponse("Transferencia Revertida Correctamente");
             }

@@ -38,8 +38,8 @@ WHERE NOMBRE = @usuario";
                         T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
                         IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
                     FROM Tes_Transacciones T 
-                    INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                    INNER JOIN Socios S 
+                    LEFT JOIN Tes_Bancos B ON T.id_banco = B.id_banco
+                    LEFT JOIN Socios S 
                         ON SUBSTRING(REPLACE(T.CODIGO, '-', ''),
                                      PATINDEX('%[^0]%', REPLACE(T.CODIGO, '-', '')),
                                      LEN(REPLACE(T.CODIGO, '-', '')))

@@ -130,17 +130,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new { id_solicitud = request.id_solicitud });
 
                 const string sqlErrores = """
-                    select
-                        row_number() over(order by A.LINEA, A.ERROR_CODIGO) as linea,
-                        cast(0 as bit) as seleccionado,
-                        isnull(rtrim(A.ERROR_CODIGO), '') as error_codigo,
-                        isnull(rtrim(A.DESCRIPCION), '') as error_descripcion,
-                        case when isnull(A.APLICADO, 0) = 1 then 'S' else 'N' end as aplicado,
-                        isnull(rtrim(A.NOTA_DEFAULT), '') as nota_default
-                    from CRD_OPERACION_TAGS_REVISION A
-                    where A.ID_SOLICITUD = @id_solicitud
-                    order by A.LINEA, A.ERROR_CODIGO
-                    """;
+                        select
+                            row_number() over(order by E.ID_ERROR) as linea,
+                            cast(0 as bit) as seleccionado,
+                            E.ID_ERROR as id_error,
+                            isnull(rtrim(E.DESCRIPCION), '') as descripcion,
+                            isnull(ER.APLICADO, 'N') as aplicado,
+                            isnull(rtrim(E.MENSAJE), '') as mensaje
+                        from CRD_ANALISIS_ERRORES E
+                        left join CRD_ANALISIS_ERRORESREG ER
+                            on E.ID_ERROR = ER.ID_ERROR
+                           and ER.ID_SOLICITUD = @id_solicitud
+                        where E.ACTIVO = '1'
+                        order by E.ID_ERROR
+                        """;
 
                 response.errores = conn.Query<CrSeguimientoRevisionesTagErrorRow>(
                     sqlErrores,
@@ -193,6 +196,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                conn.Open();
                 using var tx = conn.BeginTransaction();
 
                 var usuarioNormalizado = usuario.Trim();
@@ -263,11 +267,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (request.errores_seleccionados?.Count > 0)
                 {
                     const string sqlAplicarErrores = """
-                        update A
-                           set A.APLICADO = 1
-                        from CRD_OPERACION_TAGS_REVISION A
-                        where A.ID_SOLICITUD = @id_solicitud
-                          and A.LINEA in @lineas
+                        update CRD_ANALISIS_ERRORESREG
+                           set APLICADO = 'S'
+                        where ID_SOLICITUD = @id_solicitud
                         """;
 
                     conn.Execute(

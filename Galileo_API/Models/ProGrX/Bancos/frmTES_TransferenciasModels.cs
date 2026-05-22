@@ -16,12 +16,12 @@
     public class TesTransferenciasInfo
     {
         public int id_Banco { get; set; } = 0;
-        public string? tipoDoc { get; set; }
-        public string? plan { get; set; }
-        public string? usuario { get; set; }
-        public string? bancoConsec { get; set; }
-        public string gstrQuery { get; set; } = string.Empty;
-        public TesTransferenciasParametros parametros { get; set; } = new TesTransferenciasParametros();
+        public string? tipoDoc { get; set; } = string.Empty;
+        public string? plan { get; set; } = string.Empty;
+        public string? usuario { get; set; } = string.Empty;
+        public string? bancoConsec { get; set; } = string.Empty;
+        public string? gstrQuery { get; set; } = string.Empty;
+        public TesTransferenciasParametros? parametros { get; set; } = new TesTransferenciasParametros();
     }
 
     public class TesTransferenciasParametros
@@ -34,5 +34,12 @@
         public DateTime? fecha_corte { get; set; } = null;
         public int cantidad { get; set; } = 0;
 
+    }
+
+    public class TesTransferenciaReversarRequest
+    {
+        public int id_Banco { get; set; } = 0;
+        public string? tipoDoc { get; set; }
+        public string? plan { get; set; }
     }
 }
