@@ -431,7 +431,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         @PlazoCorte,
                         @Tipo,
                         @AplValor,
-                        dbo.MyGetdate(),
+                        Getdate(),
                         @Usuario
                     );";
 
