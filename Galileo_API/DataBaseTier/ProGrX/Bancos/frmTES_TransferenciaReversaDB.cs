@@ -479,13 +479,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     foreach (var item in reversa.lista)
                     {
                         query = $@"select SUBSTRING(@CuentaIBAN,9,2)";
-                        var tipoCuenta = conn.QueryFirstOrDefault<int>(query);
+                        var tipoCuenta = conn.QueryFirstOrDefault<int>(query, new { CuentaIBAN = item.cta_ahorros });
 
                        
 
-                        query = $@"SELECT M.RECHAZO_CODIGO , M.COD_REFERENCIA, 0 as 'COMPTOBANTE_CGP' ,M.COMPROBANTE_INTERNO , M.RECHAZO_DESC, FROM Tes_Transacciones T INNER JOIN SINPE_MOV_TRANSITO M
+                        query = $@"SELECT M.RECHAZO_CODIGO , M.COD_REFERENCIA, 0 as 'COMPTOBANTE_CGP' ,M.COMPROBANTE_INTERNO , M.RECHAZO_DESC, M.COD_TRANSITO FROM Tes_Transacciones T INNER JOIN SINPE_MOV_TRANSITO M
                                     ON T.REFERENCIA_SINPE = M.COD_REFERENCIA
-                                    WHERE M.COD_REFERENCIA = @Cod_Referencia";
+                                    WHERE T.NSOLICITUD  = @Cod_Referencia";
                         var infoTrans = conn.QueryFirstOrDefault<dynamic>(query,
                             new {
                                 Cod_Referencia = item.nsolicitud
@@ -496,7 +496,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             CODIGO_RECHAZO_SINPE = infoTrans!.RECHAZO_CODIGO,
                             CODIGO_REFERENCIA = infoTrans.COD_REFERENCIA,
                             COMPTOBANTE_CGP = infoTrans.COMPTOBANTE_CGP,
-                            COMPROBANTE_INTERNO = infoTrans.COMPROBANTE_INTERNO,
+                            COMPROBANTE_INTERNO = infoTrans.COD_TRANSITO,
                             DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
                         };
 
@@ -504,11 +504,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             ? "sp_Sinpe_ReversaDebitos"
                             : "sp_Sinpe_ReversaCreditos";
 
-                        conn.Execute(
-                            procedimiento,
-                            parametros,
-                            commandType: CommandType.StoredProcedure
-                        );
+                        try
+                        {
+                            var resultado = conn.QueryFirstOrDefault<SinpeReversaResultado>(
+                                procedimiento,
+                                parametros,
+                                commandType: CommandType.StoredProcedure
+                            );
+
+                            if (resultado == null)
+                            {
+                                return DbHelper.ErrorResponse("El procedimiento no devolvió respuesta.");
+                            }
+
+                            if (resultado.Resultado != 0)
+                            {
+                                return DbHelper.ErrorResponse(
+                                    resultado.DescripcionRechazo ?? "Ocurrió un error al reversar la transferencia.",
+                                    resultado.Resultado
+                                );
+                            }
+                            // éxito
+                        }
+                        catch (Exception ex)
+                        {
+                            return DbHelper.ErrorResponse(ex.Message);
+                        }
 
                     }
                 }

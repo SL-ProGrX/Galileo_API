@@ -827,13 +827,39 @@ where id_banco = @banco
 
         #region ===== SINPE General =====
 
-        public ErrorDto<object> SbTesBancoSinpeGeneralCore(int codEmpresa, TesEmisionDocFiltros filtro, List<TesTransaccionDto> transaccionesList)
+        public ErrorDto<object> SbTesBancoSinpeGeneralCore(
+            int codEmpresa,
+            TesEmisionDocFiltros filtro,
+            List<TesTransaccionDto> transaccionesList)
         {
+            long bancoConsec = 0;
+
+            if (filtro.docInicial > 0)
+                bancoConsec = filtro.docInicial;
+
             if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
-                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results = Array.Empty<ErrorDto>() }, Formatting.Indented));
+            {
+                return DbHelper.CreateOkResponse<object>(
+                    JsonConvert.SerializeObject(new
+                    {
+                        bancoConsec = bancoConsec.ToString(CultureInfo.InvariantCulture),
+                        extension = string.Empty,
+                        contenido = string.Empty,
+                        results = Array.Empty<ErrorDto>()
+                    }, Formatting.Indented));
+            }
 
             if (transaccionesList == null || transaccionesList.Count == 0)
-                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results = Array.Empty<ErrorDto>() }, Formatting.Indented));
+            {
+                return DbHelper.CreateOkResponse<object>(
+                    JsonConvert.SerializeObject(new
+                    {
+                        bancoConsec = bancoConsec.ToString(CultureInfo.InvariantCulture),
+                        extension = string.Empty,
+                        contenido = string.Empty,
+                        results = Array.Empty<ErrorDto>()
+                    }, Formatting.Indented));
+            }
 
             if (string.IsNullOrWhiteSpace(filtro.usuario))
                 return DbHelper.CreateErrorResponse<object>("Usuario requerido para procesar SINPE.");
@@ -846,7 +872,14 @@ where id_banco = @banco
                 foreach (var trx in transaccionesList)
                     results.Add(EmitirSinpe(servicio, codEmpresa, filtro.usuario, trx));
 
-                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results }, Formatting.Indented));
+                return DbHelper.CreateOkResponse<object>(
+                    JsonConvert.SerializeObject(new
+                    {
+                        bancoConsec = bancoConsec.ToString(CultureInfo.InvariantCulture),
+                        extension = string.Empty,
+                        contenido = string.Empty,
+                        results
+                    }, Formatting.Indented));
             }
             catch (Exception ex)
             {
