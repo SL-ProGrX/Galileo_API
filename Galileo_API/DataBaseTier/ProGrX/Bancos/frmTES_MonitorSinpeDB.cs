@@ -74,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 				                        AND c.COD_CONTRATO = d.COD_CONTRATO
 		                        INNER JOIN SIF_CONCEPTOS cp
 			                        ON cp.COD_CONCEPTO = d.COD_CONCEPTO
-		                        WHERE d.COD_PLAN = '0011'
+		                        WHERE d.COD_PLAN = 'SINPE'
 		                        AND (CONVERT(DATE, d.FECHA) BETWEEN @fechaInicio AND @fechaFin)
 		                        GROUP BY cp.DESCRIPCION;";
 

@@ -165,98 +165,144 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                var consecInt = mTesoreria.fxTesTipoDocConsecInterno(CodEmpresa, filtro.banco, filtro.tipoDoc, "/", filtro.plan).Result;
+                var consecInt = mTesoreria
+                    .fxTesTipoDocConsecInterno(CodEmpresa, filtro.banco, filtro.tipoDoc, "/", filtro.plan)
+                    .Result;
 
-                string queryUsuario = $@"select COUNT(t.USUARIO_AUTORIZA_ESPECIAL) From Tes_Transacciones t 
-where UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario 
-AND t.Estado='P' 
-And t.Autoriza = 'S' and t.fecha_hold is null";
+                var usuario = filtro.usuario.ToUpperInvariant();
+                var esUsuarioEspecial = TES_EmisionDocumento_UsuarioEsEspecial(conn, usuario);
 
-                int especial = conn.Query<int>(queryUsuario, new { usuario = filtro.usuario.ToUpper() }).FirstOrDefault();
+                var query = TES_EmisionDocumento_Solicitudes_BuildQuery(filtro, esUsuarioEspecial);
 
-                var query = "";
+                var result = conn.Query<TesSolicitudesGenData>(
+                    query,
+                    new
+                    {
+                        top = filtro.cantidad,
+                        tipoDoc = filtro.tipoDoc,
+                        banco = filtro.banco,
+                        minimo = solInicio,
+                        maximo = solCorte,
+                        fechaInicio,
+                        fechaCorte,
+                        usuario
+                    }).ToList();
 
-                if (especial == 0)
+                return TES_EmisionDocumento_Solicitudes_Formatear(
+                    new TesSolicitudesFormatoRequest
+                    {
+                        CodEmpresa = CodEmpresa,
+                        Filtro = filtro,
+                        Solicitudes = result,
+                        ConsecutivoInterno = consecInt
+                    });
+            });
+        }
+
+        /// <summary>
+        /// Valida si el usuario tiene solicitudes autorizadas de forma especial pendientes.
+        /// </summary>
+        private static bool TES_EmisionDocumento_UsuarioEsEspecial(SqlConnection conn, string usuario)
+        {
+            const string query = @"
+select count(t.USUARIO_AUTORIZA_ESPECIAL)
+from Tes_Transacciones t
+where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
+  and t.Estado = 'P'
+  and t.Autoriza = 'S'
+  and t.fecha_hold is null";
+
+            var especial = conn.QueryFirstOrDefault<int>(query, new { usuario });
+            return especial > 0;
+        }
+
+        /// <summary>
+        /// Formatea los documentos visibles y marca la información complementaria de las solicitudes generadas.
+        /// </summary>
+        private List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
+            TesSolicitudesFormatoRequest request)
+        {
+            var now = DateTime.Now;
+            var consecutivoVisible = request.Filtro.docInicial;
+            var consecutivoInterno = request.ConsecutivoInterno;
+
+            foreach (var item in request.Solicitudes)
+            {
+                var bancoItem = item.id_banco ?? request.Filtro.banco;
+                var tipoItem = string.IsNullOrWhiteSpace(item.tipo)
+                    ? request.Filtro.tipoDoc
+                    : item.tipo;
+
+                var tipoGestion = ObtenerTipoGestionDocumento(request.CodEmpresa, bancoItem, tipoItem);
+
+                if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
                 {
-                    query = @" Select TOP (@top) t.*, CAST(t.id_rechazo AS varchar(10)) + ' - ' +
-(
-    SELECT descripcion
-    FROM SINPE_MOTIVOS
-    WHERE cod_motivo = t.id_rechazo
-) AS estadoSinpe,
- dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
- Where t.Estado='P' And t.Tipo = @tipoDoc And t.Id_Banco=@banco And t.Autoriza = 'S' 
- and t.fecha_hold is null and  t.USUARIO_AUTORIZA_ESPECIAL is null ";
-
+                    item.documento =
+                        $"{consecutivoVisible.ToString("000", CultureInfo.InvariantCulture)}-{consecutivoInterno}";
+                    consecutivoInterno++;
                 }
                 else
                 {
+                    item.documento = consecutivoVisible.ToString(CultureInfo.InvariantCulture);
+                    consecutivoVisible++;
+                }
 
-                    query = @" Select TOP (@top) t.*, 
- CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+                item.fecha = now;
+                item.firmas = item.firmas_autoriza_fecha == null ? "No" : "Sí";
+            }
+
+            return request.Solicitudes;
+        }
+
+        /// <summary>
+        /// Construye la consulta de solicitudes a generar según el tipo de usuario y el rango seleccionado.
+        /// </summary>
+        private static string TES_EmisionDocumento_Solicitudes_BuildQuery(
+            TesEmisionDocFiltros filtro,
+            bool esUsuarioEspecial)
+        {
+            var query = esUsuarioEspecial
+                ? @" Select TOP (@top) t.*, 
+CAST(t.id_rechazo AS varchar(10)) + ' - ' +
 (
     SELECT descripcion
     FROM SINPE_MOTIVOS
     WHERE cod_motivo = t.id_rechazo
 ) AS estadoSinpe,
- dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
- Where t.Estado='P' And t.Autoriza = 'S' and t.fecha_hold is null and  UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario ";
-                }
+dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
+From Tes_Transacciones t
+Where t.Estado='P'
+  And t.Autoriza = 'S'
+  and t.fecha_hold is null
+  and UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario "
+                : @" Select TOP (@top) t.*,
+CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+(
+    SELECT descripcion
+    FROM SINPE_MOTIVOS
+    WHERE cod_motivo = t.id_rechazo
+) AS estadoSinpe,
+dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
+From Tes_Transacciones t
+Where t.Estado='P'
+  And t.Tipo = @tipoDoc
+  And t.Id_Banco = @banco
+  And t.Autoriza = 'S'
+  and t.fecha_hold is null
+  and t.USUARIO_AUTORIZA_ESPECIAL is null ";
 
-                if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
-                {
+            if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
+            {
+                query += " And t.NSolicitud Between @minimo And @maximo";
+            }
+            else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
+            {
+                query += " And t.Fecha_Solicitud Between @fechaInicio And @fechaCorte";
+            }
 
-                    query += " And t.NSolicitud Between @minimo And @maximo";
-                } else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
-                {
-                    query += " And t.Fecha_Solicitud Between @fechaInicio And @fechaCorte";
-                }
-                    
-                query += " Order by t.NSolicitud";
+            query += " Order by t.NSolicitud";
 
-                var result = conn.Query<TesSolicitudesGenData>(query,
-                new
-                {
-                    top = filtro.cantidad,
-                    tipoDoc = filtro.tipoDoc,
-                    banco = filtro.banco,
-                    minimo = solInicio,
-                    maximo = solCorte,
-                    fechaInicio,
-                    fechaCorte,
-                    usuario = filtro.usuario.ToUpper()
-                }).ToList();
-
-                var now = DateTime.Now;
-                var consecutivoVisible = filtro.docInicial;
-                var consecutivoInterno = consecInt;
-
-                foreach (var item in result)
-                {
-                    // TE => visible-interno
-                    // CK => consecutivo visible simple
-                    var bancoItem = item.id_banco ?? filtro.banco;
-                    var tipoItem = string.IsNullOrWhiteSpace(item.tipo) ? filtro.tipoDoc : item.tipo;
-                    var tipoGestion = ObtenerTipoGestionDocumento(CodEmpresa, bancoItem, tipoItem);
-
-                    if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
-                    {
-                        item.documento =
-                            $"{consecutivoVisible.ToString("000", CultureInfo.InvariantCulture)}-{consecutivoInterno}";
-                        consecutivoInterno++;
-                    }
-                    else
-                    {
-                        item.documento = consecutivoVisible.ToString(CultureInfo.InvariantCulture);
-                        consecutivoVisible++;
-                    }
-
-                    item.fecha = now;
-                    item.firmas = item.firmas_autoriza_fecha == null ? "No" : "Sí";
-                }
-
-                return result;
-            });
+            return query;
         }
 
         public ErrorDto TES_EmisionDocumento_ValidaNumDocumento(
@@ -470,8 +516,6 @@ where B.estado = 'A'
         {
             try
             {
-                //NormalizarFiltroFechas(filtro);
-
                 using var conn = _portalDB.CreateConnection(codEmpresa);
 
                 var bancoDocs = LoadBancoDocs(conn, filtro);

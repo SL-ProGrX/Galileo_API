@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -437,120 +438,267 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                //calculo los días entre dos fechas
-                if (reversa.lista == null || reversa.lista.Count == 0)
-                {
-                    return DbHelper.ErrorResponse("No existen registros para reversar.");
-                }
+                var validacion = TES_TransferenciaRevSinpe_ValidarEntrada(reversa);
+                if (validacion.Code != 0)
+                    return validacion;
 
-                var query = $@"Select * From Tes_Autorizaciones Where Clave= @clave and nombre = @usuario and estado = 'A'";
-                var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionesDto>(query,
-                    new { reversa.clave, reversa.usuario });
+                var autorizacion = TES_TransferenciaRevSinpe_ValidarAutorizacion(conn, reversa);
+                if (autorizacion.Code != 0)
+                    return autorizacion;
 
-                if (autorizacion == null)
-                {
-                    return DbHelper.ErrorResponse("Contraseña Incorrecta, o no Existe Nivel de Autorización", -1);
-                }
+                var existeReversion = TES_TransferenciaRevSinpe_ValidaReversionExistente(conn, reversa);
+                if (existeReversion.Code != 0)
+                    return existeReversion;
 
-                query = $@"select count(*) as Existe from TES_SINPE_REVERSA where
-                                     id_Banco = @id_banco and NDOCUMENTO = @documento ";
-                var existe = conn.QueryFirstOrDefault<int>(query,
-                    new { reversa.id_banco, documento = reversa.documento!.Trim() });
+                var reversionId = TES_TransferenciaRevSinpe_CrearReversion(conn, reversa);
+                if (reversionId.Code != 0)
+                    return reversionId;
 
-                if (existe == 1)
-                {
-                    return DbHelper.ErrorResponse($"La transferencia No.{reversa.documento}, ya fue reversada anteriormente!", -2);
-                }
+                var procesa = TES_TransferenciaRevSinpe_ProcesarSolicitudes(conn, reversa);
+                if (procesa.Code != 0)
+                    return procesa;
 
+                TES_TransferenciaRevSinpe_RegistrarBitacora(reversa, reversionId.Result);
 
-                query = $@"exec spTES_TE_Reversion_Main @id_banco, @tipo, @documento, @observaciones, @usuario ";
-                var ReversionId = conn.QueryFirstOrDefault<int>(query,
-                    new
-                    {
-                        reversa.id_banco,
-                        tipo = "TS",
-                        documento = reversa.documento.Trim(),
-                        observaciones = reversa.observaciones ?? string.Empty,
-                        usuario = reversa.usuario!.ToUpper()
-                    });
-
-                if (reversa.lista.Count > 0)
-                {
-                    foreach (var item in reversa.lista)
-                    {
-                        query = $@"select SUBSTRING(@CuentaIBAN,9,2)";
-                        var tipoCuenta = conn.QueryFirstOrDefault<int>(query, new { CuentaIBAN = item.cta_ahorros });
-
-                       
-
-                        query = $@"SELECT M.RECHAZO_CODIGO , M.COD_REFERENCIA, 0 as 'COMPTOBANTE_CGP' ,M.COMPROBANTE_INTERNO , M.RECHAZO_DESC, M.COD_TRANSITO FROM Tes_Transacciones T INNER JOIN SINPE_MOV_TRANSITO M
-                                    ON T.REFERENCIA_SINPE = M.COD_REFERENCIA
-                                    WHERE T.NSOLICITUD  = @Cod_Referencia";
-                        var infoTrans = conn.QueryFirstOrDefault<dynamic>(query,
-                            new {
-                                Cod_Referencia = item.nsolicitud
-                            });
-
-                        var parametros = new
-                        {
-                            CODIGO_RECHAZO_SINPE = infoTrans!.RECHAZO_CODIGO,
-                            CODIGO_REFERENCIA = infoTrans.COD_REFERENCIA,
-                            COMPTOBANTE_CGP = infoTrans.COMPTOBANTE_CGP,
-                            COMPROBANTE_INTERNO = infoTrans.COD_TRANSITO,
-                            DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
-                        };
-
-                        var procedimiento = tipoCuenta == 1
-                            ? "sp_Sinpe_ReversaDebitos"
-                            : "sp_Sinpe_ReversaCreditos";
-
-                        try
-                        {
-                            var resultado = conn.QueryFirstOrDefault<SinpeReversaResultado>(
-                                procedimiento,
-                                parametros,
-                                commandType: CommandType.StoredProcedure
-                            );
-
-                            if (resultado == null)
-                            {
-                                return DbHelper.ErrorResponse("El procedimiento no devolvió respuesta.");
-                            }
-
-                            if (resultado.Resultado != 0)
-                            {
-                                return DbHelper.ErrorResponse(
-                                    resultado.DescripcionRechazo ?? "Ocurrió un error al reversar la transferencia.",
-                                    resultado.Resultado
-                                );
-                            }
-                            // éxito
-                        }
-                        catch (Exception ex)
-                        {
-                            return DbHelper.ErrorResponse(ex.Message);
-                        }
-
-                    }
-                }
-
-                //bitacora
-                _mSecurity.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = reversa.codEmpresa,
-                    Usuario = reversa.usuario,
-                    Modulo = module, // Tesoreria
-                    Movimiento = "Aplica",
-                    DetalleMovimiento = "Reversion Transferencia = " + ReversionId + " Id.Cuenta:" + reversa.id_banco + ", Tipo: TS",
-                });
-
-                return DbHelper.OkResponse(ReversionId.ToString());
+                return DbHelper.OkResponse(reversionId.Result.ToString());
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
 
+        /// <summary>
+        /// Valida la información mínima requerida para aplicar la reversa SINPE.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_ValidarEntrada(TesReversaSinpeModel reversa)
+        {
+            if (reversa.lista == null || reversa.lista.Count == 0)
+                return DbHelper.ErrorResponse("No existen registros para reversar.");
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        /// <summary>
+        /// Valida la clave y el nivel de autorización del usuario para reversar transferencias SINPE.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_ValidarAutorizacion(
+            SqlConnection conn,
+            TesReversaSinpeModel reversa)
+        {
+            const string query = @"
+Select *
+From Tes_Autorizaciones
+Where Clave = @clave
+  and nombre = @usuario
+  and estado = 'A'";
+
+            var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionesDto>(
+                query,
+                new { reversa.clave, reversa.usuario });
+
+            if (autorizacion == null)
+            {
+                return DbHelper.ErrorResponse(
+                    "Contraseña Incorrecta, o no Existe Nivel de Autorización",
+                    -1);
+            }
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        /// <summary>
+        /// Valida si la transferencia ya fue reversada anteriormente.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_ValidaReversionExistente(
+            SqlConnection conn,
+            TesReversaSinpeModel reversa)
+        {
+            const string query = @"
+select count(*) as Existe
+from TES_SINPE_REVERSA
+where id_Banco = @id_banco
+  and NDOCUMENTO = @documento";
+
+            var existe = conn.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    reversa.id_banco,
+                    documento = reversa.documento!.Trim()
+                });
+
+            if (existe == 1)
+            {
+                return DbHelper.ErrorResponse(
+                    $"La transferencia No.{reversa.documento}, ya fue reversada anteriormente!",
+                    -2);
+            }
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        /// <summary>
+        /// Registra el encabezado principal de la reversa SINPE.
+        /// </summary>
+        private ErrorDto<int> TES_TransferenciaRevSinpe_CrearReversion(
+            SqlConnection conn,
+            TesReversaSinpeModel reversa)
+        {
+            const string query = @"
+exec spTES_TE_Reversion_Main
+    @id_banco,
+    @tipo,
+    @documento,
+    @observaciones,
+    @usuario";
+
+            var reversionId = conn.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    reversa.id_banco,
+                    tipo = "TS",
+                    documento = reversa.documento!.Trim(),
+                    observaciones = reversa.observaciones ?? string.Empty,
+                    usuario = reversa.usuario!.ToUpper()
+                });
+
+            return DbHelper.CreateOkResponse(reversionId);
+        }
+
+        /// <summary>
+        /// Procesa cada solicitud incluida en la reversa SINPE.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_ProcesarSolicitudes(
+            SqlConnection conn,
+            TesReversaSinpeModel reversa)
+        {
+            foreach (var item in reversa.lista!)
+            {
+                var procesaItem = TES_TransferenciaRevSinpe_ProcesarSolicitud(conn, item);
+                if (procesaItem.Code != 0)
+                    return procesaItem;
+            }
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        /// <summary>
+        /// Procesa la reversa SINPE de una solicitud individual.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_ProcesarSolicitud(
+            SqlConnection conn,
+            TesReversaSinpeListaModel item)
+        {
+            var tipoCuenta = TES_TransferenciaRevSinpe_ObtenerTipoCuenta(conn, item.cta_ahorros);
+            var infoTrans = TES_TransferenciaRevSinpe_ObtenerInfoTransaccion(conn, item.nsolicitud);
+
+            if (infoTrans == null)
+                return DbHelper.ErrorResponse($"No se encontró información SINPE para la solicitud {item.nsolicitud}.");
+
+            var parametros = new
+            {
+                CODIGO_RECHAZO_SINPE = infoTrans.RECHAZO_CODIGO,
+                CODIGO_REFERENCIA = infoTrans.COD_REFERENCIA,
+                COMPTOBANTE_CGP = infoTrans.COMPTOBANTE_CGP,
+                COMPROBANTE_INTERNO = infoTrans.COD_TRANSITO,
+                DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
+            };
+
+            var procedimiento = tipoCuenta == 1
+                ? "sp_Sinpe_ReversaDebitos"
+                : "sp_Sinpe_ReversaCreditos";
+
+            return TES_TransferenciaRevSinpe_EjecutarProcedimiento(conn, procedimiento, parametros);
+        }
+
+        /// <summary>
+        /// Obtiene el tipo de cuenta a partir del IBAN.
+        /// </summary>
+        private int TES_TransferenciaRevSinpe_ObtenerTipoCuenta(SqlConnection conn, string? cuentaIban)
+        {
+            const string query = @"select SUBSTRING(@CuentaIBAN, 9, 2)";
+
+            return conn.QueryFirstOrDefault<int>(
+                query,
+                new { CuentaIBAN = cuentaIban ?? string.Empty });
+        }
+
+        // <summary>
+        /// Obtiene la información de tránsito SINPE asociada a una solicitud.
+        /// </summary>
+        private dynamic? TES_TransferenciaRevSinpe_ObtenerInfoTransaccion(
+            SqlConnection conn,
+            int nSolicitud)
+        {
+            const string query = @"
+SELECT
+    M.RECHAZO_CODIGO,
+    M.COD_REFERENCIA,
+    0 as COMPTOBANTE_CGP,
+    M.COMPROBANTE_INTERNO,
+    M.RECHAZO_DESC,
+    M.COD_TRANSITO
+FROM Tes_Transacciones T
+INNER JOIN SINPE_MOV_TRANSITO M
+    ON T.REFERENCIA_SINPE = M.COD_REFERENCIA
+WHERE T.NSOLICITUD = @Cod_Referencia";
+
+            return conn.QueryFirstOrDefault<dynamic>(
+                query,
+                new { Cod_Referencia = nSolicitud });
+        }
+
+        /// <summary>
+        /// Ejecuta el procedimiento de reversa SINPE y valida su respuesta.
+        /// </summary>
+        private ErrorDto TES_TransferenciaRevSinpe_EjecutarProcedimiento(
+            SqlConnection conn,
+            string procedimiento,
+            object parametros)
+        {
+            try
+            {
+                var resultado = conn.QueryFirstOrDefault<SinpeReversaResultado>(
+                    procedimiento,
+                    parametros,
+                    commandType: CommandType.StoredProcedure);
+
+                if (resultado == null)
+                    return DbHelper.ErrorResponse("El procedimiento no devolvió respuesta.");
+
+                if (resultado.Resultado != 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        resultado.DescripcionRechazo ?? "Ocurrió un error al reversar la transferencia.",
+                        resultado.Resultado);
+                }
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Registra la bitácora de la reversa SINPE aplicada.
+        /// </summary>
+        private void TES_TransferenciaRevSinpe_RegistrarBitacora(
+            TesReversaSinpeModel reversa,
+            int reversionId)
+        {
+            _mSecurity.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = reversa.codEmpresa,
+                Usuario = reversa.usuario,
+                Modulo = module,
+                Movimiento = "Aplica",
+                DetalleMovimiento = "Reversion Transferencia = " + reversionId +
+                                    " Id.Cuenta:" + reversa.id_banco + ", Tipo: TS",
+            });
         }
 
         #endregion
