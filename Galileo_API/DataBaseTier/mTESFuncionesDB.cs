@@ -651,7 +651,8 @@ where id_banco = @banco
 
             try
             {
-                string vRazon = GetParametro(request.codEmpresa, "14").PadRight(30, ' ');
+                string vRazon = GetParametro(request.codEmpresa, "14");
+                vRazon = vRazon.Length > 30 ? vRazon.Substring(0, 30) : vRazon.PadRight(30, ' ');
                 string vNumNegocio = GetParametro(request.codEmpresa, "15");
                 string vCedulaReg = GetParametro(request.codEmpresa, "13");
 
@@ -660,8 +661,9 @@ where id_banco = @banco
 
                 const string qCuenta = "select Cta from Tes_Bancos where id_Banco = @banco";
                 string vCuentaBancoRaw = request.conn.QueryFirstOrDefault<string>(qCuenta, new { banco = request.bancoId }) ?? "0";
+                string cuentaNormalizada = vCuentaBancoRaw.Replace("-", "").Trim();
 
-                if (!int.TryParse(vCuentaBancoRaw, out var cuentaN))
+                if (!long.TryParse(cuentaNormalizada, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cuentaN))
                     cuentaN = 0;
 
                 string vCuentaBanco = "001" + cuentaN.ToString("D8", CultureInfo.InvariantCulture);
@@ -718,10 +720,10 @@ where id_banco = @banco
                 {
                     lineaIndex++;
 
-                    string cuenta = (item.cta_ahorros ?? "")
-                        .PadRight(11)
-                        .Substring(0, 11)
-                        .Trim();
+                    string cuenta = (item.cta_ahorros ?? string.Empty).Trim();
+                    cuenta = cuenta.Length >= 11
+                        ? cuenta.Substring(0, 11)
+                        : cuenta.PadRight(11, ' ');
 
                     long montoCents = (long)Math.Round(
                         (item.monto ?? 0m) * 100m,
@@ -754,7 +756,12 @@ where id_banco = @banco
             }
         }
 
-        public ErrorDto<object> SbTeBcrComercial(SqlConnection conn, int CodEmpresa, int vBanco, string vTipoDoc, Func<long> resolveConsecutivo)
+        public ErrorDto<object> SbTeBcrComercial(
+    SqlConnection conn,
+    int CodEmpresa,
+    int vBanco,
+    string vTipoDoc,
+    Func<long> resolveConsecutivo)
         {
             try
             {
@@ -765,20 +772,47 @@ where id_banco = @banco
                 long bancoConsec = resolveConsecutivo();
                 DateTime fecha = DateTime.Now;
 
-                // consecutivo diario
                 string conArchivo = GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
                     .ToString("D3", CultureInfo.InvariantCulture);
 
                 var sb = new StringBuilder();
                 sb.AppendLine(BuildControlBcrComercial(cedulaReg, conArchivo, fecha));
 
-                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+                var lineasDebito = conn.Query<string>(
+                    "exec spTES_BCR_Comercial 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte",
+                    new
+                    {
+                        banco = bancoId,
+                        bancoTDoc,
+                        numNegocio,
+                        bancoConsec,
+                        cantidadSolicitudes = 100000,
+                        mSolInicio = 0,
+                        mSolCorte = 0,
+                        mFechaInicio = (string?)null,
+                        mFechaCorte = (string?)null
+                    });
 
-                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+                foreach (var linea in lineasDebito)
+                    AppendIfNotEmpty(sb, linea);
+
+                var lineasCredito = conn.Query<string>(
+                    "exec spTES_BCR_Comercial 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte",
+                    new
+                    {
+                        banco = bancoId,
+                        bancoTDoc,
+                        numNegocio,
+                        bancoConsec,
+                        cantidadSolicitudes = 100000,
+                        mSolInicio = 0,
+                        mSolCorte = 0,
+                        mFechaInicio = (string?)null,
+                        mFechaCorte = (string?)null
+                    });
+
+                foreach (var linea in lineasCredito)
+                    AppendIfNotEmpty(sb, linea);
 
                 return ArchivoResponse(bancoConsec, "txt", sb);
             }
@@ -788,34 +822,63 @@ where id_banco = @banco
             }
         }
 
-        public static ErrorDto<object> SbTeBcrEmpresarialCore(SqlConnection conn, int CodEmpresa, int vBanco, string vTipoDoc, Func<long> resolveConsecutivo)
+        public static ErrorDto<object> SbTeBcrEmpresarialCore(
+    SqlConnection conn,
+    int CodEmpresa,
+    int vBanco,
+    string vTipoDoc,
+    Func<long> resolveConsecutivo)
         {
-
             try
             {
-                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(conn);
+                var (numNegocio, cedulaReg) = GetEmpresaNumNegocioYReg(conn);
 
                 int bancoId = vBanco;
                 string bancoTDoc = vTipoDoc;
                 long bancoConsec = resolveConsecutivo();
                 DateTime fecha = DateTime.Now;
 
-                // consecutivo diario
-                string conArchivo = MTesFuncionesDb
-                    .GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
+                string conArchivo = GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
                     .ToString("D3", CultureInfo.InvariantCulture);
 
                 var sb = new StringBuilder();
-                sb.AppendLine(MTesFuncionesDb.BuildControlBcrEmpresarial(cedulaReg, conArchivo, fecha));
+                sb.AppendLine(BuildControlBcrEmpresarial(cedulaReg, conArchivo, fecha));
 
-                // líneas 2 y 3 (se mantiene SP actual por compatibilidad)
-                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+                var lineasDebito = conn.Query<string>(
+                    "exec spTES_BCR_Empresarial 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte",
+                    new
+                    {
+                        banco = bancoId,
+                        bancoTDoc,
+                        numNegocio,
+                        bancoConsec,
+                        cantidadSolicitudes = 100000,
+                        mSolInicio = 0,
+                        mSolCorte = 0,
+                        mFechaInicio = (string?)null,
+                        mFechaCorte = (string?)null
+                    });
 
-                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+                foreach (var linea in lineasDebito)
+                    AppendIfNotEmpty(sb, linea);
+
+                var lineasCredito = conn.Query<string>(
+                    "exec spTES_BCR_Empresarial 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte",
+                    new
+                    {
+                        banco = bancoId,
+                        bancoTDoc,
+                        numNegocio,
+                        bancoConsec,
+                        cantidadSolicitudes = 100000,
+                        mSolInicio = 0,
+                        mSolCorte = 0,
+                        mFechaInicio = (string?)null,
+                        mFechaCorte = (string?)null
+                    });
+
+                foreach (var linea in lineasCredito)
+                    AppendIfNotEmpty(sb, linea);
 
                 return ArchivoResponse(bancoConsec, "txt", sb);
             }

@@ -1204,7 +1204,7 @@ where nsolicitud in ";
                 const string query = @"exec spTES_BCT_Enlace 
 @banco, @bancoTDoc, @bancoConsec, @cantidad, @solInicio, @solCorte, @fechaInicio, @fechaCorte";
 
-                var resultado = connection.QueryFirstOrDefault(query, new
+                var lineas = connection.Query<dynamic>(query, new
                 {
                     banco = BancoID,
                     bancoTDoc = BancoTDoc,
@@ -1216,8 +1216,11 @@ where nsolicitud in ";
                     fechaCorte
                 });
 
-                string linea = resultado?.Linea?.ToString() ?? string.Empty;
-                MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
+                foreach (var item in lineas)
+                {
+                    string linea = item?.Linea?.ToString() ?? string.Empty;
+                    MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
+                }
 
                 return MTesFuncionesDb.ArchivoResponse(BancoConsec, "txt", sb);
             }
@@ -1228,9 +1231,9 @@ where nsolicitud in ";
         }
 
         private ErrorDto<object> sbTeBNCR_Sinpe(
-            int CodEmpresa,
-            TesEmisionDocFiltros filtros,
-            Func<long> resolveConsecutivo)
+    int CodEmpresa,
+    TesEmisionDocFiltros filtros,
+    Func<long> resolveConsecutivo)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1238,20 +1241,21 @@ where nsolicitud in ";
                 Code = 0,
                 Description = ""
             };
-            
+
             int txtCantidadSolicitudes = filtros.cantidad;
             var mFechaInicio = filtros.fecha_inicio?.Date;
             var mFechaCorte = filtros.fecha_corte?.Date.AddDays(1).AddTicks(-1);
             int? mSolInicio = null;
             int? mSolCorte = null;
+
             if (filtros.generarPor == "solicitudes")
             {
                 mSolInicio = filtros.minimo;
                 mSolCorte = filtros.maximo;
             }
+
             try
             {
-                //Inicializa Variables de Bancos y Consecutivo
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
                 long BancoConsec = resolveConsecutivo();
@@ -1268,35 +1272,35 @@ where nsolicitud in ";
                     fechaCorte = mFechaCorte
                 };
 
-                // En vez de guardar el archivo, lo devuelve como string
                 var sb = new StringBuilder();
 
-                //ENCABEZADO: LINEA 1
-                var query = @"exec spTES_BNCR_SINPE 1, @banco, @bancoTDoc, 
-                        @bancoConsec, @cantidad, 
-                        @solInicio, @solCorte, @fechaInicio, @fechaCorte";
-                var Linea1 = connection.QueryFirstOrDefault<string>(query,
-                    parametros);
+                AppendLineasBncrSinpe(
+                    connection,
+                    sb,
+                    @"exec spTES_BNCR_SINPE 1, @banco, @bancoTDoc,
+                @bancoConsec, @cantidad,
+                @solInicio, @solCorte, @fechaInicio, @fechaCorte",
+                    parametros,
+                    "Linea1");
 
-                sb.AppendLine(Linea1);
+                AppendLineasBncrSinpe(
+                    connection,
+                    sb,
+                    @"exec spTES_BNCR_SINPE 2, @banco, @bancoTDoc,
+                @bancoConsec, @cantidad,
+                @solInicio, @solCorte, @fechaInicio, @fechaCorte",
+                    parametros,
+                    "Linea2");
 
-                //DEBITOS
-                query = @"exec spTES_BNCR_SINPE 2, @banco, @bancoTDoc, 
-                        @bancoConsec, @cantidad, 
-                        @solInicio, @solCorte, @fechaInicio, @fechaCorte";
-                var Linea2 = connection.QueryFirstOrDefault<string>(query,
-                   parametros);
-                sb.AppendLine(Linea2);
+                AppendLineasBncrSinpe(
+                    connection,
+                    sb,
+                    @"exec spTES_BNCR_SINPE 3, @banco, @bancoTDoc,
+                @bancoConsec, @cantidad,
+                @solInicio, @solCorte, @fechaInicio, @fechaCorte",
+                    parametros,
+                    "Linea3");
 
-                //CREDITOS
-                query = @"exec spTES_BNCR_SINPE 3, @banco, @bancoTDoc, 
-                        @bancoConsec, @cantidad, 
-                        @solInicio, @solCorte, @fechaInicio, @fechaCorte";
-                var Linea3 = connection.QueryFirstOrDefault<string>(query,
-                    parametros);
-                sb.AppendLine(Linea3);
-
-                // Devolver el contenido generado en el object
                 var archivo = new
                 {
                     bancoConsec = BancoConsec.ToString(),
@@ -1312,6 +1316,29 @@ where nsolicitud in ";
             }
 
             return resp;
+        }
+
+        private static void AppendLineasBncrSinpe(
+    SqlConnection connection,
+    StringBuilder sb,
+    string query,
+    object parametros,
+    string columna)
+        {
+            var lineas = connection.Query(query, parametros);
+
+            foreach (var item in lineas)
+            {
+                var fila = item as IDictionary<string, object>;
+                if (fila == null || !fila.TryGetValue(columna, out var valor))
+                    continue;
+
+                var linea = valor?.ToString() ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(linea))
+                {
+                    sb.AppendLine(linea);
+                }
+            }
         }
 
         public ErrorDto<int> ValidaUsuarioEspecial(int CodEmpresa, string usuario)

@@ -452,7 +452,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var reversionId = TES_TransferenciaRevSinpe_CrearReversion(conn, reversa);
                 if (reversionId.Code != 0)
-                    return reversionId;
+                    return new ErrorDto { Code = reversionId.Code, Description = reversionId.Description };
 
                 var procesa = TES_TransferenciaRevSinpe_ProcesarSolicitudes(conn, reversa);
                 if (procesa.Code != 0)
@@ -589,10 +589,10 @@ exec spTES_TE_Reversion_Main
         /// </summary>
         private ErrorDto TES_TransferenciaRevSinpe_ProcesarSolicitud(
             SqlConnection conn,
-            TesReversaSinpeListaModel item)
+            TransferenciaSolicitudData item)
         {
             var tipoCuenta = TES_TransferenciaRevSinpe_ObtenerTipoCuenta(conn, item.cta_ahorros);
-            var infoTrans = TES_TransferenciaRevSinpe_ObtenerInfoTransaccion(conn, item.nsolicitud);
+            var infoTrans = TES_TransferenciaRevSinpe_ObtenerInfoTransaccion(conn, item.nsolicitud ?? 0);
 
             if (infoTrans == null)
                 return DbHelper.ErrorResponse($"No se encontró información SINPE para la solicitud {item.nsolicitud}.");
@@ -693,7 +693,7 @@ WHERE T.NSOLICITUD = @Cod_Referencia";
             _mSecurity.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = reversa.codEmpresa,
-                Usuario = reversa.usuario,
+                Usuario = reversa.usuario!,
                 Modulo = module,
                 Movimiento = "Aplica",
                 DetalleMovimiento = "Reversion Transferencia = " + reversionId +
