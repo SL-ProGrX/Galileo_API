@@ -6,6 +6,7 @@ using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
 using System.Globalization;
 using System.Text;
@@ -640,6 +641,22 @@ where B.estado = 'A'
             List<TesTransaccionDto> Trans()
                 => ctx.Conn.Query<TesTransaccionDto>(ctx.Q.QueryTransac, ctx.Q.Parametros).ToList();
 
+            var solInicio = ctx.Filtro.generarPor == "solicitudes"
+                ? ctx.Filtro.minimo
+                : (int?)null;
+
+            var solCorte = ctx.Filtro.generarPor == "solicitudes"
+                ? ctx.Filtro.maximo
+                : (int?)null;
+
+            var fechaInicio = ctx.Filtro.generarPor == "fechas"
+                ? ctx.Filtro.fecha_inicio?.Date
+                : (DateTime?)null;
+
+            var fechaCorte = ctx.Filtro.generarPor == "fechas"
+                ? ctx.Filtro.fecha_corte?.Date.AddDays(1).AddTicks(-1)
+                : (DateTime?)null;
+
             return ctx.Filtro.formatoTE switch
             {
                 "A" => ProcesarTE_BNCR_InternetBanking(
@@ -668,7 +685,12 @@ where B.estado = 'A'
                     ctx.CodEmpresa,
                     ctx.Filtro.banco,
                     ctx.Filtro.tipoDoc,
-                    resolveConsecutivo: () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Filtro.cantidad,
+                            solInicio,
+                            solCorte,
+                            fechaInicio,
+                            fechaCorte,
+                            () => ResolverBancoConsecTransferencia(ctx)),
 
                 "E" => sbTeBCT_Enlace(
                     ctx.CodEmpresa,
@@ -676,11 +698,16 @@ where B.estado = 'A'
                     () => ResolverBancoConsecTransferencia(ctx)),
 
                 "F" => mTesFunciones.SbTeBcrComercial(
-                    ctx.Conn,
-                    ctx.CodEmpresa,
-                    ctx.Filtro.banco,
-                    ctx.Filtro.tipoDoc,
-                    resolveConsecutivo: () => ResolverBancoConsecTransferencia(ctx)),
+                    DbHelper.OpenConnection(_portalDB, ctx.CodEmpresa),
+                            ctx.CodEmpresa,
+                            ctx.Filtro.banco,
+                            ctx.Filtro.tipoDoc,
+                            ctx.Filtro.cantidad,
+                            solInicio,
+                            solCorte,
+                            fechaInicio,
+                            fechaCorte,
+                            () => ResolverBancoConsecTransferencia(ctx)),
 
                 "G" => sbTeBNCR_Sinpe(
                     ctx.CodEmpresa,
@@ -734,9 +761,6 @@ where id_banco = @banco and tipo = @tipoDoc";
 
         private long ResolverBancoConsecTransferencia(EmisionContext ctx)
         {
-            if (ctx.Filtro.docInicial > 0)
-                return ctx.Filtro.docInicial;
-
             return mTesoreria
                 .fxTesTipoDocConsec(
                     ctx.CodEmpresa,

@@ -115,6 +115,8 @@ Order by Nsolicitud";
                     usuario = "sinpe"
                 };
 
+
+
                 return Formato switch
                 {
                     "A" => // Banco Nacional
@@ -128,12 +130,33 @@ Order by Nsolicitud";
                             resolveConsecutivo: () => NTransac),
                     "C" => // BCR Planilla
                         ProcesarFormatoC(CodEmpresa, Banco, TipoDoc, NTransac, conn, parametros, LoadTransacciones()),
-                    
-                    "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(conn,CodEmpresa, Banco, TipoDoc, resolveConsecutivo: () => NTransac),
-                    
+
+                    "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(
+                            conn,
+                            CodEmpresa,
+                            Banco,
+                            TipoDoc,
+                            100000,
+                            null,
+                            null,
+                            null,
+                            null,
+                            resolveConsecutivo: () => NTransac),
+
                     "E" => sbTeBCT_Enlace(CodEmpresa, Banco, TipoDoc, NTransac),
-                    "F" => mTesFunciones.SbTeBcrComercial(conn, CodEmpresa, Banco, TipoDoc, resolveConsecutivo: () => NTransac),
-                   
+
+                    "F" => mTesFunciones.SbTeBcrComercial(
+                        conn,
+                        CodEmpresa,
+                        Banco,
+                        TipoDoc,
+                        100000,
+                        null,
+                        null,
+                        null,
+                        null,
+                        resolveConsecutivo: () => NTransac),
+
                     "G" => sbTeBNCR_Sinpe(CodEmpresa, Banco, TipoDoc, NTransac),
                     "DV1" or "DV2" => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan),
                     "S" => Err("SINPE está en espera / no implementado."),

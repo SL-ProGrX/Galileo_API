@@ -471,7 +471,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Valida la información mínima requerida para aplicar la reversa SINPE.
         /// </summary>
-        private ErrorDto TES_TransferenciaRevSinpe_ValidarEntrada(TesReversaSinpeModel reversa)
+        private static ErrorDto TES_TransferenciaRevSinpe_ValidarEntrada(TesReversaSinpeModel reversa)
         {
             if (reversa.lista == null || reversa.lista.Count == 0)
                 return DbHelper.ErrorResponse("No existen registros para reversar.");
@@ -482,7 +482,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Valida la clave y el nivel de autorización del usuario para reversar transferencias SINPE.
         /// </summary>
-        private ErrorDto TES_TransferenciaRevSinpe_ValidarAutorizacion(
+        private static ErrorDto TES_TransferenciaRevSinpe_ValidarAutorizacion(
             SqlConnection conn,
             TesReversaSinpeModel reversa)
         {
@@ -653,7 +653,7 @@ WHERE T.NSOLICITUD = @Cod_Referencia";
         /// <summary>
         /// Ejecuta el procedimiento de reversa SINPE y valida su respuesta.
         /// </summary>
-        private ErrorDto TES_TransferenciaRevSinpe_EjecutarProcedimiento(
+        private static ErrorDto TES_TransferenciaRevSinpe_EjecutarProcedimiento(
             SqlConnection conn,
             string procedimiento,
             object parametros)
