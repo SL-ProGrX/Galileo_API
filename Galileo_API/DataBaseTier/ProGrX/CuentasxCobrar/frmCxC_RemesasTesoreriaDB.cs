@@ -479,7 +479,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CxC_RemesasTesoreria_Traslado_Aplicar(int CodEmpresa, CxCRemesasTesoreriaTrasladoAplicarRequest request)
+        public ErrorDto CxC_RemesasTesoreria_Traslado_Aplicar(int CodEmpresa,CxCRemesasTesoreriaTrasladoAplicarRequest request)
         {
             var validacion = ValidarTrasladoAplicar(request);
             if (validacion.Code != 0)
@@ -487,33 +487,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return validacion;
             }
 
+            var tesoreriaRemesa = request.tesoreria_remesa.GetValueOrDefault();
+            var agrupar = request.agrupar.GetValueOrDefault();
+
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
                 if (conn.State != System.Data.ConnectionState.Open)
                 {
                     conn.Open();
                 }
 
-                if (!RemesaEstaCerrada(conn, request.tesoreria_remesa))
+                if (!RemesaEstaCerrada(conn, tesoreriaRemesa))
                 {
-                    return DbHelper.ErrorResponse(CxCRemesasTesoreriaConstantes.MensajeRemesaNoCerrada);
+                    return DbHelper.ErrorResponse(
+                        CxCRemesasTesoreriaConstantes.MensajeRemesaNoCerrada);
                 }
 
                 var fecha = fxFechaServidor(CodEmpresa);
-                var unidadOmision = ObtenerParametroCxC(conn, CxCRemesasTesoreriaConstantes.ParametroUnidadOmision);
-                var conceptoOmision = ObtenerParametroCxC(conn, CxCRemesasTesoreriaConstantes.ParametroConceptoOmision);
+
+                var unidadOmision = ObtenerParametroCxC(
+                    conn,
+                    CxCRemesasTesoreriaConstantes.ParametroUnidadOmision);
+
+                var conceptoOmision = ObtenerParametroCxC(
+                    conn,
+                    CxCRemesasTesoreriaConstantes.ParametroConceptoOmision);
 
                 using var tx = conn.BeginTransaction();
 
-                var rows = ObtenerRowsTraslado(conn, tx, request.tesoreria_remesa, request.agrupar);
+                var rows = ObtenerRowsTraslado(
+                    conn,
+                    tx,
+                    tesoreriaRemesa,
+                    agrupar);
 
                 var contexto = new CxCRemesasTesoreriaTrasladoContext
                 {
                     CodEmpresa = CodEmpresa,
-                    TesoreriaRemesa = request.tesoreria_remesa,
+                    TesoreriaRemesa = tesoreriaRemesa,
                     Usuario = request.usuario,
-                    Agrupar = request.agrupar,
+                    Agrupar = agrupar,
                     Fecha = fecha,
                     UnidadOmision = unidadOmision,
                     ConceptoOmision = conceptoOmision
@@ -524,19 +539,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     ProcesarTrasladoRow(conn, tx, contexto, row);
                 }
 
-                ActualizarEstadoRemesaTrasladada(conn, tx, request.tesoreria_remesa);
+                ActualizarEstadoRemesaTrasladada(
+                    conn,
+                    tx,
+                    tesoreriaRemesa);
 
                 tx.Commit();
 
-                return DbHelper.OkResponse(CxCRemesasTesoreriaConstantes.MensajeTrasladoOk);
+                return DbHelper.OkResponse(
+                    CxCRemesasTesoreriaConstantes.MensajeTrasladoOk);
             }
             catch (DbException ex)
             {
-                return DbHelper.ErrorResponse($"No fue posible aplicar el traslado. {ex.Message}");
+                return DbHelper.ErrorResponse(
+                    $"No fue posible aplicar el traslado. {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.ErrorResponse($"No fue posible aplicar el traslado. {ex.Message}");
+                return DbHelper.ErrorResponse(
+                    $"No fue posible aplicar el traslado. {ex.Message}");
             }
         }
         #endregion

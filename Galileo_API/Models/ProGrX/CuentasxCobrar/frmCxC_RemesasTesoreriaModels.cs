@@ -107,9 +107,9 @@
 
     public class CxCRemesasTesoreriaTrasladoAplicarRequest
     {
-        public int tesoreria_remesa { get; set; }
+        public int? tesoreria_remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public bool agrupar { get; set; }
+        public bool? agrupar { get; set; }
     }
 
     public class CxCRemesasTesoreriaReactivacionDto
