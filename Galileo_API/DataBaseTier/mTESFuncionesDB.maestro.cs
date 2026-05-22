@@ -124,7 +124,7 @@ INSERT INTO Tes_Trans_Asiento (
                     CC = detalle.vCC
                 });
             }
-            catch
+            catch (DbException)
             {
                 // ideal: log
             }
