@@ -564,146 +564,140 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private ErrorDto InsertarCargo(int codEmpresa, CrCatalogoCargoGuardarRequest request)
         {
             const string sqlInsert = @"
-                insert into cargos_adicionales
-                (
-                    cod_cargo,
-                    descripcion,
-                    automatico,
-                    AUMENTA_BASE_CRD,
-                    base,
-                    tipo,
-                    valor,
-                    cod_cuenta,
-                    tipo_deduccion,
-                    plazo_tipo,
-                    plazo_dias,
-                    monto_inicio,
-                    monto_corte,
-                    diferido_cargo,
-                    diferido_cod_cuenta,
-                    iva_porcentaje,
-                    activo
-                )
-                values
-                (
-                    @CodCargo,
-                    @Descripcion,
-                    @Automatico,
-                    @AumentaBaseCrd,
-                    @BaseCalculo,
-                    @Tipo,
-                    @Valor,
-                    @CodCuenta,
-                    @TipoDeduccion,
-                    @PlazoTipo,
-                    @PlazoDias,
-                    @MontoInicio,
-                    @MontoCorte,
-                    @DiferidoCargo,
-                    @DiferidoCodCuenta,
-                    @IvaPorcentaje,
-                    @Activo
-                );";
+            insert into cargos_adicionales
+            (
+                cod_cargo,
+                descripcion,
+                automatico,
+                AUMENTA_BASE_CRD,
+                base,
+                tipo,
+                valor,
+                cod_cuenta,
+                tipo_deduccion,
+                plazo_tipo,
+                plazo_dias,
+                monto_inicio,
+                monto_corte,
+                diferido_cargo,
+                diferido_cod_cuenta,
+                iva_porcentaje,
+                activo
+            )
+            values
+            (
+                @CodCargo,
+                @Descripcion,
+                @Automatico,
+                @AumentaBaseCrd,
+                @BaseCalculo,
+                @Tipo,
+                @Valor,
+                @CodCuenta,
+                @TipoDeduccion,
+                @PlazoTipo,
+                @PlazoDias,
+                @MontoInicio,
+                @MontoCorte,
+                @DiferidoCargo,
+                @DiferidoCodCuenta,
+                @IvaPorcentaje,
+                @Activo
+            );";
 
             var resp = DbHelper.ExecuteNonQuery(
                 _portalDb,
                 codEmpresa,
                 sqlInsert,
-                new
-                {
-                    CodCargo = request.cargo.cod_cargo,
-                    Descripcion = request.cargo.descripcion,
-                    Automatico = request.cargo.automatico ? 1 : 0,
-                    AumentaBaseCrd = request.cargo.aumenta_base_crd ? 1 : 0,
-                    BaseCalculo = request.cargo.base_calculo,
-                    Tipo = request.cargo.tipo,
-                    Valor = request.cargo.valor,
-                    CodCuenta = request.cargo.cod_cuenta,
-                    TipoDeduccion = request.cargo.tipo_deduccion,
-                    PlazoTipo = request.cargo.plazo_tipo,
-                    PlazoDias = request.cargo.plazo_dias < 0 ? 0 : request.cargo.plazo_dias,
-                    MontoInicio = request.cargo.monto_inicio,
-                    MontoCorte = request.cargo.monto_corte,
-                    DiferidoCargo = request.cargo.diferido_cargo ? 1 : 0,
-                    DiferidoCodCuenta = request.cargo.diferido_cargo ? request.cargo.diferido_cod_cuenta : string.Empty,
-                    IvaPorcentaje = request.cargo.iva_porcentaje,
-                    Activo = request.cargo.activo ? 1 : 0
-                }
+                CrearParametrosCargo(request.cargo)
             );
 
-            if (resp.Code < 0)
-                return resp;
-
-            RegistrarBitacora(
+            return FinalizarGuardadoCargo(
                 codEmpresa,
                 request.usuario,
+                request.cargo.cod_cargo,
                 "Registra - WEB",
-                $"Cargo Adicional Cod: {request.cargo.cod_cargo}"
+                resp
             );
-
-            return new ErrorDto
-            {
-                Code = 0,
-                Description = guardadoExisto
-            };
         }
 
         private ErrorDto ActualizarCargo(int codEmpresa, CrCatalogoCargoGuardarRequest request)
         {
             const string sqlUpdate = @"
-                update cargos_adicionales
-                set descripcion = @Descripcion,
-                    automatico = @Automatico,
-                    AUMENTA_BASE_CRD = @AumentaBaseCrd,
-                    base = @BaseCalculo,
-                    tipo = @Tipo,
-                    valor = @Valor,
-                    cod_cuenta = @CodCuenta,
-                    tipo_deduccion = @TipoDeduccion,
-                    plazo_tipo = @PlazoTipo,
-                    plazo_dias = @PlazoDias,
-                    monto_inicio = @MontoInicio,
-                    monto_corte = @MontoCorte,
-                    diferido_cargo = @DiferidoCargo,
-                    diferido_cod_cuenta = @DiferidoCodCuenta,
-                    iva_porcentaje = @IvaPorcentaje,
-                    activo = @Activo
-                where cod_cargo = @CodCargo;";
+            update cargos_adicionales
+            set descripcion = @Descripcion,
+                automatico = @Automatico,
+                AUMENTA_BASE_CRD = @AumentaBaseCrd,
+                base = @BaseCalculo,
+                tipo = @Tipo,
+                valor = @Valor,
+                cod_cuenta = @CodCuenta,
+                tipo_deduccion = @TipoDeduccion,
+                plazo_tipo = @PlazoTipo,
+                plazo_dias = @PlazoDias,
+                monto_inicio = @MontoInicio,
+                monto_corte = @MontoCorte,
+                diferido_cargo = @DiferidoCargo,
+                diferido_cod_cuenta = @DiferidoCodCuenta,
+                iva_porcentaje = @IvaPorcentaje,
+                activo = @Activo
+            where cod_cargo = @CodCargo;";
 
             var resp = DbHelper.ExecuteNonQuery(
                 _portalDb,
                 codEmpresa,
                 sqlUpdate,
-                new
-                {
-                    CodCargo = request.cargo.cod_cargo,
-                    Descripcion = request.cargo.descripcion,
-                    Automatico = request.cargo.automatico ? 1 : 0,
-                    AumentaBaseCrd = request.cargo.aumenta_base_crd ? 1 : 0,
-                    BaseCalculo = request.cargo.base_calculo,
-                    Tipo = request.cargo.tipo,
-                    Valor = request.cargo.valor,
-                    CodCuenta = request.cargo.cod_cuenta,
-                    TipoDeduccion = request.cargo.tipo_deduccion,
-                    PlazoTipo = request.cargo.plazo_tipo,
-                    PlazoDias = request.cargo.plazo_dias < 0 ? 0 : request.cargo.plazo_dias,
-                    MontoInicio = request.cargo.monto_inicio,
-                    MontoCorte = request.cargo.monto_corte,
-                    DiferidoCargo = request.cargo.diferido_cargo ? 1 : 0,
-                    DiferidoCodCuenta = request.cargo.diferido_cargo ? request.cargo.diferido_cod_cuenta : string.Empty,
-                    IvaPorcentaje = request.cargo.iva_porcentaje,
-                    Activo = request.cargo.activo ? 1 : 0
-                }
+                CrearParametrosCargo(request.cargo)
             );
 
+            return FinalizarGuardadoCargo(
+                codEmpresa,
+                request.usuario,
+                request.cargo.cod_cargo,
+                "Modifica - WEB",
+                resp
+            );
+        }
+
+        private static object CrearParametrosCargo(CrCatalogoCargoData cargo)
+        {
+            return new
+            {
+                CodCargo = cargo.cod_cargo,
+                Descripcion = cargo.descripcion,
+                Automatico = cargo.automatico ? 1 : 0,
+                AumentaBaseCrd = cargo.aumenta_base_crd ? 1 : 0,
+                BaseCalculo = cargo.base_calculo,
+                Tipo = cargo.tipo,
+                Valor = cargo.valor,
+                CodCuenta = cargo.cod_cuenta,
+                TipoDeduccion = cargo.tipo_deduccion,
+                PlazoTipo = cargo.plazo_tipo,
+                PlazoDias = cargo.plazo_dias < 0 ? 0 : cargo.plazo_dias,
+                MontoInicio = cargo.monto_inicio,
+                MontoCorte = cargo.monto_corte,
+                DiferidoCargo = cargo.diferido_cargo ? 1 : 0,
+                DiferidoCodCuenta = cargo.diferido_cargo ? cargo.diferido_cod_cuenta : string.Empty,
+                IvaPorcentaje = cargo.iva_porcentaje,
+                Activo = cargo.activo ? 1 : 0
+            };
+        }
+
+        private ErrorDto FinalizarGuardadoCargo(
+            int codEmpresa,
+            string usuario,
+            string codCargo,
+            string movimiento,
+            ErrorDto resp)
+        {
             if (resp.Code < 0)
                 return resp;
 
             RegistrarBitacora(
                 codEmpresa,
-                request.usuario,
-                "Modifica - WEB",
-                $"Cargo Adicional Cod: {request.cargo.cod_cargo}"
+                usuario,
+                movimiento,
+                $"Cargo Adicional Cod: {codCargo}"
             );
 
             return new ErrorDto
