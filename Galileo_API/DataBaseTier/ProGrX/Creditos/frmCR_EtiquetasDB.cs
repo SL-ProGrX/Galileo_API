@@ -107,15 +107,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             tagCodigo = LimpiarCodigo(tagCodigo);
 
-            if (string.IsNullOrWhiteSpace(tagCodigo))
-            {
-                return new ErrorDto<CrEtiquetaNotificacionData>
-                {
-                    Code = -1,
-                    Description = "Debe indicar el codigo de la etiqueta."
-                };
-            }
-
             const string sqlQuery = @"
                 select
                     rtrim(CT.TAG_CODIGO) as tag_codigo,
@@ -277,15 +268,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.notificacion.cc_email = LimpiarTexto(request.notificacion.cc_email);
             request.notificacion.mensaje = (request.notificacion.mensaje ?? string.Empty).Trim();
 
-            if (string.IsNullOrWhiteSpace(request.notificacion.tag_codigo))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el codigo de la etiqueta."
-                };
-            }
-
             var existe = ExisteNotificacion(codEmpresa, request.notificacion.tag_codigo);
 
             return existe
@@ -304,15 +286,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrEtiquetaNotificacionEliminarRequest request)
         {
             request.tag_codigo = LimpiarCodigo(request.tag_codigo);
-
-            if (string.IsNullOrWhiteSpace(request.tag_codigo))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el codigo de la etiqueta."
-                };
-            }
 
             const string sqlDelete = @"
                 delete from CRD_TAGS_AVISOS
