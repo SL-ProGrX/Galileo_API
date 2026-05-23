@@ -175,7 +175,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CcProcesoMensualArchivoF25RegistroDbModel registro,
             string codigoInstitucion)
         {
-            if (string.Equals(
+            var inicioStr = registro.Inicio.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+            var corteStr = registro.Corte.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+
+            if (string.Equals(  
                 registro.TipoDeduc?.Trim(),
                 TipoDeduccionMonto,
                 StringComparison.OrdinalIgnoreCase))
@@ -184,9 +187,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     + ";"
                     + codigoInstitucion.Trim()
                     + ";"
-                    + registro.Inicio.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                    + inicioStr
                     + ";"
-                    + registro.Corte.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                    + corteStr
                     + ";"
                     + registro.CodDeduccion
                     + ";"
@@ -201,7 +204,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ";"
                 + codigoInstitucion.Trim()
                 + ";"
-                + registro.Inicio.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                + inicioStr
                 + ";31.12.9999"
                 + ";"
                 + registro.CodDeduccion
@@ -264,8 +267,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public decimal PorcDeduc { get; set; } = 0;
             public string TipoDeduc { get; set; } = string.Empty;
             public string Movimiento { get; set; } = string.Empty;
-            public DateTime? Inicio { get; set; }
-            public DateTime? Corte { get; set; } 
+            public DateTime Inicio { get; set; }
+            public DateTime Corte { get; set; } 
             public string Nombre { get; set; } = string.Empty;
         }
     }

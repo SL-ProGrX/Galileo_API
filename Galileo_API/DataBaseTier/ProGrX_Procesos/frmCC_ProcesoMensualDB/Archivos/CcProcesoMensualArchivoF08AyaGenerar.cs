@@ -265,7 +265,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ObtenerAnioProceso(fechaProceso)
                 + " ";
 
-            linea += configuracion.FechaCorte.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " ";
+            linea += configuracion.FechaCorte?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " ";
             linea += "00.00 ";
             linea += fechaProceso.ToString(CultureInfo.InvariantCulture) + "1 ";
             linea += "00000.00";
@@ -355,7 +355,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private static string ObtenerMesProceso(decimal fechaProceso)
         {
             var fechaBase = Math.Truncate(fechaProceso)
-                .ToString(CultureInfo.InvariantCulture);
+                .ToString("0", CultureInfo.InvariantCulture);
 
             return fechaBase.Length >= 6
                 ? fechaBase.Substring(4, 2)
@@ -365,7 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private static string ObtenerAnioProceso(decimal fechaProceso)
         {
             var fechaBase = Math.Truncate(fechaProceso)
-                .ToString(CultureInfo.InvariantCulture);
+                .ToString("0", CultureInfo.InvariantCulture);
 
             return fechaBase.Length >= 4
                 ? fechaBase[..4]

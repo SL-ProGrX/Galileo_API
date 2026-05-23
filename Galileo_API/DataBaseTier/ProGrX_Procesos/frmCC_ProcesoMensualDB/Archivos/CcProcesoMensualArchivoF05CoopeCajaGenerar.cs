@@ -330,11 +330,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private static CcProcesoMensualArchivoF05NombreModel SepararNombre(string? nombreCompleto)
         {
-            var resultado = new CcProcesoMensualArchivoF05NombreModel();
-            var texto = nombreCompleto ?? string.Empty;
+            var apellido1 = new StringBuilder();
+            var apellido2 = new StringBuilder();
+            var nombre1 = new StringBuilder();
+            var nombre2 = new StringBuilder();
+
             var posicion = 1;
 
-            foreach (var caracter in texto)
+            foreach (var caracter in nombreCompleto ?? string.Empty)
             {
                 if (caracter == ' ')
                 {
@@ -345,21 +348,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 switch (posicion)
                 {
                     case 1:
-                        resultado.Apellido1 += caracter;
+                        apellido1.Append(caracter);
                         break;
+
                     case 2:
-                        resultado.Apellido2 += caracter;
+                        apellido2.Append(caracter);
                         break;
+
                     case 3:
-                        resultado.Nombre1 += caracter;
+                        nombre1.Append(caracter);
                         break;
+
                     case 4:
-                        resultado.Nombre2 += caracter;
+                        nombre2.Append(caracter);
                         break;
                 }
             }
 
-            return resultado;
+            return new CcProcesoMensualArchivoF05NombreModel
+            {
+                Apellido1 = apellido1.ToString(),
+                Apellido2 = apellido2.ToString(),
+                Nombre1 = nombre1.ToString(),
+                Nombre2 = nombre2.ToString()
+            };
         }
 
         private static string CrearNombreArchivo(

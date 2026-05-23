@@ -63,18 +63,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 contenidoCsv,
                 Encoding.GetEncoding(1252));
 
-            /*
-             * VB6:
-             * Call sbSIFGridExportar(vGrid, vHeaders, vTempo, "Excel", True)
-             *
-             * Si ya tienes un helper de Excel en el API, aquí llamas ese helper
-             * usando las mismas columnas: empleado, concepto, cantidad, Monto.
-             *
-             * Ejemplo:
-             * CcProcesoMensualArchivoExcelHelper.GuardarExcelF32(
-             *     rutaArchivoExcel,
-             *     lineas);
-             */
 
             return new CcProcesoMensualArchivoGeneradoModel
             {

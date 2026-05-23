@@ -4,7 +4,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helpers
 {
-    public class CcProcesoMensualArchivoRutaHelperDb
+    public static class CcProcesoMensualArchivoRutaHelperDb
     {
         private const string CarpetaPlanilla = "Planilla";
         private const string NombreInstitucionDefault = "SinInstitucion";
@@ -103,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             File.WriteAllText(rutaArchivo, contenido, encoding);
         }
-      
+
         public static string DepurarCadena(string? valor)
         {
             var texto = valor?.Trim() ?? string.Empty;
@@ -113,11 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             {
                 var ascii = (int)caracter;
 
-                if (ascii > 47 && ascii < 123)
-                {
-                    resultado.Append(caracter);
-                }
-                else if (ascii == 32)
+                if ((ascii > 47 && ascii < 123) || ascii == 32)
                 {
                     resultado.Append(caracter);
                 }
@@ -125,37 +121,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             return resultado.ToString();
         }
-        public static string FxStringRelleno( string? cadena,  string direccion,  string charRelleno, int cantidad)
+        public static string FxStringRelleno(string? cadena, string direccion, string charRelleno, int cantidad)
         {
-            var valor = (cadena ?? string.Empty).Trim();
+            var valorBase = cadena?.Trim() ?? string.Empty;
 
-            if (valor.Length > cantidad)
-            {
-                valor = valor[..cantidad];
-            }
+            var valor = valorBase.Length > cantidad
+              ? valorBase[..cantidad]
+              : valorBase;
 
             var relleno = string.IsNullOrEmpty(charRelleno)
                 ? " "
                 : charRelleno[..1];
 
+            var resultado = new StringBuilder(valor);
+
             if (string.Equals(direccion, "D", StringComparison.OrdinalIgnoreCase))
             {
-                while (valor.Length < cantidad)
+                while (resultado.Length < cantidad)
                 {
-                    valor += relleno;
+                    resultado.Append(relleno);
                 }
-            }
-            else
-            {
-                while (valor.Length < cantidad)
-                {
-                    valor = relleno + valor;
-                }
+
+                return resultado.ToString()[..cantidad];
             }
 
-            return valor.Length > cantidad
-                ? valor[..cantidad]
-                : valor;
+            while (resultado.Length < cantidad)
+            {
+                resultado.Insert(0, relleno);
+            }
+
+            return resultado.ToString()[..cantidad];
         }
     }
 }

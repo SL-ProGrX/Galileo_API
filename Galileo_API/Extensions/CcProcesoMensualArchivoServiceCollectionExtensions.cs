@@ -14,7 +14,7 @@ namespace Galileo_API.Extensions
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF00ExcelGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF01CcssGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF02IntegraGenerar>();
-            services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF03ASECCSSGenerar>();
+            services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF03AseccssGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF03SifGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF04IceAcostelGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF05CoopeCajaGenerar>();

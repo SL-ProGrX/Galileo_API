@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF03ASECCSSGenerar : ICcProcesoMensualArchivoGenerator
+    public class CcProcesoMensualArchivoF03AseccssGenerar : ICcProcesoMensualArchivoGenerator
     { 
         public const string TipoAporte = "A";
         public const string TipoCredito = "C";

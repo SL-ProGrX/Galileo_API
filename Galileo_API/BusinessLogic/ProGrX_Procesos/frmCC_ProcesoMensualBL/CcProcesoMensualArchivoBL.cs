@@ -23,8 +23,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 
             var planillaEnvio = ObtenerPlanillaEnvio( connection,  request.CodInstitucion);
 
-            request.FechaProceso = request.FechaProceso;
-
             return EjecutarGenerador( connection, request, planillaEnvio);
         }
         private CcProcesoMensualArchivoGeneradoModel EjecutarGenerador(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request, string planillaEnvio)

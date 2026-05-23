@@ -165,10 +165,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             // i = 2
             int movimientoSpa = 2;
 
-            if (movimientoSpa == 4)
-            {
-                return string.Empty;
-            }
 
             var codigoDeduccion = ObtenerCodigoDeduccion(
                 registro.Tipo,

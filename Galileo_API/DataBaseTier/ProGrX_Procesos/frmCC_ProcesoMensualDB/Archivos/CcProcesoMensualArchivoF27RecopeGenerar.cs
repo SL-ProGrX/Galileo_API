@@ -223,7 +223,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var anio = int.Parse(fechaBase[..4], CultureInfo.InvariantCulture);
             var mes = int.Parse(fechaBase.AsSpan(4, 2), CultureInfo.InvariantCulture);
 
-            return new DateTime(anio, mes, 14);
+            return new DateTime(anio, mes, 14, 0, 0, 0, DateTimeKind.Unspecified);
         }
 
         private static string FormatearDecimalVb6(decimal valor)

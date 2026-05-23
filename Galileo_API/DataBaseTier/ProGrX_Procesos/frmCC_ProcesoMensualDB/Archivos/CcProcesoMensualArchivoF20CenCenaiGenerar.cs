@@ -263,6 +263,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             string nombreEmpresa)
         {
             var codigoTipo = ObtenerCodigoTipo(registro.Tipo, configuracion);
+            var inicioStr = configuracion.FechaInicio.HasValue
+                ? configuracion.FechaInicio.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                : string.Empty;
+            var corteStr = configuracion.FechaCorte.HasValue
+                ? configuracion.FechaCorte.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
+                : string.Empty;
 
             return configuracion.CodigoInstDeduc.Trim()
                 + ","
@@ -274,9 +280,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ",1,"
                 + FormatearDecimalVb6(registro.MontoActual)
                 + ",0,"
-                + configuracion.FechaInicio.ToString("yyyyMMdd", CultureInfo.InvariantCulture)
+                + inicioStr
                 + ","
-                + configuracion.FechaCorte.ToString("yyyyMMdd", CultureInfo.InvariantCulture)
+                + corteStr
                 + ",0,CRC";
         }
 
@@ -372,8 +378,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public int IncModificaciones { get; set; } = 0;
             public int IncMantienen { get; set; } = 0;
             public decimal PorcAporte { get; set; } = 0;
-            public DateTime? FechaInicio { get; set; }
-            public DateTime? FechaCorte { get; set; } 
+            public DateTime? FechaInicio { get; set; } = DateTime.MinValue;
+            public DateTime? FechaCorte { get; set; } = DateTime.MinValue;
         }
 
         private sealed class CcProcesoMensualArchivoF20RegistroDbModel
