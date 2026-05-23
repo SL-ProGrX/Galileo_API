@@ -40,4 +40,15 @@
         public int solicitud { get; set; }
         public string? documentoManual { get; set; }
     }
+
+    public class SbTeBcrParametros
+    {
+        public int vBanco { get; set; } = 0;
+        public string vTipoDoc { get; set; } = string.Empty;
+        public int cantidadSolicitudes { get; set; }
+        public int? solInicio { get; set; }
+        public int? solCorte { get; set; }
+        public DateTime? fechaInicio { get; set; }
+        public DateTime? fechaCorte { get; set; }
+    }
 }

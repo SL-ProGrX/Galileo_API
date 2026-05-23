@@ -242,12 +242,12 @@
 
         public class CrSeguimientoRevisionesTagErrorRow
         {
-            public int linea { get; set; } = 0;
             public bool seleccionado { get; set; } = false;
-            public string error_codigo { get; set; } = string.Empty;
-            public string error_descripcion { get; set; } = string.Empty;
+            public int linea { get; set; } = 0;
+            public int id_error { get; set; } = 0;
+            public string descripcion { get; set; } = string.Empty;
             public string aplicado { get; set; } = string.Empty;
-            public string nota_default { get; set; } = string.Empty;
+            public string mensaje { get; set; } = string.Empty;
         }
 
         public class CrSeguimientoRevisionesTagRevisionResponse

@@ -992,7 +992,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 filtros.sortField = "item";
 
             if (filtros.sortOrder == 0)
-                filtros.sortOrder = 1;
+                filtros.sortOrder = -1;
 
             if (filtros.pagina < 0) filtros.pagina = 0;
             if (filtros.paginacion <= 0) filtros.paginacion = 10;
@@ -1035,7 +1035,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (!whitelist.TryGetValue((f.sortField ?? string.Empty), out var safeField))
                 safeField = whitelist["item"];
 
-            var dir = (f.sortOrder == 0 ? "DESC" : "ASC");
+            var dir = (f.sortOrder == -1 ? "DESC" : "ASC");
             return (safeField, dir);
         }
 
@@ -1120,7 +1120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         select item, descripcion, correo
                         from (
                             select CEDJUR as item, descripcion, email as correo
-                            from cxp_proveedores {whereFiltro}
+                            from cxp_proveedores {whereFiltro} AND CEDJUR <> ''
                         ) t
                         order by {orderBy} {dir}
                         offset @offset rows fetch next @pageSize rows only;";

@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX.Credito;
 using Galileo_API.Models.ProGrX.Credito.Galileo_API.Models.ProGrX.Credito;
 using System.Data.Common;
 
@@ -45,8 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                             isnull(dbo.fxCrdDesembolsosOperacion(R.ID_SOLICITUD), 0) as montodesembolsos,
                             isnull(dbo.fxCrdRefundicionesOperacion(R.ID_SOLICITUD), 0) as montorefundicion,
                             isnull(dbo.fxCrdRefundicionesCuotaOperacion(R.ID_SOLICITUD), 0) as refundicionescuota,
-                            cast(0 as decimal(18, 2)) as desembolsoscuota
-                        ) as desembolsoscuota
+                        cast(0 as decimal(18, 2)) as desembolsoscuota
                         from REG_CREDITOS R
                         inner join SOCIOS S on S.cedula = R.cedula
                         inner join AFI_ESTADOS_PERSONA E on S.ESTADOACTUAL = E.COD_ESTADO
