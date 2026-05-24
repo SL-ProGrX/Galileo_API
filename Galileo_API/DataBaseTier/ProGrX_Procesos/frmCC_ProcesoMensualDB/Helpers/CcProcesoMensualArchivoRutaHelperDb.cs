@@ -11,6 +11,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         private const string CarpetaPlanilla = "Planilla";
         private const string NombreInstitucionDefault = "SinInstitucion";
 
+        public static string CrearNombreArchivoEstandar(
+                int codInstitucion,
+                decimal fechaProceso,
+                string codigoInstDeduc,
+                DateTime fechaServidor,
+                string codigoFormato,
+                string extension)
+        {
+            var codigoInstitucion = string.IsNullOrWhiteSpace(codigoInstDeduc)
+                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
+                : codigoInstDeduc.Trim();
+
+            var fechaProcesoTexto = FormatearFechaProceso(fechaProceso);
+            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
+
+            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-{codigoFormato}]{extension}";
+        }
+
         public static string FormatearFechaProceso(decimal fechaProceso)
         {
             var fechaBase = Math.Truncate(fechaProceso)

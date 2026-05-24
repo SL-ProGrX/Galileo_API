@@ -113,7 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             var cadenas = ObtenerCadenasDesdeSp(
                 connection,
-                "spPrm_Formato_Integra_New_Matricula",
+                "INTEGRA_NEW",
                 request.CodInstitucion,
                 request.FechaProceso);
 
@@ -126,17 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static string ObtenerProcedimientoPermitido(string procedimiento)
-        {
-            return procedimiento switch
-            {
-                "spPrm_Formato_Integra_New" => "spPrm_Formato_Integra_New",
-                "spPrm_Formato_Integra_New_Matricula" => "spPrm_Formato_Integra_New_Matricula",
-
-                _ => throw new InvalidOperationException(
-                    $"Procedimiento no permitido para generar archivo: {procedimiento}.")
-            };
-        }
+         
         private static string GenerarArchivoIntegra(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
@@ -155,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             var cadenas = ObtenerCadenasDesdeSp(
                 connection,
-                "spPrm_Formato_Integra_New",
+                "INTEGRA_NEW_MATRICULA",
                 request.CodInstitucion,
                 request.FechaProceso);
 
@@ -201,25 +191,77 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static List<string> ObtenerCadenasDesdeSp(
+       IDbConnection connection,
+       string tipoProcedimiento,
+       int codInstitucion,
+       decimal fechaProceso)
+        {
+            return tipoProcedimiento switch
+            {
+                "INTEGRA_NEW" => ObtenerCadenasIntegraNew(
+                    connection,
+                    codInstitucion,
+                    fechaProceso),
+
+                "INTEGRA_NEW_MATRICULA" => ObtenerCadenasIntegraNewMatricula(
+                    connection,
+                    codInstitucion,
+                    fechaProceso),
+
+                _ => throw new InvalidOperationException(
+                    $"Tipo de procedimiento no permitido para generar archivo: {tipoProcedimiento}.")
+            };
+        }
+
+        private static List<string> ObtenerCadenasIntegraNew(
             IDbConnection connection,
-            string procedimiento,
             int codInstitucion,
             decimal fechaProceso)
         {
-            var procedimientoSeguro = ObtenerProcedimientoPermitido(procedimiento);
-            var query = $@"
-                EXEC {procedimientoSeguro}
-                    @CodInstitucion,
-                    @FechaProceso";
+            const string query = @"
+        EXEC spPrm_Formato_Integra_New
+            @CodInstitucion,
+            @FechaProceso";
 
-            return [.. connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
+            return ObtenerCadenas(
+                connection,
+                query,
+                codInstitucion,
+                fechaProceso);
+        }
+
+        private static List<string> ObtenerCadenasIntegraNewMatricula(
+            IDbConnection connection,
+            int codInstitucion,
+            decimal fechaProceso)
+        {
+            const string query = @"
+        EXEC spPrm_Formato_Integra_New_Matricula
+            @CodInstitucion,
+            @FechaProceso";
+
+            return ObtenerCadenas(
+                connection,
+                query,
+                codInstitucion,
+                fechaProceso);
+        }
+
+        private static List<string> ObtenerCadenas(
+            IDbConnection connection,
+            string query,
+            int codInstitucion,
+            decimal fechaProceso)
+        {
+            return connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
                     query,
                     new
                     {
                         CodInstitucion = codInstitucion,
                         FechaProceso = fechaProceso
                     })
-                .Select(x => x.Cadena ?? string.Empty)];
+                .Select(x => x.Cadena ?? string.Empty)
+                .ToList();
         }
 
         private static string CrearContenidoEnvio(

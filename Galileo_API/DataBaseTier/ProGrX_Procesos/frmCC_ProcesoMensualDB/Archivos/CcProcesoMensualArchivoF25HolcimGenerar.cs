@@ -223,8 +223,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public decimal PorcDeduc { get; set; } = 0;
             public string TipoDeduc { get; set; } = string.Empty;
             public string Movimiento { get; set; } = string.Empty;
-            public DateTime Inicio { get; set; }
-            public DateTime Corte { get; set; } 
+            public DateTime Inicio { get; set; } = DateTime.MinValue;
+            public DateTime Corte { get; set; } = DateTime.MinValue;
             public string Nombre { get; set; } = string.Empty;
         }
     }
