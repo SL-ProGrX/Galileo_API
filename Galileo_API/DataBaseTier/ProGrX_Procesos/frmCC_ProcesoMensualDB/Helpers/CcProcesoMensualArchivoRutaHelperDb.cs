@@ -10,18 +10,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
     {
         private const string CarpetaPlanilla = "Planilla";
         private const string NombreInstitucionDefault = "SinInstitucion";
+        private const string DireccionDerecha = "D";
 
         public static string CrearNombreArchivoEstandar(
-                int codInstitucion,
-                decimal fechaProceso,
-                string codigoInstDeduc,
-                DateTime fechaServidor,
-                string codigoFormato,
-                string extension)
+            int codInstitucion,
+            decimal fechaProceso,
+            string codigoInstDeduc,
+            DateTime fechaServidor,
+            string codigoFormato,
+            string extension)
         {
-            var codigoInstitucion = string.IsNullOrWhiteSpace(codigoInstDeduc)
-                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : codigoInstDeduc.Trim();
+            var codigoInstitucion = ObtenerCodigoInstitucionArchivo(
+                codInstitucion,
+                codigoInstDeduc);
 
             var fechaProcesoTexto = FormatearFechaProceso(fechaProceso);
             var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
@@ -31,38 +32,42 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
         public static string FormatearFechaProceso(decimal fechaProceso)
         {
-            var fechaBase = Math.Truncate(fechaProceso)
-                .ToString(CultureInfo.InvariantCulture);
+            var fechaBase = ObtenerFechaProcesoTexto(fechaProceso);
 
             return fechaBase.Length >= 6
                 ? $"{fechaBase[..4]}-{fechaBase.Substring(4, 2)}"
                 : fechaBase;
         }
-        public static string RellenarCerosIzquierda(string valor, int largo)
+
+        public static string ObtenerAnioProceso(decimal fechaProceso)
         {
-            var texto = valor ?? string.Empty;
+            var fechaBase = ObtenerFechaProcesoTexto(fechaProceso);
 
-            if (texto.Length > largo)
-            {
-                return texto[^largo..];
-            }
-
-            return texto.PadLeft(largo, '0');
+            return fechaBase.Length >= 4
+                ? fechaBase[..4]
+                : fechaBase;
         }
 
-        public static string RellenarEspaciosDerecha(string valor, int largo)
+        public static string RellenarCerosIzquierda(string? valor, int largo)
         {
-            var texto = valor ?? string.Empty;
-
-            if (texto.Length > largo)
-            {
-                return texto[..largo];
-            }
-
-            return texto.PadRight(largo);
+            return AjustarTexto(
+                valor,
+                largo,
+                '0',
+                alinearDerecha: true);
         }
 
-        public static string ObtenerRutaPlanilla(CcProcesoMensualGeneraArchivoRequest request)
+        public static string RellenarEspaciosDerecha(string? valor, int largo)
+        {
+            return AjustarTexto(
+                valor,
+                largo,
+                ' ',
+                alinearDerecha: false);
+        }
+
+        public static string ObtenerRutaPlanilla(
+            CcProcesoMensualGeneraArchivoRequest request)
         {
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
@@ -79,40 +84,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             Directory.CreateDirectory(rutaDirectorio);
         }
 
-        public static string CombinarArchivo(string rutaDirectorio, string nombreArchivo)
+        public static string CombinarArchivo(
+            string rutaDirectorio,
+            string nombreArchivo)
         {
             return Path.Combine(rutaDirectorio, nombreArchivo);
         }
 
-        private static string LimpiarNombreDirectorio(string valor)
-        {
-            var nombre = string.IsNullOrWhiteSpace(valor)
-                ? NombreInstitucionDefault
-                : valor.Trim();
-
-            foreach (var caracter in Path.GetInvalidFileNameChars())
-            {
-                nombre = nombre.Replace(caracter, '_');
-            }
-
-            return nombre;
-        }
-
-        public static string ObtenerAnioProceso(decimal fechaProceso)
-        {
-            var fechaBase = Math.Truncate(fechaProceso)
-                .ToString(CultureInfo.InvariantCulture);
-
-            return fechaBase.Length >= 4
-                ? fechaBase[..4]
-                : fechaBase;
-        }
         public static DateTime ObtenerFechaServidor(IDbConnection connection)
         {
-            const string query = "Select dbo.MyGetdate() as Fecha";
+            const string query = "SELECT dbo.MyGetdate() AS Fecha";
+
             return connection.QueryFirstOrDefault<DateTime>(query);
         }
-        public static List<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistrosGeneral(IDbConnection connection, int codInstitucion, decimal fechaProceso, string tipo)
+
+        public static List<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistrosGeneral(
+            IDbConnection connection,
+            int codInstitucion,
+            decimal fechaProceso,
+            string tipo)
         {
             const string query = @"
                 SELECT
@@ -126,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                     ON P.cedula = S.cedula
                 WHERE P.Proceso = @FechaProceso
                   AND P.cod_institucion = @CodInstitucion
-                  AND P.tipo = @TipoCredito
+                  AND P.tipo = @Tipo
                 ORDER BY P.cedula";
 
             return [.. connection.Query<CcProcesoMensualArchivoRegistroDbModel>(
@@ -135,7 +125,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 {
                     FechaProceso = fechaProceso,
                     CodInstitucion = codInstitucion,
-                    TipoCredito =tipo
+                    Tipo = tipo
                 })];
         }
 
@@ -163,11 +153,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 query,
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoConfiguracionModel();
         }
+
         public static void GuardarArchivoTexto(
             string rutaDirectorio,
             string rutaArchivo,
             string contenido,
-            System.Text.Encoding encoding)
+            Encoding encoding)
         {
             CrearDirectorioSiNoExiste(rutaDirectorio);
 
@@ -176,7 +167,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 File.Delete(rutaArchivo);
             }
 
-            File.WriteAllText(rutaArchivo, contenido, encoding);
+            File.WriteAllText(
+                rutaArchivo,
+                contenido,
+                encoding);
         }
 
         public static string DepurarCadena(string? valor)
@@ -186,9 +180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             foreach (var caracter in texto)
             {
-                var ascii = (int)caracter;
-
-                if ((ascii > 47 && ascii < 123) || ascii == 32)
+                if (EsCaracterPermitido(caracter))
                 {
                     resultado.Append(caracter);
                 }
@@ -196,45 +188,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             return resultado.ToString();
         }
-        public static string FxStringRelleno(string? cadena, string direccion, string charRelleno, int cantidad)
+
+        public static string FxStringRelleno(
+            string? cadena,
+            string direccion,
+            string charRelleno,
+            int cantidad)
         {
-            var valorBase = cadena?.Trim() ?? string.Empty;
+            var valor = TomarIzquierda(
+                cadena?.Trim(),
+                cantidad);
 
-            var valor = valorBase.Length > cantidad
-              ? valorBase[..cantidad]
-              : valorBase;
+            var relleno = ObtenerCaracterRelleno(charRelleno);
 
-            var relleno = string.IsNullOrEmpty(charRelleno)
-                ? " "
-                : charRelleno[..1];
+            var alinearDerecha = !string.Equals(
+                direccion,
+                DireccionDerecha,
+                StringComparison.OrdinalIgnoreCase);
 
-            var resultado = new StringBuilder(valor);
-
-            if (string.Equals(direccion, "D", StringComparison.OrdinalIgnoreCase))
-            {
-                while (resultado.Length < cantidad)
-                {
-                    resultado.Append(relleno);
-                }
-
-                return resultado.ToString()[..cantidad];
-            }
-
-            while (resultado.Length < cantidad)
-            {
-                resultado.Insert(0, relleno);
-            }
-
-            return resultado.ToString()[..cantidad];
+            return AjustarTexto(
+                valor,
+                cantidad,
+                relleno,
+                alinearDerecha);
         }
-        public static CcProcesoMensualArchivoNombreModel SepararNombre(string? nombreCompleto)
-        {
-            var apellido1 = new StringBuilder();
-            var apellido2 = new StringBuilder();
-            var nombre1 = new StringBuilder();
-            var nombre2 = new StringBuilder();
 
-            var posicion = 1;
+        public static CcProcesoMensualArchivoNombreModel SepararNombre(
+            string? nombreCompleto)
+        {
+            var partes = new[]
+            {
+                new StringBuilder(),
+                new StringBuilder(),
+                new StringBuilder(),
+                new StringBuilder()
+            };
+
+            var posicion = 0;
 
             foreach (var caracter in nombreCompleto ?? string.Empty)
             {
@@ -244,91 +234,75 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                     continue;
                 }
 
-                switch (posicion)
+                if (posicion < partes.Length)
                 {
-                    case 1:
-                        apellido1.Append(caracter);
-                        break;
-
-                    case 2:
-                        apellido2.Append(caracter);
-                        break;
-
-                    case 3:
-                        nombre1.Append(caracter);
-                        break;
-
-                    case 4:
-                        nombre2.Append(caracter);
-                        break;
+                    partes[posicion].Append(caracter);
                 }
             }
 
             return new CcProcesoMensualArchivoNombreModel
             {
-                Apellido1 = apellido1.ToString(),
-                Apellido2 = apellido2.ToString(),
-                Nombre1 = nombre1.ToString(),
-                Nombre2 = nombre2.ToString()
+                Apellido1 = partes[0].ToString(),
+                Apellido2 = partes[1].ToString(),
+                Nombre1 = partes[2].ToString(),
+                Nombre2 = partes[3].ToString()
             };
         }
 
         public static List<string> ObtenerMovimientosPorComparador(
-        CcProcesoMensualArchivoConfiguracionModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
-            if (configuracion.ComparaIndicador != 1)
-            {
-                return ["I", "E", "M", "C", "P"];
-            }
-
-            var movimientos = new List<string>();
-
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncInclusiones, "I");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncExclusiones, "E");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncModificaciones, "C");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncMantienen, "M");
-
-            movimientos.Add("P");
-
-            return movimientos;
+            return configuracion.ComparaIndicador != 1
+                ? ["I", "E", "M", "C", "P"]
+                : ObtenerMovimientosPorIndicadores(configuracion);
         }
+
         public static List<string> ObtenerMovimientosPorIndicadores(
-    CcProcesoMensualArchivoConfiguracionModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             var movimientos = new List<string>();
 
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncInclusiones, "I");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncExclusiones, "E");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncModificaciones, "C");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncMantienen, "M");
+            AgregarMovimientoSiAplica(
+                movimientos,
+                configuracion.IncInclusiones,
+                "I");
+
+            AgregarMovimientoSiAplica(
+                movimientos,
+                configuracion.IncExclusiones,
+                "E");
+
+            AgregarMovimientoSiAplica(
+                movimientos,
+                configuracion.IncModificaciones,
+                "C");
+
+            AgregarMovimientoSiAplica(
+                movimientos,
+                configuracion.IncMantienen,
+                "M");
 
             movimientos.Add("P");
 
             return movimientos;
         }
-        private static void AgregarMovimientoSiAplica(
-            List<string> movimientos,
-            int indicador,
-            string movimiento)
-        {
-            if (indicador == 1)
-            {
-                movimientos.Add(movimiento);
-            }
-        }
 
-        public static string ObtenerCodigoInstitucionArchivo(  int codInstitucion,  string? codigoInstDeduc)
+        public static string ObtenerCodigoInstitucionArchivo(
+            int codInstitucion,
+            string? codigoInstDeduc)
         {
             return string.IsNullOrWhiteSpace(codigoInstDeduc)
                 ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
                 : codigoInstDeduc.Trim();
         }
+
         public static string FormatearFechaPunto(DateTime fecha)
         {
             return fecha.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
         }
 
-        public static string CrearContenidoCadenasNoVacias(IEnumerable<string> cadenas)
+        public static string CrearContenidoCadenasNoVacias(
+            IEnumerable<string> cadenas)
         {
             var builder = new StringBuilder();
 
@@ -339,13 +313,94 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             return builder.ToString();
         }
-        public static string TomarIzquierda(string? valor, int cantidad)
+
+        public static string TomarIzquierda(
+            string? valor,
+            int cantidad)
+        {
+            return CortarTexto(
+                valor,
+                cantidad,
+                desdeDerecha: false);
+        }
+
+        private static string ObtenerFechaProcesoTexto(decimal fechaProceso)
+        {
+            return Math.Truncate(fechaProceso)
+                .ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string LimpiarNombreDirectorio(string? valor)
+        {
+            var nombre = string.IsNullOrWhiteSpace(valor)
+                ? NombreInstitucionDefault
+                : valor.Trim();
+
+            foreach (var caracter in Path.GetInvalidFileNameChars())
+            {
+                nombre = nombre.Replace(caracter, '_');
+            }
+
+            return nombre;
+        }
+
+        private static string AjustarTexto(
+            string? valor,
+            int largo,
+            char relleno,
+            bool alinearDerecha)
+        {
+            var texto = CortarTexto(
+                valor,
+                largo,
+                desdeDerecha: alinearDerecha);
+
+            return alinearDerecha
+                ? texto.PadLeft(largo, relleno)
+                : texto.PadRight(largo, relleno);
+        }
+
+        private static string CortarTexto(
+            string? valor,
+            int largo,
+            bool desdeDerecha)
         {
             var texto = valor ?? string.Empty;
 
-            return texto.Length > cantidad
-                ? texto[..cantidad]
-                : texto;
+            if (texto.Length <= largo)
+            {
+                return texto;
+            }
+
+            return desdeDerecha
+                ? texto[^largo..]
+                : texto[..largo];
+        }
+
+        private static char ObtenerCaracterRelleno(string? charRelleno)
+        {
+            return string.IsNullOrEmpty(charRelleno)
+                ? ' '
+                : charRelleno[0];
+        }
+
+        private static bool EsCaracterPermitido(char caracter)
+        {
+            var ascii = (int)caracter;
+
+            return ascii == 32 || ascii is > 47 and < 123;
+        }
+
+        private static void AgregarMovimientoSiAplica(
+            ICollection<string> movimientos,
+            int indicador,
+            string movimiento)
+        {
+            if (indicador == 1)
+            {
+                movimientos.Add(movimiento);
+            }
         }
     }
 }
+
