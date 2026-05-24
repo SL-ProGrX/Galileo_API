@@ -8,63 +8,71 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
     public class CcProcesoMensualArchivoF20CenCenaiGenerar : ICcProcesoMensualArchivoGenerator
-    {
-        private const string CodigoPlanillaEnvio = "20";
-        private const string ContentTypeCsv = "text/csv";
-        private const string ExtensionCsv = ".csv";
+    { 
+            private const string CodigoPlanillaEnvio = "20";
+            private const string ContentTypeCsv = "text/csv";
+            private const string ExtensionCsv = ".csv";
 
-        private const string TipoAhorro = "A";
-        private const string TipoExtraordinario = "E";
-        private const string TipoCredito = "C";
-        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+            private const string TipoAhorro = "A";
+            private const string TipoExtraordinario = "E";
+            private const string TipoCredito = "C";
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var configuracion = ObtenerConfiguracion(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso);
+            public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
 
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-
-            var archivosGenerados = new List<string>
+            public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
+                IDbConnection connection,
+                CcProcesoMensualGeneraArchivoRequest request)
             {
-                GenerarArchivoAnterior(
+                var configuracion = ObtenerConfiguracion(
+                    connection,
+                    request.CodInstitucion,
+                    request.FechaProceso);
+
+                var contexto = CrearContextoArchivo(
                     connection,
                     request,
-                    configuracion,
-                    fechaServidor,
-                    rutaDirectorio),
+                    configuracion.CodigoInstDeduc);
 
-                GenerarArchivoNuevo(
-                    connection,
-                    request,
-                    configuracion,
-                    fechaServidor,
-                    rutaDirectorio)
-            };
-
-            var ultimoArchivo = archivosGenerados.LastOrDefault() ?? string.Empty;
-
-            return new CcProcesoMensualArchivoGeneradoModel
+                var archivosGenerados = new List<string>
             {
-                Generado = archivosGenerados.Count > 0,
-                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                NombreArchivo = Path.GetFileName(ultimoArchivo),
-                RutaArchivo = ultimoArchivo,
-                ContentType = ContentTypeCsv,
-                ArchivoBytes = [],
-                ArchivosGenerados = archivosGenerados
-            };
-        }
+                GenerarArchivo(
+                    rutaDirectorio: contexto.RutaDirectorio,
+                    nombreArchivo: CrearNombreArchivo(
+                        request,
+                        configuracion.CodigoInstDeduc,
+                        contexto.FechaServidor,
+                        esNuevo: false),
+                    contenido: CrearContenidoArchivoAnterior(
+                        ObtenerRegistrosArchivoAnterior(
+                            connection,
+                            request,
+                            Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(configuracion)),
+                        configuracion,
+                        request.NombreEmpresa)),
 
-        private static CcProcesoMensualArchivoF20ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
+                GenerarArchivo(
+                    rutaDirectorio: contexto.RutaDirectorio,
+                    nombreArchivo: CrearNombreArchivo(
+                        request,
+                        configuracion.CodigoInstDeduc,
+                        contexto.FechaServidor,
+                        esNuevo: true),
+                    contenido: Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearContenidoCadenasNoVacias(
+                        ObtenerCadenasCecinaiNuevo(
+                            connection,
+                            request.CodInstitucion,
+                            request.FechaProceso)))
+            };
+
+                return CrearRespuesta(archivosGenerados);
+            }
+
+            private static CcProcesoMensualArchivoF20ConfigDbModel ObtenerConfiguracion(
+                IDbConnection connection,
+                int codInstitucion,
+                decimal fechaProceso)
+            {
+                const string query = @"
                 SELECT
                     ISNULL(planilla, '') AS Planilla,
                     ISNULL(codigo_aportes_env, '') AS CodigoAportesEnv,
@@ -81,120 +89,54 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 FROM instituciones
                 WHERE cod_institucion = @CodInstitucion";
 
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF20ConfigDbModel>(
-                query,
-                new
-                {
-                    CodInstitucion = codInstitucion,
-                    FechaProceso = fechaProceso
-                }) ?? new CcProcesoMensualArchivoF20ConfigDbModel();
-        }
-
-        private static string GenerarArchivoAnterior(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion,
-            DateTime fechaServidor,
-            string rutaDirectorio)
-        {
-            var nombreArchivo = CrearNombreArchivoAnterior(
-                request.CodInstitucion,
-                request.FechaProceso,
-                configuracion.CodigoInstDeduc,
-                fechaServidor);
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
-            var movimientos = ObtenerMovimientos(configuracion);
-
-            var registros = ObtenerRegistrosArchivoAnterior(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso,
-                movimientos);
-
-            var contenido = CrearContenidoArchivoAnterior(
-                registros,
-                configuracion,
-                request.NombreEmpresa);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.GetEncoding(1252));
-
-            return rutaArchivo;
-        }
-
-        private static string GenerarArchivoNuevo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion,
-            DateTime fechaServidor,
-            string rutaDirectorio)
-        {
-            var nombreArchivo = CrearNombreArchivoNuevo(
-                request.CodInstitucion,
-                request.FechaProceso,
-                configuracion.CodigoInstDeduc,
-                fechaServidor);
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
-            var cadenas = ObtenerCadenasCecinaiNuevo(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso);
-
-            var contenido = CrearContenidoCadenasNoVacias(cadenas);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.GetEncoding(1252));
-
-            return rutaArchivo;
-        }
-
-        private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion)
-        {
-            var movimientos = new List<string>();
-
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncInclusiones, "I");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncExclusiones, "E");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncModificaciones, "C");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncMantienen, "M");
-
-            movimientos.Add("P");
-
-            return movimientos;
-        }
-
-        private static void AgregarMovimientoSiAplica(
-            List<string> movimientos,
-            int indicador,
-            string movimiento)
-        {
-            if (indicador == 1)
-            {
-                movimientos.Add(movimiento);
+                return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF20ConfigDbModel>(
+                    query,
+                    new
+                    {
+                        CodInstitucion = codInstitucion,
+                        FechaProceso = fechaProceso
+                    }) ?? new CcProcesoMensualArchivoF20ConfigDbModel();
             }
-        }
 
-        private static List<CcProcesoMensualArchivoF20RegistroDbModel> ObtenerRegistrosArchivoAnterior(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso,
-            IEnumerable<string> movimientos)
-        {
-            const string query = @"
+            private static CcProcesoMensualArchivoContextoModel CrearContextoArchivo(
+                IDbConnection connection,
+                CcProcesoMensualGeneraArchivoRequest request,
+                string codigoInstDeduc)
+            {
+                return new CcProcesoMensualArchivoContextoModel
+                {
+                    FechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection),
+                    RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request),
+                    CodigoInstitucionArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(
+                        request.CodInstitucion,
+                        codigoInstDeduc)
+                };
+            }
+
+            private static string GenerarArchivo(
+                string rutaDirectorio,
+                string nombreArchivo,
+                string contenido)
+            {
+                var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+                    rutaDirectorio,
+                    nombreArchivo);
+
+                Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
+                    rutaDirectorio,
+                    rutaArchivo,
+                    contenido,
+                    Encoding.GetEncoding(1252));
+
+                return rutaArchivo;
+            }
+
+            private static List<CcProcesoMensualArchivoF20RegistroDbModel> ObtenerRegistrosArchivoAnterior(
+                IDbConnection connection,
+                CcProcesoMensualGeneraArchivoRequest request,
+                IEnumerable<string> movimientos)
+            {
+                const string query = @"
                 SELECT
                     P.cedula AS Cedula,
                     P.Tipo,
@@ -209,27 +151,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                   AND P.cod_institucion = @CodInstitucion
                 ORDER BY P.cedula, P.tipo, P.cod_deduccion, P.movimiento";
 
-            return [.. connection.Query<CcProcesoMensualArchivoF20RegistroDbModel>(
+                return [.. connection.Query<CcProcesoMensualArchivoF20RegistroDbModel>(
                 query,
                 new
                 {
-                    FechaProceso = fechaProceso,
+                    FechaProceso = request.FechaProceso,
                     Movimientos = movimientos,
-                    CodInstitucion = codInstitucion
+                    CodInstitucion = request.CodInstitucion
                 })];
-        }
+            }
 
-        private static List<string> ObtenerCadenasCecinaiNuevo(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
+            private static List<string> ObtenerCadenasCecinaiNuevo(
+                IDbConnection connection,
+                int codInstitucion,
+                decimal fechaProceso)
+            {
+                const string query = @"
                 EXEC spPrm_Formato_CECINAI_New
                     @CodInstitucion,
                     @FechaProceso";
 
-            return [.. connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
+                return [.. connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
                     query,
                     new
                     {
@@ -237,159 +179,125 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                         FechaProceso = fechaProceso
                     })
                 .Select(x => x.Cadena ?? string.Empty)];
-        }
-
-        private static string CrearContenidoArchivoAnterior(
-            IEnumerable<CcProcesoMensualArchivoF20RegistroDbModel> registros,
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion,
-            string nombreEmpresa)
-        {
-            var builder = new StringBuilder();
-
-            foreach (var registro in registros)
-            {
-                builder.AppendLine(CrearLineaArchivoAnterior(
-                    registro,
-                    configuracion,
-                    nombreEmpresa));
             }
 
-            return builder.ToString();
-        }
-
-        private static string CrearLineaArchivoAnterior(
-            CcProcesoMensualArchivoF20RegistroDbModel registro,
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion,
-            string nombreEmpresa)
-        {
-            var codigoTipo = ObtenerCodigoTipo(registro.Tipo, configuracion);
-            var inicioStr = configuracion.FechaInicio.HasValue
-                ? configuracion.FechaInicio.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
-                : string.Empty;
-            var corteStr = configuracion.FechaCorte.HasValue
-                ? configuracion.FechaCorte.Value.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture)
-                : string.Empty;
-
-            return configuracion.CodigoInstDeduc.Trim()
-                + ","
-                + codigoTipo
-                + ","
-                + registro.Cedula.Trim()
-                + ","
-                + TomarIzquierda(nombreEmpresa, 30)
-                + ",1,"
-                + FormatearDecimalVb6(registro.MontoActual)
-                + ",0,"
-                + inicioStr
-                + ","
-                + corteStr
-                + ",0,CRC";
-        }
-
-        private static string ObtenerCodigoTipo(
-            string tipo,
-            CcProcesoMensualArchivoF20ConfigDbModel configuracion)
-        {
-            return tipo?.Trim().ToUpperInvariant() switch
+            private static string CrearContenidoArchivoAnterior(
+                IEnumerable<CcProcesoMensualArchivoF20RegistroDbModel> registros,
+                CcProcesoMensualArchivoF20ConfigDbModel configuracion,
+                string nombreEmpresa)
             {
-                TipoAhorro => configuracion.CodigoAportesEnv.Trim(),
-                TipoExtraordinario => configuracion.CodigoCreditosEnv.Trim(),
-                TipoCredito => configuracion.CodigoCreditosEnv.Trim(),
-                _ => string.Empty
-            };
-        }
+                var builder = new StringBuilder();
 
-        private static string CrearContenidoCadenasNoVacias(IEnumerable<string> cadenas)
-        {
-            var builder = new StringBuilder();
-
-            foreach (var cadena in cadenas)
-            {
-                if (cadena.TrimEnd().Length > 0)
+                foreach (var registro in registros)
                 {
-                    builder.AppendLine(cadena);
+                    builder.AppendLine(
+                        CrearLineaArchivoAnterior(
+                            registro,
+                            configuracion,
+                            nombreEmpresa));
                 }
+
+                return builder.ToString();
             }
 
-            return builder.ToString();
+            private static string CrearLineaArchivoAnterior(
+                CcProcesoMensualArchivoF20RegistroDbModel registro,
+                CcProcesoMensualArchivoF20ConfigDbModel configuracion,
+                string nombreEmpresa)
+            {
+                return string.Join(
+                    ",",
+                    configuracion.CodigoInstDeduc.Trim(),
+                    ObtenerCodigoTipo(registro.Tipo, configuracion),
+                    registro.Cedula.Trim(),
+                    Helpers.CcProcesoMensualArchivoRutaHelperDb.TomarIzquierda(nombreEmpresa, 30),
+                    "1",
+                    registro.MontoActual.ToString(CultureInfo.InvariantCulture),
+                    "0",
+                    configuracion.FechaInicio.ToString("yyyyMMdd", CultureInfo.InvariantCulture),
+                    configuracion.FechaCorte.ToString("yyyyMMdd", CultureInfo.InvariantCulture),
+                    "0",
+                    "CRC");
+            }
+
+            private static string ObtenerCodigoTipo(
+                string? tipo,
+                CcProcesoMensualArchivoF20ConfigDbModel configuracion)
+            {
+                return tipo?.Trim().ToUpperInvariant() switch
+                {
+                    TipoAhorro => configuracion.CodigoAportesEnv.Trim(),
+                    TipoExtraordinario => configuracion.CodigoCreditosEnv.Trim(),
+                    TipoCredito => configuracion.CodigoCreditosEnv.Trim(),
+                    _ => string.Empty
+                };
+            }
+
+            private static string CrearNombreArchivo(
+                CcProcesoMensualGeneraArchivoRequest request,
+                string codigoInstDeduc,
+                DateTime fechaServidor,
+                bool esNuevo)
+            {
+                var codigoInstitucion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(
+                    request.CodInstitucion,
+                    codigoInstDeduc);
+
+                var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(
+                    request.FechaProceso);
+
+                var fechaServidorTexto = fechaServidor.ToString(
+                    "ddMMyyyy",
+                    CultureInfo.InvariantCulture);
+
+                var indicadorNuevo = esNuevo ? " -NUEVO- " : string.Empty;
+
+                return $"E-{codigoInstitucion}_{fechaProcesoTexto}{indicadorNuevo} [{fechaServidorTexto}-F20]{ExtensionCsv}";
+            }
+
+            private static CcProcesoMensualArchivoGeneradoModel CrearRespuesta(
+                List<string> archivosGenerados)
+            {
+                var ultimoArchivo = archivosGenerados.LastOrDefault() ?? string.Empty;
+
+                return new CcProcesoMensualArchivoGeneradoModel
+                {
+                    Generado = archivosGenerados.Count > 0,
+                    CodigoPlanillaEnvio = CodigoPlanillaEnvio,
+                    NombreArchivo = Path.GetFileName(ultimoArchivo),
+                    RutaArchivo = ultimoArchivo,
+                    ContentType = ContentTypeCsv,
+                    ArchivoBytes = [],
+                    ArchivosGenerados = archivosGenerados
+                };
+            }
+
+            private sealed class CcProcesoMensualArchivoF20ConfigDbModel
+                : CcProcesoMensualArchivoConfiguracionModel
+            {
+                public DateTime FechaInicio { get; set; } = DateTime.MinValue;
+                public DateTime FechaCorte { get; set; } = DateTime.MinValue;
+            }
+
+            private sealed class CcProcesoMensualArchivoF20RegistroDbModel
+            {
+                public string Cedula { get; set; } = string.Empty;
+                public string Tipo { get; set; } = string.Empty;
+                public string CodDeduccion { get; set; } = string.Empty;
+                public string Movimiento { get; set; } = string.Empty;
+                public decimal MontoActual { get; set; }
+            }
+
+            private sealed class CcProcesoMensualArchivoCadenaDbModel
+            {
+                public string Cadena { get; set; } = string.Empty;
+            }
+
+            private sealed class CcProcesoMensualArchivoContextoModel
+            {
+                public DateTime FechaServidor { get; set; } = DateTime.MinValue;
+                public string RutaDirectorio { get; set; } = string.Empty;
+                public string CodigoInstitucionArchivo { get; set; } = string.Empty;
+            }
         }
-
-        private static string TomarIzquierda(string? valor, int cantidad)
-        {
-            var texto = valor ?? string.Empty;
-
-            return texto.Length > cantidad
-                ? texto[..cantidad]
-                : texto;
-        }
-
-        private static string FormatearDecimalVb6(decimal valor)
-        {
-            return valor.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static string CrearNombreArchivoAnterior(
-            int codInstitucion,
-            decimal fechaProceso,
-            string codigoInstDeduc,
-            DateTime fechaServidor)
-        {
-            var codigoInstitucion = string.IsNullOrWhiteSpace(codigoInstDeduc)
-                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : codigoInstDeduc.Trim();
-
-            var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
-            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
-
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F20]{ExtensionCsv}";
-        }
-
-        private static string CrearNombreArchivoNuevo(
-            int codInstitucion,
-            decimal fechaProceso,
-            string codigoInstDeduc,
-            DateTime fechaServidor)
-        {
-            var codigoInstitucion = string.IsNullOrWhiteSpace(codigoInstDeduc)
-                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : codigoInstDeduc.Trim();
-
-            var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
-            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
-
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} -NUEVO-  [{fechaServidorTexto}-F20]{ExtensionCsv}";
-        }
-
-      
-
-        private sealed class CcProcesoMensualArchivoF20ConfigDbModel
-        {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; } = 0;
-            public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0;
-            public decimal PorcAporte { get; set; } = 0;
-            public DateTime? FechaInicio { get; set; } = DateTime.MinValue;
-            public DateTime? FechaCorte { get; set; } = DateTime.MinValue;
-        }
-
-        private sealed class CcProcesoMensualArchivoF20RegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public string Tipo { get; set; } = string.Empty;
-            public string CodDeduccion { get; set; } = string.Empty;
-            public string Movimiento { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-        }
-
-        private sealed class CcProcesoMensualArchivoCadenaDbModel
-        {
-            public string Cadena { get; set; } = string.Empty;
-        }
-    }
 }

@@ -316,5 +316,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 movimientos.Add(movimiento);
             }
         }
+
+        public static string ObtenerCodigoInstitucionArchivo(  int codInstitucion,  string? codigoInstDeduc)
+        {
+            return string.IsNullOrWhiteSpace(codigoInstDeduc)
+                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
+                : codigoInstDeduc.Trim();
+        }
+        public static string FormatearFechaPunto(DateTime fecha)
+        {
+            return fecha.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
+        }
+
+        public static string CrearContenidoCadenasNoVacias(IEnumerable<string> cadenas)
+        {
+            var builder = new StringBuilder();
+
+            foreach (var cadena in cadenas.Where(cadena => cadena.TrimEnd().Length > 0))
+            {
+                builder.AppendLine(cadena);
+            }
+
+            return builder.ToString();
+        }
+        public static string TomarIzquierda(string? valor, int cantidad)
+        {
+            var texto = valor ?? string.Empty;
+
+            return texto.Length > cantidad
+                ? texto[..cantidad]
+                : texto;
+        }
     }
 }

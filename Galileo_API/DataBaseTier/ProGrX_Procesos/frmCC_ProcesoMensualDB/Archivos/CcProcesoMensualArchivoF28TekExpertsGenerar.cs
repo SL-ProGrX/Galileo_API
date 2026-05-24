@@ -9,26 +9,65 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
     public class CcProcesoMensualArchivoF28TekExpertsGenerar : ICcProcesoMensualArchivoGenerator
     {
         private const string CodigoPlanillaEnvio = "28";
+        private const string CodigoFormatoArchivo = "F28";
         private const string ContentTypeCsv = "text/csv";
         private const string ExtensionCsv = ".csv";
 
-        private const string Encabezado =
-                    "CODIGO;TEAM;COLABORADOR;ENTRY_DATE;LOCATION;TERMINATION_DATE;02-D31;02-D32;02-D33;02-D36;02-D37;02-D35;02-D34;02-D38;02-D30";
-        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+        private static readonly string[] Encabezados =
+        [
+            "CODIGO",
+            "TEAM",
+            "COLABORADOR",
+            "ENTRY_DATE",
+            "LOCATION",
+            "TERMINATION_DATE",
+            "02-D31",
+            "02-D32",
+            "02-D33",
+            "02-D36",
+            "02-D37",
+            "02-D35",
+            "02-D34",
+            "02-D38",
+            "02-D30"
+        ];
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        private static readonly string[] Columnas =
+        [
+            "Codigo",
+            "Team",
+            "Colaborador",
+            "Entry_Date",
+            "Location",
+            "Termination_Date",
+            "02-D31",
+            "02-D32",
+            "02-D33",
+            "02-D36",
+            "02-D37",
+            "02-D35",
+            "02-D34",
+            "02-D38",
+            "02-D30"
+        ];
+        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
+                   IDbConnection connection,
+                   CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
             var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
-            var nombreArchivo = CrearNombreArchivo(
+            var nombreArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearNombreArchivoEstandar(
                 request.CodInstitucion,
                 request.FechaProceso,
                 configuracion.CodigoInstDeduc,
-                fechaServidor);
+                fechaServidor,
+                CodigoFormatoArchivo,
+                ExtensionCsv);
 
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
@@ -49,34 +88,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 contenido,
                 Encoding.GetEncoding(1252));
 
-            return new CcProcesoMensualArchivoGeneradoModel
-            {
-                Generado = true,
-                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                NombreArchivo = nombreArchivo,
-                RutaArchivo = rutaArchivo,
-                ContentType = ContentTypeCsv,
-                ArchivoBytes = [],
-                ArchivosGenerados = [rutaArchivo]
-            };
+            return CrearRespuesta(
+                nombreArchivo,
+                rutaArchivo);
         }
 
-        private static CcProcesoMensualArchivoF28ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
-        {
-            const string query = @"
-                SELECT
-                    ISNULL(codigo_inst_deduc, '') AS CodigoInstDeduc
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF28ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF28ConfigDbModel();
-        }
-
-        private static List<dynamic> ObtenerRegistros(
+        private static IEnumerable<dynamic> ObtenerRegistros(
             IDbConnection connection,
             int codInstitucion,
             decimal fechaProceso)
@@ -86,22 +103,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     @CodInstitucion,
                     @FechaProceso";
 
-            return [.. connection.Query(
-                    query,
-                    new
-                    {
-                        CodInstitucion = codInstitucion,
-                        FechaProceso = fechaProceso
-                    })];
+            return connection.Query(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaProceso = fechaProceso
+                });
         }
 
-        private static string CrearContenidoArchivo(
-            IEnumerable<dynamic> registros)
+        private static string CrearContenidoArchivo(IEnumerable<dynamic> registros)
         {
             var builder = new StringBuilder();
 
-            // VB6 imprime títulos antes de recorrer el recordset.
-            builder.AppendLine(Encabezado);
+            builder.AppendLine(CrearEncabezado());
 
             foreach (var registro in registros)
             {
@@ -111,39 +126,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return builder.ToString();
         }
 
+        private static string CrearEncabezado()
+        {
+            return string.Join(";", Encabezados);
+        }
+
         private static string CrearLineaArchivo(dynamic registro)
         {
             var fila = (IDictionary<string, object>)registro;
 
-            return ObtenerValor(fila, "Codigo")
-                + ";"
-                + ObtenerValor(fila, "Team")
-                + ";"
-                + ObtenerValor(fila, "Colaborador")
-                + ";"
-                + ObtenerValor(fila, "Entry_Date")
-                + ";"
-                + ObtenerValor(fila, "Location")
-                + ";"
-                + ObtenerValor(fila, "Termination_Date")
-                + ";"
-                + ObtenerValor(fila, "02-D31")
-                + ";"
-                + ObtenerValor(fila, "02-D32")
-                + ";"
-                + ObtenerValor(fila, "02-D33")
-                + ";"
-                + ObtenerValor(fila, "02-D36")
-                + ";"
-                + ObtenerValor(fila, "02-D37")
-                + ";"
-                + ObtenerValor(fila, "02-D35")
-                + ";"
-                + ObtenerValor(fila, "02-D34")
-                + ";"
-                + ObtenerValor(fila, "02-D38")
-                + ";"
-                + ObtenerValor(fila, "02-D30");
+            var campos = Columnas.Select(columna =>
+                ObtenerValor(
+                    fila,
+                    columna));
+
+            return string.Join(";", campos);
         }
 
         private static string ObtenerValor(
@@ -165,27 +162,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static string CrearNombreArchivo(
-            int codInstitucion,
-            decimal fechaProceso,
-            string codigoInstDeduc,
-            DateTime fechaServidor)
+        private static CcProcesoMensualArchivoGeneradoModel CrearRespuesta(
+            string nombreArchivo,
+            string rutaArchivo)
         {
-            var codigoInstitucion = string.IsNullOrWhiteSpace(codigoInstDeduc)
-                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : codigoInstDeduc.Trim();
-
-            var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
-            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
-
-            // VB6: aunque el método es F28, el archivo sale como F25.
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F25]{ExtensionCsv}";
-        }
-
-   
-        private sealed class CcProcesoMensualArchivoF28ConfigDbModel
-        {
-            public string CodigoInstDeduc { get; set; } = string.Empty;
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = true,
+                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
+                NombreArchivo = nombreArchivo,
+                RutaArchivo = rutaArchivo,
+                ContentType = ContentTypeCsv,
+                ArchivoBytes = [],
+                ArchivosGenerados = [rutaArchivo]
+            };
         }
     }
 }

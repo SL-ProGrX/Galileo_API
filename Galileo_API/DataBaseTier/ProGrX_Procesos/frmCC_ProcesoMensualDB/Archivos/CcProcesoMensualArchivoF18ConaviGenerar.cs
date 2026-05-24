@@ -7,14 +7,13 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF18ConaviGenerar :  CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF19RegistroDbModel>
+    public class CcProcesoMensualArchivoF18ConaviGenerar :  CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF19RegistroDbModel>
 
     {
         private const string TipoAhorro = "A";
         private const string TipoExtraordinario = "E";
         private const string TipoCredito = "C";
-
-        private List<string> _movimientos = [];
+         
         private decimal _porcAhorro;
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["19"];
@@ -41,31 +40,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.cod_deduccion, P.movimiento";
 
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
+        protected override void PrepararConfiguracion(
+             IDbConnection connection,
+             CcProcesoMensualArchivoConfiguracionModel configuracion,
+             CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(
-                configuracion);
-
             _porcAhorro = configuracion.PorcAhorro;
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                 request.FechaProceso,
-                Movimientos = _movimientos,
-             request.CodInstitucion
-            };
         }
 
         protected override string CrearLineaArchivo(

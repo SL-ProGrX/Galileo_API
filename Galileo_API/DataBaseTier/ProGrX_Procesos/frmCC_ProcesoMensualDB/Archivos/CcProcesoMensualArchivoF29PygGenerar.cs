@@ -10,8 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
     public class CcProcesoMensualArchivoF29PygGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF29PygGenerar.CcProcesoMensualArchivoF29RegistroDbModel>
 
     {
-        private const string TipoDeduccionMonto = "M"; 
-        private string _codigoInstitucionArchivo = string.Empty;
+        private const string TipoDeduccionMonto = "M";  
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["29"];
 

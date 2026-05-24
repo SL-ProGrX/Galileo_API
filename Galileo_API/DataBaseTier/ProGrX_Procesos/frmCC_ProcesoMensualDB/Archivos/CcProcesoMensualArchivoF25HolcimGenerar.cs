@@ -8,9 +8,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 {
     public class CcProcesoMensualArchivoF25HolcimGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF25HolcimGenerar.CcProcesoMensualArchivoF25RegistroDbModel>
     {
-        private const string TipoDeduccionMonto = "M"; 
-        private string _codigoInstitucionArchivo = string.Empty;
-
+        private const string TipoDeduccionMonto = "M";  
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["25"];
 
         protected override string CodigoPlanillaEnvio => "25";
@@ -39,60 +37,55 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
 
-        protected override void PrepararConfiguracion(IDbConnection connection,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            _codigoInstitucionArchivo = string.IsNullOrWhiteSpace(configuracion.CodigoInstDeduc)
-                ? request.CodInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : configuracion.CodigoInstDeduc.Trim();
-        }
-
         protected override string CrearLineaArchivo(
             CcProcesoMensualArchivoF25RegistroDbModel registro,
             CcProcesoMensualGeneraArchivoRequest request)
         {
-            var inicioStr = registro.Inicio.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
-            var corteStr = registro.Corte.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
-
-            if (string.Equals(
-                registro.TipoDeduc?.Trim(),
-                TipoDeduccionMonto,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return (registro.CedulaColilla ?? string.Empty).Trim()
-                    + ";"
-                    + _codigoInstitucionArchivo
-                    + ";"
-                    + inicioStr
-                    + ";"
-                    + corteStr
-                    + ";"
-                    + registro.CodDeduccion
-                    + ";"
-                    + registro.MontoActual.ToString(CultureInfo.InvariantCulture)
-                    + ";;;"
-                    + registro.Cedula
-                    + ";"
-                    + registro.Nombre;
-            }
-
-            return (registro.CedulaColilla ?? string.Empty).Trim()
-                + ";"
-                + _codigoInstitucionArchivo
-                + ";"
-                + inicioStr
-                + ";31.12.9999"
-                + ";"
-                + registro.CodDeduccion
-                + ";;"
-                + registro.PorcDeduc.ToString(CultureInfo.InvariantCulture)
-                + ";;"
-                + registro.Cedula
-                + ";"
-                + registro.Nombre;
+            return EsTipoDeduccionMonto(registro)
+                ? CrearLineaMonto(registro)
+                : CrearLineaPorcentaje(registro);
         }
 
+        private string CrearLineaMonto(CcProcesoMensualArchivoF25RegistroDbModel registro)
+        {
+            return string.Join(
+                ";",
+                (registro.CedulaColilla ?? string.Empty).Trim(),
+                CodigoInstitucionArchivo,
+                Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaPunto(registro.Inicio),
+                Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaPunto(registro.Corte),
+                registro.CodDeduccion,
+                registro.MontoActual.ToString(CultureInfo.InvariantCulture),
+                string.Empty,
+                string.Empty,
+                registro.Cedula,
+                registro.Nombre);
+        }
+
+        private string CrearLineaPorcentaje(CcProcesoMensualArchivoF25RegistroDbModel registro)
+        {
+            return string.Join(
+                ";",
+                (registro.CedulaColilla ?? string.Empty).Trim(),
+                CodigoInstitucionArchivo,
+                Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaPunto(registro.Inicio),
+                "31.12.9999",
+                registro.CodDeduccion,
+                string.Empty,
+                registro.PorcDeduc.ToString(CultureInfo.InvariantCulture),
+                string.Empty,
+                registro.Cedula,
+                registro.Nombre);
+        }
+
+        private static bool EsTipoDeduccionMonto(
+            CcProcesoMensualArchivoF25RegistroDbModel registro)
+        {
+            return string.Equals(
+                registro.TipoDeduc?.Trim(),
+                TipoDeduccionMonto,
+                StringComparison.OrdinalIgnoreCase);
+        }
         public sealed class CcProcesoMensualArchivoF25RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;

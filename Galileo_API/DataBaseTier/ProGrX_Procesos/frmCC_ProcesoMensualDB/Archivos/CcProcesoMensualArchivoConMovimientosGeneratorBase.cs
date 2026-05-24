@@ -7,14 +7,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         : CcProcesoMensualArchivoPlanoGeneratorBase<TRegistro>
     {
         private List<string> _movimientos = [];
-
+        protected string CodigoInstitucionArchivo { get; private set; } = string.Empty;
         public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request)
         {
+           
+
             var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
+
+            CodigoInstitucionArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(
+           request.CodInstitucion,
+               configuracion.CodigoInstDeduc);
 
             _movimientos = ObtenerMovimientos(configuracion);
 

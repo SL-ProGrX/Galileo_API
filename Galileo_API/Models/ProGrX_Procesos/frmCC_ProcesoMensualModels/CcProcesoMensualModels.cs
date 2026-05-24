@@ -43,7 +43,7 @@
             public string Unidad { get; set; } = string.Empty;
             public string DirectorioResultados { get; set; } = string.Empty;
         }
-        public sealed class CcProcesoMensualArchivoConfiguracionModel
+        public class CcProcesoMensualArchivoConfiguracionModel
         {
             public string Planilla { get; set; } = string.Empty;
             public string CodigoAportesEnv { get; set; } = string.Empty;

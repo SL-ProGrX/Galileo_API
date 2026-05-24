@@ -8,88 +8,89 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 {
     public class CcProcesoMensualArchivoF02IntegraGenerar : ICcProcesoMensualArchivoGenerator
     {
-        private const string CodigoPlanillaEnvio = "02"; 
+        private const string CodigoPlanillaEnvio = "02";
         private const string ContentTypeCsv = "text/csv";
+
         private const string TipoAhorro = "A";
         private const string TipoExtraordinario = "E";
         private const string TipoCredito = "C";
 
-        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } =  [CodigoPlanillaEnvio];
+        private const string PrefijoEnvio = "E";
+        private const string PrefijoMatricula = "MD";
+        private const string PrefijoIntegra = "CD";
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo( IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        private const string ExtensionTxt = "txt";
+        private const string ExtensionCsv = "csv";
+
+        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+
+        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
         {
             var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
+            var contexto = CrearContextoArchivo(
+                connection,
+                request);
 
             var archivosGenerados = new List<string>
             {
-                GenerarArchivoEnvio(
-                    connection,
-                    request,
-                    configuracion,
-                    rutaDirectorio,
-                    fechaServidor),
+                GenerarArchivo(
+                    contexto.RutaDirectorio,
+                    CrearNombreArchivo(PrefijoEnvio, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionTxt),
+                    CrearContenidoEnvio(
+                        ObtenerRegistrosEnvio(
+                            connection,
+                            request,
+                            Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(configuracion)),
+                        configuracion.PorcAhorro)),
 
-                GenerarArchivoMatricula(
-                    connection,
-                    request,
-                    configuracion,
-                    rutaDirectorio,
-                    fechaServidor),
+                GenerarArchivo(
+                    contexto.RutaDirectorio,
+                    CrearNombreArchivo(PrefijoMatricula, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
+                    CrearContenidoCadenas(
+                        ObtenerCadenasDesdeSp(
+                            connection,
+                            SpIntegra.IntegraNew,
+                            request.CodInstitucion,
+                            request.FechaProceso))),
 
-                GenerarArchivoIntegra(
-                    connection,
-                    request,
-                    configuracion,
-                    rutaDirectorio,
-                    fechaServidor)
+                GenerarArchivo(
+                    contexto.RutaDirectorio,
+                    CrearNombreArchivo(PrefijoIntegra, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
+                    CrearContenidoCadenas(
+                        ObtenerCadenasDesdeSp(
+                            connection,
+                            SpIntegra.IntegraNewMatricula,
+                            request.CodInstitucion,
+                            request.FechaProceso)))
             };
 
-            var ultimoArchivo = archivosGenerados.LastOrDefault() ?? string.Empty;
+            return CrearRespuesta(archivosGenerados);
+        }
 
-            return new CcProcesoMensualArchivoGeneradoModel
+        private static CcProcesoMensualArchivoContextoModel CrearContextoArchivo(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            return new CcProcesoMensualArchivoContextoModel
             {
-                Generado = archivosGenerados.Count > 0,
-                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                NombreArchivo = Path.GetFileName(ultimoArchivo),
-                RutaArchivo = ultimoArchivo,
-                ContentType = ContentTypeCsv,
-                ArchivoBytes = [],
-                ArchivosGenerados = archivosGenerados
+                FechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection),
+                RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request)
             };
         }
 
-       
-        private static string GenerarArchivoEnvio(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
+        private static string GenerarArchivo(
             string rutaDirectorio,
-            DateTime fechaServidor)
+            string nombreArchivo,
+            string contenido)
         {
-            var nombreArchivo = CrearNombreArchivo(
-                "E",
-                configuracion.CodigoInstDeduc,
-                fechaServidor,
-                "txt");
-
-            var rutaArchivo = Path.Combine(rutaDirectorio, nombreArchivo);
-
-            var movimientos = ObtenerMovimientos(configuracion);
-
-            var registros = ObtenerRegistrosEnvio(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso,
-                movimientos);
-
-            var contenido = CrearContenidoEnvio(
-                registros,
-                configuracion.PorcAhorro);
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+                rutaDirectorio,
+                nombreArchivo);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
                 rutaDirectorio,
@@ -100,68 +101,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static string GenerarArchivoMatricula(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
-            string rutaDirectorio,
-            DateTime fechaServidor)
-        {
-            var nombreArchivo = CrearNombreArchivo("MD",configuracion.CodigoInstDeduc, fechaServidor, "csv");
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaDirectorio, nombreArchivo);
-
-            var cadenas = ObtenerCadenasDesdeSp(
-                connection,
-                "INTEGRA_NEW",
-                request.CodInstitucion,
-                request.FechaProceso);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                CrearContenidoCadenas(cadenas),
-                Encoding.UTF8);
-
-            return rutaArchivo;
-        }
-
-         
-        private static string GenerarArchivoIntegra(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
-            string rutaDirectorio,
-            DateTime fechaServidor)
-        {
-            var nombreArchivo = CrearNombreArchivo(
-                "CD",
-                configuracion.CodigoInstDeduc,
-                fechaServidor,
-                "csv");
-
-            var rutaArchivo = Path.Combine(rutaDirectorio, nombreArchivo);
-
-
-            var cadenas = ObtenerCadenasDesdeSp(
-                connection,
-                "INTEGRA_NEW_MATRICULA",
-                request.CodInstitucion,
-                request.FechaProceso);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                CrearContenidoCadenas(cadenas),
-                Encoding.UTF8);
-
-            return rutaArchivo;
-        }
-
         private static List<CcProcesoMensualArchivoF02RegistroDbModel> ObtenerRegistrosEnvio(
             IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso,
+            CcProcesoMensualGeneraArchivoRequest request,
             IEnumerable<string> movimientos)
         {
             const string query = @"
@@ -184,84 +126,42 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 query,
                 new
                 {
-                    FechaProceso = fechaProceso,
+                    FechaProceso = request.FechaProceso,
                     Movimientos = movimientos,
-                    CodInstitucion = codInstitucion
+                    CodInstitucion = request.CodInstitucion
                 })];
         }
 
         private static List<string> ObtenerCadenasDesdeSp(
-       IDbConnection connection,
-       string tipoProcedimiento,
-       int codInstitucion,
-       decimal fechaProceso)
+            IDbConnection connection,
+            SpIntegra procedimiento,
+            int codInstitucion,
+            decimal fechaProceso)
         {
-            return tipoProcedimiento switch
+            var query = procedimiento switch
             {
-                "INTEGRA_NEW" => ObtenerCadenasIntegraNew(
-                    connection,
-                    codInstitucion,
-                    fechaProceso),
+                SpIntegra.IntegraNew => @"
+                    EXEC spPrm_Formato_Integra_New
+                        @CodInstitucion,
+                        @FechaProceso",
 
-                "INTEGRA_NEW_MATRICULA" => ObtenerCadenasIntegraNewMatricula(
-                    connection,
-                    codInstitucion,
-                    fechaProceso),
+                SpIntegra.IntegraNewMatricula => @"
+                    EXEC spPrm_Formato_Integra_New_Matricula
+                        @CodInstitucion,
+                        @FechaProceso",
 
                 _ => throw new InvalidOperationException(
-                    $"Tipo de procedimiento no permitido para generar archivo: {tipoProcedimiento}.")
+                    $"Procedimiento no permitido para generar archivo: {procedimiento}.")
             };
-        }
 
-        private static List<string> ObtenerCadenasIntegraNew(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
-        EXEC spPrm_Formato_Integra_New
-            @CodInstitucion,
-            @FechaProceso";
-
-            return ObtenerCadenas(
-                connection,
-                query,
-                codInstitucion,
-                fechaProceso);
-        }
-
-        private static List<string> ObtenerCadenasIntegraNewMatricula(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
-        EXEC spPrm_Formato_Integra_New_Matricula
-            @CodInstitucion,
-            @FechaProceso";
-
-            return ObtenerCadenas(
-                connection,
-                query,
-                codInstitucion,
-                fechaProceso);
-        }
-
-        private static List<string> ObtenerCadenas(
-            IDbConnection connection,
-            string query,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            return connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
+            return [.. connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
                     query,
                     new
                     {
                         CodInstitucion = codInstitucion,
                         FechaProceso = fechaProceso
                     })
-                .Select(x => x.Cadena ?? string.Empty)
-                .ToList();
+                .Select(x => x.Cadena ?? string.Empty)];
         }
 
         private static string CrearContenidoEnvio(
@@ -282,16 +182,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CcProcesoMensualArchivoF02RegistroDbModel registro,
             decimal porcAhorro)
         {
-            var campos = new List<string>
-            {
+            return string.Join(
+                "\t",
                 FormatearCedula(registro.Cedula),
                 registro.CodDeduccion.Trim(),
                 ObtenerMontoPorTipo(registro, porcAhorro),
                 registro.Sector == 2 ? "2" : "0",
-                "0"
-            };
-
-            return string.Join("\t", campos);
+                "0");
         }
 
         private static string ObtenerMontoPorTipo(
@@ -319,33 +216,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return builder.ToString();
         }
 
-        private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoConfiguracionModel configuracion)
-        {
-            var movimientos = new List<string>();
-
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncInclusiones, "I");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncExclusiones, "E");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncModificaciones, "C");
-            AgregarMovimientoSiAplica(movimientos, configuracion.IncMantienen, "M");
-
-            movimientos.Add("P");
-
-            return movimientos;
-        }
-
-        private static void AgregarMovimientoSiAplica(
-            List<string> movimientos,
-            int indicador,
-            string movimiento)
-        {
-            if (indicador == 1)
-            {
-                movimientos.Add(movimiento);
-            }
-        }
-
-        private static string FormatearCedula(string cedula)
+        private static string FormatearCedula(string? cedula)
         {
             var valor = cedula?.Trim() ?? string.Empty;
 
@@ -369,16 +240,44 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return $"{prefijo}-{codigo}-{fechaTexto}-01.{extension}";
         }
-             
-    
+
+        private static CcProcesoMensualArchivoGeneradoModel CrearRespuesta(
+            List<string> archivosGenerados)
+        {
+            var ultimoArchivo = archivosGenerados.LastOrDefault() ?? string.Empty;
+
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = archivosGenerados.Count > 0,
+                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
+                NombreArchivo = Path.GetFileName(ultimoArchivo),
+                RutaArchivo = ultimoArchivo,
+                ContentType = ContentTypeCsv,
+                ArchivoBytes = [],
+                ArchivosGenerados = archivosGenerados
+            };
+        }
+
+        private enum SpIntegra
+        {
+            IntegraNew,
+            IntegraNewMatricula
+        }
+
+        private sealed class CcProcesoMensualArchivoContextoModel
+        {
+            public DateTime FechaServidor { get; set; } = DateTime.MinValue;
+            public string RutaDirectorio { get; set; } = string.Empty;
+        }
+
         private sealed class CcProcesoMensualArchivoF02RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;
             public string Tipo { get; set; } = string.Empty;
             public string CodDeduccion { get; set; } = string.Empty;
             public string Movimiento { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public int Sector { get; set; } = 0;
+            public decimal MontoActual { get; set; }
+            public int Sector { get; set; }
         }
 
         private sealed class CcProcesoMensualArchivoCadenaDbModel

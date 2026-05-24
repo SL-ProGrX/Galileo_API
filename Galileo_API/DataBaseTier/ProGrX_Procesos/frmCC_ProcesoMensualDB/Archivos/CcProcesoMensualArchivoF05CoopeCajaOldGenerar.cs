@@ -18,35 +18,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+
+        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(connection, request.CodInstitucion);
+            var configuracion = ObtenerConfiguracion(
+                connection,
+                request.CodInstitucion);
+
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
             var archivosGenerados = new List<string>();
-            var ultimoArchivo = string.Empty;
 
-            if (!EsCodigoNo(configuracion.CodigoAportes))
-            {
-                ultimoArchivo = GenerarArchivoAportes(
-                    connection,
-                    request,
-                    configuracion,
-                    rutaDirectorio);
+            AgregarArchivoSiAplica(
+                archivosGenerados,
+                connection,
+                request,
+                configuracion,
+                rutaDirectorio,
+                TipoAporte,
+                configuracion.CodigoAportes);
 
-                archivosGenerados.Add(ultimoArchivo);
-            }
+            AgregarArchivoSiAplica(
+                archivosGenerados,
+                connection,
+                request,
+                configuracion,
+                rutaDirectorio,
+                TipoCredito,
+                configuracion.CodigoCreditos);
 
-            if (!EsCodigoNo(configuracion.CodigoCreditos))
-            {
-                ultimoArchivo = GenerarArchivoCreditos(
-                    connection,
-                    request,
-                    configuracion,
-                    rutaDirectorio);
-
-                archivosGenerados.Add(ultimoArchivo);
-            }
+            var ultimoArchivo = archivosGenerados.LastOrDefault() ?? string.Empty;
 
             return new CcProcesoMensualArchivoGeneradoModel
             {
@@ -58,6 +61,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 ArchivoBytes = [],
                 ArchivosGenerados = archivosGenerados
             };
+        }
+
+        private static void AgregarArchivoSiAplica(
+            ICollection<string> archivosGenerados,
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request,
+            CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
+            string rutaDirectorio,
+            string tipo,
+            string codigoConfigurado)
+        {
+            if (EsCodigoNo(codigoConfigurado))
+            {
+                return;
+            }
+
+            var rutaArchivo = GenerarArchivoPorTipo(
+                connection,
+                request,
+                configuracion,
+                rutaDirectorio,
+                tipo);
+
+            archivosGenerados.Add(rutaArchivo);
         }
 
         private static CcProcesoMensualArchivoF05OldConfigDbModel ObtenerConfiguracion(
@@ -76,16 +103,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF05OldConfigDbModel();
         }
 
-        private static string GenerarArchivoAportes(
+        private static string GenerarArchivoPorTipo(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
-            string rutaDirectorio)
+            string rutaDirectorio,
+            string tipo)
         {
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
                 request.FechaProceso,
-                "A");
+                tipo);
 
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
                 rutaDirectorio,
@@ -95,9 +123,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion,
                 request.FechaProceso,
-                TipoAporte);
+                tipo);
 
-            var contenido = CrearContenidoAportes(registros, configuracion);
+            var contenido = CrearContenidoArchivo(
+                registros,
+                configuracion,
+                tipo);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
                 rutaDirectorio,
@@ -108,123 +139,84 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static string GenerarArchivoCreditos(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
+        private static string CrearContenidoArchivo(
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
-            string rutaDirectorio)
-        {
-            var nombreArchivo = CrearNombreArchivo(
-                request.CodInstitucion,
-                request.FechaProceso,
-                "C");
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
-            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso,
-                TipoCredito);
-
-            var contenido = CrearContenidoCreditos(registros, configuracion);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.UTF8);
-
-            return rutaArchivo;
-        }
-
- 
-
-        private static string CrearContenidoAportes(
-            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
-            CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
+            string tipo)
         {
             var builder = new StringBuilder();
 
-            foreach (var registro in registros)
+            foreach (var registro in registros.Where(registro => DebeImprimirRegistro(registro, tipo)))
             {
-                builder.AppendLine(CrearLineaAporte(registro, configuracion));
+                builder.AppendLine(
+                    CrearLineaArchivo(
+                        registro,
+                        configuracion,
+                        tipo));
             }
 
             return builder.ToString();
         }
 
-        private static string CrearContenidoCreditos(
-            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
-            CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
+        private static bool DebeImprimirRegistro(
+            CcProcesoMensualArchivoRegistroDbModel registro,
+            string tipo)
         {
-            var builder = new StringBuilder();
-
-            foreach (var registro in registros)
+            if (!string.Equals(tipo, TipoCredito, StringComparison.OrdinalIgnoreCase))
             {
-                var tipoMovimiento = ObtenerTipoMovimientoCoopeCaja(registro.Movimiento);
+                return true;
+            } 
+            return ObtenerTipoMovimientoCoopeCaja(registro.Movimiento) != 1;
+        }
 
-                // VB6:
-                // If i <> 1 Then Print #fnFile, vLinea
-                if (tipoMovimiento != 1)
-                {
-                    builder.AppendLine(CrearLineaCredito(registro, configuracion));
-                }
+        private static string CrearLineaArchivo(
+            CcProcesoMensualArchivoRegistroDbModel registro,
+            CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
+            string tipo)
+        {
+            var codigo = ObtenerCodigoArchivo(configuracion, tipo);
+            var monto = ObtenerMontoArchivo(registro, tipo);
+            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
+
+            return TomarIzquierda(codigo, 6)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(registro.Cedula, "I", "0", 15)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido1, "D", " ", 15)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido2, "D", " ", 15)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre1, "D", " ", 15)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre2, "D", " ", 15)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
+                    Helpers.CcProcesoMensualArchivoRutaHelperDb.DepurarCadena(registro.Direccion),
+                    "D",
+                    " ",
+                    140)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
+                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(monto, "I", "0", 11);
+        }
+
+        private static string ObtenerCodigoArchivo(
+            CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
+            string tipo)
+        {
+            return string.Equals(tipo, TipoAporte, StringComparison.OrdinalIgnoreCase)
+                ? configuracion.CodigoAportes
+                : configuracion.CodigoCreditos;
+        }
+
+        private static string ObtenerMontoArchivo(
+            CcProcesoMensualArchivoRegistroDbModel registro,
+            string tipo)
+        {
+            if (!string.Equals(tipo, TipoCredito, StringComparison.OrdinalIgnoreCase))
+            {
+                return "0";
             }
 
-            return builder.ToString();
+            return Convert.ToInt64(registro.MontoActual * 100)
+                .ToString(CultureInfo.InvariantCulture);
         }
 
-        private static string CrearLineaAporte(
-            CcProcesoMensualArchivoRegistroDbModel registro,
-            CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
-        {
-            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
-
-            return TomarIzquierda(configuracion.CodigoAportes, 6)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(registro.Cedula, "I", "0", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido1, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido2, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre1, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre2, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                     Helpers.CcProcesoMensualArchivoRutaHelperDb.DepurarCadena(registro.Direccion),
-                    "D",
-                    " ",
-                    140)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 11);
-        }
-
-        private static string CrearLineaCredito(
-            CcProcesoMensualArchivoRegistroDbModel registro,
-            CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
-        {
-            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
-            var monto = Convert.ToInt64(registro.MontoActual * 100).ToString(CultureInfo.InvariantCulture);
-
-            return TomarIzquierda(configuracion.CodigoCreditos, 6)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(registro.Cedula, "I", "0", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido1, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Apellido2, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre1, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(nombre.Nombre2, "D", " ", 15)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                     Helpers.CcProcesoMensualArchivoRutaHelperDb.DepurarCadena(registro.Direccion),
-                    "D",
-                    " ",
-                    140)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno("0", "I", "0", 7)
-                +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(monto, "I", "0", 11);
-        }
-
-
-
-        private static int ObtenerTipoMovimientoCoopeCaja(string movimiento)
+        private static int ObtenerTipoMovimientoCoopeCaja(string? movimiento)
         {
             return movimiento?.Trim().ToUpperInvariant() switch
             {
@@ -255,7 +247,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 : texto;
         }
 
-        private static bool EsCodigoNo(string codigo)
+        private static bool EsCodigoNo(string? codigo)
         {
             return string.Equals(
                 codigo?.Trim(),
@@ -268,8 +260,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public string CodigoAportes { get; set; } = string.Empty;
             public string CodigoCreditos { get; set; } = string.Empty;
         }
-
- 
 
     }
 }

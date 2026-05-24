@@ -6,14 +6,9 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF07IceProyectosGenerar :  CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF07IceProyectosGenerar : CcProcesoMensualArchivoCreditoCondicionalGeneratorBase
 
     {
-        private const string CodigoNo = "NO";
-        private const string TipoCredito = "C";
-
-        private IDbConnection? _connection;
-
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["07"];
 
         protected override string CodigoPlanillaEnvio => "07";
@@ -21,52 +16,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string ExtensionArchivo => ".txt";
         protected override string ContentType => ContentTypeText;
 
-        // No se usa porque F07 usa ObtenerRegistrosGeneral.
-        protected override string QueryRegistros => string.Empty;
-
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var configuracion = ObtenerConfiguracion(
-                connection,
-                request.CodInstitucion);
-
-            if (EsCodigoNo(configuracion.CodigoCreditos))
-            {
-                return CrearRespuestaSinGenerar(
-                    connection,
-                    request);
-            }
-
-            _connection = connection;
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistros(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso,
-                TipoCredito);
-        }
-
         protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> FiltrarRegistros(
             IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros)
-        {
-            // VB6: Solo se procesan Inclusiones.
+        { 
             return registros.Where(registro => ObtenerTipoMovimiento(registro.Movimiento) == 2);
         }
-
         protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoRegistroDbModel registro,
-            CcProcesoMensualGeneraArchivoRequest request)
+               CcProcesoMensualArchivoRegistroDbModel registro,
+               CcProcesoMensualGeneraArchivoRequest request)
         {
-            if (_connection is null)
+            if (Connection is null)
             {
                 return string.Empty;
             }
@@ -75,7 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 registro.Nombre);
 
             var credito = ObtenerDatosCredito(
-                _connection,
+                Connection,
                 registro.Cedula,
                 request.FechaProceso);
 
@@ -102,53 +61,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + plazo.ToString(CultureInfo.InvariantCulture)
                 + "\t"
                 + registro.MontoActual.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static CcProcesoMensualArchivoGeneradoModel CrearRespuestaSinGenerar(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
-
-            var nombreArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearNombreArchivoEstandar(
-                request.CodInstitucion,
-                request.FechaProceso,
-                string.Empty,
-                fechaServidor,
-                "F07",
-                ".txt");
-
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
-            return new CcProcesoMensualArchivoGeneradoModel
-            {
-                Generado = false,
-                CodigoPlanillaEnvio = "07",
-                NombreArchivo = nombreArchivo,
-                RutaArchivo = rutaArchivo,
-                ContentType = "text/plain",
-                ArchivoBytes = [],
-                ArchivosGenerados = []
-            };
-        }
-
-        private static CcProcesoMensualArchivoF07ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
-        {
-            const string query = @"
-                SELECT
-                    ISNULL(codigo_creditos, '') AS CodigoCreditos
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF07ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF07ConfigDbModel();
         }
 
         private static CcProcesoMensualArchivoF07CreditoDbModel ObtenerDatosCredito(
@@ -179,30 +91,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     Monto = 0,
                     Plazo = 1
                 };
-        }
-
-        private static int ObtenerTipoMovimiento(string? movimiento)
-        {
-            return movimiento?.Trim().ToUpperInvariant() switch
-            {
-                "E" => 1,
-                "I" => 2,
-                "C" => 3,
-                _ => 4
-            };
-        }
-
-        private static bool EsCodigoNo(string? codigo)
-        {
-            return string.Equals(
-                codigo?.Trim(),
-                CodigoNo,
-                StringComparison.OrdinalIgnoreCase);
-        }
-
-        private sealed class CcProcesoMensualArchivoF07ConfigDbModel
-        {
-            public string CodigoCreditos { get; set; } = string.Empty;
         }
 
         private sealed class CcProcesoMensualArchivoF07CreditoDbModel
