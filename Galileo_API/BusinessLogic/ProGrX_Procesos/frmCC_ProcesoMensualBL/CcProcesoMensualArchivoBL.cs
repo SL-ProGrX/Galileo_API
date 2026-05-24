@@ -1,0 +1,179 @@
+﻿
+using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using System.Data;
+using Dapper;
+using Galileo_API.DataBaseTier;
+
+
+namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
+{
+    public class CcProcesoMensualArchivoBL
+    {
+
+        private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
+
+        public CcProcesoMensualArchivoBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores)
+        {
+            _generadorArchivos = generadores;
+        }
+        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            MProcesoMensualDb.SbBitacoraPlanilla(connection, "02.1", request.CodInstitucion, request.FechaProceso, "E", request.Usuario);
+
+            var planillaEnvio = ObtenerPlanillaEnvio( connection,  request.CodInstitucion);
+
+            return EjecutarGenerador( connection, request, planillaEnvio);
+        }
+        private CcProcesoMensualArchivoGeneradoModel EjecutarGenerador(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request, string planillaEnvio)
+        {
+            var codigo = planillaEnvio.Trim();
+
+            return codigo switch
+            {
+
+                "00" => GenerarPorCodigo(connection, request, "00"),
+
+                "03" => GenerarArchivoF03(connection, request),
+
+                "05" => GenerarF05YOld(connection, request),
+
+                "11" => CrearRespuestaSinGenerar(codigo),
+
+                "25" or "30" => GenerarPorCodigo(connection, request, "25"),
+
+                "32" or "33" => GenerarPorCodigo(connection, request, "32"),
+
+                _ => GenerarPorCodigo(connection, request, codigo)
+            };
+        }
+        private CcProcesoMensualArchivoGeneradoModel GenerarPorCodigo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request, string codigoPlanillaEnvio)
+        {
+            var generador = BuscarGenerador(codigoPlanillaEnvio);
+
+            return generador.GenerarArchivo(connection, request);
+        }
+        private static string ObtenerPlanillaEnvio(IDbConnection connection, int codInstitucion)
+        {
+            const string query = @"
+                SELECT ISNULL(planilla_envio, '') AS PlanillaEnvio
+                FROM instituciones
+                WHERE cod_institucion = @CodInstitucion";
+
+            return connection.QueryFirstOrDefault<string>(
+                query,
+                new { CodInstitucion = codInstitucion }) ?? string.Empty;
+        }
+        private static CcProcesoMensualArchivoGeneradoModel CrearRespuestaSinGenerar(string codigoPlanillaEnvio)
+        {
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = false,
+                CodigoPlanillaEnvio = codigoPlanillaEnvio,
+                NombreArchivo = string.Empty,
+                RutaArchivo = string.Empty,
+                ContentType = string.Empty,
+                ArchivoBytes = [],
+                ArchivosGenerados = []
+            };
+        }
+        private ICcProcesoMensualArchivoGenerator? BuscarGeneradorOpcional(string codigoPlanillaEnvio)
+        {
+            return _generadorArchivos.FirstOrDefault(g =>
+                g.CodigosPlanillaEnvio.Any(codigo =>
+                    string.Equals(
+                        codigo.Trim(),
+                        codigoPlanillaEnvio.Trim(),
+                        StringComparison.OrdinalIgnoreCase)));
+        }
+        private ICcProcesoMensualArchivoGenerator BuscarGenerador(string codigoPlanillaEnvio)
+        {
+            var generador = BuscarGeneradorOpcional(codigoPlanillaEnvio);
+
+            return generador is null
+                ? throw new InvalidOperationException(
+                    $"No existe generador configurado para planilla_envio '{codigoPlanillaEnvio}'.")
+                : generador;
+        }
+        private CcProcesoMensualArchivoGeneradoModel GenerarArchivoF03(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            if (request.EmpresaId is not (1 or 61))
+            {
+                return GenerarPorCodigo(connection, request, "03_S");
+            }
+
+            var archivosGenerados = new List<string>();
+            CcProcesoMensualArchivoGeneradoModel? ultimaRespuesta = null;
+
+            foreach (var unidad in new[] { "01", "02", "03" })
+            {
+                var requestUnidad = ClonarRequest(request);
+                requestUnidad.Unidad = unidad;
+
+                ultimaRespuesta = GenerarPorCodigo(
+                    connection,
+                    requestUnidad,
+                    "03_A");
+
+                archivosGenerados.AddRange(ultimaRespuesta.ArchivosGenerados);
+            }
+            return CombinarResultados("03", ultimaRespuesta, archivosGenerados);
+        }
+        private static CcProcesoMensualArchivoGeneradoModel CombinarResultados(string codigo, CcProcesoMensualArchivoGeneradoModel? ultimoResultado, List<string> archivosGenerados)
+        {
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = archivosGenerados.Count > 0,
+                CodigoPlanillaEnvio = codigo,
+                NombreArchivo = ultimoResultado?.NombreArchivo ?? string.Empty,
+                RutaArchivo = ultimoResultado?.RutaArchivo ?? string.Empty,
+                ContentType = ultimoResultado?.ContentType ?? string.Empty,
+                ArchivoBytes = [],
+                ArchivosGenerados = archivosGenerados
+            };
+        }
+        private static CcProcesoMensualGeneraArchivoRequest ClonarRequest(CcProcesoMensualGeneraArchivoRequest request)
+        {
+            return new CcProcesoMensualGeneraArchivoRequest
+            {
+                CodInstitucion = request.CodInstitucion,
+                FechaProceso = request.FechaProceso,
+                EmpresaId = request.EmpresaId,
+                Usuario = request.Usuario,
+                NombreInstitucion = request.NombreInstitucion,
+                NombreEmpresa = request.NombreEmpresa,
+                DirectorioResultados = request.DirectorioResultados,
+                Unidad = request.Unidad
+            };
+        }
+        private CcProcesoMensualArchivoGeneradoModel GenerarF05YOld( IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            var archivosGenerados = new List<string>();
+
+            var resultadoNuevo = GenerarPorCodigo(
+                connection,
+                request,
+                "05");
+
+            archivosGenerados.AddRange(resultadoNuevo.ArchivosGenerados);
+
+            var resultadoOld = GenerarPorCodigo(
+                connection,
+                request,
+                "05_OLD");
+
+            archivosGenerados.AddRange(resultadoOld.ArchivosGenerados);
+
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = archivosGenerados.Count > 0,
+                CodigoPlanillaEnvio = "05",
+                NombreArchivo = resultadoOld.NombreArchivo,
+                RutaArchivo = resultadoOld.RutaArchivo,
+                ContentType = resultadoOld.ContentType,
+                ArchivoBytes = [],
+                ArchivosGenerados = archivosGenerados
+            };
+        }
+    }
+}
