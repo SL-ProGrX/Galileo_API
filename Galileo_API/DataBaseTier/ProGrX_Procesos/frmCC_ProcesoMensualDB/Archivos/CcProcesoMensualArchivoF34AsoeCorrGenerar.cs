@@ -1,17 +1,14 @@
-﻿using Dapper;
+﻿ 
 using System.Data;
-using System.Globalization;
-using System.Text;
+using System.Globalization; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF34AsoeCorrGenerar :  CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF34AsoeCorrGenerar.CcProcesoMensualArchivoF34RegistroDbModel>
+    public class CcProcesoMensualArchivoF34AsoeCorrGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF34AsoeCorrGenerar.CcProcesoMensualArchivoF34RegistroDbModel>
 
     {
         private const string Encabezado = "Identificacion;concepto;valor;nombre";
-
-        private List<string> _movimientos = [];
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["34"];
 
@@ -35,31 +32,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-            request.FechaProceso,
-                Movimientos = _movimientos,
-              request.CodInstitucion
-            };
-        }
-
         protected override string CrearEncabezado()
         {
             return Encabezado;
@@ -82,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             public string CedulaColilla { get; set; } = string.Empty;
             public string CodDeduccion { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
+            public decimal MontoActual { get; set; } = 0;   
             public string Movimiento { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
         }
