@@ -6,28 +6,117 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF07IceProyectosGenerar : ICcProcesoMensualArchivoGenerator
+    public class CcProcesoMensualArchivoF07IceProyectosGenerar :  CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoRegistroDbModel>
+
     {
-        private const string CodigoPlanillaEnvio = "07";
-        private const string ContentTypeText = "text/plain";
-        private const string ExtensionTxt = ".txt";
         private const string CodigoNo = "NO";
         private const string TipoCredito = "C";
 
-        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+        private IDbConnection? _connection;
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["07"];
+
+        protected override string CodigoPlanillaEnvio => "07";
+        protected override string CodigoFormato => "F07";
+        protected override string ExtensionArchivo => ".txt";
+        protected override string ContentType => ContentTypeText;
+
+        // No se usa porque F07 usa ObtenerRegistrosGeneral.
+        protected override string QueryRegistros => string.Empty;
+
+        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
         {
             var configuracion = ObtenerConfiguracion(
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
+            if (EsCodigoNo(configuracion.CodigoCreditos))
+            {
+                return CrearRespuestaSinGenerar(
+                    connection,
+                    request);
+            }
 
-            var nombreArchivo = CrearNombreArchivo(
+            _connection = connection;
+
+            return base.GenerarArchivo(connection, request);
+        }
+
+        protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistros(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            return Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
+                connection,
                 request.CodInstitucion,
                 request.FechaProceso,
-                fechaServidor);
+                TipoCredito);
+        }
+
+        protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> FiltrarRegistros(
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros)
+        {
+            // VB6: Solo se procesan Inclusiones.
+            return registros.Where(registro => ObtenerTipoMovimiento(registro.Movimiento) == 2);
+        }
+
+        protected override string CrearLineaArchivo(
+            CcProcesoMensualArchivoRegistroDbModel registro,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            if (_connection is null)
+            {
+                return string.Empty;
+            }
+
+            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(
+                registro.Nombre);
+
+            var credito = ObtenerDatosCredito(
+                _connection,
+                registro.Cedula,
+                request.FechaProceso);
+
+            var monto = credito.Cantidad > 0
+                ? credito.Monto
+                : registro.MontoActual;
+
+            var plazo = credito.Cantidad > 0
+                ? credito.Plazo
+                : 1m;
+
+            return registro.Cedula.Trim()
+                + "\t"
+                + nombre.Apellido1
+                + "\t"
+                + nombre.Apellido2
+                + "\t"
+                + nombre.Nombre1
+                + " "
+                + nombre.Nombre2
+                + "\t"
+                + monto.ToString(CultureInfo.InvariantCulture)
+                + "\t"
+                + plazo.ToString(CultureInfo.InvariantCulture)
+                + "\t"
+                + registro.MontoActual.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static CcProcesoMensualArchivoGeneradoModel CrearRespuestaSinGenerar(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
+
+            var nombreArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearNombreArchivoEstandar(
+                request.CodInstitucion,
+                request.FechaProceso,
+                string.Empty,
+                fechaServidor,
+                "F07",
+                ".txt");
 
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
@@ -35,45 +124,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 rutaDirectorio,
                 nombreArchivo);
 
-            if (EsCodigoNo(configuracion.CodigoCreditos))
-            {
-                return new CcProcesoMensualArchivoGeneradoModel
-                {
-                    Generado = false,
-                    CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                    NombreArchivo = nombreArchivo,
-                    RutaArchivo = rutaArchivo,
-                    ContentType = ContentTypeText,
-                    ArchivoBytes = [],
-                    ArchivosGenerados = []
-                };
-            }
-
-            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso, TipoCredito);
-
-            var contenido = CrearContenidoArchivo(
-                connection,
-                registros,
-                request.FechaProceso);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.GetEncoding(1252));
-
             return new CcProcesoMensualArchivoGeneradoModel
             {
-                Generado = true,
-                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
+                Generado = false,
+                CodigoPlanillaEnvio = "07",
                 NombreArchivo = nombreArchivo,
                 RutaArchivo = rutaArchivo,
-                ContentType = ContentTypeText,
+                ContentType = "text/plain",
                 ArchivoBytes = [],
-                ArchivosGenerados = [rutaArchivo]
+                ArchivosGenerados = []
             };
         }
 
@@ -92,77 +151,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF07ConfigDbModel();
         }
 
-     
-        private static string CrearContenidoArchivo(
-            IDbConnection connection,
-            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
-            decimal fechaProceso)
-        {
-            var builder = new StringBuilder();
-
-            foreach (var registro in registros)
-            {
-                var tipoMovimiento = ObtenerTipoMovimiento(registro.Movimiento);
-
-                // VB6:
-                // Solo se procesan Inclusiones
-                // If x = 2 Then Print #fnFile, vLinea
-                if (tipoMovimiento == 2)
-                {
-                    builder.AppendLine(CrearLineaArchivo(
-                        connection,
-                        registro,
-                        fechaProceso));
-                }
-            }
-
-            return builder.ToString();
-        }
-
-        private static string CrearLineaArchivo(
-            IDbConnection connection,
-            CcProcesoMensualArchivoRegistroDbModel registro,
-            decimal fechaProceso)
-        {
-            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
-
-            var credito = ObtenerDatosCredito(
-                connection,
-                registro.Cedula,
-                fechaProceso);
-
-            var monto = credito.Cantidad > 0
-                ? credito.Monto
-                : registro.MontoActual;
-
-            var plazo = credito.Cantidad > 0
-                ? credito.Plazo
-                : 1m;
-
-            return registro.Cedula.Trim()
-                 + "\t"
-                 + nombre.Apellido1
-                 + "\t"
-                 + nombre.Apellido2
-                 + "\t"
-                 + nombre.Nombre1
-                 + " "
-                 + nombre.Nombre2
-                 + "\t"
-                 + FormatearDecimalVb6(monto)
-                 + "\t"
-                 + FormatearDecimalVb6(plazo)
-                 + "\t"
-                 + FormatearDecimalVb6(registro.MontoActual);
-        }
-
         private static CcProcesoMensualArchivoF07CreditoDbModel ObtenerDatosCredito(
             IDbConnection connection,
             string cedula,
             decimal fechaProceso)
         {
             const string query = @"
-                  SELECT
+                SELECT
                     COUNT(*) AS Cantidad,
                     ISNULL(SUM(montoapr), 0) AS Monto,
                     ISNULL(SUM(Saldo), 0) AS Saldo,
@@ -186,8 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 };
         }
 
-    
-        private static int ObtenerTipoMovimiento(string movimiento)
+        private static int ObtenerTipoMovimiento(string? movimiento)
         {
             return movimiento?.Trim().ToUpperInvariant() switch
             {
@@ -198,21 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static string CrearNombreArchivo(
-            int codInstitucion,
-            decimal fechaProceso,
-            DateTime fechaServidor)
-        {
-            var codigoInstitucion = codInstitucion.ToString("00", CultureInfo.InvariantCulture);
-            var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
-            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
-
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F07]{ExtensionTxt}";
-        }
-
-   
-
-        private static bool EsCodigoNo(string codigo)
+        private static bool EsCodigoNo(string? codigo)
         {
             return string.Equals(
                 codigo?.Trim(),
@@ -220,24 +200,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string FormatearDecimalVb6(decimal valor)
-        {
-            return valor.ToString(CultureInfo.InvariantCulture);
-        }
-
         private sealed class CcProcesoMensualArchivoF07ConfigDbModel
         {
             public string CodigoCreditos { get; set; } = string.Empty;
         }
 
- 
         private sealed class CcProcesoMensualArchivoF07CreditoDbModel
         {
-            public int Cantidad { get; set; } = 0;
-            public decimal Monto { get; set; } = 0;
-            public decimal Saldo { get; set; } = 0;
-            public decimal Plazo { get; set; } = 0;
+            public int Cantidad { get; set; }
+            public decimal Monto { get; set; }
+            public decimal Saldo { get; set; }
+            public decimal Plazo { get; set; }
         }
- 
     }
 }

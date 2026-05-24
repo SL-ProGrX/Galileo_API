@@ -38,8 +38,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return new
             {
-                FechaProceso = request.FechaProceso,
-                CodInstitucion = request.CodInstitucion,
+                request.FechaProceso,
+                request.CodInstitucion,
                 MovimientoExclusion
             };
         }
@@ -63,7 +63,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         public sealed class CcProcesoMensualArchivoRegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; }
+            public decimal MontoActual { get; set; } = 0;
             public string Movimiento { get; set; } = string.Empty;
             public string Tipo { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;

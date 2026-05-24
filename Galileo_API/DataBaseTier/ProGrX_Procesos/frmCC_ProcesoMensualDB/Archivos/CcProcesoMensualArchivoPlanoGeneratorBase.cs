@@ -18,7 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected abstract string ContentType { get; }
         protected abstract string QueryRegistros { get; }
 
- 
+
         protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
 
         public virtual CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
@@ -45,7 +45,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return CrearRespuesta(
                 nombreArchivo,
-                rutaArchivo);
+                rutaArchivo,
+                contenido);
         }
 
         protected virtual string CrearNombreArchivo(
@@ -82,8 +83,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return new
             {
-               request.FechaProceso,
-              request.CodInstitucion
+                request.FechaProceso,
+                request.CodInstitucion
             };
         }
 
@@ -128,9 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             TRegistro registro,
             CcProcesoMensualGeneraArchivoRequest request);
 
-        private CcProcesoMensualArchivoGeneradoModel CrearRespuesta(
-            string nombreArchivo,
-            string rutaArchivo)
+        protected virtual CcProcesoMensualArchivoGeneradoModel CrearRespuesta(string nombreArchivo, string rutaArchivo, string contenido)
         {
             return new CcProcesoMensualArchivoGeneradoModel
             {
@@ -140,7 +139,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 RutaArchivo = rutaArchivo,
                 ContentType = ContentType,
                 ArchivoBytes = [],
-                ArchivosGenerados = ObtenerArchivosGenerados(rutaArchivo)
+                ArchivosGenerados = [rutaArchivo]
             };
         }
 

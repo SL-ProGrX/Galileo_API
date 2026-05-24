@@ -292,7 +292,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             return movimientos;
         }
+        public static List<string> ObtenerMovimientosPorIndicadores(
+    CcProcesoMensualArchivoConfiguracionModel configuracion)
+        {
+            var movimientos = new List<string>();
 
+            AgregarMovimientoSiAplica(movimientos, configuracion.IncInclusiones, "I");
+            AgregarMovimientoSiAplica(movimientos, configuracion.IncExclusiones, "E");
+            AgregarMovimientoSiAplica(movimientos, configuracion.IncModificaciones, "C");
+            AgregarMovimientoSiAplica(movimientos, configuracion.IncMantienen, "M");
+
+            movimientos.Add("P");
+
+            return movimientos;
+        }
         private static void AgregarMovimientoSiAplica(
             List<string> movimientos,
             int indicador,
