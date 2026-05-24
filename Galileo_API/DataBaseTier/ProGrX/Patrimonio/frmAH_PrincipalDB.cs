@@ -158,8 +158,7 @@ order by A.fecha desc, A.consec desc;";
             if (response.Code == -1 || response.Result == null)
                 return response;
 
-            foreach (var item in response.Result?.Where(x => string.IsNullOrWhiteSpace(x.movimiento))
-         ?? Enumerable.Empty<FrmAhPrincipalDetallePatrimonioResponse>())
+            foreach (var item in response.Result.Where(x => string.IsNullOrWhiteSpace(x.movimiento)))
             {
                 item.movimiento = MCobroDb.fxTipoComprobante(
                     item.tcon,
