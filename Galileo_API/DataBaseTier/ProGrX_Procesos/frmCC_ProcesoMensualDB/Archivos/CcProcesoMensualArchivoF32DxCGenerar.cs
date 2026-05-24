@@ -1,18 +1,15 @@
-﻿using Dapper;
-using System.Data;
+﻿using System.Data;
 using System.Globalization;
-using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF32DxCGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF32DxCGenerar.CcProcesoMensualArchivoF32RegistroDbModel>
+    public class CcProcesoMensualArchivoF32DxCGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF32DxCGenerar.CcProcesoMensualArchivoF32RegistroDbModel>
 
     {
         private const string CodigoDeduccionCantidad = "DE31";
         private const string Encabezado = "empleado;concepto;cantidad;monto";
-
-        private List<string> _movimientos = [];
+         
         private string _rutaArchivoExcel = string.Empty;
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["32"];
@@ -36,20 +33,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.movimiento IN @Movimientos
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
-
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
+        protected override void PrepararConfiguracion(IDbConnection connection,
+           CcProcesoMensualArchivoConfiguracionModel configuracion,
+           CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
-
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor( connection);
+            
             var nombreArchivoExcel = CrearNombreArchivoExcel(
                 request.CodInstitucion,
                 request.FechaProceso,
@@ -61,19 +50,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             _rutaArchivoExcel = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
                 rutaDirectorio,
                 nombreArchivoExcel);
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                FechaProceso = request.FechaProceso,
-                Movimientos = _movimientos,
-                CodInstitucion = request.CodInstitucion
-            };
         }
 
         protected override string CrearEncabezado()
@@ -132,7 +108,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F32]";
         }
-
         public sealed class CcProcesoMensualArchivoF32RegistroDbModel
         {
             public string CedulaColilla { get; set; } = string.Empty;

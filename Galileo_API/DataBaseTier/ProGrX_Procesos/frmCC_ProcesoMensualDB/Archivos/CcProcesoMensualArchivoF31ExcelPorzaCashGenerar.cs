@@ -6,10 +6,8 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF31ExcelPorzaCashGenerar :   CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF31ExcelPorzaCashGenerar.CcProcesoMensualArchivoF31RegistroDbModel>
-    {
-        private List<string> _movimientos = [];
-
+    public class CcProcesoMensualArchivoF31ExcelPorzaCashGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF31ExcelPorzaCashGenerar.CcProcesoMensualArchivoF31RegistroDbModel>
+    { 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["31"];
 
         protected override string CodigoPlanillaEnvio => "31";
@@ -35,35 +33,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.movimiento IN @Movimientos
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.movimiento";
-
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                FechaProceso = request.FechaProceso,
-                Movimientos = _movimientos,
-                CodInstitucion = request.CodInstitucion
-            };
-        }
-
         protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoF31RegistroDbModel registro,
-            CcProcesoMensualGeneraArchivoRequest request)
+                   CcProcesoMensualArchivoF31RegistroDbModel registro,
+                   CcProcesoMensualGeneraArchivoRequest request)
         {
             return registro.Cedula.Trim()
                 + ";"
@@ -84,6 +56,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return (valor ?? string.Empty).Replace(";", " ");
         }
+
 
         public sealed class CcProcesoMensualArchivoF31RegistroDbModel
         {

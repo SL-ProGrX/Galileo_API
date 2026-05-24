@@ -6,11 +6,9 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF25HolcimGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF25HolcimGenerar.CcProcesoMensualArchivoF25RegistroDbModel>
+    public class CcProcesoMensualArchivoF25HolcimGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF25HolcimGenerar.CcProcesoMensualArchivoF25RegistroDbModel>
     {
-        private const string TipoDeduccionMonto = "M";
-
-        private List<string> _movimientos = [];
+        private const string TipoDeduccionMonto = "M"; 
         private string _codigoInstitucionArchivo = string.Empty;
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["25"];
@@ -40,33 +38,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
+
+        protected override void PrepararConfiguracion(IDbConnection connection,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
             CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
             _codigoInstitucionArchivo = string.IsNullOrWhiteSpace(configuracion.CodigoInstDeduc)
                 ? request.CodInstitucion.ToString("00", CultureInfo.InvariantCulture)
                 : configuracion.CodigoInstDeduc.Trim();
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                request.FechaProceso,
-                Movimientos = _movimientos,
-                request.CodInstitucion
-            };
         }
 
         protected override string CrearLineaArchivo(

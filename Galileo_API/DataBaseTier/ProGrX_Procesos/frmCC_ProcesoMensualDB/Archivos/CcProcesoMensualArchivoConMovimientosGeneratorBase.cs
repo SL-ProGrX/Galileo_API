@@ -35,8 +35,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             {
                 request.FechaProceso,
                 Movimientos = _movimientos,
-                 request.CodInstitucion
+                request.CodInstitucion
             };
+        }
+        protected virtual void PrepararConfiguracion(
+            IDbConnection connection,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
         }
     }
 }

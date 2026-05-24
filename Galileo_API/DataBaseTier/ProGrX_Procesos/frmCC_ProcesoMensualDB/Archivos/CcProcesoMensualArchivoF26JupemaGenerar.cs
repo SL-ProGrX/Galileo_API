@@ -6,11 +6,9 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF26JupemaGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF26JupemaGenerar.CcProcesoMensualArchivoF26RegistroDbModel>
+    public class CcProcesoMensualArchivoF26JupemaGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF26JupemaGenerar.CcProcesoMensualArchivoF26RegistroDbModel>
     {
-        private const string TipoDeduccionMonto = "M";
-
-        private List<string> _movimientos = [];
+        private const string TipoDeduccionMonto = "M"; 
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["26"];
 
@@ -36,34 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                request.FechaProceso,
-                Movimientos = _movimientos,
-                request.CodInstitucion
-            };
-        }
-
         protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoF26RegistroDbModel registro,
-            CcProcesoMensualGeneraArchivoRequest request)
+             CcProcesoMensualArchivoF26RegistroDbModel registro,
+             CcProcesoMensualGeneraArchivoRequest request)
         {
             var valor = string.Equals(
                 registro.TipoDeduc?.Trim(),
@@ -82,7 +55,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ",F,"
                 + valor.ToString(CultureInfo.InvariantCulture);
         }
-
         public sealed class CcProcesoMensualArchivoF26RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;

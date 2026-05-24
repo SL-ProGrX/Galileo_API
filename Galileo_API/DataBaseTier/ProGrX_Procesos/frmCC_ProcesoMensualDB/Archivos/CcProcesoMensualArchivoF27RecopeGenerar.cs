@@ -6,12 +6,10 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF27RecopeGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF27RecopeGenerar.CcProcesoMensualArchivoF27RegistroDbModel>
+    public class CcProcesoMensualArchivoF27RecopeGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF27RecopeGenerar.CcProcesoMensualArchivoF27RegistroDbModel>
 
     {
-        private const string TipoDeduccionMonto = "M";
-
-        private List<string> _movimientos = [];
+        private const string TipoDeduccionMonto = "M"; 
         private DateTime _fechaArchivo = DateTime.MinValue;
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["27"];
@@ -39,31 +37,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
-        public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-            IDbConnection connection,
+        protected override void PrepararConfiguracion(IDbConnection connection,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
             CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                connection,
-                request.CodInstitucion);
-
-            _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorComparador(
-                configuracion);
-
             _fechaArchivo = ObtenerFechaArchivo(request.FechaProceso);
-
-            return base.GenerarArchivo(connection, request);
-        }
-
-        protected override object CrearParametrosRegistros(
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            return new
-            {
-                request.FechaProceso,
-                Movimientos = _movimientos,
-                request.CodInstitucion
-            };
         }
 
         protected override string CrearLineaArchivo(
