@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF12ImasGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF12ImasGenerar.CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF12ImasGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
     {
         private const string MovimientoExclusion = "E";
 
@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoRegistroDbModel registro,
+            CcProcesoMensualArchivoPlanillaBasicaDbModel registro,
             CcProcesoMensualGeneraArchivoRequest request)
         {
             return Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
@@ -77,13 +77,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return montoEntero.ToString("000000000", CultureInfo.InvariantCulture);
         }
 
-        public sealed class CcProcesoMensualArchivoRegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; }
-            public string Movimiento { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-        }
+    
 
     }
 }

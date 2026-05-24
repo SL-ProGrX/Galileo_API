@@ -7,25 +7,23 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF18ConaviGenerar :  CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF19RegistroDbModel>
+    public class CcProcesoMensualArchivoF18ConaviGenerar :  CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF18RegistroDbModel>
 
-    {
-        private const string TipoAhorro = "A";
+    {  private const string TipoAhorro = "A";
         private const string TipoExtraordinario = "E";
         private const string TipoCredito = "C";
-         
+
         private decimal _porcAhorro;
 
-        public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["19"];
+        public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["18"];
 
-        protected override string CodigoPlanillaEnvio => "19";
-        protected override string CodigoFormato => "F19";
+        protected override string CodigoPlanillaEnvio => "18";
+        protected override string CodigoFormato => "F18";
         protected override string ExtensionArchivo => ".txt";
         protected override string ContentType => ContentTypeText;
 
         protected override string QueryRegistros => @"
             SELECT
-                S.Nombre,
                 P.cedula AS Cedula,
                 P.Tipo,
                 P.cod_deduccion AS CodDeduccion,
@@ -41,65 +39,58 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             ORDER BY P.cedula, P.tipo, P.cod_deduccion, P.movimiento";
 
         protected override void PrepararConfiguracion(
-             IDbConnection connection,
-             CcProcesoMensualArchivoConfiguracionModel configuracion,
-             CcProcesoMensualGeneraArchivoRequest request)
+            IDbConnection connection,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
+            CcProcesoMensualGeneraArchivoRequest request)
         {
             _porcAhorro = configuracion.PorcAhorro;
         }
 
         protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoF19RegistroDbModel registro,
+            CcProcesoMensualArchivoF18RegistroDbModel registro,
             CcProcesoMensualGeneraArchivoRequest request)
         {
-            var monto = ObtenerMontoArchivo(registro, _porcAhorro);
-
-            return "2"
-                + registro.CodDeduccion.Trim()
-                + " "
-                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                    registro.Nombre,
-                    "D",
-                    " ",
-                    28)
-                + " "
-                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                    registro.Cedula,
-                    "I",
-                    "0",
-                    10)
-                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                    string.Empty,
-                    "I",
-                    "0",
-                    9)
-                + Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
-                    monto,
-                    "I",
-                    "0",
-                    9);
+            return string.Join(
+                "\t",
+                FormatearCedula(registro.Cedula),
+                registro.CodDeduccion.Trim(),
+                FormatearMontoPorTipo(registro),
+                "0",
+                "0");
         }
 
-        private static string ObtenerMontoArchivo(
-            CcProcesoMensualArchivoF19RegistroDbModel registro,
-            decimal porcAhorro)
+        private string FormatearMontoPorTipo(
+            CcProcesoMensualArchivoF18RegistroDbModel registro)
         {
-            var tipo = registro.Tipo?.Trim().ToUpperInvariant();
-
-            var montoTexto = tipo switch
+            return registro.Tipo?.Trim().ToUpperInvariant() switch
             {
-                TipoAhorro => porcAhorro.ToString("######0.00", CultureInfo.InvariantCulture),
+                TipoAhorro => _porcAhorro.ToString("######0.00", CultureInfo.InvariantCulture),
                 TipoExtraordinario => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 TipoCredito => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 _ => string.Empty
             };
-
-            return montoTexto.Replace(".", string.Empty);
         }
 
-        public sealed class CcProcesoMensualArchivoF19RegistroDbModel
+        private static string FormatearCedula(string? cedula)
         {
-            public string Nombre { get; set; } = string.Empty;
+            var texto = cedula?.Trim() ?? string.Empty;
+
+            if (decimal.TryParse(
+                texto,
+                NumberStyles.Number,
+                CultureInfo.InvariantCulture,
+                out var numero))
+            {
+                texto = numero.ToString("0000000000", CultureInfo.InvariantCulture);
+            }
+
+            return texto.Length > 10
+                ? texto[..10]
+                : texto;
+        }
+
+        public sealed class CcProcesoMensualArchivoF18RegistroDbModel
+        {
             public string Cedula { get; set; } = string.Empty;
             public string Tipo { get; set; } = string.Empty;
             public string CodDeduccion { get; set; } = string.Empty;

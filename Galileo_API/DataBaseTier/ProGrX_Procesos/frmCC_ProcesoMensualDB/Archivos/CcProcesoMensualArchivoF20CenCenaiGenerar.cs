@@ -285,8 +285,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 public string Tipo { get; set; } = string.Empty;
                 public string CodDeduccion { get; set; } = string.Empty;
                 public string Movimiento { get; set; } = string.Empty;
-                public decimal MontoActual { get; set; }
-            }
+                public decimal MontoActual { get; set; } = 0;
+        }
 
             private sealed class CcProcesoMensualArchivoCadenaDbModel
             {

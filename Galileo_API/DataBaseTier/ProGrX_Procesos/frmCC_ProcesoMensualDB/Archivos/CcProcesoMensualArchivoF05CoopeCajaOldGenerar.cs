@@ -64,7 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static void AgregarArchivoSiAplica(
-            ICollection<string> archivosGenerados,
+            List<string> archivosGenerados,
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion,

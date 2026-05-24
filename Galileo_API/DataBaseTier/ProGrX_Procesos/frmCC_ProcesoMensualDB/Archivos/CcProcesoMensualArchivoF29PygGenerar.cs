@@ -36,14 +36,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.movimiento IN @Movimientos
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
-        protected override void PrepararConfiguracion(IDbConnection connection,
-           CcProcesoMensualArchivoConfiguracionModel configuracion,
-           CcProcesoMensualGeneraArchivoRequest request)
-        {
-            _codigoInstitucionArchivo = string.IsNullOrWhiteSpace(configuracion.CodigoInstDeduc)
-                ? request.CodInstitucion.ToString("00", CultureInfo.InvariantCulture)
-                : configuracion.CodigoInstDeduc.Trim();
-        }
+
+
+      
 
         protected override IEnumerable<CcProcesoMensualArchivoF29RegistroDbModel> FiltrarRegistros(
             IEnumerable<CcProcesoMensualArchivoF29RegistroDbModel> registros)
@@ -60,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CcProcesoMensualGeneraArchivoRequest request)
         {
             return "F2;'01;'"
-                + _codigoInstitucionArchivo
+                + CodigoInstitucionArchivo
                 + ";"
                 + (registro.CedulaColilla ?? string.Empty).Trim()
                 + ";;"

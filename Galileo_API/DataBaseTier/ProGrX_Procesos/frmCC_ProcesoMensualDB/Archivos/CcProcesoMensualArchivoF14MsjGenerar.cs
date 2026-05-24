@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF14MsjGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF14MsjGenerar.CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF14MsjGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
 
     {
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["14"];
@@ -31,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             ORDER BY P.cedula, P.tipo, P.movimiento";
 
         protected override string CrearLineaArchivo(
-              CcProcesoMensualArchivoRegistroDbModel registro,
+              CcProcesoMensualArchivoPlanillaBasicaDbModel registro,
               CcProcesoMensualGeneraArchivoRequest request)
         {
             return Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(
@@ -66,14 +66,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return montoEntero.ToString("000000000", CultureInfo.InvariantCulture);
         }
 
-        public sealed class CcProcesoMensualArchivoRegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; }
-            public string Movimiento { get; set; } = string.Empty;
-            public string Tipo { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-        }
+ 
 
     }
 }

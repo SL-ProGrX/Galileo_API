@@ -74,5 +74,13 @@
             public string Nombre1 { get; set; } = string.Empty;
             public string Nombre2 { get; set; } = string.Empty;
         }
+        public sealed class CcProcesoMensualArchivoPlanillaBasicaDbModel
+        {
+            public string Cedula { get; set; } = string.Empty;
+            public decimal MontoActual { get; set; }
+            public string Movimiento { get; set; } = string.Empty;
+            public string Tipo { get; set; } = string.Empty;
+            public string Nombre { get; set; } = string.Empty;
+        }
     }
 }
