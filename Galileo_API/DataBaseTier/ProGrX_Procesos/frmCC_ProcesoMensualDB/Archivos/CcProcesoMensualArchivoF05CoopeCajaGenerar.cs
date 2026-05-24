@@ -75,9 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             archivosGenerados.Add(rutaArchivo);
         }
-        private static string GenerarArchivoPorTipo(
-    CcProcesoMensualArchivoF05Contexto contexto,
-    string tipo)
+        private static string GenerarArchivoPorTipo(  CcProcesoMensualArchivoF05Contexto contexto, string tipo)
         {
             var nombreArchivo = CrearNombreArchivo(
                 contexto.Request.CodInstitucion,
@@ -141,47 +139,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return empresa;
         }
-
-        private static string GenerarArchivoPorTipo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF05ConfigDbModel configuracion,
-            CcProcesoMensualArchivoF05EmpresaDbModel empresa,
-            DateTime fechaServidor,
-            string rutaDirectorio,
-            string tipo)
-        {
-            var nombreArchivo = CrearNombreArchivo(
-                request.CodInstitucion,
-                request.FechaProceso,
-                fechaServidor,
-                tipo);
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
-            var registros = ObtenerRegistros(
-                connection,
-                request.CodInstitucion,
-                request.FechaProceso,
-                tipo);
-
-            var contenido = CrearContenidoArchivo(
-                registros,
-                configuracion,
-                empresa,
-                tipo);
-
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.UTF8);
-
-            return rutaArchivo;
-        }
-
+         
         private static List<CcProcesoMensualArchivoF05RegistroDbModel> ObtenerRegistros(
             IDbConnection connection,
             int codInstitucion,
