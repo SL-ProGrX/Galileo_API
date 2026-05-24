@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
     public class CcProcesoMensualArchivoF21UnateprotGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF21UnateprotGenerar.CcProcesoMensualArchivoF21RegistroDbModel>
 
     {
+        private List<string> _movimientos = [];
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["21"];
 
         protected override string CodigoPlanillaEnvio => "21";
@@ -55,9 +56,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return new
             {
-                FechaProceso = request.FechaProceso,
+                 request.FechaProceso,
                 Movimientos = _movimientos,
-                CodInstitucion = request.CodInstitucion
+              request.CodInstitucion
             };
         }
 
