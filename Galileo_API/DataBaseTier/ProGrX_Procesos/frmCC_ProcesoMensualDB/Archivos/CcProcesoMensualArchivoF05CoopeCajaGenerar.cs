@@ -62,7 +62,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static void AgregarArchivoSiAplica(
-            ICollection<string> archivosGenerados,
+            List<string> archivosGenerados,
             CcProcesoMensualArchivoF05Contexto contexto,
             string tipo,
             string codigoConfigurado)
@@ -389,7 +389,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private sealed class CcProcesoMensualArchivoF05RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; }
+            public decimal MontoActual { get; set; } = 0;
             public string Movimiento { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
             public string CodDepartamento { get; set; } = string.Empty;

@@ -176,17 +176,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         public static string DepurarCadena(string? valor)
         {
             var texto = valor?.Trim() ?? string.Empty;
-            var resultado = new StringBuilder();
 
-            foreach (var caracter in texto)
-            {
-                if (EsCaracterPermitido(caracter))
-                {
-                    resultado.Append(caracter);
-                }
-            }
-
-            return resultado.ToString();
+            return new string([.. texto.Where(EsCaracterPermitido)]);
         }
 
         public static string FxStringRelleno(
@@ -392,7 +383,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         }
 
         private static void AgregarMovimientoSiAplica(
-            ICollection<string> movimientos,
+            List<string> movimientos,
             int indicador,
             string movimiento)
         {
