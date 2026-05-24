@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -49,10 +49,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 };
             }
 
-            var registros = ObtenerRegistrosCreditos(
+            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
-                request.FechaProceso);
+                request.FechaProceso,
+                TipoCredito );
 
             var contenido = CrearContenidoArchivo(
                 connection,
@@ -92,39 +93,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF06ConfigDbModel();
         }
 
-        private static List<CcProcesoMensualArchivoF06RegistroDbModel> ObtenerRegistrosCreditos(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
-                SELECT
-                    P.Cedula,
-                    P.Monto_Actual AS MontoActual,
-                    P.Movimiento,
-                    S.nombre AS Nombre,
-                    S.direccion AS Direccion
-                FROM prm_planilla P
-                INNER JOIN Socios S
-                    ON P.cedula = S.cedula
-                WHERE P.Proceso = @FechaProceso
-                  AND P.cod_institucion = @CodInstitucion
-                  AND P.tipo = @TipoCredito
-                ORDER BY P.cedula";
-
-            return [.. connection.Query<CcProcesoMensualArchivoF06RegistroDbModel>(
-                query,
-                new
-                {
-                    FechaProceso = fechaProceso,
-                    CodInstitucion = codInstitucion,
-                    TipoCredito
-                })];
-        }
 
         private static string CrearContenidoArchivo(
             IDbConnection connection,
-            IEnumerable<CcProcesoMensualArchivoF06RegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             decimal fechaProceso)
         {
             var builder = new StringBuilder();
@@ -148,7 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private static string CrearLineaArchivo(
             IDbConnection connection,
-            CcProcesoMensualArchivoF06RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             decimal fechaProceso,
             int tipoMovimiento)
         {
@@ -234,11 +206,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F06]{ExtensionTxt}";
         }
 
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
 
         private static bool EsCodigoNo(string codigo)
         {
@@ -253,13 +220,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public string CodigoCreditos { get; set; } = string.Empty;
         }
 
-        private sealed class CcProcesoMensualArchivoF06RegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public string Movimiento { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-            public string Direccion { get; set; } = string.Empty;
-        }
+
     }
 }

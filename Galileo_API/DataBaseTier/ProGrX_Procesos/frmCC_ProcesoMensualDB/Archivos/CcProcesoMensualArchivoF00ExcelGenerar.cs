@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo( IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 request.FechaProceso,
                 movimientos);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -58,34 +58,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        
-        private static CcProcesoMensualArchivoF00ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
+        protected static string FormatearDecimalVb6(decimal valor)
         {
-            const string query = @"
-                SELECT
-                    ISNULL(planilla, '') AS Planilla,
-                    ISNULL(codigo_aportes_env, '') AS CodigoAportesEnv,
-                    ISNULL(codigo_creditos_env, '') AS CodigoCreditosEnv,
-                    ISNULL(porc_ahorro, 0) AS PorcAhorro,
-                    ISNULL(codigo_inst_deduc, '') AS CodigoInstDeduc,
-                    ISNULL(IncInclusiones, 0) AS IncInclusiones,
-                    ISNULL(IncExclusiones, 0) AS IncExclusiones,
-                    ISNULL(IncModificaciones, 0) AS IncModificaciones,
-                    ISNULL(IncMantienen, 0) AS IncMantienen,
-                    ISNULL(porc_aporte, 0) AS PorcAporte,
-                    ISNULL(compara_indicador, 0) AS ComparaIndicador
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF00ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF00ConfigDbModel();
+            return valor.ToString(CultureInfo.InvariantCulture);
         }
+     
 
         private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoF00ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             if (configuracion.ComparaIndicador != 1)
             {
@@ -149,13 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     CodInstitucion = codInstitucion
                 })];
         }
-
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
+         
         private static string CrearNombreArchivo(
             int codInstitucion,
             decimal fechaProceso,
@@ -198,27 +172,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 LimpiarCampo(registro.InstDesc),
                 LimpiarCampo(registro.IdAlterno));
         }
-
+        protected static string ObtenerCodigoInstitucionArchivo(
+           int codInstitucion,
+           string? codigoInstDeduc)
+        {
+            return string.IsNullOrWhiteSpace(codigoInstDeduc)
+                ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
+                : codigoInstDeduc.Trim();
+        }
         private static string LimpiarCampo(string? valor)
         {
             return (valor ?? string.Empty).Trim().Replace(";", " ");
         }
 
-      
-        private sealed class CcProcesoMensualArchivoF00ConfigDbModel
+        protected static string TomarIzquierda(string? valor, int cantidad)
         {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; } = 0;
-            public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0;
-            public decimal PorcAporte { get; set; } = 0;
-            public int ComparaIndicador { get; set; } = 0;
+            var texto = valor ?? string.Empty;
+            return texto.Length > cantidad ? texto[..cantidad] : texto;
         }
+        protected static string ReemplazarSeparador(string? valor, string separador)
+        {
+            return (valor ?? string.Empty).Replace(separador, " ");
+        }
+      
 
         private sealed class CcProcesoMensualArchivoF00RegistroDbModel
         {

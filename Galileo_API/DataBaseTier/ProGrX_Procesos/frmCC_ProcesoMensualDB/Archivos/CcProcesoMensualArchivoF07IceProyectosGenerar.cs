@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -49,10 +49,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 };
             }
 
-            var registros = ObtenerRegistrosCreditos(
+            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
-                request.FechaProceso);
+                request.FechaProceso, TipoCredito);
 
             var contenido = CrearContenidoArchivo(
                 connection,
@@ -92,39 +92,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF07ConfigDbModel();
         }
 
-        private static List<CcProcesoMensualArchivoF07RegistroDbModel> ObtenerRegistrosCreditos(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
-                SELECT
-                    P.Cedula,
-                    P.Monto_Actual AS MontoActual,
-                    P.Movimiento,
-                    S.nombre AS Nombre,
-                    S.direccion AS Direccion
-                FROM prm_planilla P
-                INNER JOIN Socios S
-                    ON P.cedula = S.cedula
-                WHERE P.Proceso = @FechaProceso
-                  AND P.cod_institucion = @CodInstitucion
-                  AND P.tipo = @TipoCredito
-                ORDER BY P.cedula";
-
-            return [.. connection.Query<CcProcesoMensualArchivoF07RegistroDbModel>(
-                query,
-                new
-                {
-                    FechaProceso = fechaProceso,
-                    CodInstitucion = codInstitucion,
-                    TipoCredito
-                })];
-        }
-
+     
         private static string CrearContenidoArchivo(
             IDbConnection connection,
-            IEnumerable<CcProcesoMensualArchivoF07RegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             decimal fechaProceso)
         {
             var builder = new StringBuilder();
@@ -150,10 +121,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private static string CrearLineaArchivo(
             IDbConnection connection,
-            CcProcesoMensualArchivoF07RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             decimal fechaProceso)
         {
-            var nombre = SepararNombre(registro.Nombre);
+            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
 
             var credito = ObtenerDatosCredito(
                 connection,
@@ -215,52 +186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 };
         }
 
-        private static CcProcesoMensualArchivoF07NombreModel SepararNombre(string? nombreCompleto)
-        {
-            var apellido1 = new StringBuilder();
-            var apellido2 = new StringBuilder();
-            var nombre1 = new StringBuilder();
-            var nombre2 = new StringBuilder();
-
-            var posicion = 1;
-
-            foreach (var caracter in nombreCompleto ?? string.Empty)
-            {
-                if (caracter == ' ')
-                {
-                    posicion++;
-                    continue;
-                }
-
-                switch (posicion)
-                {
-                    case 1:
-                        apellido1.Append(caracter);
-                        break;
-
-                    case 2:
-                        apellido2.Append(caracter);
-                        break;
-
-                    case 3:
-                        nombre1.Append(caracter);
-                        break;
-
-                    case 4:
-                        nombre2.Append(caracter);
-                        break;
-                }
-            }
-
-            return new CcProcesoMensualArchivoF07NombreModel
-            {
-                Apellido1 = apellido1.ToString(),
-                Apellido2 = apellido2.ToString(),
-                Nombre1 = nombre1.ToString(),
-                Nombre2 = nombre2.ToString()
-            };
-        }
-
+    
         private static int ObtenerTipoMovimiento(string movimiento)
         {
             return movimiento?.Trim().ToUpperInvariant() switch
@@ -284,11 +210,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F07]{ExtensionTxt}";
         }
 
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
+   
 
         private static bool EsCodigoNo(string codigo)
         {
@@ -308,15 +230,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public string CodigoCreditos { get; set; } = string.Empty;
         }
 
-        private sealed class CcProcesoMensualArchivoF07RegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public string Movimiento { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-            public string Direccion { get; set; } = string.Empty;
-        }
-
+ 
         private sealed class CcProcesoMensualArchivoF07CreditoDbModel
         {
             public int Cantidad { get; set; } = 0;
@@ -324,13 +238,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public decimal Saldo { get; set; } = 0;
             public decimal Plazo { get; set; } = 0;
         }
-
-        private sealed class CcProcesoMensualArchivoF07NombreModel
-        {
-            public string Apellido1 { get; set; } = string.Empty;
-            public string Apellido2 { get; set; } = string.Empty;
-            public string Nombre1 { get; set; } = string.Empty;
-            public string Nombre2 { get; set; } = string.Empty;
-        }
+ 
     }
 }

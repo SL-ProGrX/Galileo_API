@@ -43,5 +43,36 @@
             public string Unidad { get; set; } = string.Empty;
             public string DirectorioResultados { get; set; } = string.Empty;
         }
+        public sealed class CcProcesoMensualArchivoConfiguracionModel
+        {
+            public string Planilla { get; set; } = string.Empty;
+            public string CodigoAportesEnv { get; set; } = string.Empty;
+            public string CodigoCreditosEnv { get; set; } = string.Empty;
+            public decimal PorcAhorro { get; set; }
+            public string CodigoInstDeduc { get; set; } = string.Empty;
+            public int IncInclusiones { get; set; }
+            public int IncExclusiones { get; set; }
+            public int IncModificaciones { get; set; }
+            public int IncMantienen { get; set; }
+            public decimal PorcAporte { get; set; }
+            public int ComparaIndicador { get; set; }
+        }
+        public sealed class CcProcesoMensualArchivoRegistroDbModel
+        {
+            public string Cedula { get; set; } = string.Empty;
+            public decimal MontoActual { get; set; } = 0;
+            public string Movimiento { get; set; } = string.Empty;
+            public string Nombre { get; set; } = string.Empty;
+            public string Direccion { get; set; } = string.Empty;
+            public string Tipo { get; set; } = string.Empty;
+        }
+
+        public sealed class CcProcesoMensualArchivoNombreModel
+        {
+            public string Apellido1 { get; set; } = string.Empty;
+            public string Apellido2 { get; set; } = string.Empty;
+            public string Nombre1 { get; set; } = string.Empty;
+            public string Nombre2 { get; set; } = string.Empty;
+        }
     }
 }

@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -182,12 +182,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F25]{ExtensionCsv}";
         }
 
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
+   
         private sealed class CcProcesoMensualArchivoF28ConfigDbModel
         {
             public string CodigoInstDeduc { get; set; } = string.Empty;

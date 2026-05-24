@@ -17,11 +17,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -65,33 +65,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static CcProcesoMensualArchivoF26ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
-        {
-            const string query = @"
-                SELECT
-                    ISNULL(planilla, '') AS Planilla,
-                    ISNULL(codigo_aportes_env, '') AS CodigoAportesEnv,
-                    ISNULL(codigo_creditos_env, '') AS CodigoCreditosEnv,
-                    ISNULL(porc_ahorro, 0) AS PorcAhorro,
-                    ISNULL(codigo_inst_deduc, '') AS CodigoInstDeduc,
-                    ISNULL(IncInclusiones, 0) AS IncInclusiones,
-                    ISNULL(IncExclusiones, 0) AS IncExclusiones,
-                    ISNULL(IncModificaciones, 0) AS IncModificaciones,
-                    ISNULL(IncMantienen, 0) AS IncMantienen,
-                    ISNULL(porc_aporte, 0) AS PorcAporte,
-                    ISNULL(compara_indicador, 0) AS ComparaIndicador
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF26ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF26ConfigDbModel();
-        }
-
+       
         private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoF26ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             if (configuracion.ComparaIndicador != 1)
             {
@@ -211,27 +187,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F26]{ExtensionTxt}";
         }
-
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
-        private sealed class CcProcesoMensualArchivoF26ConfigDbModel
-        {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal? PorcAhorro { get; set; }
-            public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0; 
-            public decimal PorcAporte { get; set; } = 0;
-            public int ComparaIndicador { get; set; } = 0;
-        }
+ 
+      
 
         private sealed class CcProcesoMensualArchivoF26RegistroDbModel
         {

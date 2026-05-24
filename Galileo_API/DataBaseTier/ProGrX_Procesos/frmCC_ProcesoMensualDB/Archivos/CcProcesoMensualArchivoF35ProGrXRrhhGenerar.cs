@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 request.CodInstitucion,
                 request.FechaProceso);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -60,7 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static CcProcesoMensualArchivoF35ConfigDbModel ObtenerConfiguracion(
+        private static CcProcesoMensualArchivoConfiguracionModel ObtenerConfiguracion(
             IDbConnection connection,
             int codInstitucion,
             decimal fechaProceso)
@@ -82,13 +82,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 FROM instituciones
                 WHERE cod_institucion = @CodInstitucion";
 
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF35ConfigDbModel>(
+            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoConfiguracionModel>(
                 query,
                 new
                 {
                     CodInstitucion = codInstitucion,
                     FechaProceso = fechaProceso
-                }) ?? new CcProcesoMensualArchivoF35ConfigDbModel();
+                }) ?? new CcProcesoMensualArchivoConfiguracionModel();
         }
 
         private static List<string> ObtenerCadenasFormato(
@@ -142,28 +142,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F35]{ExtensionTxt}";
         }
 
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
-        private sealed class CcProcesoMensualArchivoF35ConfigDbModel
-        {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; } = 0;
-            public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0;
-            public decimal PorcAporte { get; set; } = 0;
-            public DateTime? FechaInicio { get; set; }
-            public DateTime? FechaCorte { get; set; }
-        }
-
+    
         private sealed class CcProcesoMensualArchivoCadenaDbModel
         {
             public string Cadena { get; set; } = string.Empty;

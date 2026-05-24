@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
@@ -55,30 +55,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static CcProcesoMensualArchivoF09ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
-        {
-            const string query = @"
-                SELECT
-                    ISNULL(planilla, '') AS Planilla,
-                    ISNULL(codigo_aportes_env, '') AS CodigoAportesEnv,
-                    ISNULL(codigo_creditos_env, '') AS CodigoCreditosEnv,
-                    ISNULL(porc_ahorro, 0) AS PorcAhorro,
-                    ISNULL(IncInclusiones, 0) AS IncInclusiones,
-                    ISNULL(IncExclusiones, 0) AS IncExclusiones,
-                    ISNULL(IncModificaciones, 0) AS IncModificaciones,
-                    ISNULL(IncMantienen, 0) AS IncMantienen
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF09ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF09ConfigDbModel();
-        }
-
+      
         private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoF09ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             var movimientos = new List<string>();
 
@@ -136,7 +115,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 })];
         }
 
-        private static string CrearContenidoArchivo(IEnumerable<CcProcesoMensualArchivoF09RegistroDbModel> registros,CcProcesoMensualArchivoF09ConfigDbModel configuracion)
+        private static string CrearContenidoArchivo(IEnumerable<CcProcesoMensualArchivoF09RegistroDbModel> registros,CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             var builder = new StringBuilder();
 
@@ -157,7 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private static string CrearLineaArchivo(
             CcProcesoMensualArchivoF09RegistroDbModel registro,
-            CcProcesoMensualArchivoF09ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             _ = ObtenerMovimientoSpa(registro.Movimiento);
 
@@ -203,7 +182,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private static string ObtenerCodigoDeduccion(
             string tipo,
-            CcProcesoMensualArchivoF09ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             return tipo?.Trim().ToUpperInvariant() switch
             {
@@ -278,17 +257,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return nombre;
         }
 
-        private sealed class CcProcesoMensualArchivoF09ConfigDbModel
-        {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; } = 0;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0;
-        }
+    
 
         private sealed class CcProcesoMensualArchivoF09RegistroDbModel
         {

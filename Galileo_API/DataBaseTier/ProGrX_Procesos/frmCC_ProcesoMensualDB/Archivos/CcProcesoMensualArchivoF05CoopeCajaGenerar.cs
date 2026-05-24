@@ -24,7 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var configuracion = ObtenerConfiguracion(connection, request.CodInstitucion);
             var empresa = ObtenerDatosEmpresa(connection);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
             var archivosGenerados = new List<string>();
@@ -404,20 +404,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool EsMovimientoExclusion(string movimiento)
-        {
-            return string.Equals(
-                movimiento?.Trim(),
-                MovimientoExclusion,
-                StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
+      
         private sealed class CcProcesoMensualArchivoF05ConfigDbModel
         {
             public string CodigoAportes { get; set; } = string.Empty;

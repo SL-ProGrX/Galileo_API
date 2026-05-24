@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
@@ -89,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF16ConfigDbModel();
         }
 
-        private static List<CcProcesoMensualArchivoF16RegistroDbModel> ObtenerRegistros(
+        private static List<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistros(
             IDbConnection connection,
             int codInstitucion,
             decimal fechaProceso)
@@ -108,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                   AND P.cod_institucion = @CodInstitucion
                 ORDER BY P.cedula, P.tipo, P.movimiento";
 
-            return [.. connection.Query<CcProcesoMensualArchivoF16RegistroDbModel>(
+            return [.. connection.Query<CcProcesoMensualArchivoRegistroDbModel>(
                 query,
                 new
                 {
@@ -118,7 +118,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearContenidoArchivo(
-            IEnumerable<CcProcesoMensualArchivoF16RegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             CcProcesoMensualArchivoF16ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -144,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaArchivo(
-            CcProcesoMensualArchivoF16RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF16ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -159,7 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaAporte(
-            CcProcesoMensualArchivoF16RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF16ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -185,7 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaCredito(
-            CcProcesoMensualArchivoF16RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF16ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -202,7 +202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaBase(
-            CcProcesoMensualArchivoF16RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             string codigoTipo,
             string tipoMovimiento,
             string monto,
@@ -286,12 +286,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F16]{ExtensionTxt}";
         }
 
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
+    
         private sealed class CcProcesoMensualArchivoF16ConfigDbModel
         {
             public string Planilla { get; set; } = string.Empty;
@@ -300,13 +295,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public decimal PorcAhorro { get; set; } = 0;
         }
 
-        private sealed class CcProcesoMensualArchivoF16RegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public string Tipo { get; set; } = string.Empty;
-            public string Movimiento { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public string Nombre { get; set; } = string.Empty;
-        }
+     
     }
 }

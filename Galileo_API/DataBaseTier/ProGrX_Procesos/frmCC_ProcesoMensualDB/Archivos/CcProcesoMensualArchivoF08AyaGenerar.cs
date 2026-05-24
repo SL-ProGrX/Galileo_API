@@ -24,7 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 request.CodInstitucion,
                 request.FechaProceso);
 
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
             var archivosGenerados = new List<string>();
@@ -100,10 +100,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 rutaDirectorio,
                 nombreArchivo);
 
-            var registros = ObtenerRegistrosCreditos(
+            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
-                request.FechaProceso);
+                request.FechaProceso, TipoCredito);
 
             var contenido = CrearContenidoArchivoAnterior(
                 registros,
@@ -150,35 +150,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static List<CcProcesoMensualArchivoF08RegistroDbModel> ObtenerRegistrosCreditos(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso)
-        {
-            const string query = @"
-                SELECT
-                    P.Cedula,
-                    P.Monto_Actual AS MontoActual,
-                    P.Movimiento,
-                    S.nombre AS Nombre,
-                    S.direccion AS Direccion
-                FROM prm_planilla P
-                INNER JOIN Socios S
-                    ON P.cedula = S.cedula
-                WHERE P.Proceso = @FechaProceso
-                  AND P.cod_institucion = @CodInstitucion
-                  AND P.tipo = @TipoCredito
-                ORDER BY P.cedula";
-
-            return [.. connection.Query<CcProcesoMensualArchivoF08RegistroDbModel>(
-                query,
-                new
-                {
-                    FechaProceso = fechaProceso,
-                    CodInstitucion = codInstitucion,
-                    TipoCredito
-                })];
-        }
+  
 
         private static List<string> ObtenerCadenasAyaNuevo(
             IDbConnection connection,
@@ -201,7 +173,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearContenidoArchivoAnterior(
-            IEnumerable<CcProcesoMensualArchivoF08RegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             CcProcesoMensualArchivoF08ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -228,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaArchivoAnterior(
-            CcProcesoMensualArchivoF08RegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF08ConfigDbModel configuracion,
             decimal fechaProceso)
         {
@@ -265,7 +237,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ObtenerAnioProceso(fechaProceso)
                 + " ";
 
-            linea += configuracion.FechaCorte?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " ";
+            linea += configuracion.FechaCorte.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " ";
             linea += "00.00 ";
             linea += fechaProceso.ToString(CultureInfo.InvariantCulture) + "1 ";
             linea += "00000.00";
@@ -371,12 +343,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 ? fechaBase[..4]
                 : string.Empty;
         }
-
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
+ 
 
         private static bool EsCodigoNo(string codigo)
         {
@@ -390,18 +357,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             public string CodigoAportes { get; set; } = string.Empty;
             public string CodigoCreditos { get; set; } = string.Empty;
-            public DateTime? FechaCorte { get; set; }
+            public DateTime FechaCorte { get; set; } = DateTime.MinValue;
         }
 
-        private sealed class CcProcesoMensualArchivoF08RegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public string Movimiento { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-            public string Direccion { get; set; } = string.Empty;
-        }
-
+ 
         private sealed class CcProcesoMensualArchivoCadenaDbModel
         {
             public string Cadena { get; set; } = string.Empty;

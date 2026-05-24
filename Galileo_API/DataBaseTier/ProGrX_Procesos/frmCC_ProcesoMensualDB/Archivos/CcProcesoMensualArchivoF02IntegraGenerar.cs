@@ -18,12 +18,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo( IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            var configuracion = ObtenerConfiguracion(
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
                 connection,
                 request.CodInstitucion);
 
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
             var archivosGenerados = new List<string>
             {
@@ -63,34 +63,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        private static CcProcesoMensualArchivoF02ConfigDbModel ObtenerConfiguracion(
-            IDbConnection connection,
-            int codInstitucion)
-        {
-            const string query = @"
-                SELECT
-                    ISNULL(planilla, '') AS Planilla,
-                    ISNULL(codigo_aportes_env, '') AS CodigoAportesEnv,
-                    ISNULL(codigo_creditos_env, '') AS CodigoCreditosEnv,
-                    ISNULL(porc_ahorro, 0) AS PorcAhorro,
-                    ISNULL(porc_aporte, 0) AS PorcAporte,
-                    ISNULL(codigo_inst_deduc, '') AS CodigoInstDeduc,
-                    ISNULL(IncInclusiones, 0) AS IncInclusiones,
-                    ISNULL(IncExclusiones, 0) AS IncExclusiones,
-                    ISNULL(IncModificaciones, 0) AS IncModificaciones,
-                    ISNULL(IncMantienen, 0) AS IncMantienen
-                FROM instituciones
-                WHERE cod_institucion = @CodInstitucion";
-
-            return connection.QueryFirstOrDefault<CcProcesoMensualArchivoF02ConfigDbModel>(
-                query,
-                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF02ConfigDbModel();
-        }
-
+       
         private static string GenerarArchivoEnvio(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF02ConfigDbModel configuracion,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
             string rutaDirectorio,
             DateTime fechaServidor)
         {
@@ -126,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private static string GenerarArchivoMatricula(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF02ConfigDbModel configuracion,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
             string rutaDirectorio,
             DateTime fechaServidor)
         {
@@ -149,10 +126,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
+        private static string ObtenerProcedimientoPermitido(string procedimiento)
+        {
+            return procedimiento switch
+            {
+                "spPrm_Formato_Integra_New" => "spPrm_Formato_Integra_New",
+                "spPrm_Formato_Integra_New_Matricula" => "spPrm_Formato_Integra_New_Matricula",
+
+                _ => throw new InvalidOperationException(
+                    $"Procedimiento no permitido para generar archivo: {procedimiento}.")
+            };
+        }
         private static string GenerarArchivoIntegra(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
-            CcProcesoMensualArchivoF02ConfigDbModel configuracion,
+            CcProcesoMensualArchivoConfiguracionModel configuracion,
             string rutaDirectorio,
             DateTime fechaServidor)
         {
@@ -163,6 +151,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 "csv");
 
             var rutaArchivo = Path.Combine(rutaDirectorio, nombreArchivo);
+
 
             var cadenas = ObtenerCadenasDesdeSp(
                 connection,
@@ -217,8 +206,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             int codInstitucion,
             decimal fechaProceso)
         {
+            var procedimientoSeguro = ObtenerProcedimientoPermitido(procedimiento);
             var query = $@"
-                EXEC {procedimiento}
+                EXEC {procedimientoSeguro}
                     @CodInstitucion,
                     @FechaProceso";
 
@@ -288,7 +278,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static List<string> ObtenerMovimientos(
-            CcProcesoMensualArchivoF02ConfigDbModel configuracion)
+            CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             var movimientos = new List<string>();
 
@@ -338,27 +328,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"{prefijo}-{codigo}-{fechaTexto}-01.{extension}";
         }
              
-       private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-              
-
-        private sealed class CcProcesoMensualArchivoF02ConfigDbModel
-        {
-            public string Planilla { get; set; } = string.Empty;
-            public string CodigoAportesEnv { get; set; } = string.Empty;
-            public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; } = 0;
-            public decimal PorcAporte { get; set; } = 0;
-            public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; } = 0;
-            public int IncExclusiones { get; set; } = 0;
-            public int IncModificaciones { get; set; } = 0;
-            public int IncMantienen { get; set; } = 0;
-        }
-
+    
         private sealed class CcProcesoMensualArchivoF02RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;

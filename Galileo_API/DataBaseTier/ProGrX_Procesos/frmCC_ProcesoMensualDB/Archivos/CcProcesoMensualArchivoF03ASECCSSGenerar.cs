@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var configuracion = ObtenerConfiguracion( connection,  request.CodInstitucion);
 
             var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-            var fechaServidor = ObtenerFechaServidor(connection);
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
             var archivosGenerados = new List<string>();
 
                 var rutaArchivo = GenerarPorUnidad(
@@ -268,16 +268,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             return $"F03-[{fechaProcesoTexto}] {fechaServidorTexto}-{institucionTexto}u{unidad}{ExtensionTxt}";
         }
-
-       
-        private static DateTime ObtenerFechaServidor(IDbConnection connection)
-        {
-            const string query = "SELECT GETDATE()";
-            return connection.QueryFirstOrDefault<DateTime>(query);
-        }
-
-      
-
+  
         private sealed class CcProcesoMensualArchivoF03ConfigDbModel
         {
             public string Planilla { get; set; } = string.Empty;

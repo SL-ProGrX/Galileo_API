@@ -91,7 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 rutaDirectorio,
                 nombreArchivo);
 
-            var registros = ObtenerRegistros(
+            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
                 request.FechaProceso,
@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 rutaDirectorio,
                 nombreArchivo);
 
-            var registros = ObtenerRegistros(
+            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
                 request.FechaProceso,
@@ -140,39 +140,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static List<CcProcesoMensualArchivoF05OldRegistroDbModel> ObtenerRegistros(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso,
-            string tipo)
-        {
-            const string query = @"
-                SELECT
-                    P.Cedula,
-                    P.Monto_Actual AS MontoActual ,
-                    P.Movimiento,
-                    S.nombre AS Nombre,
-                    S.direccion AS Direccion
-                FROM prm_planilla P
-                INNER JOIN Socios S
-                    ON P.cedula = S.cedula
-                WHERE P.Proceso = @FechaProceso
-                  AND P.cod_institucion = @CodInstitucion
-                  AND P.tipo = @Tipo
-                ORDER BY P.cedula";
-
-            return [.. connection.Query<CcProcesoMensualArchivoF05OldRegistroDbModel>(
-                query,
-                new
-                {
-                    FechaProceso = fechaProceso,
-                    CodInstitucion = codInstitucion,
-                    Tipo = tipo
-                })];
-        }
+ 
 
         private static string CrearContenidoAportes(
-            IEnumerable<CcProcesoMensualArchivoF05OldRegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
         {
             var builder = new StringBuilder();
@@ -186,7 +157,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearContenidoCreditos(
-            IEnumerable<CcProcesoMensualArchivoF05OldRegistroDbModel> registros,
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
         {
             var builder = new StringBuilder();
@@ -207,10 +178,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaAporte(
-            CcProcesoMensualArchivoF05OldRegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
         {
-            var nombre = SepararNombre(registro.Nombre);
+            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
 
             return TomarIzquierda(configuracion.CodigoAportes, 6)
                 +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(registro.Cedula, "I", "0", 15)
@@ -229,10 +200,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
 
         private static string CrearLineaCredito(
-            CcProcesoMensualArchivoF05OldRegistroDbModel registro,
+            CcProcesoMensualArchivoRegistroDbModel registro,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion)
         {
-            var nombre = SepararNombre(registro.Nombre);
+            var nombre = Helpers.CcProcesoMensualArchivoRutaHelperDb.SepararNombre(registro.Nombre);
             var monto = Convert.ToInt64(registro.MontoActual * 100).ToString(CultureInfo.InvariantCulture);
 
             return TomarIzquierda(configuracion.CodigoCreditos, 6)
@@ -251,51 +222,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 +  Helpers.CcProcesoMensualArchivoRutaHelperDb.FxStringRelleno(monto, "I", "0", 11);
         }
 
-        private static CcProcesoMensualArchivoF05OldNombreModel SepararNombre(string? nombreCompleto)
-        {
-            var apellido1 = new StringBuilder();
-            var apellido2 = new StringBuilder();
-            var nombre1 = new StringBuilder();
-            var nombre2 = new StringBuilder();
 
-            var posicion = 1;
-
-            foreach (var caracter in nombreCompleto ?? string.Empty)
-            {
-                if (caracter == ' ')
-                {
-                    posicion++;
-                    continue;
-                }
-
-                switch (posicion)
-                {
-                    case 1:
-                        apellido1.Append(caracter);
-                        break;
-
-                    case 2:
-                        apellido2.Append(caracter);
-                        break;
-
-                    case 3:
-                        nombre1.Append(caracter);
-                        break;
-
-                    case 4:
-                        nombre2.Append(caracter);
-                        break;
-                }
-            }
-
-            return new CcProcesoMensualArchivoF05OldNombreModel
-            {
-                Apellido1 = apellido1.ToString(),
-                Apellido2 = apellido2.ToString(),
-                Nombre1 = nombre1.ToString(),
-                Nombre2 = nombre2.ToString()
-            };
-        }
 
         private static int ObtenerTipoMovimientoCoopeCaja(string movimiento)
         {
@@ -342,22 +269,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             public string CodigoCreditos { get; set; } = string.Empty;
         }
 
-        private sealed class CcProcesoMensualArchivoF05OldRegistroDbModel
-        {
-            public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; } = 0;
-            public string Movimiento { get; set; } = string.Empty;
-            public string Nombre { get; set; } = string.Empty;
-            public string Direccion { get; set; } = string.Empty;
-        }
-
-        private sealed class CcProcesoMensualArchivoF05OldNombreModel
-        {
-            public string Apellido1 { get; set; } = string.Empty;
-            public string Apellido2 { get; set; } = string.Empty;
-            public string Nombre1 { get; set; } = string.Empty;
-            public string Nombre2 { get; set; } = string.Empty;
-        }
+ 
 
     }
 }
