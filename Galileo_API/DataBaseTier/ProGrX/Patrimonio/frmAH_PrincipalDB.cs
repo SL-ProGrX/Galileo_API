@@ -158,15 +158,13 @@ order by A.fecha desc, A.consec desc;";
             if (response.Code == -1 || response.Result == null)
                 return response;
 
-            foreach (var item in response.Result)
+            foreach (var item in response.Result?.Where(x => string.IsNullOrWhiteSpace(x.movimiento))
+         ?? Enumerable.Empty<FrmAhPrincipalDetallePatrimonioResponse>())
             {
-                if (string.IsNullOrWhiteSpace(item.movimiento))
-                {
-                    item.movimiento = MCobroDb.fxTipoComprobante(
-                        item.tcon,
-                        item.mov_numero
-                    );
-                }
+                item.movimiento = MCobroDb.fxTipoComprobante(
+                    item.tcon,
+                    item.mov_numero
+                );
             }
 
             return response;
