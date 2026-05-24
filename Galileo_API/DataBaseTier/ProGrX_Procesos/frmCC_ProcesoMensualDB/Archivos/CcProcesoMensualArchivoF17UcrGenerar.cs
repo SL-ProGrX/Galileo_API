@@ -7,58 +7,59 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF17UcrGenerar : ICcProcesoMensualArchivoGenerator
+    public class CcProcesoMensualArchivoF17UcrGenerar :   CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoRegistroDbModel>
     {
-        private const string CodigoPlanillaEnvio = "17";
-        private const string ContentTypeXml = "application/xml";
-        private const string ExtensionXml = ".XML";
-        private const string TipoCredito = "C";
+     private const string TipoCredito = "C";
 
-        public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
+        public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["17"];
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        protected override string CodigoPlanillaEnvio => "17";
+        protected override string CodigoFormato => "F17";
+        protected override string ExtensionArchivo => ".XML";
+        protected override string ContentType => "application/xml";
+        protected override Encoding EncodingArchivo => Encoding.UTF8;
+
+        protected override string QueryRegistros => string.Empty;
+
+        protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistros(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
         {
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
-
-            var nombreArchivo = CrearNombreArchivo(
-                request.CodInstitucion,
-                request.FechaProceso,
-                fechaServidor);
-
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
-
             RedondearMontosPlanilla(
                 connection,
                 request.CodInstitucion,
                 request.FechaProceso);
 
-            var registros = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
+            return Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRegistrosGeneral(
                 connection,
                 request.CodInstitucion,
-                request.FechaProceso, TipoCredito);
+                request.FechaProceso,
+                TipoCredito);
+        }
 
-            var contenido = CrearContenidoXml(registros);
+        protected override string CrearContenidoArchivo(
+            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            var builder = new StringBuilder();
 
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                rutaDirectorio,
-                rutaArchivo,
-                contenido,
-                Encoding.UTF8);
+            AgregarEncabezadoXml(builder);
 
-            return new CcProcesoMensualArchivoGeneradoModel
+            foreach (var registro in registros)
             {
-                Generado = true,
-                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                NombreArchivo = nombreArchivo,
-                RutaArchivo = rutaArchivo,
-                ContentType = ContentTypeXml,
-                ArchivoBytes = [],
-                ArchivosGenerados = [rutaArchivo]
-            };
+                AgregarDeduccion(builder, registro);
+            }
+
+            builder.AppendLine("</Deducciones_Externas>");
+
+            return builder.ToString();
+        }
+
+        protected override string CrearLineaArchivo(
+            CcProcesoMensualArchivoRegistroDbModel registro,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            return string.Empty;
         }
 
         private static void RedondearMontosPlanilla(
@@ -78,25 +79,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 FechaProceso = fechaProceso,
                 CodInstitucion = codInstitucion
             });
-        }
-
-       
-
-        private static string CrearContenidoXml(
-            IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros)
-        {
-            var builder = new StringBuilder();
-
-            AgregarEncabezadoXml(builder);
-
-            foreach (var registro in registros)
-            {
-                AgregarDeduccion(builder, registro);
-            }
-
-            builder.AppendLine("</Deducciones_Externas>");
-
-            return builder.ToString();
         }
 
         private static void AgregarEncabezadoXml(StringBuilder builder)
@@ -149,19 +131,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return monto.ToString(CultureInfo.InvariantCulture);
         }
-
-        private static string CrearNombreArchivo(
-            int codInstitucion,
-            decimal fechaProceso,
-            DateTime fechaServidor)
-        {
-            var codigoInstitucion = codInstitucion.ToString("00", CultureInfo.InvariantCulture);
-            var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
-            var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
-
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F17]{ExtensionXml}";
-        }
-
   
     }
 }
