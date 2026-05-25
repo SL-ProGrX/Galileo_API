@@ -25,6 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const string TipoCaracter = "CHR";
         private const string TipoPregunta = "PSN";
         private const string TipoFecha = "DTS";
+        private const string DATOSREQUERIDOS = "Datos requeridos.";
 
         public FrmCRConfiguracionDB(IConfiguration config)
         {
@@ -110,7 +111,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 if (request == null)
                 {
-                    return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                    return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
                 }
 
                 var codParametro = NormalizarTexto(request.cod_parametro);
@@ -225,7 +226,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 if (request == null)
                 {
-                    return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                    return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
                 }
 
                 var usuarioNorm = NormalizarTexto(usuario).ToUpperInvariant();
@@ -382,7 +383,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 if (request == null)
                 {
-                    return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                    return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
                 }
 
                 if (request.cr_tbp < 0 || request.cr_tbp > 100)
