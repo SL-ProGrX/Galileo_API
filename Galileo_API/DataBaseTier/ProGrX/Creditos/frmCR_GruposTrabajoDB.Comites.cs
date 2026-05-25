@@ -126,5 +126,65 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Elimina un grupo de trabajo siempre que no tenga miembros, etiquetas o comités asignados.
+        /// </summary>
+        public ErrorDto CR_GruposTrabajo_Grupos_Eliminar(
+            int codEmpresa,
+            string usuario,
+            string codGrupo)
+        {
+            var usuarioSesion = CR_GruposTrabajo_NormalizarTexto(usuario);
+            var grupo = CR_GruposTrabajo_NormalizarTexto(codGrupo);
+
+            var err = CR_GruposTrabajo_ValidarRequerido(usuarioSesion, "Debe indicar el usuario.");
+            if (err != null) return err;
+
+            err = CR_GruposTrabajo_ValidarRequerido(grupo, "Debe indicar el código del grupo.");
+            if (err != null) return err;
+
+            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            try
+            {
+                var grupoErr = CR_GruposTrabajo_ValidarGrupoExiste(conn, grupo);
+                if (grupoErr != null) return grupoErr;
+
+                const string sqlValidacion = @"
+            select
+                isnull((select count(*) from crd_grpusers where cod_grupo = @cod_grupo), 0) as miembros,
+                isnull((select count(*) from crd_tags_grupos where cod_grupo = @cod_grupo), 0) as etiquetas,
+                isnull((select count(*) from crd_comites_grupos where cod_grupo = @cod_grupo), 0) as comites;";
+
+                var asignaciones = conn.QueryFirst<(int miembros, int etiquetas, int comites)>(
+                    sqlValidacion,
+                    new { cod_grupo = grupo });
+
+                if (asignaciones.miembros > 0 || asignaciones.etiquetas > 0 || asignaciones.comites > 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        "El grupo no puede eliminarse porque tiene miembros, etiquetas o comités asignados.");
+                }
+
+                const string sqlDelete = @"
+            delete from crd_grupos
+            where cod_grupo = @cod_grupo;";
+
+                conn.Execute(sqlDelete, new { cod_grupo = grupo });
+
+                CR_GruposTrabajo_RegistrarBitacora(
+                    codEmpresa,
+                    usuarioSesion,
+                    "Elimina - WEB",
+                    $"Grupo de Trabajo: {grupo}");
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
     }
 }
