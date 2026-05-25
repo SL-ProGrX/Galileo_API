@@ -39,5 +39,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto CR_GruposTrabajo_Comites_Marcar(int codEmpresa, CrGrupoTrabajoComiteMarcarRequest request)
             => _db.CR_GruposTrabajo_Comites_Marcar(codEmpresa, request);
+
+        public ErrorDto CR_GruposTrabajo_Grupos_Eliminar(int codEmpresa, string usuario, string codGrupo)
+            => _db.CR_GruposTrabajo_Grupos_Eliminar(codEmpresa, usuario, codGrupo);
     }
 }
