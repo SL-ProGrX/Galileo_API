@@ -1,5 +1,5 @@
-﻿using System.Data;
-using Dapper;
+﻿using Dapper;
+using System.Data; 
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helpers
 {
@@ -16,6 +16,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 Proceso = proceso
             });
         }
-
+        
     }
 }

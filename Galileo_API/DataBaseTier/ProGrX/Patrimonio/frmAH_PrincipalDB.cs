@@ -112,6 +112,8 @@ where cedula = @cedula;";
                     -2);
             }
 
+            
+
             const string sql = @"
 select
     A.fecha as fecha,
@@ -128,10 +130,7 @@ select
         else ''
     end as tipo_desc,
     isnull(A.Monto, 0) as monto,
-    rtrim(case
-        when isnull(D.descripcion, '') = '' then isnull(dbo.fxTipoComprobante(A.Tcon), '')
-        else D.descripcion
-    end) as movimiento,
+    rtrim(isnull(D.descripcion, '')) as movimiento,
     rtrim(isnull(convert(varchar(50), A.NCon), '')) as mov_numero,
     rtrim(isnull(C.descripcion, '')) as mov_concepto,
     rtrim(isnull(A.Usuario, '')) as mov_usuario,
@@ -146,7 +145,7 @@ where A.cedula = @cedula
   and A.Tipo in @tipos
 order by A.fecha desc, A.consec desc;";
 
-            return DbHelper.ExecuteListQuery<FrmAhPrincipalDetallePatrimonioResponse>(
+            var response = DbHelper.ExecuteListQuery<FrmAhPrincipalDetallePatrimonioResponse>(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -155,6 +154,19 @@ order by A.fecha desc, A.consec desc;";
                     cedula = request.cedula.Trim(),
                     tipos
                 });
+
+            if (response.Code == -1 || response.Result == null)
+                return response;
+
+            foreach (var item in response.Result.Where(x => string.IsNullOrWhiteSpace(x.movimiento)))
+            {
+                item.movimiento = MCobroDb.fxTipoComprobante(
+                    item.tcon,
+                    item.mov_numero
+                );
+            }
+
+            return response;
         }
 
         /// <summary>

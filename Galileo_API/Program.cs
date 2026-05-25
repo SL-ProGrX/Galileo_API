@@ -6,9 +6,14 @@ using System.Text.Json;
 using System.Globalization;
 using Galileo.DataBaseTier;
 using Microsoft.OpenApi;
+using Galileo_API.Extensions ;
+
+
 
 // ✅ Asegúrate que este using apunte al namespace real donde está tu filtro
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCcProcesoMensualArchivos();
 
 // ✅ Cargar configuración externa desde APP_CONFIG_PATH (definida en web.config/IIS)
 var externalConfigPath = Environment.GetEnvironmentVariable("APP_CONFIG_PATH");

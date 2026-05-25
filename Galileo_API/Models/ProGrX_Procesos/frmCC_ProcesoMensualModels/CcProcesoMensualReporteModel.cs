@@ -4,7 +4,7 @@
     {
         public string NombreReporte { get; set; } = string.Empty;
         public string Titulo { get; set; } = string.Empty;
-        public Dictionary<string, object> Formulas { get; set; } = new();
+        public Dictionary<string, object> Formulas { get; set; } = [];
         public string SelectionFormula { get; set; } = string.Empty;
     }
 
