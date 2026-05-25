@@ -106,9 +106,18 @@ order by USUARIO desc;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                var sql = tipoNormalizado == "DESC"
-                    ? string.IsNullOrWhiteSpace(usuarioNormalizado) ? sqlDescPrimero : sqlDesc
-                    : string.IsNullOrWhiteSpace(usuarioNormalizado) ? sqlAscPrimero : sqlAsc;
+                if (tipoNormalizado == "DESC")
+                {
+                    sql = string.IsNullOrWhiteSpace(usuarioNormalizado)
+                        ? sqlDescPrimero
+                        : sqlDesc;
+                }
+                else
+                {
+                    sql = string.IsNullOrWhiteSpace(usuarioNormalizado)
+                        ? sqlAscPrimero
+                        : sqlAsc;
+                }
 
                 var result = conn.QueryFirstOrDefault<string>(sql, new { usuario = usuarioNormalizado }) ?? string.Empty;
 
