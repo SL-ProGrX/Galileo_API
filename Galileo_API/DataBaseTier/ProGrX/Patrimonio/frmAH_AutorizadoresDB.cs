@@ -105,7 +105,7 @@ order by USUARIO desc;";
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-
+                string sql;
                 if (tipoNormalizado == "DESC")
                 {
                     sql = string.IsNullOrWhiteSpace(usuarioNormalizado)
