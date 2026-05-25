@@ -309,12 +309,13 @@ where Id_Autorizacion in @ids;";
                 item => item,
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var idAutorizacion in idsAutorizacion)
-            {
-                var detalle = gestionesMap.TryGetValue(idAutorizacion, out var gestion)
+            var detalles = idsAutorizacion.Select(idAutorizacion =>
+                gestionesMap.TryGetValue(idAutorizacion, out var gestion)
                     ? $"Gestion Id:{idAutorizacion}..Id: {gestion.cedula}..Nombre: {gestion.nombre}"
-                    : $"Gestion Id:{idAutorizacion}";
+                    : $"Gestion Id:{idAutorizacion}");
 
+            foreach (var detalle in detalles)
+            {
                 _dbBitacora.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = codEmpresa,
