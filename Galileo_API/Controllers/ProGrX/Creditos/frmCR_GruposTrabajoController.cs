@@ -53,5 +53,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpPost("CR_GruposTrabajo_Comites_Marcar")]
         public ErrorDto CR_GruposTrabajo_Comites_Marcar(int codEmpresa, CrGrupoTrabajoComiteMarcarRequest request)
             => _bl.CR_GruposTrabajo_Comites_Marcar(codEmpresa, request);
+
+        [HttpDelete("CR_GruposTrabajo_Grupos_Eliminar")]
+        public ErrorDto CR_GruposTrabajo_Grupos_Eliminar(int codEmpresa, string usuario, string codGrupo)
+            => _bl.CR_GruposTrabajo_Grupos_Eliminar(codEmpresa, usuario, codGrupo);
     }
 }

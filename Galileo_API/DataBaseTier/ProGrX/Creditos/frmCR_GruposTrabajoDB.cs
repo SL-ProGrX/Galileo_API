@@ -59,6 +59,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 : DbHelper.ErrorResponse("El grupo indicado no existe.");
         }
 
+
+
         private void CR_GruposTrabajo_RegistrarBitacora(
             int codEmpresa,
             string usuario,
