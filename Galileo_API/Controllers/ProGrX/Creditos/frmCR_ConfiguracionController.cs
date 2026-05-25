@@ -14,7 +14,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
     public class FrmCRConfiguracionController : ControllerBase
     {
         private readonly FrmCRConfiguracionBL _bl;
-
+        private const string DATOSREQUERIDOS = "Datos requeridos.";
         public FrmCRConfiguracionController(IConfiguration config)
         {
             _bl = new FrmCRConfiguracionBL(config);
@@ -38,7 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             if (request == null)
             {
-                return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
             }
 
             return _bl.CR_Configuracion_Generales_Guardar(CodEmpresa, request, usuario);
@@ -55,7 +55,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             if (request == null)
             {
-                return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
             }
 
             return _bl.CR_Configuracion_Operativos_Guardar(CodEmpresa, request, usuario);
@@ -78,7 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             if (request == null)
             {
-                return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
             }
 
             return _bl.CR_Configuracion_FechaCorte_Guardar(CodEmpresa, request, usuario);
@@ -89,7 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             if (request == null)
             {
-                return DbHelper.ErrorResponse("Datos requeridos.", -2);
+                return DbHelper.ErrorResponse(DATOSREQUERIDOS, -2);
             }
 
             return _bl.CR_Configuracion_TBP_Guardar(CodEmpresa, request, usuario);
