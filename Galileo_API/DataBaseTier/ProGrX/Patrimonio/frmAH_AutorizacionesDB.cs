@@ -301,7 +301,7 @@ where Id_Autorizacion in @ids;";
             IReadOnlyCollection<string> idsAutorizacion,
             IReadOnlyCollection<PatGestionesBitacoraItem> gestiones)
         {
-            var movimiento = accion == "A" ? "Autoriza" : "Deniega";
+            var movimiento = accion == "A" ? "Autoriza-WEB" : "Deniega-WEB";
             var detalleAccion = accion == "A" ? "Autoriza" : "Deniega";
 
             var gestionesMap = gestiones.ToDictionary(
@@ -319,7 +319,7 @@ where Id_Autorizacion in @ids;";
                 {
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
-                    Movimiento = "Aplica",
+                    Movimiento = movimiento,
                     Modulo = vModulo,
                     DetalleMovimiento = $"{detalleAccion} de {detalle}"
                 });
