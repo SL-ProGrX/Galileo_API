@@ -58,15 +58,36 @@
         public int Total { get; set; }
         public List<FrmCntXConCierreCuentaMovData> Lista { get; set; } = [];
     }
-    public class FrmCntXConCierreActualizarMovimientoRequest
+    public class FrmCntXConCierreActualizarMovimientoRequest : FrmCntXConCierreCuentaMovData
     {
         public int? Cod_Consolida { get; set; }
         public int? Cod_Contabilidad { get; set; }
         public int? Anio { get; set; }
         public int? Mes { get; set; }
-        public string Cod_Cuenta { get; set; } = string.Empty;
-        public decimal? SI { get; set; }
-        public decimal? TD { get; set; }
-        public decimal? TC { get; set; }
+    }
+
+    public class FrmCntXConCierreContabilidadPortalData
+    {
+        public int Cod_Contabilidad { get; set; }
+    }
+    public class FrmCntXConCierreContabilidadPortalLista
+    {
+        public int Total { get; set; }
+        public List<FrmCntXConCierreContabilidadPortalData> Lista { get; set; } = [];
+    }
+    public class FrmCntXConCierreExisteMovimientoRequest
+    {
+        public int CodConsolida { get; set; }
+        public int CodContabilidad { get; set; }
+        public int Anio { get; set; }
+        public int Mes { get; set; }
+        public string CodCuenta { get; set; } = string.Empty;
+    }
+    public class FrmCntXConCierreInsertarMovimientoRequest : FrmCntXConCierreCuentaMovData
+    {
+        public int CodConsolida { get; set; }
+        public int CodContabilidad { get; set; }
+        public int Anio { get; set; }
+        public int Mes { get; set; }
     }
 }
