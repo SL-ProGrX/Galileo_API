@@ -9,7 +9,7 @@ namespace Galileo_API.Extensions
         public static IServiceCollection AddCcProcesoMensualArchivos(
            this IServiceCollection services)
         {
-            services.AddScoped<CcProcesoMensualArchivoBL>();
+            services.AddScoped<CcProcesoMensualBL>();
 
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF00ExcelGenerar>();
             services.AddScoped<ICcProcesoMensualArchivoGenerator, CcProcesoMensualArchivoF01CcssGenerar>();
