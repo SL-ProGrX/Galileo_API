@@ -49,9 +49,9 @@
     public class FrmCntXConCierreCuentaMovData
     {
         public string Cod_Cuenta { get; set; } = string.Empty;
-        public decimal SI { get; set; }
-        public decimal TD { get; set; }
-        public decimal TC { get; set; }
+        public decimal? SI { get; set; }
+        public decimal? TD { get; set; }
+        public decimal? TC { get; set; }
     }
     public class FrmCntXConCierreCuentaMovLista
     {
@@ -77,17 +77,17 @@
     }
     public class FrmCntXConCierreExisteMovimientoRequest
     {
-        public int CodConsolida { get; set; }
-        public int CodContabilidad { get; set; }
-        public int Anio { get; set; }
-        public int Mes { get; set; }
-        public string CodCuenta { get; set; } = string.Empty;
+        public int? CodConsolida { get; set; }
+        public int? CodContabilidad { get; set; }
+        public int? Anio { get; set; }
+        public int? Mes { get; set; }
+        public string? CodCuenta { get; set; } = string.Empty;
     }
     public class FrmCntXConCierreInsertarMovimientoRequest : FrmCntXConCierreCuentaMovData
     {
-        public int CodConsolida { get; set; }
-        public int CodContabilidad { get; set; }
-        public int Anio { get; set; }
-        public int Mes { get; set; }
+        public int? CodConsolida { get; set; }
+        public int? CodContabilidad { get; set; }
+        public int? Anio { get; set; }
+        public int? Mes { get; set; }
     }
 }
