@@ -51,7 +51,7 @@ order by COD_INSTITUCION;";
         /// <summary>
         /// Normaliza y valida los registros cargados desde Excel para poblar el histórico.
         /// </summary>
-        public ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
+        public static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
             int codEmpresa,
             FrmAhConciliadorPatronalCargadoRequest? request)
         {
