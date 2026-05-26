@@ -418,6 +418,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 Modulo = vModulo
             });   
         }
+       
         private sealed class CcProcesoMensualGeneraConfigDbModel
         {
             public string CodigoAportesEnv { get; set; } = string.Empty;
