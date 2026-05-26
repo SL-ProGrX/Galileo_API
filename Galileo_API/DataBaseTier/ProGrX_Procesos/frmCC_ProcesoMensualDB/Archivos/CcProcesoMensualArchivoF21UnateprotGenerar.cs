@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF21UnateprotGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF21UnateprotGenerar.CcProcesoMensualArchivoF21RegistroDbModel>
+    public class CcProcesoMensualArchivoF21UnateprotGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF21UnateprotGenerar.CcProcesoMensualArchivoF21RegistroDbModel>
 
     {
         private List<string> _movimientos = [];

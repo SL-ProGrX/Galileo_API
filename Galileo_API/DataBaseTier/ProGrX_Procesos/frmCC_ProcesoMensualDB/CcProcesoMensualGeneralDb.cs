@@ -69,16 +69,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             var parametrosAdd = item.ParametrosAdd?.Trim();
 
-            var query = string.IsNullOrWhiteSpace(parametrosAdd)
-                ? $"EXEC {procedimiento} @CodInstitucion, @Proceso"
-                : $"EXEC {procedimiento} @CodInstitucion, @Proceso, {parametrosAdd}";
+            var query = CrearQueryProcesoAdd( procedimiento, item.ParametrosPlanillas,parametrosAdd);
 
-            connection.Execute(query, new
-            {
-                CodInstitucion = codInstitucion,
-                Proceso = proceso
-            });
+            connection.Execute(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    Proceso = proceso
+                });
         }
+        private static string CrearQueryProcesoAdd( string procedimiento, int parametrosPlanillas, string? parametrosAdd)
+        {
+            if (parametrosPlanillas == 1)
+            {
+                return string.IsNullOrWhiteSpace(parametrosAdd)
+                    ? $"EXEC {procedimiento} @CodInstitucion, @Proceso"
+                    : $"EXEC {procedimiento} @CodInstitucion, @Proceso, {parametrosAdd}";
+            }
+
+            return string.IsNullOrWhiteSpace(parametrosAdd)
+                ? $"EXEC {procedimiento}"
+                : $"EXEC {procedimiento} {parametrosAdd}";
+        }
+
         private static bool EsNombreProcedimientoValido(string procedimiento)
         {
             return !string.IsNullOrWhiteSpace(procedimiento)
@@ -106,22 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 || c == '\''
                 || c == '/');
         }
-        private static string CrearParametrosProcedimiento(CcProcesoMensualProcesoGeneralDbModel item, int codInstitucion, decimal proceso)
-        {
-            if (item.ParametrosPlanillas == 1)
-            {
-                var parametros = $"{codInstitucion},{proceso}";
-
-                if (!string.IsNullOrWhiteSpace(item.ParametrosAdd))
-                {
-                    parametros = $"{parametros},{item.ParametrosAdd.Trim()}";
-                }
-
-                return parametros;
-            }
-
-            return item.ParametrosAdd.Trim();
-        }
+     
         private sealed class CcProcesoMensualProcesoGeneralDbModel
         {
             public string Descripcion { get; set; } = string.Empty;

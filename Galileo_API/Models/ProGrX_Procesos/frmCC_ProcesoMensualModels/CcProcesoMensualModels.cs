@@ -10,7 +10,12 @@
             public Dictionary<string, object> Formulas { get; set; } = [];
             public string SelectionFormula { get; set; } = string.Empty;
         }
-
+        public sealed class CcProcesoMensualGeneraDeduccionesResponse
+        {
+            public bool Generado { get; set; } = false;
+            public string PlanillaEnvio { get; set; } = string.Empty;
+            public CcProcesoMensualArchivoGeneradoModel Archivo { get; set; } = new();
+        }
         public class CcProcesoMensualGeneraDeduccionesRequest
         {
             public int CodInstitucion { get; set; } = 0;
@@ -20,7 +25,7 @@
             public bool AplicaCambioDeducciones { get; set; } = false;
             public int Redondeo { get; set; } = 0;
         }
-
+     
         public class CcProcesoMensualArchivoGeneradoModel
         {
             public bool Generado { get; set; } = false;
@@ -48,14 +53,14 @@
             public string Planilla { get; set; } = string.Empty;
             public string CodigoAportesEnv { get; set; } = string.Empty;
             public string CodigoCreditosEnv { get; set; } = string.Empty;
-            public decimal PorcAhorro { get; set; }
+            public decimal PorcAhorro { get; set; } = 0;
             public string CodigoInstDeduc { get; set; } = string.Empty;
-            public int IncInclusiones { get; set; }
-            public int IncExclusiones { get; set; }
-            public int IncModificaciones { get; set; }
-            public int IncMantienen { get; set; }
-            public decimal PorcAporte { get; set; }
-            public int ComparaIndicador { get; set; }
+            public int IncInclusiones { get; set; } = 0;
+            public int IncExclusiones { get; set; } = 0;
+            public int IncModificaciones { get; set; } = 0;
+            public int IncMantienen { get; set; } = 0;
+            public decimal PorcAporte { get; set; } = 0;
+            public int ComparaIndicador { get; set; } = 0;
         }
         public sealed class CcProcesoMensualArchivoRegistroDbModel
         {
@@ -77,7 +82,7 @@
         public sealed class CcProcesoMensualArchivoPlanillaBasicaDbModel
         {
             public string Cedula { get; set; } = string.Empty;
-            public decimal MontoActual { get; set; }
+            public decimal MontoActual { get; set; } = 0;
             public string Movimiento { get; set; } = string.Empty;
             public string Tipo { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;

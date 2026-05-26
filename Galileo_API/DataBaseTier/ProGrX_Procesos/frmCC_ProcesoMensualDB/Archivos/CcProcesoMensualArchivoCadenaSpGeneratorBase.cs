@@ -4,98 +4,81 @@ using Dapper;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
-{     
-        public abstract class CcProcesoMensualArchivoCadenaSpGeneratorBase : ICcProcesoMensualArchivoGenerator
+{
+    public abstract class CcProcesoMensualArchivoCadenaSpGeneratorBase : ICcProcesoMensualArchivoGenerator
+    {
+        protected const string ContentTypeText = "text/plain";
+        public abstract IReadOnlyCollection<string> CodigosPlanillaEnvio { get; }
+        protected abstract string CodigoPlanillaEnvio { get; }
+        protected abstract string CodigoFormato { get; }
+        protected abstract string ExtensionArchivo { get; }
+        protected abstract string ContentType { get; }
+        protected abstract string QueryCadenas { get; }
+        protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
+        public virtual CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            protected const string ContentTypeText = "text/plain";
+            var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
+                connection,
+                request.CodInstitucion);
 
-            public abstract IReadOnlyCollection<string> CodigosPlanillaEnvio { get; }
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
 
-            protected abstract string CodigoPlanillaEnvio { get; }
-            protected abstract string CodigoFormato { get; }
-            protected abstract string ExtensionArchivo { get; }
-            protected abstract string ContentType { get; }
-            protected abstract string QueryCadenas { get; }
+            var nombreArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearNombreArchivoEstandar(
+                request.CodInstitucion,
+                request.FechaProceso,
+                configuracion.CodigoInstDeduc,
+                fechaServidor,
+                CodigoFormato,
+                ExtensionArchivo);
 
-            protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
-            public virtual CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
-                IDbConnection connection,
-                CcProcesoMensualGeneraArchivoRequest request)
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+                rutaDirectorio,
+                nombreArchivo);
+
+            var cadenas = ObtenerCadenas(connection, request);
+
+            var contenido = CrearContenidoArchivo(cadenas);
+
+            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaDirectorio, rutaArchivo, contenido, EncodingArchivo);
+
+            return new CcProcesoMensualArchivoGeneradoModel
             {
-                var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
-                    connection,
-                    request.CodInstitucion);
+                Generado = true,
+                CodigoPlanillaEnvio = CodigoPlanillaEnvio,
+                NombreArchivo = nombreArchivo,
+                RutaArchivo = rutaArchivo,
+                ContentType = ContentType,
+                ArchivoBytes = [],
+                ArchivosGenerados = [rutaArchivo]
+            };
+        }
+        protected virtual IEnumerable<string> ObtenerCadenas(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            return connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
+                    QueryCadenas,
+                    new
+                    {
+                        request.CodInstitucion,
+                        request.FechaProceso
+                    })
+                .Select(x => x.Cadena ?? string.Empty);
+        }
+        protected virtual string CrearContenidoArchivo(IEnumerable<string> cadenas)
+        {
+            var builder = new StringBuilder();
 
-                var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
-
-                var nombreArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CrearNombreArchivoEstandar(
-                    request.CodInstitucion,
-                    request.FechaProceso,
-                    configuracion.CodigoInstDeduc,
-                    fechaServidor,
-                    CodigoFormato,
-                    ExtensionArchivo);
-
-                var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-
-                var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                    rutaDirectorio,
-                    nombreArchivo);
-
-                var cadenas = ObtenerCadenas(
-                    connection,
-                    request);
-
-                var contenido = CrearContenidoArchivo(cadenas);
-
-                Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
-                    rutaDirectorio,
-                    rutaArchivo,
-                    contenido,
-                    EncodingArchivo);
-
-                return new CcProcesoMensualArchivoGeneradoModel
-                {
-                    Generado = true,
-                    CodigoPlanillaEnvio = CodigoPlanillaEnvio,
-                    NombreArchivo = nombreArchivo,
-                    RutaArchivo = rutaArchivo,
-                    ContentType = ContentType,
-                    ArchivoBytes = [],
-                    ArchivosGenerados = [rutaArchivo]
-                };
+            foreach (var cadena in cadenas.Where(cadena => cadena.TrimEnd().Length > 0))
+            {
+                builder.AppendLine(cadena);
             }
 
-            protected virtual IEnumerable<string> ObtenerCadenas(
-                IDbConnection connection,
-                CcProcesoMensualGeneraArchivoRequest request)
-            {
-                return connection.Query<CcProcesoMensualArchivoCadenaDbModel>(
-                        QueryCadenas,
-                        new
-                        {
-                            CodInstitucion = request.CodInstitucion,
-                            FechaProceso = request.FechaProceso
-                        })
-                    .Select(x => x.Cadena ?? string.Empty);
-            }
-
-            protected virtual string CrearContenidoArchivo(IEnumerable<string> cadenas)
-            {
-                var builder = new StringBuilder();
-
-                foreach (var cadena in cadenas.Where(cadena => cadena.TrimEnd().Length > 0))
-                {
-                    builder.AppendLine(cadena);
-                }
-
-                return builder.ToString();
-            }
-
-            private sealed class CcProcesoMensualArchivoCadenaDbModel
-            {
-                public string Cadena { get; set; } = string.Empty;
-            }
+            return builder.ToString();
+        }
+        private sealed class CcProcesoMensualArchivoCadenaDbModel
+        {
+            public string Cadena { get; set; } = string.Empty;
         }
     }
+}
