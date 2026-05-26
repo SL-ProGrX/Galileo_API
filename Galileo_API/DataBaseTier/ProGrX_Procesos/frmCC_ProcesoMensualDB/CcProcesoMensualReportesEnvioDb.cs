@@ -17,14 +17,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         {
             try
             {
-                var contexto = CrearContextoReporte(
-           codEmpresa,
-           usuario,
-           vFecha);
+                var contexto = CrearContextoReporte( codEmpresa,  usuario,  vFecha);
 
-                var reporte = CrearReporteGeneracionF02(
-                    contexto,
-                    vFecha);
+                var reporte = CrearReporteGeneracionF02( contexto, vFecha);
 
                 return DbHelper.CreateOkResponse(reporte);
             }
@@ -34,14 +29,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             "Error al obtener los parámetros del reporte de planillas generadas.");
             }
         }
-        private CcProcesoMensualReporteContexto CrearContextoReporte(
-        int codEmpresa,
-        string usuario,
-        decimal fechaProceso)
+        private CcProcesoMensualReporteContexto CrearContextoReporte(int codEmpresa, string usuario, decimal fechaProceso)
         {
-            var globalesResp = _mProGrx.sbSifParametrosInicializa(
-                codEmpresa,
-                usuario);
+            var globalesResp = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario);
 
             return new CcProcesoMensualReporteContexto
             {
@@ -52,59 +42,34 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 CodInstitucion = globalesResp?.Result?.GInstitucion ?? 0
             };
         }
-
-        private static CcProcesoMensualReporteModel CrearReporteGeneracionF02(
-            CcProcesoMensualReporteContexto contexto,
-            decimal fechaProceso)
+        private static CcProcesoMensualReporteModel CrearReporteGeneracionF02(CcProcesoMensualReporteContexto contexto, decimal fechaProceso)
         {
             return new CcProcesoMensualReporteModel
             {
                 NombreReporte = "Sys_Planilla_Generada",
                 Titulo = "Planillas - Información Generada",
-                Formulas = CrearFormulasBase(contexto),
-                SelectionFormula = CrearSelectionFormulaPlanilla(
-                    fechaProceso,
-                    contexto.CodInstitucion)
+                Fecha = contexto.FechaTexto,
+                Empresa = contexto.NombreEmpresa,
+                Usuario = contexto.Usuario,
+                Institucion = contexto.NombreInstitucion,
+                Filtros = $"PRM_PLANILLA.PROCESO = {fechaProceso} AND PRM_PLANILLA.COD_INSTITUCION = {contexto.CodInstitucion}"
+
             };
         }
-
-        private static Dictionary<string, object> CrearFormulasBase(
-            CcProcesoMensualReporteContexto contexto)
-        {
-            return new Dictionary<string, object>
-    {
-        { "Empresa", contexto.NombreEmpresa },
-        { "Fecha", contexto.FechaTexto },
-        { "usuario", contexto.Usuario },
-        { "institucion", contexto.NombreInstitucion }
-    };
-        }
-
-        private static string CrearSelectionFormulaPlanilla(
-            decimal fechaProceso,
-            int codInstitucion)
-        {
-            return string.Create(
-                CultureInfo.InvariantCulture,
-                $"PRM_PLANILLA.PROCESO = {fechaProceso} AND PRM_PLANILLA.COD_INSTITUCION = {codInstitucion}");
-        }
-
-        private static ErrorDto<CcProcesoMensualReporteModel> CrearErrorReporte(
-            string mensaje)
+        private static ErrorDto<CcProcesoMensualReporteModel> CrearErrorReporte(string mensaje)
         {
             return DbHelper.CreateErrorResponse<CcProcesoMensualReporteModel>(
                 mensaje,
                 -1,
                 new CcProcesoMensualReporteModel());
         }
-
         private sealed class CcProcesoMensualReporteContexto
         {
             public string Usuario { get; set; } = string.Empty;
             public string FechaTexto { get; set; } = string.Empty;
             public string NombreEmpresa { get; set; } = string.Empty;
             public string NombreInstitucion { get; set; } = string.Empty;
-            public int CodInstitucion { get; set; }
+            public int CodInstitucion { get; set; } = 0;
         }
     }
 }

@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF13InaGenerar :  CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF13InaGenerar.CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF13InaGenerar :  CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF13InaGenerar.CcProcesoMensualArchivoRegistroDbModel>
     {
         private string _codigoCreditosEnv = string.Empty;
 

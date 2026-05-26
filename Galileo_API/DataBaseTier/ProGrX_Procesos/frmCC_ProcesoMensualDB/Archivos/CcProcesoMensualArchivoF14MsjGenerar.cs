@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF14MsjGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
+    public class CcProcesoMensualArchivoF14MsjGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
 
     {
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["14"];

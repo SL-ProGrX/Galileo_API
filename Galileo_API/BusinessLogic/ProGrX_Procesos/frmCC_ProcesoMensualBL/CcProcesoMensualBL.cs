@@ -1,22 +1,60 @@
-﻿
-using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos;
-using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
-using System.Data;
-using Dapper;
+﻿using Dapper;
+using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier;
-
-
+using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB;
+using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos;
+using System.Data;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels; 
 namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 {
-    public class CcProcesoMensualArchivoBL
+    public class CcProcesoMensualBL
     {
 
         private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
+        private readonly CcProcesoMensualEnvioDb _db;
+        private readonly PortalDB _portalDb;
 
-        public CcProcesoMensualArchivoBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores)
+        public CcProcesoMensualBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
             _generadorArchivos = generadores;
+            _db = new CcProcesoMensualEnvioDb(config);
+            _portalDb = new PortalDB(config);
         }
+
+        public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, string usuario, CcProcesoMensualGeneraDeduccionesRequest request)
+        {
+            var deduccionesResp = _db.CcProcesoMensual_GeneraDeducciones_Ejecutar(codEmpresa, usuario, request);
+
+             if(!deduccionesResp.Result)
+            {
+                return DbHelper.CreateErrorResponse<CcProcesoMensualGeneraDeduccionesResponse>(
+                    "No se pudo generar las deducciones.",
+                    -1,
+                    new CcProcesoMensualGeneraDeduccionesResponse { }
+                );
+            }
+
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            CcProcesoMensualGeneraArchivoRequest archivoRequest = new()
+            {
+                CodInstitucion = request.CodInstitucion,
+                FechaProceso = request.FechaProceso,
+                Usuario = request.Usuario
+            };
+
+            var archivoGenerado = GenerarArchivo(connection,archivoRequest);
+
+            return DbHelper.CreateOkResponse(new CcProcesoMensualGeneraDeduccionesResponse
+            {
+                Generado = true, 
+                Archivo = archivoGenerado
+            });
+        }
+
+
+
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
             MProcesoMensualDb.SbBitacoraPlanilla(connection, "02.1", request.CodInstitucion, request.FechaProceso, "E", request.Usuario);
@@ -175,5 +213,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 ArchivosGenerados = archivosGenerados
             };
         }
+  
+    
     }
 }
