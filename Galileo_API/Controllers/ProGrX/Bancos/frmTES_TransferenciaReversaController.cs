@@ -73,7 +73,7 @@ namespace Galileo_API.Controllers
         }
 
         [HttpPost("TES_TransferenciaRevSinpe_Aplicar")]
-        public ErrorDto TES_TransferenciaRevSinpe_Aplicar(TesReversaSinpeModel reversa)
+        public ErrorDto TES_TransferenciaRevSinpe_Aplicar([FromBody] TesReversaSinpeModel reversa)
         {
             return _TransferenciaReversaBL.TES_TransferenciaRevSinpe_Aplicar(reversa);
         }
