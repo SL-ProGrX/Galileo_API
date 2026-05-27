@@ -637,8 +637,8 @@ FROM {table}
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 const string sql = @"
-                    SELECT CODIGO_SINPE AS item, RTRIM(Descripcion) AS descripcion 
-                    FROM AFI_TIPOS_IDS 
+                    SELECT TIPO_ID AS item, RTRIM(Descripcion) AS descripcion 
+                    FROM AFI_TIPOS_IDS
                     ORDER BY Tipo_Id;";
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();

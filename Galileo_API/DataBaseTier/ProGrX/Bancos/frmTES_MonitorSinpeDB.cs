@@ -59,6 +59,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<TesMonitorSinpeDebCrdModels>> Tes_MonitorSinpeDebCred_Consultar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
+
             const string sql = @"SELECT
                                     ROW_NUMBER() OVER (ORDER BY cp.DESCRIPCION) AS Consecutivo,
 			                        SUM(CASE
@@ -76,17 +79,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 		                        INNER JOIN SIF_CONCEPTOS cp
 			                        ON cp.COD_CONCEPTO = d.COD_CONCEPTO
 		                        WHERE d.COD_PLAN = 'SINPE'
-		                        AND d.FECHA BETWEEN @fechaInicio AND @fechaFin
+                                AND d.FECHA >= @fechaInicio
+                                       AND REGISTRO_FECHA < @fechaFin
 		                        GROUP BY cp.DESCRIPCION;";
 
             var p = new DynamicParameters();
             //formato de fecha , si tu base de datos espera otro formato, ajusta el tipo de dato o la forma de agregar el parámetro
             string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(fechaInicio, "yyyy-MM-dd 00:00:00")!;
             string fechaF = MProGrXAuxiliarDB.validaFechaGlobal(fechaFin, "yyyy-MM-dd 23:59:59")!;
-            p.Add("@fechaInicio", fechaIni, DbType.String);   // o sin DbType si no querés
-            p.Add("@fechaFin", fechaF, DbType.String);
+            p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
+            p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
 
-            return DbHelper.ExecuteListQuery<TesMonitorSinpeDebCrdModels>(_portalDB, CodEmpresa, sql, p); 
+            var result = conn.Query<TesMonitorSinpeDebCrdModels>(sql, p, commandTimeout: 400).ToList();
+
+            return new ErrorDto<List<TesMonitorSinpeDebCrdModels>>
+            {
+                Code = 0,
+                Description = "",
+                Result = result
+            };
         }
 
         /// <summary>
@@ -98,6 +109,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<TesMonitorSinpeDebCrdModels>> Tes_MonitorSinpeTransitos_Consultar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
+
             const string sql = @"SELECT
                                     ROW_NUMBER() OVER (ORDER BY CEDULA) AS Consecutivo,
                                     COD_REFERENCIA,
@@ -108,7 +122,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 				                        WHEN MONTO >= 0 THEN MONTO
 			                        END) AS Credito
 		                        FROM SINPE_MOV_TRANSITO
-		                        WHERE REGISTRO_FECHA BETWEEN @fechaInicio AND @fechaFin
+		                       WHERE REGISTRO_FECHA >= @fechaInicio
+                                       AND REGISTRO_FECHA < @fechaFin
 		                        AND estado = 4
 		                        GROUP BY CEDULA , COD_REFERENCIA;";
 
@@ -116,10 +131,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(fechaInicio, "yyyy-MM-dd 00:00:00")!;
             string fechaF = MProGrXAuxiliarDB.validaFechaGlobal(fechaFin, "yyyy-MM-dd 23:59:59")!;
 
-            p.Add("@fechaInicio", fechaIni, DbType.String);   // o sin DbType si no querés
-            p.Add("@fechaFin", fechaF, DbType.String);
+            p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
+            p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
+            
+            var result = conn.Query<TesMonitorSinpeDebCrdModels>(sql, p, commandTimeout: 400).ToList();
 
-            return DbHelper.ExecuteListQuery<TesMonitorSinpeDebCrdModels>(_portalDB, CodEmpresa, sql, p);
+            return new ErrorDto<List<TesMonitorSinpeDebCrdModels>>
+            {
+                Code = 0,
+                Description = "",
+                Result = result
+            };
+            
         }
 
     }
