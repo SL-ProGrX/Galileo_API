@@ -331,34 +331,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private ErrorDto<List<CrCalculoOperacionRefundicionData>> ObtenerRefundiciones(int codEmpresa, string cedula)
         {
             const string sql = @"
-                select
-                    R.id_solicitud as operacion,
-                    rtrim(R.codigo) as codigo,
-                    isnull(R.saldo,0) as saldo_real,
-                    rtrim(isnull(Gar.Descripcion,'')) as garantia_descripcion,
-                    isnull(V.intc,0) as mora_intc,
-                    isnull(V.intm,0) as mora_intm,
-                    isnull(V.amortiza,0) as mora_principal,
-                    isnull(R.cuota,0) as cuota,
-                    isnull(R.amortiza,0) as recaudado,
-                    isnull(R.plazo,0) as plazo,
-                    isnull(R.montoapr,0) as montoapr,
-                    isnull(C.retencion,'N') as retencion,
-                    isnull(C.poliza,'N') as poliza,
-                    isnull(C.aceptarefun,'N') as aceptarefun,
-                    isnull(C.refunde_tipo,'') as refunde_tipo,
-                    isnull(C.refunde_porc,0) as refunde_porc,
-                    isnull(
-                        datediff(m, dbo.fxSIFCorteAFechaInicio(R.PRIDEDUC), GETDATE()) / convert(float,R.PLAZO)
-                    ,0) as tiempo_transcurrido
-                from reg_creditos R
-                inner join Catalogo C on R.codigo = C.codigo
-                inner join crd_garantia_tipos Gar on R.garantia = Gar.Garantia
-                left join Vista_morosidad V on R.id_solicitud = V.id_solicitud
-                where R.cedula = @Cedula
-                  and R.saldo > 0
-                  and R.proceso <> 'J'
-                  and R.estado = 'A';";
+            select
+                R.id_solicitud as operacion,
+                rtrim(R.codigo) as codigo,
+                isnull(R.saldo,0) as saldo_real,
+                rtrim(isnull(R.garantia,'')) as garantia,
+                rtrim(isnull(Gar.Descripcion,'')) as garantia_descripcion,
+                isnull(V.intc,0) as mora_intc,
+                isnull(V.intm,0) as mora_intm,
+                isnull(V.amortiza,0) as mora_principal,
+                isnull(R.cuota,0) as cuota,
+                isnull(R.amortiza,0) as recaudado,
+                isnull(R.plazo,0) as plazo,
+                isnull(R.montoapr,0) as montoapr,
+                isnull(C.retencion,'N') as retencion,
+                isnull(C.poliza,'N') as poliza,
+                isnull(C.aceptarefun,'N') as aceptarefun,
+                isnull(C.refunde_tipo,'') as refunde_tipo,
+                isnull(C.refunde_porc,0) as refunde_porc,
+                isnull(
+                    datediff(m, dbo.fxSIFCorteAFechaInicio(R.PRIDEDUC), GETDATE()) / convert(float,R.PLAZO)
+                ,0) as tiempo_transcurrido
+            from reg_creditos R
+            inner join Catalogo C on R.codigo = C.codigo
+            inner join crd_garantia_tipos Gar on R.garantia = Gar.Garantia
+            left join Vista_morosidad V on R.id_solicitud = V.id_solicitud
+            where R.cedula = @Cedula
+              and R.saldo > 0
+              and R.proceso <> 'J'
+              and R.estado = 'A';";
 
             return DbHelper.ExecuteListQuery<CrCalculoOperacionRefundicionData>(
                 _portalDb,
@@ -448,6 +449,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene los dias de interes segun configuracion de la linea.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="linea"></param>
+        /// <returns></returns>
         private int ObtenerDiasInteres(int codEmpresa, LineaCodigoQueryDto linea)
         {
             if (linea.fechacortealterna == "S")
@@ -471,6 +475,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Identifica el tipo especial de linea.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         private int ObtenerTipoCodigo(int codEmpresa, string cedula, string codigo)
         {
             const string sql = @"
@@ -509,6 +517,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el monto inicial sugerido segun tipo de linea.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="codigoTipo"></param>
+        /// <returns></returns>
         private decimal ObtenerMontoSolicitadoInicial(int codEmpresa, string cedula, int codigoTipo)
         {
             return codigoTipo switch
@@ -522,6 +534,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Valida si la linea es de excedentes.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         private bool EsCodigoExcedente(int codEmpresa, string codigo)
         {
             const string sqlExcParametros = @"
@@ -553,6 +568,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el disponible base de excedentes.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
         private decimal ObtenerExcedenteDisponible(int codEmpresa, string cedula)
         {
             var item = ObtenerDisponibleExcedente(codEmpresa, cedula);
@@ -562,6 +580,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el disponible de fondos.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="garantia"></param>
+        /// <param name="contrato"></param>
+        /// <returns></returns>
         private decimal ObtenerDisponibleFondos(int codEmpresa, string cedula, string garantia, int contrato)
         {
             const string sql = @"exec spCRDGarantiaFNDCalculo @Cedula, @Garantia, @Contrato;";
@@ -583,6 +606,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el rango de linea segun monto.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="monto"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
         private decimal FxCatalogoRango(int codEmpresa, string codigo, decimal monto, string tipo)
         {
             const string sql = @"select dbo.fxCrdCatalogoRango(@Codigo,@Monto,@Tipo,'','') as resultado;";
@@ -603,6 +631,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el maximo de rangos para la linea.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         private decimal FxRangoMaximo(int codEmpresa, string codigo)
         {
             const string sql = @"select isnull(max(hasta),0) from rangos where codigo = @Codigo;";
@@ -618,6 +649,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene disponible sobre ahorros.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
         private DisponibleBaseQueryDto? ObtenerDisponibleAhorros(int codEmpresa, string cedula)
         {
             const string sql = @"exec spVoxAhorros @Cedula;";
@@ -646,6 +680,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene disponible de excedentes.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
         private DisponibleExcedenteQueryDto? ObtenerDisponibleExcedente(int codEmpresa, string cedula)
         {
             const string sql = @"exec spVoxExcedenteCredito @Cedula;";

@@ -26,12 +26,13 @@
         public decimal capitalizacion { get; set; } = 0;
         public decimal disponible_bruto { get; set; } = 0;
     }
-
+    
     public class CrCalculoOperacionRefundicionData
     {
         public long operacion { get; set; } = 0;
         public string codigo { get; set; } = string.Empty;
         public decimal saldo_real { get; set; } = 0;
+        public string garantia { get; set; } = string.Empty;
         public string garantia_descripcion { get; set; } = string.Empty;
         public decimal mora_intc { get; set; } = 0;
         public decimal mora_intm { get; set; } = 0;
