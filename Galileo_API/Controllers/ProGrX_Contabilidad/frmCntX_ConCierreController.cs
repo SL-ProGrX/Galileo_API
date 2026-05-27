@@ -78,5 +78,33 @@
         {
             return _bl.AF_CntXConCierre_ActualizarMovimiento(codEmpresa, req);
         }
+
+        [HttpGet("AF_CntXConCierre_ObtenerMovimientosPortal")]
+        [Authorize]
+        public ErrorDto<FrmCntXConCierreCuentaMovLista> AF_CntXConCierre_ObtenerMovimientosPortal(int codEmpresa, int mes, int anio, int nivel, string contabilidades)
+        {
+            return _bl.AF_CntXConCierre_ObtenerMovimientosPortal(codEmpresa, mes, anio, nivel, contabilidades);
+        }
+
+        [HttpGet("AF_CntXConCierre_ObtenerContabilidadesPortal")]
+        [Authorize]
+        public ErrorDto<FrmCntXConCierreContabilidadPortalLista> AF_CntXConCierre_ObtenerContabilidadesPortal(int codEmpresa, int codConsolida, int codPortal)
+        {
+            return _bl.AF_CntXConCierre_ObtenerContabilidadesPortal(codEmpresa, codConsolida, codPortal);
+        }
+
+        [HttpPost("AF_CntXConCierre_ExisteMovimientoConsolidado")]
+        [Authorize]
+        public ErrorDto AF_CntXConCierre_ExisteMovimientoConsolidado(int codEmpresa, [FromBody] FrmCntXConCierreExisteMovimientoRequest req)
+        {
+            return _bl.AF_CntXConCierre_ExisteMovimientoConsolidado(codEmpresa, req);
+        }
+
+        [HttpPost("AF_CntXConCierre_InsertarMovimiento")]
+        [Authorize]
+        public ErrorDto AF_CntXConCierre_InsertarMovimiento(int codEmpresa, [FromBody] FrmCntXConCierreInsertarMovimientoRequest req)
+        {
+            return _bl.AF_CntXConCierre_InsertarMovimiento(codEmpresa, req);
+        }
     }
 }
