@@ -1330,15 +1330,38 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
         public sealed record TipoId(string Codigo, string Descripcion);
 
-        private static TipoId Desconocido() => new TipoId("", "Desconocido");
-        private static TipoId ExtranjeroNoResidente() => new TipoId("9", "Extranjero No Residente");
+        
+
         private static TipoId FisicaNacional() => new TipoId("0", "Persona Física Nacional (Cédula)");
         private static TipoId Juridica() => new TipoId("3", "Persona Jurídica");
-        private static TipoId Gobierno() => new TipoId("2", "Gobierno");
+        private static TipoId ExtranjeroNoResidente() => new TipoId("9", "Extranjero No Residente");
+        private static TipoId Dimex() => new TipoId("1", "DIMEX");
+
         private static TipoId InstitucionAutonoma() => new TipoId("4", "Institución Autónoma");
+
+        private static TipoId Didi() => new TipoId("5", "DIDI");
+
         private static TipoId Diplomaticos() => new TipoId("5", "Diplomáticos");
+
+        private static TipoId Desconocido() => new TipoId("", "Desconocido");
+
         private static TipoId FisicaResidente() => new TipoId("1", "Persona Física Residente");
+
+        private static TipoId Gobierno() => new TipoId("2", "Gobierno");
+        
         private static TipoId BancoInterna() => new TipoId("3", "Banco Interna");
+
+        private static TipoId InferirResidenciaODiplomatica(string id)
+        {
+            if (id.Length == 12 && id[0] == '5')
+                return Didi();
+
+            if ((id.Length == 11 || id.Length == 12) && id[0] == '1')
+                return Dimex();
+
+            return FisicaResidente();
+        }
+
 
         public static TipoId Inferir(string cedula)
         {
@@ -1369,7 +1392,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 9 => FisicaNacional(),
                 10 => InferirLongitud10(id),
-                11 or 12 => FisicaResidente(),
+                11 or 12 => InferirResidenciaODiplomatica(id),
                 < 9 => BancoInterna(),
                 _ => ExtranjeroNoResidente()
             };
@@ -2208,6 +2231,38 @@ WHERE COD_REFERENCIA = @codReferencia;";
                     DESCRIPCION_RECHAZO = solicitud.RECHAZO_DESC
                 },
                 commandType: CommandType.StoredProcedure);
+        }
+
+
+        public ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF)
+        {
+
+            var response = new ErrorDto<int>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = 0
+            };
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                var query = @"
+                            SELECT TIPO_ID
+                            FROM AFI_TIPOS_IDS
+                            WHERE CODIGO_PIN = @CodigoSugef;";
+
+                response.Result = connection.QueryFirstOrDefault<int>(query, new { CodigoSugef = CODIGO_SUGEF });
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al obtener el tipo de identificación PIN.";
+                response.Result = 0;
+            }
+
+            return response;
         }
 
         #endregion
