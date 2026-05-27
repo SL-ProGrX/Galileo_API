@@ -337,7 +337,7 @@ create table #PatronalCarga
             SqlConnection conn,
             List<FrmAhConciliadorPatronalHistoricoDto> registros)
         {
-            var tabla = new DataTable();
+            using var tabla = new DataTable();
             tabla.Columns.Add("identificacion", typeof(string));
             tabla.Columns.Add("id_alterna", typeof(string));
             tabla.Columns.Add("nombre", typeof(string));
