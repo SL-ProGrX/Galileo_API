@@ -239,7 +239,8 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
                 if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
                 {
                     item.documento =
-                        $"{consecutivoVisible.ToString("000", CultureInfo.InvariantCulture)}-{consecutivoInterno}";
+                        $"{consecutivoVisible.ToString(CultureInfo.InvariantCulture)}-" +
+                        $"{consecutivoInterno.ToString("000", CultureInfo.InvariantCulture)}";
                     consecutivoInterno++;
                 }
                 else
@@ -371,7 +372,7 @@ Where t.Estado='P'
                 .Result?
                 .Trim();
 
-            if (string.Equals(comprobante, "04", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(comprobante, "4", StringComparison.OrdinalIgnoreCase))
             {
                 return "TE";
             }
@@ -720,13 +721,10 @@ where B.estado = 'A'
                     ctx.Filtro,
                     () => ResolverBancoConsecTransferencia(ctx)),
 
-                "DV1" or "DV2" => sbTeFormatoEstandar(
+                "DV1" or "DV2" or "S" => sbTeFormatoEstandar(
                     ctx.CodEmpresa,
                     ctx.Filtro,
                     () => ResolverBancoConsecTransferencia(ctx)),
-
-                "S" => DbHelper.CreateErrorResponse<object>(
-                    "No se pudo realizar la operación, debido a que la opción de SINPE se encuentra en espera"),
 
                 "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(
                     ctx.CodEmpresa,
@@ -1144,9 +1142,9 @@ where nsolicitud in ";
         #region ===== Implementaciones existentes (menos duplicación) =====
 
         private ErrorDto<object> sbTeFormatoEstandar(
-            int CodEmpresa,
-            TesEmisionDocFiltros filtros,
-            Func<long> resolveConsecutivo)
+           int CodEmpresa,
+           TesEmisionDocFiltros filtros,
+           Func<long> resolveConsecutivo)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1160,14 +1158,15 @@ where nsolicitud in ";
                 var formatoData = mTesFunciones.vTesFormatos(connection, pFormato);
                 if (formatoData.Code == -1)
                 {
-                    return DbHelper.CreateErrorResponse<object>($"Error al obtener configuración del formato");
+                    return DbHelper.CreateErrorResponse<object>(
+                        "Error al obtener configuración del formato");
                 }
 
                 string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
                 string vProcedimiento = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
 
                 string BancoTDoc = filtros.tipoDoc;
-                string BancoPlan = filtros.plan;
+                string BancoPlan = filtros.plan ?? "-sp-";
 
                 long BancoConsec = resolveConsecutivo();
 
@@ -1175,45 +1174,51 @@ where nsolicitud in ";
 
                 var sb = new StringBuilder();
 
-                for (int numLinea = 1; numLinea <= 3; numLinea++)
+                if (!string.IsNullOrWhiteSpace(vProcedimiento) &&
+                    !string.Equals(vProcedimiento.Trim(), "N/A", StringComparison.OrdinalIgnoreCase))
                 {
-                    var queryLinea = new StringBuilder();
-                    queryLinea.Append("EXEC ");
-                    queryLinea.Append(vProcedimiento);
-                    queryLinea.Append(" @numLinea, @bancoID, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte");
-
-                    if (!string.Equals(BancoPlan, "-sp-", StringComparison.OrdinalIgnoreCase))
-                        queryLinea.Append(", @bancoPlan");
-
-                    var parametros = new
+                    for (int numLinea = 1; numLinea <= 3; numLinea++)
                     {
-                        numLinea,
-                        bancoID = BancoID,
-                        bancoTDoc = BancoTDoc,
-                        numNegocio = vNumNegocio,
-                        bancoConsec = BancoConsec,
-                        cantidadSolicitudes = filtros.cantidad,
-                        mSolInicio = solInicio,
-                        mSolCorte = solCorte,
-                        mFechaInicio = fechaInicio?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
-                        mFechaCorte = fechaCorte?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
-                        bancoPlan = BancoPlan,
+                        var queryLinea = new StringBuilder();
+                        queryLinea.Append("EXEC ");
+                        queryLinea.Append(vProcedimiento);
+                        queryLinea.Append(" @numLinea, @bancoID, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte");
 
-                    };
+                        if (!string.Equals(BancoPlan, "-sp-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            queryLinea.Append(", @bancoPlan");
+                        }
 
-                    var lineas = connection.Query<string>(queryLinea.ToString(), parametros);
-                    foreach (var linea in lineas)
-                        MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
+                        var parametros = new
+                        {
+                            numLinea,
+                            bancoID = BancoID,
+                            bancoTDoc = BancoTDoc,
+                            numNegocio = vNumNegocio,
+                            bancoConsec = BancoConsec,
+                            cantidadSolicitudes = filtros.cantidad,
+                            mSolInicio = solInicio,
+                            mSolCorte = solCorte,
+                            mFechaInicio = fechaInicio?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
+                            mFechaCorte = fechaCorte?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
+                            bancoPlan = BancoPlan,
+                        };
+
+                        var lineas = connection.Query<string>(queryLinea.ToString(), parametros);
+                        foreach (var linea in lineas)
+                        {
+                            MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
+                        }
+                    }
                 }
 
-                return MTesFuncionesDb.ArchivoResponse(BancoConsec, vExtension, sb);
+                return MTesFuncionesDb.ArchivoResponse(BancoConsec -1 , vExtension, sb);
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
         }
-
         private ErrorDto<object> sbTeBCT_Enlace(
             int CodEmpresa,
             TesEmisionDocFiltros filtros,
