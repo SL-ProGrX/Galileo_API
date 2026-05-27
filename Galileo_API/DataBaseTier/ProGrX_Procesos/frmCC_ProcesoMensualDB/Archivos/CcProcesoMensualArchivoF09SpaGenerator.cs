@@ -7,7 +7,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF09SpaGenerator : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF09SpaGenerator.CcProcesoMensualArchivoF09RegistroDbModel>
+    public class CcProcesoMensualArchivoF09SpaGenerator : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF09SpaGenerator.CcProcesoMensualArchivoF09RegistroDbModel>
 
     {
         private const string NombreArchivoSpa = "ARC-DED.TXT";

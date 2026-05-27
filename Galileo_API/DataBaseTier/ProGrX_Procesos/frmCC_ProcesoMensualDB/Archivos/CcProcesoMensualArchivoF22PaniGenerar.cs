@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF22PaniGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF22PaniGenerar.CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF22PaniGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF22PaniGenerar.CcProcesoMensualArchivoRegistroDbModel>
 
     {
 
