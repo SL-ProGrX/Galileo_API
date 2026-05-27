@@ -11,7 +11,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
         public FrmVivMantenimientoBl(IConfiguration config)
             => _db = new FrmVivMantenimientoDb(config);
 
-        public ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
+        public static ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
         {
             return FrmVivMantenimientoDb.VivMantenimiento_ArbolInicial_Obtener();
         }

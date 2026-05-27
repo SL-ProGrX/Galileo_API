@@ -21,7 +21,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         [HttpGet("VivMantenimiento_ArbolInicial_Obtener")]
         public ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
         {
-            return _bl.VivMantenimiento_ArbolInicial_Obtener();
+            return FrmVivMantenimientoBl.VivMantenimiento_ArbolInicial_Obtener();
         }
 
         [HttpGet("VivMantenimiento_NodosHijos_Obtener")]

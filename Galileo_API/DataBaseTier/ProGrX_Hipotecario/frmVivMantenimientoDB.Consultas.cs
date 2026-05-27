@@ -6,6 +6,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 {
     public partial class FrmVivMantenimientoDb
     {
+        private const string ConsultaOperacionesGarantiaSql = @"
+                SELECT
+                    [key] = CONCAT('(vv)', G.NumeroOperacion, '(Op)', G.IdGarantia, '(Ig)', RTRIM(S.Cedula), '(Cd)'),
+                    columna_1 = CAST(G.NumeroOperacion AS varchar(30)),
+                    columna_2 = FORMAT(R.MONTOAPR, 'N2'),
+                    columna_3 = RTRIM(S.Cedula),
+                    columna_4 = RTRIM(S.Nombre),
+                    columna_5 = CAST(G.NumeroFinca AS varchar(30)),
+                    columna_6 = CASE G.Estado WHEN 'R' THEN 'Garantia Registrada' WHEN 'X' THEN 'Proceso de avaluo' WHEN 'A' THEN 'Avaluo Registrado' WHEN 'Y' THEN 'Proceso de registro' WHEN 'S' THEN 'Solicitada' ELSE '' END,
+                    columna_7 = RTRIM(G.NumPlanoCatastro),
+                    columna_8 = RTRIM(Z.Descripcion),
+                    columna_9 = RTRIM(P.Descripcion),
+                    columna_10 = RTRIM(C.Descripcion),
+                    columna_11 = ISNULL(RTRIM(D.Descripcion), '')
+                FROM Socios S
+                INNER JOIN REG_CREDITOS R ON S.Cedula = R.Cedula
+                INNER JOIN ViviendaGarantia G ON G.NumeroOperacion = R.ID_SOLICITUD
+                INNER JOIN ViviendaZonas Z ON Z.IdZona = G.IdZona
+                INNER JOIN Provincias P ON G.UbicacionProvincia = P.Provincia
+                INNER JOIN Cantones C ON G.UbicacionProvincia = C.Provincia AND G.UbicacionCanton = C.Canton
+                LEFT JOIN Distritos D ON G.UbicacionProvincia = D.Provincia AND G.UbicacionCanton = D.Canton AND G.UbicacionDistrito = D.Distrito ";
+
         /// <summary>
         /// Obtiene los nodos hijos del arbol de mantenimiento de garantias hipotecarias.
         /// </summary>
@@ -404,7 +426,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
         private ErrorDto<List<VivMantenimientoListaData>> VivMantenimiento_TramiteOperaciones_Obtener(int codEmpresa)
         {
-            string sql = ConsultaOperacionesGarantia() + @"
+            string sql = ConsultaOperacionesGarantiaSql + @"
                 WHERE R.GARANTIA = 'H' AND R.ESTADOSOL <> 'F'
                 ORDER BY G.NumeroOperacion DESC";
 
@@ -448,31 +470,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 codEmpresa,
                 sql,
                 new { IdContacto = ObtenerIdContactoProfesional(key), TipoProfesional = ObtenerTipoProfesional(tag) });
-        }
-
-        private static string ConsultaOperacionesGarantia()
-        {
-            return @"
-                SELECT
-                    [key] = CONCAT('(vv)', G.NumeroOperacion, '(Op)', G.IdGarantia, '(Ig)', RTRIM(S.Cedula), '(Cd)'),
-                    columna_1 = CAST(G.NumeroOperacion AS varchar(30)),
-                    columna_2 = FORMAT(R.MONTOAPR, 'N2'),
-                    columna_3 = RTRIM(S.Cedula),
-                    columna_4 = RTRIM(S.Nombre),
-                    columna_5 = CAST(G.NumeroFinca AS varchar(30)),
-                    columna_6 = CASE G.Estado WHEN 'R' THEN 'Garantia Registrada' WHEN 'X' THEN 'Proceso de avaluo' WHEN 'A' THEN 'Avaluo Registrado' WHEN 'Y' THEN 'Proceso de registro' WHEN 'S' THEN 'Solicitada' ELSE '' END,
-                    columna_7 = RTRIM(G.NumPlanoCatastro),
-                    columna_8 = RTRIM(Z.Descripcion),
-                    columna_9 = RTRIM(P.Descripcion),
-                    columna_10 = RTRIM(C.Descripcion),
-                    columna_11 = ISNULL(RTRIM(D.Descripcion), '')
-                FROM Socios S
-                INNER JOIN REG_CREDITOS R ON S.Cedula = R.Cedula
-                INNER JOIN ViviendaGarantia G ON G.NumeroOperacion = R.ID_SOLICITUD
-                INNER JOIN ViviendaZonas Z ON Z.IdZona = G.IdZona
-                INNER JOIN Provincias P ON G.UbicacionProvincia = P.Provincia
-                INNER JOIN Cantones C ON G.UbicacionProvincia = C.Provincia AND G.UbicacionCanton = C.Canton
-                LEFT JOIN Distritos D ON G.UbicacionProvincia = D.Provincia AND G.UbicacionCanton = D.Canton AND G.UbicacionDistrito = D.Distrito ";
         }
 
         private static List<VivMantenimientoNodoData> NodosProfesionales()
