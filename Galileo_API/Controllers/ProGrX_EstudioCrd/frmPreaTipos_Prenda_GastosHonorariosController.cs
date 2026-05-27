@@ -19,21 +19,21 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
 
         [Authorize]
         [HttpGet("CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener")]
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtros)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtros)
         {
             return _bl.CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(CodEmpresa, tipo, filtros);
         }
 
         [Authorize]
         [HttpGet("CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export")]
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtros)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtros)
         {
             return _bl.CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(CodEmpresa, tipo, filtros);
         }
 
         [Authorize]
         [HttpPost("CR_PreaTipos_Prenda_GastosHonorarios_Guardar")]
-        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, [FromBody] CrPreaTiposPrendaGastosHonorariosGuardarRequest request)
+        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, [FromBody] CrPreaConfigGuardarRequest request)
         {
             return _bl.CR_PreaTipos_Prenda_GastosHonorarios_Guardar(CodEmpresa, usuario, tipo, request);
         }
@@ -46,4 +46,5 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
     }
 }
+
 

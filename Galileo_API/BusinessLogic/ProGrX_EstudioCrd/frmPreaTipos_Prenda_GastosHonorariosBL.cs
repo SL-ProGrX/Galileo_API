@@ -13,17 +13,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             _db = new FrmPreaTiposPrendaGastosHonorariosDB(config);
         }
 
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtros)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtros)
         {
             return _db.CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(CodEmpresa, tipo, filtros);
         }
 
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtros)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtros)
         {
             return _db.CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(CodEmpresa, tipo, filtros);
         }
 
-        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, CrPreaTiposPrendaGastosHonorariosGuardarRequest request)
+        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, CrPreaConfigGuardarRequest request)
         {
             return _db.CR_PreaTipos_Prenda_GastosHonorarios_Guardar(CodEmpresa, usuario, tipo, request);
         }
@@ -34,4 +34,5 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
     }
 }
+
 

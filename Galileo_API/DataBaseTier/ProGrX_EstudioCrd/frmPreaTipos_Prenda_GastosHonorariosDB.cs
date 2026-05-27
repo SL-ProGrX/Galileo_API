@@ -34,9 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="tipo"></param>
         /// <param name="filtrosJson"></param>
         /// <returns></returns>
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtrosJson)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtrosJson)
         {
-            var result = new CrPreaTiposPrendaGastosHonorariosListaResult();
+            var result = new CrPreaConfigListaResult();
 
             try
             {
@@ -63,19 +63,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
             catch (JsonException ex)
             {
-                return DbHelper.CreateErrorResponse<CrPreaTiposPrendaGastosHonorariosListaResult>(ex.Message, -1, result);
+                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
             }
             catch (SqlException ex)
             {
-                return DbHelper.CreateErrorResponse<CrPreaTiposPrendaGastosHonorariosListaResult>(ex.Message, -1, result);
+                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.CreateErrorResponse<CrPreaTiposPrendaGastosHonorariosListaResult>(ex.Message, -1, result);
+                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
             }
             catch (ArgumentException ex)
             {
-                return DbHelper.CreateErrorResponse<CrPreaTiposPrendaGastosHonorariosListaResult>(ex.Message, -1, result);
+                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
             }
         }
 
@@ -86,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="tipo"></param>
         /// <param name="filtrosJson"></param>
         /// <returns></returns>
-        public ErrorDto<CrPreaTiposPrendaGastosHonorariosListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtrosJson)
+        public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtrosJson)
         {
             var filtros = DeserializeFiltros(filtrosJson);
             filtros.pagina = 0;
@@ -106,7 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="tipo"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, CrPreaTiposPrendaGastosHonorariosGuardarRequest request)
+        public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, CrPreaConfigGuardarRequest request)
         {
             try
             {
@@ -122,10 +122,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                var spResult = conn.QueryFirstOrDefault<CrPreaTiposPrendaGastosHonorariosSpResultDto>(
+                var spResult = conn.QueryFirstOrDefault<CrPreaSpResultDto>(
                     BuildGuardarSql(tipoNorm),
                     BuildGuardarParameters(tipoNorm, request, usuarioNorm),
-                    commandType: CommandType.Text) ?? new CrPreaTiposPrendaGastosHonorariosSpResultDto();
+                    commandType: CommandType.Text) ?? new CrPreaSpResultDto();
 
                 if (spResult.Pass != 1)
                 {
@@ -172,10 +172,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                var spResult = conn.QueryFirstOrDefault<CrPreaTiposPrendaGastosHonorariosSpResultDto>(
+                var spResult = conn.QueryFirstOrDefault<CrPreaSpResultDto>(
                     BuildEliminarSql(tipoNorm),
                     BuildEliminarParameters(tipoNorm, id, usuarioNorm),
-                    commandType: CommandType.Text) ?? new CrPreaTiposPrendaGastosHonorariosSpResultDto();
+                    commandType: CommandType.Text) ?? new CrPreaSpResultDto();
 
                 if (spResult.Pass != 1)
                 {
@@ -254,7 +254,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="tipo"></param>
         /// <param name="request"></param>
-        private static void ValidateGuardarRequest(string tipo, CrPreaTiposPrendaGastosHonorariosGuardarRequest request)
+        private static void ValidateGuardarRequest(string tipo, CrPreaConfigGuardarRequest request)
         {
             var estado = (request.estado ?? string.Empty).Trim().ToUpperInvariant();
             if (estado != "A" && estado != "I")
@@ -312,7 +312,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="request"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private static object BuildGuardarParameters(string tipo, CrPreaTiposPrendaGastosHonorariosGuardarRequest request, string usuario)
+        private static object BuildGuardarParameters(string tipo, CrPreaConfigGuardarRequest request, string usuario)
         {
             if (tipo == TipoExamen)
             {
@@ -387,7 +387,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="spResult"></param>
-        private void Bitacora(int CodEmpresa, string usuario, CrPreaTiposPrendaGastosHonorariosSpResultDto spResult)
+        private void Bitacora(int CodEmpresa, string usuario, CrPreaSpResultDto spResult)
         {
             _securityMainDb.Bitacora(new BitacoraInsertarDto
             {
@@ -404,9 +404,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        private static CrPreaTiposPrendaGastosHonorariosListaData MapListaRow(IDictionary<string, object?> row)
+        private static CrPreaConfigListaData MapListaRow(IDictionary<string, object?> row)
         {
-            return new CrPreaTiposPrendaGastosHonorariosListaData
+            return new CrPreaConfigListaData
             {
                 id = GetInt(row, "ID_PARAM", "ID_REQUISITO", "ID"),
                 monto_min = GetDecimal(row, "MONTO_MIN"),
@@ -435,7 +435,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="filtros"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static IEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> ApplyFiltro(IEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> rows, FiltrosLazyLoadData filtros, string tipo)
+        private static IEnumerable<CrPreaConfigListaData> ApplyFiltro(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
         {
             var filtro = (filtros.filtro ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(filtro))
@@ -470,12 +470,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="filtros"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static IOrderedEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> ApplySort(IEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> rows, FiltrosLazyLoadData filtros, string tipo)
+        private static IOrderedEnumerable<CrPreaConfigListaData> ApplySort(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
         {
             var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
             var asc = filtros.sortOrder == 1;
 
-            Func<CrPreaTiposPrendaGastosHonorariosListaData, object?> keySelector = sortField switch
+            Func<CrPreaConfigListaData, object?> keySelector = sortField switch
             {
                 "id" => x => x.id,
                 "monto_min" => x => x.monto_min,
@@ -506,7 +506,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="rows"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private static IEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> ApplyPaging(IEnumerable<CrPreaTiposPrendaGastosHonorariosListaData> rows, FiltrosLazyLoadData filtros)
+        private static IEnumerable<CrPreaConfigListaData> ApplyPaging(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros)
         {
             var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
             var paginacion = filtros.paginacion < 0 ? 0 : filtros.paginacion;
@@ -599,4 +599,5 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
     }
 }
+
 
