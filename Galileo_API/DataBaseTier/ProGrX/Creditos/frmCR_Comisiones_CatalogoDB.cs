@@ -14,6 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const int VModulo = 3;
         private const string GuardadoExito = "Información guardada satisfactoriamente...";
         private const string EliminadoExito = "Información eliminada satisfactoriamente...";
+        private const string ValIndicaComision = "Debe indicar la comisión.";
 
 
         public FrmCrComisionesCatalogoDB(IConfiguration config)
@@ -103,7 +104,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto<List<CrComisionesCatalogoPorcentajeData>>
                 {
                     Code = -1,
-                    Description = "Debe indicar la comisión.",
+                    Description = ValIndicaComision,
                     Result = []
                 };
             }
@@ -154,7 +155,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto<List<CrComisionesCatalogoLineaData>>
                 {
                     Code = -1,
-                    Description = "Debe indicar la comisión.",
+                    Description = ValIndicaComision,
                     Result = []
                 };
             }
@@ -329,7 +330,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar la comisión."
+                    Description = ValIndicaComision
                 };
             }
 
@@ -343,7 +344,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     {
                         pCodigo = request.cod_comision,
                         pCodigoDesc = string.Empty,
-                        pFechaInicio = new DateTime(2020, 1, 1),
+                        pFechaInicio = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
                         pBase = string.Empty,
                         pCuenta = string.Empty,
                         pActivo = 0,
@@ -387,7 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto
                 {
                     Code = -1,
-                    Description = "Debe indicar la comisión."
+                    Description = ValIndicaComision
                 };
             }
 

@@ -8,7 +8,7 @@
         public string base_calculo { get; set; } = string.Empty;
         public string cod_cuenta_mask { get; set; } = string.Empty;
         public string cuenta_desc { get; set; } = string.Empty;
-        public bool activa { get; set; }
+        public bool activa { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
     }
@@ -27,11 +27,11 @@
 
     public class CrComisionesCatalogoPorcentajeData
     {
-        public long linea_id { get; set; }
-        public decimal inicio { get; set; }
-        public decimal corte { get; set; }
-        public decimal venta { get; set; }
-        public decimal formalizacion { get; set; }
+        public long linea_id { get; set; } = 0;
+        public decimal inicio { get; set; } = 0;
+        public decimal corte { get; set; } = 0;
+        public decimal venta { get; set; } = 0;
+        public decimal formalizacion { get; set; } = 0;
     }
 
     public class CrComisionesCatalogoPorcentajesRequest
@@ -50,14 +50,14 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_comision { get; set; } = string.Empty;
-        public long linea_id { get; set; }
+        public long linea_id { get; set; } = 0;
     }
 
     public class CrComisionesCatalogoLineaData
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
     }
 
     public class CrComisionesCatalogoLineasRequest
@@ -70,7 +70,7 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_comision { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
     }
 
     public class CrComisionesCatalogoCuentaLookupData
