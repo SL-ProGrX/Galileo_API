@@ -59,9 +59,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<TesMonitorSinpeDebCrdModels>> Tes_MonitorSinpeDebCred_Consultar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            conn.Open();
-
             const string sql = @"SELECT
                                     ROW_NUMBER() OVER (ORDER BY cp.DESCRIPCION) AS Consecutivo,
 			                        SUM(CASE
@@ -83,19 +80,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                        AND REGISTRO_FECHA < @fechaFin
 		                        GROUP BY cp.DESCRIPCION;";
 
-            var p = new DynamicParameters();
-           
-            p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
-            p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
-
-            var result = conn.Query<TesMonitorSinpeDebCrdModels>(sql, p, commandTimeout: 400).ToList();
-
-            return new ErrorDto<List<TesMonitorSinpeDebCrdModels>>
-            {
-                Code = 0,
-                Description = "",
-                Result = result
-            };
+            return EjecutaQuery(CodEmpresa, fechaInicio, fechaFin, sql);
         }
 
         /// <summary>
@@ -107,8 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<TesMonitorSinpeDebCrdModels>> Tes_MonitorSinpeTransitos_Consultar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            conn.Open();
+            
 
             const string sql = @"SELECT
                                     ROW_NUMBER() OVER (ORDER BY CEDULA) AS Consecutivo,
@@ -125,10 +109,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 		                        AND estado = 4
 		                        GROUP BY CEDULA , COD_REFERENCIA;";
 
+           
+            return EjecutaQuery( CodEmpresa, fechaInicio, fechaFin, sql);
+
+        }
+
+       private ErrorDto<List<TesMonitorSinpeDebCrdModels>> EjecutaQuery(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin, string sql)
+       {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             var p = new DynamicParameters();
             p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
             p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
-            
+
             var result = conn.Query<TesMonitorSinpeDebCrdModels>(sql, p, commandTimeout: 400).ToList();
 
             return new ErrorDto<List<TesMonitorSinpeDebCrdModels>>
@@ -137,7 +130,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 Description = "",
                 Result = result
             };
-            
         }
 
     }
