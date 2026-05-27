@@ -108,7 +108,25 @@ namespace Galileo.DataBaseTier
                 FROM SYS_CUENTAS_BANCARIAS C 
                 INNER JOIN TES_BANCOS_GRUPOS B 
                     ON C.cod_banco = B.cod_grupo
-                WHERE C.Identificacion = @Cedula";
+                WHERE STUFF(
+                        REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
+                        1,
+                        PATINDEX(
+                            '%[^0]%',
+                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
+                        ) - 1,
+                        ''
+                    )
+                    =
+                    STUFF(
+                        REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', ''),
+                        1,
+                        PATINDEX(
+                            '%[^0]%',
+                            REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', '')
+                        ) - 1,
+                        ''
+                    )";
 
             var parameters = new DynamicParameters();
             parameters.Add("@Cedula", cedula);
