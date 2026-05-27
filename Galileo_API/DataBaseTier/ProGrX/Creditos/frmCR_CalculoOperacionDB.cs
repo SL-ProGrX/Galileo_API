@@ -476,10 +476,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Identifica el tipo especial de linea.
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        private int ObtenerTipoCodigo(int codEmpresa, string cedula, string codigo)
+        private int ObtenerTipoCodigo(int codEmpresa, string codigo)
         {
             const string sql = @"
                 select
@@ -700,19 +699,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static string LimpiarCodigo(string valor)
             => (valor ?? string.Empty).Trim().ToUpperInvariant();
 
-        private class GarantiaPatDetalleQueryDto
+        private sealed class GarantiaPatDetalleQueryDto
         {
             public string nombre { get; set; } = string.Empty;
-            public decimal porc_obrero { get; set; }
-            public decimal porc_patronal { get; set; }
-            public decimal porc_capitaliza { get; set; }
-            public decimal mnt_patronal { get; set; }
-            public decimal mnt_obrero { get; set; }
-            public decimal mnt_capitaliza { get; set; }
-            public decimal monto { get; set; }
+            public decimal porc_obrero { get; set; } = 0;
+            public decimal porc_patronal { get; set; } = 0;
+            public decimal porc_capitaliza { get; set; } = 0;
+            public decimal mnt_patronal { get; set; } = 0;
+            public decimal mnt_obrero { get; set; } = 0;
+            public decimal mnt_capitaliza { get; set; } = 0;
+            public decimal monto { get; set; } = 0;
         }
 
-        private class LineaCodigoQueryDto
+        private sealed class LineaCodigoQueryDto
         {
             public string descripcion { get; set; } = string.Empty;
             public string fechacortealterna { get; set; } = "N";
@@ -723,33 +722,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public int operaciones_activas { get; set; }
         }
 
-        private class ParAhcrFechaQueryDto
+        private sealed class ParAhcrFechaQueryDto
         {
             public DateTime cr_fecha_calculo { get; set; }
             public DateTime fecha { get; set; }
         }
 
-        private class TipoGarantiaQueryDto
+        private sealed class TipoGarantiaQueryDto
         {
             public string garantia { get; set; } = string.Empty;
             public string formulario { get; set; } = string.Empty;
         }
 
-        private class DisponibleBaseQueryDto
+        private sealed class DisponibleBaseQueryDto
         {
-            public decimal disponible { get; set; }
-            public decimal saldos { get; set; }
+            public decimal disponible { get; set; } = 0;
+            public decimal saldos { get; set; } = 0;
         }
 
-        private class DisponibleExcedenteQueryDto
+        private sealed class DisponibleExcedenteQueryDto
         {
-            public decimal base_credito { get; set; }
-            public decimal saldos { get; set; }
+            public decimal base_credito { get; set; } = 0;
+            public decimal saldos { get; set; } = 0;
         }
 
-        private class DisponibleFondosQueryDto
+        private sealed class DisponibleFondosQueryDto
         {
-            public decimal disponible { get; set; }
+            public decimal disponible { get; set; } = 0;
         }
     }
 }
