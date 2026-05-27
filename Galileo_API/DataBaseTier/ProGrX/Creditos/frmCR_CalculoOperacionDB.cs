@@ -112,7 +112,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
-            var codigoTipo = ObtenerTipoCodigo(codEmpresa, cedula, codigo);
+            var codigoTipo = ObtenerTipoCodigo(codEmpresa, codigo);
             var dias = ObtenerDiasInteres(codEmpresa, lineaResp.Result);
             var frecuenciaPago = lineaResp.Result.base_calculo == "06" ? "Q" : "M";
             var montoSolicitado = ObtenerMontoSolicitadoInicial(codEmpresa, cedula, codigoTipo);
@@ -715,17 +715,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             public string descripcion { get; set; } = string.Empty;
             public string fechacortealterna { get; set; } = "N";
-            public DateTime fechacorte { get; set; }
-            public DateTime fecha_server { get; set; }
+            public DateTime fechacorte { get; set; } = DateTime.Now;
+            public DateTime fecha_server { get; set; } = DateTime.Now;
             public string base_calculo { get; set; } = string.Empty;
             public string refunde { get; set; } = "N";
-            public int operaciones_activas { get; set; }
+            public int operaciones_activas { get; set; } = 0;
         }
 
         private sealed class ParAhcrFechaQueryDto
         {
-            public DateTime cr_fecha_calculo { get; set; }
-            public DateTime fecha { get; set; }
+            public DateTime cr_fecha_calculo { get; set; } = DateTime.Now;
+            public DateTime fecha { get; set; } = DateTime.Now;
         }
 
         private sealed class TipoGarantiaQueryDto
