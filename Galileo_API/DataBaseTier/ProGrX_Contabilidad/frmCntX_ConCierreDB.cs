@@ -213,5 +213,89 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                                AND cod_cuenta = @Cod_Cuenta";
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, req);
         }
+
+        /// <summary>
+        /// Obtiene los movimientos consolidados por portal.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa</param>
+        /// <param name="mes">Mes</param>
+        /// <param name="anio">Año</param>
+        /// <param name="nivel">Nivel</param>
+        /// <param name="contabilidades">Cadena de contabilidades separadas por coma</param>
+        /// <returns>ErrorDto con la lista de movimientos</returns>
+        public ErrorDto<FrmCntXConCierreCuentaMovLista> AF_CntXConCierre_ObtenerMovimientosPortal(int codEmpresa, int mes, int anio, int nivel, string contabilidades)
+        {
+            string query = $@"SELECT M.cod_cuenta,
+                                    ISNULL(SUM(M.saldo_inicial),0) AS SI,
+                                    ISNULL(SUM(M.total_debitos),0) AS TD,
+                                    ISNULL(SUM(M.Total_creditos),0) AS TC
+                             FROM movimiento_cuentas M
+                             INNER JOIN Cuentas X ON M.COD_CONTABILIDAD = X.COD_CONTABILIDAD AND M.cod_cuenta = X.cod_cuenta
+                             WHERE M.mes = @Mes AND M.anio = @Anio AND X.nivel <= @Nivel AND X.COD_CONTABILIDAD IN ({contabilidades})
+                             GROUP BY M.cod_cuenta";
+            var lista = DbHelper.ExecuteListQuery<FrmCntXConCierreCuentaMovData>(_portalDb, codEmpresa, query, new { Mes = mes, Anio = anio, Nivel = nivel });
+            return new ErrorDto<FrmCntXConCierreCuentaMovLista>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new FrmCntXConCierreCuentaMovLista
+                {
+                    Total = lista.Result?.Count ?? 0,
+                    Lista = lista.Result ?? []
+                }
+            };
+        }
+
+        /// <summary>
+        /// Obtiene las contabilidades asociadas a un portal y consolidación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa</param>
+        /// <param name="codConsolida">Código de consolidación</param>
+        /// <param name="codPortal">Código de portal</param>
+        /// <returns>ErrorDto con la lista de contabilidades</returns>
+        public ErrorDto<FrmCntXConCierreContabilidadPortalLista> AF_CntXConCierre_ObtenerContabilidadesPortal(int codEmpresa, int codConsolida, int codPortal)
+        {
+            string query = @"SELECT COD_CONTABILIDAD FROM CNTX_CONSOLIDA_PORTALES_CON WHERE cod_consolida = @CodConsolida AND cod_portal = @CodPortal";
+            var lista = DbHelper.ExecuteListQuery<FrmCntXConCierreContabilidadPortalData>(_portalDb, codEmpresa, query, new { CodConsolida = codConsolida, CodPortal = codPortal });
+            return new ErrorDto<FrmCntXConCierreContabilidadPortalLista>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new FrmCntXConCierreContabilidadPortalLista
+                {
+                    Total = lista.Result?.Count ?? 0,
+                    Lista = lista.Result ?? []
+                }
+            };
+        }
+
+        /// <summary>
+        /// Verifica si existe un movimiento consolidado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa</param>
+        /// <param name="req">Datos del movimiento a verificar</param>
+        /// <returns>ErrorDto con el resultado de la verificación</returns>
+        public ErrorDto AF_CntXConCierre_ExisteMovimientoConsolidado(int codEmpresa, FrmCntXConCierreExisteMovimientoRequest req)
+        {
+            string query = @"SELECT ISNULL(COUNT(*),0) AS Existe FROM con_movimientos WHERE cod_consolida = @CodConsolida AND COD_CONTABILIDAD = @CodContabilidad AND anio = @Anio AND mes = @Mes AND cod_cuenta = @CodCuenta";
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, query, 0, req).Result;
+            return existe > 0
+                ? new ErrorDto { Code = 0, Description = "Existe movimiento consolidado." }
+                : new ErrorDto { Code = -1, Description = "No existe movimiento consolidado." };
+        }
+
+        /// <summary>
+        /// Inserta un solo movimiento consolidado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa</param>
+        /// <param name="req">Datos del movimiento a insertar</param>
+        /// <returns>ErrorDto con el resultado de la inserción</returns>
+        public ErrorDto AF_CntXConCierre_InsertarMovimiento(int codEmpresa, FrmCntXConCierreInsertarMovimientoRequest req)
+        {
+            string query = @"INSERT INTO con_movimientos(
+                                cod_consolida, COD_CONTABILIDAD, anio, mes, cod_cuenta, saldo_inicial, total_debitos, total_creditos)
+                             VALUES(@CodConsolida, @CodContabilidad, @Anio, @Mes, @CodCuenta, @SI, @TD, @TC)";
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, req);
+        }
     }
 }
