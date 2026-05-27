@@ -2,11 +2,16 @@ namespace Galileo_API.Models.ProGrX.Credito
 {
     public class CrPoliticaPagoData
     {
-        public int id_politica { get; set; }
+        public int? id_politica { get; set; }
+
         public int dia_inicio { get; set; } = 1;
+
         public int dia_corte { get; set; } = 1;
+
         public string politica { get; set; } = "ULT";
+
         public string politica_desc { get; set; } = "Ultimo dia del Mes";
+
         public int dia_base { get; set; } = 32;
     }
 
@@ -25,6 +30,7 @@ namespace Galileo_API.Models.ProGrX.Credito
     public class CrPoliticaPagoTrasladoGuardarRequest
     {
         public string tipo { get; set; } = string.Empty;
+
         public int? dia_semana { get; set; }
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }

@@ -64,7 +64,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (!PoliticaPagoEsValida(request, out var mensaje))
                 return DbHelper.ErrorResponse(mensaje);
 
-            var existe = request.id_politica > 0 && ExistePolitica(codEmpresa, request.id_politica);
+            var idPolitica = request.id_politica.GetValueOrDefault();
+            var existe = idPolitica > 0 && ExistePolitica(codEmpresa, idPolitica);
             if (!existe)
                 request.id_politica = ObtenerSiguientePolitica(codEmpresa);
 
