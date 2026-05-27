@@ -56,5 +56,25 @@
         {
             return _db.AF_CntXConCierre_ActualizarMovimiento(codEmpresa, req);
         }
+
+        public ErrorDto<FrmCntXConCierreCuentaMovLista> AF_CntXConCierre_ObtenerMovimientosPortal(int codEmpresa, int mes, int anio, int nivel, string contabilidades)
+        {
+            return _db.AF_CntXConCierre_ObtenerMovimientosPortal(codEmpresa, mes, anio, nivel, contabilidades);
+        }
+
+        public ErrorDto<FrmCntXConCierreContabilidadPortalLista> AF_CntXConCierre_ObtenerContabilidadesPortal(int codEmpresa, int codConsolida, int codPortal)
+        {
+            return _db.AF_CntXConCierre_ObtenerContabilidadesPortal(codEmpresa, codConsolida, codPortal);
+        }
+
+        public ErrorDto AF_CntXConCierre_ExisteMovimientoConsolidado(int codEmpresa, FrmCntXConCierreExisteMovimientoRequest req)
+        {
+            return _db.AF_CntXConCierre_ExisteMovimientoConsolidado(codEmpresa, req);
+        }
+
+        public ErrorDto AF_CntXConCierre_InsertarMovimiento(int codEmpresa, FrmCntXConCierreInsertarMovimientoRequest req)
+        {
+            return _db.AF_CntXConCierre_InsertarMovimiento(codEmpresa, req);
+        }
     }
 }
