@@ -1,12 +1,12 @@
 ﻿using System.Data;
 using System.Globalization;
 using System.Text;
-using Dapper; 
+using Dapper;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF00ExcelGenerar :      CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoF00ExcelGenerar.CcProcesoMensualArchivoF00RegistroDbModel>
+    public class CcProcesoMensualArchivoF00ExcelGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF00ExcelGenerar.CcProcesoMensualArchivoF00RegistroDbModel>
 
     {
 
@@ -58,7 +58,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return new
             {
-                  request.FechaProceso,
+                request.FechaProceso,
                 Movimientos = _movimientos,
                 request.CodInstitucion
             };

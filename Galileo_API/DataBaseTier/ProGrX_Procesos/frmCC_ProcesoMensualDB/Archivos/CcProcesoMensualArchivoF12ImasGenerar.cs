@@ -6,7 +6,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF12ImasGenerar : CcProcesoMensualArchivoPlanoGeneratorBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
+    public class CcProcesoMensualArchivoF12ImasGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoPlanillaBasicaDbModel>
     {
         private const string MovimientoExclusion = "E";
 
