@@ -27,11 +27,11 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         }
 
         [HttpPost("Patrimonio_frmAH_ConciliadorPatronal_Cargado")]
-        public ActionResult<ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
+        public static ActionResult<ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
             [FromQuery] int codEmpresa,
             [FromBody] FrmAhConciliadorPatronalCargadoRequest request)
         {
-            return _bl.Patrimonio_frmAH_ConciliadorPatronal_Cargado(codEmpresa, request);
+            return FrmAhConciliadorPatronalBL.Patrimonio_frmAH_ConciliadorPatronal_Cargado(codEmpresa, request);
         }
 
         [HttpPost("Patrimonio_frmAH_ConciliadorPatronal_Aplicar")]

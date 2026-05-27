@@ -20,7 +20,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
             return _db.Patrimonio_frmAH_ConciliadorPatronal_Instituciones_Obtener(codEmpresa);
         }
 
-        public ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
+        public static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
             int codEmpresa,
             FrmAhConciliadorPatronalCargadoRequest request)
         {
