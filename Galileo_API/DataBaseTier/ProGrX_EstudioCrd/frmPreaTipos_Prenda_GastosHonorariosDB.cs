@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private const string TipoConstitucion = "C";
         private const string TipoTraspaso = "T";
         private const string TipoExamen = "E";
-        private const string MensajeTipoInvalido = "El tipo indicado no es vÃ¡lido.";
+        private const string MensajeTipoInvalido = "El tipo indicado no es válido.";
 
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
@@ -28,7 +28,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Obtiene la lista paginada de gastos, honorarios o exÃ¡menes prendarios.
+        /// Obtiene la lista paginada de gastos, honorarios o exámenes prendarios.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
@@ -36,51 +36,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(int CodEmpresa, string tipo, string filtrosJson)
         {
-            var result = new CrPreaConfigListaResult();
-
-            try
-            {
-                var tipoNorm = NormalizeTipo(tipo);
-                var filtros = DeserializeFiltros(filtrosJson);
-
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-                var rows = conn.Query(
-                    "EXEC spCrd_Prea_Config_Prenda_Listas @Tipo",
-                    new { Tipo = tipoNorm },
-                    commandType: CommandType.Text)
-                    .Cast<IDictionary<string, object?>>()
-                    .Select(MapListaRow)
-                    .ToList();
-
-                var filtrada = ApplyFiltro(rows, filtros, tipoNorm);
-                var ordenada = ApplySort(filtrada, filtros, tipoNorm).ToList();
-
-                result.total = ordenada.Count;
-                result.lista = ApplyPaging(ordenada, filtros).ToList();
-
-                return DbHelper.CreateOkResponse(result);
-            }
-            catch (JsonException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
-            }
-            catch (ArgumentException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
-            }
+            return ObtenerListaPrendaria(CodEmpresa, tipo, filtrosJson, false);
         }
 
         /// <summary>
-        /// Obtiene la lista completa de gastos, honorarios o exÃ¡menes prendarios para exportaciÃ³n.
+        /// Obtiene la lista completa de gastos, honorarios o exámenes prendarios para exportación.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
@@ -88,18 +48,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto<CrPreaConfigListaResult> CR_PreaTipos_Prenda_GastosHonorarios_Lista_Export(int CodEmpresa, string tipo, string filtrosJson)
         {
-            var filtros = DeserializeFiltros(filtrosJson);
-            filtros.pagina = 0;
-            filtros.paginacion = 0;
-
-            return CR_PreaTipos_Prenda_GastosHonorarios_Lista_Obtener(
-                CodEmpresa,
-                tipo,
-                JsonConvert.SerializeObject(filtros));
+            return ObtenerListaPrendaria(CodEmpresa, tipo, filtrosJson, true);
         }
 
         /// <summary>
-        /// Guarda un registro de gastos, honorarios o exÃ¡menes prendarios.
+        /// Guarda un registro de gastos, honorarios o exámenes prendarios.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
@@ -108,50 +61,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, CrPreaConfigGuardarRequest request)
         {
+            if (request == null)
+            {
+                return DbHelper.ErrorResponse("La solicitud es requerida.");
+            }
+
             try
             {
-                if (request == null)
-                {
-                    return DbHelper.ErrorResponse("La solicitud es requerida.");
-                }
+                var tipoNorm = NormalizarTipo(tipo);
+                var usuarioNorm = NormalizarUsuario(usuario);
+                ValidarGuardado(tipoNorm, request);
 
-                var tipoNorm = NormalizeTipo(tipo);
-                var usuarioNorm = NormalizeUsuario(usuario);
+                var resultado = EjecutarSpResultado(
+                    CodEmpresa,
+                    usuarioNorm,
+                    SqlGuardar(tipoNorm),
+                    ParametrosGuardar(tipoNorm, request, usuarioNorm));
 
-                ValidateGuardarRequest(tipoNorm, request);
-
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-                var spResult = conn.QueryFirstOrDefault<CrPreaSpResultDto>(
-                    BuildGuardarSql(tipoNorm),
-                    BuildGuardarParameters(tipoNorm, request, usuarioNorm),
-                    commandType: CommandType.Text) ?? new CrPreaSpResultDto();
-
-                if (spResult.Pass != 1)
-                {
-                    return DbHelper.ErrorResponse(spResult.Mensaje, -2);
-                }
-
-                Bitacora(CodEmpresa, usuarioNorm, spResult);
-
-                return DbHelper.OkResponse($"{spResult.Mensaje}, {spResult.Movimiento} satisfactoriamente!");
+                return resultado.Pass == 1
+                    ? DbHelper.OkResponse($"{resultado.Mensaje}, {resultado.Movimiento} satisfactoriamente!")
+                    : DbHelper.ErrorResponse(resultado.Mensaje, -2);
             }
-            catch (SqlException ex)
+            catch (Exception ex) when (EsErrorControlado(ex))
             {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message, -2);
-            }
-            catch (ArgumentException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message, -2);
+                return DbHelper.ErrorResponse(ex.Message, ex is SqlException ? -1 : -2);
             }
         }
 
         /// <summary>
-        /// Elimina un registro de gastos, honorarios o exÃ¡menes prendarios.
+        /// Elimina un registro de gastos, honorarios o exámenes prendarios.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
@@ -160,44 +98,103 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <returns></returns>
         public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Eliminar(int CodEmpresa, string usuario, string tipo, int id)
         {
+            if (id <= 0)
+            {
+                return DbHelper.ErrorResponse("El identificador es requerido.", -2);
+            }
+
             try
             {
-                if (id <= 0)
-                {
-                    return DbHelper.ErrorResponse("El identificador es requerido.", -2);
-                }
+                var tipoNorm = NormalizarTipo(tipo);
+                var usuarioNorm = NormalizarUsuario(usuario);
+                var resultado = EjecutarSpResultado(
+                    CodEmpresa,
+                    usuarioNorm,
+                    SqlEliminar(tipoNorm),
+                    ParametrosEliminar(tipoNorm, id, usuarioNorm));
 
-                var tipoNorm = NormalizeTipo(tipo);
-                var usuarioNorm = NormalizeUsuario(usuario);
+                return resultado.Pass == 1
+                    ? DbHelper.OkResponse($"{resultado.Mensaje}, Eliminado satisfactoriamente!")
+                    : DbHelper.ErrorResponse(resultado.Mensaje, -2);
+            }
+            catch (Exception ex) when (EsErrorControlado(ex))
+            {
+                return DbHelper.ErrorResponse(ex.Message, ex is SqlException ? -1 : -2);
+            }
+        }
+
+        /// <summary>
+        /// Ejecuta la consulta prendaria y aplica filtros lazy.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="tipo"></param>
+        /// <param name="filtrosJson"></param>
+        /// <param name="exportar"></param>
+        /// <returns></returns>
+        private ErrorDto<CrPreaConfigListaResult> ObtenerListaPrendaria(int CodEmpresa, string tipo, string filtrosJson, bool exportar)
+        {
+            var result = new CrPreaConfigListaResult();
+
+            try
+            {
+                var tipoNorm = NormalizarTipo(tipo);
+                var filtros = LeerFiltros(filtrosJson);
+                if (exportar)
+                {
+                    filtros.pagina = 0;
+                    filtros.paginacion = 0;
+                }
 
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                var rows = conn.Query(
+                    "EXEC spCrd_Prea_Config_Prenda_Listas @Tipo",
+                    new { Tipo = tipoNorm },
+                    commandType: CommandType.Text)
+                    .Cast<IDictionary<string, object?>>()
+                    .Select(FilaALista)
+                    .ToList();
 
-                var spResult = conn.QueryFirstOrDefault<CrPreaSpResultDto>(
-                    BuildEliminarSql(tipoNorm),
-                    BuildEliminarParameters(tipoNorm, id, usuarioNorm),
-                    commandType: CommandType.Text) ?? new CrPreaSpResultDto();
+                var ordenada = Ordenar(Filtrar(rows, filtros, tipoNorm), filtros, tipoNorm).ToList();
+                result.total = ordenada.Count;
+                result.lista = Paginar(ordenada, filtros).ToList();
 
-                if (spResult.Pass != 1)
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex) when (EsErrorControlado(ex))
+            {
+                return DbHelper.CreateErrorResponse<CrPreaConfigListaResult>(ex.Message, -1, result);
+            }
+        }
+
+        /// <summary>
+        /// Ejecuta un SP prendario de guardado o eliminación y registra bitácora si procede.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="sql"></param>
+        /// <param name="parametros"></param>
+        /// <returns></returns>
+        private CrPreaSpResultDto EjecutarSpResultado(int CodEmpresa, string usuario, string sql, object parametros)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            var resultado = conn.QueryFirstOrDefault<CrPreaSpResultDto>(
+                sql,
+                parametros,
+                commandType: CommandType.Text) ?? new CrPreaSpResultDto();
+
+            if (resultado.Pass == 1)
+            {
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
-                    return DbHelper.ErrorResponse(spResult.Mensaje, -2);
-                }
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = resultado.Mensaje,
+                    Movimiento = $"{resultado.Movimiento} - WEB",
+                    Modulo = ModuloEstudioCredito
+                });
+            }
 
-                Bitacora(CodEmpresa, usuarioNorm, spResult);
-
-                return DbHelper.OkResponse($"{spResult.Mensaje}, Eliminado satisfactoriamente!");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message, -2);
-            }
-            catch (ArgumentException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message, -2);
-            }
+            return resultado;
         }
 
         /// <summary>
@@ -205,14 +202,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="filtrosJson"></param>
         /// <returns></returns>
-        private static FiltrosLazyLoadData DeserializeFiltros(string filtrosJson)
+        private static FiltrosLazyLoadData LeerFiltros(string filtrosJson)
         {
-            if (string.IsNullOrWhiteSpace(filtrosJson))
-            {
-                return new FiltrosLazyLoadData();
-            }
-
-            return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtrosJson) ?? new FiltrosLazyLoadData();
+            return string.IsNullOrWhiteSpace(filtrosJson)
+                ? new FiltrosLazyLoadData()
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtrosJson) ?? new FiltrosLazyLoadData();
         }
 
         /// <summary>
@@ -220,76 +214,63 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static string NormalizeTipo(string tipo)
+        private static string NormalizarTipo(string tipo)
         {
-            var tipoNorm = (tipo ?? string.Empty).Trim().ToUpperInvariant();
-
-            return tipoNorm switch
-            {
-                TipoConstitucion => TipoConstitucion,
-                TipoTraspaso => TipoTraspaso,
-                TipoExamen => TipoExamen,
-                _ => throw new InvalidOperationException(MensajeTipoInvalido)
-            };
+            var valor = (tipo ?? string.Empty).Trim().ToUpperInvariant();
+            return valor is TipoConstitucion or TipoTraspaso or TipoExamen
+                ? valor
+                : throw new InvalidOperationException(MensajeTipoInvalido);
         }
 
         /// <summary>
-        /// Normaliza el usuario de sesiÃ³n.
+        /// Normaliza el usuario de sesión.
         /// </summary>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private static string NormalizeUsuario(string usuario)
+        private static string NormalizarUsuario(string usuario)
         {
-            var usuarioNorm = (usuario ?? string.Empty).Trim().ToUpperInvariant();
-            if (string.IsNullOrWhiteSpace(usuarioNorm))
-            {
-                throw new InvalidOperationException("El usuario es requerido.");
-            }
-
-            return usuarioNorm;
+            var valor = (usuario ?? string.Empty).Trim().ToUpperInvariant();
+            return string.IsNullOrWhiteSpace(valor)
+                ? throw new InvalidOperationException("El usuario es requerido.")
+                : valor;
         }
 
         /// <summary>
-        /// Valida la solicitud de guardado segÃºn el tipo prendario.
+        /// Valida la solicitud de guardado según el tipo prendario.
         /// </summary>
         /// <param name="tipo"></param>
         /// <param name="request"></param>
-        private static void ValidateGuardarRequest(string tipo, CrPreaConfigGuardarRequest request)
+        private static void ValidarGuardado(string tipo, CrPreaConfigGuardarRequest request)
         {
             var estado = (request.estado ?? string.Empty).Trim().ToUpperInvariant();
             if (estado != "A" && estado != "I")
             {
-                throw new InvalidOperationException("El estado indicado no es vÃ¡lido.");
-            }
-
-            if (tipo == TipoExamen)
-            {
-                if (request.edad_min > request.edad_max)
-                {
-                    throw new InvalidOperationException("El rango de edad mÃ­nima no puede ser mayor al de edad mÃ¡xima.");
-                }
-
-                if (request.monto_min > request.monto_max)
-                {
-                    throw new InvalidOperationException("El monto mÃ­nimo no puede ser mayor al monto mÃ¡ximo.");
-                }
-
-                if (string.IsNullOrWhiteSpace((request.rango_edad ?? string.Empty).Trim()))
-                {
-                    throw new InvalidOperationException("La descripciÃ³n del rango de edad es requerida.");
-                }
-
-                if (string.IsNullOrWhiteSpace((request.descripcion_examenes ?? string.Empty).Trim()))
-                {
-                    throw new InvalidOperationException("La descripciÃ³n de exÃ¡menes es requerida.");
-                }
-
-                return;
+                throw new InvalidOperationException("El estado indicado no es válido.");
             }
 
             if (request.monto_min > request.monto_max)
             {
-                throw new InvalidOperationException("El monto mÃ­nimo no puede ser mayor al monto mÃ¡ximo.");
+                throw new InvalidOperationException("El monto mínimo no puede ser mayor al monto máximo.");
+            }
+
+            if (tipo != TipoExamen)
+            {
+                return;
+            }
+
+            if (request.edad_min > request.edad_max)
+            {
+                throw new InvalidOperationException("El rango de edad mínima no puede ser mayor al de edad máxima.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.rango_edad?.Trim()))
+            {
+                throw new InvalidOperationException("La descripción del rango de edad es requerida.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.descripcion_examenes?.Trim()))
+            {
+                throw new InvalidOperationException("La descripción de exámenes es requerida.");
             }
         }
 
@@ -298,25 +279,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static string BuildGuardarSql(string tipo)
+        private static string SqlGuardar(string tipo)
         {
             return tipo == TipoExamen
-                ? @"EXEC spCrd_Prea_Config_Examen_Prenda_Requisito_Add @Id, @RangoDesc, @EdadMin, @EdadMax, @MontoMin, @MontoMax, @Descripcion, @Estado, @Usuario"
-                : @"EXEC spCrd_Prea_Config_Prenda_Add @Id, @MontoMin, @MontoMax, @Gastos, @Honorarios, @Estado, @Usuario, @Tipo";
+                ? "EXEC spCrd_Prea_Config_Examen_Prenda_Requisito_Add @Id, @RangoDesc, @EdadMin, @EdadMax, @MontoMin, @MontoMax, @Descripcion, @Estado, @Usuario"
+                : "EXEC spCrd_Prea_Config_Prenda_Add @Id, @MontoMin, @MontoMax, @Gastos, @Honorarios, @Estado, @Usuario, @Tipo";
         }
 
         /// <summary>
-        /// Construye los parÃ¡metros de guardado del SP prendario.
+        /// Construye la llamada parametrizada al SP de eliminación prendario.
+        /// </summary>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        private static string SqlEliminar(string tipo)
+        {
+            return tipo == TipoExamen
+                ? "EXEC spCrd_Prea_Config_Examen_Prenda_Requisito_Del @Id, @Usuario"
+                : "EXEC spCrd_Prea_Config_Prenda_Del @Id, @Usuario, @Tipo";
+        }
+
+        /// <summary>
+        /// Construye los parámetros de guardado del SP prendario.
         /// </summary>
         /// <param name="tipo"></param>
         /// <param name="request"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private static object BuildGuardarParameters(string tipo, CrPreaConfigGuardarRequest request, string usuario)
+        private static object ParametrosGuardar(string tipo, CrPreaConfigGuardarRequest request, string usuario)
         {
-            if (tipo == TipoExamen)
-            {
-                return new
+            return tipo == TipoExamen
+                ? new
                 {
                     Id = request.id,
                     RangoDesc = request.rango_edad.Trim(),
@@ -327,76 +319,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     Descripcion = request.descripcion_examenes.Trim(),
                     Estado = request.estado.Trim().ToUpperInvariant(),
                     Usuario = usuario
+                }
+                : new
+                {
+                    Id = request.id,
+                    MontoMin = request.monto_min,
+                    MontoMax = request.monto_max,
+                    Gastos = request.gastos,
+                    Honorarios = request.honorarios,
+                    Estado = request.estado.Trim().ToUpperInvariant(),
+                    Usuario = usuario,
+                    Tipo = tipo
                 };
-            }
-
-            return new
-            {
-                Id = request.id,
-                MontoMin = request.monto_min,
-                MontoMax = request.monto_max,
-                Gastos = request.gastos,
-                Honorarios = request.honorarios,
-                Estado = request.estado.Trim().ToUpperInvariant(),
-                Usuario = usuario,
-                Tipo = tipo
-            };
         }
 
         /// <summary>
-        /// Construye la llamada parametrizada al SP de eliminaciÃ³n prendario.
-        /// </summary>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        private static string BuildEliminarSql(string tipo)
-        {
-            return tipo == TipoExamen
-                ? @"EXEC spCrd_Prea_Config_Examen_Prenda_Requisito_Del @Id, @Usuario"
-                : @"EXEC spCrd_Prea_Config_Prenda_Del @Id, @Usuario, @Tipo";
-        }
-
-        /// <summary>
-        /// Construye los parÃ¡metros de eliminaciÃ³n del SP prendario.
+        /// Construye los parámetros de eliminación del SP prendario.
         /// </summary>
         /// <param name="tipo"></param>
         /// <param name="id"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private static object BuildEliminarParameters(string tipo, int id, string usuario)
+        private static object ParametrosEliminar(string tipo, int id, string usuario)
         {
-            if (tipo == TipoExamen)
-            {
-                return new
-                {
-                    Id = id,
-                    Usuario = usuario
-                };
-            }
-
-            return new
-            {
-                Id = id,
-                Usuario = usuario,
-                Tipo = tipo
-            };
-        }
-
-        /// <summary>
-        /// Registra en bitÃ¡cora el resultado confirmado por el SP.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="spResult"></param>
-        private void Bitacora(int CodEmpresa, string usuario, CrPreaSpResultDto spResult)
-        {
-            _securityMainDb.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = spResult.Mensaje,
-                Movimiento = $"{spResult.Movimiento} - WEB",
-                Modulo = ModuloEstudioCredito
-            });
+            return tipo == TipoExamen
+                ? new { Id = id, Usuario = usuario }
+                : new { Id = id, Usuario = usuario, Tipo = tipo };
         }
 
         /// <summary>
@@ -404,26 +352,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        private static CrPreaConfigListaData MapListaRow(IDictionary<string, object?> row)
+        private static CrPreaConfigListaData FilaALista(IDictionary<string, object?> row)
         {
+            var estadoDesc = Texto(row, "ESTADO_DESC");
             return new CrPreaConfigListaData
             {
-                id = GetInt(row, "ID_PARAM", "ID_REQUISITO", "ID"),
-                monto_min = GetDecimal(row, "MONTO_MIN"),
-                monto_max = GetDecimal(row, "MONTO_MAX"),
-                gastos = GetDecimal(row, "GASTOS"),
-                honorarios = GetDecimal(row, "HONORARIOS"),
-                total = GetDecimal(row, "TOTAL"),
-                rango_edad = GetString(row, "RANGO_EDAD"),
-                edad_min = GetShort(row, "EDAD_MIN"),
-                edad_max = GetShort(row, "EDAD_MAX"),
-                descripcion_examenes = GetString(row, "DESCRIPCION_EXAMENES"),
-                estado_desc = GetString(row, "ESTADO_DESC"),
-                estado = ResolveEstado(GetString(row, "ESTADO_DESC")),
-                registro_usuario = GetString(row, "REGISTRO_USUARIO"),
-                registro_fecha = GetDate(row, "REGISTRO_FECHA"),
-                modifica_usuario = GetString(row, "MODIFICA_USUARIO"),
-                modifica_fecha = GetDate(row, "MODIFICA_FECHA"),
+                id = Entero(row, "ID_PARAM", "ID_REQUISITO", "ID"),
+                monto_min = Decimal(row, "MONTO_MIN"),
+                monto_max = Decimal(row, "MONTO_MAX"),
+                gastos = Decimal(row, "GASTOS"),
+                honorarios = Decimal(row, "HONORARIOS"),
+                total = Decimal(row, "TOTAL"),
+                rango_edad = Texto(row, "RANGO_EDAD"),
+                edad_min = Corto(row, "EDAD_MIN"),
+                edad_max = Corto(row, "EDAD_MAX"),
+                descripcion_examenes = Texto(row, "DESCRIPCION_EXAMENES"),
+                estado_desc = estadoDesc,
+                estado = estadoDesc.Equals("Activo", StringComparison.OrdinalIgnoreCase) ? "A" : "I",
+                registro_usuario = Texto(row, "REGISTRO_USUARIO"),
+                registro_fecha = Fecha(row, "REGISTRO_FECHA"),
+                modifica_usuario = Texto(row, "MODIFICA_USUARIO"),
+                modifica_fecha = Fecha(row, "MODIFICA_FECHA"),
                 isNew = false
             };
         }
@@ -435,7 +384,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="filtros"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static IEnumerable<CrPreaConfigListaData> ApplyFiltro(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
+        private static IEnumerable<CrPreaConfigListaData> Filtrar(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
         {
             var filtro = (filtros.filtro ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(filtro))
@@ -443,24 +392,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return rows;
             }
 
-            var texto = filtro.ToUpperInvariant();
-
-            return rows.Where(x =>
-                x.id.ToString().Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.monto_min.ToString("N2").Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.monto_max.ToString("N2").Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.gastos.ToString("N2").Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.honorarios.ToString("N2").Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.total.ToString("N2").Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.estado_desc.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.registro_usuario.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                x.modifica_usuario.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                (tipo == TipoExamen &&
-                    (x.rango_edad.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                     x.descripcion_examenes.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                     x.edad_min.ToString().Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                     x.edad_max.ToString().Contains(texto, StringComparison.OrdinalIgnoreCase)))
-            );
+            return rows.Where(row => ValoresBusqueda(row, tipo).Any(valor => valor.Contains(filtro, StringComparison.OrdinalIgnoreCase)));
         }
 
         /// <summary>
@@ -470,12 +402,66 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="filtros"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private static IOrderedEnumerable<CrPreaConfigListaData> ApplySort(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
+        private static IOrderedEnumerable<CrPreaConfigListaData> Ordenar(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros, string tipo)
         {
-            var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-            var asc = filtros.sortOrder == 1;
+            var campo = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
+            var ascendente = filtros.sortOrder == 1;
+            var selector = SelectorOrden(campo, tipo);
 
-            Func<CrPreaConfigListaData, object?> keySelector = sortField switch
+            return ascendente
+                ? rows.OrderBy(selector).ThenBy(x => x.id)
+                : rows.OrderByDescending(selector).ThenByDescending(x => x.id);
+        }
+
+        /// <summary>
+        /// Aplica paginación lazy a la lista prendaria.
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        private static IEnumerable<CrPreaConfigListaData> Paginar(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros)
+        {
+            var pagina = Math.Max(filtros.pagina, 0);
+            var paginacion = Math.Max(filtros.paginacion, 0);
+            return paginacion == 0 ? rows : rows.Skip(pagina).Take(paginacion);
+        }
+
+        /// <summary>
+        /// Retorna los valores disponibles para búsqueda global.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        private static IEnumerable<string> ValoresBusqueda(CrPreaConfigListaData row, string tipo)
+        {
+            yield return row.id.ToString();
+            yield return row.monto_min.ToString("N2");
+            yield return row.monto_max.ToString("N2");
+            yield return row.gastos.ToString("N2");
+            yield return row.honorarios.ToString("N2");
+            yield return row.total.ToString("N2");
+            yield return row.estado_desc;
+            yield return row.registro_usuario;
+            yield return row.modifica_usuario;
+
+            if (tipo == TipoExamen)
+            {
+                yield return row.rango_edad;
+                yield return row.descripcion_examenes;
+                yield return row.edad_min.ToString();
+                yield return row.edad_max.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Retorna el selector permitido para ordenamiento.
+        /// </summary>
+        /// <param name="campo"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        private static Func<CrPreaConfigListaData, object?> SelectorOrden(string campo, string tipo)
+        {
+            return campo switch
             {
                 "id" => x => x.id,
                 "monto_min" => x => x.monto_min,
@@ -494,110 +480,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 "modifica_fecha" => x => x.modifica_fecha,
                 _ => x => x.id
             };
-
-            return asc
-                ? rows.OrderBy(keySelector).ThenBy(x => x.id)
-                : rows.OrderByDescending(keySelector).ThenByDescending(x => x.id);
         }
 
         /// <summary>
-        /// Aplica paginaciÃ³n lazy a la lista prendaria.
+        /// Determina si la excepción corresponde al flujo controlado del DB.
         /// </summary>
-        /// <param name="rows"></param>
-        /// <param name="filtros"></param>
+        /// <param name="ex"></param>
         /// <returns></returns>
-        private static IEnumerable<CrPreaConfigListaData> ApplyPaging(IEnumerable<CrPreaConfigListaData> rows, FiltrosLazyLoadData filtros)
+        private static bool EsErrorControlado(Exception ex)
         {
-            var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
-            var paginacion = filtros.paginacion < 0 ? 0 : filtros.paginacion;
-
-            if (paginacion == 0)
-            {
-                return rows;
-            }
-
-            return rows.Skip(pagina).Take(paginacion);
+            return ex is JsonException or SqlException or InvalidOperationException or ArgumentException;
         }
 
-        /// <summary>
-        /// Obtiene el primer valor string disponible segÃºn las claves indicadas.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        private static string GetString(IDictionary<string, object?> row, params string[] keys)
+        private static string Texto(IDictionary<string, object?> row, params string[] keys)
         {
-            var value = keys
-                .Select(key => row.TryGetValue(key, out var v) ? v : null)
-                .FirstOrDefault(v => v != null && v != DBNull.Value);
-
-            return Convert.ToString(value)?.Trim() ?? string.Empty;
+            var valor = Valor(row, keys);
+            return Convert.ToString(valor)?.Trim() ?? string.Empty;
         }
 
-        /// <summary>
-        /// Obtiene el primer valor entero disponible segÃºn las claves indicadas.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        private static int GetInt(IDictionary<string, object?> row, params string[] keys)
+        private static int Entero(IDictionary<string, object?> row, params string[] keys)
         {
-            var text = GetString(row, keys);
-            return int.TryParse(text, out var value) ? value : 0;
+            return int.TryParse(Texto(row, keys), out var valor) ? valor : 0;
         }
 
-        /// <summary>
-        /// Obtiene el primer valor decimal disponible segÃºn las claves indicadas.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        private static decimal GetDecimal(IDictionary<string, object?> row, params string[] keys)
+        private static decimal Decimal(IDictionary<string, object?> row, params string[] keys)
         {
-            var value = keys
-                .Select(key => row.TryGetValue(key, out var v) ? v : null)
-                .FirstOrDefault(v => v != null && v != DBNull.Value);
-
-            return value == null ? 0m : Convert.ToDecimal(value);
+            var valor = Valor(row, keys);
+            return valor == null ? 0m : Convert.ToDecimal(valor);
         }
 
-        /// <summary>
-        /// Obtiene el primer valor short disponible segÃºn las claves indicadas.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        private static short GetShort(IDictionary<string, object?> row, params string[] keys)
+        private static short Corto(IDictionary<string, object?> row, params string[] keys)
         {
-            var text = GetString(row, keys);
-            return short.TryParse(text, out var value) ? value : (short)0;
+            return short.TryParse(Texto(row, keys), out var valor) ? valor : (short)0;
         }
 
-        /// <summary>
-        /// Obtiene el primer valor fecha disponible segÃºn las claves indicadas.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        private static DateTime? GetDate(IDictionary<string, object?> row, params string[] keys)
+        private static DateTime? Fecha(IDictionary<string, object?> row, params string[] keys)
         {
-            var value = keys
-                .Select(key => row.TryGetValue(key, out var v) ? v : null)
-                .FirstOrDefault(v => v != null && v != DBNull.Value);
-
-            return value == null ? null : Convert.ToDateTime(value);
+            var valor = Valor(row, keys);
+            return valor == null ? null : Convert.ToDateTime(valor);
         }
 
-        /// <summary>
-        /// Convierte la descripciÃ³n de estado en su cÃ³digo estÃ¡ndar.
-        /// </summary>
-        /// <param name="estadoDesc"></param>
-        /// <returns></returns>
-        private static string ResolveEstado(string estadoDesc)
+        private static object? Valor(IDictionary<string, object?> row, params string[] keys)
         {
-            return estadoDesc.Equals("Activo", StringComparison.OrdinalIgnoreCase) ? "A" : "I";
+            return keys
+                .Select(key => row.TryGetValue(key, out var valor) ? valor : null)
+                .FirstOrDefault(valor => valor != null && valor != DBNull.Value);
         }
     }
 }
-
-
