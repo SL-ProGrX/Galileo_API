@@ -1,4 +1,4 @@
-using Galileo.DataBaseTier;
+﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Hipotecario;
 
@@ -17,17 +17,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             return NormalizarTexto(tag) switch
             {
-                "ModuloDeVivienda" => VivMantenimiento_ArbolInicial_Obtener(),
+                "ModuloDeVivienda" => FrmVivMantenimientoDb.VivMantenimiento_ArbolInicial_Obtener(),
                 "NodoZonas" => VivMantenimiento_NodosZonas_Obtener(codEmpresa),
                 "NodoZonasHijo" => DbHelper.CreateOkResponse(VivMantenimiento_NodosZonaDetalle_Obtener(key)),
                 "NodoProfesionales" => DbHelper.CreateOkResponse(NodosProfesionales()),
-                "NodoEmpresas" => VivMantenimiento_NodosEmpresas_Obtener(codEmpresa),
+                NodoEmpresas => VivMantenimiento_NodosEmpresas_Obtener(codEmpresa),
                 "NodoEmpresaHijo" => DbHelper.CreateOkResponse(NodosEmpresaProfesionales(key)),
                 "NodoAsigIngEmpresa" => VivMantenimiento_NodosProfesionalesEmpresa_Obtener(codEmpresa, key, "I"),
                 "NodoAsigAbogEmpresa" => VivMantenimiento_NodosProfesionalesEmpresa_Obtener(codEmpresa, key, "A"),
-                "NodoPersonasFisicas" => DbHelper.CreateOkResponse(NodosPersonasFisicas()),
-                "NodoAsigIngPF" => VivMantenimiento_NodosPersonasFisicas_Obtener(codEmpresa, "I"),
-                "NodoAsigAbogPF" => VivMantenimiento_NodosPersonasFisicas_Obtener(codEmpresa, "A"),
+                NodoPersonasFisicas => DbHelper.CreateOkResponse(NodosPersonasFisicas()),
+                NodoAsigIngPf => VivMantenimiento_NodosPersonasFisicas_Obtener(codEmpresa, "I"),
+                NodoAsigAbogPf => VivMantenimiento_NodosPersonasFisicas_Obtener(codEmpresa, "A"),
                 "NodoIngZanasHijo" => VivMantenimiento_NodosProfesionalesZona_Obtener(codEmpresa, key, "I"),
                 "NodoAbogZanasHijo" => VivMantenimiento_NodosProfesionalesZona_Obtener(codEmpresa, key, "A"),
                 "NodoIngenierosZonaHijo" or "NodoAbogadosZonaHijo" or "NodoIngenierosEmpresaHijo" or "NodoAbogadosEmpresaHijo" or "NodoIngenierosPFHijo" or "NodoAbogadosPFHijo" => DbHelper.CreateOkResponse(NodosOperacionesProfesional(tag, key)),
@@ -56,12 +56,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 "NodoOperacionesCanceladas" => VivMantenimiento_ControlDesembolso_Obtener(codEmpresa, true),
                 "NodoTramiteGarantia" => VivMantenimiento_TramiteOperaciones_Obtener(codEmpresa),
                 "NodoEmpresaHijo" => VivMantenimiento_ContactosEmpresa_Obtener(codEmpresa, ObtenerLongKey(key, "(Em)")),
-                "NodoEmpresas" => VivMantenimiento_Empresas_Obtener(codEmpresa),
+                NodoEmpresas => VivMantenimiento_Empresas_Obtener(codEmpresa),
                 "NodoAsigIngEmpresa" => VivMantenimiento_ContactosTipoEmpresa_Obtener(codEmpresa, ObtenerLongKey(key, "(Em)"), "I"),
                 "NodoAsigAbogEmpresa" => VivMantenimiento_ContactosTipoEmpresa_Obtener(codEmpresa, ObtenerLongKey(key, "(Em)"), "A"),
-                "NodoPersonasFisicas" => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, ""),
-                "NodoAsigIngPF" => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, "I"),
-                "NodoAsigAbogPF" => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, "A"),
+                NodoPersonasFisicas => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, ""),
+                NodoAsigIngPf => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, "I"),
+                NodoAsigAbogPf => VivMantenimiento_PersonasFisicas_Obtener(codEmpresa, "A"),
                 "NodoIngZanasHijo" => VivMantenimiento_ProfesionalesZona_Obtener(codEmpresa, key, "I"),
                 "NodoAbogZanasHijo" => VivMantenimiento_ProfesionalesZona_Obtener(codEmpresa, key, "A"),
                 "NodoIngenierosEmpresaHijo" or "NodoAbogadosEmpresaHijo" or "NodoIngenierosPFHijo" or "NodoAbogadosPFHijo" => VivMantenimiento_Zonas_Obtener(codEmpresa, ObtenerLongKey(key, "(ic)")),
@@ -479,8 +479,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             return new List<VivMantenimientoNodoData>
             {
-                CrearNodo("NodoEmpresas", "Empresas", "NodoEmpresas", "pi pi-building", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false),
-                CrearNodo("NodoPersonasFisicas", "Personas Fisicas", "NodoPersonasFisicas", "pi pi-users", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false)
+                CrearNodo(NodoEmpresas, "Empresas", NodoEmpresas, "pi pi-building", FormVivProfesionales, RutaVivProfesionales, leaf: false),
+                CrearNodo(NodoPersonasFisicas, "Personas Fisicas", NodoPersonasFisicas, "pi pi-users", FormVivProfesionales, RutaVivProfesionales, leaf: false)
             };
         }
 
@@ -488,8 +488,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             return new List<VivMantenimientoNodoData>
             {
-                CrearNodo("NodoAsigIngPF", "Ingenieros", "NodoAsigIngPF", "pi pi-user", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false),
-                CrearNodo("NodoAsigAbogPF", "Abogados", "NodoAsigAbogPF", "pi pi-briefcase", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false)
+                CrearNodo(NodoAsigIngPf, "Ingenieros", NodoAsigIngPf, "pi pi-user", FormVivProfesionales, RutaVivProfesionales, leaf: false),
+                CrearNodo(NodoAsigAbogPf, "Abogados", NodoAsigAbogPf, "pi pi-briefcase", FormVivProfesionales, RutaVivProfesionales, leaf: false)
             };
         }
 
@@ -497,8 +497,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             return new List<VivMantenimientoNodoData>
             {
-                CrearNodo($"{key}|I", "Ingenieros", "NodoAsigIngEmpresa", "pi pi-user", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false),
-                CrearNodo($"{key}|A", "Abogados", "NodoAsigAbogEmpresa", "pi pi-briefcase", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false)
+                CrearNodo($"{key}|I", "Ingenieros", "NodoAsigIngEmpresa", "pi pi-user", FormVivProfesionales, RutaVivProfesionales, leaf: false),
+                CrearNodo($"{key}|A", "Abogados", "NodoAsigAbogEmpresa", "pi pi-briefcase", FormVivProfesionales, RutaVivProfesionales, leaf: false)
             };
         }
 
@@ -506,16 +506,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         {
             return new List<VivMantenimientoNodoData>
             {
-                CrearNodo($"{key}|I", "Ingenieros", "NodoIngZanasHijo", "pi pi-user", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false),
-                CrearNodo($"{key}|A", "Abogados", "NodoAbogZanasHijo", "pi pi-briefcase", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false)
+                CrearNodo($"{key}|I", "Ingenieros", "NodoIngZanasHijo", "pi pi-user", FormVivProfesionales, RutaVivProfesionales, leaf: false),
+                CrearNodo($"{key}|A", "Abogados", "NodoAbogZanasHijo", "pi pi-briefcase", FormVivProfesionales, RutaVivProfesionales, leaf: false)
             };
         }
 
         private static List<VivMantenimientoNodoData> NodosOperacionesProfesional(string tag, string key)
         {
             var esAbogado = tag.Contains("Abog", StringComparison.OrdinalIgnoreCase);
-            var origen = tag.Contains("Zona", StringComparison.OrdinalIgnoreCase) ? "Zona" :
-                tag.Contains("Empresa", StringComparison.OrdinalIgnoreCase) ? "Empresa" : "PF";
+            var origen = ObtenerOrigenOperacionesProfesional(tag);
             var prefijo = esAbogado ? "NodoOperaAbog" : "NodoOperaIng";
 
             return new List<VivMantenimientoNodoData>
@@ -567,6 +566,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 
         private static string ObtenerTipoProfesional(string tag)
             => tag.Contains("Abog", StringComparison.OrdinalIgnoreCase) ? "A" : "I";
+
+        private static string ObtenerOrigenOperacionesProfesional(string tag)
+        {
+            if (tag.Contains("Zona", StringComparison.OrdinalIgnoreCase))
+                return "Zona";
+
+            return tag.Contains("Empresa", StringComparison.OrdinalIgnoreCase) ? "Empresa" : "PF";
+        }
 
         private static bool EsOperacionEjecutada(string tag)
             => tag.EndsWith("Eje", StringComparison.OrdinalIgnoreCase);

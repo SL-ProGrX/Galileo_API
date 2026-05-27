@@ -29,9 +29,9 @@ namespace Galileo_API.Models.ProGrX_Hipotecario
 
     public class VivMantenimientoZonaContactoAsignarRequest
     {
-        public long idZona { get; set; }
-        public long idContacto { get; set; }
-        public bool asignar { get; set; }
+        public required long idZona { get; set; }
+        public required long idContacto { get; set; }
+        public required bool asignar { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 }

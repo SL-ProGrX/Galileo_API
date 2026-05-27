@@ -13,7 +13,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
 
         public ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
         {
-            return _db.VivMantenimiento_ArbolInicial_Obtener();
+            return FrmVivMantenimientoDb.VivMantenimiento_ArbolInicial_Obtener();
         }
 
         public ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_NodosHijos_Obtener(int codEmpresa, string tag, string key)

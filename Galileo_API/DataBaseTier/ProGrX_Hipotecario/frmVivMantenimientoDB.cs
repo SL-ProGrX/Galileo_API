@@ -6,6 +6,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
 {
     public partial class FrmVivMantenimientoDb
     {
+        private const string FormVivProfesionales = "frmVivProfesionales";
+        private const string RutaVivProfesionales = "/viv-informacion-profesionales";
+        private const string NodoEmpresas = "NodoEmpresas";
+        private const string NodoPersonasFisicas = "NodoPersonasFisicas";
+        private const string NodoAsigIngPf = "NodoAsigIngPF";
+        private const string NodoAsigAbogPf = "NodoAsigAbogPF";
+
         private readonly PortalDB _portalDb;
 
         public FrmVivMantenimientoDb(IConfiguration config)
@@ -22,13 +29,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// Obtiene los nodos principales del mantenimiento de garantias hipotecarias.
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
+        public static ErrorDto<List<VivMantenimientoNodoData>> VivMantenimiento_ArbolInicial_Obtener()
         {
             var nodos = new List<VivMantenimientoNodoData>
             {
                 CrearNodo("NodoParametrosGenerales", "Parametros", "NodoParametrosGenerales", "pi pi-cog", "frmVivParametros", "/viv-parametros"),
                 CrearNodo("NodoZonas", "Zonas", "NodoZonas", "pi pi-map", "frmVivZonas", "/viv-zonas", leaf: false),
-                CrearNodo("NodoProfesionales", "Profesionales", "NodoProfesionales", "pi pi-users", "frmVivProfesionales", "/viv-informacion-profesionales", leaf: false),
+                CrearNodo("NodoProfesionales", "Profesionales", "NodoProfesionales", "pi pi-users", FormVivProfesionales, RutaVivProfesionales, leaf: false),
                 CrearNodo("NodoTiposDesembolsos", "Conceptos Desembolsos", "NodoTiposDesembolsos", "pi pi-list", "frmVivTiposDesembolsos", "/viv-tipos-desembolsos"),
                 CrearNodo("NodoTramiteGarantia", "Garantias en Tramite", "NodoTramiteGarantia", "pi pi-briefcase", "frmVivControlAsignacionGarantia", "/viv-control-asignacion-garantia"),
                 CrearNodo("NodoOperacionesTramite", "Operaciones en tramite", "NodoOperacionesTramite", "pi pi-file-edit"),
