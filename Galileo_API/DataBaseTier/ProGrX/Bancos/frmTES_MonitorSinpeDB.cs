@@ -84,9 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 		                        GROUP BY cp.DESCRIPCION;";
 
             var p = new DynamicParameters();
-            //formato de fecha , si tu base de datos espera otro formato, ajusta el tipo de dato o la forma de agregar el parámetro
-            string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(fechaInicio, "yyyy-MM-dd 00:00:00")!;
-            string fechaF = MProGrXAuxiliarDB.validaFechaGlobal(fechaFin, "yyyy-MM-dd 23:59:59")!;
+           
             p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
             p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
 
@@ -128,9 +126,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 		                        GROUP BY CEDULA , COD_REFERENCIA;";
 
             var p = new DynamicParameters();
-            string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(fechaInicio, "yyyy-MM-dd 00:00:00")!;
-            string fechaF = MProGrXAuxiliarDB.validaFechaGlobal(fechaFin, "yyyy-MM-dd 23:59:59")!;
-
             p.Add("@fechaInicio", fechaInicio.Date, DbType.DateTime);
             p.Add("@fechaFin", fechaFin.Date.AddDays(1), DbType.DateTime);
             
