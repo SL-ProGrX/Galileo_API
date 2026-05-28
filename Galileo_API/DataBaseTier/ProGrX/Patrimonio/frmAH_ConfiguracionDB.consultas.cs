@@ -1,9 +1,7 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
+﻿using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.AH;
 using Galileo.Models.ERROR;
-using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
@@ -49,7 +47,7 @@ order by DIVISA_LOCAL desc, COD_DIVISA asc;";
                 data.cod_divisa = string.IsNullOrWhiteSpace(data.cod_divisa) ? divisa : data.cod_divisa;
                 return DbHelper.CreateOkResponse(data);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, result);
             }
