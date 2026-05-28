@@ -99,14 +99,26 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
-                            if(LaInformacionDeLaCuentaPIN.Account.AccountNumber == null)
+                            if(LaInformacionDeLaCuentaPIN.Account == null || LaInformacionDeLaCuentaPIN.Account.AccountNumber == null)
                             {
-                                var respustaError = _mKindo.fxTesConsultaMotivo(CodEmpresa, Convert.ToInt32(LaInformacionDeLaCuentaPIN.Account.State.ToString())).Result;
-                                response = new ErrorDto
+                                if (LaInformacionDeLaCuentaPIN.Account == null)
                                 {
-                                    Code = -1,
-                                    Description = respustaError
-                                };
+                                    response = new ErrorDto
+                                    {
+                                        Code = -1,
+                                        Description = LaInformacionDeLaCuentaPIN.Errors[0].Message
+                                    };
+                                }
+                                else
+                                {
+                                    var respustaError = _mKindo.fxTesConsultaMotivo(CodEmpresa, Convert.ToInt32(LaInformacionDeLaCuentaPIN.Account.State.ToString())).Result;
+                                    response = new ErrorDto
+                                    {
+                                        Code = -1,
+                                        Description = respustaError
+                                    };
+                                }
+                               
                             }
                             else
                             {

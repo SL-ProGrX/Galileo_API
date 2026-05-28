@@ -120,7 +120,7 @@ namespace Galileo_API.DataBaseTier
                             ActualizaReferencia(conn, vDocumento, item);
                         }
                     }
-
+                    consc = consc + 1;
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
                 }
 
