@@ -176,79 +176,84 @@ namespace Galileo.DataBaseTier
         {
             decimal curCuotaI = MCobroDb.fxCalcula_Cuota(pSaldo, pPlazo, pTasa, "M");
             double dbTasaDiaria = (double)pTasa / 36000d;
-            pFechaInicio = new DateTime(pFechaInicio.Year, pFechaInicio.Month, 1);
+            DateTime fechaTrabajo = new DateTime(pFechaInicio.Year, pFechaInicio.Month, 1);
 
             decimal[,] vMatriz = new decimal[pPlazo + 1, 7];
             int vAproximaciones = 1;
-            bool vPaso;
 
             for (int i = 1; i <= pPlazo; i++)
             {
                 vMatriz[i, 0] = i;
-                vMatriz[i, 2] = DateTime.DaysInMonth(pFechaInicio.Year, pFechaInicio.Month);
-                pFechaInicio = pFechaInicio.AddMonths(1);
+                vMatriz[i, 2] = DateTime.DaysInMonth(fechaTrabajo.Year, fechaTrabajo.Month);
+                fechaTrabajo = fechaTrabajo.AddMonths(1);
             }
 
             vMatriz[1, 1] = Redondear((decimal)((double)pSaldo * dbTasaDiaria * 30d) + 1m);
 
-            for (int i = 1; i <= pPlazo; i++)
+            bool recalcular = true;
+
+            while (recalcular && vAproximaciones < 100000)
             {
-                vPaso = true;
+                recalcular = false;
                 vMatriz[1, 6] = pSaldo;
 
-                if (i == 1 && vMatriz[i, 2] == 31m && vAproximaciones == 1)
+                for (int i = 1; i <= pPlazo; i++)
                 {
-                    vMatriz[i, 1] = Redondear((decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
-                }
+                    bool vPaso = true;
 
-                if (i > 1)
-                {
-                    vMatriz[i, 1] = vMatriz[i - 1, 1];
-                    vMatriz[i, 6] = vMatriz[i - 1, 5];
-                }
-
-                if (vMatriz[i, 1] > vMatriz[i, 6] || i == pPlazo)
-                {
-                    vMatriz[i, 1] = Redondear(vMatriz[i, 6] + (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
-                }
-
-                vMatriz[i, 3] = Redondear((decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
-                vMatriz[i, 4] = Redondear(vMatriz[i, 1] - vMatriz[i, 3]);
-                vMatriz[i, 5] = Redondear(vMatriz[i, 6] - vMatriz[i, 4]);
-
-                if (vMatriz[i, 4] < 0m && vPaso)
-                {
-                    vAproximaciones++;
-                    vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
-                    i = 0;
-                    continue;
-                }
-
-                if (vMatriz[i, 5] <= 0m && i < pPlazo && vPaso)
-                {
-                    vAproximaciones++;
-                    vMatriz[1, 1] = Redondear(vMatriz[1, 1] - 0.5m);
-                    i = 0;
-                    continue;
-                }
-
-                if (vMatriz[i, 5] <= 0m && i == pPlazo && vPaso)
-                {
-                    if (vMatriz[i, 6] <= vMatriz[1, 1])
+                    if (i == 1 && vMatriz[i, 2] == 31m && vAproximaciones == 1)
                     {
-                        curCuotaI = vMatriz[1, 1];
+                        vMatriz[i, 1] = Redondear(
+                            (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+                    }
+
+                    if (i > 1)
+                    {
+                        vMatriz[i, 1] = vMatriz[i - 1, 1];
+                        vMatriz[i, 6] = vMatriz[i - 1, 5];
+                    }
+
+                    if (vMatriz[i, 1] > vMatriz[i, 6] || i == pPlazo)
+                    {
+                        vMatriz[i, 1] = Redondear(
+                            vMatriz[i, 6] + (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+                    }
+
+                    vMatriz[i, 3] = Redondear(
+                        (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+                    vMatriz[i, 4] = Redondear(vMatriz[i, 1] - vMatriz[i, 3]);
+                    vMatriz[i, 5] = Redondear(vMatriz[i, 6] - vMatriz[i, 4]);
+
+                    if (vMatriz[i, 4] < 0m && vPaso)
+                    {
+                        vAproximaciones++;
+                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
+                        recalcular = true;
                         break;
                     }
 
-                    vAproximaciones++;
-                    vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
-                    i = 0;
-                    continue;
-                }
+                    if (vMatriz[i, 5] <= 0m && i < pPlazo && vPaso)
+                    {
+                        vAproximaciones++;
+                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] - 0.5m);
+                        recalcular = true;
+                        break;
+                    }
 
-                if (vAproximaciones >= 100000)
-                {
-                    break;
+                    if (vMatriz[i, 5] <= 0m && i == pPlazo && vPaso)
+                    {
+                        if (vMatriz[i, 6] <= vMatriz[1, 1])
+                        {
+                            curCuotaI = vMatriz[1, 1];
+                            recalcular = false;
+                            break;
+                        }
+
+                        vAproximaciones++;
+                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
+                        recalcular = true;
+                        break;
+                    }
                 }
             }
 
