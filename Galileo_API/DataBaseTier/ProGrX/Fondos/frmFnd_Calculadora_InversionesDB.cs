@@ -76,7 +76,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return EjecutarDropdownCalculadora(
                 CodEmpresa,
                 "spFnd_Inversion_Plazos",
-                new { CodPlan = NormalizarTexto(CodPlan) });
+                new { Plan = NormalizarTexto(CodPlan) });
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 var data = connection.QueryFirstOrDefault<dynamic>(
                     "spFnd_Inversion_Plazos_Dias",
-                    new { Plazo },
+                    new { PlazoId = Plazo },
                     commandType: System.Data.CommandType.StoredProcedure);
 
                 return ObtenerDiasPlazo(data, CodPlan);
