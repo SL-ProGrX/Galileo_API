@@ -153,19 +153,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
-        private List<DropDownListaGenericaModel> ObtenerFactoresCalculo()
+        private static List<DropDownListaGenericaModel> ObtenerFactoresCalculo()
             => MCredito.SbCrdFactorCalculo();
 
-        private string ObtenerFactorCalculo(string dato)
+        private static string ObtenerFactorCalculo(string dato)
             => MCredito.FxCrdFactorCalculo(dato);
 
-        private decimal CalcularCuota(decimal monto, int plazo, decimal interes, string frecuencia = "M")
+        private static decimal CalcularCuota(decimal monto, int plazo, decimal interes, string frecuencia = "M")
             => MCobroDb.fxCalcula_Cuota(monto, plazo, interes, frecuencia);
 
-        private decimal CalcularCuotaNivelada(decimal saldo, int plazo, decimal tasa, DateTime fechaInicio)
+        private static decimal CalcularCuotaNivelada(decimal saldo, int plazo, decimal tasa, DateTime fechaInicio)
             => MCredito.FxCrdCuotaNivelada(saldo, plazo, tasa, fechaInicio);
 
-        private int ObtenerDiasMes(int mes, int anio)
+        private static int ObtenerDiasMes(int mes, int anio)
             => MCredito.fxMesDias(mes, anio);
     }
 }
