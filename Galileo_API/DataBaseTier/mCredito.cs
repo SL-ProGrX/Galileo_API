@@ -176,20 +176,22 @@ namespace Galileo.DataBaseTier
         {
             decimal curCuotaI = MCobroDb.fxCalcula_Cuota(pSaldo, pPlazo, pTasa, "M");
             double dbTasaDiaria = (double)pTasa / 36000d;
-            DateTime fechaTrabajo = new DateTime(pFechaInicio.Year, pFechaInicio.Month, 1);
+
+            DateTime fechaTrabajo = new DateTime(
+                pFechaInicio.Year,
+                pFechaInicio.Month,
+                1,
+                0,
+                0,
+                0,
+                pFechaInicio.Kind);
 
             decimal[,] vMatriz = new decimal[pPlazo + 1, 7];
-            int vAproximaciones = 1;
-
-            for (int i = 1; i <= pPlazo; i++)
-            {
-                vMatriz[i, 0] = i;
-                vMatriz[i, 2] = DateTime.DaysInMonth(fechaTrabajo.Year, fechaTrabajo.Month);
-                fechaTrabajo = fechaTrabajo.AddMonths(1);
-            }
+            InicializarMatriz(vMatriz, pPlazo, fechaTrabajo);
 
             vMatriz[1, 1] = Redondear((decimal)((double)pSaldo * dbTasaDiaria * 30d) + 1m);
 
+            int vAproximaciones = 1;
             bool recalcular = true;
 
             while (recalcular && vAproximaciones < 100000)
@@ -199,65 +201,119 @@ namespace Galileo.DataBaseTier
 
                 for (int i = 1; i <= pPlazo; i++)
                 {
-                    bool vPaso = true;
+                    PrepararFila(vMatriz, i, pPlazo, dbTasaDiaria, vAproximaciones);
+                    CalcularFila(vMatriz, i, dbTasaDiaria);
 
-                    if (i == 1 && vMatriz[i, 2] == 31m && vAproximaciones == 1)
+                    var accion = EvaluarAjuste(vMatriz, i, pPlazo);
+
+                    if (accion == AjusteCuotaNivelada.Ninguno)
                     {
-                        vMatriz[i, 1] = Redondear(
-                            (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+                        continue;
                     }
 
-                    if (i > 1)
+                    if (accion == AjusteCuotaNivelada.CuotaAceptada)
                     {
-                        vMatriz[i, 1] = vMatriz[i - 1, 1];
-                        vMatriz[i, 6] = vMatriz[i - 1, 5];
-                    }
-
-                    if (vMatriz[i, 1] > vMatriz[i, 6] || i == pPlazo)
-                    {
-                        vMatriz[i, 1] = Redondear(
-                            vMatriz[i, 6] + (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
-                    }
-
-                    vMatriz[i, 3] = Redondear(
-                        (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
-                    vMatriz[i, 4] = Redondear(vMatriz[i, 1] - vMatriz[i, 3]);
-                    vMatriz[i, 5] = Redondear(vMatriz[i, 6] - vMatriz[i, 4]);
-
-                    if (vMatriz[i, 4] < 0m && vPaso)
-                    {
-                        vAproximaciones++;
-                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
-                        recalcular = true;
+                        curCuotaI = vMatriz[1, 1];
+                        recalcular = false;
                         break;
                     }
 
-                    if (vMatriz[i, 5] <= 0m && i < pPlazo && vPaso)
-                    {
-                        vAproximaciones++;
-                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] - 0.5m);
-                        recalcular = true;
-                        break;
-                    }
-
-                    if (vMatriz[i, 5] <= 0m && i == pPlazo && vPaso)
-                    {
-                        if (vMatriz[i, 6] <= vMatriz[1, 1])
-                        {
-                            curCuotaI = vMatriz[1, 1];
-                            recalcular = false;
-                            break;
-                        }
-
-                        vAproximaciones++;
-                        vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
-                        recalcular = true;
-                        break;
-                    }
+                    vAproximaciones++;
+                    AjustarCuotaBase(vMatriz, accion);
+                    recalcular = true;
+                    break;
                 }
             }
 
             return Redondear(curCuotaI);
+        }
+
+        private static void InicializarMatriz(decimal[,] vMatriz, int pPlazo, DateTime fechaTrabajo)
+        {
+            for (int i = 1; i <= pPlazo; i++)
+            {
+                vMatriz[i, 0] = i;
+                vMatriz[i, 2] = DateTime.DaysInMonth(fechaTrabajo.Year, fechaTrabajo.Month);
+                fechaTrabajo = fechaTrabajo.AddMonths(1);
+            }
+        }
+
+        private static void PrepararFila(
+            decimal[,] vMatriz,
+            int i,
+            int pPlazo,
+            double dbTasaDiaria,
+            int vAproximaciones)
+        {
+            if (i == 1 && vMatriz[i, 2] == 31m && vAproximaciones == 1)
+            {
+                vMatriz[i, 1] = Redondear(
+                    (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+            }
+
+            if (i > 1)
+            {
+                vMatriz[i, 1] = vMatriz[i - 1, 1];
+                vMatriz[i, 6] = vMatriz[i - 1, 5];
+            }
+
+            if (vMatriz[i, 1] > vMatriz[i, 6] || i == pPlazo)
+            {
+                vMatriz[i, 1] = Redondear(
+                    vMatriz[i, 6] + (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+            }
+        }
+
+        private static void CalcularFila(decimal[,] vMatriz, int i, double dbTasaDiaria)
+        {
+            vMatriz[i, 3] = Redondear(
+                (decimal)((double)vMatriz[i, 6] * dbTasaDiaria * (double)vMatriz[i, 2]));
+            vMatriz[i, 4] = Redondear(vMatriz[i, 1] - vMatriz[i, 3]);
+            vMatriz[i, 5] = Redondear(vMatriz[i, 6] - vMatriz[i, 4]);
+        }
+
+        private static AjusteCuotaNivelada EvaluarAjuste(decimal[,] vMatriz, int i, int pPlazo)
+        {
+            if (vMatriz[i, 4] < 0m)
+            {
+                return AjusteCuotaNivelada.Incrementar;
+            }
+
+            if (vMatriz[i, 5] <= 0m && i < pPlazo)
+            {
+                return AjusteCuotaNivelada.Decrementar;
+            }
+
+            if (vMatriz[i, 5] <= 0m && i == pPlazo)
+            {
+                return vMatriz[i, 6] <= vMatriz[1, 1]
+                    ? AjusteCuotaNivelada.CuotaAceptada
+                    : AjusteCuotaNivelada.Incrementar;
+            }
+
+            return AjusteCuotaNivelada.Ninguno;
+        }
+
+        private static void AjustarCuotaBase(decimal[,] vMatriz, AjusteCuotaNivelada accion)
+        {
+            if (accion == AjusteCuotaNivelada.Incrementar)
+            {
+                vMatriz[1, 1] = Redondear(vMatriz[1, 1] + 0.5m);
+                return;
+            }
+
+            if (accion == AjusteCuotaNivelada.Decrementar)
+            {
+                vMatriz[1, 1] = Redondear(vMatriz[1, 1] - 0.5m);
+            }
+        }
+
+        private enum AjusteCuotaNivelada
+        {
+            Ninguno = 0,
+            Incrementar = 1,
+            Decrementar = 2,
+            CuotaAceptada = 3,
         }
 
         private static decimal Redondear(decimal valor)
