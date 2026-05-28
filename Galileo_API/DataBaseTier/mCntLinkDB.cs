@@ -103,7 +103,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        public string fxgCntCuentaDesc(int codEmpresa, string pCuenta)
+        public string fxgCntCuentaDesc(int codEmpresa, string pCuenta, int? contabilidad = 0)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
@@ -119,7 +119,7 @@ namespace Galileo.DataBaseTier
                 var info = connection.QueryFirstOrDefault<CntDescripCuentaDto>(sql, new
                 {
                     Cuenta = pCuenta,
-                    Contabilidad = codEmpresa
+                    Contabilidad = contabilidad
                 });
 
                 return info?.Descripcion ?? string.Empty;
