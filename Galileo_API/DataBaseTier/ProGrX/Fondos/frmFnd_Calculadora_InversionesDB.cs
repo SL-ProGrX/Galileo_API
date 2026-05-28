@@ -235,7 +235,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "dbo.spFnd_Calculadora_Inversiones_Email",
                     new
                     {
-                        CalculoId,
+                        CalculoId = CalculoId,
                         Usuario = NormalizarTexto(Usuario)
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
@@ -304,7 +304,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             return connection.Query<FndCalculadoraInversionesFlujoData>(
                 "dbo.spFnd_Calculadora_Inversiones_Flujo",
-                new { pCalculoId = calculoId },
+                new { IdCalculo = calculoId },
                 commandType: System.Data.CommandType.StoredProcedure).ToList();
         }
 
@@ -312,20 +312,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             return new
             {
-                pCalculoId = filtros.pCalculoId == 0 ? (int?)null : filtros.pCalculoId,
-                txtInversion = filtros.txtInversion,
-                vFecha = DateTime.Now,
-                plazo = filtros.Plazo,
-                pTP_Sol = filtros.pTP_Sol,
-                pFrecuenciaPago = filtros.pFrecuenciaPago,
-                txtMonto = filtros.txtMonto,
-                baseCalculo = 360,
-                capitaliza = filtros.chkCapitaliza ? 1 : 0,
-                cedula = NormalizarTexto(filtros.Cedula),
-                plan = NormalizarTexto(filtros.Plan),
-                origen = "ProGrX",
-                usuario = NormalizarTexto(filtros.Usuario).ToUpper(),
-                pTP_Indica = filtros.pTP_Sol > filtros.pTasa ? 1 : 0
+                IdCalculo = filtros.pCalculoId == 0 ? (int?)null : filtros.pCalculoId,
+                MontoInversion = filtros.txtInversion,
+                FechaInicio = DateTime.Now,
+                DiasTotales = filtros.Plazo,
+                TasaAnual = filtros.pTP_Sol,
+                FrecuenciaPago = filtros.pFrecuenciaPago,
+                MontoAportacion = filtros.txtMonto,
+                FactorCalculo = 360,
+                Capitaliza_Rend = filtros.chkCapitaliza ? 1 : 0,
+                CEDULA = NormalizarTexto(filtros.Cedula),
+                COD_PLAN = NormalizarTexto(filtros.Plan),
+                APP_NAME = "ProGrX",
+                USUARIO = NormalizarTexto(filtros.Usuario).ToUpper(),
+                TasaPreferencial = filtros.pTP_Sol > filtros.pTasa ? 1 : 0
             };
         }
 
