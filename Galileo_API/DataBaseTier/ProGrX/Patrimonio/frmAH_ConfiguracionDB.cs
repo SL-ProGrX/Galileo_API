@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.AH;
 using Galileo.Models.ERROR;
+using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
@@ -63,12 +64,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 ["cta_rentacap"] = request.patrimonio.cta_rentacap
             };
 
-            foreach (var item in cuentasPatrimonio)
+            var cuentaPatrimonioInvalida = cuentasPatrimonio
+                .Where(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
+                .FirstOrDefault();
+
+            if (cuentaPatrimonioInvalida.Key != null)
             {
-                if (!AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
-                {
-                    return DbHelper.ErrorResponse($"La cuenta {item.Key} no es válida.", -2);
-                }
+                return DbHelper.ErrorResponse($"La cuenta {cuentaPatrimonioInvalida.Key} no es válida.", -2);
             }
 
             if (request.excedentes_cfg == 1)
@@ -85,12 +87,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     ["cta_exc_reserva"] = request.excedentes.cta_exc_reserva
                 };
 
-                foreach (var item in cuentasExcedentes)
+                var cuentaExcedenteInvalida = cuentasExcedentes
+                    .Where(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
+                    .FirstOrDefault();
+
+                if (cuentaExcedenteInvalida.Key != null)
                 {
-                    if (!AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
-                    {
-                        return DbHelper.ErrorResponse($"La cuenta {item.Key} no es válida.", -2);
-                    }
+                    return DbHelper.ErrorResponse($"La cuenta {cuentaExcedenteInvalida.Key} no es válida.", -2);
                 }
             }
 
