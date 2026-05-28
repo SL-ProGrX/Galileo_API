@@ -15,8 +15,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la fecha del servidor y el catálogo de factores de cálculo.
+        /// Obtiene la fecha del servidor y el catalogo de factores de calculo.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<CrSolCalculoCuotaPantallaData> CrSolCalculoCuota_Pantalla_Obtener(int codEmpresa)
         {
             const string sql = @"select getdate() as fecha_servidor;";
@@ -50,8 +52,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene el código o descripción equivalente del factor de cálculo.
+        /// Obtiene el codigo o descripcion equivalente del factor de calculo.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrSolCalculoCuotaFactorData> CrSolCalculoCuota_Factor_Obtener(
             int codEmpresa,
             CrSolCalculoCuotaFactorRequest request)
@@ -70,8 +75,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Calcula una cuota según monto, plazo, interés y frecuencia.
+        /// Calcula una cuota segun monto, plazo, interes y frecuencia.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrSolCalculoCuotaCalcularCuotaData> CrSolCalculoCuota_Cuota_Calcular(
             int codEmpresa,
             CrSolCalculoCuotaCalcularCuotaRequest request)
@@ -96,6 +104,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Calcula la cuota para el esquema actual nivelada.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrSolCalculoCuotaNiveladaData> CrSolCalculoCuota_Nivelada_Calcular(
             int codEmpresa,
             CrSolCalculoCuotaNiveladaRequest request)
@@ -118,8 +129,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene los días del mes y año indicados.
+        /// Obtiene los dias del mes y año indicados.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrSolCalculoCuotaDiasMesData> CrSolCalculoCuota_DiasMes_Obtener(
             int codEmpresa,
             CrSolCalculoCuotaDiasMesRequest request)
