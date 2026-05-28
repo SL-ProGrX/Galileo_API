@@ -20,6 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly FrmCntXConsultaCuentasDb _ConsultaCuentasDB;
         private readonly VerificadorCoreFactory _factory;
+        private readonly MKindoServiceDb mKindo;
 
         private readonly string descripcion = "descripcion";
         private readonly string nSolicitud = "NSOLICITUD";
@@ -39,6 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             _Security_MainDB = new MSecurityMainDb(config);
             _ConsultaCuentasDB = new FrmCntXConsultaCuentasDb(config);
             _factory = new VerificadorCoreFactory(config);
+            mKindo = new MKindoServiceDb(config);
         }
 
         #region Helpers privados para reducir duplicidad
@@ -158,6 +160,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
+
+                AjustarTipoCedDestino(trx);
+                trx.tipo_ced_destino = mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, Convert.ToInt32(trx.tipo_ced_destino)).Result;
 
                 trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
@@ -583,6 +588,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     return ErrorSimple((valida.Description ?? string.Empty), -1);
 
                 AjustarTipoCedOrigen(transaccion);
+                AjustarTipoCedDestino(transaccion);
                 ProcesarRegAutorizacion(CodEmpresa, usuario, transaccion);
 
                 var res = GuardarTransaccion(CodEmpresa, usuario, transaccion);
@@ -645,6 +651,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             var ced_origen = MKindoServiceDb.Inferir(t.cedula_origen!);
             t.tipo_ced_origen = Convert.ToInt32(ced_origen.Codigo);
+        }
+
+        private static void AjustarTipoCedDestino(TesTransaccionDto t)
+        {
+            var ced_destino = MKindoServiceDb.Inferir(t.codigo!);
+            t.tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
         }
 
         private void ProcesarRegAutorizacion(int CodEmpresa, string usuario, TesTransaccionDto t)
@@ -1106,7 +1118,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
            
 
             return new BeneficiarioSpec(
-                CountSql: "select count(cod_proveedor) from cxp_proveedores",
+                CountSql: "select count(CEDJUR) from cxp_proveedores where CEDJUR != ''",
                 CountParams: _ => new { },
                 BuildListSql: f =>
                 {
@@ -1120,7 +1132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         select item, descripcion, correo
                         from (
                             select CEDJUR as item, descripcion, email as correo
-                            from cxp_proveedores {whereFiltro} AND CEDJUR <> ''
+                            from cxp_proveedores {whereFiltro} AND CEDJUR != ''
                         ) t
                         order by {orderBy} {dir}
                         offset @offset rows fetch next @pageSize rows only;";
@@ -1743,8 +1755,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         @Idx as idx
                     FROM SYS_CUENTAS_BANCARIAS C
                     INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                    WHERE C.Identificacion = @Cedula
-                      AND B.COD_GRUPO = @Grupo
+                    WHERE 
+                        STUFF(
+                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
+                            1,
+                            PATINDEX(
+                                '%[^0]%',
+                                REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
+                            ) - 1,
+                            ''
+                        )
+                        =
+                        STUFF(
+                            REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', ''),
+                            1,
+                            PATINDEX(
+                                '%[^0]%',
+                                REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', '')
+                            ) - 1,
+                            ''
+                        )
+                      --AND B.COD_GRUPO = @Grupo
                       AND C.COD_DIVISA = @Divisa
                       AND C.ACTIVA = 1
                 ";
@@ -1759,7 +1790,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         @Idx as idx
                     FROM SYS_CUENTAS_BANCARIAS C
                     INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                    WHERE C.Identificacion = @Cedula
+                    WHERE STUFF(
+                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
+                            1,
+                            PATINDEX(
+                                '%[^0]%',
+                                REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
+                            ) - 1,
+                            ''
+                        )
+                        =
+                        STUFF(
+                            REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', ''),
+                            1,
+                            PATINDEX(
+                                '%[^0]%',
+                                REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', '')
+                            ) - 1,
+                            ''
+                        )
                       AND B.COD_GRUPO IN (
                             SELECT COD_GRUPO 
                             FROM TES_BANCOS_GRUPOS_ASG 
