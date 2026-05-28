@@ -16,11 +16,6 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         public ErrorDto<CrSolCalculoCuotaPantallaData> CrSolCalculoCuota_Pantalla_Obtener(int codEmpresa)
             => _db.CrSolCalculoCuota_Pantalla_Obtener(codEmpresa);
 
-        public ErrorDto<CrSolCalculoCuotaFactorData> CrSolCalculoCuota_Factor_Obtener(
-            int codEmpresa,
-            CrSolCalculoCuotaFactorRequest request)
-            => _db.CrSolCalculoCuota_Factor_Obtener(codEmpresa, request);
-
         public ErrorDto<CrSolCalculoCuotaCalcularCuotaData> CrSolCalculoCuota_Cuota_Calcular(
             int codEmpresa,
             CrSolCalculoCuotaCalcularCuotaRequest request)

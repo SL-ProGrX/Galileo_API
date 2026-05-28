@@ -52,29 +52,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene el codigo o descripcion equivalente del factor de calculo.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<CrSolCalculoCuotaFactorData> CrSolCalculoCuota_Factor_Obtener(
-            int codEmpresa,
-            CrSolCalculoCuotaFactorRequest request)
-        {
-            var valor = ObtenerFactorCalculo(request?.dato ?? string.Empty);
-
-            return new ErrorDto<CrSolCalculoCuotaFactorData>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CrSolCalculoCuotaFactorData
-                {
-                    valor = valor
-                }
-            };
-        }
-
-        /// <summary>
         /// Calcula una cuota segun monto, plazo, interes y frecuencia.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -155,9 +132,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static List<DropDownListaGenericaModel> ObtenerFactoresCalculo()
             => MCredito.SbCrdFactorCalculo();
-
-        private static string ObtenerFactorCalculo(string dato)
-            => MCredito.FxCrdFactorCalculo(dato);
 
         private static decimal CalcularCuota(decimal monto, int plazo, decimal interes, string frecuencia = "M")
             => MCobroDb.fxCalcula_Cuota(monto, plazo, interes, frecuencia);

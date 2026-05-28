@@ -22,11 +22,6 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<CrSolCalculoCuotaPantallaData> CrSolCalculoCuota_Pantalla_Obtener(int codEmpresa)
             => _bl.CrSolCalculoCuota_Pantalla_Obtener(codEmpresa);
 
-        [HttpPost("CrSolCalculoCuota_Factor_Obtener")]
-        public ErrorDto<CrSolCalculoCuotaFactorData> CrSolCalculoCuota_Factor_Obtener(
-            int codEmpresa, CrSolCalculoCuotaFactorRequest request)
-        => _bl.CrSolCalculoCuota_Factor_Obtener(codEmpresa, request);
-
         [HttpPost("CrSolCalculoCuota_Cuota_Calcular")]
         public ErrorDto<CrSolCalculoCuotaCalcularCuotaData> CrSolCalculoCuota_Cuota_Calcular(
             int codEmpresa, CrSolCalculoCuotaCalcularCuotaRequest request)
