@@ -205,10 +205,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpContratoConsulta,
                     new
                     {
-                        operadora,
-                        cod_plan = NormalizarTexto(cod_plan),
-                        contrato,
-                        usuario = NormalizarTexto(usuario)
+                        Operadora = operadora,
+                        Plan = NormalizarTexto(cod_plan),
+                        Contrato = contrato,
+                        Usuario = NormalizarTexto(usuario)
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
 
@@ -283,7 +283,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query(
                     SpInversionPlazos,
-                    new { codigo = NormalizarTexto(codigo) },
+                    new { Plan = NormalizarTexto(codigo) },
                     commandType: System.Data.CommandType.StoredProcedure)
                 .Select(r => new DropDownListaGenericaModel
                 {
@@ -564,7 +564,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<dynamic>(
                     SpInversionPlazosDias,
-                    new { plazo_inversion },
+                    new { PlazoId = plazo_inversion },
                     commandType: System.Data.CommandType.StoredProcedure));
 
             if (result.Code != 0)

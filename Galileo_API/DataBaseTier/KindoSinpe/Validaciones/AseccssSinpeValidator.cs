@@ -1229,45 +1229,6 @@ namespace Galileo_API.DataBaseTier
             }
             return res;
         }
-
-        private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF, bool isPin)
-        {
-           
-            var response = new ErrorDto<int>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = 0
-            };
-
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-                if (isPin)
-                {
-                    response.Result = CODIGO_SUGEF;
-                }
-                else
-                {
-                    var query = @"
-                            SELECT CODIGO_PIN
-                            FROM AFI_TIPOS_IDS
-                            WHERE CODIGO_SUGEF = @CodigoSugef;";
-
-                    response.Result = connection.QueryFirstOrDefault<int>(query, new { CodigoSugef = CODIGO_SUGEF });
-                }
-            }
-            catch (Exception)
-            {
-                response.Code = -1;
-                response.Description = "Error al obtener el tipo de identificación PIN.";
-                response.Result = 0;
-            }
-
-            return response;
-        }
-
         private ErrorDto<string> ConsultarConsecutivoSinpe(int CodEmpresa)
         {
            
