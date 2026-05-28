@@ -1,4 +1,5 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.AH;
 using Galileo.Models.ERROR;

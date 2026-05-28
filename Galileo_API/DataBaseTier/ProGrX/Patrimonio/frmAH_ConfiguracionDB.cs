@@ -65,8 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             };
 
             var cuentaPatrimonioInvalida = cuentasPatrimonio
-                .Where(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
-                .FirstOrDefault();
+                .FirstOrDefault(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value));
 
             if (cuentaPatrimonioInvalida.Key != null)
             {
@@ -88,8 +87,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 };
 
                 var cuentaExcedenteInvalida = cuentasExcedentes
-                    .Where(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value))
-                    .FirstOrDefault();
+                    .FirstOrDefault(item => !AH_Configuracion_CuentaEsValida(codEmpresa, item.Value));
 
                 if (cuentaExcedenteInvalida.Key != null)
                 {
