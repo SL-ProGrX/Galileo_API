@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 
         public FrmFndBitacoraDb(IConfiguration config)
         {
-            _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
+            _portalDb = new PortalDB(config);
             _mProGrxMain = new MProGrxMain(config);
         }
 
@@ -273,8 +273,8 @@ WHERE M.modulo = @Modulo
             FrmFndBitacoraCambiosRequest request,
             List<string> movimientos)
         {
-            var fechaInicio = (request.FechaIni ?? new DateTime(1900, 1, 1)).Date;
-            var fechaFin = (request.FechaFin ?? new DateTime(2100, 12, 31)).Date.AddDays(1).AddTicks(-1);
+            var fechaInicio = (request.FechaIni ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified)).Date;
+            var fechaFin = (request.FechaFin ?? new DateTime(2100, 12, 31, 0, 0, 0, DateTimeKind.Unspecified)).Date.AddDays(1).AddTicks(-1);
 
             return new
             {

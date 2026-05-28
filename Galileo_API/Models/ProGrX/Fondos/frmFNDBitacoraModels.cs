@@ -19,15 +19,15 @@
 
         // Soporte para la lógica real del V6 aunque el Angular actual aún no los envía.
         public string? Usuario { get; set; }
-        public bool BuscarUsuarioFechaRevision { get; set; }
+        public bool BuscarUsuarioFechaRevision { get; set; } = false;
     }
 
     public class FrmFndBitacoraCambiosDto
     {
-        public int id_Bitacora { get; set; }
-        public int cod_Operadora { get; set; }
+        public int id_Bitacora { get; set; } = 0;
+        public int cod_Operadora { get; set; } = 0;
         public string cod_Plan { get; set; } = string.Empty;
-        public int cod_Contrato { get; set; }
+        public int cod_Contrato { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
         public string movimiento { get; set; } = string.Empty;
@@ -37,12 +37,12 @@
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string movimientoDesc { get; set; } = string.Empty;
-        public int revisado { get; set; }
+        public int revisado { get; set; } = 0;
     }
 
     public class FrmFndBitacoraCambioRevisarRequest
     {
-        public int id_Bitacora { get; set; }
+        public int id_Bitacora { get; set; } = 0;
         public string revisado_Usuario { get; set; } = string.Empty;
     }
 
