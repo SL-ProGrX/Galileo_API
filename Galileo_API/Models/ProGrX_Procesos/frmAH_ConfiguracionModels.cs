@@ -35,7 +35,7 @@ namespace Galileo.Models.AH
         public string porcentaje_rentacap { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
         public string cta_exc_reserva { get; set; } = string.Empty;
-        public string excedentes_cfg { get; set; } = string.Empty;
+        public int excedentes_cfg { get; set; } = 0;
         public string divisa_desc { get; set; } = string.Empty;
         public string cta_obr_mask { get; set; } = string.Empty;
         public string cta_obr_desc { get; set; } = string.Empty;
@@ -69,5 +69,45 @@ namespace Galileo.Models.AH
         public string cta_epg_desc { get; set; } = string.Empty;
         public string cta_ereserva_mask { get; set; } = string.Empty;
         public string cta_ereserva_desc { get; set; } = string.Empty;
+    }
+
+    public class AhConfiguracionGuardarRequest
+    {
+        public string cod_divisa { get; set; } = string.Empty;
+        public int excedentes_cfg { get; set; } = 0;
+        public AhConfiguracionPatrimonioRequest patrimonio { get; set; } = new();
+        public AhConfiguracionExcedentesRequest excedentes { get; set; } = new();
+    }
+
+    public class AhConfiguracionPatrimonioRequest
+    {
+        public string cta_obrero { get; set; } = string.Empty;
+        public string cta_patronal { get; set; } = string.Empty;
+        public string cta_extra { get; set; } = string.Empty;
+        public string cta_capitaliza { get; set; } = string.Empty;
+        public string cta_custodia { get; set; } = string.Empty;
+        public string cta_devoluciones { get; set; } = string.Empty;
+        public string cta_liqpas { get; set; } = string.Empty;
+        public string cta_rentacap { get; set; } = string.Empty;
+    }
+
+    public class AhConfiguracionExcedentesRequest
+    {
+        public string cta_renta { get; set; } = string.Empty;
+        public string cta_excdist { get; set; } = string.Empty;
+        public string cta_excpagar { get; set; } = string.Empty;
+        public string cta_excnc { get; set; } = string.Empty;
+        public string cta_excajustecobrar { get; set; } = string.Empty;
+        public string cta_excajustepagar { get; set; } = string.Empty;
+        public string cta_excdonacion { get; set; } = string.Empty;
+        public string cta_exc_reserva { get; set; } = string.Empty;
+    }
+
+    public class AhConfiguracionCuentaValidarResponse
+    {
+        public string cuenta { get; set; } = string.Empty;
+        public string cuenta_mask { get; set; } = string.Empty;
+        public string cuenta_desc { get; set; } = string.Empty;
+        public bool valida { get; set; } = false;
     }
 }
