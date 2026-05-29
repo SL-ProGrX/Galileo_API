@@ -1,6 +1,5 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Clientes;
-using Galileo_API.DataBaseTier.ProGrX.Clientes;
 using Galileo_API.Models.ProGrX.Clientes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
