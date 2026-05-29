@@ -434,6 +434,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     var oficinaTitular = oficina?.Titular ?? string.Empty;
 
                     var proceso = EjecutarProcesoRetiroLiquidacion(connection, filtros, tipoDoc, oficinaTitular);
+                    RegistrarTrazabilidadLiquidacion(CodEmpresa, proceso, filtros);
                     RegistrarTagLiquidacion(proceso, filtros);
                     return proceso;
                 });
@@ -574,6 +575,21 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Modulo = "FLQ",
             });
         }
+        private void RegistrarTrazabilidadLiquidacion(int codEmpresa, FndRetLiqProcesoData proceso, FiltrosRetLiqAplicar filtros)
+        {
+            if (proceso.liq_Num <= 0)
+            {
+                return;
+            }
+
+            _mMain.sbTrazabilidad_Inserta(
+                    codEmpresa,
+                    "08",
+                    proceso.liq_Num.ToString(),
+                    proceso.liq_Num.ToString(),
+                    NormalizarTexto(filtros.Usuario));
+        }
+
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
     }
 }
