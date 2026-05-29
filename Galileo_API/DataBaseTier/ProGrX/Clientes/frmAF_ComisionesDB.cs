@@ -23,70 +23,83 @@ namespace Galileo.DataBaseTier
 
         #region Remesa
 
-        /// <summary>
-        /// Método que obtiene la lista de comisiones en remesa
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="exporta"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> AF_ComisionesRemesa_Obtener(int CodEmpresa, bool exporta, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<TablasListaGenericaModel>()
+            var resultadoVacio = new TablasListaGenericaModel
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new TablasListaGenericaModel()
+                total = 0,
+                lista = new List<AfComisionDto>()
+            };
+
+            var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
+            {
+                var salida = new TablasListaGenericaModel
                 {
                     total = 0,
                     lista = new List<AfComisionDto>()
-                }
-            };
+                };
 
-            try
-            {
-                var query = "";
-                using var connection = new SqlConnection(stringConn);
-                query = $@"select COUNT(Cod_Comision) from afi_comisiones";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
+                var parametros = new DynamicParameters();
+                var whereClause = string.Empty;
+                var filtroTexto = filtros?.filtro?.Trim();
 
-                if (filtros.filtro != null)
+                salida.total = connection.ExecuteScalar<int>("select COUNT(Cod_Comision) from afi_comisiones");
+
+                if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    filtros.filtro = " WHERE ( Cod_Comision LIKE '%" + filtros.filtro + "%' " +
-                        " OR Usuario LIKE '%" + filtros.filtro + "%' " +
-                        " OR estado LIKE '%" + filtros.filtro + "%' " +
-                        " OR fecha LIKE '%" + filtros.filtro + "%' ) ";
+                    whereClause = @" WHERE (
+                                        CAST(Cod_Comision AS VARCHAR(50)) LIKE @Filtro
+                                        OR Usuario LIKE @Filtro
+                                        OR Estado LIKE @Filtro
+                                        OR CONVERT(VARCHAR(25), Fecha, 120) LIKE @Filtro
+                                    )";
+                    parametros.Add("Filtro", $"%{filtroTexto}%");
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
+                var sortField = filtros?.sortField;
+                if (string.IsNullOrWhiteSpace(sortField))
                 {
-                    filtros.sortField = "Cod_Comision";
+                    sortField = "Cod_Comision";
                 }
+
+                if (sortField != "Cod_Comision" &&
+                    sortField != "FECHA" &&
+                    sortField != "USUARIO" &&
+                    sortField != "ESTADO")
+                {
+                    sortField = "Cod_Comision";
+                }
+
+                var sortDirection = (filtros?.sortOrder ?? 0) == 0 ? "ASC" : "DESC";
+                string query;
 
                 if (exporta)
                 {
-                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO from afi_comisiones 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "ASC" : "DESC")} ";
+                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO
+                               from afi_comisiones
+                               {whereClause}
+                               order by {sortField} {sortDirection}";
                 }
                 else
                 {
-                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO from afi_comisiones
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "ASC" : "DESC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
+                    parametros.Add("OffsetRows", filtros?.pagina ?? 0);
+                    parametros.Add("FetchRows", filtros?.paginacion ?? 0);
+
+                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO
+                               from afi_comisiones
+                               {whereClause}
+                               order by {sortField} {sortDirection}
+                               OFFSET @OffsetRows ROWS
+                               FETCH NEXT @FetchRows ROWS ONLY";
                 }
 
+                salida.lista = connection.Query<AfComisionDto>(query, parametros).ToList();
+                return salida;
+            });
 
-                result.Result.lista = connection.Query<AfComisionDto>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? resultadoVacio)
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener comisiones en remesa.", result.Code.GetValueOrDefault(-1), resultadoVacio);
         }
 
 
