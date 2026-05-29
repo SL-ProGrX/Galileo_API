@@ -25,6 +25,50 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<TablasListaGenericaModel> AF_ComisionesRemesa_Obtener(int CodEmpresa, bool exporta, FiltrosLazyLoadData filtros)
         {
+            const string queryExporta = @"
+                SELECT COD_COMISION, FECHA, USUARIO, ESTADO
+                FROM afi_comisiones
+                WHERE (
+                    @Filtro IS NULL
+                    OR CAST(COD_COMISION AS VARCHAR(50)) LIKE @Filtro
+                    OR USUARIO LIKE @Filtro
+                    OR ESTADO LIKE @Filtro
+                    OR CONVERT(VARCHAR(25), FECHA, 120) LIKE @Filtro
+                )
+                ORDER BY
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN COD_COMISION END ASC,
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN COD_COMISION END DESC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN FECHA END ASC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN FECHA END DESC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN USUARIO END ASC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN USUARIO END DESC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN ESTADO END ASC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN ESTADO END DESC,
+                    COD_COMISION ASC;";
+
+            const string queryPaginado = @"
+                SELECT COD_COMISION, FECHA, USUARIO, ESTADO
+                FROM afi_comisiones
+                WHERE (
+                    @Filtro IS NULL
+                    OR CAST(COD_COMISION AS VARCHAR(50)) LIKE @Filtro
+                    OR USUARIO LIKE @Filtro
+                    OR ESTADO LIKE @Filtro
+                    OR CONVERT(VARCHAR(25), FECHA, 120) LIKE @Filtro
+                )
+                ORDER BY
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN COD_COMISION END ASC,
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN COD_COMISION END DESC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN FECHA END ASC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN FECHA END DESC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN USUARIO END ASC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN USUARIO END DESC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN ESTADO END ASC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN ESTADO END DESC,
+                    COD_COMISION ASC
+                OFFSET @OffsetRows ROWS
+                FETCH NEXT @FetchRows ROWS ONLY;";
+
             var resultadoVacio = new TablasListaGenericaModel
             {
                 total = 0,
@@ -39,61 +83,35 @@ namespace Galileo.DataBaseTier
                     lista = new List<AfComisionDto>()
                 };
 
-                var parametros = new DynamicParameters();
-                var whereClause = string.Empty;
                 var filtroTexto = filtros?.filtro?.Trim();
+                var sortField = filtros?.sortField;
+                var sortDirection = (filtros?.sortOrder ?? 0) == 0 ? "ASC" : "DESC";
+
+                if (string.IsNullOrWhiteSpace(sortField) ||
+                    (sortField != "Cod_Comision" &&
+                     sortField != "FECHA" &&
+                     sortField != "USUARIO" &&
+                     sortField != "ESTADO"))
+                {
+                    sortField = "Cod_Comision";
+                }
+
+                var parametros = new DynamicParameters();
+                parametros.Add("Filtro", string.IsNullOrWhiteSpace(filtroTexto) ? null : $"%{filtroTexto}%");
+                parametros.Add("SortField", sortField);
+                parametros.Add("SortDirection", sortDirection);
 
                 salida.total = connection.ExecuteScalar<int>("select COUNT(Cod_Comision) from afi_comisiones");
 
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    whereClause = @" WHERE (
-                                        CAST(Cod_Comision AS VARCHAR(50)) LIKE @Filtro
-                                        OR Usuario LIKE @Filtro
-                                        OR Estado LIKE @Filtro
-                                        OR CONVERT(VARCHAR(25), Fecha, 120) LIKE @Filtro
-                                    )";
-                    parametros.Add("Filtro", $"%{filtroTexto}%");
-                }
-
-                var sortField = filtros?.sortField;
-                if (string.IsNullOrWhiteSpace(sortField))
-                {
-                    sortField = "Cod_Comision";
-                }
-
-                if (sortField != "Cod_Comision" &&
-                    sortField != "FECHA" &&
-                    sortField != "USUARIO" &&
-                    sortField != "ESTADO")
-                {
-                    sortField = "Cod_Comision";
-                }
-
-                var sortDirection = (filtros?.sortOrder ?? 0) == 0 ? "ASC" : "DESC";
-                string query;
-
                 if (exporta)
                 {
-                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO
-                               from afi_comisiones
-                               {whereClause}
-                               order by {sortField} {sortDirection}";
-                }
-                else
-                {
-                    parametros.Add("OffsetRows", filtros?.pagina ?? 0);
-                    parametros.Add("FetchRows", filtros?.paginacion ?? 0);
-
-                    query = $@"select COD_COMISION,FECHA,USUARIO,ESTADO
-                               from afi_comisiones
-                               {whereClause}
-                               order by {sortField} {sortDirection}
-                               OFFSET @OffsetRows ROWS
-                               FETCH NEXT @FetchRows ROWS ONLY";
+                    salida.lista = connection.Query<AfComisionDto>(queryExporta, parametros).ToList();
+                    return salida;
                 }
 
-                salida.lista = connection.Query<AfComisionDto>(query, parametros).ToList();
+                parametros.Add("OffsetRows", filtros?.pagina ?? 0);
+                parametros.Add("FetchRows", filtros?.paginacion ?? 0);
+                salida.lista = connection.Query<AfComisionDto>(queryPaginado, parametros).ToList();
                 return salida;
             });
 

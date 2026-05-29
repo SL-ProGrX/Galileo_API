@@ -71,52 +71,79 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns></returns>
         public ErrorDto<AfEstadosLista> AF_Estados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AfEstadosLista>
+            const string queryBase = @"
+                SELECT cod_estado,
+                       descripcion,
+                       activo,
+                       deduce_creditos,
+                       deduce_patrimonio,
+                       deduce_ahorros
+                FROM afi_estados_persona
+                WHERE (
+                    @Filtro IS NULL
+                    OR cod_estado LIKE @Filtro
+                    OR descripcion LIKE @Filtro
+                )
+                ORDER BY
+                    CASE WHEN @SortField = 'cod_estado' AND @SortDirection = 'ASC' THEN cod_estado END ASC,
+                    CASE WHEN @SortField = 'cod_estado' AND @SortDirection = 'DESC' THEN cod_estado END DESC,
+                    CASE WHEN @SortField = 'descripcion' AND @SortDirection = 'ASC' THEN descripcion END ASC,
+                    CASE WHEN @SortField = 'descripcion' AND @SortDirection = 'DESC' THEN descripcion END DESC,
+                    CASE WHEN @SortField = 'activo' AND @SortDirection = 'ASC' THEN CAST(activo AS INT) END ASC,
+                    CASE WHEN @SortField = 'activo' AND @SortDirection = 'DESC' THEN CAST(activo AS INT) END DESC,
+                    CASE WHEN @SortField = 'deduce_creditos' AND @SortDirection = 'ASC' THEN CAST(deduce_creditos AS INT) END ASC,
+                    CASE WHEN @SortField = 'deduce_creditos' AND @SortDirection = 'DESC' THEN CAST(deduce_creditos AS INT) END DESC,
+                    CASE WHEN @SortField = 'deduce_patrimonio' AND @SortDirection = 'ASC' THEN CAST(deduce_patrimonio AS INT) END ASC,
+                    CASE WHEN @SortField = 'deduce_patrimonio' AND @SortDirection = 'DESC' THEN CAST(deduce_patrimonio AS INT) END DESC,
+                    CASE WHEN @SortField = 'deduce_ahorros' AND @SortDirection = 'ASC' THEN CAST(deduce_ahorros AS INT) END ASC,
+                    CASE WHEN @SortField = 'deduce_ahorros' AND @SortDirection = 'DESC' THEN CAST(deduce_ahorros AS INT) END DESC,
+                    cod_estado ASC";
+
+            const string queryPaginado = queryBase + @"
+                OFFSET @OffsetRows ROWS
+                FETCH NEXT @FetchRows ROWS ONLY";
+
+            var resultadoVacio = new AfEstadosLista
             {
-                Code = 0,
-                Result = new AfEstadosLista()
-                {
-                    total = 0,
-                    lista = new List<AfEstadosDto>()
-                }
+                total = 0,
+                lista = new List<AfEstadosDto>()
             };
-            try
+
+            var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
-                var queryT = "select COUNT(cod_estado) from afi_estados_persona";
-                response.Result.total = connection.Query<int>(queryT).FirstOrDefault();
-
-                if (filtros.filtro != null)
+                var salida = new AfEstadosLista
                 {
-                    filtros.filtro = " WHERE ( cod_estado LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
+                    total = connection.ExecuteScalar<int>("select COUNT(cod_estado) from afi_estados_persona"),
+                    lista = new List<AfEstadosDto>()
+                };
+
+                var filtroTexto = filtros?.filtro?.Trim();
+                var sortField = ObtenerSortFieldEstados(filtros?.sortField);
+                var sortDirection = ObtenerSortDirectionEstados(filtros?.sortOrder ?? 0);
+
+                var parametros = new DynamicParameters();
+                parametros.Add("Filtro", string.IsNullOrWhiteSpace(filtroTexto) ? null : $"%{filtroTexto}%");
+                parametros.Add("SortField", sortField);
+                parametros.Add("SortDirection", sortDirection);
+
+                var offsetRows = filtros?.pagina ?? 0;
+                var fetchRows = filtros?.paginacion ?? 0;
+
+                if (fetchRows > 0)
+                {
+                    parametros.Add("OffsetRows", offsetRows);
+                    parametros.Add("FetchRows", fetchRows);
+                    salida.lista = connection.Query<AfEstadosDto>(queryPaginado, parametros).ToList();
+                    return salida;
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "cod_estado";
-                }
+                salida.lista = connection.Query<AfEstadosDto>(queryBase, parametros).ToList();
+                return salida;
+            });
 
-                var query = $@"select cod_estado,descripcion,activo,deduce_creditos,deduce_patrimonio,deduce_ahorros 
-                        from afi_estados_persona
-                        {filtros.filtro} 
-                        order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")} ";
-
-                if (filtros.paginacion > 0)
-                {
-                    query += $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                }
-                response.Result.lista = connection.Query<AfEstadosDto>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result.total = 0;
-                response.Result.lista = new List<AfEstadosDto>();
-            }
-            return response;
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? resultadoVacio)
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener estados de persona.", result.Code.GetValueOrDefault(-1), resultadoVacio);
         }
 
 
@@ -140,8 +167,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             return CrearRespuestaEstado(result);
         }
-        
-        
+
+
         /// <summary>
         /// Inserta o actualiza el estado de persona usando una conexión abierta.
         /// </summary>
@@ -531,6 +558,24 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
 
+        private static string ObtenerSortFieldEstados(string? sortField)
+        {
+            return sortField switch
+            {
+                "cod_estado" => "cod_estado",
+                "descripcion" => "descripcion",
+                "activo" => "activo",
+                "deduce_creditos" => "deduce_creditos",
+                "deduce_patrimonio" => "deduce_patrimonio",
+                "deduce_ahorros" => "deduce_ahorros",
+                _ => "cod_estado"
+            };
+        }
+
+        private static string ObtenerSortDirectionEstados(int sortOrder)
+        {
+            return sortOrder == 0 ? "DESC" : "ASC";
+        }
         /// <summary>
         /// Crea parámetros seguros para guardar estados.
         /// </summary>

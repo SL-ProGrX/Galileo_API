@@ -32,7 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             string? usuario = "A",
             string? tipo = "ASC")
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_ConsultaAscDesc(codEmpresa, usuario, tipo);
+            return _bl.Patrimonio_frmAH_Autorizadores_ConsultaAscDesc(codEmpresa, usuario ?? "A", tipo ?? "ASC");
         }
 
         [HttpGet("Patrimonio_frmAH_Autorizadores_Lista")]
