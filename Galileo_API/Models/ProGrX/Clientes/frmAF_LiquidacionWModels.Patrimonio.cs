@@ -1,12 +1,23 @@
 ﻿namespace Galileo.Models.ProGrX.Clientes
 {
+    public abstract class AfLiquidacionConCedula
+    {
+        public string Cedula { get; set; } = string.Empty;
+    }
+
+    public abstract class AfLiquidacionConDivisaTipoCambio
+    {
+        public string Cod_Divisa { get; set; } = string.Empty;
+        public decimal Tipo_Cambio { get; set; }
+    }
+
     public class AfLiquidacionCausaAccion
     {
         public byte Mortalidad { get; set; }
         public byte Liq_Alterna { get; set; }
     }
 
-    public class AfLiquidacionConsultaPatrimonio
+    public class AfLiquidacionConsultaPatrimonio : AfLiquidacionConDivisaTipoCambio
     {
         public decimal Ahorro { get; set; }
         public decimal Aporte { get; set; }
@@ -17,14 +28,11 @@
         public decimal Excedente { get; set; }
         public decimal Exc_Renta { get; set; }
         public short Exc_Aplica { get; set; }
-        public string Cod_Divisa { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
         public string Divisa_Local { get; set; } = string.Empty;
     }
 
-    public class AfLiquidacionRentaGlobal
+    public class AfLiquidacionRentaGlobal : AfLiquidacionConCedula
     {
-        public string Cedula { get; set; } = string.Empty;
         public decimal RG_Porcentaje { get; set; }
         public decimal RG_MntNoGravable { get; set; }
         public decimal Retiro_Acumulado { get; set; }
@@ -34,21 +42,19 @@
         public short RG_Aplica { get; set; }
     }
 
-    public class AfLiquidacionRentaGlobalFiltro
+    public class AfLiquidacionRentaGlobalFiltro : AfLiquidacionConCedula
     {
-        public string Cedula { get; set; } = string.Empty;
         public DateTime? Corte { get; set; }
         public decimal MntRetiro { get; set; }
         public string? Plan { get; set; }
     }
 
-    public class AfLiquidacionListaPlanesFiltro
+    public class AfLiquidacionListaPlanesFiltro : AfLiquidacionConCedula
     {
-        public string Cedula { get; set; } = string.Empty;
         public string TipoLiq { get; set; } = "A";
     }
 
-    public class AfLiquidacionListaPlanes
+    public class AfLiquidacionListaPlanes : AfLiquidacionConDivisaTipoCambio
     {
         public int Cod_Contrato { get; set; }
         public string Cod_Plan { get; set; } = string.Empty;
@@ -61,7 +67,5 @@
         public decimal Renta_Global { get; set; }
         public decimal Impuesto_Renta { get; set; }
         public decimal Multa { get; set; }
-        public string Cod_Divisa { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
     }
 }
