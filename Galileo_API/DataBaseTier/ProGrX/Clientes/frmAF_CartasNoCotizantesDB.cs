@@ -51,14 +51,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
                     if (qryMes == 0)
                     {
-                        if (vMes == 1)
-                        {
-                            vMes = 12;
-                        }
-                        else
-                        {
-                            vMes = vMes - 1;
-                        }
+                        vMes = (vMes == 1) ? 12 : vMes - 1;
                     }
 
                     response.Result = vMes;
