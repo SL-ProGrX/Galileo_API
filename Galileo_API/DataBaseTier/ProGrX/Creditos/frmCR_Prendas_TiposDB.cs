@@ -63,15 +63,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.tipo.descripcion = (request.tipo.descripcion ?? string.Empty).Trim();
             request.tipo.formulario = (request.tipo.formulario ?? string.Empty).Trim();
 
-            if (string.IsNullOrWhiteSpace(request.tipo.tipo_prenda))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el tipo de prenda."
-                };
-            }
-
             if (ExisteTipo(codEmpresa, request.tipo.tipo_prenda))
             {
                 return ActualizarTipo(codEmpresa, request);
@@ -90,15 +81,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             request.usuario = Limpiar(request.usuario);
             request.tipo_prenda = Limpiar(request.tipo_prenda);
-
-            if (string.IsNullOrWhiteSpace(request.tipo_prenda))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el tipo de prenda."
-                };
-            }
 
             const string SqlTipoDelete = @"
             delete from CRD_PRENDAS_TIPOS
@@ -121,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             RegistrarBitacora(
                 codEmpresa,
                 request.usuario,
-                "Elimina",
+                "Elimina - WEB",
                 $"Tipo de Prenda: {request.tipo_prenda}"
             );
 
@@ -194,32 +176,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.categoria = Limpiar(request.categoria);
             request.idx = (request.idx ?? string.Empty).Trim();
 
-            if (string.IsNullOrWhiteSpace(request.tipo_prenda))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el tipo de prenda."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(request.categoria))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar la categoria."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(request.idx))
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = "Debe indicar el identificador de la asignacion."
-                };
-            }
             const string SqlAsignacionGuardar = @"
             exec spCrd_Prendas_Cat_List_Asignacion_Add
                 @TipoPrenda,
@@ -287,7 +243,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 codEmpresa,
                 request.usuario,
                 request.tipo.tipo_prenda,
-                "Registra",
+                "Registra - WEB",
                 resp
             );
         }
@@ -312,7 +268,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 codEmpresa,
                 request.usuario,
                 request.tipo.tipo_prenda,
-                "Modifica",
+                "Modifica - WEB",
                 resp
             );
         }
