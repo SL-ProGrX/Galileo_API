@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Galileo.DataBaseTier.ProGrX.Clientes;
+﻿using Galileo.DataBaseTier.ProGrX.Clientes;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
@@ -71,6 +70,5 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return _DB.Af_LiquidacionAsientos_Buscar(CodEmpresa, request);
         }
-
     }
 }
