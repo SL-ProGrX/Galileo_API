@@ -5,6 +5,11 @@
         public string Cedula { get; set; } = string.Empty;
     }
 
+    public abstract class AfLiquidacionFiltroConCedula : AfLiquidacionConCedula
+    {
+        public string? Plan { get; set; }
+    }
+
     public abstract class AfLiquidacionConDivisaTipoCambio
     {
         public string Cod_Divisa { get; set; } = string.Empty;
@@ -42,15 +47,18 @@
         public short RG_Aplica { get; set; }
     }
 
-    public class AfLiquidacionRentaGlobalFiltro : AfLiquidacionConCedula
+    public class AfLiquidacionRentaGlobalFiltro : AfLiquidacionFiltroConCedula
     {
         public DateTime? Corte { get; set; }
         public decimal MntRetiro { get; set; }
-        public string? Plan { get; set; }
     }
 
-    public class AfLiquidacionListaPlanesFiltro : AfLiquidacionConCedula
+    public class AfLiquidacionListaPlanesFiltro : AfLiquidacionFiltroConCedula
     {
+        public AfLiquidacionListaPlanesFiltro()
+        {
+            Plan = null;
+        }
         public string TipoLiq { get; set; } = "A";
     }
 
