@@ -15,6 +15,23 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
 
+        private static string ValidarOperadorFiltro(string operador)
+        {
+            string operadorNormalizado = operador?.Trim() ?? string.Empty;
+
+            return operadorNormalizado switch
+            {
+                "=" => operadorNormalizado,
+                "<>" => operadorNormalizado,
+                ">" => operadorNormalizado,
+                ">=" => operadorNormalizado,
+                "<" => operadorNormalizado,
+                "<=" => operadorNormalizado,
+                _ => throw new ArgumentException("Operador SQL no permitido.")
+            };
+        }
+
+
         /// <summary>
         /// Obtiene el mes de corte para las cartas de no cotizantes, dependiendo del mes actual y el parámetro de aplicación en par_ahcr. (VB6: sbgAF_CartasNoCotizantes_ObtenerMesCorte)
         /// </summary>
@@ -106,23 +123,43 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(conn);
-                var query = $@"select S.cedula,S.nombre,datediff(m,A.fecahorro,dbo.MyGetdate()) as Meses
+
+                string operadorMeses = ValidarOperadorFiltro(filtros.meses);
+                string operadorMora = ValidarOperadorFiltro(filtros.mora);
+
+                const string query = @"select S.cedula,S.nombre,datediff(m,A.fecahorro,dbo.MyGetdate()) as Meses
 		                       ,isnull(sum(R.saldo),0) as Saldos,isnull(sum(V.Intc),0) as IntCor
 		                       ,isnull(sum(V.IntM),0) as IntMor,isnull(sum(V.cuota),0) as Cuotas
 		                        from Socios S inner join Ahorro_consolidado A on S.cedula = A.cedula
-		                        and datediff(m,A.fecahorro,dbo.MyGetdate()) {filtros.meses} @MesesNoCotizar
+		                        and (
+                                    (@OperadorMeses = '=' and datediff(m,A.fecahorro,dbo.MyGetdate()) = @MesesNoCotizar)
+                                    or (@OperadorMeses = '<>' and datediff(m,A.fecahorro,dbo.MyGetdate()) <> @MesesNoCotizar)
+                                    or (@OperadorMeses = '>' and datediff(m,A.fecahorro,dbo.MyGetdate()) > @MesesNoCotizar)
+                                    or (@OperadorMeses = '>=' and datediff(m,A.fecahorro,dbo.MyGetdate()) >= @MesesNoCotizar)
+                                    or (@OperadorMeses = '<' and datediff(m,A.fecahorro,dbo.MyGetdate()) < @MesesNoCotizar)
+                                    or (@OperadorMeses = '<=' and datediff(m,A.fecahorro,dbo.MyGetdate()) <= @MesesNoCotizar)
+                                )
 		                        and S.estadoactual = 'S' and S.fechaingreso < @dtpIngreso
 		                        left join Reg_Creditos R on S.cedula = R.cedula
 		                        inner join Vista_Morosidad V on R.id_solicitud = V.id_solicitud
 		                        inner join Catalogo C on R.codigo = C.codigo and C.retencion = 'N' and C.poliza = 'N'
 		                        group by S.cedula,S.nombre,A.fecahorro
-		                        Having isnull(Sum(V.cuota), 0) {filtros.mora} @CuotaMora";
+		                        Having (
+                                    (@OperadorMora = '=' and isnull(Sum(V.cuota), 0) = @CuotaMora)
+                                    or (@OperadorMora = '<>' and isnull(Sum(V.cuota), 0) <> @CuotaMora)
+                                    or (@OperadorMora = '>' and isnull(Sum(V.cuota), 0) > @CuotaMora)
+                                    or (@OperadorMora = '>=' and isnull(Sum(V.cuota), 0) >= @CuotaMora)
+                                    or (@OperadorMora = '<' and isnull(Sum(V.cuota), 0) < @CuotaMora)
+                                    or (@OperadorMora = '<=' and isnull(Sum(V.cuota), 0) <= @CuotaMora)
+                                )";
 
                 response.Result = connection.Query<AfCartasNoCotizantesData>(query,
                     new
                     {
+                        OperadorMeses = operadorMeses,
                         MesesNoCotizar = filtros.mesesNoCotizar,
                         dtpIngreso = filtros.fechaIngreso,
+                        OperadorMora = operadorMora,
                         CuotaMora = filtros.cuotaMora
                     }).ToList();
 

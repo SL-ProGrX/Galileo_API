@@ -17,6 +17,7 @@ namespace Galileo.DataBaseTier
         private const string CONSULTA_REALIZADA_CORRECTAMENTE = "Consulta realizada correctamente";
         private const string OPERACION_REALIZADA_CORRECTAMENTE = "Operación realizada correctamente";
         private const string CAMPO_COD_INSTITUCION = "cod_institucion";
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
 
         public FrmAFPrincipalDB(IConfiguration config)
         {
@@ -748,7 +749,7 @@ namespace Galileo.DataBaseTier
         private static bool EsEmailValido(string email)
         {
             if (string.IsNullOrWhiteSpace(email)) return false;
-            return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.None, RegexTimeout);
         }
 
         /// <summary>
