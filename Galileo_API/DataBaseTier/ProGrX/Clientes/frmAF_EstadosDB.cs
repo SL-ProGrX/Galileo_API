@@ -489,15 +489,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                if (Info.check)
-                {
-                    query = @"insert AFI_ESTADOS_INSTITUCIONES(cod_estado,cod_institucion,usuario,fecha)
-                            values( @CodEstado, @CodInstitucion, @Usuario, GETDATE())";
-                }
-                else
-                {
-                    query = @"delete AFI_ESTADOS_INSTITUCIONES where cod_estado = @CodEstado and cod_institucion = @CodInstitucion";
-                }
+                query = Info.check
+                    ? @"insert AFI_ESTADOS_INSTITUCIONES(cod_estado,cod_institucion,usuario,fecha)
+                            values( @CodEstado, @CodInstitucion, @Usuario, GETDATE())"
+                    : @"delete AFI_ESTADOS_INSTITUCIONES where cod_estado = @CodEstado and cod_institucion = @CodInstitucion";
                 connection.Execute(query, new
                 {
                     CodEstado = Info.cod_estado,
