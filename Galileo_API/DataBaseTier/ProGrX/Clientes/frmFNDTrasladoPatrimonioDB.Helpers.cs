@@ -95,7 +95,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 request.CodPlan,
                 request.CodContrato,
                 Monto = request.Monto * -1,
-                FechaProceso = request.Fecha.Year * 100 + request.Fecha.Month,
+                FechaProceso = request.Fecha.HasValue ? request.Fecha.Value.Year * 100 + request.Fecha.Value.Month : 0,
                 request.Tcon,
                 request.Ncon,
                 request.Usuario
@@ -205,7 +205,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 Cedula = NormalizarTexto(socio.Cedula),
                 Tipo = tipo,
                 socio.Monto,
-                FechaProc = request.Fecha.Year * 100 + request.Fecha.Month,
+                FechaProc = request.Fecha.HasValue
+                    ? request.Fecha.Value.Year * 100 + request.Fecha.Value.Month
+                    : 0,
                 NumCom = "NC-" + NormalizarTexto(request.NC_Pat),
                 Tcon = NormalizarTexto(request.TipoDoc),
                 Ncon = NormalizarTexto(request.NC_Pat),

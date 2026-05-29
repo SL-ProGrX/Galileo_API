@@ -247,11 +247,13 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             var codPlan = NormalizarTexto(request.CodPlan);
             var filtraPlan = !string.IsNullOrWhiteSpace(codPlan)
                 && !string.Equals(codPlan, PlanTodos, StringComparison.OrdinalIgnoreCase);
+            var fechaInicio = request.FechaInicio?.Date ?? DateTime.Today;
+            var fechaFin = (request.FechaFin ?? request.FechaInicio ?? fechaInicio).Date.AddDays(1).AddSeconds(-1);
 
             return new
             {
-                FechaInicio = request.FechaInicio.Date,
-                FechaFin = request.FechaFin.Date.AddDays(1).AddSeconds(-1),
+                FechaInicio = fechaInicio,
+                FechaFin = fechaFin,
                 CodPlan = codPlan,
                 FiltraPlan = filtraPlan ? 1 : 0
             };
@@ -278,10 +280,13 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         private static object CrearParametrosResumen(FndConMovCobroResumenRequest request)
         {
+            var fechaInicio = request.FechaInicio?.Date ?? DateTime.Today;
+            var fechaFin = (request.FechaFin ?? request.FechaInicio ?? fechaInicio).Date.AddDays(1).AddSeconds(-1);
+
             return new
             {
-                FechaInicio = request.FechaInicio.Date,
-                FechaFin = request.FechaFin.Date.AddDays(1).AddSeconds(-1),
+                FechaInicio = fechaInicio,
+                FechaFin = fechaFin,
                 CodPlan = NormalizarTexto(request.CodPlan)
             };
         }
