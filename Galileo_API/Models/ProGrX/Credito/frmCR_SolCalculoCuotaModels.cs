@@ -9,16 +9,6 @@ namespace Galileo_API.Models.ProGrX.Credito
         public List<DropDownListaGenericaModel> factores { get; set; } = new();
     }
 
-    public class CrSolCalculoCuotaFactorRequest
-    {
-        public string dato { get; set; } = string.Empty;
-    }
-
-    public class CrSolCalculoCuotaFactorData
-    {
-        public string valor { get; set; } = string.Empty;
-    }
-
     public class CrSolCalculoCuotaCalcularCuotaRequest
     {
         public decimal monto { get; set; } = 0;
