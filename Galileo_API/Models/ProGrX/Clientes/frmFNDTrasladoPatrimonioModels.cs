@@ -27,8 +27,8 @@
     public class FndDocumentoConsecutivoRequest
     {
         public string Tipo { get; set; } = string.Empty;
-        public long Operadora { get; set; }
-        public int SysDocVersion { get; set; }
+        public required long Operadora { get; set; }
+        public required int SysDocVersion { get; set; }
     }
 
     public class FndDocumentoConsecutivoResult
@@ -39,7 +39,7 @@
     public class FndDocumentoConsecutivoAseRequest
     {
         public string Tipo { get; set; } = string.Empty;
-        public int SysDocVersion { get; set; }
+        public required int SysDocVersion { get; set; }
     }
 
     public class FndDocumentoConsecutivoAseResult
@@ -54,11 +54,11 @@
 
     public class FndContratoDetalleInsertRequest
     {
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string CodPlan { get; set; } = string.Empty;
-        public int CodContrato { get; set; }
-        public decimal Monto { get; set; }
-        public DateTime Fecha { get; set; }
+        public required int CodContrato { get; set; }
+        public required decimal Monto { get; set; }
+        public DateTime? Fecha { get; set; }
         public string Tcon { get; set; } = string.Empty;
         public string Ncon { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
@@ -66,19 +66,19 @@
 
     public class FndContratoUpdateRequest
     {
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string CodPlan { get; set; } = string.Empty;
-        public int CodContrato { get; set; }
+        public required int CodContrato { get; set; }
     }
 
     public class FndDocumentoInsertRequest
     {
         public string Tipo { get; set; } = string.Empty;
         public string IdDocumento { get; set; } = string.Empty;
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string Cliente { get; set; } = "APLICACION GENERAL";
         public string Concepto { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Detalle1 { get; set; } = string.Empty;
         public string Detalle2 { get; set; } = string.Empty;
@@ -90,11 +90,11 @@
 
     public class FndAsientoInsertRequest
     {
-        public int CodOperadora { get; set; }
+        public required int CodOperadora { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string IdDocumento { get; set; } = string.Empty;
         public string FndCuenta { get; set; } = string.Empty;
-        public decimal FndMonto { get; set; }
+        public required decimal FndMonto { get; set; }
         public string FndDebehaber { get; set; } = string.Empty;
     }
 
@@ -106,7 +106,7 @@
         public string ClienteIdentificacion { get; set; } = string.Empty;
         public string ClienteNombre { get; set; } = "APLICACION GENERAL";
         public string CodConcepto { get; set; } = "FND003";
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public string Estado { get; set; } = "P";
         public string Referencia01 { get; set; } = string.Empty;
         public string Referencia02 { get; set; } = string.Empty;
@@ -124,11 +124,11 @@
     {
         public string Tipo { get; set; } = string.Empty;
         public string Transaccion { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public string Movimiento { get; set; } = string.Empty; // 'D' o 'C'
         public string Divisa { get; set; } = string.Empty;
-        public decimal TipoCambio { get; set; }
-        public int Contabilidad { get; set; }
+        public required decimal TipoCambio { get; set; }
+        public required int Contabilidad { get; set; }
         public string Unidad { get; set; } = string.Empty;
         public string CentroCosto { get; set; } = string.Empty;
         public string Cuenta { get; set; } = string.Empty;
@@ -159,7 +159,7 @@
     {
         public string Destino { get; set; } = string.Empty; // "O", "P", "C"
         public List<FndAhorroConsolidadoSocio> Socios { get; set; } = new();
-        public DateTime Fecha { get; set; }
+        public DateTime? Fecha { get; set; }
         public string NC_Pat { get; set; } = string.Empty;
         public string TipoDoc { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;

@@ -2,7 +2,7 @@
 {
     public class AfComisionDto
     {
-        public int cod_comision { get; set; }
+        public required int cod_comision { get; set; }
         public DateTime? fecha { get; set; }
         public string? usuario { get; set; }
         public string? estado { get; set; }
@@ -10,18 +10,18 @@
 
     public class AfComisionPromotorData
     {
-        public int id_promotor { get; set; }
+        public required int id_promotor { get; set; }
         public required string nombre { get; set; }
         public required string tipo { get; set; }
-        public int casos { get; set; }
-        public decimal monto { get; set; }
+        public required int casos { get; set; }
+        public required decimal monto { get; set; }
     }
 
     public class AfComisionPagoData
     {
-        public int id_promotor { get; set; }
+        public required int id_promotor { get; set; }
         public required string nombre { get; set; }
-        public decimal monto { get; set; }
+        public required decimal monto { get; set; }
         public required string tipo_documento { get; set; }
         public string? cuenta_ahorros { get; set; }
         public required string nombre_contacto { get; set; }

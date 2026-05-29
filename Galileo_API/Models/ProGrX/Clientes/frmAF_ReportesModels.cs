@@ -24,18 +24,18 @@
 
     public class AfReporteDto
     {
-        public int id_rep { get; set; }
+        public required int id_rep { get; set; }
         public required string tipo { get; set; }
         public required string reporte { get; set; }
         public required string prefijo { get; set; }
-        public bool seguridad { get; set; }
+        public required bool seguridad { get; set; }
     }
 
     public class AfSeguridadGrupoDto
     {
-        public int codgrupo { get; set; }
+        public required int codgrupo { get; set; }
         public string? descripcion { get; set; }
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
     }
 
     public class AfSeguridadMiembroDto

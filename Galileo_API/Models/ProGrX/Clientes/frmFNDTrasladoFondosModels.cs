@@ -17,11 +17,11 @@
     public class FndTrasladoFondosRequest
     {
         public required string PlanOrigen { get; set; }
-        public int ContratoOrigen { get; set; }
+        public required int ContratoOrigen { get; set; }
         public required string Cedula { get; set; }
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public required string PlanDestino { get; set; }
-        public int ContratoDestino { get; set; }
+        public required int ContratoDestino { get; set; }
         public required string Usuario { get; set; }
         public string? Nota { get; set; }
         public string App { get; set; } = "ProGrX";

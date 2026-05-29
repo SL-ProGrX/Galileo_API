@@ -3,8 +3,8 @@
 
     public class FndConMovCobroRequest
     {
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaFin { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaFin { get; set; }
         public string CodPlan { get; set; } = "T"; // "T" para todos, o el código específico
     }
 
@@ -30,18 +30,18 @@
 
     public class FndAcreditaMovCbrPendienteRequest
     {
-        public int Operacion { get; set; }
+        public required int Operacion { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public short Accion { get; set; } 
+        public required short Accion { get; set; } 
         public string TipoDoc { get; set; } = string.Empty;
         public string NumDoc { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
     }
 
     public class FndConMovCobroResumenRequest
     {
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaFin { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaFin { get; set; }
         public string CodPlan { get; set; } = string.Empty;
     }
 

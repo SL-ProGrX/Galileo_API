@@ -38,7 +38,7 @@
 
     public class FndBitacoraCambioRevisarRequest
     {
-        public int Id_Bitacora { get; set; }
+        public required int Id_Bitacora { get; set; }
         public string Revisado_Usuario { get; set; } = string.Empty;
     }
 

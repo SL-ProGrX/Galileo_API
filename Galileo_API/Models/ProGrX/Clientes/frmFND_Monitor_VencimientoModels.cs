@@ -17,7 +17,7 @@
         public DateTime? FechaIni { get; set; }
         public DateTime? FechaFin { get; set; }
         public int? TipoFondo { get; set; }
-        public short TipoCDP { get; set; }
+        public short? TipoCDP { get; set; }
     }
 
     public class FndVencimientosConsultaResult
