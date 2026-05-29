@@ -9,15 +9,13 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_TelefonosController : ControllerBase
+    public class FrmAfTelefonosController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        FrmAFTelefonosBL _bl;
+        private readonly FrmAFTelefonosBL _bl;
 
-        public frmAF_TelefonosController(IConfiguration config)
+        public FrmAfTelefonosController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmAFTelefonosBL(_config);
+            _bl = new FrmAFTelefonosBL(config);
         }
 
         [Authorize]

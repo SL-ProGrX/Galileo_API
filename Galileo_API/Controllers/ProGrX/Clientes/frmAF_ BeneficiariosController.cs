@@ -8,10 +8,10 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_BeneficiariosController : ControllerBase
+    public class FrmAfBeneficiariosController : ControllerBase
     {
-        FrmAFBeneficiariosBL _bl;
-        public frmAF_BeneficiariosController(IConfiguration config)
+        private readonly FrmAFBeneficiariosBL _bl;
+        public FrmAfBeneficiariosController(IConfiguration config)
         {
             _bl = new FrmAFBeneficiariosBL(config);
         }
