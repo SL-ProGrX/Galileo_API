@@ -530,17 +530,12 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                if (Checked)
-                {
-                    query = @"insert into AFI_ESTADOS_INSTITUCIONES(cod_estado,cod_institucion,usuario,fecha) 
+                query = Checked
+                    ? @"insert into AFI_ESTADOS_INSTITUCIONES(cod_estado,cod_institucion,usuario,fecha) 
                             (select @CodEstado, cod_institucion, @Usuario, GETDATE() 
                             from instituciones where activa = 1 and cod_institucion not in(select cod_institucion from AFI_ESTADOS_INSTITUCIONES
-                            where cod_estado = @CodEstado))";
-                }
-                else
-                {
-                    query = "delete AFI_ESTADOS_INSTITUCIONES where cod_estado = @CodEstado";
-                }
+                            where cod_estado = @CodEstado))"
+                    : "delete AFI_ESTADOS_INSTITUCIONES where cod_estado = @CodEstado";
                 connection.Execute(query, new { CodEstado, Usuario });
             }
             catch (Exception ex)
