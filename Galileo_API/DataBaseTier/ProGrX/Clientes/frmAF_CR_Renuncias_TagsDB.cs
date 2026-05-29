@@ -64,21 +64,18 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, AfCrRenunciaRecepcionAplica recepcionDatos)
         {
-            if (recepcionDatos is null)
-            {
-                return DbHelper.ErrorResponse("Los datos de recepción son requeridos.", -2);
-            }
-
-            return EjecutarStoredProcedure(
+            return EjecutarStoredProcedureConValidacion(
                 CodEmpresa,
+                recepcionDatos,
+                "Los datos de recepción son requeridos.",
                 SpRenunciaRecepcionAplica,
-                new
+                dto => new
                 {
-                    recepcionDatos.RenunciaId,
-                    Usuario = NormalizarTexto(recepcionDatos.Usuario),
-                    Notas = NormalizarTexto(recepcionDatos.Notas),
-                    Equipo = NormalizarTexto(recepcionDatos.Equipo),
-                    Version = NormalizarTexto(recepcionDatos.Version)
+                    dto.RenunciaId,
+                    Usuario = NormalizarTexto(dto.Usuario),
+                    Notas = NormalizarTexto(dto.Notas),
+                    Equipo = NormalizarTexto(dto.Equipo),
+                    Version = NormalizarTexto(dto.Version)
                 },
                 "Error al aplicar recepción de renuncia.");
         }
@@ -92,22 +89,19 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, AfCrRenunciaRevisionAplica revisionDatos)
         {
-            if (revisionDatos is null)
-            {
-                return DbHelper.ErrorResponse("Los datos de revisión son requeridos.", -2);
-            }
-
-            return EjecutarStoredProcedure(
+            return EjecutarStoredProcedureConValidacion(
                 CodEmpresa,
+                revisionDatos,
+                "Los datos de revisión son requeridos.",
                 SpRenunciaRevisionAplica,
-                new
+                dto => new
                 {
-                    revisionDatos.RenunciaId,
-                    Usuario = NormalizarTexto(revisionDatos.Usuario),
-                    Notas = NormalizarTexto(revisionDatos.Notas),
-                    Equipo = NormalizarTexto(revisionDatos.Equipo),
-                    Version = NormalizarTexto(revisionDatos.Version),
-                    Estado = NormalizarTexto(revisionDatos.Estado)
+                    dto.RenunciaId,
+                    Usuario = NormalizarTexto(dto.Usuario),
+                    Notas = NormalizarTexto(dto.Notas),
+                    Equipo = NormalizarTexto(dto.Equipo),
+                    Version = NormalizarTexto(dto.Version),
+                    Estado = NormalizarTexto(dto.Estado)
                 },
                 "Error al aplicar revisión de renuncia.");
         }
@@ -160,23 +154,51 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, AfCrRenunciaReversa dto)
         {
+            return EjecutarStoredProcedureConValidacion(
+                CodEmpresa,
+                dto,
+                "Los datos de reversa son requeridos.",
+                SpRenunciaRevisionReversar,
+                data => new
+                {
+                    data.RenunciaId,
+                    Usuario = NormalizarTexto(data.Usuario),
+                    NotasReversa = NormalizarTexto(data.NotasReversa),
+                    Equipo = NormalizarTexto(data.Equipo),
+                    Version = NormalizarTexto(data.Version)
+                },
+                "Error al reversar revisión de renuncia.");
+        }
+        /// <summary>
+        /// Valida que el DTO exista y ejecuta el procedimiento almacenado correspondiente.
+        /// </summary>
+        /// <typeparam name="T">Tipo del DTO de entrada.</typeparam>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="dto">Datos de entrada.</param>
+        /// <param name="requiredMessage">Mensaje de validación cuando el DTO es nulo.</param>
+        /// <param name="storedProcedure">Nombre del procedimiento almacenado.</param>
+        /// <param name="parametersFactory">Constructor de parámetros.</param>
+        /// <param name="errorMessage">Mensaje de error controlado.</param>
+        /// <returns>Resultado de la ejecución.</returns>
+        private ErrorDto EjecutarStoredProcedureConValidacion<T>(
+            int codEmpresa,
+            T? dto,
+            string requiredMessage,
+            string storedProcedure,
+            Func<T, object> parametersFactory,
+            string errorMessage)
+            where T : class
+        {
             if (dto is null)
             {
-                return DbHelper.ErrorResponse("Los datos de reversa son requeridos.", -2);
+                return DbHelper.ErrorResponse(requiredMessage, -2);
             }
 
             return EjecutarStoredProcedure(
-                CodEmpresa,
-                SpRenunciaRevisionReversar,
-                new
-                {
-                    dto.RenunciaId,
-                    Usuario = NormalizarTexto(dto.Usuario),
-                    NotasReversa = NormalizarTexto(dto.NotasReversa),
-                    Equipo = NormalizarTexto(dto.Equipo),
-                    Version = NormalizarTexto(dto.Version)
-                },
-                "Error al reversar revisión de renuncia.");
+                codEmpresa,
+                storedProcedure,
+                parametersFactory(dto),
+                errorMessage);
         }
 
 

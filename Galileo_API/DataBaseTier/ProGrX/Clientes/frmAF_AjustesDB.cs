@@ -155,6 +155,26 @@ namespace Galileo.DataBaseTier
                 SqlEstadosPersonaActivos);
         }
 
+        /// <summary>
+        /// Construye una respuesta estándar según el resultado de una ejecución sin retorno relevante.
+        /// </summary>
+        private static ErrorDto CrearRespuestaOperacion(ErrorDto<int> result, string successMessage, string errorMessage)
+        {
+            return result.Code != 0
+                ? DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1))
+                : DbHelper.OkResponse(successMessage);
+        }
+
+        /// <summary>
+        /// Construye una respuesta estándar a partir de una ejecución WithConn que retorna ErrorDto.
+        /// </summary>
+        private static ErrorDto CrearRespuestaOperacion(ErrorDto<ErrorDto> result, string errorMessage)
+        {
+            return result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
+        }
+
 
         /// <summary>
         /// Actualiza el tipo de identificación de una persona.
@@ -175,9 +195,7 @@ namespace Galileo.DataBaseTier
                     Cedula = NormalizarTexto(cedula)
                 });
 
-            return result.Code != 0
-                ? DbHelper.ErrorResponse(result.Description ?? "Error al actualizar identificación.", result.Code.GetValueOrDefault(-1))
-                : DbHelper.OkResponse("Actualizado correctamente");
+           return CrearRespuestaOperacion(result, "Actualizado correctamente", "Error al actualizar identificación.");
         }
 
 
@@ -214,9 +232,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.OkResponse("Estado actualizado correctamente");
             });
 
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? "Error al cambiar estado.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaOperacion(result, "Error al cambiar estado.");       
         }
 
 
@@ -268,9 +284,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.OkResponse("Actualización aplicada correctamente.");
             });
 
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? "Error al cambiar institución.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaOperacion(result, "Error al cambiar institución.");
         }
 
 
@@ -311,9 +325,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.OkResponse("Institución y dependencias actualizadas correctamente.");
             });
 
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? "Error al cambiar institución.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaOperacion(result, "Error al cambiar institución.");
         }
 
 

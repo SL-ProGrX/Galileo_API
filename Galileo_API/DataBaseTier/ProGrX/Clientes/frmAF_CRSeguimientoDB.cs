@@ -133,10 +133,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestiones(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlGestiones);
+            return EjecutarDropDownQuery(CodEmpresa, SqlGestiones);
         }
 
 
@@ -145,10 +142,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Causas(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlCausasActivas);
+            return EjecutarDropDownQuery(CodEmpresa, SqlCausasActivas);
         }
 
 
@@ -157,10 +151,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Institucion(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlInstituciones);
+            return EjecutarDropDownQuery(CodEmpresa, SqlInstituciones);
         }
 
 
@@ -169,10 +160,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Provincia(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlProvincias);
+            return EjecutarDropDownQuery(CodEmpresa, SqlProvincias);
         }
 
 
@@ -181,10 +169,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Zona(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlZonas);
+            return EjecutarDropDownQuery(CodEmpresa, SqlZonas);
         }
 
 
@@ -245,10 +230,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestion(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlGestiones);
+            return EjecutarDropDownQuery(CodEmpresa, SqlGestiones);
         }
 
 
@@ -257,13 +239,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, AfCrSeguimientoMotivosRegistrar motivos)
         {
-            if (motivos is null)
-            {
-                return DbHelper.ErrorResponse("Los datos del motivo son requeridos.", -2);
-            }
-
-            return EjecutarStoredProcedure(
+            return EjecutarStoredProcedureConValidacion(
                 CodEmpresa,
+                motivos,
+                "Los datos del motivo son requeridos.",
                 SpMotivosRegistra,
                 motivos,
                 "Error al registrar motivo de seguimiento.");
@@ -275,13 +254,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         public ErrorDto AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, AfCrSeguimientoRenunciaEstado estado)
         {
-            if (estado is null)
-            {
-                return DbHelper.ErrorResponse("Los datos del estado son requeridos.", -2);
-            }
-
-            return EjecutarStoredProcedure(
+            return EjecutarStoredProcedureConValidacion(
                 CodEmpresa,
+                estado,
+                "Los datos del estado son requeridos.",
                 SpRenunciaCambioEstado,
                 estado,
                 "Error al cambiar estado de renuncia.");
@@ -320,6 +296,37 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             };
         }
 
+
+        /// <summary>
+        /// Ejecuta una consulta que retorna elementos para dropdown.
+        /// </summary>
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDownQuery(int codEmpresa, string sql)
+        {
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                CreatePortalDb(),
+                codEmpresa,
+                sql);
+        }
+
+        /// <summary>
+        /// Valida que el DTO exista y luego ejecuta el procedimiento almacenado.
+        /// </summary>
+        private ErrorDto EjecutarStoredProcedureConValidacion<T>(
+            int codEmpresa,
+            T? dto,
+            string requiredMessage,
+            string storedProcedure,
+            object parameters,
+            string errorMessage)
+            where T : class
+        {
+            if (dto is null)
+            {
+                return DbHelper.ErrorResponse(requiredMessage, -2);
+            }
+
+            return EjecutarStoredProcedure(codEmpresa, storedProcedure, parameters, errorMessage);
+        }
 
         /// <summary>
         /// Ejecuta un procedimiento almacenado sin retorno.

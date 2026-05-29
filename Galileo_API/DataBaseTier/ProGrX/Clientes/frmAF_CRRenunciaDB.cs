@@ -552,6 +552,52 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
 
 
+
+        /// <summary>
+        /// Ejecuta una operación con conexión abierta y construye un ErrorDto tipado.
+        /// </summary>
+        private ErrorDto<T> EjecutarOperacion<T>(int codEmpresa, Func<SqlConnection, T> operation, T successResult)
+        {
+            var result = new ErrorDto<T>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = successResult
+            };
+
+            try
+            {
+                string stringConn = CreatePortalDb().ObtenerDbConnStringEmpresa(codEmpresa);
+                using var connection = new SqlConnection(stringConn);
+                result.Result = operation(connection);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = default!;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Ejecuta una operación booleana con conexión abierta y construye un ErrorDto estándar.
+        /// </summary>
+        private ErrorDto<bool> EjecutarOperacionBool(int codEmpresa, Action<SqlConnection> operation)
+        {
+            var result = EjecutarOperacion(codEmpresa, connection =>
+            {
+                operation(connection);
+                return true;
+            }, true);
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(true)
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al ejecutar operación.", result.Code.GetValueOrDefault(-1), false);
+        }
+
+
         /// <summary>
         /// Guarda la liquidación de una renuncia
         /// </summary>
@@ -560,17 +606,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns></returns>
         public ErrorDto<int> AF_CR_Renuncias_Liquidacion_Guarda(int CodEmpresa, AfRenunciaLiquidacion request)
         {
-            var result = new ErrorDto<int>()
+            return EjecutarOperacion(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = 0
-            };
-
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
                 var parameters = new DynamicParameters();
 
                 parameters.Add("@Codigo", request.CodRenuncia);
@@ -604,22 +641,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 parameters.Add("@Version", request.Version);
                 parameters.Add("@IdDocumento", request.IdDocumento);
 
-                // El SP retorna el consecutivo como RenunciaId
-                var renunciaId = connection.QuerySingle<int>(
+                return connection.QuerySingle<int>(
                     "spAFI_Renuncia_Liquidacion_Guarda",
                     parameters,
-                    commandType: System.Data.CommandType.StoredProcedure
-                );
-
-                result.Result = renunciaId;
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = 0;
-            }
-            return result;
+                    commandType: System.Data.CommandType.StoredProcedure);
+            }, 0);
         }
 
 
@@ -631,20 +657,12 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> AF_CR_Renuncias_Plan_Insertar(int CodEmpresa, AfRenunciaPlan request)
         {
-            var result = new ErrorDto<bool>()
+            return EjecutarOperacionBool(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
                 var query = @"INSERT INTO AFI_CR_RENUNCIAS_PLANES
-                    (COD_RENUNCIA, COD_CONTRATO, COD_OPERADORA, COD_PLAN, DISPONIBLE, MULTA, REND_PENDIENTE, LIQ_FND, APORTES, RENDIMIENTOS, COD_DIVISA, TIPO_CAMBIO, MARCADA)
-                    VALUES (@CodRenuncia, @CodContrato, @CodOperadora, @CodPlan, @Disponible, @Multa, @RendPendiente, 0, @Aportes, @Rendimientos, @CodDivisa, @TipoCambio, @Marcada)";
+            (COD_RENUNCIA, COD_CONTRATO, COD_OPERADORA, COD_PLAN, DISPONIBLE, MULTA, REND_PENDIENTE, LIQ_FND, APORTES, RENDIMIENTOS, COD_DIVISA, TIPO_CAMBIO, MARCADA)
+            VALUES (@CodRenuncia, @CodContrato, @CodOperadora, @CodPlan, @Disponible, @Multa, @RendPendiente, 0, @Aportes, @Rendimientos, @CodDivisa, @TipoCambio, @Marcada)";
+
                 connection.Execute(query, new
                 {
                     request.CodRenuncia,
@@ -660,14 +678,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     request.TipoCambio,
                     Marcada = request.Marcada ? 1 : 0
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = false;
-            }
-            return result;
+            });
         }
 
 
@@ -679,29 +690,14 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> AF_CR_Renuncias_Abono_Insertar(int CodEmpresa, AfRenunciaAbono request)
         {
-            var result = new ErrorDto<bool>()
+            return EjecutarOperacionBool(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-
-            try
-            {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
                 var query = @"INSERT INTO AFI_CR_RENUNCIAS_ABONOS
-                    (COD_RENUNCIA, ID_SOLICITUD, CODIGO, ABONO, SALDO, CARGOS, MORA_INTC, MORA_INTM, MORA_PRIN, COD_DIVISA, TIPO_CAMBIO, TIPO, GARANTIA, MARCADO)
-                    VALUES (@CodRenuncia, @IdSolicitud, @Codigo, @Abono, @Saldo, @Cargos, @MoraIntC, @MoraIntM, @MoraPrin, @CodDivisa, @TipoCambio, @Tipo, @Garantia, 1)";
+            (COD_RENUNCIA, ID_SOLICITUD, CODIGO, ABONO, SALDO, CARGOS, MORA_INTC, MORA_INTM, MORA_PRIN, COD_DIVISA, TIPO_CAMBIO, TIPO, GARANTIA, MARCADO)
+            VALUES (@CodRenuncia, @IdSolicitud, @Codigo, @Abono, @Saldo, @Cargos, @MoraIntC, @MoraIntM, @MoraPrin, @CodDivisa, @TipoCambio, @Tipo, @Garantia, 1)";
+
                 connection.Execute(query, request);
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = false;
-            }
-            return result;
+            });
         }
     }
 }
