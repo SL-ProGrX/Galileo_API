@@ -1,13 +1,9 @@
 ﻿using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
-using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Clientes;
 using Microsoft.Data.SqlClient;
 using System.Security.Cryptography;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Clientes
 {
@@ -28,6 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
             _mSecurityMainDb = new MSecurityMainDb(config);
             _mProGrx = new MProGrxMain(config);
         }
+
 
         /// <summary>
         /// Metodo para obtener el valor de un parámetro específico relacionado con el cambio de PIN en la afiliación.
@@ -68,6 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
                 ) ?? new FrmAfCambioPinPersonaModel();
             });
         }
+
 
         /// <summary>
         /// Valida si el Ticket ya fue utilizado (VB6: fxTicketValida).
@@ -114,6 +112,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
             return numero.ToString("D4");
         }
 
+
+        /// <summary>
+        /// Registra en bitácora la generación del ticket para cambio de PIN de Autogestión (VB6: sbgAFIBitacora con movimiento "Aplica - WEB").
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="vTicket"></param>
+        /// <returns></returns>
         public ErrorDto Af_CambioPin_Bitacora(int CodEmpresa,string usuario, string vTicket )
         {
             return _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
@@ -125,6 +131,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
                 Modulo = 1
             });
         }
+
 
         /// <summary>
         /// Renueva la clave Web/App de Autogestión (VB6: spuProGrX_MOBILE_Persona_WebKey_Renueva)

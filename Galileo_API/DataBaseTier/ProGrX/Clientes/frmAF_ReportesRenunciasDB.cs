@@ -1,8 +1,6 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
+﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models; // Asegúrate de tener el namespace correcto para DropDownListaGenericaModel
-using System.Collections.Generic;
+using Galileo.Models; 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Clientes
 {
