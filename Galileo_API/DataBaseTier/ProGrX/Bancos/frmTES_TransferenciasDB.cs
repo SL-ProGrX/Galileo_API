@@ -1,9 +1,12 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
+using Org.BouncyCastle.Asn1.Ocsp;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -122,6 +125,9 @@ namespace Galileo_API.DataBaseTier
                     }
                     consc = consc + 1;
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
+
+                    var acreditacionResult = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, consc.ToString("D4"), transferencia.usuario!);
+
                 }
 
                 return DbHelper.OkResponse(
@@ -279,6 +285,33 @@ Where ID_Solicitud = @IdSolicitud";
             }
         }
 
+        private ErrorDto spTes_TEI_Acreaditacion(int CodEmpresa, int banco, string tipo, string documento, string usuario)
+        {
+            try
+            {
+                var connectionString = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
 
+                var parametros = new DynamicParameters();
+
+                parametros.Add("@Banco", banco, DbType.Int64);
+                parametros.Add("@Tipo", tipo, DbType.String);
+                parametros.Add("@Documento", documento, DbType.String);
+                parametros.Add("@Usuario", usuario, DbType.String);
+
+                var result = DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+                      connectionString,
+                      "dbo.spCRDVivGarantiaAvaluo_A",
+                      default,
+                      parametros
+                  ).Result ?? new ErrorDto { Code = -1, Description = "Error desconocido." };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+                
+        }
     }
 }
