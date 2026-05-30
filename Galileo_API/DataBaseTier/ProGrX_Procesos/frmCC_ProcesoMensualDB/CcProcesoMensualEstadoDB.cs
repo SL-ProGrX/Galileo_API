@@ -12,12 +12,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     public class CcProcesoMensualEstadoDB
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain _mProGrx;
 
         public CcProcesoMensualEstadoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
-            _mProGrx = new MProGrxMain(config);
         }
 
         public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion, string usuario)

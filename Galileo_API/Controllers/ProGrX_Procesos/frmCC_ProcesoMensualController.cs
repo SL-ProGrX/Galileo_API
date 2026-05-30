@@ -11,11 +11,11 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
     [Route("api/[controller]")]
     [ApiController]
 
-    public class FrmCC_ProcesoMensualController : ControllerBase
+    public class FrmCcProcesoMensualController : ControllerBase
     {
         private readonly CcProcesoMensualBL  _bl;
 
-        public FrmCC_ProcesoMensualController(IConfiguration config)
+        public FrmCcProcesoMensualController(IConfiguration config)
         {
             _bl = new CcProcesoMensualBL(config);
         }
