@@ -1413,7 +1413,6 @@ where nsolicitud in ";
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             string pFormato = filtros.formatoTE ?? string.Empty;
-            int BancoID = filtros.banco;
 
             try
             {
