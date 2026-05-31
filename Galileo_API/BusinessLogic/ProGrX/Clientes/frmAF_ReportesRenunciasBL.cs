@@ -1,7 +1,6 @@
 ﻿using Galileo_API.DataBaseTier.ProGrX.Clientes;
 using Galileo.Models.ERROR;
 using Galileo.Models;
-using System.Collections.Generic;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Clientes
 {
