@@ -126,7 +126,7 @@ namespace Galileo_API.DataBaseTier
                     consc = consc + 1;
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    var acreditacionResult = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, consc.ToString("D4"), transferencia.usuario!);
+                    spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, consc.ToString("D4"), transferencia.usuario!);
 
                 }
 
