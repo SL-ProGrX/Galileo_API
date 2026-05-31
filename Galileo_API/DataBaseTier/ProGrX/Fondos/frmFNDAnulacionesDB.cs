@@ -138,7 +138,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     new
                     {
                         Plan = NormalizarTexto(Plan),
-                        Tipo = "N",
+                        TipoMov = "N",
                         Usuario = NormalizarTexto(Usuario)
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
@@ -192,7 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<FndAnulacionesEstadoGestionDto>(
                     SpGestionEstado,
-                    new { GestionId },
+                    new { GestionId = GestionId },
                     commandType: System.Data.CommandType.StoredProcedure));
 
             return new ErrorDto<FndAnulacionesEstadoGestionDto>
@@ -524,8 +524,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 new
                 {
                     GestionId = estadoGestion.gestion_id,
-                    vTipoDoc = TipoDocumentoAnulacion,
-                    vRecibo = recibo,
+                    TCon = TipoDocumentoAnulacion,
+                    Ncon = recibo,
                     Usuario = parametros.usuario
                 },
                 commandType: System.Data.CommandType.StoredProcedure);
@@ -581,8 +581,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Operadora = parametros?.operadora,
                 Plan = NormalizarTexto(parametros?.plan),
                 Contrato = parametros?.contrato,
-                AutorizaMonto = parametros?.autoriza_monto ?? 0,
-                Aporte = parametros?.aporte ?? 0,
+                MntSol = parametros?.autoriza_monto ?? 0,
+                MntCal = parametros?.aporte ?? 0,
                 Usuario = NormalizarTexto(parametros?.usuario)
             };
         }
