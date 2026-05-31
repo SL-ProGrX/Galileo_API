@@ -1424,7 +1424,6 @@ where nsolicitud in ";
                 }
 
                 string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
-                string vProcedimiento = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
 
                 string BancoTDoc = filtros.tipoDoc;
                 string BancoPlan = filtros.plan ?? "-sp-";
