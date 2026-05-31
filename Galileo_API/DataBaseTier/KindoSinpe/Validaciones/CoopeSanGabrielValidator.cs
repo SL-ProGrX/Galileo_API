@@ -121,8 +121,6 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
         public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
         {
-            var ok = DbHelper.CreateOkResponse();
-
             try
             {
                 var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario);
