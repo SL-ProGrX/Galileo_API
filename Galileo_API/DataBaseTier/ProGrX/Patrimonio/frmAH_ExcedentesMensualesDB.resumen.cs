@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="periodoId">Periodo seleccionado.</param>
         /// <returns>Lista resumen de cortes del periodo.</returns>
-        public ErrorDto<List<ResumenExcedenteMDto>> Patrimonio_frmAH_ExcedentesMensuales_Resumen_Lista(
+        public ErrorDto<List<ResumenExcedenteMDto>> AH_ExcedentesMensuales_Resumen_Lista(
             int codEmpresa,
             int periodoId)
         {

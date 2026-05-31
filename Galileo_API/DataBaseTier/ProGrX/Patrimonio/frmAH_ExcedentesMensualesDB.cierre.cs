@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene la información base del periodo para el tab Cierre.
         /// </summary>
-        public ErrorDto<ExcedentePeriodoDto?> Patrimonio_frmAH_ExcedentesMensuales_Cierre_Periodo_Obtener(
+        public ErrorDto<ExcedentePeriodoDto?> AH_ExcedentesMensuales_Cierre_Periodo_Obtener(
             int codEmpresa,
             int periodoId)
         {
@@ -46,7 +46,7 @@ WHERE id_periodo = @PeriodoId;";
         /// <summary>
         /// Obtiene la tabla de renta utilizada por el cierre.
         /// </summary>
-        public ErrorDto<List<RentaExcedenteDto>> Patrimonio_frmAH_ExcedentesMensuales_Cierre_Renta_Lista(int codEmpresa)
+        public ErrorDto<List<RentaExcedenteDto>> AH_ExcedentesMensuales_Cierre_Renta_Lista(int codEmpresa)
         {
             const string sql = @"
 SELECT
@@ -63,7 +63,7 @@ ORDER BY Desde;";
         /// <summary>
         /// Valida si el periodo puede cerrarse.
         /// </summary>
-        public ErrorDto<string?> Patrimonio_frmAH_ExcedentesMensuales_Cierre_Valida(
+        public ErrorDto<string?> AH_ExcedentesMensuales_Cierre_Valida(
             int codEmpresa,
             int periodoId)
         {
@@ -90,7 +90,7 @@ select dbo.fxExc_Cierre_Valida(@PeriodoId) as Mensaje;";
         /// <summary>
         /// Ejecuta el cierre de excedentes del periodo.
         /// </summary>
-        public ErrorDto Patrimonio_frmAH_ExcedentesMensuales_Cierre_Aplicar(
+        public ErrorDto AH_ExcedentesMensuales_Cierre_Aplicar(
             int codEmpresa,
             int periodoId,
             string usuario)

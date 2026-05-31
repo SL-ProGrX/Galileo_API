@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de periodos de excedentes.</returns>
-        public ErrorDto<List<ExcPeriodosDto>> Patrimonio_frmAH_ExcedentesMensuales_Periodos_Lista(int codEmpresa)
+        public ErrorDto<List<ExcPeriodosDto>> AH_ExcedentesMensuales_Periodos_Lista(int codEmpresa)
         {
             const string sql = @"
                             SELECT
@@ -41,7 +41,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="periodoId">Periodo seleccionado.</param>
         /// <returns>Lista de cortes del periodo.</returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Patrimonio_frmAH_ExcedentesMensuales_Cortes_Lista(
+        public ErrorDto<List<DropDownListaGenericaModel>> AH_ExcedentesMensuales_Cortes_Lista(
             int codEmpresa,
             int periodoId)
         {
@@ -64,7 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Valida si ya existe una bitácora previa para el proceso y detalle indicados.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesMensuales_Bitacora_Valida(
+        public ErrorDto<bool> AH_ExcedentesMensuales_Bitacora_Valida(
             int codEmpresa,
             int periodoId,
             string codProceso,
@@ -101,7 +101,7 @@ where ID_PERIODO = @PeriodoId
         /// <summary>
         /// Registra una línea de bitácora de excedentes.
         /// </summary>
-        public ErrorDto Patrimonio_frmAH_ExcedentesMensuales_Bitacora_Registrar(
+        public ErrorDto AH_ExcedentesMensuales_Bitacora_Registrar(
             int codEmpresa,
             int periodoId,
             string codProceso,

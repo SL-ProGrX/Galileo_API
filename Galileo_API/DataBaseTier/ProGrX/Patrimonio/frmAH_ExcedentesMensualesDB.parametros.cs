@@ -9,7 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene la lista de parámetros de excedentes.
         /// </summary>
-        public ErrorDto<List<ExcParametrosDto>> Patrimonio_frmAH_ExcedentesMensuales_Parametros_Lista(int codEmpresa)
+        public ErrorDto<List<ExcParametrosDto>> AH_ExcedentesMensuales_Parametros_Lista(int codEmpresa)
         {
             const string sql = @"
 select

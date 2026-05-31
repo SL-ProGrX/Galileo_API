@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene el último periodo cerrado para el tab Aplicaciones.
         /// </summary>
-        public ErrorDto<ExcPeriodosDto?> Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_UltimoPeriodoCerrado_Obtener(int codEmpresa)
+        public ErrorDto<ExcPeriodosDto?> AH_ExcedentesMensuales_Aplicaciones_UltimoPeriodoCerrado_Obtener(int codEmpresa)
         {
             const string sql = @"
 select top 1
@@ -36,7 +36,7 @@ where idx in (select max(idx) from vExc_Periodos where estado = 'C');";
         /// <summary>
         /// Obtiene la bitácora del periodo en etapa de cierre/aplicaciones.
         /// </summary>
-        public ErrorDto<List<BitacoraExcedenteDto>> Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_Log_Lista(
+        public ErrorDto<List<BitacoraExcedenteDto>> AH_ExcedentesMensuales_Aplicaciones_Log_Lista(
             int codEmpresa,
             int periodoId)
         {
@@ -65,7 +65,7 @@ order by Registro_Fecha asc;";
         /// <summary>
         /// Obtiene la lista de procesos pendientes de aplicaciones para el periodo.
         /// </summary>
-        public ErrorDto<List<DropDownListaGenericaModel>> Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_ProcesosPendientes_Lista(
+        public ErrorDto<List<DropDownListaGenericaModel>> AH_ExcedentesMensuales_Aplicaciones_ProcesosPendientes_Lista(
             int codEmpresa,
             int periodoId)
         {
@@ -104,7 +104,7 @@ exec spExc_Aplicaciones_Procesos_Pendientes @PeriodoId;";
         /// <summary>
         /// Ejecuta la separación de salidas del periodo.
         /// </summary>
-        public ErrorDto Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_Salidas_Separa(
+        public ErrorDto AH_ExcedentesMensuales_Aplicaciones_Salidas_Separa(
             int codEmpresa,
             int periodoId,
             string usuario)
@@ -126,7 +126,7 @@ exec spExc_Procesos_Salidas_Separa @PeriodoId, @Usuario;";
         /// <summary>
         /// Obtiene las salidas pendientes de traslado a fondos del periodo.
         /// </summary>
-        public ErrorDto<List<DropDownListaGenericaModel>> Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_SalidasPendientes_Lista(
+        public ErrorDto<List<DropDownListaGenericaModel>> AH_ExcedentesMensuales_Aplicaciones_SalidasPendientes_Lista(
             int codEmpresa,
             int periodoId)
         {
@@ -161,7 +161,7 @@ where DESTINO_PLAN <> ''
         /// <summary>
         /// Ejecuta el traslado a fondos de una salida del periodo.
         /// </summary>
-        public ErrorDto Patrimonio_frmAH_ExcedentesMensuales_Aplicaciones_Salidas_Fondos(
+        public ErrorDto AH_ExcedentesMensuales_Aplicaciones_Salidas_Fondos(
             int codEmpresa,
             int periodoId,
             string salida,
