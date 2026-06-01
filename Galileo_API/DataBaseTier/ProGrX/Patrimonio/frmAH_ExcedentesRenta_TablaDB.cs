@@ -19,7 +19,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
         /// <summary>
         /// Obtiene la tabla de renta de excedentes.
-        /// </summary>
+        /// </summary>ValidarRequest
+
         public ErrorDto<List<RentaExcedenteDto>> AH_ExcedentesRentaTabla_Obtener(int codEmpresa)
         {
             const string sql = @"
@@ -146,7 +147,7 @@ WHERE ID_RENTA = @Id_Renta;";
             return DbHelper.OkResponse("Informacion guardada satisfactoriamente...");
         }
 
-        private ErrorDto ValidarRequest(RentaExcedenteDto? request)
+        private static ErrorDto ValidarRequest(RentaExcedenteDto? request)
         {
             if (request == null)
                 return DbHelper.ErrorResponse("Debe indicar la informacion a guardar.", -2);
