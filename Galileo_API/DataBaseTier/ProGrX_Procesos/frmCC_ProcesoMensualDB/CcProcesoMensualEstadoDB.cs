@@ -12,29 +12,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     public class CcProcesoMensualEstadoDB
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain _mProGrx; 
-        private const string FrecuenciaQuincenalId = "Q";
-        private const string Mensual = "Mensual";
-        private const string PrimeraQuincena = "1er Quincena";
-        private const string SegundaQuincena = "2da Quincena";
-        private const int ValorPrimeraQuincena = 1;
-        private const int ValorSegundaQuincena = 2;
 
         public CcProcesoMensualEstadoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
-            _mProGrx = new MProGrxMain(config); 
         }
 
-        public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, string usuario)
+        public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
             try
             {
-                var globalesResp = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario);
                 var portalId = ObtenerPortalId(connection);
-                var codigoAportes = ObtenerCodigoAportes(connection, globalesResp?.Result?.GInstitucion ?? 0);
+                var codigoAportes = ObtenerCodigoAportes(connection, gInstitucion);
 
                 var response = new CcProcesoMensualInicialResponse
                 {
@@ -43,12 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Aplicaciones = ObtenerAplicaciones(portalId),
                     MostrarAplicacion = portalId == 53 || portalId == 0,
                     HabilitarAhorros = !string.Equals(codigoAportes?.Trim(), "NO", StringComparison.OrdinalIgnoreCase),
-                    Globales = new CcProcesoMensualGlobalesModel
-                    {
-                        GInstitucion = globalesResp?.Result?.GInstitucion ?? 0,
-                        GNombreInstitucion = globalesResp?.Result?.GNombreInstitucion ?? string.Empty,
-                        GlngFechaCR = globalesResp?.Result?.GlngFechaCR ?? 0
-                    }
+                    FechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection),
+
+                    EstadoActual = CcProcesoMensual_EstadoActualProceso_Obtener(codEmpresa, gInstitucion).Result ?? new CcProcesoMensualEstadoResponse()
                 };
 
                 return DbHelper.CreateOkResponse(response);
@@ -111,29 +99,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return aplicaciones;
         }
-        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, string usuario)
+        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
             try
             {
-                var globalesResp = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario);
-                var parametros = ObtenerParametrosInstitucion(connection, globalesResp?.Result?.GInstitucion ?? 0);
+                var parametros = ObtenerParametrosInstitucion(connection, gInstitucion);
 
                 if (parametros is null)
                 {
                     return DbHelper.CreateOkResponse(new CcProcesoMensualEstadoResponse
                     {
                         ExisteParametroProceso = false,
-                        Institucion = globalesResp?.Result?.GNombreInstitucion ?? string.Empty,
                         Mensaje = "NO EXISTEN PARAMETROS DEL PROCESO - !! DEBE CREARLOS ANTES DE ENTRAR AQUI !! "
                     });
                 }
 
                 var response = CrearEstadoResponse(
-                    parametros,
-                    globalesResp?.Result?.GNombreInstitucion ?? string.Empty,
-                    globalesResp?.Result?.GlngFechaCR ?? 0);
+                    parametros);
 
                 return DbHelper.CreateOkResponse(response);
             }
@@ -145,24 +129,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualEstadoResponse());
             }
         }
-        private static CcProcesoMensualEstadoResponse CrearEstadoResponse(CcProcesoMensualInstitucionParametrosModel parametros, string nombreInstitucion, decimal fechaCr)
+        private static CcProcesoMensualEstadoResponse CrearEstadoResponse(CcProcesoMensualInstitucionParametrosModel parametros)
         {
-            var fechaProcesoBase = Math.Truncate(fechaCr).ToString(CultureInfo.InvariantCulture);
-            var ano = ObtenerAnoProceso(fechaProcesoBase);
-            var mes = ObtenerMesProceso(fechaProcesoBase);
-            var frecuenciaSeleccionada = ObtenerFrecuencia(parametros.Frecuencia_Id, fechaCr); 
-
             return new CcProcesoMensualEstadoResponse
             {
                 ExisteParametroProceso = true,
-                Institucion = nombreInstitucion, 
-                Ano = ano,
-                Mes = mes,
-                MesDescripcion = MccFuncionesDb.ObtenerNombreMes(mes),
                 FrecuenciaId = parametros.Frecuencia_Id,
-                Frecuencias = ObtenerFrecuencias(parametros.Frecuencia_Id),
-                FrecuenciaSeleccion = frecuenciaSeleccionada,
-                Indicadores = CrearIndicadores(parametros), 
+                Indicadores = CrearIndicadores(parametros) ?? new CcProcesoMensualIndicadoresModel(),
             };
         }
         private static CcProcesoMensualInstitucionParametrosModel? ObtenerParametrosInstitucion(IDbConnection connection, int codInstitucion)
@@ -185,75 +158,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             return connection.QueryFirstOrDefault<CcProcesoMensualInstitucionParametrosModel>(
                 query,
                 new { CodInstitucion = codInstitucion });
-        }
-        private static List<DropDownListaGenericaModel> ObtenerFrecuencias(string frecuenciaId)
-        {
-            if (string.Equals(frecuenciaId, FrecuenciaQuincenalId, StringComparison.OrdinalIgnoreCase))
-            {
-                return
-                    [
-                        new()
-                        {item = ValorPrimeraQuincena,descripcion = PrimeraQuincena },
-                        new()
-                        {item = ValorSegundaQuincena,descripcion = SegundaQuincena }
-                    ];
-            }
-            return
-                    [
-                        new()
-                        { item = 0,descripcion = Mensual},
-                        new()
-                        {item = ValorPrimeraQuincena, descripcion = PrimeraQuincena },
-                        new()
-                        {item = ValorSegundaQuincena, descripcion = SegundaQuincena }
-                    ];
-        }
-        private static int ObtenerAnoProceso(string fechaProceso)
-        {
-            return fechaProceso.Length >= 4
-                ? int.Parse(fechaProceso[..4], CultureInfo.InvariantCulture)
-                : 0;
-        }
-        private static int ObtenerMesProceso(string fechaProceso)
-        {
-            return fechaProceso.Length >= 6
-                ? int.Parse(fechaProceso.AsSpan(4, 2), CultureInfo.InvariantCulture)
-                : 0;
-        }
-        private static CcProcesoMensualFrecuenciaSeleccionModel ObtenerFrecuencia(string frecuenciaId, decimal fechaProceso)
-        {
-            if (!string.Equals(
-                frecuenciaId,
-                FrecuenciaQuincenalId,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return new CcProcesoMensualFrecuenciaSeleccionModel
-                {
-                    FrecuenciaSeleccionada = Mensual,
-                    SufijoFechaProceso = string.Empty
-                };
-            }
-
-            var quincena = ObtenerParteQuincena(fechaProceso);
-
-            if (quincena == 0.1m)
-            {
-                return new CcProcesoMensualFrecuenciaSeleccionModel
-                {
-                    FrecuenciaSeleccionada = PrimeraQuincena,
-                    SufijoFechaProceso = "_Q1"
-                };
-            }
-
-            return new CcProcesoMensualFrecuenciaSeleccionModel
-            {
-                FrecuenciaSeleccionada = SegundaQuincena,
-                SufijoFechaProceso = "_Q2"
-            };
-        }
-        private static decimal ObtenerParteQuincena(decimal fechaProceso)
-        {
-            return fechaProceso - Math.Truncate(fechaProceso);
         }
         private static CcProcesoMensualIndicadoresModel CrearIndicadores(CcProcesoMensualInstitucionParametrosModel parametros)
         {
@@ -314,6 +218,277 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 indicadores.OpcionCreditosSeleccionada = 3;
             }
         }
+        public ErrorDto<CcProcesoMensualValidaPasoResponse> CcProcesoMensual_ValidaPaso(int codEmpresa, int codInstitucion, decimal fechaProceso, string transaccion = "08")
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
+            try
+            {
+                var request = new CcProcesoMensualValidaPasoRequest
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaProceso = fechaProceso,
+                    Transaccion = string.IsNullOrWhiteSpace(transaccion)
+                        ? "08"
+                        : transaccion.Trim()
+                };
+
+                var resultado = ValidarPaso(connection, request);
+
+                return DbHelper.CreateOkResponse(resultado);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<CcProcesoMensualValidaPasoResponse>(
+                    "Error al validar el paso del proceso mensual.",
+                    -1,
+                    new CcProcesoMensualValidaPasoResponse
+                    {
+                        Valido = false,
+                        Mensaje = "Error al validar el paso del proceso mensual."
+                    });
+            }
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarPaso(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            var bloqueoAplicacion = ValidarBloqueoPorAplicacionFutura(connection, request);
+
+            if (!bloqueoAplicacion.Valido)
+            {
+                return bloqueoAplicacion;
+            }
+
+            var bloqueoPatrimonio = ValidarBloqueoPatrimonio(connection, request);
+
+            if (!bloqueoPatrimonio.Valido)
+            {
+                return bloqueoPatrimonio;
+            }
+
+            var cuadreAbonos = ValidarCuadreAbonos(connection, request);
+
+            if (!cuadreAbonos.Valido)
+            {
+                return cuadreAbonos;
+            }
+
+            var desglose = ValidarDesgloseRealizado(connection, request);
+
+            if (!desglose.Valido)
+            {
+                return desglose;
+            }
+
+            var mesAnterior = ValidarPlanillaMesAnterior(connection, request);
+
+            if (!mesAnterior.Valido)
+            {
+                return mesAnterior;
+            }
+
+            return CrearResultadoValido();
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarBloqueoPorAplicacionFutura(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            if (string.Compare(request.Transaccion, "09", StringComparison.Ordinal) < 0)
+            {
+                var existe = ExisteBitacoraDesdeProceso(
+                    connection,
+                    request.CodInstitucion,
+                    request.FechaProceso,
+                    "08");
+
+                if (existe)
+                {
+                    return CrearResultadoInvalido(
+                        "No se puede realizar el movimiento seleccionado ya que se ha aplicado esta planilla y/o otra futura en los auxiliares... verifique.!");
+                }
+            }
+
+            return CrearResultadoValido();
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarBloqueoPatrimonio(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            if (!EsTransaccion(request.Transaccion, "05"))
+            {
+                return CrearResultadoValido();
+            }
+
+            var existe = ExisteBitacoraDesdeProceso(
+                connection,
+                request.CodInstitucion,
+                request.FechaProceso,
+                "05");
+
+            return existe
+                ? CrearResultadoInvalido(
+                    "No se puede realizar el movimiento seleccionado ya que se ha aplicado esta planilla y/o otra futura en los auxiliares... verifique.!")
+                : CrearResultadoValido();
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarCuadreAbonos(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            if (!EsTransaccion(request.Transaccion, "08"))
+            {
+                return CrearResultadoValido();
+            }
+
+            const string query = @"
+                SELECT dbo.fxPrmAplicacionValida(
+                    @FechaProceso,
+                    @CodInstitucion) AS Valida";
+
+            var valida = connection.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    request.FechaProceso,
+                    request.CodInstitucion
+                });
+
+            return valida == 0
+                ? CrearResultadoInvalido(
+                    "La información detallada de los abonos no cuadra con la información cargada... verifique.!")
+                : CrearResultadoValido();
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarDesgloseRealizado(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            if (!EsTransaccionAplicacion(request.Transaccion))
+            {
+                return CrearResultadoValido();
+            }
+
+            var existe = ExisteBitacoraEnProceso(
+                connection,
+                request.CodInstitucion,
+                request.FechaProceso,
+                "04");
+
+            return !existe
+                ? CrearResultadoInvalido(
+                    "No se ha realizado el proceso de detalle de Aportes/Creditos... verifique.!")
+                : CrearResultadoValido();
+        }
+        private static CcProcesoMensualValidaPasoResponse ValidarPlanillaMesAnterior(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            if (!EsTransaccion(request.Transaccion, "08"))
+            {
+                return CrearResultadoValido();
+            }
+
+            var existe = ExisteAplicacionMesAnterior(
+                connection,
+                request);
+
+            return !existe
+                ? CrearResultadoInvalido(
+                    "La Planilla del Mes anterior no ha sido aplicada... verifique.!")
+                : CrearResultadoValido();
+        }
+        private static bool ExisteAplicacionMesAnterior(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
+        {
+            var procesoBase = Math.Truncate(request.FechaProceso);
+            var diferencia = Math.Round(
+                request.FechaProceso - procesoBase,
+                1,
+                MidpointRounding.AwayFromZero);
+
+            if (diferencia == 0.1m)
+            {
+                const string queryQuincena = @"
+                        SELECT ISNULL(COUNT(*), 0) AS Existe
+                        FROM prm_bitacora
+                        WHERE cod_institucion = @CodInstitucion
+                          AND transaccion = '08'
+                          AND (
+                                proceso = dbo.fxSIFPrmProcesoAnt(@FechaProceso)
+                             OR proceso = dbo.fxSIFPrmProcesoAnt(@ProcesoBase)
+                          )";
+
+                return connection.QueryFirstOrDefault<int>(
+                    queryQuincena,
+                    new
+                    {
+                        request.CodInstitucion,
+                        request.FechaProceso,
+                        ProcesoBase = procesoBase
+                    }) > 0;
+            }
+
+            const string query = @"
+                        SELECT ISNULL(COUNT(*), 0) AS Existe
+                        FROM prm_bitacora
+                        WHERE cod_institucion = @CodInstitucion
+                          AND transaccion = '08'
+                          AND proceso = dbo.fxSIFPrmProcesoAnt(@FechaProceso)";
+
+            return connection.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    request.CodInstitucion,
+                    request.FechaProceso
+                }) > 0;
+        }
+        private static bool ExisteBitacoraEnProceso(IDbConnection connection, int codInstitucion, decimal fechaProceso, string transaccion)
+        {
+            const string query = @"
+                SELECT ISNULL(COUNT(*), 0) AS Existe
+                FROM prm_bitacora
+                WHERE cod_institucion = @CodInstitucion
+                  AND proceso = @FechaProceso
+                  AND transaccion = @Transaccion";
+
+            return connection.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaProceso = fechaProceso,
+                    Transaccion = transaccion
+                }) > 0;
+        }
+        private static bool ExisteBitacoraDesdeProceso(IDbConnection connection, int codInstitucion, decimal fechaProceso, string transaccion)
+        {
+            const string query = @"
+                    SELECT ISNULL(COUNT(*), 0) AS Existe
+                    FROM prm_bitacora
+                    WHERE cod_institucion = @CodInstitucion
+                      AND transaccion = @Transaccion
+                      AND proceso >= @FechaProceso";
+
+            return connection.QueryFirstOrDefault<int>(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    Transaccion = transaccion,
+                    FechaProceso = fechaProceso
+                }) > 0;
+        }
+        private static bool EsTransaccion(string transaccion, string esperada)
+        {
+            return string.Equals(transaccion?.Trim(), esperada, StringComparison.OrdinalIgnoreCase);
+        }
+        private static bool EsTransaccionAplicacion(string transaccion)
+        {
+            return EsTransaccion(transaccion, "08")
+                || EsTransaccion(transaccion, "05");
+        }
+        private static CcProcesoMensualValidaPasoResponse CrearResultadoValido()
+        {
+            return new CcProcesoMensualValidaPasoResponse
+            {
+                Valido = true,
+                Mensaje = string.Empty
+            };
+        }
+        private static CcProcesoMensualValidaPasoResponse CrearResultadoInvalido(string mensaje)
+        {
+            return new CcProcesoMensualValidaPasoResponse
+            {
+                Valido = false,
+                Mensaje = mensaje
+            };
+        }
     }
 }

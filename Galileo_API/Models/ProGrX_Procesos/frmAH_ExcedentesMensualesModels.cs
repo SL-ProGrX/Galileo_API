@@ -14,12 +14,6 @@ namespace Galileo.Models.AH
         public string estado { get; set; } = string.Empty;
     }
 
-    public class ExcPeriodosCorte
-    {
-        public string idx { get; set; } = string.Empty;
-        public string itmx { get; set; } = string.Empty;
-    }
-
     public class ResumenExcedenteMDto
     {
         public string id_periodo { get; set; } = string.Empty;
@@ -30,4 +24,67 @@ namespace Galileo.Models.AH
         public string total { get; set; } = string.Empty;
         public string bruto { get; set; } = string.Empty;
     }
+
+    public class FrmAhExcedentesMensualesBaseAplicacionRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string tipoAplicacion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesMensualAplicarRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public DateTime corte { get; set; } = DateTime.MinValue;
+        public decimal monto { get; set; } = 0;
+        public string tipoAplicacion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesCierreAplicarRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesSalidasSeparaRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesSalidasFondosRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string salida { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesBitacoraRegistrarRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string codProceso { get; set; } = string.Empty;
+        public string detalle { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string codTransaccion { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesMensualPeriodoDto
+    {
+        public string estado { get; set; } = string.Empty;
+        public string tipo_apl_mensual { get; set; } = string.Empty;
+        public string tipo_apl_mensual_desc { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesMensualResultadoDto
+    {
+        public int casos_general { get; set; } = 0;
+        public decimal total_ahorros { get; set; } = 0;
+        public decimal total_aportes { get; set; } = 0;
+        public decimal factor { get; set; } = 0;
+        public decimal total_distribuido { get; set; } = 0;
+        public int casos_proceso { get; set; } = 0;
+    }
+
 }

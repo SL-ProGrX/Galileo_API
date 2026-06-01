@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -22,6 +23,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly VerificadorCoreFactory _factory;
         private readonly MKindoServiceDb mKindo;
 
+        private readonly PortalDB _portalDB;
+
         private readonly string descripcion = "descripcion";
         private readonly string nSolicitud = "NSOLICITUD";
 
@@ -41,6 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             _ConsultaCuentasDB = new FrmCntXConsultaCuentasDb(config);
             _factory = new VerificadorCoreFactory(config);
             mKindo = new MKindoServiceDb(config);
+            _portalDB = new PortalDB(config);
         }
 
         #region Helpers privados para reducir duplicidad
@@ -161,8 +165,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
-                AjustarTipoCedDestino(trx);
-                trx.tipo_ced_destino = mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, Convert.ToInt32(trx.tipo_ced_destino)).Result;
+                trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
 
                 trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
@@ -174,6 +177,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 return trx;
             });
+        }
+
+        public int fxTipoIdentificacion(int CodEmpresa, string cedula)
+        {
+            var ced_destino = MKindoServiceDb.Inferir(cedula!);
+            var tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
+            return mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, tipo_ced_destino).Result;
         }
 
         #endregion
@@ -1726,11 +1736,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             });
         }
 
-        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco, string? tipoOrigen = "1")
+        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco, bool? CuentaInterna = false)
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var infoSql = @"SELECT COD_GRUPO, CTA, COD_DIVISA, INT_GRUPOS_ASOCIADOS 
                         FROM TES_BANCOS 
@@ -1741,102 +1752,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (bancoInfo == null)
                     return Error<List<TesCuentasBancarias>>("Banco no encontrado.");
 
-                string query;
-
-                if (tipoOrigen == "1")
+                var query = "exec spSys_Cuentas_Bancarias @Identificacion, @BancoId, @DivisaCheck";
+                var parameters = new
                 {
-                    if (!bancoInfo.int_grupos_asociados)
-                    {
-                        query = @"
-                    SELECT 
-                        C.CUENTA_INTERNA,
-                        rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
-                        C.CUENTA_INTERNA as itmx,
-                        @Idx as idx
-                    FROM SYS_CUENTAS_BANCARIAS C
-                    INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                    WHERE 
-                        STUFF(
-                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
-                            1,
-                            PATINDEX(
-                                '%[^0]%',
-                                REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
-                            ) - 1,
-                            ''
-                        )
-                        =
-                        STUFF(
-                            REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', ''),
-                            1,
-                            PATINDEX(
-                                '%[^0]%',
-                                REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', '')
-                            ) - 1,
-                            ''
-                        )
-                      --AND B.COD_GRUPO = @Grupo
-                      AND C.COD_DIVISA = @Divisa
-                      AND C.ACTIVA = 1
-                ";
-                    }
-                    else
-                    {
-                        query = @"
-                    SELECT 
-                        C.CUENTA_INTERNA,
-                        rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
-                        C.CUENTA_INTERNA as itmx,
-                        @Idx as idx
-                    FROM SYS_CUENTAS_BANCARIAS C
-                    INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                    WHERE STUFF(
-                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
-                            1,
-                            PATINDEX(
-                                '%[^0]%',
-                                REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
-                            ) - 1,
-                            ''
-                        )
-                        =
-                        STUFF(
-                            REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', ''),
-                            1,
-                            PATINDEX(
-                                '%[^0]%',
-                                REPLACE(REPLACE(LTRIM(RTRIM(@Cedula)), '-', ''), ' ', '')
-                            ) - 1,
-                            ''
-                        )
-                      AND B.COD_GRUPO IN (
-                            SELECT COD_GRUPO 
-                            FROM TES_BANCOS_GRUPOS_ASG 
-                            WHERE ID_BANCO = @BancoId
-                      )
-                      AND C.COD_DIVISA = @Divisa
-                      AND C.ACTIVA = 1
-                ";
-                    }
-                }
-                else
-                {
-                    return Error<List<TesCuentasBancarias>>("TipoOrigen no soportado.");
-                }
+                    Identificacion = (identificacion ?? string.Empty)
+                    .Trim()
+                    .Replace("-", "")
+                    .TrimStart('0'),
+                    BancoId = banco,
+                    DivisaCheck = 0
+                };
 
                 var lista = connection.Query<TesCuentasBancarias>(
                     query,
-                    new
-                    {
-                        Cedula = identificacion,
-                        Grupo = bancoInfo.cod_grupo,
-                        Divisa = bancoInfo.cod_divisa,
-                        BancoId = banco,
-                        Idx = bancoInfo.cta
-                    }
-                ).ToList();
+                    parameters).ToList();
 
-                return Ok(lista);
+                //elimina Duplciados
+                var result = lista.GroupBy(x => new { x.cuenta_desc, x.cuenta_interna })
+                                  .Select(g => g.First())
+                                  .ToList();
+
+                result = result.Where(x => x.cuenta_desc!.Contains(bancoInfo.cod_divisa!)).ToList();
+
+                if (CuentaInterna == true)
+                {
+                    //filtro cuando descripcion contiene INT
+                    result = result.Where(x => x.cuenta_desc!.Contains("INT")).ToList();
+                }
+
+                return Ok(result);
+
             }
             catch (Exception ex)
             {
@@ -1876,6 +1821,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     empresa = CodEmpresa
                 }) ?? new TesCuentasBancarias();
             });
+        }
+
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                //Busco si la cuenta esta registrada para la cedula
+                var query = @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
+                                     ON s.CEDULA = c.IDENTIFICACION 
+                                    WHERE CUENTA_INTERNA = @cuenta
+                                    AND ACTIVA = 1";
+
+                var cuentaInfo = connection.QueryFirstOrDefault<dynamic>(query, new { cuenta });
+
+                if(cuentaInfo == null)
+                {
+                    //Valido la cedula por Kindo
+                    var servicio = _factory.CrearServicio(CodEmpresa, usuario);
+                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+
+                    return result.Code == 0
+                        ? DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.")
+                        : DbHelper.ErrorResponse("La cuenta no es válida para la cédula proporcionada.");
+                }
+
+                var id1 = cuentaInfo.IDENTIFICACION
+                            .Trim()
+                            .Replace("-", "")
+                            .Replace(" ", "")
+                            .TrimStart('0');
+
+                var id2 = cedula.Trim()
+                            .Replace("-", "")
+                            .Replace(" ", "")
+                            .TrimStart('0');
+
+                if (id1 == id2)
+                {
+                    var msj = $@"La cuenta {cuenta} registrada a 
+                                        nombre de {cuentaInfo.NOMBRE} cédula: {cedula} Tipo de Moneda: {cuentaInfo.COD_DIVISA}";
+                    return DbHelper.OkResponse(msj);
+
+                }
+                else
+                {
+                    return DbHelper.ErrorResponse("La cuenta no es válida para la cédula proporcionada.");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse("Error al validar la cuenta: " + ex.Message);
+            }
         }
 
         #endregion

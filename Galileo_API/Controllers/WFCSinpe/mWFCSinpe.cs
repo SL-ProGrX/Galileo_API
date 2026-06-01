@@ -44,6 +44,16 @@ namespace Galileo_API.Controllers.WFCSinpe
             };
         }
 
+        ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            // Implementación por defecto
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "No implementado",
+            };
+        }
+
         /// <summary>
         /// Servicio ASECCSS
         /// </summary>
