@@ -285,32 +285,24 @@ Where ID_Solicitud = @IdSolicitud";
             }
         }
 
-        private ErrorDto spTes_TEI_Acreaditacion(int CodEmpresa, int banco, string tipo, string documento, string usuario)
+        private void spTes_TEI_Acreaditacion(int CodEmpresa, int banco, string tipo, string documento, string usuario)
         {
-            try
-            {
-                var connectionString = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+            var connectionString = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
 
-                var parametros = new DynamicParameters();
+            var parametros = new DynamicParameters();
 
-                parametros.Add("@Banco", banco, DbType.Int64);
-                parametros.Add("@Tipo", tipo, DbType.String);
-                parametros.Add("@Documento", documento, DbType.String);
-                parametros.Add("@Usuario", usuario, DbType.String);
+            parametros.Add("@Banco", banco, DbType.Int64);
+            parametros.Add("@Tipo", tipo, DbType.String);
+            parametros.Add("@Documento", documento, DbType.String);
+            parametros.Add("@Usuario", usuario, DbType.String);
 
-                return DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
-                      connectionString,
-                      "dbo.spCRDVivGarantiaAvaluo_A",
-                      default,
-                      parametros
-                  ).Result ?? DbHelper.ErrorResponse("Error desconocido");
+            DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+                  connectionString,
+                  "dbo.spCRDVivGarantiaAvaluo_A",
+                  default,
+                  parametros
+              );
 
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-                
         }
     }
 }
