@@ -17,18 +17,8 @@ namespace Galileo.Models.AH
         public string banco_desc { get; set; } = string.Empty;
     }
 
-    public class FrmAhExcedentesTiposSalidasGuardarRequest
+    public class FrmAhExcedentesTiposSalidasGuardarRequest: FrmAhExcedentesTiposSalidasDto
     {
-        public string cod_salida { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-        public bool activa { get; set; } = false;
-        public bool opcion_sistema { get; set; } = false;
-        public int destino_operadora { get; set; } = 0;
-        public string destino_plan { get; set; } = string.Empty;
-        public int destino_banco { get; set; } = 0;
-        public string tipo_aplicacion { get; set; } = string.Empty;
-        public bool permite_reclasificar { get; set; } = false;
-        public bool requiere_porcentaje { get; set; } = false;
         public string usuario { get; set; } = string.Empty;
     }
 
