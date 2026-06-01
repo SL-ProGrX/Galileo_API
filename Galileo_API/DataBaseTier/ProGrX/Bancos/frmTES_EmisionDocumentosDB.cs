@@ -1425,8 +1425,6 @@ where nsolicitud in ";
 
                 string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
 
-                string BancoPlan = filtros.plan ?? "-sp-";
-
                 long BancoConsec = resolveConsecutivo();
 
                 var sb = new StringBuilder();
