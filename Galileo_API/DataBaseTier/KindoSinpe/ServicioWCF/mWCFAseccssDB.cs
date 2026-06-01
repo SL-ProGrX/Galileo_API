@@ -45,6 +45,27 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
+        public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            try
+            {
+                var request = _cliente.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+                return new ErrorDto
+                {
+                    Code = request.Code,
+                    Description = request.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = $"Error al validar Sinpe: {ex.Message}"
+                };
+            }
+        }
+
         /// <summary>
         /// Servicio para Validacion SINPE ASECCSS
         /// </summary>

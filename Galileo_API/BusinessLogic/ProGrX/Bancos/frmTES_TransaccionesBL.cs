@@ -174,9 +174,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.FxTesBancoDocsValor(CodEmpresa, banco, tipo);
         }
 
-        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco)
+        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco, bool? CuentaInterna = false)
         {
-            return _db.TES_TransaccionesCuentasBancarias_Obtener(CodEmpresa, identificacion, banco);
+            return _db.TES_TransaccionesCuentasBancarias_Obtener(CodEmpresa, identificacion, banco, CuentaInterna);
         }
 
         public ErrorDto<CtnxCuentasDto> ObtenerCuentas(int CodEmpresa, string jCuenta)
@@ -188,6 +188,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
         public ErrorDto<TesCuentasBancarias> TES_TransaccionesCtaInterna_Obtener(int CodEmpresa, int id_banco)
         {
             return _db.TES_TransaccionesCtaInterna_Obtener(CodEmpresa, id_banco);
+        }
+
+        public int fxTipoIdentificacion(int CodEmpresa,string cedula)
+        {
+            return _db.fxTipoIdentificacion(CodEmpresa, cedula);
+        }
+
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            return _db.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario);
         }
     }
 }
