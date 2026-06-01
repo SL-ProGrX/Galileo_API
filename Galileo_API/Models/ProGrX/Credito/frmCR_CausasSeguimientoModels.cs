@@ -4,7 +4,7 @@
     {
         public string cod_causas { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool estado { get; set; }
+        public bool estado { get; set; } = false;
     }
 
     public class CrCausasSeguimientoGuardarRequest
