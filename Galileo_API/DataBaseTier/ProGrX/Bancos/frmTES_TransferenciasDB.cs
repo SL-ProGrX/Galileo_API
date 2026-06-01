@@ -298,14 +298,13 @@ Where ID_Solicitud = @IdSolicitud";
                 parametros.Add("@Documento", documento, DbType.String);
                 parametros.Add("@Usuario", usuario, DbType.String);
 
-                var result = DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+                return DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
                       connectionString,
                       "dbo.spCRDVivGarantiaAvaluo_A",
                       default,
                       parametros
-                  ).Result ?? new ErrorDto { Code = -1, Description = "Error desconocido." };
+                  ).Result ?? DbHelper.ErrorResponse("Error desconocido");
 
-                return result;
             }
             catch (Exception ex)
             {

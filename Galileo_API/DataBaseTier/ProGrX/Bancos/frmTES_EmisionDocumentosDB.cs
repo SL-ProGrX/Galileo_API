@@ -1428,13 +1428,12 @@ where nsolicitud in ";
                 string vProcedimiento = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
 
                 string BancoTDoc = filtros.tipoDoc;
-                string BancoPlan = filtros.plan ?? "-sp-";
-
+                
                 long BancoConsec = resolveConsecutivo();
 
                 var sb = new StringBuilder();
 
-                var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
+                var (_, _, _, _) = GetRangos(filtros);
 
                 return MTesFuncionesDb.ArchivoResponse(BancoConsec, vExtension, sb);
             }
