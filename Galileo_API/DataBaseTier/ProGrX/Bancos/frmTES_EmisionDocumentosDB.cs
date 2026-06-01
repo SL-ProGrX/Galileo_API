@@ -1413,7 +1413,6 @@ where nsolicitud in ";
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             string pFormato = filtros.formatoTE ?? string.Empty;
-            int BancoID = filtros.banco;
 
             try
             {
@@ -1425,10 +1424,9 @@ where nsolicitud in ";
                 }
 
                 string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
-                string vProcedimiento = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
 
-                string BancoTDoc = filtros.tipoDoc;
-                
+                string BancoPlan = filtros.plan ?? "-sp-";
+
                 long BancoConsec = resolveConsecutivo();
 
                 var sb = new StringBuilder();
