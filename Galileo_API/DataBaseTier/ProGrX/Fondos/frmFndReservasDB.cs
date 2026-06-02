@@ -35,9 +35,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         cta_transitoria,
                         activa,
                         registro_usuario,
-                        registro_fecha,
-                        modifica_usuario,
-                        modifica_fecha
+                        registro_fecha
                     FROM dbo.vFND_RESERVAS
                     WHERE @hasFilter = 0 OR
                     (
