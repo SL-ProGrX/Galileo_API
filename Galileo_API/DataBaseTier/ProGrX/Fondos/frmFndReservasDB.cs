@@ -32,7 +32,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         COD_RESERVA AS cod_reserva,
                         descripcion,
                         cta_reserva,
+	                    cta_reserva_desc,
                         cta_transitoria,
+	                    cta_transitoria_desc,
                         activa,
                         registro_usuario,
                         registro_fecha
