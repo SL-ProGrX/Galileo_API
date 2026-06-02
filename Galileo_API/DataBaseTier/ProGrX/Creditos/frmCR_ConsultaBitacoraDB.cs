@@ -236,7 +236,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (incluyeMovBancario)
             {
-                parametros.Add("@MovBancario", request.mov_bancario ? 1 : 0);
+                parametros.Add("@MovBancario", request.mov_bancario.GetValueOrDefault() ? 1 : 0);
             }
 
             return parametros;

@@ -5,7 +5,7 @@
         public string cedula { get; set; } = string.Empty;
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }
-        public bool mov_bancario { get; set; }
+        public bool? mov_bancario { get; set; }
     }
 
     public class CrConsultaBitacoraLista<T>
