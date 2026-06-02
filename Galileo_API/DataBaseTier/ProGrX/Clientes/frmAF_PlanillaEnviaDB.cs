@@ -34,8 +34,8 @@ namespace Galileo.DataBaseTier
         private const string SpArchivoObtener = "spPrm_Formato_PG_Soc";
 
         private const string SqlPlanillaEnvio = @"
-                    SELECT ISNULL(PLANILLA_ENVIO, '') AS PLANILLA_ENVIO,
-                           LTRIM(RTRIM(ISNULL(codigo_inst_deduc, ''))) AS codigo_inst_deduc
+                    SELECT ISNULL(PLANILLA_ENVIO, '') AS planillaEnvio,
+                           LTRIM(RTRIM(ISNULL(codigo_inst_deduc, ''))) AS codigoInstDeduc
                     FROM dbo.INSTITUCIONES
                     WHERE COD_INSTITUCION = @CodInstitucion;";
 
@@ -125,9 +125,9 @@ namespace Galileo.DataBaseTier
                     SqlPlanillaEnvio,
                     new { CodInstitucion = codInstitucion });
 
-                var planillaEnvio = string.IsNullOrWhiteSpace(institucion?.PLANILLA_ENVIO)
+                var planillaEnvio = string.IsNullOrWhiteSpace(institucion?.PlanillaEnvio)
                     ? "29"
-                    : institucion.PLANILLA_ENVIO.Trim();
+                    : institucion.PlanillaEnvio.Trim();
 
                 var registros = planillaEnvio == "15"
                     ? connection.Query<AfArchivoResultadoDto>(
@@ -145,7 +145,7 @@ namespace Galileo.DataBaseTier
                 return new AfArchivoPlanillaDto
                 {
                     planillaEnvio = planillaEnvio,
-                    nombreArchivo = CrearNombreArchivo(planillaEnvio, institucion?.codigo_inst_deduc),
+                    nombreArchivo = CrearNombreArchivo(planillaEnvio, institucion?.CodigoInstDeduc),
                     registros = registros
                 };
             });
@@ -212,8 +212,14 @@ namespace Galileo.DataBaseTier
 
         private sealed class InstitucionPlanillaDto
         {
-            public string? PLANILLA_ENVIO { get; set; }
-            public string? codigo_inst_deduc { get; set; }
+            public InstitucionPlanillaDto(string? planillaEnvio, string? codigoInstDeduc)
+            {
+                PlanillaEnvio = NormalizarTexto(planillaEnvio);
+                CodigoInstDeduc = NormalizarTexto(codigoInstDeduc);
+            }
+
+            public string PlanillaEnvio { get; }
+            public string CodigoInstDeduc { get; }
         }
     }
 }

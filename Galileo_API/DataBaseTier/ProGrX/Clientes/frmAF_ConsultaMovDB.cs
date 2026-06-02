@@ -86,13 +86,13 @@ namespace Galileo.DataBaseTier
                 var liquidacion = NormalizarTexto(idLiquidacion);
                 var usuarioNormalizado = NormalizarTexto(usuario);
 
-                var validacion = connection.QueryFirstOrDefault<LiquidacionReversaValidacion>(
+                var mensajeValidacion = connection.QueryFirstOrDefault<string>(
                     $"EXEC {SpLiquidacionReversaValidacion} @IdLiquidacion",
                     new { IdLiquidacion = liquidacion });
 
-                if (!string.IsNullOrWhiteSpace(validacion?.Mensaje))
+                if (!string.IsNullOrWhiteSpace(mensajeValidacion))
                 {
-                    return validacion.Mensaje;
+                    return mensajeValidacion;
                 }
 
                 connection.Execute(
@@ -111,11 +111,19 @@ namespace Galileo.DataBaseTier
                 return string.Empty;
             });
 
-            return response.Code == 0
-                ? (string.IsNullOrWhiteSpace(response.Result)
-                    ? DbHelper.OkResponse("Reversión realizada satisfactoriamente.")
-                    : DbHelper.ErrorResponse(response.Result, -2))
-                : DbHelper.ErrorResponse(response.Description ?? "Error al revertir liquidación.", response.Code.GetValueOrDefault(-1));
+            if (response.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "Error al revertir liquidación.",
+                    response.Code.GetValueOrDefault(-1));
+            }
+
+            if (!string.IsNullOrWhiteSpace(response.Result))
+            {
+                return DbHelper.ErrorResponse(response.Result, -2);
+            }
+
+            return DbHelper.OkResponse("Reversión realizada satisfactoriamente.");
         }
 
 
@@ -199,11 +207,6 @@ namespace Galileo.DataBaseTier
                 Movimiento = "Reversa",
                 DetalleMovimiento = detalle
             });
-        }
-
-        private sealed class LiquidacionReversaValidacion
-        {
-            public string? Mensaje { get; set; }
         }
 
     }
