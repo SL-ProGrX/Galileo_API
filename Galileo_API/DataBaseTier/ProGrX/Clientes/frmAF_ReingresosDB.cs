@@ -19,7 +19,7 @@ namespace Galileo.DataBaseTier
         private const string SqlActivarSocio = @"
                     UPDATE dbo.socios
                     SET estadoactual = 'S',
-                        FechaIngreso = @FechaIngreso,
+                        FechaIngreso = dbo.MyGetdate(),
                         priDeduc = @PriDeduc,
                         reg_user = @Usuario,
                         reg_fecha = dbo.MyGetdate(),
@@ -27,6 +27,11 @@ namespace Galileo.DataBaseTier
                         id_promotor = @IdPromotor,
                         cod_oficina = @CodOficina
                     WHERE cedula = @Cedula;";
+
+        private const string SqlPromotorActivo = @"
+                    SELECT ISNULL(MAX(estado), 0)
+                    FROM dbo.promotores
+                    WHERE id_promotor = @IdPromotor;";
 
         private const string SqlInsertarIngreso = @"
                     INSERT INTO dbo.afi_ingresos
@@ -86,6 +91,12 @@ namespace Galileo.DataBaseTier
                 return validacion;
             }
 
+            var promotorActivo = ValidarPromotorActivo(CodEmpresa, req.id_promotor);
+            if (promotorActivo.Code != 0)
+            {
+                return promotorActivo;
+            }
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 connection.Open();
@@ -127,12 +138,20 @@ namespace Galileo.DataBaseTier
                 return DbHelper.ErrorResponse("El usuario es requerido.", -2);
             }
 
+            if (req.id_promotor <= 0)
+            {
+                return DbHelper.ErrorResponse("El promotor es requerido.", -2);
+            }
+
             return DbHelper.OkResponse("Ok");
         }
 
         /// <summary>
         /// Actualiza la información del socio para activar su estado.
         /// </summary>
+        /// <param name="connection">Conexión SQL abierta.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="req">Datos de activación.</param>
         private static void ActivarSocio(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
         {
             connection.Execute(
@@ -144,6 +163,9 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Registra el ingreso de la persona.
         /// </summary>
+        /// <param name="connection">Conexión SQL abierta.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="req">Datos de ingreso.</param>
         private static void RegistrarIngreso(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
         {
             connection.Execute(
@@ -155,6 +177,9 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Vincula el patrimonio de la persona.
         /// </summary>
+        /// <param name="connection">Conexión SQL abierta.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="req">Datos de la persona.</param>
         private static void VincularPatrimonio(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
         {
             connection.Execute(
@@ -167,12 +192,13 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Crea parámetros seguros para activar un socio.
         /// </summary>
+        /// <param name="req">Datos de activación.</param>
+        /// <returns>Parámetros para actualizar el socio.</returns>
         private static object CrearParametrosActivacion(AfPersonaActivacionDto req)
         {
             return new
             {
                 Cedula = NormalizarTexto(req.cedula),
-                FechaIngreso = DateTime.Now,
                 PriDeduc = req.pri_deduc,
                 Usuario = NormalizarTexto(req.usuario),
                 IdPromotor = req.id_promotor,
@@ -183,6 +209,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Crea parámetros seguros para registrar el ingreso.
         /// </summary>
+        /// <param name="req">Datos de ingreso.</param>
+        /// <returns>Parámetros para insertar el histórico de ingreso.</returns>
         private static object CrearParametrosIngreso(AfPersonaActivacionDto req)
         {
             return new
@@ -201,8 +229,35 @@ namespace Galileo.DataBaseTier
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
+        /// Verifica si el promotor recibido existe y está activo.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="idPromotor">Código del promotor.</param>
+        /// <returns>Resultado de la validación.</returns>
+        private ErrorDto ValidarPromotorActivo(int CodEmpresa, int idPromotor)
+        {
+            var estado = DbHelper.ExecuteSingleQuery<int>(
+                CreatePortalDb(),
+                CodEmpresa,
+                SqlPromotorActivo,
+                0,
+                new { IdPromotor = idPromotor });
+
+            if (estado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(estado.Description ?? "Error al validar el promotor.", estado.Code.GetValueOrDefault(-1));
+            }
+
+            return estado.Result == 1
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse("El promotor indicado se encuentra inactivo o no existe.", -2);
+        }
+
+        /// <summary>
         /// Normaliza valores de texto recibidos desde formularios.
         /// </summary>
+        /// <param name="valor">Valor a normalizar.</param>
+        /// <returns>Valor sin espacios al inicio o al final.</returns>
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
     }
 }
