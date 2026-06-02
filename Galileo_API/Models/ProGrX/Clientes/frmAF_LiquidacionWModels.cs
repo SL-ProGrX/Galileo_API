@@ -57,28 +57,5 @@
             public int BancoId { get; set; }
             public short DivisaCheck { get; set; } = 0;
         }
-    }   
-
-    public class AfLiquidacionRenunciaSinLiquidar
-    {
-        public string Cedula { get; set; } = string.Empty;
-        public string Id_Alterno { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-    }
-
-    public class AfLiquidacionSocio
-    {
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-    }
-
-    public class AfLiquidacionSocioDetalle
-    {
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public DateTime FechaIngreso { get; set; }
-        public string EstadoActual { get; set; } = string.Empty;
-        public int Boleta { get; set; }
-        public string EstadoPersona { get; set; } = string.Empty;
     }
 }

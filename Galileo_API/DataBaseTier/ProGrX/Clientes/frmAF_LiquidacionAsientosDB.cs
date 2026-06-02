@@ -2,9 +2,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
-using Microsoft.Data.SqlClient;
-using Microsoft.Reporting.Map.WebForms.BingMaps;
-using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
@@ -31,6 +28,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 Description = "OK"
             };
         }
+
 
         /// <summary>
         /// Metodo: Obtiene los bancos disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
@@ -69,6 +67,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                         });
         }
 
+
         /// <summary>
         /// Metodo: Obtiene los usuarios disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
         /// </summary>
@@ -104,6 +103,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                             return response;
                         });
         }
+
 
         /// <summary>
         /// Metodo: Obtiene los tokens disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
@@ -142,6 +142,12 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
 
+        /// <summary>
+        /// Metodo: Obtiene las oficinas disponibles para la liquidación de afiliaciones, filtrados por fecha de liquidación.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Oficinas(
             int CodEmpresa,
             AfLiquidacionFiltroRequest request)
@@ -172,6 +178,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return response;
             });
         }
+
 
         /// <summary>
         /// Método: Obtiene los tipos de asiento para la liquidación de afiliaciones
@@ -210,6 +217,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return response;
         }
 
+
         /// <summary>
         /// Método: Obtiene los tokens disponibles para la liquidación de afiliaciones
         /// </summary>
@@ -220,6 +228,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         {
             return _mtes.spTes_Token_Consulta(CodEmpresa, usuario);
         }
+
 
         /// <summary>
         /// Método: Genera un nuevo token para la liquidación de afiliaciones
@@ -321,6 +330,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             }
         }
 
+
         /// <summary>
         /// OBJETIVO:
         ///     Ejecuta la consulta de liquidaciones para traslado a Tesorería,
@@ -416,6 +426,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return conn.Query<AfLiquidacionAsientosRowDto>(query, param).ToList();
             });
         }
+
 
         /// <summary>
         /// Normaliza valores tipo catálogo que en VB6 se evaluaban por la primera letra.

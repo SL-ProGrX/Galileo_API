@@ -229,7 +229,7 @@ namespace Galileo.DataBaseTier
                     codempresa,
                     connection => connection.QueryFirstOrDefault<(int autorizado, decimal monto)>(
                         "spFnd_Autoriza_Datos",
-                        new { Plan = plan, Usuario = usuario, Accion = "A" },
+                        new { Plan = plan, Usuario = usuario, TipoMov = "A" },
                         commandType: CommandType.StoredProcedure));
 
                 if (data.Code != 0)

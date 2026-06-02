@@ -191,6 +191,95 @@ namespace Galileo_API.DataBaseTier
             }
             return response;
         }
+
+        public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            ErrorDto response = new();
+            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result ?? new Galileo.Models.KindoSinpe.ParametrosSinpe();
+
+            try
+            {
+               
+                if (string.IsNullOrEmpty(cedula) == false && string.IsNullOrEmpty(cuenta) == false)
+                {
+                    if (ConsultarIsPINEntity(cuenta).Result == true)
+                    {
+                        if (ConsultarIsServiceAvailable(usuario).Result == false)
+                        {
+                            response.Code = -1;
+                            response.Description = " - " + "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
+                        }
+                        else
+                        {
+                            ResAccountInfo LaInformacionDeLaCuentaPIN = new ResAccountInfo();
+                            LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
+                            LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(cuenta).Result ?? new ResAccountInfo();
+
+                            if (LaInformacionDeLaCuentaPIN.Account == null || LaInformacionDeLaCuentaPIN.Account.AccountNumber == null)
+                            {
+                                if (LaInformacionDeLaCuentaPIN.Account == null)
+                                {
+                                    response = new ErrorDto
+                                    {
+                                        Code = -1,
+                                        Description = LaInformacionDeLaCuentaPIN.Errors[0].Message
+                                    };
+                                }
+                                else
+                                {
+                                    var respustaError = _mKindo.fxTesConsultaMotivo(CodEmpresa, Convert.ToInt32(LaInformacionDeLaCuentaPIN.Account.State.ToString())).Result;
+                                    response = new ErrorDto
+                                    {
+                                        Code = -1,
+                                        Description = respustaError
+                                    };
+                                }
+
+                            }
+                            else
+                            {
+                                var id1 = cedula
+                                        .Trim()
+                                        .Replace("-", "")
+                                        .Replace(" ", "")
+                                        .TrimStart('0');
+
+                                var id2 = LaInformacionDeLaCuentaPIN.Account.HolderId.Trim()
+                                            .Replace("-", "")
+                                            .Replace(" ", "")
+                                            .TrimStart('0');
+
+                                if (id1 != id2)
+                                {
+                                    response.Code = -1;
+                                    response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                                }
+                                else
+                                {
+                                    response.Code = 0;
+                                    response.Description = $@"La cuenta {cuenta} registrada a 
+                                        nombre de {LaInformacionDeLaCuentaPIN.Account.Holder} cédula: {LaInformacionDeLaCuentaPIN.Account.HolderId} Tipo Id: 1 Tipo de Moneda: @moneda";
+                                }
+                            }
+
+                        }
+                    }
+                }
+                else
+                {
+                    response.Code = -1;
+                    response.Description = " - Solicitud SINPE incompleta.";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                _ = ex.Message; //bandera para visualizar error técnico. 
+                response.Description = "Ocurrió un problema con la validación.";
+            }
+            return response;
+        }
+
         private ErrorDto<bool> ConsultarIsPINEntity(string AccountNumber)
         {
             var Elresutado = new ResPINEntity();
@@ -1229,45 +1318,6 @@ namespace Galileo_API.DataBaseTier
             }
             return res;
         }
-
-        private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF, bool isPin)
-        {
-           
-            var response = new ErrorDto<int>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = 0
-            };
-
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-                if (isPin)
-                {
-                    response.Result = CODIGO_SUGEF;
-                }
-                else
-                {
-                    var query = @"
-                            SELECT CODIGO_PIN
-                            FROM AFI_TIPOS_IDS
-                            WHERE CODIGO_SUGEF = @CodigoSugef;";
-
-                    response.Result = connection.QueryFirstOrDefault<int>(query, new { CodigoSugef = CODIGO_SUGEF });
-                }
-            }
-            catch (Exception)
-            {
-                response.Code = -1;
-                response.Description = "Error al obtener el tipo de identificación PIN.";
-                response.Result = 0;
-            }
-
-            return response;
-        }
-
         private ErrorDto<string> ConsultarConsecutivoSinpe(int CodEmpresa)
         {
            

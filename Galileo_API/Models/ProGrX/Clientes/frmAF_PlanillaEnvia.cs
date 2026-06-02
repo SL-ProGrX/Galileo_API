@@ -17,4 +17,11 @@
         public string? col_10 { get; set; }
         public string? col_11 { get; set; }
     }
+
+    public class AfArchivoPlanillaDto
+    {
+        public string? planillaEnvio { get; set; }
+        public string? nombreArchivo { get; set; }
+        public List<AfArchivoResultadoDto> registros { get; set; } = new();
+    }
 }

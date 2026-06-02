@@ -3,7 +3,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace Galileo_API.Controllers.ProGrX.Clientes
 {

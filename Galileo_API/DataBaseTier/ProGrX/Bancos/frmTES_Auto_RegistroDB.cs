@@ -77,7 +77,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var parametros = new
                 {
-                    AutoId = registro.id_auto,
+                    AutoId = (registro.id_auto == null) ? 0 : registro.id_auto,
                     Descripcion = registro.descripcion,
                     PClave = registro.palabras_clave,
                     Detalle = registro.detalle,
@@ -95,7 +95,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     BeneficiarioNombre = registro.beneficiario_nombre,
                     Activo = activo,
                     Usuario = (registro.id_auto! == 0) ? registro.registro_usuario! : registro.modifica_usuario!,
-                    Mov = (registro.id_auto == 0) ? "A" : "M",
+                    Mov = "A",
                     TipoMov = registro.apl_tipo_mov,
                     TipoDoc = registro.tipo_doc,
                     IgnoraRegistro = (registro.ignora_registro == true) ? 1 : 0,
@@ -156,7 +156,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var parametros = new
                 {
-                    AutoId = registro.id_auto,
+                    AutoId = (registro.id_auto == null) ? 0 : registro.id_auto,
                     Descripcion = registro.descripcion,
                     PClave = registro.palabras_clave,
                     Detalle = registro.detalle,
@@ -198,15 +198,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="codigo"></param>
         /// <param name="FiltraCtas"></param>
         /// <returns></returns>
-        public ErrorDto<List<TesAutoRegCtaBancariasData>> Tes_AutoRegistroCtaBancos_Obtener(int CodEmpresa, int? codigo, string? FiltraCtas)
+        public ErrorDto<List<TesAutoRegCtaBancariasData>> Tes_AutoRegistroCtaBancos_Obtener(
+            int CodEmpresa,
+            int? codigo,
+            string? FiltraCtas)
         {
-            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            try
             {
-                const string query = @"exec spTes_Auto_Registro_Ctas @AutoId , @Descripcion";
-                string? valCodigo = (codigo == null || codigo == 0) ? "0" : codigo.ToString();
+                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                return conn.Query<TesAutoRegCtaBancariasData>(query, new { AutoId = valCodigo, Descripcion = FiltraCtas }).ToList();
-            });
+                const string query = @"exec spTes_Auto_Registro_Ctas @AutoId, @Descripcion";
+
+                var parametros = new
+                {
+                    AutoId = codigo.GetValueOrDefault(),
+                    Descripcion = FiltraCtas?.Trim() ?? string.Empty
+                };
+
+                var result = conn.Query<TesAutoRegCtaBancariasData>(query, parametros).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<TesAutoRegCtaBancariasData>>(ex.Message);
+            }
         }
 
         /// <summary>

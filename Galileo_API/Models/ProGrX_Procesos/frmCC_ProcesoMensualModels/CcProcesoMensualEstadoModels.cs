@@ -8,33 +8,20 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
         {
             public List<DropDownListaGenericaModel> Meses { get; set; } = [];
             public List<DropDownListaGenericaModel> Aplicaciones { get; set; } = [];
-            public CcProcesoMensualGlobalesModel Globales { get; set; } = new();
+            public DateTime FechaServidor { get; set; }
             public bool MostrarAplicacion { get; set; }
             public bool HabilitarAhorros { get; set; }
             public CcProcesoMensualEstadoResponse EstadoActual { get; set; } = new();
         }
-       
-        public class CcProcesoMensualGlobalesModel
-        {
-            public int GInstitucion { get; set; }
-            public string GNombreInstitucion { get; set; } = string.Empty;
-            public decimal GlngFechaCR { get; set; }
-        }
+        
         public class CcProcesoMensualEstadoResponse
-        {
-            public string Institucion { get; set; } = string.Empty;
-            public string FechaProceso { get; set; } = string.Empty;
-            public int Ano { get; set; }
-            public int Mes { get; set; }
-            public string MesDescripcion { get; set; } = string.Empty;
+        {  
             public string FrecuenciaId { get; set; } = string.Empty;
-            public List<DropDownListaGenericaModel> Frecuencias { get; set; } = [];
-            public CcProcesoMensualFrecuenciaSeleccionModel FrecuenciaSeleccion { get; set; } = new();
             public bool ExisteParametroProceso { get; set; }
             public string Mensaje { get; set; } = string.Empty;
             public CcProcesoMensualIndicadoresModel Indicadores { get; set; } = new();
-            public CcProcesoMensualReportesModel Reportes { get; set; } = new();
-            public CcProcesoMensualVistaProcesoModel VistaProceso { get; set; } = new();
+      
+        
         }
 
         public class CcProcesoMensualFrecuenciaSeleccionModel
@@ -62,13 +49,7 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public int? OpcionAhorrosSeleccionada { get; set; }
             public int? OpcionCreditosSeleccionada { get; set; }
         }
-        public class CcProcesoMensualVistaProcesoModel
-        {
-            public int ProcesoActivo { get; set; }
-            public bool MostrarEnvio { get; set; }
-            public bool MostrarRecepcion { get; set; }
-            public bool MostrarAplicacion { get; set; }
-        }
+        
         public class CcProcesoMensualReportesModel
         {
             public bool AhorrosAplica { get; set; }
@@ -109,5 +90,15 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public DateTime? Fecha { get; set; }
         }
 
+        public  class CcProcesoMensualValidaPasoResponse        {
+            public bool Valido { get; set; } = false;
+            public string Mensaje { get; set; } = string.Empty;
+        }
+        public class CcProcesoMensualValidaPasoRequest
+        {
+            public int CodInstitucion { get; init; } = 0;
+            public decimal FechaProceso { get; init; } = 0;
+            public string Transaccion { get; init; } = "08";
+        }
     }
 }

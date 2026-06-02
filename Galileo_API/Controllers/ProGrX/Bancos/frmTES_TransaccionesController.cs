@@ -241,9 +241,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         [Authorize]
         [HttpGet("TES_TransaccionesCuentasBancarias_Obtener")]
-        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco)
+        public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco, bool? CuentaInterna = false)
         {
-            return _bl.TES_TransaccionesCuentasBancarias_Obtener(CodEmpresa, identificacion, banco);
+            return _bl.TES_TransaccionesCuentasBancarias_Obtener(CodEmpresa, identificacion, banco, CuentaInterna);
         }
 
         [Authorize]
@@ -258,6 +258,20 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         public ErrorDto<TesCuentasBancarias> TES_TransaccionesCtaInterna_Obtener(int CodEmpresa, int id_banco)
         {
             return _bl.TES_TransaccionesCtaInterna_Obtener(CodEmpresa, id_banco);
+        }
+
+        [Authorize]
+        [HttpGet("fxTipoIdentificacion")]
+        public int fxTipoIdentificacion(int CodEmpresa, string cedula)
+        {
+            return _bl.fxTipoIdentificacion(CodEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("TES_TransaccionesValidaCuentaXCedula")]
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            return _bl.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario);
         }
     }
 }
