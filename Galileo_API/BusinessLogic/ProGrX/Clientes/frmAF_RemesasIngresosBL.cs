@@ -54,5 +54,10 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return _db.AFI_RemesaPorCedula_Obtener(codEmpresa, cedula);
         }
+
+        public ErrorDto AFI_Remesa_Reporte_Aplicar(int codEmpresa, string usuario, int codRemesa)
+        {
+            return _db.AFI_Remesa_Reporte_Aplicar(codEmpresa, usuario, codRemesa);
+        }
     }
 }
