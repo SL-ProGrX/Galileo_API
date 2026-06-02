@@ -28,9 +28,9 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return DbfrmAF_ConsultaMov.ConsultaMovLiquidaciones_Obtener(CodCliente, cedula);
         }
 
-        public ErrorDto AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion)
+        public ErrorDto AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion, string cedula)
         {
-            return DbfrmAF_ConsultaMov.AF_MovLiquidaciones_Reversion(CodEmpresa, usuario, idLiquidacion);
+            return DbfrmAF_ConsultaMov.AF_MovLiquidaciones_Reversion(CodEmpresa, usuario, idLiquidacion, cedula);
         }
 
         public ErrorDto FechaServidor_Obtener(int CodEmpresa)

@@ -861,8 +861,9 @@ namespace Galileo.DataBaseTier
                 var existe = connection.ExecuteScalar<int>(
                     @"SELECT COUNT(*)
               FROM afi_reportes_GRP_AUT
-              WHERE id_rep = @Id_Rep",
-                    new { Id_Rep = id_rep });
+              WHERE id_rep = @Id_Rep
+                AND cod_grupo = @CodGrupo",
+                    new { Id_Rep = id_rep, CodGrupo = cod_grupo });
 
                 if (existe == 0)
                 {
@@ -884,11 +885,13 @@ namespace Galileo.DataBaseTier
                 {
                     string delete = @"
                         DELETE FROM afi_reportes_GRP_AUT
-                        WHERE id_rep = @Id_Rep;";
+                        WHERE id_rep = @Id_Rep
+                          AND cod_grupo = @CodGrupo;";
 
                     connection.Execute(delete, new
                     {
-                        Id_Rep = id_rep
+                        Id_Rep = id_rep,
+                        CodGrupo = cod_grupo
                     });
 
                 }
