@@ -38,5 +38,12 @@ namespace Galileo.Controllers
         {
             return BL_AF_PlanillaEnvia.AF_Archivo_Obtener(CodEmpresa, codinstitucion, fechaproceso);
         }
+
+        [Authorize]
+        [HttpGet("AF_ArchivoPlanilla_Obtener")]
+        public ErrorDto<AfArchivoPlanillaDto> AF_ArchivoPlanilla_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
+        {
+            return BL_AF_PlanillaEnvia.AF_ArchivoPlanilla_Obtener(CodEmpresa, codinstitucion, fechaproceso);
+        }
     }
 }

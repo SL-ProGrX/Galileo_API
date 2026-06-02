@@ -9,6 +9,7 @@
         public DateTime fecha_corte { get; set; }
         public string? notas { get; set; }
         public string? estado { get; set; }
+        public string? estado_desc { get; set; }
         public DateTime? microfilm_fecha { get; set; }
         public string? microfilm_usuario { get; set; }
     }
