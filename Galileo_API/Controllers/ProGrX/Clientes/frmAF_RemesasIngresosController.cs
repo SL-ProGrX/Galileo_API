@@ -54,15 +54,15 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
-        [HttpGet("AFI_Remesa_Cerrar")]
+        [HttpPost("AFI_Remesa_Cerrar")]
         public ErrorDto AFI_Remesa_Cerrar(int codEmpresa, int codRemesa)
         {
             return _bl.AFI_Remesa_Cerrar(codEmpresa, codRemesa);
         }
 
         [Authorize]
-        [HttpGet("AFI_Remesa_Cargar")]
-        public ErrorDto AFI_Remesa_Cargar(int codEmpresa, int codRemesa, List<int> ingresosSeleccionados)
+        [HttpPost("AFI_Remesa_Cargar")]
+        public ErrorDto AFI_Remesa_Cargar(int codEmpresa, int codRemesa, [FromBody] List<int> ingresosSeleccionados)
         {
             return _bl.AFI_Remesa_Cargar(codEmpresa, codRemesa, ingresosSeleccionados);
         }
@@ -73,6 +73,13 @@ namespace Galileo.Controllers
         public ErrorDto<List<RemesaConsultaDto>> AFI_RemesaPorCedula_Obtener(int CodEmpresa, string Cedula)
         {
             return _bl.AFI_RemesaPorCedula_Obtener(CodEmpresa, Cedula);
+        }
+
+        [Authorize]
+        [HttpPatch("AFI_Remesa_Reporte_Aplicar")]
+        public ErrorDto AFI_Remesa_Reporte_Aplicar(int CodEmpresa, string usuario, int CodRemesa)
+        {
+            return _bl.AFI_Remesa_Reporte_Aplicar(CodEmpresa, usuario, CodRemesa);
         }
     }
 }
