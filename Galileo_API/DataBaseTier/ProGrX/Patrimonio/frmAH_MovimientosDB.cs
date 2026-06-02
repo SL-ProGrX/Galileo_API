@@ -89,7 +89,6 @@ order by itmx;";
                     -2);
             }
 
-            string inTiposAporte = string.Empty;
             var tiposAporte = ObtenerTiposAporteConsulta(request.tipo_aporte);
             if (tiposAporte.Count == 0)
             {
@@ -185,9 +184,6 @@ order by D.Fecha desc, D.Id_seq desc;";
 
             if (tipoNormalizado == "CAPITALIZADO" || tipoNormalizado == "CAPITALIZADA")
                 return ["C"];
-
-            if (tipoNormalizado == "TODOS")
-                return ["T"];
 
             return tipoNormalizado switch
             {
