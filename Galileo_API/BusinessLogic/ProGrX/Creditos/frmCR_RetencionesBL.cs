@@ -68,5 +68,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         {
             return _db.AF_CR_Retenciones_ObtenerSiguienteSolicitud(codEmpresa, idSolicitudActual, siguiente);
         }
+
+        public ErrorDto AF_CR_Retenciones_InsertarCredito(int codEmpresa, InsertarCreditoRequest req)
+        {
+            return _db.AF_CR_Retenciones_InsertarCredito(codEmpresa, req);
+        }
+
+        public ValidacionPreviaInsertarCreditoResponse AF_CR_Retenciones_ValidarAntesInsertar(int codEmpresa, string codigo, string cedula)
+        {
+            return _db.AF_CR_Retenciones_ValidarAntesInsertar(codEmpresa, codigo, cedula);
+        }
     }
 }
