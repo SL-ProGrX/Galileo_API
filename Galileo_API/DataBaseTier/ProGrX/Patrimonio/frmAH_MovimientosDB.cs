@@ -91,17 +91,12 @@ order by itmx;";
                     -2);
             }
 
-            string inTiposAporte = string.Empty;
             var tiposAporte = ObtenerTiposAporteConsulta(request.tipo_aporte);
             if (tiposAporte.Count == 0)
             {
                 return DbHelper.CreateErrorResponse<List<MovimientosPatrimonioDto>>(
                     "El tipo de aporte indicado no es válido.",
                     -2);
-            }
-            else
-            {
-                inTiposAporte = string.Join(", ", tiposAporte.Select(ta => $"'{ta}'"));
             }
 
             const string sql = @"
