@@ -51,6 +51,14 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
+        public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            return EjecutarOperacion(
+                () => _cliente.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario),
+                "Error al validar Sinpe"
+            );
+        }
+
         /// <summary>
         /// Servicio para emisión de crédito directo SINPE CSG.
         /// </summary>

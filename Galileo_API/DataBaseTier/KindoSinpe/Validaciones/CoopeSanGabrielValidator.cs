@@ -119,6 +119,24 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             }
         }
 
+        public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
+        {
+            try
+            {
+                var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario);
+                if (parametrosSinpe?.Result == null)
+                    return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
+
+               
+                return DbHelper.OkResponse("Validación de transacción no implementada para Coope San Gabriel.");
+
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse("Ocurrió un problema con la validación. - " + ex.Message);
+            }
+        }
+
         private ErrorDto<vInfoSinpe> CargarInfoSinpe(int codEmpresa, string solicitud)
         {
             return _mKindo.fxTesConsultaInfoSinpe(codEmpresa, solicitud);

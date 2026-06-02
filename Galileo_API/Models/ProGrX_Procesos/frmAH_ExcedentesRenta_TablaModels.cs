@@ -2,9 +2,9 @@ namespace Galileo.Models.AH
 {
     public class RentaExcedenteDto
     {
-        public int Id_Renta { get; set; }
-        public int Desde { get; set; }
-        public int Hasta { get; set; }
-        public int Porcentaje { get; set; }
+        public int Id_Renta { get; set; } = 0;
+        public decimal Desde { get; set; } = 0;
+        public decimal Hasta { get; set; } = 0;
+        public decimal Porcentaje { get; set; } = 0;
     }
 }

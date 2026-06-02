@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.AspNetCore.Mvc;
@@ -380,14 +381,6 @@ Where t.Estado='P'
             return "CK";
         }
 
-        private bool EsGestionTransferencia(int codEmpresa, int banco, string tipoDoc)
-        {
-            return string.Equals(
-                ObtenerTipoGestionDocumento(codEmpresa, banco, tipoDoc),
-                "TE",
-                StringComparison.OrdinalIgnoreCase);
-        }
-
         public ErrorDto TES_EmisionDocumento_RevisaCuentas_SP(int CodEmpresa, int banco)
         {
             try
@@ -721,19 +714,24 @@ where B.estado = 'A'
                     ctx.Filtro,
                     () => ResolverBancoConsecTransferencia(ctx)),
 
-                "DV1" or "DV2" or "S" => sbTeFormatoEstandar(
+                "DV1" or "DV2" => sbTeFormatoEstandar(
                     ctx.CodEmpresa,
                     ctx.Filtro,
                     () => ResolverBancoConsecTransferencia(ctx)),
 
+                "S" => sbTEFormato_Interno(
+                       ctx.CodEmpresa,
+                       ctx.Filtro,
+                       () => ResolverBancoConsecTransferencia(ctx)),
+
                 "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(
-                    ctx.CodEmpresa,
-                    ctx.Filtro,
-                    Trans()),
-                _ => sbTeFormatoEstandar(
-                   ctx.CodEmpresa,
-                   ctx.Filtro,
-                   () => ResolverBancoConsecTransferencia(ctx))
+                        ctx.CodEmpresa,
+                        ctx.Filtro,
+                        Trans()),
+                    _ => sbTeFormatoEstandar(
+                       ctx.CodEmpresa,
+                       ctx.Filtro,
+                       () => ResolverBancoConsecTransferencia(ctx))
             };
         }
 
@@ -1219,6 +1217,7 @@ where nsolicitud in ";
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
         }
+
         private ErrorDto<object> sbTeBCT_Enlace(
             int CodEmpresa,
             TesEmisionDocFiltros filtros,
@@ -1407,6 +1406,38 @@ where nsolicitud in ";
             
         }
 
+        public ErrorDto<object> sbTEFormato_Interno(int CodEmpresa,
+           TesEmisionDocFiltros filtros,
+           Func<long> resolveConsecutivo)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            string pFormato = filtros.formatoTE ?? string.Empty;
+
+            try
+            {
+                var formatoData = mTesFunciones.vTesFormatos(connection, pFormato);
+                if (formatoData.Code == -1)
+                {
+                    return DbHelper.CreateErrorResponse<object>(
+                        "Error al obtener configuración del formato");
+                }
+
+                string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
+
+                long BancoConsec = resolveConsecutivo();
+
+                var sb = new StringBuilder();
+
+                var (_, _, _, _) = GetRangos(filtros);
+
+                return MTesFuncionesDb.ArchivoResponse(BancoConsec, vExtension, sb);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<object>(ex.Message);
+            }
+        }
 
         #endregion
 
