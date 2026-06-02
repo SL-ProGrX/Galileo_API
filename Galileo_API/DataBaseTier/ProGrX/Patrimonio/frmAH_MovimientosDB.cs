@@ -8,14 +8,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
     public class FrmAHMovimientosDB
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrXAuxiliarDB _AuxiliarDB;
         private readonly MProGrxMain _mProGrx;
 
         public FrmAHMovimientosDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
-            _AuxiliarDB = new MProGrXAuxiliarDB(config);
         }
 
         /// <summary>
@@ -98,10 +96,6 @@ order by itmx;";
                 return DbHelper.CreateErrorResponse<List<MovimientosPatrimonioDto>>(
                     "El tipo de aporte indicado no es válido.",
                     -2);
-            }
-            else
-            {
-                inTiposAporte = string.Join(", ", tiposAporte.Select(ta => $"'{ta}'"));
             }
 
             const string sql = @"
