@@ -934,7 +934,41 @@ namespace Galileo.DataBaseTier
 
             return connection.Query<DateTime>(strSQL).FirstOrDefault();
         }
+        public static string FxCodigoCbo(string? texto, int listCount = 1)
+        {
+            if (listCount == 0)
+                return string.Empty;
 
+            texto = texto ?? string.Empty;
+
+            var i = 1;
+            var x = texto.Length;
+            var vPaso = true;
+
+            while (vPaso)
+            {
+                if (i <= texto.Length && texto.Substring(i - 1, 1) == "-")
+                {
+                    vPaso = false;
+                    i--;
+                }
+                else
+                {
+                    i++;
+                }
+
+                if (i == x)
+                    break;
+            }
+
+            if (i <= 0)
+                return string.Empty;
+
+            if (i > texto.Length)
+                i = texto.Length;
+
+            return texto.Substring(0, i).Trim();
+        }
     }
 
 }
