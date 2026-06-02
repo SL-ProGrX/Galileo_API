@@ -192,9 +192,6 @@ order by D.Fecha desc, D.Id_seq desc;";
             if (tipoNormalizado == "CAPITALIZADO" || tipoNormalizado == "CAPITALIZADA")
                 return ["C"];
 
-            if (tipoNormalizado == "TODOS")
-                return ["T"];
-
             return tipoNormalizado switch
             {
                 "O" or "P" or "C" or "E" or "X" => [tipoNormalizado],
