@@ -135,6 +135,8 @@ namespace Galileo.Models.TES
         public DateTime creacion_fecha { get; set; }
     }
 
+    /**
+    **Se repite en tes_transacciones -- cambiar nombre o heredar -- de TesTransAsientoDto
     public partial class TesTransAsientoDto
     {
         public string cod_cuenta { get; set; } = string.Empty;
@@ -150,6 +152,7 @@ namespace Galileo.Models.TES
         public decimal tipo_cambio { get; set; }
         public string cod_divisa { get; set; } = string.Empty;
     }
+    **/
 
     public partial  class TesBitacoraDto
     {
