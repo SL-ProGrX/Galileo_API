@@ -2,7 +2,6 @@
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using System.Data;
 using Galileo.Models.ProGrX_Procesos;
 using Galileo.Models.Security;
 
@@ -23,26 +22,7 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
         private const string CampoDescripcion = "DESCRIPCION";
         private const string CampoParametrosPlanillas = "PARAMETROS_PLANILLAS";
         private const string CampoParametrosAdd = "PARAMETROS_ADD";
-        private const string OrdenPorProceso = @"CASE
-                        WHEN p.transaccion = '01' THEN 'Cambia Fecha de Proceso'
-                        WHEN p.transaccion = '02' THEN 'Genera deducciones'
-                        WHEN p.transaccion = '03' THEN 'Carga deducciones'
-                        WHEN p.transaccion = '04' THEN 'Desglosa deducciones'
-                        WHEN p.transaccion = '05' THEN 'Aplica Ahorros'
-                        WHEN p.transaccion = '06' THEN 'Inconsistencias de Ahorros'
-                        WHEN p.transaccion = '07' THEN 'Devoluciones de Ahorros'
-                        WHEN p.transaccion = '08' THEN 'Aplica Abonos'
-                        WHEN p.transaccion = '09' THEN 'Reporte de Inconsistencias'
-                        WHEN p.transaccion = '10' THEN 'Actualiza Intereses Moratorios'
-                        WHEN p.transaccion = '11' THEN 'Actualiza Saldo del Mes'
-                        ELSE ''
-                      END";
-        private const string OrdenPorEjecucionOrden = @"CASE 
-                        WHEN ISNUMERIC(LTRIM(RTRIM(p.ejecucion_orden))) = 1 
-                        THEN CAST(LTRIM(RTRIM(p.ejecucion_orden)) AS int) 
-                        ELSE 0 
-                      END";
-        private const string SqlProcesosComplementariosSelect = @"SELECT
+        private const string SqlProcesosComplementariosBase = @"SELECT
                   p.transaccion,
                   CASE
                     WHEN p.transaccion = '01' THEN 'Cambia Fecha de Proceso'
@@ -65,15 +45,27 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
                   p.descripcion,
                   CAST(p.parametros_planillas AS bit) AS parametros_planillas,
                   ISNULL(p.parametros_add,'') AS parametros_add
-              FROM prm_procesos_add p";
-        private const string SqlProcesosComplementariosFiltro = @" WHERE (
-                        p.transaccion LIKE '%' + @filtro + '%'
-                     OR p.procedimiento LIKE '%' + @filtro + '%'
-                     OR p.descripcion LIKE '%' + @filtro + '%'
-                     OR p.ejecucion_tipo LIKE '%' + @filtro + '%'
-                     OR p.parametros_add LIKE '%' + @filtro + '%'
-                     OR p.ejecucion_orden LIKE '%' + @filtro + '%'
-                   )";
+              FROM prm_procesos_add p
+              WHERE (
+                    @filtro IS NULL
+                 OR p.transaccion LIKE '%' + @filtro + '%'
+                 OR p.procedimiento LIKE '%' + @filtro + '%'
+                 OR p.descripcion LIKE '%' + @filtro + '%'
+                 OR p.ejecucion_tipo LIKE '%' + @filtro + '%'
+                 OR p.parametros_add LIKE '%' + @filtro + '%'
+                 OR p.ejecucion_orden LIKE '%' + @filtro + '%'
+              )";
+        private const string SqlProcesosComplementariosTotal = @"SELECT COUNT(1)
+              FROM prm_procesos_add p
+              WHERE (
+                    @filtro IS NULL
+                 OR p.transaccion LIKE '%' + @filtro + '%'
+                 OR p.procedimiento LIKE '%' + @filtro + '%'
+                 OR p.descripcion LIKE '%' + @filtro + '%'
+                 OR p.ejecucion_tipo LIKE '%' + @filtro + '%'
+                 OR p.parametros_add LIKE '%' + @filtro + '%'
+                 OR p.ejecucion_orden LIKE '%' + @filtro + '%'
+              )";
 
         public FrmCCProcesoMensualProcAddDB(IConfiguration config)
         {
@@ -96,29 +88,73 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var dp = CrearParametrosFiltroProcesos(filtros);
-                var whereSql = ConstruirWhereProcesos(filtros.filtro);
-                var sortField = ObtenerSortFieldProcesos(filtros.sortField);
-                var sortDir = ObtenerSortDirectionProcesos(filtros.sortOrder);
-                var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
-                var fetch = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
+                var parametros = new DynamicParameters();
+                parametros.Add("@filtro", string.IsNullOrWhiteSpace(filtros.filtro) ? null : filtros.filtro.Trim());
+                parametros.Add("@SortField", NormalizarSortFieldProcesos(filtros.sortField));
+                parametros.Add("@SortOrder", filtros.sortOrder == 2 ? "DESC" : "ASC");
+                parametros.Add("@offset", filtros.pagina < 0 ? 0 : filtros.pagina);
+                parametros.Add("@fetch", filtros.paginacion <= 0 ? 30 : filtros.paginacion);
 
-                dp.Add("@offset", offset);
-                dp.Add("@fetch", fetch);
+                const string sql = SqlProcesosComplementariosBase + @"
+              ORDER BY
+                    CASE WHEN @SortField = 'TRANSACCION' AND @SortOrder = 'ASC' THEN p.transaccion END ASC,
+                    CASE WHEN @SortField = 'TRANSACCION' AND @SortOrder = 'DESC' THEN p.transaccion END DESC,
+                    CASE WHEN @SortField = 'PROCESO' AND @SortOrder = 'ASC' THEN CASE
+                        WHEN p.transaccion = '01' THEN 'Cambia Fecha de Proceso'
+                        WHEN p.transaccion = '02' THEN 'Genera deducciones'
+                        WHEN p.transaccion = '03' THEN 'Carga deducciones'
+                        WHEN p.transaccion = '04' THEN 'Desglosa deducciones'
+                        WHEN p.transaccion = '05' THEN 'Aplica Ahorros'
+                        WHEN p.transaccion = '06' THEN 'Inconsistencias de Ahorros'
+                        WHEN p.transaccion = '07' THEN 'Devoluciones de Ahorros'
+                        WHEN p.transaccion = '08' THEN 'Aplica Abonos'
+                        WHEN p.transaccion = '09' THEN 'Reporte de Inconsistencias'
+                        WHEN p.transaccion = '10' THEN 'Actualiza Intereses Moratorios'
+                        WHEN p.transaccion = '11' THEN 'Actualiza Saldo del Mes'
+                        ELSE ''
+                    END END ASC,
+                    CASE WHEN @SortField = 'PROCESO' AND @SortOrder = 'DESC' THEN CASE
+                        WHEN p.transaccion = '01' THEN 'Cambia Fecha de Proceso'
+                        WHEN p.transaccion = '02' THEN 'Genera deducciones'
+                        WHEN p.transaccion = '03' THEN 'Carga deducciones'
+                        WHEN p.transaccion = '04' THEN 'Desglosa deducciones'
+                        WHEN p.transaccion = '05' THEN 'Aplica Ahorros'
+                        WHEN p.transaccion = '06' THEN 'Inconsistencias de Ahorros'
+                        WHEN p.transaccion = '07' THEN 'Devoluciones de Ahorros'
+                        WHEN p.transaccion = '08' THEN 'Aplica Abonos'
+                        WHEN p.transaccion = '09' THEN 'Reporte de Inconsistencias'
+                        WHEN p.transaccion = '10' THEN 'Actualiza Intereses Moratorios'
+                        WHEN p.transaccion = '11' THEN 'Actualiza Saldo del Mes'
+                        ELSE ''
+                    END END DESC,
+                    CASE WHEN @SortField = 'PROC_NUM' AND @SortOrder = 'ASC' THEN p.proc_num END ASC,
+                    CASE WHEN @SortField = 'PROC_NUM' AND @SortOrder = 'DESC' THEN p.proc_num END DESC,
+                    CASE WHEN @SortField = 'EJECUCION_TIPO' AND @SortOrder = 'ASC' THEN p.ejecucion_tipo END ASC,
+                    CASE WHEN @SortField = 'EJECUCION_TIPO' AND @SortOrder = 'DESC' THEN p.ejecucion_tipo END DESC,
+                    CASE WHEN @SortField = 'EJECUCION_ORDEN' AND @SortOrder = 'ASC' THEN CASE
+                        WHEN ISNUMERIC(LTRIM(RTRIM(p.ejecucion_orden))) = 1 THEN CAST(LTRIM(RTRIM(p.ejecucion_orden)) AS int)
+                        ELSE 0
+                    END END ASC,
+                    CASE WHEN @SortField = 'EJECUCION_ORDEN' AND @SortOrder = 'DESC' THEN CASE
+                        WHEN ISNUMERIC(LTRIM(RTRIM(p.ejecucion_orden))) = 1 THEN CAST(LTRIM(RTRIM(p.ejecucion_orden)) AS int)
+                        ELSE 0
+                    END END DESC,
+                    CASE WHEN @SortField = 'PROCEDIMIENTO' AND @SortOrder = 'ASC' THEN p.procedimiento END ASC,
+                    CASE WHEN @SortField = 'PROCEDIMIENTO' AND @SortOrder = 'DESC' THEN p.procedimiento END DESC,
+                    CASE WHEN @SortField = 'DESCRIPCION' AND @SortOrder = 'ASC' THEN p.descripcion END ASC,
+                    CASE WHEN @SortField = 'DESCRIPCION' AND @SortOrder = 'DESC' THEN p.descripcion END DESC,
+                    CASE WHEN @SortField = 'PARAMETROS_PLANILLAS' AND @SortOrder = 'ASC' THEN p.parametros_planillas END ASC,
+                    CASE WHEN @SortField = 'PARAMETROS_PLANILLAS' AND @SortOrder = 'DESC' THEN p.parametros_planillas END DESC,
+                    CASE WHEN @SortField = 'PARAMETROS_ADD' AND @SortOrder = 'ASC' THEN p.parametros_add END ASC,
+                    CASE WHEN @SortField = 'PARAMETROS_ADD' AND @SortOrder = 'DESC' THEN p.parametros_add END DESC,
+                    p.transaccion ASC
+              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
-                var salida = new CcPlanillaProcesosComplementariosLista
+                return new CcPlanillaProcesosComplementariosLista
                 {
-                    total = connection.QueryFirstOrDefault<int>(
-                        "SELECT COUNT(1) FROM prm_procesos_add p" + whereSql,
-                        dp),
-                    lista = connection.Query<CcPlanillaProcesosComplementariosData>(
-                        SqlProcesosComplementariosSelect + whereSql + @"
-              ORDER BY " + sortField + " " + sortDir + @"
-              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;",
-                        dp).ToList()
+                    total = connection.QueryFirstOrDefault<int>(SqlProcesosComplementariosTotal, parametros),
+                    lista = connection.Query<CcPlanillaProcesosComplementariosData>(sql, parametros).ToList()
                 };
-
-                return salida;
             });
 
             return result.Code == 0
@@ -141,19 +177,18 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var dp = CrearParametrosFiltroProcesos(filtros);
-                var whereSql = ConstruirWhereProcesos(filtros.filtro);
+                var parametros = new DynamicParameters();
+                parametros.Add("@filtro", string.IsNullOrWhiteSpace(filtros.filtro) ? null : filtros.filtro.Trim());
 
-                return connection.Query<CcPlanillaProcesosComplementariosData>(
-                    SqlProcesosComplementariosSelect + whereSql + @"
-              ORDER BY p.transaccion, 
-            p.ejecucion_tipo,
-            CASE 
-                WHEN ISNUMERIC(LTRIM(RTRIM(p.ejecucion_orden))) = 1 
-                THEN CAST(LTRIM(RTRIM(p.ejecucion_orden)) AS int) 
-                ELSE 0 
-            END;",
-                    dp).ToList();
+                const string sql = SqlProcesosComplementariosBase + @"
+              ORDER BY p.transaccion,
+                       p.ejecucion_tipo,
+                       CASE
+                           WHEN ISNUMERIC(LTRIM(RTRIM(p.ejecucion_orden))) = 1 THEN CAST(LTRIM(RTRIM(p.ejecucion_orden)) AS int)
+                           ELSE 0
+                       END;";
+
+                return connection.Query<CcPlanillaProcesosComplementariosData>(sql, parametros).ToList();
             });
 
             return result.Code == 0
@@ -398,44 +433,22 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
             };
         }
 
-        private static DynamicParameters CrearParametrosFiltroProcesos(FiltrosLazyLoadData filtros)
-        {
-            var dp = new DynamicParameters();
-            if (!string.IsNullOrWhiteSpace(filtros.filtro))
-            {
-                dp.Add("@filtro", filtros.filtro.Trim());
-            }
 
-            return dp;
-        }
-
-        private static string ConstruirWhereProcesos(string? filtro)
-        {
-            return string.IsNullOrWhiteSpace(filtro)
-                ? string.Empty
-                : SqlProcesosComplementariosFiltro;
-        }
-
-        private static string ObtenerSortFieldProcesos(string? sortField)
+        private static string NormalizarSortFieldProcesos(string? sortField)
         {
             return (sortField ?? string.Empty).Trim().ToUpperInvariant() switch
             {
-                CampoTransaccion => "p.transaccion",
-                CampoProceso => OrdenPorProceso,
-                CampoProcNum => "p.proc_num",
-                CampoEjecucionTipo => "p.ejecucion_tipo",
-                CampoEjecucionOrden => OrdenPorEjecucionOrden,
-                CampoProcedimiento => "p.procedimiento",
-                CampoDescripcion => "p.descripcion",
-                CampoParametrosPlanillas => "p.parametros_planillas",
-                CampoParametrosAdd => "p.parametros_add",
-                _ => "p.transaccion"
+                CampoTransaccion => CampoTransaccion,
+                CampoProceso => CampoProceso,
+                CampoProcNum => CampoProcNum,
+                CampoEjecucionTipo => CampoEjecucionTipo,
+                CampoEjecucionOrden => CampoEjecucionOrden,
+                CampoProcedimiento => CampoProcedimiento,
+                CampoDescripcion => CampoDescripcion,
+                CampoParametrosPlanillas => CampoParametrosPlanillas,
+                CampoParametrosAdd => CampoParametrosAdd,
+                _ => CampoTransaccion
             };
-        }
-
-        private static string ObtenerSortDirectionProcesos(int sortOrder)
-        {
-            return sortOrder == 2 ? "DESC" : "ASC";
         }
 
         private static string FormatearOrden(string? orden)
