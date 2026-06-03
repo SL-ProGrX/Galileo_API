@@ -6,13 +6,13 @@ using Galileo.BusinessLogic.ProGrX_Personas;
 
 namespace Galileo.Controllers.ProGrx_Personas
 {
-    [Route("api/frmAF_Afiliacion_Tags")]
+    [Route("api/[controller]")]
     [ApiController]
-    public class FrmAFAfiliacionTagsController : ControllerBase
+    public class frmAF_Afiliacion_TagsController : ControllerBase
     {
         private readonly FrmAFAfiliacionTagsBL _bl;
 
-        public FrmAFAfiliacionTagsController(IConfiguration config)
+        public frmAF_Afiliacion_TagsController(IConfiguration config)
         {
             _bl = new FrmAFAfiliacionTagsBL(config);
         }
