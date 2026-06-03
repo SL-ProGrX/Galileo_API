@@ -89,8 +89,10 @@ namespace Galileo_API.DataBaseTier
                     foreach (var item in result)
                     {
                         consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+                        
                         var vDocumento = consc.ToString("D4");
 
+                        item.documento = vDocumento;
                         curMonto += item.monto;
 
                         conn.Execute(FrmTesAutorizacionSql.Query_UpdateTransacciones, new
@@ -123,7 +125,6 @@ namespace Galileo_API.DataBaseTier
                             ActualizaReferencia(conn, vDocumento, item);
                         }
                     }
-                    consc = consc + 1;
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
                     spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, consc.ToString("D4"), transferencia.usuario!);
@@ -296,9 +297,9 @@ Where ID_Solicitud = @IdSolicitud";
             parametros.Add("@Documento", documento, DbType.String);
             parametros.Add("@Usuario", usuario, DbType.String);
 
-            DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+            var result = DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
                   connectionString,
-                  "dbo.spCRDVivGarantiaAvaluo_A",
+                  "dbo.spTes_TEI_Acreaditacion",
                   default,
                   parametros
               );

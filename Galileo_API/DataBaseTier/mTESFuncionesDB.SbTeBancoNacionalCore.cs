@@ -48,6 +48,8 @@ namespace Galileo.DataBaseTier
 
                 long bancoConsec = resolveConsecutivo();
 
+                bancoConsec = bancoConsec - 1;
+
                 var sb = new StringBuilder();
 
                 var header = new StringBuilder(120);
