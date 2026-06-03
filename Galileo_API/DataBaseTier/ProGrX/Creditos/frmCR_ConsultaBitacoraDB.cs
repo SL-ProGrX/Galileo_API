@@ -215,15 +215,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static CrConsultaBitacoraRequest NormalizarRequest(CrConsultaBitacoraRequest? request)
         {
-            var fechaInicio = request?.fecha_inicio?.Date ?? DateTime.Today.AddDays(-7);
-            var fechaCorte = request?.fecha_corte?.Date ?? DateTime.Today;
+            if (request == null)
+            {
+                var hoy = DateTime.Today;
+
+                return new CrConsultaBitacoraRequest
+                {
+                    cedula = string.Empty,
+                    fecha_inicio = hoy.AddDays(-7),
+                    fecha_corte = hoy.AddDays(1).AddTicks(-1),
+                    mov_bancario = false
+                };
+            }
+
+            var fechaInicio = request.fecha_inicio.HasValue
+                ? request.fecha_inicio.Value.Date
+                : DateTime.Today.AddDays(-7);
+
+            var fechaCorte = request.fecha_corte.HasValue
+                ? request.fecha_corte.Value.Date
+                : DateTime.Today;
 
             return new CrConsultaBitacoraRequest
             {
-                cedula = (request?.cedula ?? string.Empty).Trim(),
+                cedula = (request.cedula ?? string.Empty).Trim(),
                 fecha_inicio = fechaInicio,
                 fecha_corte = fechaCorte.AddDays(1).AddTicks(-1),
-                mov_bancario = request?.mov_bancario ?? false
+                mov_bancario = request.mov_bancario.GetValueOrDefault()
             };
         }
 
