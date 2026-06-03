@@ -8,11 +8,11 @@ namespace Galileo.Controllers.ProGrx_Personas
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Afiliacion_TagsController : ControllerBase
+    public class FrmAfAfiliacionTagsController : ControllerBase
     {
         private readonly FrmAFAfiliacionTagsBL _bl;
 
-        public frmAF_Afiliacion_TagsController(IConfiguration config)
+        public FrmAfAfiliacionTagsController(IConfiguration config)
         {
             _bl = new FrmAFAfiliacionTagsBL(config);
         }
