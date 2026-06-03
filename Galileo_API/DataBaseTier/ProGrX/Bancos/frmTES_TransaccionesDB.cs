@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
@@ -589,6 +590,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
+                //Valida cuenta:
+                var valCuenta = TES_TransaccionesValidaCuentaXCedula(CodEmpresa, transaccion.codigo, transaccion.cta_ahorros, usuario, transaccion.tipo_beneficiario);
+                if(valCuenta.Code == -1)
+                {
+                    return valCuenta;
+                }
+
                 NormalizarUsuarioSolicita(usuario, transaccion);
                 AsegurarAsientoDetalle(CodEmpresa, contabilidad, transaccion);
                 PrepararDetalleEnPartes(transaccion);
@@ -1823,17 +1831,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             });
         }
 
-        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string? cedula, string? cuenta, string? usuario, int? tipoOrigen = 0)
         {
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-                //Busco si la cuenta esta registrada para la cedula
-                var query = @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
+                var query = string.Empty;
+                if (tipoOrigen == 2)
+                {
+                    //Busco si la cuenta esta registrada para la cedula
+                    query = @"select ID_BANCO as IDENTIFICACION , CTA as CUENTA_INTERNA, COD_DIVISA, DESCRIPCION as NOMBRE FROM TES_BANCOS
+                                    WHERE CTA = @cuenta
+                                    AND ESTADO = 'A'";
+                }
+                else
+                {
+                    //Busco si la cuenta esta registrada para la cedula
+                    query = @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
                                      ON s.CEDULA = c.IDENTIFICACION 
                                     WHERE CUENTA_INTERNA = @cuenta
                                     AND ACTIVA = 1";
+                }
+
+               
 
                 var cuentaInfo = connection.QueryFirstOrDefault<dynamic>(query, new { cuenta });
 
@@ -1848,13 +1868,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         : DbHelper.ErrorResponse("La cuenta no es válida para la cédula proporcionada.");
                 }
 
-                var id1 = cuentaInfo.IDENTIFICACION
+                var id1 = cuentaInfo.IDENTIFICACION.ToString()
                             .Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');
 
-                var id2 = cedula.Trim()
+                var id2 = cedula!.ToString().Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');
