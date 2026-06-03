@@ -49,11 +49,14 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         {
             if (filtros is null)
             {
-                return DbHelper.CreateErrorResponse("Los filtros de unidades son requeridos.", -2, new TablasListaGenericaModel
-                {
-                    total = 0,
-                    lista = new List<AfUnidadesDto>()
-                });
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros de unidades son requeridos.",
+                    -2,
+                    new TablasListaGenericaModel
+                    {
+                        total = 0,
+                        lista = new List<AfUnidadesDto>()
+                    });
             }
 
             var resultadoVacio = new TablasListaGenericaModel
@@ -77,93 +80,86 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 var fetchRows = filtros.paginacion;
                 var filtroParametro = string.IsNullOrWhiteSpace(filtroTexto) ? null : $"%{filtroTexto}%";
 
+                var parametros = new
+                {
+                    Filtro = filtroParametro,
+                    SortField = sortField,
+                    SortDirection = sortDirection,
+                    OffsetRows = offsetRows,
+                    FetchRows = fetchRows
+                };
+
                 if (rbTipo == 0)
                 {
                     salida.total = connection.QueryFirstOrDefault<int>(
-                        @"Select COUNT(U.Codigo)
-                          from UProgramatica U left join Provincias P on U.Provincia = P.Provincia
-                          where @Filtro is null
-                             or U.Descripcion like @Filtro
-                             or U.Codigo like @Filtro");
+                        @"select count(U.Codigo)
+                  from UProgramatica U
+                  left join Provincias P on U.Provincia = P.Provincia
+                  where @Filtro is null
+                     or U.Descripcion like @Filtro
+                     or U.Codigo like @Filtro",
+                        parametros);
 
                     var query = @"
-                        Select U.Codigo,
-                               U.Descripcion,
-                               isnull(P.Provincia,'') as Provincia,
-                               isnull(P.Descripcion,'') as ProvinciaDesc
-                        from UProgramatica U
-                        left join Provincias P on U.Provincia = P.Provincia
-                        where @Filtro is null
-                           or U.Descripcion like @Filtro
-                           or U.Codigo like @Filtro
-                        order by
-                            CASE WHEN @SortField = 'Codigo' AND @SortDirection = 'ASC' THEN U.Codigo END ASC,
-                            CASE WHEN @SortField = 'Codigo' AND @SortDirection = 'DESC' THEN U.Codigo END DESC,
-                            CASE WHEN @SortField = 'Descripcion' AND @SortDirection = 'ASC' THEN U.Descripcion END ASC,
-                            CASE WHEN @SortField = 'Descripcion' AND @SortDirection = 'DESC' THEN U.Descripcion END DESC,
-                            CASE WHEN @SortField = 'Provincia' AND @SortDirection = 'ASC' THEN P.Provincia END ASC,
-                            CASE WHEN @SortField = 'Provincia' AND @SortDirection = 'DESC' THEN P.Provincia END DESC,
-                            CASE WHEN @SortField = 'ProvinciaDesc' AND @SortDirection = 'ASC' THEN P.Descripcion END ASC,
-                            CASE WHEN @SortField = 'ProvinciaDesc' AND @SortDirection = 'DESC' THEN P.Descripcion END DESC,
-                            U.Codigo ASC";
+                select U.Codigo,
+                       U.Descripcion,
+                       isnull(P.Provincia,'') as Provincia,
+                       isnull(P.Descripcion,'') as ProvinciaDesc
+                from UProgramatica U
+                left join Provincias P on U.Provincia = P.Provincia
+                where @Filtro is null
+                   or U.Descripcion like @Filtro
+                   or U.Codigo like @Filtro
+                order by
+                    case when @SortField = 'Codigo' and @SortDirection = 'ASC' then U.Codigo end asc,
+                    case when @SortField = 'Codigo' and @SortDirection = 'DESC' then U.Codigo end desc,
+                    case when @SortField = 'Descripcion' and @SortDirection = 'ASC' then U.Descripcion end asc,
+                    case when @SortField = 'Descripcion' and @SortDirection = 'DESC' then U.Descripcion end desc,
+                    case when @SortField = 'Provincia' and @SortDirection = 'ASC' then P.Provincia end asc,
+                    case when @SortField = 'Provincia' and @SortDirection = 'DESC' then P.Provincia end desc,
+                    case when @SortField = 'ProvinciaDesc' and @SortDirection = 'ASC' then P.Descripcion end asc,
+                    case when @SortField = 'ProvinciaDesc' and @SortDirection = 'DESC' then P.Descripcion end desc,
+                    U.Codigo asc";
 
                     if (fetchRows > 0)
                     {
                         query += " OFFSET @OffsetRows ROWS FETCH NEXT @FetchRows ROWS ONLY";
                     }
 
-                    salida.lista = connection.Query<AfUnidadesDto>(
-                        query,
-                        new
-                        {
-                            Filtro = filtroParametro,
-                            SortField = sortField,
-                            SortDirection = sortDirection,
-                            OffsetRows = offsetRows,
-                            FetchRows = fetchRows
-                        }).ToList();
+                    salida.lista = connection.Query<AfUnidadesDto>(query, parametros).ToList();
                 }
                 else
                 {
                     salida.total = connection.QueryFirstOrDefault<int>(
-                        @"Select COUNT(U.UT_Codigo)
-                          from UTrabajo U
-                          where @Filtro is null
-                             or U.UT_Descripcion like @Filtro
-                             or U.UT_Codigo like @Filtro",
-                        new { Filtro = filtroParametro });
+                        @"select count(U.UT_Codigo)
+                  from UTrabajo U
+                  where @Filtro is null
+                     or U.UT_Descripcion like @Filtro
+                     or U.UT_Codigo like @Filtro",
+                        parametros);
 
                     var query = @"
-                        Select U.UT_Codigo as Codigo,
-                               U.UT_Descripcion as Descripcion,
-                               '' as Provincia,
-                               '' as ProvinciaDesc
-                        from UTrabajo U
-                        where @Filtro is null
-                           or U.UT_Descripcion like @Filtro
-                           or U.UT_Codigo like @Filtro
-                        order by
-                            CASE WHEN @SortField = 'Codigo' AND @SortDirection = 'ASC' THEN U.UT_Codigo END ASC,
-                            CASE WHEN @SortField = 'Codigo' AND @SortDirection = 'DESC' THEN U.UT_Codigo END DESC,
-                            CASE WHEN @SortField = 'Descripcion' AND @SortDirection = 'ASC' THEN U.UT_Descripcion END ASC,
-                            CASE WHEN @SortField = 'Descripcion' AND @SortDirection = 'DESC' THEN U.UT_Descripcion END DESC,
-                            U.UT_Codigo ASC";
+                select U.UT_Codigo as Codigo,
+                       U.UT_Descripcion as Descripcion,
+                       '' as Provincia,
+                       '' as ProvinciaDesc
+                from UTrabajo U
+                where @Filtro is null
+                   or U.UT_Descripcion like @Filtro
+                   or U.UT_Codigo like @Filtro
+                order by
+                    case when @SortField = 'Codigo' and @SortDirection = 'ASC' then U.UT_Codigo end asc,
+                    case when @SortField = 'Codigo' and @SortDirection = 'DESC' then U.UT_Codigo end desc,
+                    case when @SortField = 'Descripcion' and @SortDirection = 'ASC' then U.UT_Descripcion end asc,
+                    case when @SortField = 'Descripcion' and @SortDirection = 'DESC' then U.UT_Descripcion end desc,
+                    U.UT_Codigo asc";
 
                     if (fetchRows > 0)
                     {
                         query += " OFFSET @OffsetRows ROWS FETCH NEXT @FetchRows ROWS ONLY";
                     }
 
-                    salida.lista = connection.Query<AfUnidadesDto>(
-                        query,
-                        new
-                        {
-                            Filtro = filtroParametro,
-                            SortField = sortField,
-                            SortDirection = sortDirection,
-                            OffsetRows = offsetRows,
-                            FetchRows = fetchRows
-                        }).ToList();
+                    salida.lista = connection.Query<AfUnidadesDto>(query, parametros).ToList();
                 }
 
                 return salida;
@@ -171,7 +167,10 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? resultadoVacio)
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener unidades.", result.Code.GetValueOrDefault(-1), resultadoVacio);
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al obtener unidades.",
+                    result.Code.GetValueOrDefault(-1),
+                    resultadoVacio);
         }
 
         /// <summary>
