@@ -30,6 +30,10 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 fechaCorte = new DateTime(2200, 1, 1, 23, 59, 59, DateTimeKind.Unspecified);
             }
 
+            var cedula = filtros.GetType().GetProperty("cedula")?.GetValue(filtros)
+                         ?? filtros.GetType().GetProperty("Cedula")?.GetValue(filtros)
+                         ?? string.Empty;
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query<AfSuspendidosConsultaDto>(
                     "spPAT_AsociadosSinAportes_Gestion_Consulta",
@@ -38,7 +42,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                         Inicio = fechaInicio,
                         Corte = fechaCorte,
                         Evento = filtros.evento,
-                        Cedula = filtros.cedula,
+                        Cedula = cedula,
                         Nombre = filtros.nombre
                     },
                     commandType: CommandType.StoredProcedure,
