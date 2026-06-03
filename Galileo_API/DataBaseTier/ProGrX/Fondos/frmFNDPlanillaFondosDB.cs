@@ -198,7 +198,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 return DbHelper.CreateErrorResponse(
                     "Tipo de proceso no identificado (solo se permite 'A' o 'R').",
-                    -1,
+                    -2,
                     new DropDownListaGenericaModel());
             }
 
@@ -276,15 +276,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 return DbHelper.CreateErrorResponse(
                     "No hay registros para procesar.",
-                    -1,
+                    -2,
                     new FndPlanillaFondosData());
             }
 
             if (FxAplicada(CodEmpresa, request.cod_institucion, request.plan ?? string.Empty, request.proceso, request.comprobante ?? string.Empty))
             {
                 return DbHelper.CreateErrorResponse(
-                    "Ya se aplico una planilla con esta fecha de proceso para la institución y el plan elegidos",
-                    -1,
+                    "Ya se aplico una planilla con esta fecha de proceso para la institucion y el plan elegidos",
+                    -2,
                     new FndPlanillaFondosData());
             }
 
