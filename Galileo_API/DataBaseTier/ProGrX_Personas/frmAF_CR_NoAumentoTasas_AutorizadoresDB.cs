@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Personas;
 using Galileo.Models.Security;
@@ -27,10 +26,15 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns></returns>
         public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
         {
-            return EjecutarStoredProcedureList<AfNatAutorizadores>(
-                CodEmpresa,
-                "spAFI_Renuncia_NAT_Autorizadores_Obtener",
-                new { SoloAutorizados = EstadoAutorizado });
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<AfNatAutorizadores>(
+                    "spAFI_Renuncia_NAT_Autorizadores_Obtener",
+                    new { SoloAutorizados = EstadoAutorizado },
+                    commandType: System.Data.CommandType.StoredProcedure).ToList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfNatAutorizadores>())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener autorizadores NAT.", result.Code.GetValueOrDefault(-1), new List<AfNatAutorizadores>());
         }
 
         /// <summary>
@@ -43,15 +47,18 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns></returns>
         public ErrorDto AF_NAT_Autorizadores_Asignar(int CodEmpresa, string A_Usuario, string Mov, string Usuario)
         {
-            var result = EjecutarStoredProcedure(
-                CodEmpresa,
-                "spAFI_Renuncia_NAT_Autorizadores_Add",
-                new { A_Usuario, Mov, Usuario },
-                "Error al asignar autorizador NAT.");
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spAFI_Renuncia_NAT_Autorizadores_Add",
+                    new { A_Usuario, Mov, Usuario },
+                    commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
 
             if (result.Code != 0)
             {
-                return result;
+                return DbHelper.ErrorResponse(result.Description ?? "Error al asignar autorizador NAT.", result.Code.GetValueOrDefault(-1));
             }
 
             RegistrarBitacora(
@@ -61,29 +68,6 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 Mov == "A" ? "Registra - WEB" : "Elimina - WEB");
 
             return DbHelper.OkResponse("Ok");
-        }
-
-        private ErrorDto<List<T>> EjecutarStoredProcedureList<T>(int codEmpresa, string storedProcedure, object parameters)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
-                connection.Query<T>(storedProcedure, parameters, commandType: System.Data.CommandType.StoredProcedure).ToList());
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<T>())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al ejecutar procedimiento almacenado.", result.Code.GetValueOrDefault(-1), new List<T>());
-        }
-
-        private ErrorDto EjecutarStoredProcedure(int codEmpresa, string storedProcedure, object parameters, string errorMessage)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
-            {
-                connection.Execute(storedProcedure, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
