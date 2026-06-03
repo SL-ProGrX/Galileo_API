@@ -249,27 +249,29 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         {
             return new AfiEtiquetaDto
             {
-                id = row.Id,
-                tag_desc = row.Tag_Desc,
+                id = row.ID,
+                tag_desc = row.TAG_DESC,
                 fecha_etiqueta = row.Fecha_Format,
-                usuario_etiqueta = row.Registro_Usuario,
-                observacion = row.Observacion,
-                tipo_desc = row.Tipo_Desc,
-                cedula = row.Cedula,
-                nombre = row.Nombre
+                usuario_etiqueta = row.REGISTRO_USUARIO,
+                observacion = row.OBSERVACION,
+                tipo_desc = null,
+                cedula = row.CEDULA,
+                nombre = row.NOMBRE
             };
         }
 
-        private sealed class AfiEtiquetaDbRow
-        {
-            public int Id { get; set; }
-            public string? Tag_Desc { get; set; }
-            public string? Fecha_Format { get; set; }
-            public string? Registro_Usuario { get; set; }
-            public string? Observacion { get; set; }
-            public string? Tipo_Desc { get; set; }
-            public string? Cedula { get; set; }
-            public string? Nombre { get; set; }
-        }
+        private sealed record AfiEtiquetaDbRow(
+            int CODIGO,
+            int ID,
+            string? CEDULA,
+            string? NOMBRE,
+            string? TAG_DESC,
+            string? COD_ETIQUETA,
+            DateTime FECHA_ETIQUETA,
+            string? USUARIO_ETIQUETA,
+            string? OBSERVACION,
+            string? REGISTRO_USUARIO,
+            DateTime REGISTRO_FECHA,
+            string? Fecha_Format);
     }
 }
