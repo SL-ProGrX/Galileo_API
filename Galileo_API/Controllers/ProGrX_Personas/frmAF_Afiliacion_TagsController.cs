@@ -6,7 +6,7 @@ using Galileo.BusinessLogic.ProGrX_Personas;
 
 namespace Galileo.Controllers.ProGrx_Personas
 {
-    [Route("api/[controller]")]
+    [Route("api/frmAF_Afiliacion_Tags")]
     [ApiController]
     public class FrmAFAfiliacionTagsController : ControllerBase
     {
@@ -60,6 +60,7 @@ namespace Galileo.Controllers.ProGrx_Personas
             return _bl.AFI_Afiliacion_Revision_Aplica(codEmpresa, consec, estado, usuario, nota ?? string.Empty);
         }
 
+        [Authorize]
         [HttpGet("AFI_Afiliaciones_Etiquetas_Consulta")]
         public ErrorDto<List<AfiEtiquetaDto>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
         {
