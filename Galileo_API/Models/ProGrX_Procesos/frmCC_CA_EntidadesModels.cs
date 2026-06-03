@@ -14,8 +14,8 @@ namespace Galileo.Models.GEN
         public string formato { get; set; } = string.Empty;
         public string cod_cuenta { get; set; } = string.Empty;
         public string cod_cuenta_mask { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public bool isNew { get; set; }
+        public required bool activo { get; set; }
+        public required bool isNew { get; set; }
     }
 
     public class PrmCaEntidadData

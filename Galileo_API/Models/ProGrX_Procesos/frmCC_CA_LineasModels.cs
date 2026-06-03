@@ -10,8 +10,8 @@ namespace Galileo.Models.GEN
         public string cod_linea { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public bool isNew { get; set; }
+        public required bool activo { get; set; }
+        public required bool isNew { get; set; }
     }
 
 
