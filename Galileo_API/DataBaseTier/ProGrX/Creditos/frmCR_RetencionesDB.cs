@@ -265,5 +265,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var lista = DbHelper.ExecuteListQuery<SiguienteSolicitudData>(_portalDb, codEmpresa, query, new { IdSolicitudActual = idSolicitudActual });
             return lista.Result ?? [];
         }
+
+        /// <summary>
+        /// Inserta un nuevo crédito en reg_creditos.
+        /// </summary>
+        public ErrorDto AF_CR_Retenciones_InsertarCredito(int codEmpresa, InsertarCreditoRequest req)
+        {
+            string query = @"
+                INSERT INTO reg_creditos (
+                    codigo, id_comite, cedula, montosol, montoapr, monto_girado, saldo, amortiza, interesc, saldo_mes, cuota, int, interesv, plazo,
+                    userrec, userres, userfor, usertesoreria, tesoreria, fechasol, fechares, fechaforp, fechaforf, fecha_calculo_int, garantia,
+                    primer_cuota, tdocumento, ndocumento, pagare, firma_deudor, premio, observacion, estado, prideduc, fecult, estadosol,
+                    documento_referido, cod_destino, cod_divisa, base_calculo
+                )
+                VALUES (
+                    @Codigo, @IdComite, @Cedula, @MontoSol, @MontoApr, @MontoGirado, @Saldo, @Amortiza, @Interesc, @SaldoMes, @Cuota, @Int, @Interesv, @Plazo,
+                    @UserRec, @UserRes, @UserFor, @UserTesoreria, @Tesoreria, @FechaSol, @FechaRes, @FechaForp, @FechaForf, @FechaCalculoInt, @Garantia,
+                    @PrimerCuota, @TDocumento, @NDocumento, @Pagare, @FirmaDeudor, @Premio, @Observacion, @Estado, @PriDeduc, @FecUlt, @EstadoSol,
+                    @DocumentoReferido, @CodDestino, @CodDivisa, @BaseCalculo
+                )";
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, req);
+        }
+
+        /// <summary>
+        /// Valida existencia de catálogo, socio y obtiene ctaNintC antes de insertar.
+        /// </summary>
+        public ValidacionPreviaInsertarCreditoResponse AF_CR_Retenciones_ValidarAntesInsertar(int codEmpresa, string codigo, string cedula)
+        {
+            string queryCatalogo = "SELECT ISNULL(COUNT(*),0) FROM catalogo WHERE (Retencion = 'S' OR Poliza = 'S') AND codigo = @Codigo";
+            string querySocio = "SELECT ISNULL(COUNT(*),0) FROM socios WHERE cedula = @Cedula";
+            string queryCtaNintC = "SELECT ctaNintC FROM catalogo WHERE codigo = @Codigo";
+
+            int existeCatalogo = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, queryCatalogo, 0, new { Codigo = codigo }).Result;
+            int existeSocio = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, querySocio, 0, new { Cedula = cedula }).Result;
+            string? ctaNintC = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, queryCtaNintC, null, new { Codigo = codigo }).Result;
+
+            return new ValidacionPreviaInsertarCreditoResponse
+            {
+                ExisteCatalogo = existeCatalogo > 0,
+                ExisteSocio = existeSocio > 0,
+                CtaNintC = ctaNintC
+            };
+        }
     }
 }

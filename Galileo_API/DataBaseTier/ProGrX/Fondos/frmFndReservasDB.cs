@@ -32,12 +32,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         COD_RESERVA AS cod_reserva,
                         descripcion,
                         cta_reserva,
+	                    cta_reserva_desc,
                         cta_transitoria,
+	                    cta_transitoria_desc,
                         activa,
                         registro_usuario,
-                        registro_fecha,
-                        modifica_usuario,
-                        modifica_fecha
+                        registro_fecha
                     FROM dbo.vFND_RESERVAS
                     WHERE @hasFilter = 0 OR
                     (

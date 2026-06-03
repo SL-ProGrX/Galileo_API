@@ -94,5 +94,19 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             return _bl.AF_CR_Retenciones_ObtenerSiguienteSolicitud(codEmpresa, idSolicitudActual, siguiente);
         }
+
+        [HttpPost("AF_CR_Retenciones_InsertarCredito")]
+        [Authorize]
+        public ErrorDto AF_CR_Retenciones_InsertarCredito(int codEmpresa, [FromBody] InsertarCreditoRequest req)
+        {
+            return _bl.AF_CR_Retenciones_InsertarCredito(codEmpresa, req);
+        }
+
+        [HttpGet("AF_CR_Retenciones_ValidarAntesInsertar")]
+        [Authorize]
+        public ValidacionPreviaInsertarCreditoResponse AF_CR_Retenciones_ValidarAntesInsertar(int codEmpresa, string codigo, string cedula)
+        {
+            return _bl.AF_CR_Retenciones_ValidarAntesInsertar(codEmpresa, codigo, cedula);
+        }
     }
 }
