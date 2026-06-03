@@ -11,13 +11,11 @@ namespace Galileo.Controllers.ProGrx_Personas
     [ApiController]
     public class FrmAfAfiliacionTramiteController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmAfAfiliacionTramiteBl BlAfAfiliacionTramite;
 
         public FrmAfAfiliacionTramiteController(IConfiguration config)
         {
-            _config = config;
-            BlAfAfiliacionTramite = new FrmAfAfiliacionTramiteBl(_config);
+            BlAfAfiliacionTramite = new FrmAfAfiliacionTramiteBl(config);
         }
 
         [Authorize]
