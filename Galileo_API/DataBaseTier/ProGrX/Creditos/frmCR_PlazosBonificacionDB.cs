@@ -1,9 +1,7 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Credito;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
