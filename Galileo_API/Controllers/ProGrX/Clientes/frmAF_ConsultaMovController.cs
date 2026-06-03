@@ -39,9 +39,9 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpPost("AF_MovLiquidaciones_Reversion")]
-        public ErrorDto AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion)
+        public ErrorDto AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion, string cedula)
         {
-            return BL_AF_ConsultaMov.AF_MovLiquidaciones_Reversion(CodEmpresa, usuario, idLiquidacion);
+            return BL_AF_ConsultaMov.AF_MovLiquidaciones_Reversion(CodEmpresa, usuario, idLiquidacion, cedula);
         }
 
         [Authorize]

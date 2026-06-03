@@ -10,44 +10,14 @@ namespace Galileo.DataBaseTier
     public class FrmAfCambioCedulaDB
     {
         private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurity;
-
-        private const string SqlTiposCedulas = @"
-                    SELECT TIPO_ID AS item,
-                           RTRIM(Descripcion) AS descripcion
-                    FROM dbo.AFI_TIPOS_IDS
-                    ORDER BY Tipo_Id;";
-
-        private const string SqlTipoIdLargoMinimo = @"
-                    SELECT LARGO_MINIMO
-                    FROM dbo.AFI_TIPOS_IDS
-                    WHERE TIPO_ID = @TipoId;";
-
-        private const string SpIdentificacionCambio = "spAFI_Identificacion_Cambio";
-        private const string SpSegLogon = "spSEG_Logon";
-
-        private const string SqlCedulaCambio = @"
-                    SELECT
-                        S.Cedula AS cedulaActual,
-                        S.NOMBRE AS nombre,
-                        S.TIPO_ID AS tipoid,
-                        Tip.DESCRIPCION AS TipoId_Desc,
-                        CASE
-                            WHEN Ep.COD_ESTADO = 'N' THEN 'No Asociado'
-                            ELSE 'Asociado'
-                        END AS estado,
-                        Ep.DESCRIPCION AS Estado_Persona
-                    FROM dbo.socios S
-                    INNER JOIN dbo.AFI_TIPOS_IDS Tip
-                        ON S.TIPO_ID = Tip.TIPO_ID
-                    INNER JOIN dbo.AFI_ESTADOS_PERSONA Ep
-                        ON S.ESTADOACTUAL = Ep.COD_ESTADO
-                    WHERE TRIM(S.cedula) = @Cedula;";
 
         public FrmAfCambioCedulaDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mSecurity = new MSecurityMainDb(_config);
+            _portalDb = new PortalDB(_config);
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data)
@@ -62,8 +32,13 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado de tipos de cédula.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposCedulas_Obtener(int CodEmpresa)
         {
+            const string SqlTiposCedulas = @"
+                    SELECT TIPO_ID AS item,
+                           RTRIM(Descripcion) AS descripcion
+                    FROM dbo.AFI_TIPOS_IDS
+                    ORDER BY Tipo_Id;";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
-                CreatePortalDb(),
+                _portalDb,
                 CodEmpresa,
                 SqlTiposCedulas);
         }
@@ -85,8 +60,12 @@ namespace Galileo.DataBaseTier
                 return validacion;
             }
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            var result = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
+                const string SqlTipoIdLargoMinimo = @"
+                    SELECT LARGO_MINIMO
+                    FROM dbo.AFI_TIPOS_IDS
+                    WHERE TIPO_ID = @TipoId;";
                 var largoMinimo = connection.QueryFirstOrDefault<int>(
                     SqlTipoIdLargoMinimo,
                     new { TipoId = cambioCedula.tipo });
@@ -97,7 +76,7 @@ namespace Galileo.DataBaseTier
                         $"El n&uacute;mero de identificaci&oacute;n nuevo no cumplen con los caracteres requeridos {largoMinimo}, verifique!",
                         -2);
                 }
-
+                const string SpIdentificacionCambio = "spAFI_Identificacion_Cambio";
                 connection.Execute(
                     SpIdentificacionCambio,
                     CrearParametrosCambioCedula(usuario, cambioCedula),
@@ -122,7 +101,25 @@ namespace Galileo.DataBaseTier
         /// <returns>Información de la persona asociada a la cédula.</returns>
         public ErrorDto<AFCedulaCambioDto> AF_Cedula_Obtener(int CodEmpresa, string cedula)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            const string SqlCedulaCambio = @"
+                    SELECT
+                        S.Cedula AS cedulaActual,
+                        S.NOMBRE AS nombre,
+                        S.TIPO_ID AS tipoid,
+                        Tip.DESCRIPCION AS TipoId_Desc,
+                        CASE
+                            WHEN Ep.COD_ESTADO = 'N' THEN 'No Asociado'
+                            ELSE 'Asociado'
+                        END AS estado,
+                        Ep.DESCRIPCION AS Estado_Persona
+                    FROM dbo.socios S
+                    INNER JOIN dbo.AFI_TIPOS_IDS Tip
+                        ON S.TIPO_ID = Tip.TIPO_ID
+                    INNER JOIN dbo.AFI_ESTADOS_PERSONA Ep
+                        ON S.ESTADOACTUAL = Ep.COD_ESTADO
+                    WHERE TRIM(S.cedula) = @Cedula;";
+
+            var result = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<AFCedulaCambioDto>(
                     SqlCedulaCambio,
                     new { Cedula = NormalizarTexto(cedula) }));
@@ -168,15 +165,22 @@ namespace Galileo.DataBaseTier
                 return permiso;
             }
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.QueryFirstOrDefault<int>(
+            var defaultConnString = ObtenerDefaultConnString();
+            if (string.IsNullOrWhiteSpace(defaultConnString))
+            {
+                return DbHelper.ErrorResponse("No se encontró la conexión DefaultConnString.", -1);
+            }
+            const string SpSegLogon = "spSEG_Logon";
+
+            var result = DbHelper.ExecuteStoredProcedureSingle<int>(
+                    defaultConnString,
                     SpSegLogon,
+                    0,
                     new
                     {
                         usuario = NormalizarTexto(param.usuario),
                         clave = param.clave
-                    },
-                    commandType: CommandType.StoredProcedure));
+                    });
 
             if (result.Code != 0)
             {
@@ -190,10 +194,13 @@ namespace Galileo.DataBaseTier
 
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene la cadena de conexión por defecto configurada para validaciones de seguridad.
         /// </summary>
-        /// <returns>Instancia de PortalDB configurada.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
+        /// <returns>Cadena de conexión DefaultConnString.</returns>
+        private string ObtenerDefaultConnString()
+        {
+            return _config.GetConnectionString("DefaultConnString") ?? string.Empty;
+        }
 
 
         /// <summary>

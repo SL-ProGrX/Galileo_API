@@ -28,5 +28,10 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return _db.AF_Archivo_Obtener(CodEmpresa, codinstitucion, fechaproceso);
         }
+
+        public ErrorDto<AfArchivoPlanillaDto> AF_ArchivoPlanilla_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
+        {
+            return _db.AF_ArchivoPlanilla_Obtener(CodEmpresa, codinstitucion, fechaproceso);
+        }
     }
 }

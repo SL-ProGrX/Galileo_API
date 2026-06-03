@@ -3,13 +3,18 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
     public class FrmAFRemesasIngresosDB
     {
         private readonly IConfiguration _config;
+        private readonly MSecurityMainDb _securityMainDb;
 
+        private const int ModuloAfiliacion = 1;
+        private const string FormNameRemesasIngresos = "frmAF_RemesasIngresos";
+        private const string MsgSinPermisos = "No tiene los permisos para realizar esta opción, verifique...!!!";
         private const string TextoRemesaCerrada = "Remesa Cerrada";
         private const string OficinaTodos = "TODOS";
 
@@ -132,17 +137,29 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     WHERE Consec = @Consec;";
 
         private const string SqlRemesasPorCedula = @"
-                    SELECT A.cod_remesa,
-                           A.fecha,
-                           A.usuario
+                    SELECT A.cod_remesa AS CodRemesa,
+                           A.fecha AS Fecha,
+                           A.usuario AS Usuario
                     FROM dbo.AFI_REMESAS_ING A
                     INNER JOIN dbo.AFI_INGRESOS X
                         ON A.cod_remesa = X.cod_remesa
                     WHERE X.cedula = @Cedula;";
 
+        private const string SqlRemesaMicrofilm = @"
+                    UPDATE dbo.AFI_REMESAS_ING
+                    SET Microfilm_Fecha = dbo.MyGetdate(),
+                        Microfilm_usuario = @Usuario
+                    WHERE cod_remesa = @CodRemesa;";
+
+        private const string SqlRemesaExiste = @"
+                    SELECT COUNT(*)
+                    FROM dbo.AFI_REMESAS_ING
+                    WHERE cod_remesa = @CodRemesa;";
+
         public FrmAFRemesasIngresosDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _securityMainDb = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -325,8 +342,58 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
         /// <summary>
+        /// Marca una remesa como recibida en microfilm.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que aplica el recibo.</param>
+        /// <param name="codRemesa">Código de remesa.</param>
+        /// <returns>Resultado del registro de microfilm.</returns>
+        public ErrorDto AFI_Remesa_Reporte_Aplicar(int codEmpresa, string usuario, int codRemesa)
+        {
+            var permiso = ValidarPermiso(codEmpresa, usuario, "cmdMicrofilm");
+            if (permiso.Code != 0)
+            {
+                return permiso;
+            }
+
+            var existe = DbHelper.ExecuteSingleQuery<int>(
+                CreatePortalDb(),
+                codEmpresa,
+                SqlRemesaExiste,
+                0,
+                new { CodRemesa = codRemesa });
+
+            if (existe.Code != 0)
+            {
+                return DbHelper.ErrorResponse(existe.Description ?? "Error al validar remesa.", existe.Code.GetValueOrDefault(-1));
+            }
+
+            if (existe.Result == 0)
+            {
+                return DbHelper.ErrorResponse("La Remesa seleccionada no existe, verifique...!!!", -1);
+            }
+
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                codEmpresa,
+                SqlRemesaMicrofilm,
+                new
+                {
+                    Usuario = NormalizarTexto(usuario),
+                    CodRemesa = codRemesa
+                });
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar microfilmado.", result.Code.GetValueOrDefault(-1));
+        }
+
+        /// <summary>
         /// Inserta una nueva remesa.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos de la remesa.</param>
+        /// <returns>Resultado del registro.</returns>
         private ErrorDto InsertarRemesa(int codEmpresa, AdiRemesaIngRequestDto request)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
@@ -344,6 +411,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Actualiza una remesa existente cuando aún no está cerrada.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos de la remesa.</param>
+        /// <returns>Resultado de la actualización.</returns>
         private ErrorDto ActualizarRemesa(int codEmpresa, AdiRemesaIngRequestDto request)
         {
             if (string.Equals(NormalizarTexto(request.Estado), TextoRemesaCerrada, StringComparison.OrdinalIgnoreCase))
@@ -365,6 +435,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Crea parámetros seguros para insertar o actualizar remesas.
         /// </summary>
+        /// <param name="request">Datos de la remesa.</param>
+        /// <param name="codRemesa">Código de remesa a guardar.</param>
+        /// <returns>Parámetros para Dapper.</returns>
         private static object CrearParametrosRemesa(AdiRemesaIngRequestDto request, int codRemesa)
         {
             return new
@@ -380,6 +453,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene las fechas de inicio y corte de una remesa.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="codRemesa">Código de remesa.</param>
+        /// <returns>Fechas de inicio y corte de la remesa.</returns>
         private ErrorDto<(DateTime FechaInicio, DateTime FechaCorte)> ObtenerFechasRemesa(int codEmpresa, string codRemesa)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
@@ -409,6 +485,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene ingresos pendientes aplicando filtro seguro de oficina.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="fechas">Rango de fechas de la remesa.</param>
+        /// <param name="oficina">Código de oficina o TODOS.</param>
+        /// <returns>Listado de ingresos pendientes.</returns>
         private ErrorDto<List<IngresosPendientesDto>> ObtenerIngresosPendientes(int codEmpresa, (DateTime FechaInicio, DateTime FechaCorte) fechas, string oficina)
         {
             var oficinaSegura = NormalizarTexto(oficina);
@@ -437,6 +517,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Valida que la remesa exista y esté abierta.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="codRemesa">Código de remesa.</param>
+        /// <returns>Resultado de la validación.</returns>
         private ErrorDto ValidarRemesaAbierta(int codEmpresa, int codRemesa)
         {
             var result = DbHelper.ExecuteSingleQuery<int>(
@@ -459,6 +542,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Valida dentro de una transacción que la remesa esté abierta.
         /// </summary>
+        /// <param name="connection">Conexión SQL activa.</param>
+        /// <param name="transaction">Transacción SQL activa.</param>
+        /// <param name="codRemesa">Código de remesa.</param>
         private static void ValidarRemesaAbiertaTransaccion(SqlConnection connection, SqlTransaction transaction, int codRemesa)
         {
             var existe = connection.ExecuteScalar<int>(SqlRemesaAbiertaExiste, new { CodRemesa = codRemesa }, transaction);
@@ -469,13 +555,45 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
         /// <summary>
+        /// Valida permiso para el botón indicado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario a validar.</param>
+        /// <param name="boton">Botón o acción a validar.</param>
+        /// <returns>Resultado de la validación.</returns>
+        private ErrorDto ValidarPermiso(int codEmpresa, string? usuario, string boton)
+        {
+            var usuarioSeguro = NormalizarTexto(usuario);
+            if (string.IsNullOrWhiteSpace(usuarioSeguro))
+            {
+                return DbHelper.ErrorResponse("El usuario es obligatorio para validar permisos...", -1);
+            }
+
+            var permiso = _securityMainDb.Derecho(new ParametrosAccesoDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuarioSeguro.ToUpper(),
+                Modulo = ModuloAfiliacion,
+                FormName = FormNameRemesasIngresos,
+                Boton = boton
+            });
+
+            return permiso == 0
+                ? DbHelper.ErrorResponse(MsgSinPermisos, -1)
+                : DbHelper.OkResponse("Ok");
+        }
+
+        /// <summary>
         /// Crea una instancia de acceso al portal usando la configuración inyectada.
         /// </summary>
+        /// <returns>Instancia de PortalDB.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
         /// Normaliza valores de texto recibidos desde filtros o formularios.
         /// </summary>
+        /// <param name="valor">Valor a normalizar.</param>
+        /// <returns>Texto normalizado.</returns>
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
     }
 }
