@@ -1,5 +1,29 @@
 namespace Galileo.Models.GEN
 {
+    public class CcCaLineasLista
+    {
+        public int total { get; set; }
+        public List<CcCaLineasData> lista { get; set; } = new List<CcCaLineasData>();
+    }
+    public class CcCaLineasData
+    {
+        public string cod_linea { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string cod_plan { get; set; } = string.Empty;
+        public bool activo { get; set; }
+        public bool isNew { get; set; }
+    }
+
+
+    public class CcCaCatalogoLineasData
+    {
+        public string codigo { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string existe { get; set; } = string.Empty;
+        public bool activo => existe != "-1";
+    }
+
+
     public class CcCaLineasActivasData
     {
         public string ItmX { get; set; } = string.Empty;
