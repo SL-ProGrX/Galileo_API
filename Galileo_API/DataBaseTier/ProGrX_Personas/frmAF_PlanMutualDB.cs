@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Personas;
@@ -214,17 +213,24 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 return DbHelper.ErrorResponse("Los datos de la persona son requeridos.", -2);
             }
 
-            return EjecutarStoredProcedure(
-                CodEmpresa,
-                "spAFI_PM_Excluye",
-                new
-                {
-                    plan,
-                    cedula = persona.cedula,
-                    excluye = persona.excluye ? 1 : 0,
-                    usuario = usuario.ToUpper()
-                },
-                "Error al guardar la persona del plan mutual.");
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spAFI_PM_Excluye",
+                    new
+                    {
+                        plan,
+                        cedula = persona.cedula,
+                        excluye = persona.excluye ? 1 : 0,
+                        usuario = usuario.ToUpper()
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar la persona del plan mutual.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -241,24 +247,27 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 return DbHelper.ErrorResponse("Los datos del plan mutual son requeridos.", -2);
             }
 
-            var result = EjecutarStoredProcedure(
-                CodEmpresa,
-                "spAFI_PM_Registro",
-                new
-                {
-                    cod_plan = plan.cod_plan,
-                    descripcion = plan.descripcion,
-                    monto = plan.monto,
-                    codigio_retencion = plan.codigio_retencion,
-                    activo = plan.activo ? 1 : 0,
-                    usuario,
-                    accion = "A"
-                },
-                "Error al guardar el plan mutual.");
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spAFI_PM_Registro",
+                    new
+                    {
+                        cod_plan = plan.cod_plan,
+                        descripcion = plan.descripcion,
+                        monto = plan.monto,
+                        codigio_retencion = plan.codigio_retencion,
+                        activo = plan.activo ? 1 : 0,
+                        usuario,
+                        accion = "A"
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
 
             if (result.Code != 0)
             {
-                return result;
+                return DbHelper.ErrorResponse(result.Description ?? "Error al guardar el plan mutual.", result.Code.GetValueOrDefault(-1));
             }
 
             RegistrarBitacora(CodEmpresa, usuario, $"Plan Mutual/Beneficios : {plan.cod_plan}", "Registra - WEB");
@@ -274,24 +283,27 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns></returns>
         public ErrorDto AF_PlanMutual_Eliminar(int CodEmpresa, string usuario, string plan)
         {
-            var result = EjecutarStoredProcedure(
-                CodEmpresa,
-                "spAFI_PM_Registro",
-                new
-                {
-                    cod_plan = plan,
-                    descripcion = string.Empty,
-                    monto = 0,
-                    codigio_retencion = string.Empty,
-                    activo = 0,
-                    usuario,
-                    accion = "E"
-                },
-                "Error al eliminar el plan mutual.");
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spAFI_PM_Registro",
+                    new
+                    {
+                        cod_plan = plan,
+                        descripcion = string.Empty,
+                        monto = 0,
+                        codigio_retencion = string.Empty,
+                        activo = 0,
+                        usuario,
+                        accion = "E"
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
 
             if (result.Code != 0)
             {
-                return result;
+                return DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el plan mutual.", result.Code.GetValueOrDefault(-1));
             }
 
             RegistrarBitacora(CodEmpresa, usuario, $"Plan Mutual/Beneficios : {plan}", "Elimina - WEB");
@@ -307,33 +319,24 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns></returns>
         public ErrorDto AF_PlanMutual_Actualizar(int CodEmpresa, string usuario, string plan)
         {
-            var result = EjecutarStoredProcedure(
-                CodEmpresa,
-                "spAFI_PM_Recaudos_Update",
-                new { plan, usuario },
-                "Error al actualizar recaudos del plan mutual.");
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spAFI_PM_Recaudos_Update",
+                    new { plan, usuario },
+                    commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
 
             if (result.Code != 0)
             {
-                return result;
+                return DbHelper.ErrorResponse(result.Description ?? "Error al actualizar recaudos del plan mutual.", result.Code.GetValueOrDefault(-1));
             }
 
             RegistrarBitacora(CodEmpresa, usuario, $"Plan Mutual/Beneficios : {plan} , Actualización de Recaudos", "Aplica - WEB");
             return DbHelper.OkResponse("Ok");
         }
 
-        private ErrorDto EjecutarStoredProcedure(int codEmpresa, string storedProcedure, object parameters, string errorMessage)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
-            {
-                connection.Execute(storedProcedure, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         private static string ObtenerSortFieldPlanMutual(string? sortField)
         {
