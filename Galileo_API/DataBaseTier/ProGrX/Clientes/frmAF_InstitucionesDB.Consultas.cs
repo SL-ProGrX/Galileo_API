@@ -182,7 +182,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return EjecutarStoredProcedureList<AfInstitucionEmpresasDto>(
                 CodEmpresa,
                 SpInstitucionVinculadas,
-                new { CodInstitucion, Tipo });
+                new { Institucion = CodInstitucion, Tipo });
         }
 
         /// <summary>
@@ -215,9 +215,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 SpInstitucionesCodigosLineas,
                 new
                 {
-                    CodInstitucion,
+                    Institucion = CodInstitucion,
                     Codigo = NormalizarTexto(Codigo),
-                    Estado = ObtenerEstadoCodigo(rbCodigo)
+                    Activo = ObtenerEstadoCodigo(rbCodigo)
                 });
         }
 
@@ -232,7 +232,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             return EjecutarStoredProcedureList<AfInstitucionDepartamentosDto>(
                 CodEmpresa,
                 SpInstitucionDepartamentos,
-                new { CodInstitucion });
+                new { Institucion = CodInstitucion });
         }
 
         /// <summary>
@@ -249,8 +249,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 SpInstitucionSecciones,
                 new
                 {
-                    CodInstitucion,
-                    CodDepartamento = NormalizarDepartamento(CodDepartamento)
+                    Institucion = CodInstitucion,
+                    Departamento = NormalizarDepartamento(CodDepartamento)
                 });
         }
 
