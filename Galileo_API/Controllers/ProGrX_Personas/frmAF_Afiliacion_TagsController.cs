@@ -8,11 +8,11 @@ namespace Galileo.Controllers.ProGrx_Personas
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmAFAfiliacionTagsController : ControllerBase
+    public class FrmAfAfiliacionTagsController : ControllerBase
     {
         private readonly FrmAFAfiliacionTagsBL _bl;
 
-        public FrmAFAfiliacionTagsController(IConfiguration config)
+        public FrmAfAfiliacionTagsController(IConfiguration config)
         {
             _bl = new FrmAFAfiliacionTagsBL(config);
         }
@@ -60,6 +60,7 @@ namespace Galileo.Controllers.ProGrx_Personas
             return _bl.AFI_Afiliacion_Revision_Aplica(codEmpresa, consec, estado, usuario, nota ?? string.Empty);
         }
 
+        [Authorize]
         [HttpGet("AFI_Afiliaciones_Etiquetas_Consulta")]
         public ErrorDto<List<AfiEtiquetaDto>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
         {
