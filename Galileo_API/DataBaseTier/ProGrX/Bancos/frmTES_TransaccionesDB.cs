@@ -1836,24 +1836,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-                var query = string.Empty;
-                if (tipoOrigen == 2)
-                {
-                    //Busco si la cuenta esta registrada para la cedula
-                    query = @"select ID_BANCO as IDENTIFICACION , CTA as CUENTA_INTERNA, COD_DIVISA, DESCRIPCION as NOMBRE FROM TES_BANCOS
+                //Busco si la cuenta esta registrada para la cedula
+                var query = tipoOrigen == 2
+                    ? @"select ID_BANCO as IDENTIFICACION , CTA as CUENTA_INTERNA, COD_DIVISA, DESCRIPCION as NOMBRE FROM TES_BANCOS
                                     WHERE CTA = @cuenta
-                                    AND ESTADO = 'A'";
-                }
-                else
-                {
-                    //Busco si la cuenta esta registrada para la cedula
-                    query = @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
+                                    AND ESTADO = 'A'"
+                    : @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
                                      ON s.CEDULA = c.IDENTIFICACION 
                                     WHERE CUENTA_INTERNA = @cuenta
                                     AND ACTIVA = 1";
-                }
-
-               
 
                 var cuentaInfo = connection.QueryFirstOrDefault<dynamic>(query, new { cuenta });
 
