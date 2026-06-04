@@ -2,7 +2,7 @@
 {
     public class FrmCRSeguimientoDocData
     {
-        public int documento { get; set; }
-        public int verificacion { get; set; }
+        public required int documento { get; set; }
+        public required int verificacion { get; set; }
     }
 }
