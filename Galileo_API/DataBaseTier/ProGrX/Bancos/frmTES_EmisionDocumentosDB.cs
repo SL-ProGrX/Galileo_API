@@ -1167,7 +1167,7 @@ where nsolicitud in ";
                 string BancoPlan = filtros.plan ?? "-sp-";
 
                 long BancoConsec = resolveConsecutivo();
-                BancoConsec = BancoConsec - 1;
+    
                 var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
                 var sb = new StringBuilder();
@@ -1232,7 +1232,7 @@ where nsolicitud in ";
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
                 long BancoConsec = resolveConsecutivo();
-                BancoConsec = BancoConsec - 1;
+
                 var sb = new StringBuilder();
 
                 const string query = @"exec spTES_BCT_Enlace 
@@ -1293,9 +1293,6 @@ where nsolicitud in ";
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
                 long BancoConsec = resolveConsecutivo();
-
-                BancoConsec = BancoConsec - 1;
-
                 var parametros = new
                 {
                     banco = BancoID,
@@ -1419,8 +1416,7 @@ where nsolicitud in ";
 
             try
             {
-                var (vNumNegocio, _) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(connection);
-
+                
                 var formatoData = mTesFunciones.vTesFormatos(connection, pFormato);
                 if (formatoData.Code == -1)
                 {
@@ -1428,36 +1424,47 @@ where nsolicitud in ";
                         "Error al obtener configuración del formato");
                 }
 
-                string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
-
-                string vProcedimiento = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
-
                 string BancoTDoc = filtros.tipoDoc;
-                string BancoPlan = filtros.plan ?? "-sp-";
 
                 long BancoConsec = resolveConsecutivo();
-                BancoConsec = BancoConsec - 1;
-
-                var sb = new StringBuilder();
 
                 var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
-                List<TesTransaccionDto> transacciones = connection.Query<TesTransaccionDto>(@"
-Select TOP (@top) * From Tes_Transacciones Where Estado = 'P' And Tipo = @tipoDoc
-    And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
-    " + (filtros.generarPor == nSolicitudes
-                    ? " And NSolicitud Between @minimo And @maximo"
-                    : " And Fecha_Solicitud Between @fechaInicio And @fechaCorte") + " Order by Nsolicitud",
-                    new
-                    {
-                        top = filtros.cantidad,
-                        banco = BancoID,
-                        tipoDoc = BancoTDoc,
-                        minimo = solInicio,
-                        maximo = solCorte,
-                        fechaInicio,
-                        fechaCorte
-                    }).ToList();
+                string sql = filtros.generarPor == nSolicitudes
+                        ? @"
+                    Select TOP (@top) *
+                    From Tes_Transacciones
+                    Where Estado = 'P'
+                      And Tipo = @tipoDoc
+                      And ID_Banco = @banco
+                      And Autoriza = 'S'
+                      And fecha_hold is null
+                      And NSolicitud Between @minimo And @maximo
+                    Order by Nsolicitud"
+                        : @"
+                    Select TOP (@top) *
+                    From Tes_Transacciones
+                    Where Estado = 'P'
+                      And Tipo = @tipoDoc
+                      And ID_Banco = @banco
+                      And Autoriza = 'S'
+                      And fecha_hold is null
+                      And Fecha_Solicitud Between @fechaInicio And @fechaCorte
+                    Order by Nsolicitud";
+
+                                    List<TesTransaccionDto> transacciones =
+                                    [
+                                        .. connection.Query<TesTransaccionDto>(sql, new
+                        {
+                            top = filtros.cantidad,
+                            banco = BancoID,
+                            tipoDoc = BancoTDoc,
+                            minimo = solInicio,
+                            maximo = solCorte,
+                            fechaInicio,
+                            fechaCorte
+                        })
+                                    ];
 
                 return SbSinpeInterno(transacciones, BancoConsec);
 
@@ -1468,7 +1475,7 @@ Select TOP (@top) * From Tes_Transacciones Where Estado = 'P' And Tipo = @tipoDo
             }
         }
 
-        public ErrorDto<object> SbSinpeInterno(List<TesTransaccionDto> transaccionesList, long bancoConsec)
+        public static ErrorDto<object> SbSinpeInterno(List<TesTransaccionDto> transaccionesList, long bancoConsec)
         {
             var sb = new StringBuilder();
 
@@ -1505,10 +1512,10 @@ Select TOP (@top) * From Tes_Transacciones Where Estado = 'P' And Tipo = @tipoDo
                 detalle.Append(item.nsolicitud.ToString().PadLeft(10, '0'));
                 detalle.Append(bancoId.PadLeft(12, '0'));
                 detalle.Append(((long)Math.Round(montoItem * 100, 0)).ToString("D15", CultureInfo.InvariantCulture));
-                detalle.Append(item.beneficiario.PadRight(50));
+                detalle.Append(item.beneficiario!.PadRight(50));
                 detalle.Append(item.estado);
-                detalle.Append(item.cta_ahorros.PadLeft(20, '0'));
-                detalle.Append(item.ndocumento.PadLeft(15, '0'));
+                detalle.Append(item.cta_ahorros!.PadLeft(20, '0'));
+                detalle.Append(item.ndocumento!.PadLeft(15, '0'));
 
                 sb.AppendLine(detalle.ToString());
             }

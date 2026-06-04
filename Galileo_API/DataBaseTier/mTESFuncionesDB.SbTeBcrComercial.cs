@@ -22,7 +22,6 @@ namespace Galileo.DataBaseTier
                 int bancoId = parametros.vBanco;
                 string bancoTDoc = parametros.vTipoDoc;
                 long bancoConsec = resolveConsecutivo();
-                bancoConsec = bancoConsec - 1;
                 DateTime fecha = DateTime.Now;
 
                 string conArchivo = GetConsecutivoArchivoDelDia(conn, bancoId, fecha)

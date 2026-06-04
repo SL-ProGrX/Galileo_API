@@ -20,7 +20,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 long bancoConsec = resolveConsecutivo();
-                bancoConsec = bancoConsec - 1;
+
                 var sb = new StringBuilder();
 
                 foreach (var item in transaccionesList)

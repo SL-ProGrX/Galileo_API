@@ -297,7 +297,7 @@ Where ID_Solicitud = @IdSolicitud";
             parametros.Add("@Documento", documento, DbType.String);
             parametros.Add("@Usuario", usuario, DbType.String);
 
-            var result = DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+            DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
                   connectionString,
                   "dbo.spTes_TEI_Acreaditacion",
                   default,
