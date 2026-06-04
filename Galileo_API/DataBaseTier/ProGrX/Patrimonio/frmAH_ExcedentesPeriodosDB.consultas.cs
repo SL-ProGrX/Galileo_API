@@ -43,8 +43,12 @@ order by ID_PERIODO desc;";
             int codEmpresa,
             int periodoId)
         {
-            const string sqlPeriodo = @"
-select
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sql = @"
+                    select
     isnull(ID_PERIODO, 0) as id_periodo,
     INICIO as inicio,
     CORTE as corte,
@@ -71,39 +75,15 @@ select
     rtrim(isnull(TIPO_APL_MENSUAL, '')) as tipo_apl_mensual,
     rtrim(isnull(TIPO_APL_MENSUAL_DESC, '')) as tipo_apl_mensual_desc
 from vExc_Periodos_Consulta
-where ID_PERIODO = @PeriodoId;";
+where ID_PERIODO = @PeriodoId;
 
-            const string sqlRenta = @"
-select
+                    select
     cast(isnull(DESDE, 0) as decimal(18, 2)) as Desde,
     cast(isnull(HASTA, 0) as decimal(18, 2)) as Hasta,
     cast(isnull(PORCENTAJE, 0) as decimal(18, 2)) as Porcentaje
 from EXC_RENTA_TABLA_H
 where ID_PERIODO = @PeriodoId
 order by DESDE;";
-
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-
-                const string sql = @"
-                    select
-                        id_periodo,
-                        descripcion,
-                        fecha_inicio,
-                        fecha_final,
-                        fecha_cierre,
-                        estado
-                    from exc_periodos
-                    where id_periodo = @PeriodoId;
-
-                    select
-                        id_renta,
-                        desde,
-                        hasta,
-                        porcentaje
-                    from exc_renta_tabla
-                    order by id_renta;";
 
                 using var multi = conn.QueryMultiple(
                     sql,
