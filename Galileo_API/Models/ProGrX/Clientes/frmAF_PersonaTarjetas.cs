@@ -13,10 +13,10 @@
     {
         public string Cedula { get; set; } = string.Empty;
         public string Tarjeta { get; set; } = string.Empty;
-        public DateTime Vence { get; set; }
+        public DateTime? Vence { get; set; }
         public string Code { get; set; } = string.Empty;
         public string TipoMov { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public bool ValidaTarjeta { get; set; }
+        public required bool ValidaTarjeta { get; set; }
     }
 }
