@@ -13,16 +13,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
             _db = new FrmAhExcedentesParametrosDB(config);
         }
 
-        public ErrorDto<List<FrmAhExcedentesParametroDto>> Patrimonio_frmAH_ExcedentesParametros_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesParametroDto>> Ah_ExcedentesParametros_Lista(int codEmpresa)
         {
-            return _db.Patrimonio_frmAH_ExcedentesParametros_Lista(codEmpresa);
+            return _db.Ah_ExcedentesParametros_Lista(codEmpresa);
         }
 
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesParametros_Actualizar(
             int codEmpresa,
             FrmAhExcedentesParametroActualizarRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesParametros_Actualizar(codEmpresa, request);
+            return _db.Ah_ExcedentesParametros_Actualizar(codEmpresa, request);
         }
     }
 }

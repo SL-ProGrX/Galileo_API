@@ -18,11 +18,11 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAHConstanciasBL(config);
         }
 
-        [HttpGet("Patrimonio_frmAH_Constancias_Consulta_Obtener")]
-        public ErrorDto<FrmAhConstanciasConsultaResponse?> Patrimonio_frmAH_Constancias_Consulta_Obtener(
+        [HttpGet("Ah_Constancias_Consulta_Obtener")]
+        public ErrorDto<FrmAhConstanciasConsultaResponse?> Ah_Constancias_Consulta_Obtener(
             [FromQuery] int CodEmpresa,
             [FromQuery] string Cedula,
             [FromQuery] string Usuario)
-            => _bl.Patrimonio_frmAH_Constancias_Consulta_Obtener(CodEmpresa, Cedula, Usuario);
+            => _bl.Ah_Constancias_Consulta_Obtener(CodEmpresa, Cedula, Usuario);
     }
 }

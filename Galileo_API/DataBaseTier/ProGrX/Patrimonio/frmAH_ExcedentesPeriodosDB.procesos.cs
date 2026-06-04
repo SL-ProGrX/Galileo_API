@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Actualiza el modo de aplicación mensual del período.
         /// Equivale al botón Actualiza del VB6.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_BaseAplicacion_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosBaseAplicacionRequest? request)
         {
@@ -26,19 +26,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
             }
 
-            var usuarioNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.usuario);
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
             }
 
-            var tipoAplicacionNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTipoAplicacion(request.tipo_apl_mensual);
+            var tipoAplicacionNormalizado = Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(request.tipo_apl_mensual);
 
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                var periodo = Patrimonio_frmAH_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
+                var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
                     return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
@@ -71,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Actualiza la nota del estado de excedentes del período.
         /// Equivale al botón de guardar nota del VB6.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_EstadoNota_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_EstadoNota_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosEstadoNotaRequest? request)
         {
@@ -85,13 +85,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
             }
 
-            var usuarioNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.usuario);
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
             }
 
-            var notaNormalizada = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.estado_notas);
+            var notaNormalizada = Ah_ExcedentesPeriodos_NormalizarTexto(request.estado_notas);
 
             const string sql = @"
 update EXC_PERIODOS
@@ -102,7 +102,7 @@ where ID_PERIODO = @PeriodoId;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                if (!Patrimonio_frmAH_ExcedentesPeriodos_Existe(conn, request.id_periodo))
+                if (!Ah_ExcedentesPeriodos_Existe(conn, request.id_periodo))
                 {
                     return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
                 }
@@ -127,7 +127,7 @@ where ID_PERIODO = @PeriodoId;";
         /// Recalcula la base de datos para cálculo de excedentes del período.
         /// Equivale al botón Recalcular la Base del VB6.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_RecalcularBase(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_RecalcularBase(
             int codEmpresa,
             FrmAhExcedentesPeriodosRecalcularBaseRequest? request)
         {
@@ -141,7 +141,7 @@ where ID_PERIODO = @PeriodoId;";
                 return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
             }
 
-            var usuarioNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.usuario);
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
@@ -160,7 +160,7 @@ order by corte;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                var periodo = Patrimonio_frmAH_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
+                var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
                     return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
@@ -203,7 +203,7 @@ order by corte;";
             }
         }
 
-        private static FrmAhExcedentesPeriodosEstadoInternoDto? Patrimonio_frmAH_ExcedentesPeriodos_ObtenerEstadoPeriodo(
+        private static FrmAhExcedentesPeriodosEstadoInternoDto? Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(
             SqlConnection conn,
             int periodoId)
         {

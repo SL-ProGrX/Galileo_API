@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Obtiene los datos iniciales requeridos por frmAH_Constancias para cargar identificación,
         /// nombre del afiliado y el usuario emisor del reporte.
         /// </summary>
-        public ErrorDto<FrmAhConstanciasConsultaResponse?> Patrimonio_frmAH_Constancias_Consulta_Obtener(
+        public ErrorDto<FrmAhConstanciasConsultaResponse?> Ah_Constancias_Consulta_Obtener(
             int codEmpresa,
             string cedula,
             string usuario)

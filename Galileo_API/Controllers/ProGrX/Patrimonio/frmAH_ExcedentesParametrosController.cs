@@ -18,19 +18,19 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhExcedentesParametrosBL(config);
         }
 
-        [HttpGet("Patrimonio_frmAH_ExcedentesParametros_Lista")]
-        public ErrorDto<List<FrmAhExcedentesParametroDto>> Patrimonio_frmAH_ExcedentesParametros_Lista(
+        [HttpGet("Ah_ExcedentesParametros_Lista")]
+        public ErrorDto<List<FrmAhExcedentesParametroDto>> Ah_ExcedentesParametros_Lista(
             [FromQuery] int codEmpresa)
         {
-            return _bl.Patrimonio_frmAH_ExcedentesParametros_Lista(codEmpresa);
+            return _bl.Ah_ExcedentesParametros_Lista(codEmpresa);
         }
 
-        [HttpPut("Patrimonio_frmAH_ExcedentesParametros_Actualizar")]
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_Actualizar(
+        [HttpPut("Ah_ExcedentesParametros_Actualizar")]
+        public ErrorDto<bool> Ah_ExcedentesParametros_Actualizar(
             [FromQuery] int codEmpresa,
             [FromBody] FrmAhExcedentesParametroActualizarRequest request)
         {
-            return _bl.Patrimonio_frmAH_ExcedentesParametros_Actualizar(codEmpresa, request);
+            return _bl.Ah_ExcedentesParametros_Actualizar(codEmpresa, request);
         }
     }
 }

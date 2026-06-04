@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene la lista principal de períodos de excedentes.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesPeriodosListaDto>> Patrimonio_frmAH_ExcedentesPeriodos_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesPeriodosListaDto>> Ah_ExcedentesPeriodos_Lista(int codEmpresa)
         {
             const string sql = @"
 select
@@ -39,7 +39,7 @@ order by ID_PERIODO desc;";
         /// <summary>
         /// Obtiene el detalle del período y su tabla histórica de renta.
         /// </summary>
-        public ErrorDto<FrmAhExcedentesPeriodosDetalleDto> Patrimonio_frmAH_ExcedentesPeriodos_Obtener(
+        public ErrorDto<FrmAhExcedentesPeriodosDetalleDto> Ah_ExcedentesPeriodos_Obtener(
             int codEmpresa,
             int periodoId)
         {
@@ -86,8 +86,27 @@ order by DESDE;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
+                const string sql = @"
+                    select
+                        id_periodo,
+                        descripcion,
+                        fecha_inicio,
+                        fecha_final,
+                        fecha_cierre,
+                        estado
+                    from exc_periodos
+                    where id_periodo = @PeriodoId;
+
+                    select
+                        id_renta,
+                        desde,
+                        hasta,
+                        porcentaje
+                    from exc_renta_tabla
+                    order by id_renta;";
+
                 using var multi = conn.QueryMultiple(
-                    $"{sqlPeriodo}{Environment.NewLine}{sqlRenta}",
+                    sql,
                     new { PeriodoId = periodoId });
 
                 var periodo = multi.ReadFirstOrDefault<ExcedentePeriodoDto>();
@@ -116,7 +135,7 @@ order by DESDE;";
         /// <summary>
         /// Obtiene el resumen del cierre aplicado/cargado del período.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesPeriodosResumenDto>> Patrimonio_frmAH_ExcedentesPeriodos_Resumen_Lista(
+        public ErrorDto<List<FrmAhExcedentesPeriodosResumenDto>> Ah_ExcedentesPeriodos_Resumen_Lista(
             int codEmpresa,
             int periodoId)
         {
@@ -153,18 +172,18 @@ where ID_PERIODO = @PeriodoId;";
 
                 var lista = new List<FrmAhExcedentesPeriodosResumenDto>
                 {
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("Excedente Bruto", row.excedente_bruto, 0m, false, 1),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Reserva", row.reserva, 0m, false, 2),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Capitalizado", row.capitalizacion, 0m, false, 3),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Renta", row.renta, 0m, false, 4),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("Excedente Neto", row.excedente_neto, 0m, true, 5),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Donaciones", row.donacion, 0m, false, 6),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(+/-) Ajustes", row.ajuste_aplicado, row.ajuste_cargado, false, 7),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Crédito s/Excedente", row.cexd_aplicado, row.cexd_cargado, false, 8),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) Morosidad", row.mora_aplicada, row.mora_cargada, false, 9),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("(-) O.P.C.F.", row.opcf_aplicado, row.opcf_cargado, false, 10),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("Capitaliza Extradordinario", row.capitalizado_indivual, 0m, false, 11),
-                    Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen("Excedente Final", row.excedente_final, 0m, true, 12)
+                    Ah_ExcedentesPeriodos_CrearResumen("Excedente Bruto", row.excedente_bruto, 0m, false, 1),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Reserva", row.reserva, 0m, false, 2),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Capitalizado", row.capitalizacion, 0m, false, 3),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Renta", row.renta, 0m, false, 4),
+                    Ah_ExcedentesPeriodos_CrearResumen("Excedente Neto", row.excedente_neto, 0m, true, 5),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Donaciones", row.donacion, 0m, false, 6),
+                    Ah_ExcedentesPeriodos_CrearResumen("(+/-) Ajustes", row.ajuste_aplicado, row.ajuste_cargado, false, 7),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Crédito s/Excedente", row.cexd_aplicado, row.cexd_cargado, false, 8),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) Morosidad", row.mora_aplicada, row.mora_cargada, false, 9),
+                    Ah_ExcedentesPeriodos_CrearResumen("(-) O.P.C.F.", row.opcf_aplicado, row.opcf_cargado, false, 10),
+                    Ah_ExcedentesPeriodos_CrearResumen("Capitaliza Extradordinario", row.capitalizado_indivual, 0m, false, 11),
+                    Ah_ExcedentesPeriodos_CrearResumen("Excedente Final", row.excedente_final, 0m, true, 12)
                 };
 
                 return DbHelper.CreateOkResponse(lista);
@@ -175,7 +194,7 @@ where ID_PERIODO = @PeriodoId;";
             }
         }
 
-        private static FrmAhExcedentesPeriodosResumenDto Patrimonio_frmAH_ExcedentesPeriodos_CrearResumen(
+        private static FrmAhExcedentesPeriodosResumenDto Ah_ExcedentesPeriodos_CrearResumen(
             string concepto,
             decimal aplicado,
             decimal cargado,

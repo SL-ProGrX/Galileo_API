@@ -12,10 +12,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
             _db = new FrmAHConstanciasDB(config);
         }
 
-        public ErrorDto<FrmAhConstanciasConsultaResponse?> Patrimonio_frmAH_Constancias_Consulta_Obtener(
+        public ErrorDto<FrmAhConstanciasConsultaResponse?> Ah_Constancias_Consulta_Obtener(
             int codEmpresa,
             string cedula,
             string usuario)
-            => _db.Patrimonio_frmAH_Constancias_Consulta_Obtener(codEmpresa, cedula, usuario);
+            => _db.Ah_Constancias_Consulta_Obtener(codEmpresa, cedula, usuario);
     }
 }

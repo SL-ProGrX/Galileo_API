@@ -13,74 +13,74 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
             _db = new FrmAhExcedentesPeriodosDB(config);
         }
 
-        public ErrorDto<List<FrmAhExcedentesPeriodosListaDto>> Patrimonio_frmAH_ExcedentesPeriodos_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesPeriodosListaDto>> Ah_ExcedentesPeriodos_Lista(int codEmpresa)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Lista(codEmpresa);
+            return _db.Ah_ExcedentesPeriodos_Lista(codEmpresa);
         }
 
-        public ErrorDto<FrmAhExcedentesPeriodosDetalleDto> Patrimonio_frmAH_ExcedentesPeriodos_Obtener(
+        public ErrorDto<FrmAhExcedentesPeriodosDetalleDto> Ah_ExcedentesPeriodos_Obtener(
             int codEmpresa,
             int periodoId)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Obtener(codEmpresa, periodoId);
+            return _db.Ah_ExcedentesPeriodos_Obtener(codEmpresa, periodoId);
         }
 
-        public ErrorDto<List<BitacoraExcedenteDto>> Patrimonio_frmAH_ExcedentesPeriodos_Bitacora_Lista(
+        public ErrorDto<List<BitacoraExcedenteDto>> Ah_ExcedentesPeriodos_Bitacora_Lista(
             int codEmpresa,
             int periodoId,
             string etapa)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Bitacora_Lista(codEmpresa, periodoId, etapa);
+            return _db.Ah_ExcedentesPeriodos_Bitacora_Lista(codEmpresa, periodoId, etapa);
         }
 
-        public ErrorDto<List<FrmAhExcedentesPeriodosResumenDto>> Patrimonio_frmAH_ExcedentesPeriodos_Resumen_Lista(
+        public ErrorDto<List<FrmAhExcedentesPeriodosResumenDto>> Ah_ExcedentesPeriodos_Resumen_Lista(
             int codEmpresa,
             int periodoId)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Resumen_Lista(codEmpresa, periodoId);
+            return _db.Ah_ExcedentesPeriodos_Resumen_Lista(codEmpresa, periodoId);
         }
 
-        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Patrimonio_frmAH_ExcedentesPeriodos_Insertar(
+        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Ah_ExcedentesPeriodos_Insertar(
             int codEmpresa,
             FrmAhExcedentesPeriodosGuardarRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Insertar(codEmpresa, request);
+            return _db.Ah_ExcedentesPeriodos_Insertar(codEmpresa, request);
         }
 
-        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Patrimonio_frmAH_ExcedentesPeriodos_Actualizar(
+        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Ah_ExcedentesPeriodos_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosGuardarRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Actualizar(codEmpresa, request);
+            return _db.Ah_ExcedentesPeriodos_Actualizar(codEmpresa, request);
         }
 
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_Eliminar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_Eliminar(
             int codEmpresa,
             int periodoId,
             string usuario)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_Eliminar(codEmpresa, periodoId, usuario);
+            return _db.Ah_ExcedentesPeriodos_Eliminar(codEmpresa, periodoId, usuario);
         }
 
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_BaseAplicacion_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosBaseAplicacionRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_BaseAplicacion_Actualizar(codEmpresa, request);
+            return _db.Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar(codEmpresa, request);
         }
 
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_EstadoNota_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_EstadoNota_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosEstadoNotaRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_EstadoNota_Actualizar(codEmpresa, request);
+            return _db.Ah_ExcedentesPeriodos_EstadoNota_Actualizar(codEmpresa, request);
         }
 
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_RecalcularBase(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_RecalcularBase(
             int codEmpresa,
             FrmAhExcedentesPeriodosRecalcularBaseRequest request)
         {
-            return _db.Patrimonio_frmAH_ExcedentesPeriodos_RecalcularBase(codEmpresa, request);
+            return _db.Ah_ExcedentesPeriodos_RecalcularBase(codEmpresa, request);
         }
     }
 }

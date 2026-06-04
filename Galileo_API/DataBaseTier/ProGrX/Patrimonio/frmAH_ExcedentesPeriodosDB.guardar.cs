@@ -14,32 +14,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Inserta un nuevo período de excedentes.
         /// </summary>
-        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Patrimonio_frmAH_ExcedentesPeriodos_Insertar(
+        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Ah_ExcedentesPeriodos_Insertar(
             int codEmpresa,
             FrmAhExcedentesPeriodosGuardarRequest request)
         {
-            return Patrimonio_frmAH_ExcedentesPeriodos_Guardar(codEmpresa, request, false);
+            return Ah_ExcedentesPeriodos_Guardar(codEmpresa, request, false);
         }
 
         /// <summary>
         /// Actualiza un período de excedentes existente.
         /// </summary>
-        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Patrimonio_frmAH_ExcedentesPeriodos_Actualizar(
+        public ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Ah_ExcedentesPeriodos_Actualizar(
             int codEmpresa,
             FrmAhExcedentesPeriodosGuardarRequest request)
         {
-            return Patrimonio_frmAH_ExcedentesPeriodos_Guardar(codEmpresa, request, true);
+            return Ah_ExcedentesPeriodos_Guardar(codEmpresa, request, true);
         }
 
         /// <summary>
         /// Elimina un período de excedentes.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesPeriodos_Eliminar(
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_Eliminar(
             int codEmpresa,
             int periodoId,
             string usuario)
         {
-            var usuarioNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(usuario);
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(usuario);
 
             if (periodoId <= 0)
             {
@@ -59,14 +59,14 @@ where ID_PERIODO = @PeriodoId;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                if (!Patrimonio_frmAH_ExcedentesPeriodos_Existe(conn, periodoId))
+                if (!Ah_ExcedentesPeriodos_Existe(conn, periodoId))
                 {
                     return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
                 }
 
                 conn.Execute(sqlDelete, new { PeriodoId = periodoId });
 
-                Patrimonio_frmAH_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
+                Ah_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
                     codEmpresa,
                     usuarioNormalizado,
                     "Elimina - WEB",
@@ -80,13 +80,13 @@ where ID_PERIODO = @PeriodoId;";
             }
         }
 
-        private ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Patrimonio_frmAH_ExcedentesPeriodos_Guardar(
+        private ErrorDto<FrmAhExcedentesPeriodosGuardarResponse> Ah_ExcedentesPeriodos_Guardar(
             int codEmpresa,
             FrmAhExcedentesPeriodosGuardarRequest? request,
             bool esEdicion)
         {
             var response = new FrmAhExcedentesPeriodosGuardarResponse();
-            var validacion = Patrimonio_frmAH_ExcedentesPeriodos_ValidarGuardarRequest(request, response, esEdicion);
+            var validacion = Ah_ExcedentesPeriodos_ValidarGuardarRequest(request, response, esEdicion);
 
             if (validacion != null)
             {
@@ -94,9 +94,9 @@ where ID_PERIODO = @PeriodoId;";
             }
 
             var requestNormalizado = request!;
-            var usuarioNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.usuario);
-            var estadoNotasNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.estado_notas);
-            var tipoAplMensualNormalizado = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTipoAplicacion(requestNormalizado.tipo_apl_mensual);
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.usuario);
+            var estadoNotasNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.estado_notas);
+            var tipoAplMensualNormalizado = Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(requestNormalizado.tipo_apl_mensual);
 
             const string sqlSiguienteId = @"
 select isnull(max(ID_PERIODO), 0) + 1
@@ -178,7 +178,7 @@ where ID_PERIODO = @IdPeriodo;";
 
                 if (esEdicion)
                 {
-                    var validacionEstado = Patrimonio_frmAH_ExcedentesPeriodos_ValidarPeriodoEditable(conn, idPeriodo, response);
+                    var validacionEstado = Ah_ExcedentesPeriodos_ValidarPeriodoEditable(conn, idPeriodo, response);
                     if (validacionEstado != null)
                     {
                         return validacionEstado;
@@ -208,7 +208,7 @@ where ID_PERIODO = @IdPeriodo;";
                 var accion = esEdicion ? "Modifica" : "Registra";
                 var movimiento = esEdicion ? "Modifica - WEB" : "Registra - WEB";
 
-                Patrimonio_frmAH_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
+                Ah_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
                     codEmpresa,
                     usuarioNormalizado,
                     movimiento,
@@ -226,7 +226,7 @@ where ID_PERIODO = @IdPeriodo;";
             }
         }
 
-        private static ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>? Patrimonio_frmAH_ExcedentesPeriodos_ValidarGuardarRequest(
+        private static ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>? Ah_ExcedentesPeriodos_ValidarGuardarRequest(
             FrmAhExcedentesPeriodosGuardarRequest? request,
             FrmAhExcedentesPeriodosGuardarResponse response,
             bool esEdicion)
@@ -264,7 +264,7 @@ where ID_PERIODO = @IdPeriodo;";
             return null;
         }
 
-        private static ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>? Patrimonio_frmAH_ExcedentesPeriodos_ValidarPeriodoEditable(
+        private static ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>? Ah_ExcedentesPeriodos_ValidarPeriodoEditable(
             SqlConnection conn,
             int periodoId,
             FrmAhExcedentesPeriodosGuardarResponse response)
@@ -289,7 +289,7 @@ where ID_PERIODO = @PeriodoId;";
             return null;
         }
 
-        private static bool Patrimonio_frmAH_ExcedentesPeriodos_Existe(
+        private static bool Ah_ExcedentesPeriodos_Existe(
             SqlConnection conn,
             int periodoId)
         {
@@ -301,18 +301,18 @@ where ID_PERIODO = @PeriodoId;";
             return conn.QueryFirstOrDefault<int>(sql, new { PeriodoId = periodoId }) > 0;
         }
 
-        private static string Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(string? valor)
+        private static string Ah_ExcedentesPeriodos_NormalizarTexto(string? valor)
         {
             return (valor ?? string.Empty).Trim();
         }
 
-        private static string Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTipoAplicacion(string? tipoAplicacion)
+        private static string Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(string? tipoAplicacion)
         {
             var valor = (tipoAplicacion ?? string.Empty).Trim().ToUpperInvariant();
             return string.IsNullOrWhiteSpace(valor) ? "M" : valor[..1];
         }
 
-        private void Patrimonio_frmAH_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
+        private void Ah_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
             int codEmpresa,
             string usuario,
             string movimiento,

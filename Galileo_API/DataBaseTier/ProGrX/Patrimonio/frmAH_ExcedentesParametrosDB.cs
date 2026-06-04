@@ -26,7 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Inicializa y obtiene la lista de parámetros de excedentes.
         /// Ejecuta primero la lógica equivalente al VB6 `spEXC_Parametros`.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesParametroDto>> Patrimonio_frmAH_ExcedentesParametros_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesParametroDto>> Ah_ExcedentesParametros_Lista(int codEmpresa)
         {
             const string sqlLista = @"
 select
@@ -57,21 +57,21 @@ order by cod_parametro;";
         /// <summary>
         /// Actualiza el valor de un parámetro de excedentes según el tipo definido en la tabla.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_Actualizar(
+        public ErrorDto<bool> Ah_ExcedentesParametros_Actualizar(
             int codEmpresa,
             FrmAhExcedentesParametroActualizarRequest? request)
         {
-            var validacion = Patrimonio_frmAH_ExcedentesParametros_ValidarActualizarRequest(request);
+            var validacion = Ah_ExcedentesParametros_ValidarActualizarRequest(request);
             if (validacion.Code < 0)
             {
                 return validacion;
             }
 
             var codParametro = (request!.cod_parametro ?? string.Empty).Trim();
-            var tipoNormalizado = Patrimonio_frmAH_ExcedentesParametros_NormalizarTipo(request.tipo);
+            var tipoNormalizado = Ah_ExcedentesParametros_NormalizarTipo(request.tipo);
             var usuario = (request.usuario ?? string.Empty).Trim();
 
-            var normalizacionValor = Patrimonio_frmAH_ExcedentesParametros_NormalizarValorPorTipo(
+            var normalizacionValor = Ah_ExcedentesParametros_NormalizarValorPorTipo(
                 codEmpresa,
                 tipoNormalizado,
                 request.valor);
@@ -121,7 +121,7 @@ where cod_parametro = @cod_parametro;";
                     usuario
                 });
 
-                Patrimonio_frmAH_ExcedentesParametros_RegistrarBitacora(
+                Ah_ExcedentesParametros_RegistrarBitacora(
                     codEmpresa,
                     usuario,
                     "Modifica - WEB",
@@ -135,7 +135,7 @@ where cod_parametro = @cod_parametro;";
             }
         }
 
-        private static ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_ValidarActualizarRequest(
+        private static ErrorDto<bool> Ah_ExcedentesParametros_ValidarActualizarRequest(
             FrmAhExcedentesParametroActualizarRequest? request)
         {
             if (request == null)
@@ -153,7 +153,7 @@ where cod_parametro = @cod_parametro;";
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
             }
 
-            var tipoNormalizado = Patrimonio_frmAH_ExcedentesParametros_NormalizarTipo(request.tipo);
+            var tipoNormalizado = Ah_ExcedentesParametros_NormalizarTipo(request.tipo);
             if (string.IsNullOrWhiteSpace(tipoNormalizado))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el tipo del parámetro.", -2, false);
@@ -162,7 +162,7 @@ where cod_parametro = @cod_parametro;";
             return DbHelper.CreateOkResponse(true);
         }
 
-        private (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarValorPorTipo(
+        private (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarValorPorTipo(
     int codEmpresa,
     string tipo,
     string? valorEntrada)
@@ -176,18 +176,18 @@ where cod_parametro = @cod_parametro;";
 
             return tipo switch
             {
-                "DEC" => Patrimonio_frmAH_ExcedentesParametros_NormalizarDecimal(valor),
-                "NUM" => Patrimonio_frmAH_ExcedentesParametros_NormalizarEntero(valor),
-                "POR" => Patrimonio_frmAH_ExcedentesParametros_NormalizarPorcentaje(valor),
-                "CTA" => Patrimonio_frmAH_ExcedentesParametros_NormalizarCuenta(codEmpresa, valor),
-                "CHR" => Patrimonio_frmAH_ExcedentesParametros_NormalizarCaracter(valor),
-                "PSN" => Patrimonio_frmAH_ExcedentesParametros_NormalizarPsn(valor),
-                "DTS" => Patrimonio_frmAH_ExcedentesParametros_NormalizarFecha(valor),
+                "DEC" => Ah_ExcedentesParametros_NormalizarDecimal(valor),
+                "NUM" => Ah_ExcedentesParametros_NormalizarEntero(valor),
+                "POR" => Ah_ExcedentesParametros_NormalizarPorcentaje(valor),
+                "CTA" => Ah_ExcedentesParametros_NormalizarCuenta(codEmpresa, valor),
+                "CHR" => Ah_ExcedentesParametros_NormalizarCaracter(valor),
+                "PSN" => Ah_ExcedentesParametros_NormalizarPsn(valor),
+                "DTS" => Ah_ExcedentesParametros_NormalizarFecha(valor),
                 _ => (true, valor, null)
             };
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarDecimal(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarDecimal(string valor)
         {
             if (!decimal.TryParse(
                     valor.Replace(",", "."),
@@ -201,7 +201,7 @@ where cod_parametro = @cod_parametro;";
             return (true, numeroDecimal.ToString(CultureInfo.InvariantCulture), null);
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarEntero(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarEntero(string valor)
         {
             if (!long.TryParse(valor, out var numeroEntero))
             {
@@ -211,7 +211,7 @@ where cod_parametro = @cod_parametro;";
             return (true, numeroEntero.ToString(CultureInfo.InvariantCulture), null);
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarPorcentaje(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarPorcentaje(string valor)
         {
             if (!decimal.TryParse(
                     valor.Replace(",", "."),
@@ -225,7 +225,7 @@ where cod_parametro = @cod_parametro;";
             return (true, porcentaje.ToString(CultureInfo.InvariantCulture), null);
         }
 
-        private (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarCuenta(
+        private (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarCuenta(
             int codEmpresa,
             string valor)
         {
@@ -246,7 +246,7 @@ where cod_parametro = @cod_parametro;";
             return (true, cuentaNormalizada, null);
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarCaracter(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarCaracter(string valor)
         {
             if (valor.Contains('\''))
             {
@@ -256,7 +256,7 @@ where cod_parametro = @cod_parametro;";
             return (true, valor, null);
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarPsn(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarPsn(string valor)
         {
             var letra = valor[..1].ToUpperInvariant();
 
@@ -268,9 +268,9 @@ where cod_parametro = @cod_parametro;";
             return (true, letra, null);
         }
 
-        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarFecha(string valor)
+        private static (bool ok, string valor, string? mensaje) Ah_ExcedentesParametros_NormalizarFecha(string valor)
         {
-            if (!Patrimonio_frmAH_ExcedentesParametros_TryParseFecha(valor, out var fecha))
+            if (!Ah_ExcedentesParametros_TryParseFecha(valor, out var fecha))
             {
                 return (false, string.Empty, "La Fecha indicada no es válida.");
             }
@@ -278,12 +278,12 @@ where cod_parametro = @cod_parametro;";
             return (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), null);
         }
 
-        private static string Patrimonio_frmAH_ExcedentesParametros_NormalizarTipo(string? tipo)
+        private static string Ah_ExcedentesParametros_NormalizarTipo(string? tipo)
         {
             return (tipo ?? string.Empty).Trim().ToUpperInvariant();
         }
 
-        private static bool Patrimonio_frmAH_ExcedentesParametros_TryParseFecha(string valor, out DateTime fecha)
+        private static bool Ah_ExcedentesParametros_TryParseFecha(string valor, out DateTime fecha)
         {
             var formatos = new[]
             {
@@ -304,7 +304,7 @@ where cod_parametro = @cod_parametro;";
                    || DateTime.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
-        private void Patrimonio_frmAH_ExcedentesParametros_RegistrarBitacora(
+        private void Ah_ExcedentesParametros_RegistrarBitacora(
             int codEmpresa,
             string usuario,
             string movimiento,

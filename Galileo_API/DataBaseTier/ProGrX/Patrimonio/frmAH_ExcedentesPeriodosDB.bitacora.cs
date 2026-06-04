@@ -10,12 +10,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Obtiene la bitácora del período según la etapa seleccionada.
         /// T = Todos, A = Aplicación Mensual, C = Cierre, X = Configuración.
         /// </summary>
-        public ErrorDto<List<BitacoraExcedenteDto>> Patrimonio_frmAH_ExcedentesPeriodos_Bitacora_Lista(
+        public ErrorDto<List<BitacoraExcedenteDto>> Ah_ExcedentesPeriodos_Bitacora_Lista(
             int codEmpresa,
             int periodoId,
             string etapa)
         {
-            var etapaNormalizada = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarEtapaBitacora(etapa);
+            var etapaNormalizada = Ah_ExcedentesPeriodos_NormalizarEtapaBitacora(etapa);
 
             const string sql = @"
 select
@@ -49,7 +49,7 @@ order by REGISTRO_FECHA desc, LINEA desc;";
         /// <summary>
         /// Registra una línea de bitácora funcional del período.
         /// </summary>
-        public ErrorDto Patrimonio_frmAH_ExcedentesPeriodos_Bitacora_Registrar(
+        public ErrorDto Ah_ExcedentesPeriodos_Bitacora_Registrar(
             int codEmpresa,
             FrmAhExcedentesPeriodosBitacoraRegistrarRequest request)
         {
@@ -90,20 +90,20 @@ values
             var parameters = new
             {
                 PeriodoId = request.periodoId,
-                CodProceso = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.codProceso),
-                Detalle = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.detalle),
-                Usuario = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.usuario),
-                TipoDocumento = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.tipoDocumento),
-                CodTransaccion = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.codTransaccion),
+                CodProceso = Ah_ExcedentesPeriodos_NormalizarTexto(request.codProceso),
+                Detalle = Ah_ExcedentesPeriodos_NormalizarTexto(request.detalle),
+                Usuario = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario),
+                TipoDocumento = Ah_ExcedentesPeriodos_NormalizarTexto(request.tipoDocumento),
+                CodTransaccion = Ah_ExcedentesPeriodos_NormalizarTexto(request.codTransaccion),
                 Monto = request.monto,
                 Casos = request.casos,
-                Notas = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.notas)
+                Notas = Ah_ExcedentesPeriodos_NormalizarTexto(request.notas)
             };
 
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, parameters);
         }
 
-        private static string Patrimonio_frmAH_ExcedentesPeriodos_NormalizarEtapaBitacora(string? etapa)
+        private static string Ah_ExcedentesPeriodos_NormalizarEtapaBitacora(string? etapa)
         {
             var valor = (etapa ?? "T").Trim().ToUpperInvariant();
             return valor is "A" or "C" or "X" ? valor : "T";
