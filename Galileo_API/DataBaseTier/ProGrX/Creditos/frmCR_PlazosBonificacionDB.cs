@@ -1,9 +1,7 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Credito;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -101,7 +99,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la definición de un plan.
+        /// Obtiene la definicion de un plan.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codPlazoBono"></param>
@@ -134,7 +132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda la definición de un plan.
+        /// Guarda la definicion de un plan.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -206,7 +204,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Elimina un plan de bonificación.
+        /// Elimina un plan de bonificacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -287,7 +285,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene las líneas de bonificación de un plan.
+        /// Obtiene las lineas de bonificacion de un plan.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codPlazoBono"></param>
@@ -322,7 +320,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda una línea de bonificación.
+        /// Guarda una linea de bonificacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -361,7 +359,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Elimina una línea de bonificación.
+        /// Elimina una linea de bonificacion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -418,7 +416,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene las garantías asignables y asignadas.
+        /// Obtiene las garantias asignables y asignadas.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codPlazoBono"></param>
@@ -452,7 +450,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Guarda o elimina una asignación de garantía.
+        /// Guarda o elimina una asignacion de garantia.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
