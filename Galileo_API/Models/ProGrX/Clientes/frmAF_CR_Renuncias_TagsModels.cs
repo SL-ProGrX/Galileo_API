@@ -16,7 +16,7 @@
 
     public class AfCrRenunciaRecepcionAplica
     {
-        public int RenunciaId { get; set; }
+        public required int RenunciaId { get; set; }
         public string Usuario { get; set; } = "";
         public string Notas { get; set; } = "";
         public string Equipo { get; set; } = "";

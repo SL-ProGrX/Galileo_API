@@ -1,5 +1,4 @@
-﻿using Dapper;
-using Galileo.Models.ERROR;
+﻿using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
 using Galileo.Models.Security;
 
@@ -173,8 +172,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         {
             return new
             {
-                inicio = filtro.Inicio.Date,
-                corte = filtro.Corte.Date.AddDays(1).AddSeconds(-1),
+                inicio = filtro.Inicio?.Date,
+                corte = filtro.Corte?.Date.AddDays(1).AddSeconds(-1),
                 idPromotor = filtro.IdPromotor,
                 usuario = NormalizarTexto(filtro.Usuario),
                 autorizado = filtro.Autorizado

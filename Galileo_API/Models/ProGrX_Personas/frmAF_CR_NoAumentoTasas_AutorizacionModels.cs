@@ -23,6 +23,6 @@
         public string FUserReg { get; set; } = string.Empty;
         public string TUsuario { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Autorizadas { get; set; } 
+        public int? Autorizadas { get; set; } 
     }
 }

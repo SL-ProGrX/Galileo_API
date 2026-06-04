@@ -4,10 +4,10 @@
     {
         public string cod_estado { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public bool deduce_creditos { get; set; }
-        public bool deduce_patrimonio { get; set; }
-        public bool deduce_ahorros { get; set; }
+        public required bool activo { get; set; }
+        public required bool deduce_creditos { get; set; }
+        public required bool deduce_patrimonio { get; set; }
+        public required bool deduce_ahorros { get; set; }
     }
 
     public class AfEstadosLista

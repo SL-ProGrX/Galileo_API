@@ -38,8 +38,8 @@
 
     public class AfRenunciaEmiteTDocFiltro
     {
-        public int BancoId { get; set; }
-        public int Mortalidad { get; set; }
+        public required int BancoId { get; set; }
+        public required int Mortalidad { get; set; }
         public string Cedula { get; set; } = "A";
         public string TipoRen { get; set; } = "A";
         public int IdCausa { get; set; } = 0;
@@ -118,7 +118,7 @@
     public class AfRenunciaCuentaBancariaFiltro
     {
         public string Identificacion { get; set; } = string.Empty;
-        public int BancoId { get; set; }
+        public required int BancoId { get; set; }
         public short DivisaCheck { get; set; } = 0;
     }
 
@@ -176,7 +176,7 @@
     {
         public string Cedula { get; set; } = string.Empty;
         public DateTime? Corte { get; set; }
-        public decimal MntRetiro { get; set; }
+        public required decimal MntRetiro { get; set; }
         public string? Plan { get; set; }
     }
 
@@ -232,67 +232,67 @@
     
     public class AfRenunciaLiquidacion
     {
-        public int CodRenuncia { get; set; }
+        public required int CodRenuncia { get; set; }
         public string Cedula { get; set; } = "";
-        public int IdCausa { get; set; }
-        public int IdPromotor { get; set; }
-        public bool Mortalidad { get; set; }
-        public bool Reingreso { get; set; }
-        public bool AltPlanilla { get; set; }
-        public bool Volver { get; set; }
-        public bool AumentoPuntos { get; set; }
-        public bool AporteObrero { get; set; }
-        public bool AportePatronal { get; set; }
-        public bool Capitalizacion { get; set; }
-        public bool AhorroExtraordinario { get; set; }
-        public bool AceptaPatronal { get; set; }
+        public int? IdCausa { get; set; }
+        public int? IdPromotor { get; set; }
+        public bool? Mortalidad { get; set; }
+        public bool? Reingreso { get; set; }
+        public bool? AltPlanilla { get; set; }
+        public bool? Volver { get; set; }
+        public bool? AumentoPuntos { get; set; }
+        public bool? AporteObrero { get; set; }
+        public bool? AportePatronal { get; set; }
+        public bool? Capitalizacion { get; set; }
+        public bool? AhorroExtraordinario { get; set; }
+        public bool? AceptaPatronal { get; set; }
         public string Tipo { get; set; } = "";
         public string Usuario { get; set; } = "";
         public string Notas { get; set; } = "";
         public string Oficina { get; set; } = "";
         public string Documento { get; set; } = "";
-        public int Banco { get; set; }
+        public int? Banco { get; set; }
         public string Cuenta { get; set; } = "9999999999999999";
         public string CodPlan { get; set; } = "";
-        public decimal TotalNeto { get; set; }
-        public decimal Disponible { get; set; }
-        public decimal RetenerMonto { get; set; }
+        public required decimal TotalNeto { get; set; }
+        public required decimal Disponible { get; set; }
+        public required decimal RetenerMonto { get; set; }
         public DateTime? AcFecha { get; set; }
         public string Boleta { get; set; } = "";
         public string Equipo { get; set; } = "";
         public string Version { get; set; } = "";
-        public int IdDocumento { get; set; }
+        public required int IdDocumento { get; set; }
     }
 
     public class AfRenunciaPlan
     {
-        public int CodRenuncia { get; set; }
-        public int CodContrato { get; set; }
-        public int CodOperadora { get; set; }
+        public required int CodRenuncia { get; set; }
+        public required int CodContrato { get; set; }
+        public int? CodOperadora { get; set; }
         public string CodPlan { get; set; } = "";
-        public decimal Disponible { get; set; }
-        public decimal Multa { get; set; }
-        public decimal RendPendiente { get; set; }
-        public decimal Aportes { get; set; }
-        public decimal Rendimientos { get; set; }
+        public required decimal Disponible { get; set; }
+        public required decimal Multa { get; set; }
+        public required decimal RendPendiente { get; set; }
+        public required decimal Aportes { get; set; }
+        public required decimal Rendimientos { get; set; }
         public string CodDivisa { get; set; } = "";
-        public decimal TipoCambio { get; set; }
-        public bool Marcada { get; set; }
+        public required decimal TipoCambio { get; set; }
+        public required bool Marcada { get; set; }
     }
 
     public class AfRenunciaAbono
     {
-        public int CodRenuncia { get; set; }
-        public int IdSolicitud { get; set; }
+        public required int CodRenuncia { get; set; }
+        public required int IdSolicitud { get; set; }
         public string Codigo { get; set; } = "";
-        public decimal Abono { get; set; }
-        public decimal Saldo { get; set; }
-        public decimal Cargos { get; set; }
-        public decimal MoraIntC { get; set; }
-        public decimal MoraIntM { get; set; }
-        public decimal MoraPrin { get; set; }
+        public required decimal Abono { get; set; }
+        public required decimal Saldo { get; set; }
+        public required decimal Cargos { get; set; }
+        public required decimal MoraIntC { get; set; }
+        public required decimal MoraIntM { get; set; }
+        public required decimal MoraPrin { get; set; }
         public string CodDivisa { get; set; } = "";
-        public decimal TipoCambio { get; set; }
+        public required decimal TipoCambio { get; set; }
         public string Tipo { get; set; } = "";
         public string Garantia { get; set; } = "";
     }

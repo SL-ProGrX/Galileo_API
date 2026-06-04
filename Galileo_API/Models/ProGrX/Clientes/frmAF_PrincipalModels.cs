@@ -624,7 +624,7 @@
     public class AfPersonaIngresoEconomicoAddDto
     {
         public string Cedula { get; set; } = default!;
-        public decimal Ingreso { get; set; }
+        public required decimal Ingreso { get; set; }
         public string Usuario { get; set; } = default!;
         public int Tipo { get; set; } = 1;
     }

@@ -2,12 +2,12 @@
 {
     public class CatalogoData
     {
-        public int Linea_Id { get; set; }
+        public required int Linea_Id { get; set; }
         public string Catalogo_Id { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public bool Activo { get; set; } = false;
-        public int Tipo_Id { get; set; }
-        public DateTime Registro_Fecha { get; set; }
+        public required int Tipo_Id { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
         public DateTime? Modifica_Fecha { get; set; }
         public string? Modifica_Usuario { get; set; }
