@@ -22,7 +22,7 @@
         public string? cod_estado { get; set; }
         public string? cod_estado_cambio { get; set; }
         public string? usuario { get; set; }
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public string? estadoInicial { get; set; }
         public string? estadoFinal { get; set; }
     }
@@ -33,6 +33,6 @@
         public string? cod_institucion { get; set; }
         public string? descripcion { get; set; }
         public string? desc_corta { get; set; }
-        public bool check { get; set; }
+        public required bool check { get; set; }
     }
 }
