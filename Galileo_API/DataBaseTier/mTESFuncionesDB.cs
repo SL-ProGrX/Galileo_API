@@ -47,12 +47,14 @@ namespace Galileo.DataBaseTier
         public ErrorDto<object> SbTesBancoSinpeGeneralCore(
             int codEmpresa,
             TesEmisionDocFiltros filtro,
-            List<TesTransaccionDto> transaccionesList)
+            List<TesTransaccionDto> transaccionesList,
+            Func<long> resolveConsecutivo)
         {
             long bancoConsec = 0;
 
             if (filtro.docInicial > 0)
-                bancoConsec = filtro.docInicial;
+                _ = resolveConsecutivo();
+                bancoConsec = filtro!.docInicial!;
 
             if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
             {

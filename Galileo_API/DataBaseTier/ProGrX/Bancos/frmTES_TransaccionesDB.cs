@@ -166,7 +166,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
+                /** El SP ya trae el tipo_ced_origen, pero lo recalculamos para asegurarnos que esté correcto y evitar inconsistencias
                 trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                **/
 
                 trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
@@ -1851,8 +1853,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if(cuentaInfo == null)
                 {
                     //Valido la cedula por Kindo
-                    var servicio = _factory.CrearServicio(CodEmpresa, usuario);
-                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+                    var servicio = _factory.CrearServicio(CodEmpresa, usuario!);
+                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula!, cuenta!, usuario!);
 
                     return result.Code == 0
                         ? DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.")

@@ -276,8 +276,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string query = "spTes_Bancos_Mov_Consulta";
 
-                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaInicio, "yyyy-MM-dd" + " 00:00:00");
-                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaCorte, "yyyy-MM-dd" + " 23:59:59");
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
 
                 var parameters = new
                 {
@@ -339,7 +339,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                     parametros,
                                     commandType: CommandType.StoredProcedure);
 
-                    if(result.Ok == 0)
+                    if(result!.Ok == 0)
                     {
                         error = " - Linea: " + result.LineaId + " error: " +result.Mensaje;
                     }
