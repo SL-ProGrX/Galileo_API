@@ -219,10 +219,6 @@ where ID_PERIODO = @PeriodoId;";
                 new { PeriodoId = periodoId });
         }
 
-        private class FrmAhExcedentesPeriodosEstadoInternoDto
-        {
-            public int id_periodo { get; set; } = 0;
-            public string estado { get; set; } = string.Empty;
-        }
+       
     }
 }

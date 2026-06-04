@@ -117,4 +117,24 @@ namespace Galileo.Models.AH
         public int id_periodo { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
     }
+
+    public class FrmAhExcedentesPeriodosEstadoInternoDto
+    {
+        public int id_periodo { get; set; } = 0;
+        public string estado { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesPeriodosBitacoraRegistrarRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string codProceso { get; set; } = string.Empty;
+        public string detalle { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string tipoDocumento { get; set; } = string.Empty;
+        public string codTransaccion { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
+        public int casos { get; set; } = 0;
+        public string notas { get; set; } = string.Empty;
+    }
+
 }

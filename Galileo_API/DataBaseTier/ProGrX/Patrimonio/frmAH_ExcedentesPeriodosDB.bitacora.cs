@@ -51,15 +51,7 @@ order by REGISTRO_FECHA desc, LINEA desc;";
         /// </summary>
         public ErrorDto Patrimonio_frmAH_ExcedentesPeriodos_Bitacora_Registrar(
             int codEmpresa,
-            int periodoId,
-            string codProceso,
-            string detalle,
-            string usuario,
-            string tipoDocumento = "",
-            string codTransaccion = "",
-            decimal monto = 0,
-            int casos = 0,
-            string notas = "")
+            FrmAhExcedentesPeriodosBitacoraRegistrarRequest request)
         {
             const string sql = @"
 insert into EXC_PERIODOS_BITACORA
@@ -97,15 +89,15 @@ values
 
             var parameters = new
             {
-                PeriodoId = periodoId,
-                CodProceso = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(codProceso),
-                Detalle = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(detalle),
-                Usuario = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(usuario),
-                TipoDocumento = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(tipoDocumento),
-                CodTransaccion = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(codTransaccion),
-                Monto = monto,
-                Casos = casos,
-                Notas = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(notas)
+                PeriodoId = request.periodoId,
+                CodProceso = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.codProceso),
+                Detalle = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.detalle),
+                Usuario = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.usuario),
+                TipoDocumento = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.tipoDocumento),
+                CodTransaccion = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.codTransaccion),
+                Monto = request.monto,
+                Casos = request.casos,
+                Notas = Patrimonio_frmAH_ExcedentesPeriodos_NormalizarTexto(request.notas)
             };
 
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, parameters);

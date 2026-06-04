@@ -135,7 +135,7 @@ where cod_parametro = @cod_parametro;";
             }
         }
 
-        private ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_ValidarActualizarRequest(
+        private static ErrorDto<bool> Patrimonio_frmAH_ExcedentesParametros_ValidarActualizarRequest(
             FrmAhExcedentesParametroActualizarRequest? request)
         {
             if (request == null)
@@ -163,9 +163,9 @@ where cod_parametro = @cod_parametro;";
         }
 
         private (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarValorPorTipo(
-            int codEmpresa,
-            string tipo,
-            string? valorEntrada)
+    int codEmpresa,
+    string tipo,
+    string? valorEntrada)
         {
             var valor = (valorEntrada ?? string.Empty).Trim();
 
@@ -174,99 +174,108 @@ where cod_parametro = @cod_parametro;";
                 return (false, string.Empty, "El valor no puede quedar vacío.");
             }
 
-            switch (tipo)
+            return tipo switch
             {
-                case "DEC":
-                    {
-                        if (!decimal.TryParse(
-                                valor.Replace(",", "."),
-                                NumberStyles.Any,
-                                CultureInfo.InvariantCulture,
-                                out var numeroDecimal))
-                        {
-                            return (false, string.Empty, "El valor indicado no es válido.");
-                        }
+                "DEC" => Patrimonio_frmAH_ExcedentesParametros_NormalizarDecimal(valor),
+                "NUM" => Patrimonio_frmAH_ExcedentesParametros_NormalizarEntero(valor),
+                "POR" => Patrimonio_frmAH_ExcedentesParametros_NormalizarPorcentaje(valor),
+                "CTA" => Patrimonio_frmAH_ExcedentesParametros_NormalizarCuenta(codEmpresa, valor),
+                "CHR" => Patrimonio_frmAH_ExcedentesParametros_NormalizarCaracter(valor),
+                "PSN" => Patrimonio_frmAH_ExcedentesParametros_NormalizarPsn(valor),
+                "DTS" => Patrimonio_frmAH_ExcedentesParametros_NormalizarFecha(valor),
+                _ => (true, valor, null)
+            };
+        }
 
-                        return (true, numeroDecimal.ToString(CultureInfo.InvariantCulture), null);
-                    }
-
-                case "NUM":
-                    {
-                        if (!long.TryParse(valor, out var numeroEntero))
-                        {
-                            return (false, string.Empty, "El valor indicado no es válido.");
-                        }
-
-                        return (true, numeroEntero.ToString(CultureInfo.InvariantCulture), null);
-                    }
-
-                case "POR":
-                    {
-                        if (!decimal.TryParse(
-                                valor.Replace(",", "."),
-                                NumberStyles.Any,
-                                CultureInfo.InvariantCulture,
-                                out var porcentaje))
-                        {
-                            return (false, string.Empty, "El valor indicado no es válido, suministre un porcentaje.");
-                        }
-
-                        return (true, porcentaje.ToString(CultureInfo.InvariantCulture), null);
-                    }
-
-                case "CTA":
-                    {
-                        var cuenta = new string(valor.Where(char.IsDigit).ToArray());
-
-                        if (string.IsNullOrWhiteSpace(cuenta))
-                        {
-                            return (false, string.Empty, "La Cuenta indicada no es válida, presione F4 para buscar en el catálogo.");
-                        }
-
-                        var cuentaValida = _cntLinkDb.fxgCntCuentaValida(codEmpresa, cuenta);
-                        if (!cuentaValida)
-                        {
-                            return (false, string.Empty, "La Cuenta indicada no es válida, presione F4 para buscar en el catálogo.");
-                        }
-
-                        var cuentaNormalizada = _cntLinkDb.fxgCntCuentaFormato(codEmpresa, false, cuenta, 0);
-                        return (true, cuentaNormalizada, null);
-                    }
-
-                case "CHR":
-                    {
-                        if (valor.Contains('\''))
-                        {
-                            return (false, string.Empty, "El valor indicado contiene caracteres no válidos.");
-                        }
-
-                        return (true, valor, null);
-                    }
-
-                case "PSN":
-                    {
-                        var letra = valor[..1].ToUpperInvariant();
-                        if (letra != "S" && letra != "N")
-                        {
-                            return (false, string.Empty, "El valor indicado no es válido. Indique [S] o [N].");
-                        }
-
-                        return (true, letra, null);
-                    }
-
-                case "DTS":
-                    {
-                        if (!Patrimonio_frmAH_ExcedentesParametros_TryParseFecha(valor, out var fecha))
-                        {
-                            return (false, string.Empty, "La Fecha indicada no es válida.");
-                        }
-
-                        return (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), null);
-                    }
-
-                default:
-                    return (true, valor, null);
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarDecimal(string valor)
+        {
+            if (!decimal.TryParse(
+                    valor.Replace(",", "."),
+                    NumberStyles.Any,
+                    CultureInfo.InvariantCulture,
+                    out var numeroDecimal))
+            {
+                return (false, string.Empty, "El valor indicado no es válido.");
             }
+
+            return (true, numeroDecimal.ToString(CultureInfo.InvariantCulture), null);
+        }
+
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarEntero(string valor)
+        {
+            if (!long.TryParse(valor, out var numeroEntero))
+            {
+                return (false, string.Empty, "El valor indicado no es válido.");
+            }
+
+            return (true, numeroEntero.ToString(CultureInfo.InvariantCulture), null);
+        }
+
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarPorcentaje(string valor)
+        {
+            if (!decimal.TryParse(
+                    valor.Replace(",", "."),
+                    NumberStyles.Any,
+                    CultureInfo.InvariantCulture,
+                    out var porcentaje))
+            {
+                return (false, string.Empty, "El valor indicado no es válido, suministre un porcentaje.");
+            }
+
+            return (true, porcentaje.ToString(CultureInfo.InvariantCulture), null);
+        }
+
+        private (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarCuenta(
+            int codEmpresa,
+            string valor)
+        {
+            var cuenta = new string(valor.Where(char.IsDigit).ToArray());
+
+            if (string.IsNullOrWhiteSpace(cuenta))
+            {
+                return (false, string.Empty, "La Cuenta indicada no es válida, presione F4 para buscar en el catálogo.");
+            }
+
+            var cuentaValida = _cntLinkDb.fxgCntCuentaValida(codEmpresa, cuenta);
+            if (!cuentaValida)
+            {
+                return (false, string.Empty, "La Cuenta indicada no es válida, presione F4 para buscar en el catálogo.");
+            }
+
+            var cuentaNormalizada = _cntLinkDb.fxgCntCuentaFormato(codEmpresa, false, cuenta, 0);
+            return (true, cuentaNormalizada, null);
+        }
+
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarCaracter(string valor)
+        {
+            if (valor.Contains('\''))
+            {
+                return (false, string.Empty, "El valor indicado contiene caracteres no válidos.");
+            }
+
+            return (true, valor, null);
+        }
+
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarPsn(string valor)
+        {
+            var letra = valor[..1].ToUpperInvariant();
+
+            if (letra != "S" && letra != "N")
+            {
+                return (false, string.Empty, "El valor indicado no es válido. Indique [S] o [N].");
+            }
+
+            return (true, letra, null);
+        }
+
+        private static (bool ok, string valor, string? mensaje) Patrimonio_frmAH_ExcedentesParametros_NormalizarFecha(string valor)
+        {
+            if (!Patrimonio_frmAH_ExcedentesParametros_TryParseFecha(valor, out var fecha))
+            {
+                return (false, string.Empty, "La Fecha indicada no es válida.");
+            }
+
+            return (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), null);
         }
 
         private static string Patrimonio_frmAH_ExcedentesParametros_NormalizarTipo(string? tipo)
