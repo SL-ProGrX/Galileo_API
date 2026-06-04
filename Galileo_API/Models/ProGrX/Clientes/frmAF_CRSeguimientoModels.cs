@@ -34,7 +34,7 @@
         public string? TipoFecha { get; set; }
         public DateTime? FIni { get; set; }
         public DateTime? FFin { get; set; }
-        public bool AplicarChecks { get; set; }
+        public required bool AplicarChecks { get; set; }
         public byte? Mortalidad { get; set; }
         public byte? Reingreso { get; set; }
         public byte? Volver { get; set; }
@@ -88,7 +88,7 @@
 
     public class AfCrSeguimientoMotivosRegistrar
     {
-        public int RenunciaId { get; set; }
+        public required int RenunciaId { get; set; }
         public string Motivo { get; set; } = "";
         public string TipoMov { get; set; } = "";
         public string? Usuario { get; set; }
@@ -96,7 +96,7 @@
 
     public class AfCrSeguimientoRenunciaEstado
     {
-        public int RenunciaId { get; set; }
+        public required int RenunciaId { get; set; }
         public string Estado { get; set; } = "";
         public string Gestion { get; set; } = "";
         public string? Notas { get; set; } = "";

@@ -2,11 +2,11 @@
 {
     public class AfPromotoresPrincipalDto
     {
-        public int id_promotor { get; set; }
+        public required int id_promotor { get; set; }
         public string nombre { get; set; } = string.Empty;
         public DateTime? fechaing { get; set; }
-        public int estado { get; set; }
-        public int cod_banco { get; set; }
+        public required int estado { get; set; }
+        public required int cod_banco { get; set; }
         public string banco { get; set; } = string.Empty;
         public string tipo_documento { get; set; } = string.Empty;
         public string cod_comision { get; set; } = string.Empty;
@@ -21,8 +21,8 @@
         public string? fax { get; set; } = string.Empty;
         public string? fax_ext { get; set; } = string.Empty;
         public string? nombre_contacto { get; set; } = string.Empty;
-        public bool comite { get; set; }
-        public bool apl_comision { get; set; }
+        public required bool comite { get; set; }
+        public required bool apl_comision { get; set; }
         public string? usuario { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
     }

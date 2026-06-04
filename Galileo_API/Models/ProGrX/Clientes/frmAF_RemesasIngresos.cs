@@ -16,10 +16,10 @@
 
     public class AdiRemesaIngRequestDto
     {
-        public int CodRemesa { get; set; }
+        public required int CodRemesa { get; set; }
         public string Usuario { get; set; } = "";
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaCorte { get; set; }
         public string Notas { get; set; } = "";
         public string Estado { get; set; } = ""; // "A" o "C"
     }

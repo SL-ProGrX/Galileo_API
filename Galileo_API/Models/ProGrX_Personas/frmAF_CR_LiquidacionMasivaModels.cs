@@ -2,8 +2,8 @@
 {
     public class AfLiquidacionMasivaFiltros
     {
-        public DateTime Inicio { get; set; }
-        public DateTime Corte { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
         public string? Tipo { get; set; }
         public int? Institucion { get; set; }
         public int? Causa { get; set; }
