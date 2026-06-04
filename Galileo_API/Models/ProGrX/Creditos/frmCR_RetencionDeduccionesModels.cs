@@ -21,7 +21,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string proceso_default { get; set; } = string.Empty;
     }
 
-    public class CrRetencionDeduccionesRequestBase
+    public class CrRetencionDeduccionesRequest
     {
         public string codigo { get; set; } = string.Empty;
         public int? cod_institucion { get; set; }
@@ -33,21 +33,11 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string usuario { get; set; } = string.Empty;
     }
 
-    public class CrRetencionDeduccionesObtenerRequest
-        : CrRetencionDeduccionesRequestBase
-    {
-    }
-
     public class CrRetencionDeduccionesResultadoData
     {
         public List<CrRetencionDeduccionesData> deducciones { get; set; } = new();
         public decimal total_monto { get; set; } = 0;
         public int total_casos { get; set; } = 0;
-    }
-
-    public class CrRetencionDeduccionesArchivoRequest
-        : CrRetencionDeduccionesRequestBase
-    {
     }
 
     public class CrRetencionDeduccionesArchivoData

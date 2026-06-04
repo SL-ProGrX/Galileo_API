@@ -92,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<CrRetencionDeduccionesResultadoData> Cr_RetencionDeducciones_Obtener(
             int codEmpresa,
-            CrRetencionDeduccionesObtenerRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             var validacion = ValidarFiltros(request);
             if (validacion.Code != 0)
@@ -165,9 +165,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<CrRetencionDeduccionesArchivoData> Cr_RetencionDeducciones_Archivo_Generar(
             int codEmpresa,
-            CrRetencionDeduccionesArchivoRequest request)
+            CrRetencionDeduccionesRequest request)
         {
-            var consulta = Cr_RetencionDeducciones_Obtener(codEmpresa, new CrRetencionDeduccionesObtenerRequest
+            var consulta = Cr_RetencionDeducciones_Obtener(codEmpresa, new CrRetencionDeduccionesRequest
             {
                 usuario = request.usuario,
                 codigo = request.codigo,
@@ -366,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private ErrorDto<List<CrRetencionDeduccionesData>> ObtenerDeduccionesConPlanPagos(
             int codEmpresa,
-            CrRetencionDeduccionesObtenerRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             string filtroFecha = request.tipo == "F"
                 ? " and D.MOV_FECHA between @FechaInicio and @FechaCorte "
@@ -405,7 +405,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private ErrorDto<List<CrRetencionDeduccionesData>> ObtenerDeduccionesSinPlanPagos(
             int codEmpresa,
-            CrRetencionDeduccionesObtenerRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             string filtroFecha = request.tipo == "F"
                 ? " and D.fechas between @FechaInicioSoloFecha and @FechaCorteSoloFecha "
@@ -444,7 +444,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private ErrorDto<List<CrRetencionDeduccionesData>> ObtenerDeduccionesMorosidad(
             int codEmpresa,
-            CrRetencionDeduccionesObtenerRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             string filtroFecha = request.tipo == "F"
                 ? " and D.Fecult between @FechaInicioSoloFecha and @FechaCorteSoloFecha "
@@ -476,7 +476,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 CrearParametrosConsulta(request, false));
         }
 
-        private static object CrearParametrosConsulta(CrRetencionDeduccionesObtenerRequest request, bool usaHora)
+        private static object CrearParametrosConsulta(CrRetencionDeduccionesRequest request, bool usaHora)
         {
             var fechaInicio = request.fecha_inicio ?? DateTime.Now;
             var fechaCorte = request.fecha_corte ?? fechaInicio;
@@ -533,7 +533,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return $"{fechaServidor.Year}{fechaServidor.Month:00}";
         }
 
-        private static ErrorDto ValidarFiltros(CrRetencionDeduccionesObtenerRequest request)
+        private static ErrorDto ValidarFiltros(CrRetencionDeduccionesRequest request)
         {
             request.usuario = (request.usuario ?? string.Empty).Trim();
             request.codigo = (request.codigo ?? string.Empty).Trim().ToUpperInvariant();
@@ -592,7 +592,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static string ConstruirNombreArchivo(
             string formato,
-            CrRetencionDeduccionesArchivoRequest request,
+            CrRetencionDeduccionesRequest request,
             DateTime fechaServidor,
             string descripcionInstitucion,
             int codInstitucion)
@@ -640,7 +640,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static string GenerarContenidoIntegra(
             List<CrRetencionDeduccionesData> lista,
-            CrRetencionDeduccionesArchivoRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             var sb = new StringBuilder();
             DateTime fecha = request.fecha_corte ?? request.fecha_inicio ?? DateTime.Now;
@@ -681,7 +681,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static string GenerarContenidoSPA(
             List<CrRetencionDeduccionesData> lista,
-            CrRetencionDeduccionesArchivoRequest request)
+            CrRetencionDeduccionesRequest request)
         {
             var sb = new StringBuilder();
             DateTime fecha = request.fecha_corte ?? request.fecha_inicio ?? DateTime.Now;

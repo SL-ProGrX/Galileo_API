@@ -18,12 +18,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<CrRetencionDeduccionesResultadoData> Cr_RetencionDeducciones_Obtener(
             int codEmpresa,
-            CrRetencionDeduccionesObtenerRequest request)
+            CrRetencionDeduccionesRequest request)
             => _db.Cr_RetencionDeducciones_Obtener(codEmpresa, request);
 
         public ErrorDto<CrRetencionDeduccionesArchivoData> Cr_RetencionDeducciones_Archivo_Generar(
             int codEmpresa,
-            CrRetencionDeduccionesArchivoRequest request)
+            CrRetencionDeduccionesRequest request)
             => _db.Cr_RetencionDeducciones_Archivo_Generar(codEmpresa, request);
     }
 }

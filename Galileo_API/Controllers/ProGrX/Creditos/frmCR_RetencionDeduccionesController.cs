@@ -25,13 +25,13 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpPost("Cr_RetencionDeducciones_Obtener")]
         public ErrorDto<CrRetencionDeduccionesResultadoData> Cr_RetencionDeducciones_Obtener(
             int codEmpresa,
-            [FromBody] CrRetencionDeduccionesObtenerRequest request)
+            [FromBody] CrRetencionDeduccionesRequest request)
             => _bl.Cr_RetencionDeducciones_Obtener(codEmpresa, request);
 
         [HttpPost("Cr_RetencionDeducciones_Archivo_Generar")]
         public ErrorDto<CrRetencionDeduccionesArchivoData> Cr_RetencionDeducciones_Archivo_Generar(
             int codEmpresa,
-            [FromBody] CrRetencionDeduccionesArchivoRequest request)
+            [FromBody] CrRetencionDeduccionesRequest request)
             => _bl.Cr_RetencionDeducciones_Archivo_Generar(codEmpresa, request);
     }
 }
