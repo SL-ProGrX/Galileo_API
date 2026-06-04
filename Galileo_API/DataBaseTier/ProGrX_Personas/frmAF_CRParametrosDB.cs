@@ -83,11 +83,11 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             connection.Execute(queryInsert, new
             {
                 parametros.dias_vence,
-                liq_pat_control = parametros.liq_pat_control ? 1 : 0,
+                liq_pat_control = parametros.liq_pat_control == true ? 1 : 0,
                 parametros.fecha_limite,
                 parametros.tipo_vencimiento,
-                utiliza_zonas = parametros.utiliza_zonas ? 1 : 0,
-                activar_control = parametros.activar_control ? 1 : 0
+                utiliza_zonas = parametros.utiliza_zonas == true ? 1 : 0,
+                activar_control = parametros.activar_control == true ? 1 : 0
             });
 
             RegistrarBitacora(
@@ -117,11 +117,11 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             {
                 parametros.id,
                 parametros.dias_vence,
-                liq_pat_control = parametros.liq_pat_control ? 1 : 0,
+                liq_pat_control = parametros.liq_pat_control == true ? 1 : 0,
                 parametros.fecha_limite,
                 parametros.tipo_vencimiento,
-                utiliza_zonas = parametros.utiliza_zonas ? 1 : 0,
-                activar_control = parametros.activar_control ? 1 : 0
+                utiliza_zonas = parametros.utiliza_zonas == true ? 1 : 0,
+                activar_control = parametros.activar_control == true ? 1 : 0
             });
 
             RegistrarBitacora(

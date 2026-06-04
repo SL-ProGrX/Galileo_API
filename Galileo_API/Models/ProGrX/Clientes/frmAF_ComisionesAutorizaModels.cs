@@ -18,11 +18,11 @@
 
     public class ComisionAutorizaFiltroDto
     {
-        public DateTime Inicio { get; set; }
-        public DateTime Corte { get; set; }
-        public bool ChkAportes { get; set; }
-        public bool ChkPromotor { get; set; }
-        public bool ChkUsuarios { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
+        public required bool ChkAportes { get; set; }
+        public required bool ChkPromotor { get; set; }
+        public required bool ChkUsuarios { get; set; }
         public int? IdPromotor { get; set; }
         public string? Usuario { get; set; }
         public int? Autorizado { get; set; }

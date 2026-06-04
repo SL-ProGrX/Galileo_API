@@ -8,7 +8,7 @@
 
     public class AFBitacoraEspecialData
     {
-        public int id_bitacora { get; set; }
+        public required int id_bitacora { get; set; }
         public string? cedula { get; set; }
         public string? usuario { get; set; }
         public DateTime? fecha { get; set; }
