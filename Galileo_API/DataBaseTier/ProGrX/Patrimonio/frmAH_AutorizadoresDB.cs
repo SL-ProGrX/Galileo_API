@@ -22,11 +22,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene un autorizador de patrimonio por usuario.
         /// </summary>
-        public ErrorDto<AutorizadorePatrimonioDto> Patrimonio_frmAH_Autorizadores_Obtener(
+        public ErrorDto<AutorizadorePatrimonioDto> Ah_Autorizadores_Obtener(
             int codEmpresa,
             string usuario)
         {
-            var usuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(usuario);
+            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(usuario);
             var response = new AutorizadorePatrimonioDto();
 
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
@@ -72,13 +72,13 @@ where USUARIO = @usuario;";
         /// <summary>
         /// Obtiene el usuario anterior o siguiente según el orden solicitado.
         /// </summary>
-        public ErrorDto<string> Patrimonio_frmAH_Autorizadores_ConsultaAscDesc(
+        public ErrorDto<string> Ah_Autorizadores_ConsultaAscDesc(
             int codEmpresa,
             string usuario,
             string tipo)
         {
-            var usuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(usuario);
-            var tipoNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarTipo(tipo);
+            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(usuario);
+            var tipoNormalizado = Ah_Autorizadores_NormalizarTipo(tipo);
 
             const string sqlAscPrimero = @"
 select top 1 rtrim(isnull(USUARIO, ''))
@@ -132,7 +132,7 @@ order by USUARIO desc;";
         /// <summary>
         /// Obtiene la lista de autorizadores de patrimonio para búsquedas.
         /// </summary>
-        public ErrorDto<List<AutorizadorePatrimonioDto>> Patrimonio_frmAH_Autorizadores_Lista(
+        public ErrorDto<List<AutorizadorePatrimonioDto>> Ah_Autorizadores_Lista(
             int codEmpresa,
             string? filtro)
         {
@@ -167,33 +167,33 @@ order by USUARIO asc;";
         /// <summary>
         /// Inserta un autorizador de patrimonio.
         /// </summary>
-        public ErrorDto<FrmAhAutorizadoresGuardarResponse> Patrimonio_frmAH_Autorizadores_Insertar(
+        public ErrorDto<FrmAhAutorizadoresGuardarResponse> Ah_Autorizadores_Insertar(
             int codEmpresa,
             FrmAhAutorizadoresGuardarRequest request)
         {
-            return Patrimonio_frmAH_Autorizadores_Guardar(codEmpresa, request, true);
+            return Ah_Autorizadores_Guardar(codEmpresa, request, true);
         }
 
         /// <summary>
         /// Actualiza un autorizador de patrimonio.
         /// </summary>
-        public ErrorDto<FrmAhAutorizadoresGuardarResponse> Patrimonio_frmAH_Autorizadores_Actualizar(
+        public ErrorDto<FrmAhAutorizadoresGuardarResponse> Ah_Autorizadores_Actualizar(
             int codEmpresa,
             FrmAhAutorizadoresGuardarRequest request)
         {
-            return Patrimonio_frmAH_Autorizadores_Guardar(codEmpresa, request, false);
+            return Ah_Autorizadores_Guardar(codEmpresa, request, false);
         }
 
         /// <summary>
         /// Elimina un autorizador de patrimonio por usuario.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_Autorizadores_Eliminar(
+        public ErrorDto<bool> Ah_Autorizadores_Eliminar(
             int codEmpresa,
             string usuario,
             string registroUsuario)
         {
-            var usuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(usuario);
-            var registroUsuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(registroUsuario);
+            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(usuario);
+            var registroUsuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(registroUsuario);
 
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
@@ -213,14 +213,14 @@ where USUARIO = @usuario;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                if (!Patrimonio_frmAH_Autorizadores_Existe(conn, usuarioNormalizado))
+                if (!Ah_Autorizadores_Existe(conn, usuarioNormalizado))
                 {
                     return DbHelper.CreateErrorResponse("El autorizador indicado no existe.", -2, false);
                 }
 
                 conn.Execute(sqlDelete, new { usuario = usuarioNormalizado });
 
-                Patrimonio_frmAH_Autorizadores_RegistrarBitacora(
+                Ah_Autorizadores_RegistrarBitacora(
                     codEmpresa,
                     registroUsuarioNormalizado,
                     usuarioNormalizado,
@@ -234,23 +234,23 @@ where USUARIO = @usuario;";
             }
         }
 
-        private ErrorDto<FrmAhAutorizadoresGuardarResponse> Patrimonio_frmAH_Autorizadores_Guardar(
+        private ErrorDto<FrmAhAutorizadoresGuardarResponse> Ah_Autorizadores_Guardar(
             int codEmpresa,
             FrmAhAutorizadoresGuardarRequest? request,
             bool esNuevo)
         {
             var response = new FrmAhAutorizadoresGuardarResponse();
-            var validacion = Patrimonio_frmAH_Autorizadores_ValidarGuardarRequest(request, response);
+            var validacion = Ah_Autorizadores_ValidarGuardarRequest(request, response);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var usuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(request!.usuario);
+            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(request!.usuario);
             var notasNormalizadas = (request.notas ?? string.Empty).Trim();
             var estadoNormalizado = request.estado.Trim().ToUpperInvariant();
-            var registroUsuarioNormalizado = Patrimonio_frmAH_Autorizadores_NormalizarUsuario(request.registro_usuario);
+            var registroUsuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(request.registro_usuario);
 
             const string sqlGuardar = @"
 exec spPAT_Autorizador_Add
@@ -262,7 +262,7 @@ exec spPAT_Autorizador_Add
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                var existe = Patrimonio_frmAH_Autorizadores_Existe(conn, usuarioNormalizado);
+                var existe = Ah_Autorizadores_Existe(conn, usuarioNormalizado);
 
                 if (esNuevo && existe)
                 {
@@ -293,7 +293,7 @@ exec spPAT_Autorizador_Add
                 var movimiento = esNuevo ? "Registra - WEB" : "Modifica - WEB";
                 var accion = esNuevo ? "Registra" : "Modifica";
 
-                Patrimonio_frmAH_Autorizadores_RegistrarBitacora(
+                Ah_Autorizadores_RegistrarBitacora(
                     codEmpresa,
                     registroUsuarioNormalizado,
                     usuarioNormalizado,
@@ -311,7 +311,7 @@ exec spPAT_Autorizador_Add
             }
         }
 
-        private static ErrorDto<FrmAhAutorizadoresGuardarResponse>? Patrimonio_frmAH_Autorizadores_ValidarGuardarRequest(
+        private static ErrorDto<FrmAhAutorizadoresGuardarResponse>? Ah_Autorizadores_ValidarGuardarRequest(
             FrmAhAutorizadoresGuardarRequest? request,
             FrmAhAutorizadoresGuardarResponse response)
         {
@@ -351,7 +351,7 @@ exec spPAT_Autorizador_Add
             return null;
         }
 
-        private static bool Patrimonio_frmAH_Autorizadores_Existe(
+        private static bool Ah_Autorizadores_Existe(
             SqlConnection conn,
             string usuario)
         {
@@ -363,7 +363,7 @@ where USUARIO = @usuario;";
             return conn.QueryFirstOrDefault<int>(sql, new { usuario }) > 0;
         }
 
-        private void Patrimonio_frmAH_Autorizadores_RegistrarBitacora(
+        private void Ah_Autorizadores_RegistrarBitacora(
             int codEmpresa,
             string usuarioSistema,
             string usuarioAutorizador,
@@ -379,12 +379,12 @@ where USUARIO = @usuario;";
             });
         }
 
-        private static string Patrimonio_frmAH_Autorizadores_NormalizarUsuario(string? usuario)
+        private static string Ah_Autorizadores_NormalizarUsuario(string? usuario)
         {
             return (usuario ?? string.Empty).Trim();
         }
 
-        private static string Patrimonio_frmAH_Autorizadores_NormalizarTipo(string? tipo)
+        private static string Ah_Autorizadores_NormalizarTipo(string? tipo)
         {
             return (tipo ?? string.Empty).Trim().Equals("desc", StringComparison.OrdinalIgnoreCase)
                 ? "DESC"

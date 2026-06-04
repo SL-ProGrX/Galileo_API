@@ -18,16 +18,16 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAHAnulaAhorrosBL(config);
         }
 
-        [HttpGet("Patrimonio_frmAH_AnulaAhorros_Consulta_Obtener")]
-        public ErrorDto<FrmAhAnulaAhorrosConsultaResponse?> Patrimonio_frmAH_AnulaAhorros_Consulta_Obtener(int CodEmpresa, string Cedula)
-            => _bl.Patrimonio_frmAH_AnulaAhorros_Consulta_Obtener(CodEmpresa, Cedula);
+        [HttpGet("Ah_AnulaAhorros_Consulta_Obtener")]
+        public ErrorDto<FrmAhAnulaAhorrosConsultaResponse?> Ah_AnulaAhorros_Consulta_Obtener(int CodEmpresa, string Cedula)
+            => _bl.Ah_AnulaAhorros_Consulta_Obtener(CodEmpresa, Cedula);
 
-        [HttpGet("Patrimonio_frmAH_AnulaAhorros_Movimientos_Obtener")]
-        public ErrorDto<List<FrmAhAnulaAhorrosMovimientoResponse>> Patrimonio_frmAH_AnulaAhorros_Movimientos_Obtener(int CodEmpresa, string Cedula, string TipoRubro)
-            => _bl.Patrimonio_frmAH_AnulaAhorros_Movimientos_Obtener(CodEmpresa, Cedula, TipoRubro);
+        [HttpGet("Ah_AnulaAhorros_Movimientos_Obtener")]
+        public ErrorDto<List<FrmAhAnulaAhorrosMovimientoResponse>> Ah_AnulaAhorros_Movimientos_Obtener(int CodEmpresa, string Cedula, string TipoRubro)
+            => _bl.Ah_AnulaAhorros_Movimientos_Obtener(CodEmpresa, Cedula, TipoRubro);
 
-        [HttpPost("Patrimonio_frmAH_AnulaAhorros_Procesar")]
-        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_Procesar(int CodEmpresa, FrmAhAnulaAhorrosProcesarRequest request)
-            => _bl.Patrimonio_frmAH_AnulaAhorros_Procesar(CodEmpresa, request);
+        [HttpPost("Ah_AnulaAhorros_Procesar")]
+        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Ah_AnulaAhorros_Procesar(int CodEmpresa, FrmAhAnulaAhorrosProcesarRequest request)
+            => _bl.Ah_AnulaAhorros_Procesar(CodEmpresa, request);
     }
 }

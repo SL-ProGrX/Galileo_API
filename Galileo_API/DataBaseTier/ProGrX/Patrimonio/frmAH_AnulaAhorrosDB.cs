@@ -29,7 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene el consolidado de patrimonio del afiliado.
         /// </summary>
-        public ErrorDto<FrmAhAnulaAhorrosConsultaResponse?> Patrimonio_frmAH_AnulaAhorros_Consulta_Obtener(int codEmpresa, string cedula)
+        public ErrorDto<FrmAhAnulaAhorrosConsultaResponse?> Ah_AnulaAhorros_Consulta_Obtener(int codEmpresa, string cedula)
         {
             const string sql = @"
 select
@@ -59,7 +59,7 @@ where cedula = @cedula;";
         /// <summary>
         /// Obtiene los movimientos recientes para anulación por movimiento.
         /// </summary>
-        public ErrorDto<List<FrmAhAnulaAhorrosMovimientoResponse>> Patrimonio_frmAH_AnulaAhorros_Movimientos_Obtener(int codEmpresa, string cedula, string tipoRubro)
+        public ErrorDto<List<FrmAhAnulaAhorrosMovimientoResponse>> Ah_AnulaAhorros_Movimientos_Obtener(int codEmpresa, string cedula, string tipoRubro)
         {
             const string sql = @"
 select top 24
@@ -87,13 +87,13 @@ order by fecha desc;";
         /// <summary>
         /// Procesa la anulación de ahorros con generación de documento, asiento, saldo a favor e impresión.
         /// </summary>
-        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_Procesar(
+        public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Ah_AnulaAhorros_Procesar(
     int codEmpresa,
     FrmAhAnulaAhorrosProcesarRequest request)
         {
             var response = new FrmAhAnulaAhorrosProcesarResponse();
 
-            var validacionRequest = Patrimonio_frmAH_AnulaAhorros_ValidarRequestProcesar(request, response);
+            var validacionRequest = Ah_AnulaAhorros_ValidarRequestProcesar(request, response);
             if (validacionRequest != null)
                 return validacionRequest;
 
@@ -103,11 +103,11 @@ order by fecha desc;";
 
             try
             {
-                var consulta = Patrimonio_frmAH_AnulaAhorros_ConsultarPersona(conn, tx, request.cedula);
+                var consulta = Ah_AnulaAhorros_ConsultarPersona(conn, tx, request.cedula);
                 if (consulta == null)
                     return DbHelper.CreateErrorResponse("No se localizó la persona o sus registros de aportes.", -2, response);
 
-                decimal monto = Patrimonio_frmAH_AnulaAhorros_ObtenerMontoProcesar(request);
+                decimal monto = Ah_AnulaAhorros_ObtenerMontoProcesar(request);
                 if (monto <= 0)
                     return DbHelper.CreateErrorResponse("El monto debe ser mayor que cero.", -2, response);
 
@@ -133,7 +133,7 @@ order by fecha desc;";
                         response);
                 }
 
-                var destino = Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(conn, tx, codEmpresa, request);
+                var destino = Ah_AnulaAhorros_ResolverCuentaDestino(conn, tx, codEmpresa, request);
                 if (!destino.EsValido)
                     return DbHelper.CreateErrorResponse(destino.MensajeError, -2, response);
 
@@ -145,9 +145,9 @@ order by fecha desc;";
 
                 string nombreCliente = string.IsNullOrWhiteSpace(request.nombre) ? consulta.nombre : request.nombre;
                 string detalle = string.IsNullOrWhiteSpace(request.notas) ? "Anulación de ahorro" : request.notas.Trim();
-                string[] lineas = Patrimonio_frmAH_AnulaAhorros_ConstruirLineasProcesar(request, consulta, cuentaAporte.aporte, monto, saldoActual);
+                string[] lineas = Ah_AnulaAhorros_ConstruirLineasProcesar(request, consulta, cuentaAporte.aporte, monto, saldoActual);
 
-                Patrimonio_frmAH_AnulaAhorros_InsertarTransaccion(
+                Ah_AnulaAhorros_InsertarTransaccion(
                     conn,
                     tx,
                     request,
@@ -204,7 +204,7 @@ order by fecha desc;";
                         referencia3 = string.Empty
                     });
 
-                Patrimonio_frmAH_AnulaAhorros_RegistrarSaldoFavorSiAplica(
+                Ah_AnulaAhorros_RegistrarSaldoFavorSiAplica(
                     conn,
                     tx,
                     request,
@@ -219,7 +219,7 @@ order by fecha desc;";
                     },
                     destino);
 
-                Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
+                Ah_AnulaAhorros_EjecutarAnulacion(
                     conn,
                     tx,
                     new EjecutarAnulacionParametrosRequest
@@ -362,7 +362,7 @@ exec spSIFDocsAsiento
         }
 
        
-        private static ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Patrimonio_frmAH_AnulaAhorros_ValidarRequestProcesar(
+        private static ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Ah_AnulaAhorros_ValidarRequestProcesar(
     FrmAhAnulaAhorrosProcesarRequest request,
     FrmAhAnulaAhorrosProcesarResponse response)
         {
@@ -372,7 +372,7 @@ exec spSIFDocsAsiento
             return new ErrorDto<FrmAhAnulaAhorrosProcesarResponse>();
         }
 
-        private static FrmAhAnulaAhorrosConsultaResponse Patrimonio_frmAH_AnulaAhorros_ConsultarPersona(
+        private static FrmAhAnulaAhorrosConsultaResponse Ah_AnulaAhorros_ConsultarPersona(
             SqlConnection conn,
             SqlTransaction tx,
             string cedula)
@@ -395,7 +395,7 @@ exec spSIFDocsAsiento
                         where cedula = @cedula;", new { cedula }, tx) ?? new FrmAhAnulaAhorrosConsultaResponse();
         }
 
-        private static decimal Patrimonio_frmAH_AnulaAhorros_ObtenerMontoProcesar(FrmAhAnulaAhorrosProcesarRequest request)
+        private static decimal Ah_AnulaAhorros_ObtenerMontoProcesar(FrmAhAnulaAhorrosProcesarRequest request)
         {
             bool esMov = string.Equals(request.tipo_anulacion?.Trim(), "MOV", StringComparison.OrdinalIgnoreCase);
             bool tieneMovimientos = request.movimientos != null && request.movimientos.Count > 0;
@@ -405,7 +405,7 @@ exec spSIFDocsAsiento
                 : request.monto;
         }
 
-        private static string[] Patrimonio_frmAH_AnulaAhorros_ConstruirLineasProcesar(
+        private static string[] Ah_AnulaAhorros_ConstruirLineasProcesar(
             FrmAhAnulaAhorrosProcesarRequest request,
             FrmAhAnulaAhorrosConsultaResponse consulta,
             decimal aporte,
@@ -427,7 +427,7 @@ exec spSIFDocsAsiento
             ];
         }
 
-        private void Patrimonio_frmAH_AnulaAhorros_InsertarTransaccion(
+        private void Ah_AnulaAhorros_InsertarTransaccion(
             SqlConnection conn,
             SqlTransaction tx,
             FrmAhAnulaAhorrosProcesarRequest request,
@@ -476,7 +476,7 @@ values
             }, tx);
         }
 
-        private void Patrimonio_frmAH_AnulaAhorros_EjecutarAnulacion(
+        private void Ah_AnulaAhorros_EjecutarAnulacion(
             SqlConnection conn,
             SqlTransaction tx,
             EjecutarAnulacionParametrosRequest request
@@ -503,7 +503,7 @@ exec spPAT_Anulacion
             }, tx);
         }
 
-        private void Patrimonio_frmAH_AnulaAhorros_RegistrarSaldoFavorSiAplica(
+        private void Ah_AnulaAhorros_RegistrarSaldoFavorSiAplica(
             SqlConnection conn,
             SqlTransaction tx,
             FrmAhAnulaAhorrosProcesarRequest request,
@@ -558,14 +558,14 @@ exec spPAT_Anulacion_Saldo_Favor
             }, tx);
         }
 
-        private PatrimoniofrmAHAnulaAhorrosCuentaDestino Patrimonio_frmAH_AnulaAhorros_ResolverCuentaDestino(
+        private PatrimoniofrmAHAnulaAhorrosCuentaDestino Ah_AnulaAhorros_ResolverCuentaDestino(
             SqlConnection conn,
             SqlTransaction tx,
             int codEmpresa,
             FrmAhAnulaAhorrosProcesarRequest request
             )
         {
-            if (Patrimonio_frmAH_AnulaAhorros_EsAccionSaldoFavor(request.accion))
+            if (Ah_AnulaAhorros_EsAccionSaldoFavor(request.accion))
             {
                 var saldoFavor = conn.QueryFirstOrDefault<(string cod_forma_pago, string cod_cuenta)>(@"
 select top 1
@@ -595,7 +595,7 @@ where TIPO = 'S' and Activa = 1;", transaction: tx);
             return PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearNormal(cuentaDestino);
         }
 
-        private static bool Patrimonio_frmAH_AnulaAhorros_EsAccionSaldoFavor(string accion)
+        private static bool Ah_AnulaAhorros_EsAccionSaldoFavor(string accion)
         {
             return string.Equals((accion ?? "C").Trim(), "S", StringComparison.OrdinalIgnoreCase);
         }

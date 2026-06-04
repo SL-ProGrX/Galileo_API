@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene el resumen principal de patrimonio del afiliado y valida acceso restringido.
         /// </summary>
-        public ErrorDto<FrmAhPrincipalConsultaResponse?> Patrimonio_frmAH_Principal_Consulta_Obtener(
+        public ErrorDto<FrmAhPrincipalConsultaResponse?> Ah_Principal_Consulta_Obtener(
             int codEmpresa,
             string cedula,
             string usuario)
@@ -88,7 +88,7 @@ where cedula = @cedula;";
         /// <summary>
         /// Obtiene el detalle de movimientos de patrimonio filtrado por rubros seleccionados.
         /// </summary>
-        public ErrorDto<List<FrmAhPrincipalDetallePatrimonioResponse>> Patrimonio_frmAH_Principal_DetallePatrimonio_Obtener(
+        public ErrorDto<List<FrmAhPrincipalDetallePatrimonioResponse>> Ah_Principal_DetallePatrimonio_Obtener(
             int codEmpresa,
             FrmAhPrincipalDetallePatrimonioRequest request)
         {
@@ -172,7 +172,7 @@ order by A.fecha desc, A.consec desc;";
         /// <summary>
         /// Obtiene el histórico de excedentes del afiliado.
         /// </summary>
-        public ErrorDto<List<FrmAhPrincipalExcedentesResponse>> Patrimonio_frmAH_Principal_Excedentes_Obtener(
+        public ErrorDto<List<FrmAhPrincipalExcedentesResponse>> Ah_Principal_Excedentes_Obtener(
             int codEmpresa,
             string cedula)
         {
@@ -203,7 +203,7 @@ order by P.CORTE desc, P.Inicio desc;";
         /// <summary>
         /// Obtiene el histórico mensual de aportes del afiliado.
         /// </summary>
-        public ErrorDto<List<FrmAhPrincipalHistoricoResponse>> Patrimonio_frmAH_Principal_Historico_Obtener(
+        public ErrorDto<List<FrmAhPrincipalHistoricoResponse>> Ah_Principal_Historico_Obtener(
             int codEmpresa,
             string cedula)
         {
@@ -236,7 +236,7 @@ order by A.anio desc, A.mes desc;";
         /// <summary>
         /// Obtiene las liquidaciones pendientes registradas para el afiliado.
         /// </summary>
-        public ErrorDto<List<FrmAhPrincipalLiquidacionesResponse>> Patrimonio_frmAH_Principal_Liquidaciones_Obtener(
+        public ErrorDto<List<FrmAhPrincipalLiquidacionesResponse>> Ah_Principal_Liquidaciones_Obtener(
             int codEmpresa,
             string cedula)
         {
