@@ -165,8 +165,8 @@ Order by Nsolicitud";
 
                     "G" => sbTeBNCR_Sinpe(CodEmpresa, Banco, TipoDoc, NTransac),
                     "DV1" or "DV2" => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan),
-                    "S" => Err("SINPE está en espera / no implementado."),
-                    "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(CodEmpresa, filtro, LoadTransacciones()),
+                    "S" => Err("SINPE INTERNO está en espera / no implementado."),
+                    "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(CodEmpresa, filtro, LoadTransacciones(), resolveConsecutivo: () => NTransac),
                     _ => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan)
                 };
             }

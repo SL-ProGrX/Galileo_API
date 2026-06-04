@@ -727,7 +727,8 @@ where B.estado = 'A'
                 "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(
                         ctx.CodEmpresa,
                         ctx.Filtro,
-                        Trans()),
+                        Trans(),
+                       () => ResolverBancoConsecTransferencia(ctx)),
                     _ => sbTeFormatoEstandar(
                        ctx.CodEmpresa,
                        ctx.Filtro,
