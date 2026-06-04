@@ -1077,7 +1077,7 @@ namespace Galileo_API.DataBaseTier
 
                     if (ConsultarIsPINEntity(solicitud!.Cuenta!).Result == true) // NOSONAR
                     {
-                        if (ConsultarIsServiceAvailable(CodEmpresa, vUsuario).Result == false) // NOSONAR
+                        if (!ConsultarIsServiceAvailable(CodEmpresa, vUsuario).Result) // NOSONAR
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
