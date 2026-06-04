@@ -13,8 +13,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             _db = new FrmCrRetencionDeduccionesDb(config);
         }
 
-        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(int codEmpresa)
-            => _db.Cr_RetencionDeducciones_Pantalla_Obtener(codEmpresa);
+        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(int codEmpresa, string usuario)
+            => _db.Cr_RetencionDeducciones_Pantalla_Obtener(codEmpresa, usuario);
 
         public ErrorDto<CrRetencionDeduccionesResultadoData> Cr_RetencionDeducciones_Obtener(
             int codEmpresa,

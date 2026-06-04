@@ -19,8 +19,8 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [HttpGet("Cr_RetencionDeducciones_Pantalla_Obtener")]
-        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(int codEmpresa)
-            => _bl.Cr_RetencionDeducciones_Pantalla_Obtener(codEmpresa);
+        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(int codEmpresa, string usuario)
+            => _bl.Cr_RetencionDeducciones_Pantalla_Obtener(codEmpresa, usuario);
 
         [HttpPost("Cr_RetencionDeducciones_Obtener")]
         public ErrorDto<CrRetencionDeduccionesResultadoData> Cr_RetencionDeducciones_Obtener(

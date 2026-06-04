@@ -9,27 +9,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public class FrmCrRetencionDeduccionesDb
     {
         private readonly PortalDB _portalDb;
+        private readonly MProGrxMain _mProGrxMain;
 
         public FrmCrRetencionDeduccionesDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _mProGrxMain = new MProGrxMain(config);
         }
 
         /// <summary>
         /// Obtiene la información inicial de la pantalla.
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(int codEmpresa)
+        public ErrorDto<CrRetencionDeduccionesPantallaData> Cr_RetencionDeducciones_Pantalla_Obtener(
+            int codEmpresa,
+            string usuario)
         {
-            var fechaServidor = ObtenerFechaServidor(codEmpresa);
-            if (fechaServidor.Code != 0)
+            var globalesResp = ObtenerGlobales(codEmpresa, usuario);
+            if (globalesResp.Code != 0 || globalesResp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    fechaServidor.Description ?? "No fue posible obtener la fecha del servidor.",
-                    fechaServidor.Code.GetValueOrDefault(-1),
+                    globalesResp.Description ?? "No fue posible obtener los parámetros globales.",
+                    globalesResp.Code.GetValueOrDefault(-1),
                     new CrRetencionDeduccionesPantallaData());
             }
+
+            var globales = globalesResp.Result;
 
             var clientes = ObtenerClientes(codEmpresa);
             if (clientes.Code != 0)
@@ -49,12 +56,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new CrRetencionDeduccionesPantallaData());
             }
 
+            var fechaServidor = globales.fxFechaServidor ?? DateTime.Now;
+            var procesoDefault = ObtenerProcesoDefault(globales, fechaServidor);
+
             var salida = new CrRetencionDeduccionesPantallaData
             {
                 clientes = clientes.Result ?? new List<DropDownListaGenericaModel>(),
                 instituciones = instituciones.Result ?? new List<DropDownListaGenericaModel>(),
-                fecha_servidor = fechaServidor.Result,
-                proceso_default = $"{fechaServidor.Result.Year}{fechaServidor.Result.Month:00}",
+                fecha_servidor = fechaServidor,
+                proceso_default = procesoDefault,
                 formato_default = "01",
                 tipo_default = "P",
                 formatos = new List<DropDownListaGenericaModel>
@@ -93,16 +103,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new CrRetencionDeduccionesResultadoData());
             }
 
-            var usaPlanPagos = ObtenerUsaPlanPagos(codEmpresa);
-            if (usaPlanPagos.Code != 0)
+            var globalesResp = ObtenerGlobales(codEmpresa, request.usuario);
+            if (globalesResp.Code != 0 || globalesResp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    usaPlanPagos.Description ?? "No fue posible determinar la configuración de plan de pagos.",
-                    usaPlanPagos.Code.GetValueOrDefault(-1),
+                    globalesResp.Description ?? "No fue posible obtener la configuración global.",
+                    globalesResp.Code.GetValueOrDefault(-1),
                     new CrRetencionDeduccionesResultadoData());
             }
 
-            var listaPrincipal = usaPlanPagos.Result
+            var globales = globalesResp.Result;
+            var usaPlanPagos = globales.SysPlanPagos == 1;
+
+            var listaPrincipal = usaPlanPagos
                 ? ObtenerDeduccionesConPlanPagos(codEmpresa, request)
                 : ObtenerDeduccionesSinPlanPagos(codEmpresa, request);
 
@@ -116,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             List<CrRetencionDeduccionesData> salida = listaPrincipal.Result ?? new List<CrRetencionDeduccionesData>();
 
-            if (!usaPlanPagos.Result)
+            if (!usaPlanPagos)
             {
                 var morosidad = ObtenerDeduccionesMorosidad(codEmpresa, request);
                 if (morosidad.Code != 0)
@@ -156,6 +169,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             var consulta = Cr_RetencionDeducciones_Obtener(codEmpresa, new CrRetencionDeduccionesObtenerRequest
             {
+                usuario = request.usuario,
                 codigo = request.codigo,
                 cod_institucion = request.cod_institucion,
                 formato = request.formato,
@@ -191,22 +205,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new CrRetencionDeduccionesArchivoData());
             }
 
-            var fechaServidor = ObtenerFechaServidor(codEmpresa);
-            if (fechaServidor.Code != 0)
+            var globalesResp = ObtenerGlobales(codEmpresa, request.usuario);
+            if (globalesResp.Code != 0 || globalesResp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    fechaServidor.Description ?? "No fue posible obtener la fecha del servidor.",
-                    fechaServidor.Code.GetValueOrDefault(-1),
+                    globalesResp.Description ?? "No fue posible obtener los parámetros globales.",
+                    globalesResp.Code.GetValueOrDefault(-1),
                     new CrRetencionDeduccionesArchivoData());
             }
 
+            var fechaServidor = globalesResp.Result.fxFechaServidor ?? DateTime.Now;
             string formato = NormalizarFormato(request.formato);
             string descripcionInstitucion = institucion.Result?.descripcion ?? "TODOS";
 
             string nombreArchivo = ConstruirNombreArchivo(
                 formato,
                 request,
-                fechaServidor.Result,
+                fechaServidor,
                 descripcionInstitucion,
                 request.cod_institucion ?? 0);
 
@@ -224,6 +239,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 contenido = contenido,
                 content_type = "text/plain"
             });
+        }
+
+        /// <summary>
+        /// Obtiene los parámetros globales reutilizables del formulario.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        private ErrorDto<Globales> ObtenerGlobales(int codEmpresa, string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar el usuario para obtener los parámetros globales.",
+                    -1,
+                    new Globales());
+            }
+
+            return _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario.Trim());
         }
 
         /// <summary>
@@ -256,49 +290,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private ErrorDto<List<DropDownListaGenericaModel>> ObtenerInstituciones(int codEmpresa)
         {
             const string sql = @"
-                select cast(0 as int) as item, 'TODOS' as descripcion
-                union all
-                select cast(cod_institucion as int) as item, rtrim(descripcion) as descripcion
-                from instituciones
-                where activa = 1
-                order by descripcion;";
+                select item, descripcion
+                from
+                (
+                    select
+                        0 as orden,
+                        cast(0 as int) as item,
+                        'TODOS' as descripcion
+
+                    union all
+
+                    select
+                        1 as orden,
+                        cast(cod_institucion as int) as item,
+                        rtrim(descripcion) as descripcion
+                    from instituciones
+                    where activa = 1
+                ) as x
+                order by x.orden, x.descripcion;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
                 sql);
-        }
-
-        /// <summary>
-        /// Obtiene la fecha actual del servidor.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        private ErrorDto<DateTime> ObtenerFechaServidor(int codEmpresa)
-        {
-            const string sql = @"select dbo.MyGetdate();";
-
-            return DbHelper.ExecuteSingleQuery<DateTime>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                DateTime.Now);
-        }
-
-        /// <summary>
-        /// Indica si la empresa utiliza plan de pagos.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        private ErrorDto<bool> ObtenerUsaPlanPagos(int codEmpresa)
-        {
-            const string sql = @"select cast(isnull(SysPlanPagos, 0) as bit) from globales;";
-
-            return DbHelper.ExecuteSingleQuery<bool>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                false);
         }
 
         /// <summary>
@@ -319,18 +333,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             const string sql = @"
-                select
-                    cast(cod_institucion as int) as item,
-                    rtrim(descripcion) as descripcion
-                from instituciones
-                where cod_institucion = @CodInstitucion;";
+            select
+                cast(cod_institucion as int) as item,
+                rtrim(descripcion) as descripcion
+            from instituciones
+            where cod_institucion = @CodInstitucion;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var response = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
                 new DropDownListaGenericaModel(),
                 new { CodInstitucion = codInstitucion });
+
+            if (response.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    response.Description ?? "No fue posible obtener la institución.",
+                    response.Code.GetValueOrDefault(-1),
+                    new DropDownListaGenericaModel());
+            }
+
+            return DbHelper.CreateOkResponse(
+                response.Result ?? new DropDownListaGenericaModel());
         }
 
         /// <summary>
@@ -498,12 +523,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return salida;
         }
 
+        private static string ObtenerProcesoDefault(Globales globales, DateTime fechaServidor)
+        {
+            if (globales.GlngFechaCR > 0)
+            {
+                return Convert.ToInt64(globales.GlngFechaCR).ToString();
+            }
+
+            return $"{fechaServidor.Year}{fechaServidor.Month:00}";
+        }
+
         private static ErrorDto ValidarFiltros(CrRetencionDeduccionesObtenerRequest request)
         {
+            request.usuario = (request.usuario ?? string.Empty).Trim();
             request.codigo = (request.codigo ?? string.Empty).Trim().ToUpperInvariant();
             request.formato = NormalizarFormato(request.formato);
             request.tipo = NormalizarTipo(request.tipo);
             request.proceso = (request.proceso ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.ErrorResponse("Debe indicar el usuario.", -1);
+            }
 
             if (string.IsNullOrWhiteSpace(request.codigo))
             {
@@ -556,7 +597,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string descripcionInstitucion,
             int codInstitucion)
         {
-            string prefijo = formato switch
+            string prefijoFecha = formato switch
             {
                 "02" => "INTEGRA",
                 "03" => "CCSS",
@@ -564,12 +605,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 _ => "SIF"
             };
 
+            string prefijoProceso = formato switch
+            {
+                "02" => "INTEGRA",
+                "03" => "CCSS",
+                "04" => "SPA",
+                _ => "ProGrX"
+            };
+
             if (NormalizarTipo(request.tipo) == "F")
             {
-                return $"{prefijo}-{fechaServidor:yyyyMMdd}-{codInstitucion:00}.{descripcionInstitucion}.txt";
+                return $"{prefijoFecha}-{fechaServidor:yyyyMMdd}-{codInstitucion:00}.{descripcionInstitucion}.txt";
             }
 
-            return $"{request.proceso}_{codInstitucion:00} {descripcionInstitucion} [{prefijo}].txt";
+            return $"{request.proceso}_{codInstitucion:00} {descripcionInstitucion} [{prefijoProceso}].txt";
         }
 
         private static string GenerarContenidoProGrX(List<CrRetencionDeduccionesData> lista)

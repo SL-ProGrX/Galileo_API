@@ -17,7 +17,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         public List<DropDownListaGenericaModel> tipos { get; set; } = new();
         public string formato_default { get; set; } = "01";
         public string tipo_default { get; set; } = "P";
-        public DateTime fecha_servidor { get; set; }
+        public DateTime? fecha_servidor { get; set; }
         public string proceso_default { get; set; } = string.Empty;
     }
 
@@ -30,6 +30,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }
         public string proceso { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class CrRetencionDeduccionesResultadoData
@@ -48,6 +49,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }
         public string proceso { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class CrRetencionDeduccionesArchivoData
