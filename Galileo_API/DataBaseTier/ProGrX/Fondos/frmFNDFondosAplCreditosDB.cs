@@ -1,9 +1,10 @@
 ﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
 
-namespace Galileo.DataBaseTier.ProGrX.Fondos
+namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 {
     public class FrmFndFondosAplCreditosDb
     {
@@ -33,12 +34,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private const string SqlResumenContratos = @"
                     SELECT
-                        R.COD_OPERADORA,
-                        R.COD_PLAN,
-                        R.COD_MONEDA,
-                        R.PLAN_DESC,
-                        R.TOTAL,
-                        R.CONTRATOS
+                        R.COD_OPERADORA AS CodOperadora,
+                        R.COD_PLAN AS CodPlan,
+                        R.COD_MONEDA AS CodMoneda,
+                        R.PLAN_DESC AS PlanDesc,
+                        R.TOTAL AS Total,
+                        R.CONTRATOS AS Contratos
                     FROM dbo.vFnd_Contratos_Resumen R
                     INNER JOIN dbo.FND_PLANES P
                         ON R.cod_Operadora = P.COD_OPERADORA
@@ -92,9 +93,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             return new ErrorDto<List<FndFondosAplCreditosListaResult>>
             {
-                Code = result.Code.HasValue ? result.Code.Value : 0,
+                Code = result.Code ?? 0,
                 Description = result.Description,
-                Result = result.Result ?? new List<FndFondosAplCreditosListaResult>()
+                Result = result.Result ?? []
             };
         }
 
@@ -201,8 +202,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 Operadora = param.CodOperadora,
                 Plan = NormalizarTexto(param.CodPlan),
-                Tipo = NormalizarTexto(param.Tipo),
-                Institucion = param.CodInstitucion
+                Tipo = NormalizarTexto(param.Tipo)
             };
         }
 
@@ -214,7 +214,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Aplica_Mora = param.AplicaMora,
                 Aplica_CtaTransito = param.AplicaCtaTransito,
                 Aplica_Extra = param.AplicaExtra,
-                Institucion = param.Institucion
+                param.Institucion
             };
         }
 

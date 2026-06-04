@@ -269,9 +269,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         [Authorize]
         [HttpGet("TES_TransaccionesValidaCuentaXCedula")]
-        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string? cedula, string? cuenta, string? usuario, int? tipoOrigen = 0)
         {
-            return _bl.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario);
+            return _bl.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario, tipoOrigen);
         }
     }
 }

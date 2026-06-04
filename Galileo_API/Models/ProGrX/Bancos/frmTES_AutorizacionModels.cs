@@ -39,7 +39,8 @@ namespace Galileo.Models.TES
         public string token { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
         public string appid { get; set; } = string.Empty;
-        public bool activaCuentaSinpe { get; set; }
+        public bool activaCuentaSinpe { get; set; } = false;
+        public bool verificaCtas { get; set; } = false;
     }
 
     public class TesSolicitudesLista

@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene la lista de gestiones de patrimonio según los filtros indicados.
         /// </summary>
-        public ErrorDto<List<PatGestionesPatrimonio>> Patrimonio_frmAH_Autorizaciones_Obtener(
+        public ErrorDto<List<PatGestionesPatrimonio>> Ah_Autorizaciones_Obtener(
             int codEmpresa,
             FiltrosAutorizacionesPatrimonioDto filtros)
         {
@@ -35,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "Los filtros de consulta son requeridos.");
             }
 
-            var filtrosNormalizados = Patrimonio_frmAH_Autorizaciones_NormalizarFiltros(filtros);
+            var filtrosNormalizados = Ah_Autorizaciones_NormalizarFiltros(filtros);
 
             const string sql = @"
 select
@@ -86,13 +86,13 @@ order by Registro_Fecha;";
         /// <summary>
         /// Autoriza o deniega en lote las solicitudes seleccionadas.
         /// </summary>
-        public ErrorDto<FrmAhAutorizacionesProcesarResponse> Patrimonio_frmAH_Autorizaciones_Procesar(
+        public ErrorDto<FrmAhAutorizacionesProcesarResponse> Ah_Autorizaciones_Procesar(
             int codEmpresa,
             FrmAhAutorizacionesProcesarRequest request)
         {
             var response = new FrmAhAutorizacionesProcesarResponse();
 
-            var validacion = Patrimonio_frmAH_Autorizaciones_ValidarRequestProcesar(request, response);
+            var validacion = Ah_Autorizaciones_ValidarRequestProcesar(request, response);
             if (validacion != null)
             {
                 return validacion;
@@ -112,7 +112,7 @@ order by Registro_Fecha;";
 
             try
             {
-                if (!Patrimonio_frmAH_Autorizaciones_Autorizador_Valida(conn, tx, usuario))
+                if (!Ah_Autorizaciones_Autorizador_Valida(conn, tx, usuario))
                 {
                     return DbHelper.CreateErrorResponse(
                         MensajeUsuarioNoAutorizador,
@@ -120,7 +120,7 @@ order by Registro_Fecha;";
                         response);
                 }
 
-                var gestionesBitacora = Patrimonio_frmAH_Autorizaciones_GestionesBitacora_Obtener(
+                var gestionesBitacora = Ah_Autorizaciones_GestionesBitacora_Obtener(
                     conn,
                     tx,
                     idsAutorizacion);
@@ -143,7 +143,7 @@ order by Registro_Fecha;";
 
                 tx.Commit();
 
-                Patrimonio_frmAH_Autorizaciones_RegistrarBitacora(
+                Ah_Autorizaciones_RegistrarBitacora(
                     codEmpresa,
                     usuario,
                     accion,
@@ -175,7 +175,7 @@ order by Registro_Fecha;";
             }
         }
 
-        private static FiltrosAutorizacionesPatrimonioDto Patrimonio_frmAH_Autorizaciones_NormalizarFiltros(
+        private static FiltrosAutorizacionesPatrimonioDto Ah_Autorizaciones_NormalizarFiltros(
             FiltrosAutorizacionesPatrimonioDto filtros)
         {
             var fechaInicio = filtros.fecha_inicio == DateTime.MinValue
@@ -196,13 +196,13 @@ order by Registro_Fecha;";
                 cedula = (filtros.cedula ?? string.Empty).Trim(),
                 usuario = (filtros.usuario ?? string.Empty).Trim(),
                 nombre = (filtros.nombre ?? string.Empty).Trim(),
-                estado = Patrimonio_frmAH_Autorizaciones_NormalizarEstado(filtros.estado),
+                estado = Ah_Autorizaciones_NormalizarEstado(filtros.estado),
                 fecha_inicio = fechaInicio,
                 fecha_corte = fechaCorteBase.HasValue ? fechaCorteBase.Value.AddDays(1).AddTicks(-1) : (DateTime?)null
             };
         }
 
-        private static string Patrimonio_frmAH_Autorizaciones_NormalizarEstado(string? estado)
+        private static string Ah_Autorizaciones_NormalizarEstado(string? estado)
         {
             var estadoNormalizado = (estado ?? string.Empty).Trim().ToUpperInvariant();
             return estadoNormalizado switch
@@ -214,7 +214,7 @@ order by Registro_Fecha;";
             };
         }
 
-        private static ErrorDto<FrmAhAutorizacionesProcesarResponse>? Patrimonio_frmAH_Autorizaciones_ValidarRequestProcesar(
+        private static ErrorDto<FrmAhAutorizacionesProcesarResponse>? Ah_Autorizaciones_ValidarRequestProcesar(
             FrmAhAutorizacionesProcesarRequest? request,
             FrmAhAutorizacionesProcesarResponse response)
         {
@@ -254,7 +254,7 @@ order by Registro_Fecha;";
             return null;
         }
 
-        private static bool Patrimonio_frmAH_Autorizaciones_Autorizador_Valida(
+        private static bool Ah_Autorizaciones_Autorizador_Valida(
             SqlConnection conn,
             SqlTransaction tx,
             string usuario)
@@ -270,7 +270,7 @@ select cast(isnull(dbo.fxPAT_Autorizado_Valida(@usuario), 0) as int);";
             return estado == 1;
         }
 
-        private static List<PatGestionesBitacoraItem> Patrimonio_frmAH_Autorizaciones_GestionesBitacora_Obtener(
+        private static List<PatGestionesBitacoraItem> Ah_Autorizaciones_GestionesBitacora_Obtener(
             SqlConnection conn,
             SqlTransaction tx,
             IReadOnlyCollection<string> idsAutorizacion)
@@ -294,7 +294,7 @@ where Id_Autorizacion in @ids;";
                 tx).ToList();
         }
 
-        private void Patrimonio_frmAH_Autorizaciones_RegistrarBitacora(
+        private void Ah_Autorizaciones_RegistrarBitacora(
             int codEmpresa,
             string usuario,
             string accion,

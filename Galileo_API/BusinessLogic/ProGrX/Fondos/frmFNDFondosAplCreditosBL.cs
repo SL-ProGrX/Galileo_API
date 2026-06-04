@@ -1,8 +1,8 @@
 ﻿using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
-using Galileo.DataBaseTier.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
+using Galileo_API.DataBaseTier.ProGrX.Fondos;
 
-namespace Galileo.BusinessLogic.ProGrX.Fondos
+namespace Galileo_API.BusinessLogic.ProGrX.Fondos
 {
     public class FrmFndFondosAplCreditosBl
     {

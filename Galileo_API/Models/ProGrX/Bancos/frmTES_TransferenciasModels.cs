@@ -11,6 +11,7 @@
         public int id_Banco { get; set; } = 0;
         public string? tipo { get; set; }
         public string? codigo { get; set; }
+        public string? documento { get; set; }
     }
 
     public class TesTransferenciasInfo

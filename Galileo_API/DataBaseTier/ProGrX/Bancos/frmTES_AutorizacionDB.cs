@@ -50,7 +50,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var lenInter = GetInterbancariaLength(conn, filtro.id_banco);
 
                 // 3) Revisión automática (SP)
+                if (filtro.verificaCtas) { 
                 EjecutarRevisionAutomatica(conn, filtro.id_banco);
+                }
 
                 // 4) Conteo total
                 response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
