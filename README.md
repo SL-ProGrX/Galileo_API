@@ -1,13 +1,13 @@
 # 🌌 Galileo_API
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-blue?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/Language-C%23-239120?logo=csharp)](https://learn.microsoft.com/en-us/dotnet/csharp/)
 ![Status](https://img.shields.io/badge/Status-Private%20Project-critical)
 [![Swagger](https://img.shields.io/badge/API-Swagger-green?logo=swagger)](https://swagger.io/)
 
 ---
 
-API desarrollada con **ASP.NET Core 9** que implementa autenticación segura mediante **JWT (JSON Web Tokens)**.  
+API desarrollada con **ASP.NET Core 10** que implementa autenticación segura mediante **JWT (JSON Web Tokens)**.  
 Diseñada para entornos privados y uso interno, con prácticas seguras para manejo de claves y configuración.
 
 ---
@@ -29,7 +29,7 @@ Diseñada para entornos privados y uso interno, con prácticas seguras para mane
 
 ## 🧰 Tecnologías utilizadas
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/)
+- [.NET 10 SDK](https://dotnet.microsoft.com/)
 - C# 12
 - ASP.NET Core Web API
 - Swagger / Swashbuckle
