@@ -51,10 +51,12 @@ namespace Galileo.DataBaseTier
             Func<long> resolveConsecutivo)
         {
             long bancoConsec = 0;
-
+            resolveConsecutivo();
             if (filtro.docInicial > 0)
-                _ = resolveConsecutivo();
-                bancoConsec = filtro!.docInicial!;
+            {
+                bancoConsec = filtro.docInicial!;
+            } 
+                
 
             if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
             {
