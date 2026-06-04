@@ -205,7 +205,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     if (ConsultarIsPINEntity(cuenta).Result == true)
                     {
-                        if (ConsultarIsServiceAvailable(CodEmpresa, usuario).Result == false)
+                        if (!ConsultarIsServiceAvailable(CodEmpresa, usuario).Result)
                         {
                             response.Code = -1;
                             response.Description = " - " + "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
