@@ -1167,7 +1167,7 @@ where nsolicitud in ";
                 string BancoPlan = filtros.plan ?? "-sp-";
 
                 long BancoConsec = resolveConsecutivo();
-
+    
                 var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
                 var sb = new StringBuilder();
@@ -1293,7 +1293,6 @@ where nsolicitud in ";
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
                 long BancoConsec = resolveConsecutivo();
-
                 var parametros = new
                 {
                     banco = BancoID,
@@ -1413,9 +1412,11 @@ where nsolicitud in ";
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             string pFormato = filtros.formatoTE ?? string.Empty;
+            int BancoID = filtros.banco;
 
             try
             {
+                
                 var formatoData = mTesFunciones.vTesFormatos(connection, pFormato);
                 if (formatoData.Code == -1)
                 {
@@ -1423,20 +1424,103 @@ where nsolicitud in ";
                         "Error al obtener configuración del formato");
                 }
 
-                string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
+                string BancoTDoc = filtros.tipoDoc;
 
                 long BancoConsec = resolveConsecutivo();
 
-                var sb = new StringBuilder();
+                var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
-                var (_, _, _, _) = GetRangos(filtros);
+                string sql = filtros.generarPor == nSolicitudes
+                        ? @"
+                    Select TOP (@top) *
+                    From Tes_Transacciones
+                    Where Estado = 'P'
+                      And Tipo = @tipoDoc
+                      And ID_Banco = @banco
+                      And Autoriza = 'S'
+                      And fecha_hold is null
+                      And NSolicitud Between @minimo And @maximo
+                    Order by Nsolicitud"
+                        : @"
+                    Select TOP (@top) *
+                    From Tes_Transacciones
+                    Where Estado = 'P'
+                      And Tipo = @tipoDoc
+                      And ID_Banco = @banco
+                      And Autoriza = 'S'
+                      And fecha_hold is null
+                      And Fecha_Solicitud Between @fechaInicio And @fechaCorte
+                    Order by Nsolicitud";
 
-                return MTesFuncionesDb.ArchivoResponse(BancoConsec, vExtension, sb);
+                                    List<TesTransaccionDto> transacciones =
+                                    [
+                                        .. connection.Query<TesTransaccionDto>(sql, new
+                        {
+                            top = filtros.cantidad,
+                            banco = BancoID,
+                            tipoDoc = BancoTDoc,
+                            minimo = solInicio,
+                            maximo = solCorte,
+                            fechaInicio,
+                            fechaCorte
+                        })
+                                    ];
+
+                return SbSinpeInterno(transacciones, BancoConsec);
+
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
+        }
+
+        public static ErrorDto<object> SbSinpeInterno(List<TesTransaccionDto> transaccionesList, long bancoConsec)
+        {
+            var sb = new StringBuilder();
+
+            string bancoId = transaccionesList.FirstOrDefault()?.id_banco.ToString() ?? "0000";
+            string numCliente = "0000000000";
+            string fecha = DateTime.Now.ToString("ddMMyyyy");
+            decimal montoPlanilla = transaccionesList.Sum(t => t.monto ?? 0);
+
+            string strMontoPlanilla = ((long)Math.Round(montoPlanilla * 100, 0))
+                .ToString("D15", CultureInfo.InvariantCulture);
+
+            // Header
+            var header = new StringBuilder(120);
+            header.Append('1');
+            header.Append(numCliente);
+            header.Append(fecha.Substring(0, 2));
+            header.Append(fecha.Substring(2, 2));
+            header.Append(fecha.Substring(4, 4));
+            header.Append(bancoId.PadLeft(12, '0'));
+            header.Append("10000");
+            header.Append(strMontoPlanilla);
+            header.Append("000000000000000000000000");
+
+            sb.AppendLine(header.ToString());
+
+            // Detalles
+            foreach (var item in transaccionesList)
+            {
+                var detalle = new StringBuilder(200);
+
+                decimal montoItem = item.monto ?? 0;
+
+                detalle.Append('2');
+                detalle.Append(item.nsolicitud.ToString().PadLeft(10, '0'));
+                detalle.Append(bancoId.PadLeft(12, '0'));
+                detalle.Append(((long)Math.Round(montoItem * 100, 0)).ToString("D15", CultureInfo.InvariantCulture));
+                detalle.Append(item.beneficiario!.PadRight(50));
+                detalle.Append(item.estado);
+                detalle.Append(item.cta_ahorros!.PadLeft(20, '0'));
+                detalle.Append(item.ndocumento!.PadLeft(15, '0'));
+
+                sb.AppendLine(detalle.ToString());
+            }
+
+            return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);
         }
 
         #endregion

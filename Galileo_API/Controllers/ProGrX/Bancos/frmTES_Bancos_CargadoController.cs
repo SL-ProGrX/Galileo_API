@@ -64,9 +64,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpPost("TES_RegistrosBancosCargados_Aplicar")]
-        public ErrorDto TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
         {
-            return _bl.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
+            return await _bl.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
         }
 
         [HttpPost("TES_RegistrosBancosCargados_Elimina")]
