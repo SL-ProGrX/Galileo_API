@@ -896,9 +896,9 @@ namespace Galileo.DataBaseTier
                 {
                     globales.GOficinaTitular = oficina.Titular;
                     globales.GOficinaApoyo = oficina.Apoyo;
-                    globales.GOficina = oficina.Descripcion;
-                    globales.GOficinaUnidad = oficina.Cod_Unidad;
-                    globales.GOficinaCentroCosto = oficina.Cod_Centro_Costo;
+                    globales.GOficina = oficina.DESCRIPCION;
+                    globales.GOficinaUnidad = oficina.COD_UNIDAD;
+                    globales.GOficinaCentroCosto = oficina.COD_CENTRO_COSTO;
                 }
 
 
