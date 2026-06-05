@@ -5,13 +5,12 @@
     
         public sealed class CcProcesoMensualCargaDeduccionesRequest
         {
-            public int CodEmpresa { get; set; }
-            public int CodInstitucion { get; set; }
-            public decimal FechaProceso { get; set; }
-            public int Pago { get; set; }
+            public int CodEmpresa { get; set; } = 0;
+            public int CodInstitucion { get; set; } = 0;
+            public decimal FechaProceso { get; set; } = 0;
+            public int Pago { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
-
-            public CcProcesoMensualCargaDeduccionesTipo TipoCarga { get; set; }
+            public CcProcesoMensualCargaDeduccionesTipo TipoCarga { get; set; } = CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel;
 
             public List<CcProcesoMensualCargaDeduccionFilaRequest> Filas { get; set; } = [];
         }
@@ -20,7 +19,7 @@
             public string Cedula { get; set; } = string.Empty;
             public Dictionary<string, decimal> Montos { get; set; } = [];
             public string Codigo { get; set; } = string.Empty;
-            public decimal Monto { get; set; }
+            public decimal Monto { get; set; } = 0;
             public int? Tipo { get; set; }
             public string Up { get; set; } = string.Empty;
             public string Ut { get; set; } = string.Empty;
@@ -40,14 +39,14 @@
         public sealed class CcProcesoMensualCargaDeduccionesResponse
         {
             public bool Cargado { get; set; }
-            public int RegistrosProcesados { get; set; }
-            public int RegistrosInsertados { get; set; }
+            public int RegistrosProcesados { get; set; } = 0;
+            public int RegistrosInsertados { get; set; } = 0;
             public string Mensaje { get; set; } = string.Empty;
         }
         public sealed class CcProcesoMensualReglaDeduccionConfig
         {
             public string CodDeduccion { get; init; } = string.Empty;
-            public int Tipo { get; init; }
+            public int Tipo { get; init; } = 0;
             public IReadOnlyCollection<string> ColumnasOrigen { get; init; } = [];
 
             public bool RequiereAportesHabilitados { get; init; }

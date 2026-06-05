@@ -3,7 +3,9 @@ using Galileo.DataBaseTier;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
 using System.Data;
+using System.Linq;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaArchivos
 {
@@ -61,8 +63,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
 
                 RevisarCedulasCargadas(connection, transaction, request);
 
-                MProcesoMensualDb.SbBitacoraPlanilla(connection, "03", request.CodInstitucion, request.FechaProceso, "R", request.Usuario, "Pla.Num." + request.Pago, transaction);
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                MProcesoMensualDb.SbBitacoraPlanilla(connection,
+                                                    new CcProcesoMensualBitacoraPlanillaDto
+                                                    {
+                                                        Transaccion = "03",
+                                                        CodInstitucion = request.CodInstitucion,
+                                                        Proceso = request.FechaProceso,
+                                                        Gestion = "R",
+                                                        Usuario = request.Usuario,
+                                                        Documento = "Pla.Num." + request.Pago
+                                                    }, transaction);
+
+
+                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = request.CodEmpresa,
                     Usuario = request.Usuario,
@@ -293,18 +306,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             return columnasOrigen.All(fila.Montos.ContainsKey);
         }
         private static decimal ObtenerMonto(CcProcesoMensualCargaDeduccionFilaRequest fila, IEnumerable<string> columnasOrigen)
-        {
-            decimal total = 0;
-
-            foreach (var columna in columnasOrigen)
-            {
-                if (fila.Montos.TryGetValue(columna, out var monto))
-                {
-                    total += monto;
-                }
-            }
-
-            return total;
+        { 
+            return columnasOrigen
+                .Where(fila.Montos.ContainsKey)
+                .Sum(columna => fila.Montos[columna]);
+              
         }
         private static bool EsCodigoNo(string? codigo)
         {
