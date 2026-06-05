@@ -28,8 +28,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(DESCRIPCION) as descripcion,
                     isnull(VALOR, 0) as valor
                 from CARGOS_ADICIONALES
-                where TIPO = 'M'
-                order by COD_CARGO;";
+                where TIPO = 'M'";
 
             return DbHelper.ExecuteListQuery<CrCargosAplicacionCargoData>(
                 _portalDb,
@@ -180,15 +179,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var globales = globalesResp.Result;
             var oficinaUnidad = NormalizarTexto(globales.GOficinaUnidad);
-            var oficinaCentroCosto = NormalizarTexto(globales.GOficinaCentroCosto);
+            var oficinaCentroCosto = NormalizarTexto(globales.GOficinaCentroCosto) ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(oficinaUnidad) ||
-                string.IsNullOrWhiteSpace(oficinaCentroCosto))
+            if (string.IsNullOrWhiteSpace(oficinaUnidad))
             {
                 return new ErrorDto
                 {
                     Code = -2,
-                    Description = "No fue posible determinar la unidad y centro de costo del usuario."
+                    Description = "No fue posible determinar la unidad del usuario."
                 };
             }
 
@@ -196,9 +194,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 exec spCrdOperacionCargoAdd
                     @Operacion,
                     @Monto,
-                    @OficinaUnidad,
-                    @OficinaCentroCosto,
-                    @Notas,
+                    @Unidad,
+                    @CentroCosto,
+                    @Detalle,
                     @Usuario,
                     'CR',
                     @CodCuenta,
@@ -213,9 +211,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     Operacion = request.operacion,
                     Monto = request.monto,
-                    OficinaUnidad = oficinaUnidad,
-                    OficinaCentroCosto = oficinaCentroCosto,
-                    Notas = TruncarNotas(request.notas),
+                    Unidad = oficinaUnidad,
+                    CentroCosto = oficinaCentroCosto,
+                    Detalle = TruncarNotas(request.notas),
                     Usuario = request.usuario,
                     CodCuenta = codCuentaResp.Result,
                     CodCargo = request.cod_cargo
