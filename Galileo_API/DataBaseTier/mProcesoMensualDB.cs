@@ -42,7 +42,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="gestion"></param>
         /// <param name="usuario"></param>
         /// <param name="documento"></param>
-        public static void SbBitacoraPlanilla(IDbConnection connection, string transaccion, int codInstitucion, decimal proceso, string gestion, string usuario, string documento = "")
+        public static void SbBitacoraPlanilla(IDbConnection connection, string transaccion, int codInstitucion, decimal proceso, string gestion, string usuario, string documento = "",IDbTransaction? transaccionDb = null)
         {
             const string query = @"
                 EXEC spPrm_Bitacora
@@ -61,7 +61,9 @@ namespace Galileo_API.DataBaseTier
                 Transaccion = transaccion,
                 Gestion = gestion,
                 Documento = documento ?? string.Empty
-            });
+            }, 
+            transaction: transaccionDb
+            );
         }
 
         /// <summary>
