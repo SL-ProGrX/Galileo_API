@@ -87,5 +87,15 @@
             public string Tipo { get; set; } = string.Empty;
             public string Nombre { get; set; } = string.Empty;
         }
+
+        public sealed class CcProcesoMensualBitacoraPlanillaDto
+        {
+            public string Transaccion { get; set; } = string.Empty;
+            public int CodInstitucion { get; set; }
+            public decimal Proceso { get; set; }
+            public string Gestion { get; set; } = string.Empty;
+            public string Usuario { get; set; } = string.Empty;
+            public string Documento { get; set; } = string.Empty;
+        }
     }
 }

@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
 using System.Globalization;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualEstadoModels;
 
 
@@ -490,5 +491,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 Mensaje = mensaje
             };
         }
+        public ErrorDto<CcProcesoMensualCargaConfigDbModel> DatosInstitucion_Obtener(int codEmpresa, int codInstitucion)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+            const string query = @"
+               SELECT
+                    ISNULL(I.planilla, '') AS Planilla,
+                    ISNULL(I.codigo_aportes, '') AS CodigoAportes,
+                    ISNULL(I.codigo_creditos, '') AS CodigoCreditos, 
+                FROM instituciones                 
+                    WHERE I.cod_institucion = @CodInstitucion";
+ 
+            var resultado = conn.QueryFirstOrDefault<CcProcesoMensualCargaConfigDbModel>(
+                query,
+                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualCargaConfigDbModel();
+
+            return DbHelper.CreateOkResponse(resultado);
+        }
     }
 }
+ 
