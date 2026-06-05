@@ -629,31 +629,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static CrPrendaListaData MapearPrendaLista(dynamic row)
         {
             var valores = CrearDiccionario(row);
+            var prenda = new CrPrendaListaData();
 
-            return new CrPrendaListaData
-            {
-                prenda_id = ObtenerLong(valores, ColPrendaId),
-                tipo_prenda = ObtenerString(valores, "Tipo_Prenda"),
-                tipo_prenda_desc = ObtenerString(valores, "Tipo_Prenda_Desc", "PrendaDesc"),
-                avaluo = ObtenerDecimal(valores, "Avaluo"),
-                porc_cobertura = ObtenerDecimal(valores, "Porc_Cobertura"),
-                cobertura = ObtenerDecimal(valores, "Cobertura"),
-                descripcion = ObtenerString(valores, "Descripcion"),
-                id_principal = ObtenerString(valores, "ID_PRINCIPAL"),
-                id_provisional = ObtenerString(valores, "ID_PROVISIONAL"),
-                modelo = ObtenerString(valores, "Modelo"),
-                serie = ObtenerString(valores, "Serie"),
-                marca = ObtenerString(valores, "Marca"),
-                anio = ObtenerString(valores, "Anio"),
-                registro_fecha = ObtenerString(valores, ColRegistroFecha),
-                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
-                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", ColActualizaFecha),
-                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", ColActualizaUsuario),
-                tomo = ObtenerString(valores, "Tomo"),
-                folio = ObtenerString(valores, "Folio"),
-                notario = ObtenerString(valores, "Notario"),
-                notario_registro_fecha = ObtenerString(valores, "NOTARIO_REGISTRO_FECHA")
-            };
+            CompletarPrendaBase(prenda, valores);
+            return prenda;
         }
 
         private static CrPrendaDetalleData MapearPrendaDetalle(dynamic row)
@@ -661,27 +640,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var valores = CrearDiccionario(row);
             var detalle = new CrPrendaDetalleData
             {
-                prenda_id = ObtenerLong(valores, ColPrendaId),
-                tipo_prenda = ObtenerString(valores, "Tipo_Prenda"),
-                tipo_prenda_desc = ObtenerString(valores, "Tipo_Prenda_Desc"),
-                avaluo = ObtenerDecimal(valores, "Avaluo"),
-                porc_cobertura = ObtenerDecimal(valores, "Porc_Cobertura"),
-                cobertura = ObtenerDecimal(valores, "Cobertura"),
-                descripcion = ObtenerString(valores, "Descripcion"),
-                id_principal = ObtenerString(valores, "ID_PRINCIPAL"),
-                id_provisional = ObtenerString(valores, "ID_PROVISIONAL"),
-                modelo = ObtenerString(valores, "Modelo"),
-                serie = ObtenerString(valores, "Serie"),
-                marca = ObtenerString(valores, "Marca"),
-                anio = ObtenerString(valores, "Anio"),
-                registro_fecha = ObtenerString(valores, ColRegistroFecha),
-                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
-                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", ColActualizaFecha),
-                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", ColActualizaUsuario),
-                tomo = ObtenerString(valores, "Tomo"),
-                folio = ObtenerString(valores, "Folio"),
-                notario = ObtenerString(valores, "Notario"),
-                notario_registro_fecha = ObtenerString(valores, "NOTARIO_REGISTRO_FECHA"),
                 color = ObtenerString(valores, "Color"),
                 observaciones = ObtenerString(valores, "Observaciones", "OBSERVACIONES"),
                 chasis_numero = ObtenerString(valores, "CHASIS_NUMERO"),
@@ -717,42 +675,80 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 capacidad_ud_desc = ObtenerString(valores, "CAPACIDAD_UD_DESC"),
                 cilindraje_ud_desc = ObtenerString(valores, "CILINDRAJE_UD_DESC"),
                 titular_nombre = ObtenerString(valores, "Titular_Nombre"),
-                titular_tercero = ObtenerInt(valores, "Titular_Tercero"),
-                pe_indica = ObtenerInt(valores, "PE_INDICA"),
-                pe_id = ObtenerInt(valores, "PE_Id"),
-                pe_numero = ObtenerString(valores, "PE_NUMERO"),
-                pe_prima = ObtenerDecimal(valores, "PE_PRIMA"),
-                pe_frecuencia = ObtenerString(valores, "PE_FRECUENCIA"),
-                pe_inicio = ObtenerString(valores, "PE_INICIO"),
-                pe_vence = ObtenerString(valores, "PE_VENCE"),
-                pe_activa = ObtenerInt(valores, "PE_ACTIVA"),
-                pe_cobertura = ObtenerString(valores, "PE_Cobertura"),
-                pe_notas = ObtenerString(valores, "PE_NOTAS"),
-                aseguradora_desc = ObtenerString(valores, "ASEGURADORA_DESC"),
-                id_aseguradora = ObtenerInt(valores, "ID_ASEGURADORA"),
-                a_cedula = ObtenerString(valores, "A_CEDULA"),
-                a_tipo_id = ObtenerString(valores, "A_TIPO_ID", "A_TIPOID", "TIPO_ID"),
-                a_tipo_id_desc = ObtenerString(valores, "A_TIPO_ID_DESC", "A_TIPOID_DESC", "TIPO_ID_DESC"),
-                a_apellido_1 = ObtenerString(valores, "A_APELLIDO_1"),
-                a_apellido_2 = ObtenerString(valores, "A_APELLIDO_2"),
-                a_nombre = ObtenerString(valores, "A_NOMBRE"),
-                a_email = ObtenerString(valores, "A_EMAIL"),
-                a_tel_movil = ObtenerString(valores, "A_TEL_MOVIL"),
-                a_nacimiento = ObtenerString(valores, "A_NACIMIENTO"),
-                a_sexo = ObtenerString(valores, "A_SEXO"),
-                a_parentesco_desc = ObtenerString(valores, "A_PARENTESCO_DESC"),
-                a_cod_parentesco = ObtenerString(valores, "A_COD_PARENTESCO"),
-                pe_vencida = ObtenerInt(valores, "PE_VENCIDA")
+                titular_tercero = ObtenerInt(valores, "Titular_Tercero")
             };
 
-            if (detalle.pe_indica == 1)
-            {
-                detalle.pe_status = detalle.pe_vencida == 1
-                    ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
-                    : "Utiliza PÃ³liza Externa!";
-            }
+            CompletarPrendaBase(detalle, valores);
+            CompletarPolizaExterna(detalle, valores);
+            AsignarEstadoPoliza(detalle);
 
             return detalle;
+        }
+
+        private static void CompletarPrendaBase(CrPrendaListaData prenda, IDictionary<string, object> valores)
+        {
+            prenda.prenda_id = ObtenerLong(valores, ColPrendaId);
+            prenda.tipo_prenda = ObtenerString(valores, "Tipo_Prenda");
+            prenda.tipo_prenda_desc = ObtenerString(valores, "Tipo_Prenda_Desc", "PrendaDesc");
+            prenda.avaluo = ObtenerDecimal(valores, "Avaluo");
+            prenda.porc_cobertura = ObtenerDecimal(valores, "Porc_Cobertura");
+            prenda.cobertura = ObtenerDecimal(valores, "Cobertura");
+            prenda.descripcion = ObtenerString(valores, "Descripcion");
+            prenda.id_principal = ObtenerString(valores, "ID_PRINCIPAL");
+            prenda.id_provisional = ObtenerString(valores, "ID_PROVISIONAL");
+            prenda.modelo = ObtenerString(valores, "Modelo");
+            prenda.serie = ObtenerString(valores, "Serie");
+            prenda.marca = ObtenerString(valores, "Marca");
+            prenda.anio = ObtenerString(valores, "Anio");
+            prenda.registro_fecha = ObtenerString(valores, ColRegistroFecha);
+            prenda.registro_usuario = ObtenerString(valores, ColRegistroUsuario);
+            prenda.actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", ColActualizaFecha);
+            prenda.actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", ColActualizaUsuario);
+            prenda.tomo = ObtenerString(valores, "Tomo");
+            prenda.folio = ObtenerString(valores, "Folio");
+            prenda.notario = ObtenerString(valores, "Notario");
+            prenda.notario_registro_fecha = ObtenerString(valores, "NOTARIO_REGISTRO_FECHA");
+        }
+
+        private static void CompletarPolizaExterna(CrPrendaDetalleData detalle, IDictionary<string, object> valores)
+        {
+            detalle.pe_indica = ObtenerInt(valores, "PE_INDICA", "PolizaIndica", "POLIZA_INDICA");
+            detalle.pe_id = ObtenerInt(valores, "PE_Id", "PE_ID");
+            detalle.pe_numero = ObtenerString(valores, "PE_NUMERO");
+            detalle.pe_prima = ObtenerDecimal(valores, "PE_PRIMA");
+            detalle.pe_frecuencia = ObtenerString(valores, "PE_FRECUENCIA");
+            detalle.pe_inicio = ObtenerString(valores, "PE_INICIO");
+            detalle.pe_vence = ObtenerString(valores, "PE_VENCE");
+            detalle.pe_activa = ObtenerInt(valores, "PE_ACTIVA");
+            detalle.pe_cobertura = ObtenerString(valores, "PE_Cobertura", "PE_COBERTURA");
+            detalle.pe_notas = ObtenerString(valores, "PE_NOTAS");
+            detalle.aseguradora_desc = ObtenerString(valores, "ASEGURADORA_DESC");
+            detalle.id_aseguradora = ObtenerInt(valores, "ID_ASEGURADORA");
+            detalle.a_cedula = ObtenerString(valores, "A_CEDULA");
+            detalle.a_tipo_id = ObtenerString(valores, "A_TIPO_ID", "A_TIPOID", "TIPO_ID");
+            detalle.a_tipo_id_desc = ObtenerString(valores, "A_TIPO_ID_DESC", "A_TIPOID_DESC", "TIPO_ID_DESC");
+            detalle.a_apellido_1 = ObtenerString(valores, "A_APELLIDO_1");
+            detalle.a_apellido_2 = ObtenerString(valores, "A_APELLIDO_2");
+            detalle.a_nombre = ObtenerString(valores, "A_NOMBRE");
+            detalle.a_email = ObtenerString(valores, "A_EMAIL");
+            detalle.a_tel_movil = ObtenerString(valores, "A_TEL_MOVIL");
+            detalle.a_nacimiento = ObtenerString(valores, "A_NACIMIENTO");
+            detalle.a_sexo = ObtenerString(valores, "A_SEXO");
+            detalle.a_parentesco_desc = ObtenerString(valores, "A_PARENTESCO_DESC");
+            detalle.a_cod_parentesco = ObtenerString(valores, "A_COD_PARENTESCO");
+            detalle.pe_vencida = ObtenerInt(valores, "PE_VENCIDA");
+        }
+
+        private static void AsignarEstadoPoliza(CrPrendaDetalleData detalle)
+        {
+            if (detalle.pe_indica != 1)
+            {
+                return;
+            }
+
+            detalle.pe_status = detalle.pe_vencida == 1
+                ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
+                : "Utiliza PÃ³liza Externa!";
         }
 
         private static CrPrendaAnotacionData MapearAnotacion(dynamic row)
@@ -839,46 +835,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static CrPrendaDetalleData MapearPolizaExternaDetalle(dynamic row)
         {
             var valores = CrearDiccionario(row);
-            var detalle = new CrPrendaDetalleData
-            {
-                pe_indica = ObtenerInt(valores, "PE_INDICA", "PolizaIndica", "POLIZA_INDICA"),
-                pe_id = ObtenerInt(valores, "PE_Id", "PE_ID"),
-                pe_numero = ObtenerString(valores, "PE_NUMERO"),
-                pe_prima = ObtenerDecimal(valores, "PE_PRIMA"),
-                pe_frecuencia = ObtenerString(valores, "PE_FRECUENCIA"),
-                pe_inicio = ObtenerString(valores, "PE_INICIO"),
-                pe_vence = ObtenerString(valores, "PE_VENCE"),
-                pe_activa = ObtenerInt(valores, "PE_ACTIVA"),
-                pe_cobertura = ObtenerString(valores, "PE_Cobertura", "PE_COBERTURA"),
-                pe_notas = ObtenerString(valores, "PE_NOTAS"),
-                aseguradora_desc = ObtenerString(valores, "ASEGURADORA_DESC"),
-                id_aseguradora = ObtenerInt(valores, "ID_ASEGURADORA"),
-                a_cedula = ObtenerString(valores, "A_CEDULA"),
-                a_tipo_id = ObtenerString(valores, "A_TIPO_ID", "A_TIPOID", "TIPO_ID"),
-                a_tipo_id_desc = ObtenerString(valores, "A_TIPO_ID_DESC", "A_TIPOID_DESC", "TIPO_ID_DESC"),
-                a_apellido_1 = ObtenerString(valores, "A_APELLIDO_1"),
-                a_apellido_2 = ObtenerString(valores, "A_APELLIDO_2"),
-                a_nombre = ObtenerString(valores, "A_NOMBRE"),
-                a_email = ObtenerString(valores, "A_EMAIL"),
-                a_tel_movil = ObtenerString(valores, "A_TEL_MOVIL"),
-                a_nacimiento = ObtenerString(valores, "A_NACIMIENTO"),
-                a_sexo = ObtenerString(valores, "A_SEXO"),
-                a_parentesco_desc = ObtenerString(valores, "A_PARENTESCO_DESC"),
-                a_cod_parentesco = ObtenerString(valores, "A_COD_PARENTESCO"),
-                pe_vencida = ObtenerInt(valores, "PE_VENCIDA")
-            };
+            var detalle = new CrPrendaDetalleData();
+
+            CompletarPolizaExterna(detalle, valores);
 
             if (detalle.pe_indica == 0 && detalle.pe_id > 0)
             {
                 detalle.pe_indica = 1;
             }
 
-            if (detalle.pe_indica == 1)
-            {
-                detalle.pe_status = detalle.pe_vencida == 1
-                    ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
-                    : "Utiliza PÃ³liza Externa!";
-            }
+            AsignarEstadoPoliza(detalle);
 
             return detalle;
         }
