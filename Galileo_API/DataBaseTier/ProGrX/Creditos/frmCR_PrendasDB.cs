@@ -850,15 +850,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static int ObtenerInt(IDictionary<string, object> valores, params string[] llaves)
         {
-            foreach (var llave in llaves)
-            {
-                if (valores.TryGetValue(llave, out var valor) && valor != null)
-                {
-                    return Convert.ToInt32(valor);
-                }
-            }
-
-            return 0;
+            return llaves
+                .Where(llave => valores.TryGetValue(llave, out var valor) && valor != null)
+                .Select(llave => Convert.ToInt32(valores[llave]))
+                .FirstOrDefault();
         }
 
         private static decimal ObtenerDecimal(IDictionary<string, object> valores, string llave)
