@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -277,12 +278,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         tipoId = data.tipoId
                     });
 
+                var bitacora = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId}";
+                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario!);
+
                 _Security_MainDB.Bitacora
                      (new BitacoraInsertarDto
                      {
                          EmpresaId = CodEmpresa,
                          Usuario = data.usuario!,
-                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId}",
+                         DetalleMovimiento = bitacora,
                          Movimiento = "RECLASIFICACION - WEB",
                          Modulo = vModulo
                      });

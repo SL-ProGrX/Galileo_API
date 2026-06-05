@@ -23,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// Obtiene la lista principal de tipos de salidas de excedentes.
         /// Respeta la homologación de columnas del VB6.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesTiposSalidasDto>> Patrimonio_frmAH_ExcedentesTiposSalidas_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesTiposSalidasDto>> Ah_ExcedentesTiposSalidas_Lista(int codEmpresa)
         {
             const string sql = @"
 select
@@ -49,7 +49,7 @@ order by activa desc, cod_salida;";
         /// <summary>
         /// Obtiene la lista de planes para el lookup equivalente al F4 del VB6.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesTiposSalidasPlanDto>> Patrimonio_frmAH_ExcedentesTiposSalidas_Planes_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesTiposSalidasPlanDto>> Ah_ExcedentesTiposSalidas_Planes_Lista(int codEmpresa)
         {
             const string sql = @"
 select
@@ -69,7 +69,7 @@ order by descripcion;";
         /// <summary>
         /// Obtiene la lista de bancos para el lookup equivalente al F4 del VB6.
         /// </summary>
-        public ErrorDto<List<FrmAhExcedentesTiposSalidasBancoDto>> Patrimonio_frmAH_ExcedentesTiposSalidas_Bancos_Lista(int codEmpresa)
+        public ErrorDto<List<FrmAhExcedentesTiposSalidasBancoDto>> Ah_ExcedentesTiposSalidas_Bancos_Lista(int codEmpresa)
         {
             const string sql = @"
 select
@@ -86,32 +86,32 @@ order by descripcion;";
         /// <summary>
         /// Inserta un tipo de salida nuevo.
         /// </summary>
-        public ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Patrimonio_frmAH_ExcedentesTiposSalidas_Insertar(
+        public ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Ah_ExcedentesTiposSalidas_Insertar(
             int codEmpresa,
             FrmAhExcedentesTiposSalidasGuardarRequest request)
         {
-            return Patrimonio_frmAH_ExcedentesTiposSalidas_Guardar(codEmpresa, request, true);
+            return Ah_ExcedentesTiposSalidas_Guardar(codEmpresa, request, true);
         }
 
         /// <summary>
         /// Actualiza un tipo de salida existente.
         /// </summary>
-        public ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Patrimonio_frmAH_ExcedentesTiposSalidas_Actualizar(
+        public ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Ah_ExcedentesTiposSalidas_Actualizar(
             int codEmpresa,
             FrmAhExcedentesTiposSalidasGuardarRequest request)
         {
-            return Patrimonio_frmAH_ExcedentesTiposSalidas_Guardar(codEmpresa, request, false);
+            return Ah_ExcedentesTiposSalidas_Guardar(codEmpresa, request, false);
         }
 
         /// <summary>
         /// Elimina un tipo de salida por código.
         /// </summary>
-        public ErrorDto<bool> Patrimonio_frmAH_ExcedentesTiposSalidas_Eliminar(
+        public ErrorDto<bool> Ah_ExcedentesTiposSalidas_Eliminar(
             int codEmpresa,
             string codSalida,
             string usuario)
         {
-            var codSalidaNormalizado = Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarCodigo(codSalida);
+            var codSalidaNormalizado = Ah_ExcedentesTiposSalidas_NormalizarCodigo(codSalida);
             var usuarioNormalizado = (usuario ?? string.Empty).Trim();
 
             if (string.IsNullOrWhiteSpace(codSalidaNormalizado))
@@ -132,14 +132,14 @@ where cod_salida = @cod_salida;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                if (!Patrimonio_frmAH_ExcedentesTiposSalidas_Existe(conn, codSalidaNormalizado))
+                if (!Ah_ExcedentesTiposSalidas_Existe(conn, codSalidaNormalizado))
                 {
                     return DbHelper.CreateErrorResponse("El tipo de salida indicado no existe.", -2, false);
                 }
 
                 conn.Execute(sqlDelete, new { cod_salida = codSalidaNormalizado });
 
-                Patrimonio_frmAH_ExcedentesTiposSalidas_RegistrarBitacora(
+                Ah_ExcedentesTiposSalidas_RegistrarBitacora(
                     codEmpresa,
                     usuarioNormalizado,
                     "Elimina - WEB",
@@ -153,22 +153,22 @@ where cod_salida = @cod_salida;";
             }
         }
 
-        private ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Patrimonio_frmAH_ExcedentesTiposSalidas_Guardar(
+        private ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse> Ah_ExcedentesTiposSalidas_Guardar(
             int codEmpresa,
             FrmAhExcedentesTiposSalidasGuardarRequest? request,
             bool esNuevo)
         {
             var response = new FrmAhExcedentesTiposSalidasGuardarResponse();
-            var validacion = Patrimonio_frmAH_ExcedentesTiposSalidas_ValidarGuardarRequest(request, response);
+            var validacion = Ah_ExcedentesTiposSalidas_ValidarGuardarRequest(request, response);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var codSalidaNormalizado = Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarCodigo(request!.cod_salida);
+            var codSalidaNormalizado = Ah_ExcedentesTiposSalidas_NormalizarCodigo(request!.cod_salida);
             var descripcionNormalizada = (request.descripcion ?? string.Empty).Trim();
-            var tipoAplicacionNormalizado = Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarTipoAplicacion(request.tipo_aplicacion);
+            var tipoAplicacionNormalizado = Ah_ExcedentesTiposSalidas_NormalizarTipoAplicacion(request.tipo_aplicacion);
             var destinoPlanNormalizado = (request.destino_plan ?? string.Empty).Trim();
             var usuarioNormalizado = (request.usuario ?? string.Empty).Trim();
 
@@ -223,7 +223,7 @@ where cod_salida = @cod_salida;";
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                var existe = Patrimonio_frmAH_ExcedentesTiposSalidas_Existe(conn, codSalidaNormalizado);
+                var existe = Ah_ExcedentesTiposSalidas_Existe(conn, codSalidaNormalizado);
 
                 if (esNuevo && existe)
                 {
@@ -261,7 +261,7 @@ where cod_salida = @cod_salida;";
                 var accion = esNuevo ? "Registra" : "Modifica";
                 var movimiento = esNuevo ? "Registra - WEB" : "Modifica - WEB";
 
-                Patrimonio_frmAH_ExcedentesTiposSalidas_RegistrarBitacora(
+                Ah_ExcedentesTiposSalidas_RegistrarBitacora(
                     codEmpresa,
                     usuarioNormalizado,
                     movimiento,
@@ -279,7 +279,7 @@ where cod_salida = @cod_salida;";
             }
         }
 
-        private static ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse>? Patrimonio_frmAH_ExcedentesTiposSalidas_ValidarGuardarRequest(
+        private static ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse>? Ah_ExcedentesTiposSalidas_ValidarGuardarRequest(
             FrmAhExcedentesTiposSalidasGuardarRequest? request,
             FrmAhExcedentesTiposSalidasGuardarResponse response)
         {
@@ -298,7 +298,7 @@ where cod_salida = @cod_salida;";
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, response);
             }
 
-            var tipoAplicacion = Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarTipoAplicacion(request.tipo_aplicacion);
+            var tipoAplicacion = Ah_ExcedentesTiposSalidas_NormalizarTipoAplicacion(request.tipo_aplicacion);
             if (string.IsNullOrWhiteSpace(tipoAplicacion))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el tipo de aplicación.", -2, response);
@@ -317,7 +317,7 @@ where cod_salida = @cod_salida;";
             return null;
         }
 
-        private static bool Patrimonio_frmAH_ExcedentesTiposSalidas_Existe(SqlConnection conn, string codSalida)
+        private static bool Ah_ExcedentesTiposSalidas_Existe(SqlConnection conn, string codSalida)
         {
             const string sql = @"
 select cast(count(1) as int)
@@ -327,12 +327,12 @@ where cod_salida = @cod_salida;";
             return conn.QueryFirstOrDefault<int>(sql, new { cod_salida = codSalida }) > 0;
         }
 
-        private static string Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarCodigo(string? codSalida)
+        private static string Ah_ExcedentesTiposSalidas_NormalizarCodigo(string? codSalida)
         {
             return (codSalida ?? string.Empty).Trim().ToUpperInvariant();
         }
 
-        private static string Patrimonio_frmAH_ExcedentesTiposSalidas_NormalizarTipoAplicacion(string? tipoAplicacion)
+        private static string Ah_ExcedentesTiposSalidas_NormalizarTipoAplicacion(string? tipoAplicacion)
         {
             var valor = (tipoAplicacion ?? string.Empty).Trim().ToUpperInvariant();
             return string.IsNullOrWhiteSpace(valor)
@@ -340,7 +340,7 @@ where cod_salida = @cod_salida;";
                 : valor[..1];
         }
 
-        private void Patrimonio_frmAH_ExcedentesTiposSalidas_RegistrarBitacora(
+        private void Ah_ExcedentesTiposSalidas_RegistrarBitacora(
             int codEmpresa,
             string usuario,
             string movimiento,

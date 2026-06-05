@@ -18,54 +18,54 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhAutorizadoresBL(config);
         }
 
-        [HttpGet("Patrimonio_frmAH_Autorizadores_Obtener")]
-        public ActionResult<ErrorDto<AutorizadorePatrimonioDto>> Patrimonio_frmAH_Autorizadores_Obtener(
+        [HttpGet("Ah_Autorizadores_Obtener")]
+        public ActionResult<ErrorDto<AutorizadorePatrimonioDto>> Ah_Autorizadores_Obtener(
             [FromQuery] int codEmpresa,
             [FromQuery] string usuario)
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_Obtener(codEmpresa, usuario);
+            return _bl.Ah_Autorizadores_Obtener(codEmpresa, usuario);
         }
 
-        [HttpGet("Patrimonio_frmAH_Autorizadores_ConsultaAscDesc")]
-        public ActionResult<ErrorDto<string>> Patrimonio_frmAH_Autorizadores_ConsultaAscDesc(
+        [HttpGet("Ah_Autorizadores_ConsultaAscDesc")]
+        public ActionResult<ErrorDto<string>> Ah_Autorizadores_ConsultaAscDesc(
             int codEmpresa,
             string? usuario = "A",
             string? tipo = "ASC")
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_ConsultaAscDesc(codEmpresa, usuario ?? "A", tipo ?? "ASC");
+            return _bl.Ah_Autorizadores_ConsultaAscDesc(codEmpresa, usuario ?? "A", tipo ?? "ASC");
         }
 
-        [HttpGet("Patrimonio_frmAH_Autorizadores_Lista")]
-        public ActionResult<ErrorDto<List<AutorizadorePatrimonioDto>>> Patrimonio_frmAH_Autorizadores_Lista(
+        [HttpGet("Ah_Autorizadores_Lista")]
+        public ActionResult<ErrorDto<List<AutorizadorePatrimonioDto>>> Ah_Autorizadores_Lista(
             [FromQuery] int codEmpresa,
             [FromQuery] string? filtro = "")
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_Lista(codEmpresa, filtro);
+            return _bl.Ah_Autorizadores_Lista(codEmpresa, filtro);
         }
 
-        [HttpPost("Patrimonio_frmAH_Autorizadores_Insertar")]
-        public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Patrimonio_frmAH_Autorizadores_Insertar(
+        [HttpPost("Ah_Autorizadores_Insertar")]
+        public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Ah_Autorizadores_Insertar(
             [FromQuery] int codEmpresa,
             [FromBody] FrmAhAutorizadoresGuardarRequest request)
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_Insertar(codEmpresa, request);
+            return _bl.Ah_Autorizadores_Insertar(codEmpresa, request);
         }
 
-        [HttpPut("Patrimonio_frmAH_Autorizadores_Actualizar")]
-        public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Patrimonio_frmAH_Autorizadores_Actualizar(
+        [HttpPut("Ah_Autorizadores_Actualizar")]
+        public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Ah_Autorizadores_Actualizar(
             [FromQuery] int codEmpresa,
             [FromBody] FrmAhAutorizadoresGuardarRequest request)
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_Actualizar(codEmpresa, request);
+            return _bl.Ah_Autorizadores_Actualizar(codEmpresa, request);
         }
 
-        [HttpDelete("Patrimonio_frmAH_Autorizadores_Eliminar")]
-        public ActionResult<ErrorDto<bool>> Patrimonio_frmAH_Autorizadores_Eliminar(
+        [HttpDelete("Ah_Autorizadores_Eliminar")]
+        public ActionResult<ErrorDto<bool>> Ah_Autorizadores_Eliminar(
             [FromQuery] int codEmpresa,
             [FromQuery] string usuario,
             [FromQuery] string registroUsuario)
         {
-            return _bl.Patrimonio_frmAH_Autorizadores_Eliminar(codEmpresa, usuario, registroUsuario);
+            return _bl.Ah_Autorizadores_Eliminar(codEmpresa, usuario, registroUsuario);
         }
     }
 }

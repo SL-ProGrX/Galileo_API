@@ -18,20 +18,20 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhAutorizacionesBL(config);
         }
 
-        [HttpGet("Patrimonio_frmAH_Autorizaciones_Obtener")]
-        public ActionResult<ErrorDto<List<PatGestionesPatrimonio>>> Patrimonio_frmAH_Autorizaciones_Obtener(
+        [HttpGet("Ah_Autorizaciones_Obtener")]
+        public ActionResult<ErrorDto<List<PatGestionesPatrimonio>>> Ah_Autorizaciones_Obtener(
             [FromQuery] int codEmpresa,
             string filtros)
         {
-            return _bl.Patrimonio_frmAH_Autorizaciones_Obtener(codEmpresa, filtros);
+            return _bl.Ah_Autorizaciones_Obtener(codEmpresa, filtros);
         }
 
-        [HttpPost("Patrimonio_frmAH_Autorizaciones_Procesar")]
-        public ActionResult<ErrorDto<FrmAhAutorizacionesProcesarResponse>> Patrimonio_frmAH_Autorizaciones_Procesar(
+        [HttpPost("Ah_Autorizaciones_Procesar")]
+        public ActionResult<ErrorDto<FrmAhAutorizacionesProcesarResponse>> Ah_Autorizaciones_Procesar(
             [FromQuery] int codEmpresa,
             [FromBody] FrmAhAutorizacionesProcesarRequest request)
         {
-            return _bl.Patrimonio_frmAH_Autorizaciones_Procesar(codEmpresa, request);
+            return _bl.Ah_Autorizaciones_Procesar(codEmpresa, request);
         }
     }
 }

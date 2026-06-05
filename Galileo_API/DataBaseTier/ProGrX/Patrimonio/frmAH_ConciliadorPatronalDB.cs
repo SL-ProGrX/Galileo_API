@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <summary>
         /// Obtiene las instituciones activas para el proceso de conciliación patronal.
         /// </summary>
-        public ErrorDto<List<DropDownListaGenericaModel>> Patrimonio_frmAH_ConciliadorPatronal_Instituciones_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Ah_ConciliadorPatronal_Instituciones_Obtener(
             int codEmpresa)
         {
             const string sql = @"
@@ -51,19 +51,19 @@ order by COD_INSTITUCION;";
         /// <summary>
         /// Normaliza y valida los registros cargados desde Excel para poblar el histórico.
         /// </summary>
-        public static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Patrimonio_frmAH_ConciliadorPatronal_Cargado(
+        public static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>> Ah_ConciliadorPatronal_Cargado(
             int codEmpresa,
             FrmAhConciliadorPatronalCargadoRequest? request)
         {
             var result = new List<FrmAhConciliadorPatronalHistoricoDto>();
-            var validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarRequestBase(request, result);
+            var validacion = Ah_ConciliadorPatronal_ValidarRequestBase(request, result);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var registrosNormalizados = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+            var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
                 request!.registros,
                 out var validacionRegistros);
 
@@ -78,19 +78,19 @@ order by COD_INSTITUCION;";
         /// <summary>
         /// Aplica el proceso de conciliación patronal ejecutando el SP por cada fila cargada.
         /// </summary>
-        public ErrorDto<FrmAhConciliadorPatronalAplicarResponse> Patrimonio_frmAH_ConciliadorPatronal_Aplicar(
+        public ErrorDto<FrmAhConciliadorPatronalAplicarResponse> Ah_ConciliadorPatronal_Aplicar(
             int codEmpresa,
             FrmAhConciliadorPatronalCargadoRequest? request)
         {
             var response = new FrmAhConciliadorPatronalAplicarResponse();
-            var validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarRequestBase(request, response);
+            var validacion = Ah_ConciliadorPatronal_ValidarRequestBase(request, response);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var registrosNormalizados = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+            var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
                 request!.registros,
                 out var validacionRegistrosAplicar,
                 response);
@@ -162,19 +162,19 @@ exec spPAT_Concilia_Patronal_Registro
         /// <summary>
         /// Obtiene los casos de conciliación comparando el lote cargado contra la base actual.
         /// </summary>
-        public ErrorDto<List<FrmAhConciliadorPatronalConciliacionDto>> Patrimonio_frmAH_ConciliadorPatronal_Conciliacion_Obtener(
+        public ErrorDto<List<FrmAhConciliadorPatronalConciliacionDto>> Ah_ConciliadorPatronal_Conciliacion_Obtener(
             int codEmpresa,
             FrmAhConciliadorPatronalConciliacionRequest? request)
         {
             var result = new List<FrmAhConciliadorPatronalConciliacionDto>();
-            var validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarConciliacionRequest(request, result);
+            var validacion = Ah_ConciliadorPatronal_ValidarConciliacionRequest(request, result);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var registrosNormalizados = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+            var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
                 request!.registros,
                 out var validacionRegistros);
 
@@ -227,7 +227,7 @@ from (
 ) x
 order by x.nombre, x.identificacion;";
 
-            return Patrimonio_frmAH_ConciliadorPatronal_EjecutarConsultaConTablaTemporal(
+            return Ah_ConciliadorPatronal_EjecutarConsultaConTablaTemporal(
     codEmpresa,
     registrosNormalizados,
     conn => conn.Query<FrmAhConciliadorPatronalConciliacionDto>(
@@ -238,19 +238,19 @@ order by x.nombre, x.identificacion;";
         /// <summary>
         /// Obtiene los resultados comparando el lote cargado contra la base actual.
         /// </summary>
-        public ErrorDto<List<FrmAhConciliadorPatronalResultadoDto>> Patrimonio_frmAH_ConciliadorPatronal_Resultados_Obtener(
+        public ErrorDto<List<FrmAhConciliadorPatronalResultadoDto>> Ah_ConciliadorPatronal_Resultados_Obtener(
             int codEmpresa,
             FrmAhConciliadorPatronalResultadosRequest? request)
         {
             var result = new List<FrmAhConciliadorPatronalResultadoDto>();
-            var validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarResultadosRequest(request, result);
+            var validacion = Ah_ConciliadorPatronal_ValidarResultadosRequest(request, result);
 
             if (validacion != null)
             {
                 return validacion;
             }
 
-            var registrosNormalizados = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+            var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
                 request!.registros,
                 out var validacionRegistros);
 
@@ -288,7 +288,7 @@ where
     or cast(isnull(c.patronal, 0) - isnull(b.aporte_registrado, 0) as decimal(18,2)) <> 0
 order by nombre, identificacion;";
 
-            return Patrimonio_frmAH_ConciliadorPatronal_EjecutarConsultaConTablaTemporal(
+            return Ah_ConciliadorPatronal_EjecutarConsultaConTablaTemporal(
      codEmpresa,
      registrosNormalizados,
      conn => conn.Query<FrmAhConciliadorPatronalResultadoDto>(
@@ -297,7 +297,7 @@ order by nombre, identificacion;";
 
         }
 
-        private ErrorDto<List<T>> Patrimonio_frmAH_ConciliadorPatronal_EjecutarConsultaConTablaTemporal<T>(
+        private ErrorDto<List<T>> Ah_ConciliadorPatronal_EjecutarConsultaConTablaTemporal<T>(
     int codEmpresa,
     List<FrmAhConciliadorPatronalHistoricoDto> registros,
     Func<SqlConnection, List<T>> ejecutarConsulta)
@@ -307,8 +307,8 @@ order by nombre, identificacion;";
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
 
-                Patrimonio_frmAH_ConciliadorPatronal_CrearTablaTemporal(conn);
-                Patrimonio_frmAH_ConciliadorPatronal_CargarTablaTemporal(conn, registros);
+                Ah_ConciliadorPatronal_CrearTablaTemporal(conn);
+                Ah_ConciliadorPatronal_CargarTablaTemporal(conn, registros);
 
                 var data = ejecutarConsulta(conn);
                 return DbHelper.CreateOkResponse(data);
@@ -319,7 +319,7 @@ order by nombre, identificacion;";
             }
         }
 
-        private static void Patrimonio_frmAH_ConciliadorPatronal_CrearTablaTemporal(SqlConnection conn)
+        private static void Ah_ConciliadorPatronal_CrearTablaTemporal(SqlConnection conn)
         {
             const string sql = @"
 create table #PatronalCarga
@@ -333,7 +333,7 @@ create table #PatronalCarga
             conn.Execute(sql);
         }
 
-        private static void Patrimonio_frmAH_ConciliadorPatronal_CargarTablaTemporal(
+        private static void Ah_ConciliadorPatronal_CargarTablaTemporal(
             SqlConnection conn,
             List<FrmAhConciliadorPatronalHistoricoDto> registros)
         {
@@ -357,7 +357,7 @@ create table #PatronalCarga
             bulk.WriteToServer(tabla);
         }
 
-        private static ErrorDto<T>? Patrimonio_frmAH_ConciliadorPatronal_ValidarRequestBase<T>(
+        private static ErrorDto<T>? Ah_ConciliadorPatronal_ValidarRequestBase<T>(
             FrmAhConciliadorPatronalCargadoRequest? request,
             T defaultResult)
         {
@@ -385,7 +385,7 @@ create table #PatronalCarga
                     defaultResult);
             }
 
-            request.tipo_analisis = Patrimonio_frmAH_ConciliadorPatronal_NormalizarTipoAnalisis(request.tipo_analisis);
+            request.tipo_analisis = Ah_ConciliadorPatronal_NormalizarTipoAnalisis(request.tipo_analisis);
             if (string.IsNullOrWhiteSpace(request.tipo_analisis))
             {
                 return DbHelper.CreateErrorResponse(
@@ -394,7 +394,7 @@ create table #PatronalCarga
                     defaultResult);
             }
 
-            request.registro_usuario = Patrimonio_frmAH_ConciliadorPatronal_NormalizarTexto(request.registro_usuario, 50);
+            request.registro_usuario = Ah_ConciliadorPatronal_NormalizarTexto(request.registro_usuario, 50);
             if (string.IsNullOrWhiteSpace(request.registro_usuario))
             {
                 return DbHelper.CreateErrorResponse(
@@ -414,7 +414,7 @@ create table #PatronalCarga
             return null;
         }
 
-        private static ErrorDto<T>? Patrimonio_frmAH_ConciliadorPatronal_ValidarConciliacionRequest<T>(
+        private static ErrorDto<T>? Ah_ConciliadorPatronal_ValidarConciliacionRequest<T>(
             FrmAhConciliadorPatronalConciliacionRequest? request,
             T defaultResult)
         {
@@ -442,7 +442,7 @@ create table #PatronalCarga
                     defaultResult);
             }
 
-            request.localizados = Patrimonio_frmAH_ConciliadorPatronal_NormalizarLocalizados(request.localizados);
+            request.localizados = Ah_ConciliadorPatronal_NormalizarLocalizados(request.localizados);
             if (string.IsNullOrWhiteSpace(request.localizados))
             {
                 return DbHelper.CreateErrorResponse(
@@ -462,7 +462,7 @@ create table #PatronalCarga
             return null;
         }
 
-        private static ErrorDto<T>? Patrimonio_frmAH_ConciliadorPatronal_ValidarResultadosRequest<T>(
+        private static ErrorDto<T>? Ah_ConciliadorPatronal_ValidarResultadosRequest<T>(
             FrmAhConciliadorPatronalResultadosRequest? request,
             T defaultResult)
         {
@@ -490,7 +490,7 @@ create table #PatronalCarga
                     defaultResult);
             }
 
-            request.resultado = Patrimonio_frmAH_ConciliadorPatronal_NormalizarResultado(request.resultado);
+            request.resultado = Ah_ConciliadorPatronal_NormalizarResultado(request.resultado);
             if (string.IsNullOrWhiteSpace(request.resultado))
             {
                 return DbHelper.CreateErrorResponse(
@@ -510,7 +510,7 @@ create table #PatronalCarga
             return null;
         }
 
-        private static List<FrmAhConciliadorPatronalHistoricoDto> Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+        private static List<FrmAhConciliadorPatronalHistoricoDto> Ah_ConciliadorPatronal_NormalizarRegistros(
             List<FrmAhConciliadorPatronalHistoricoDto> registros,
             out ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>? validacion)
         {
@@ -520,9 +520,9 @@ create table #PatronalCarga
             for (int i = 0; i < registros.Count; i++)
             {
                 var fila = registros[i] ?? new FrmAhConciliadorPatronalHistoricoDto();
-                var registro = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistro(fila);
+                var registro = Ah_ConciliadorPatronal_NormalizarRegistro(fila);
 
-                validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarRegistro(
+                validacion = Ah_ConciliadorPatronal_ValidarRegistro(
                     registro,
                     i + 1);
 
@@ -537,7 +537,7 @@ create table #PatronalCarga
             return normalizados;
         }
 
-        private static List<FrmAhConciliadorPatronalHistoricoDto> Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistros(
+        private static List<FrmAhConciliadorPatronalHistoricoDto> Ah_ConciliadorPatronal_NormalizarRegistros(
             List<FrmAhConciliadorPatronalHistoricoDto> registros,
             out ErrorDto<FrmAhConciliadorPatronalAplicarResponse>? validacion,
             FrmAhConciliadorPatronalAplicarResponse response)
@@ -548,9 +548,9 @@ create table #PatronalCarga
             for (int i = 0; i < registros.Count; i++)
             {
                 var fila = registros[i] ?? new FrmAhConciliadorPatronalHistoricoDto();
-                var registro = Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistro(fila);
+                var registro = Ah_ConciliadorPatronal_NormalizarRegistro(fila);
 
-                validacion = Patrimonio_frmAH_ConciliadorPatronal_ValidarRegistroAplicar(
+                validacion = Ah_ConciliadorPatronal_ValidarRegistroAplicar(
                     registro,
                     i + 1,
                     response);
@@ -566,19 +566,19 @@ create table #PatronalCarga
             return normalizados;
         }
 
-        private static FrmAhConciliadorPatronalHistoricoDto Patrimonio_frmAH_ConciliadorPatronal_NormalizarRegistro(
+        private static FrmAhConciliadorPatronalHistoricoDto Ah_ConciliadorPatronal_NormalizarRegistro(
             FrmAhConciliadorPatronalHistoricoDto fila)
         {
             return new FrmAhConciliadorPatronalHistoricoDto
             {
-                identificacion = Patrimonio_frmAH_ConciliadorPatronal_NormalizarTexto(fila.identificacion, 50),
-                id_alterna = Patrimonio_frmAH_ConciliadorPatronal_NormalizarTexto(fila.id_alterna, 50),
-                nombre = Patrimonio_frmAH_ConciliadorPatronal_NormalizarTexto(fila.nombre, 250),
+                identificacion = Ah_ConciliadorPatronal_NormalizarTexto(fila.identificacion, 50),
+                id_alterna = Ah_ConciliadorPatronal_NormalizarTexto(fila.id_alterna, 50),
+                nombre = Ah_ConciliadorPatronal_NormalizarTexto(fila.nombre, 250),
                 patronal = decimal.Round(fila.patronal, 2, MidpointRounding.AwayFromZero)
             };
         }
 
-        private static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>? Patrimonio_frmAH_ConciliadorPatronal_ValidarRegistro(
+        private static ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>? Ah_ConciliadorPatronal_ValidarRegistro(
             FrmAhConciliadorPatronalHistoricoDto registro,
             int numeroFila)
         {
@@ -609,7 +609,7 @@ create table #PatronalCarga
             return null;
         }
 
-        private static ErrorDto<FrmAhConciliadorPatronalAplicarResponse>? Patrimonio_frmAH_ConciliadorPatronal_ValidarRegistroAplicar(
+        private static ErrorDto<FrmAhConciliadorPatronalAplicarResponse>? Ah_ConciliadorPatronal_ValidarRegistroAplicar(
             FrmAhConciliadorPatronalHistoricoDto registro,
             int numeroFila,
             FrmAhConciliadorPatronalAplicarResponse response)
@@ -641,25 +641,25 @@ create table #PatronalCarga
             return null;
         }
 
-        private static string Patrimonio_frmAH_ConciliadorPatronal_NormalizarTipoAnalisis(string? tipoAnalisis)
+        private static string Ah_ConciliadorPatronal_NormalizarTipoAnalisis(string? tipoAnalisis)
         {
             var tipo = (tipoAnalisis ?? string.Empty).Trim().ToUpperInvariant();
             return tipo is "R" or "T" ? tipo : string.Empty;
         }
 
-        private static string Patrimonio_frmAH_ConciliadorPatronal_NormalizarLocalizados(string? localizados)
+        private static string Ah_ConciliadorPatronal_NormalizarLocalizados(string? localizados)
         {
             var valor = (localizados ?? string.Empty).Trim().ToUpperInvariant();
             return valor is "P" or "B" ? valor : string.Empty;
         }
 
-        private static string Patrimonio_frmAH_ConciliadorPatronal_NormalizarResultado(string? resultado)
+        private static string Ah_ConciliadorPatronal_NormalizarResultado(string? resultado)
         {
             var valor = (resultado ?? string.Empty).Trim().ToUpperInvariant();
             return valor is "C" or "D" ? valor : string.Empty;
         }
 
-        private static string Patrimonio_frmAH_ConciliadorPatronal_NormalizarTexto(string? valor, int maximo)
+        private static string Ah_ConciliadorPatronal_NormalizarTexto(string? valor, int maximo)
         {
             var texto = (valor ?? string.Empty).Trim();
             return texto.Length <= maximo ? texto : texto[..maximo];
