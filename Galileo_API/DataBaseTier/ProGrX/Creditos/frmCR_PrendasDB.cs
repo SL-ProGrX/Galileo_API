@@ -1,12 +1,20 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Credito;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public class FrmCrPrendasDb
     {
+        private const string ColPrendaId = "Prenda_Id";
+        private const string ColRegistroFecha = "Registro_fecha";
+        private const string ColRegistroUsuario = "Registro_Usuario";
+        private const string ColActualizaFecha = "ACTUALIZA_FECHA";
+        private const string ColActualizaUsuario = "ACTUALIZA_USUARIO";
+        private const string FormatoFechaSql = "yyyy-MM-dd";
+
         private readonly PortalDB _portalDb;
 
         public FrmCrPrendasDb(IConfiguration config)
@@ -19,6 +27,62 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             _portalDb = portalDb;
         }
 
+        private ErrorDto<List<T>> EjecutarListaMapeada<T>(
+            int codEmpresa,
+            string sql,
+            object parametros,
+            Func<dynamic, T> mapear)
+        {
+            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
+                connection.Query(sql, parametros)
+                    .Select(mapear)
+                    .ToList());
+
+            return new ErrorDto<List<T>>
+            {
+                Code = resp.Code,
+                Description = resp.Description,
+                Result = resp.Result ?? new List<T>()
+            };
+        }
+
+        private ErrorDto<T> EjecutarUnicoMapeado<T>(
+            int codEmpresa,
+            string sql,
+            object parametros,
+            Func<dynamic, T> mapear)
+            where T : new()
+        {
+            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
+                connection.Query(sql, parametros)
+                    .Select(mapear)
+                    .FirstOrDefault());
+
+            return new ErrorDto<T>
+            {
+                Code = resp.Code,
+                Description = resp.Description,
+                Result = resp.Result ?? new T()
+            };
+        }
+
+        private ErrorDto<string> EjecutarRespuestaSp(
+            int codEmpresa,
+            string sql,
+            object parametros,
+            string mensajeOk)
+        {
+            var resp = EjecutarPrimerResultado(codEmpresa, sql, parametros);
+
+            return RespuestaSp(resp, mensajeOk);
+        }
+
+        private dynamic EjecutarPrimerResultado(int codEmpresa, string sql, object parametros)
+        {
+            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
+                connection.Query(sql, parametros).FirstOrDefault());
+        }
+
         public ErrorDto<List<CrPrendaListaData>> CrPrendas_Obtener(
             int codEmpresa,
             long operacion,
@@ -26,34 +90,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             const string sql = "exec spCrd_Prendas_List @Operacion, @Expediente;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { Operacion = operacion, Expediente = expediente ?? string.Empty })
-                    .Select(MapearPrendaLista)
-                    .ToList());
-
-            return new ErrorDto<List<CrPrendaListaData>>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new List<CrPrendaListaData>()
-            };
+            return EjecutarListaMapeada(
+                codEmpresa,
+                sql,
+                new { Operacion = operacion, Expediente = expediente ?? string.Empty },
+                MapearPrendaLista);
         }
 
         public ErrorDto<CrPrendaDetalleData> CrPrendas_ObtenerDetalle(int codEmpresa, long prendaId)
         {
             const string sql = "exec spCrd_Prendas_Garantia_Load @PrendaId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { PrendaId = prendaId })
-                    .Select(MapearPrendaDetalle)
-                    .FirstOrDefault());
-
-            return new ErrorDto<CrPrendaDetalleData>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new CrPrendaDetalleData()
-            };
+            return EjecutarUnicoMapeado(codEmpresa, sql, new { PrendaId = prendaId }, MapearPrendaDetalle);
         }
 
         public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_TiposActivos(int codEmpresa)
@@ -128,51 +176,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             const string sql = "exec spCrd_Prendas_Anotaciones_Lista @PrendaId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { PrendaId = prendaId })
-                    .Select(MapearAnotacion)
-                    .ToList());
-
-            return new ErrorDto<List<CrPrendaAnotacionData>>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new List<CrPrendaAnotacionData>()
-            };
+            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearAnotacion);
         }
 
         public ErrorDto<List<CrPrendaPolizaCoberturaData>> CrPrendas_PolizasList(int codEmpresa, string tipoPrenda, long prendaId)
         {
             const string sql = "exec spCrd_Prendas_Polizas_List @TipoPrenda, @PrendaId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { TipoPrenda = tipoPrenda ?? string.Empty, PrendaId = prendaId })
-                    .Select(MapearPolizaCobertura)
-                    .ToList());
-
-            return new ErrorDto<List<CrPrendaPolizaCoberturaData>>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new List<CrPrendaPolizaCoberturaData>()
-            };
+            return EjecutarListaMapeada(
+                codEmpresa,
+                sql,
+                new { TipoPrenda = tipoPrenda ?? string.Empty, PrendaId = prendaId },
+                MapearPolizaCobertura);
         }
 
         public ErrorDto<List<CrPrendaHistoricoAvaluoData>> CrPrendas_AvaluosLista(int codEmpresa, long prendaId)
         {
             const string sql = "exec spCrd_Prendas_Avaluos_Lista @PrendaId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { PrendaId = prendaId })
-                    .Select(MapearHistoricoAvaluo)
-                    .ToList());
-
-            return new ErrorDto<List<CrPrendaHistoricoAvaluoData>>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new List<CrPrendaHistoricoAvaluoData>()
-            };
+            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearHistoricoAvaluo);
         }
 
         public ErrorDto<string> CrPrendas_AvaluoGuardar(int codEmpresa, CrPrendaAvaluoGuardarRequest request)
@@ -194,8 +216,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @PolizaRstPlan,
                     @Usuario;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new
+            return EjecutarRespuestaSp(
+                codEmpresa,
+                sql,
+                new
                 {
                     PrendaId = request.prenda_id,
                     Inspector = request.inspector ?? string.Empty,
@@ -211,9 +235,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     PolizaFormaliza = request.poliza_formaliza,
                     PolizaRstPlan = request.poliza_rst_plan,
                     Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
-                }).FirstOrDefault());
-
-            return RespuestaSp(resp, "Avalúo registrado satisfactoriamente!");
+                },
+                "AvalÃºo registrado satisfactoriamente!");
         }
 
         public ErrorDto<string> CrPrendas_NotariadoGuardar(int codEmpresa, CrPrendaNotariadoGuardarRequest request)
@@ -226,32 +249,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Folio,
                     @Usuario;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new
+            return EjecutarRespuestaSp(
+                codEmpresa,
+                sql,
+                new
                 {
                     PrendaId = request.prenda_id,
                     Notario = request.notario ?? string.Empty,
                     Tomo = request.tomo ?? string.Empty,
                     Folio = request.folio ?? string.Empty,
                     Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
-                }).FirstOrDefault());
-
-            return RespuestaSp(resp, "Información de notariado actualizada satisfactoriamente!");
+                },
+                "InformaciÃ³n de notariado actualizada satisfactoriamente!");
         }
 
         public ErrorDto<string> CrPrendas_NotaGuardar(int codEmpresa, CrPrendaNotaGuardarRequest request)
         {
             const string sql = "exec spCrd_Prendas_Anotaciones_Add @PrendaId, @Nota, @Usuario;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new
+            return EjecutarRespuestaSp(
+                codEmpresa,
+                sql,
+                new
                 {
                     PrendaId = request.prenda_id,
                     Nota = request.nota ?? string.Empty,
                     Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
-                }).FirstOrDefault());
-
-            return RespuestaSp(resp, "Registro de Notas de Prenda realizado Satisfactoriamente!");
+                },
+                "Registro de Notas de Prenda realizado Satisfactoriamente!");
         }
 
         public ErrorDto<string> CrPrendas_PolizaCoberturaGuardar(
@@ -277,7 +302,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 Code = resp.Code,
                 Description = resp.Description,
-                Result = resp.Code == -1 ? string.Empty : "Cobertura de póliza actualizada correctamente."
+                Result = resp.Code == -1 ? string.Empty : "Cobertura de pÃ³liza actualizada correctamente."
             };
         }
 
@@ -285,34 +310,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             const string sql = "exec spCrd_Prendas_Polizas_Externas_Lista @PrendaId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { PrendaId = prendaId })
-                    .Select(MapearHistoricoPoliza)
-                    .ToList());
-
-            return new ErrorDto<List<CrPrendaHistoricoPolizaData>>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new List<CrPrendaHistoricoPolizaData>()
-            };
+            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearHistoricoPoliza);
         }
 
         public ErrorDto<CrPrendaDetalleData> CrPrendas_PolizaExternaLoad(int codEmpresa, long prendaId, int polizaExtId)
         {
             const string sql = "exec spCrd_Prendas_Polizas_Externas_Load @PrendaId, @PolizaExtId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new { PrendaId = prendaId, PolizaExtId = polizaExtId })
-                    .Select(MapearPolizaExternaDetalle)
-                    .FirstOrDefault());
-
-            return new ErrorDto<CrPrendaDetalleData>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Result ?? new CrPrendaDetalleData()
-            };
+            return EjecutarUnicoMapeado(
+                codEmpresa,
+                sql,
+                new { PrendaId = prendaId, PolizaExtId = polizaExtId },
+                MapearPolizaExternaDetalle);
         }
 
         public ErrorDto<long> CrPrendas_Guardar(int codEmpresa, CrPrendaGuardarCompletaRequest request)
@@ -363,54 +372,109 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @TitularNombre,
                     @Inspector;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new
-                {
-                    PrendaId = request.prenda_id,
-                    Operacion = request.operacion,
-                    Expediente = request.expediente ?? string.Empty,
-                    Identificacion = request.identificacion ?? string.Empty,
-                    TipoPrenda = request.tipo_prenda ?? string.Empty,
-                    IdPrincipal = request.id_principal ?? string.Empty,
-                    IdProvisional = request.id_provisional ?? string.Empty,
-                    Descripcion = request.descripcion ?? string.Empty,
-                    Observaciones = request.observaciones ?? string.Empty,
-                    Marca = request.marca ?? string.Empty,
-                    Modelo = request.modelo ?? string.Empty,
-                    Serie = request.serie ?? string.Empty,
-                    Color = request.color ?? string.Empty,
-                    Anio = ObtenerEnteroSeguro(request.anio),
-                    Peso = request.es_vehicular ? request.peso : 0,
-                    Capacidad = request.es_vehicular ? request.capacidad : 0,
-                    Cilindraje = request.es_vehicular ? request.cilindraje : 0,
-                    Puertas = request.es_vehicular ? request.puertas_numero : 0,
-                    Chasis = request.es_vehicular ? request.chasis_numero ?? string.Empty : string.Empty,
-                    Vin = request.es_vehicular ? request.vin_motor ?? string.Empty : string.Empty,
-                    IdMarca = request.es_vehicular ? request.id_marca : 0,
-                    IdModelo = request.es_vehicular ? request.id_modelo : 0,
-                    IdPresentacion = request.es_vehicular ? request.id_presentacion : 0,
-                    IdCombustible = request.es_vehicular ? request.id_combustible : 0,
-                    IdComercio = request.es_vehicular ? request.id_comercio : 0,
-                    PesoUd = request.peso_ud ?? string.Empty,
-                    CapacidadUd = request.capacidad_ud ?? string.Empty,
-                    CilindrajeUd = request.cilindraje_ud ?? string.Empty,
-                    Avaluo = request.avaluo,
-                    PorcCobertura = request.porc_cobertura,
-                    Cobertura = request.cobertura,
-                    AvaluoNotas = request.avaluo_observacion ?? string.Empty,
-                    FechaInspeccion = ConvertirFechaSql(request.avaluo_inspeccion),
-                    ValorFiscal = request.valor_fiscal,
-                    ValorTotal = request.avaluo,
-                    MontoExtras = request.monto_extras,
-                    PolizaFactor = request.poliza_factor,
-                    PolizaFormaliza = request.poliza_mnt_formalizacion,
-                    PolizaRstPlan = request.poliza_rst_plan,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
-                    TitularTercero = request.titular_tercero,
-                    TitularNombre = request.titular_nombre ?? string.Empty,
-                    Inspector = request.avaluo_inspector ?? string.Empty
-                }).FirstOrDefault());
+            var parametros = CrearParametrosGuardar(request);
+            var resp = EjecutarPrimerResultado(codEmpresa, sql, parametros);
 
+            return CrearRespuestaGuardar(resp);
+        }
+
+        private static object CrearParametrosGuardar(CrPrendaGuardarCompletaRequest request)
+        {
+            var vehiculo = CrearParametrosVehiculo(request);
+
+            return new
+            {
+                PrendaId = request.prenda_id,
+                Operacion = request.operacion,
+                Expediente = request.expediente ?? string.Empty,
+                Identificacion = request.identificacion ?? string.Empty,
+                TipoPrenda = request.tipo_prenda ?? string.Empty,
+                IdPrincipal = request.id_principal ?? string.Empty,
+                IdProvisional = request.id_provisional ?? string.Empty,
+                Descripcion = request.descripcion ?? string.Empty,
+                Observaciones = request.observaciones ?? string.Empty,
+                Marca = request.marca ?? string.Empty,
+                Modelo = request.modelo ?? string.Empty,
+                Serie = request.serie ?? string.Empty,
+                Color = request.color ?? string.Empty,
+                vehiculo.Anio,
+                vehiculo.Peso,
+                vehiculo.Capacidad,
+                vehiculo.Cilindraje,
+                vehiculo.Puertas,
+                vehiculo.Chasis,
+                vehiculo.Vin,
+                vehiculo.IdMarca,
+                vehiculo.IdModelo,
+                vehiculo.IdPresentacion,
+                vehiculo.IdCombustible,
+                vehiculo.IdComercio,
+                PesoUd = request.peso_ud ?? string.Empty,
+                CapacidadUd = request.capacidad_ud ?? string.Empty,
+                CilindrajeUd = request.cilindraje_ud ?? string.Empty,
+                Avaluo = request.avaluo,
+                PorcCobertura = request.porc_cobertura,
+                Cobertura = request.cobertura,
+                AvaluoNotas = request.avaluo_observacion ?? string.Empty,
+                FechaInspeccion = ConvertirFechaSql(request.avaluo_inspeccion),
+                ValorFiscal = request.valor_fiscal,
+                ValorTotal = request.avaluo,
+                MontoExtras = request.monto_extras,
+                PolizaFactor = request.poliza_factor,
+                PolizaFormaliza = request.poliza_mnt_formalizacion,
+                PolizaRstPlan = request.poliza_rst_plan,
+                Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                TitularTercero = request.titular_tercero,
+                TitularNombre = request.titular_nombre ?? string.Empty,
+                Inspector = request.avaluo_inspector ?? string.Empty
+            };
+        }
+
+        private sealed class ParametrosVehiculoGuardar
+        {
+            public int Anio { get; set; } = 0;
+            public decimal Peso { get; set; } = 0;
+            public decimal Capacidad { get; set; } = 0;
+            public decimal Cilindraje { get; set; } = 0;
+            public decimal Puertas { get; set; } = 0;
+            public string Chasis { get; set; } = string.Empty;
+            public string Vin { get; set; } = string.Empty;
+            public int IdMarca { get; set; } = 0;
+            public int IdModelo { get; set; } = 0;
+            public int IdPresentacion { get; set; } = 0;
+            public int IdCombustible { get; set; } = 0;
+            public int IdComercio { get; set; } = 0;
+        }
+
+        private static ParametrosVehiculoGuardar CrearParametrosVehiculo(CrPrendaGuardarCompletaRequest request)
+        {
+            if (!request.es_vehicular)
+            {
+                return new ParametrosVehiculoGuardar
+                {
+                    Anio = ObtenerEnteroSeguro(request.anio)
+                };
+            }
+
+            return new ParametrosVehiculoGuardar
+            {
+                Anio = ObtenerEnteroSeguro(request.anio),
+                Peso = request.peso,
+                Capacidad = request.capacidad,
+                Cilindraje = request.cilindraje,
+                Puertas = request.puertas_numero,
+                Chasis = request.chasis_numero ?? string.Empty,
+                Vin = request.vin_motor ?? string.Empty,
+                IdMarca = request.id_marca,
+                IdModelo = request.id_modelo,
+                IdPresentacion = request.id_presentacion,
+                IdCombustible = request.id_combustible,
+                IdComercio = request.id_comercio
+            };
+        }
+
+        private static ErrorDto<long> CrearRespuestaGuardar(dynamic resp)
+        {
             if (resp.Code == -1)
             {
                 return new ErrorDto<long>
@@ -426,12 +490,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto<long>
                 {
                     Code = -1,
-                    Description = "No se obtuvo respuesta al guardar la garantía prendaria.",
+                    Description = "No se obtuvo respuesta al guardar la garantia prendaria.",
                     Result = 0
                 };
             }
 
-            var valores = CrearDiccionario(resp.Result);
+            return CrearRespuestaGuardarExitosa(resp.Result);
+        }
+
+        private static ErrorDto<long> CrearRespuestaGuardarExitosa(dynamic result)
+        {
+            var valores = CrearDiccionario(result);
             var pass = ObtenerInt(valores, "Pass");
             var mensaje = ObtenerString(valores, "Mensaje");
             var movimiento = ObtenerString(valores, "Movimiento");
@@ -477,8 +546,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Parentesco,
                     @PolizaExtId;";
 
-            var resp = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(sql, new
+            var resp = EjecutarPrimerResultado(
+                codEmpresa,
+                sql,
+                new
                 {
                     PrendaId = request.prenda_id,
                     AseguradoraId = request.id_aseguradora,
@@ -503,7 +574,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Telefono = request.a_tel_movil ?? string.Empty,
                     Parentesco = request.a_cod_parentesco ?? string.Empty,
                     PolizaExtId = request.pe_id
-                }).FirstOrDefault());
+                });
 
             if (resp.Code == -1)
             {
@@ -520,7 +591,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto<string>
                 {
                     Code = -1,
-                    Description = "No se obtuvo respuesta al registrar la póliza externa.",
+                    Description = "No se obtuvo respuesta al registrar la pÃ³liza externa.",
                     Result = string.Empty
                 };
             }
@@ -535,7 +606,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 Code = pass == 1 ? 0 : -1,
                 Description = pass == 1 ? string.Empty : mensaje,
                 Result = pass == 1
-                    ? $"Póliza Externa {movimiento} satisfactoriamente!"
+                    ? $"PÃ³liza Externa {movimiento} satisfactoriamente!"
                     : mensaje
             };
         }
@@ -561,7 +632,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return new CrPrendaListaData
             {
-                prenda_id = ObtenerLong(valores, "Prenda_Id"),
+                prenda_id = ObtenerLong(valores, ColPrendaId),
                 tipo_prenda = ObtenerString(valores, "Tipo_Prenda"),
                 tipo_prenda_desc = ObtenerString(valores, "Tipo_Prenda_Desc", "PrendaDesc"),
                 avaluo = ObtenerDecimal(valores, "Avaluo"),
@@ -574,10 +645,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 serie = ObtenerString(valores, "Serie"),
                 marca = ObtenerString(valores, "Marca"),
                 anio = ObtenerString(valores, "Anio"),
-                registro_fecha = ObtenerString(valores, "Registro_fecha"),
-                registro_usuario = ObtenerString(valores, "Registro_Usuario"),
-                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", "ACTUALIZA_FECHA"),
-                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", "ACTUALIZA_USUARIO"),
+                registro_fecha = ObtenerString(valores, ColRegistroFecha),
+                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
+                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", ColActualizaFecha),
+                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", ColActualizaUsuario),
                 tomo = ObtenerString(valores, "Tomo"),
                 folio = ObtenerString(valores, "Folio"),
                 notario = ObtenerString(valores, "Notario"),
@@ -590,7 +661,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var valores = CrearDiccionario(row);
             var detalle = new CrPrendaDetalleData
             {
-                prenda_id = ObtenerLong(valores, "Prenda_Id"),
+                prenda_id = ObtenerLong(valores, ColPrendaId),
                 tipo_prenda = ObtenerString(valores, "Tipo_Prenda"),
                 tipo_prenda_desc = ObtenerString(valores, "Tipo_Prenda_Desc"),
                 avaluo = ObtenerDecimal(valores, "Avaluo"),
@@ -603,10 +674,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 serie = ObtenerString(valores, "Serie"),
                 marca = ObtenerString(valores, "Marca"),
                 anio = ObtenerString(valores, "Anio"),
-                registro_fecha = ObtenerString(valores, "Registro_fecha"),
-                registro_usuario = ObtenerString(valores, "Registro_Usuario"),
-                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", "ACTUALIZA_FECHA"),
-                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", "ACTUALIZA_USUARIO"),
+                registro_fecha = ObtenerString(valores, ColRegistroFecha),
+                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
+                actualiza_fecha = ObtenerString(valores, "Actualiza_Fecha", ColActualizaFecha),
+                actualiza_usuario = ObtenerString(valores, "Actualiza_Usuario", ColActualizaUsuario),
                 tomo = ObtenerString(valores, "Tomo"),
                 folio = ObtenerString(valores, "Folio"),
                 notario = ObtenerString(valores, "Notario"),
@@ -677,8 +748,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (detalle.pe_indica == 1)
             {
                 detalle.pe_status = detalle.pe_vencida == 1
-                    ? "Utiliza Póliza Externa y se encuentra Vencida!"
-                    : "Utiliza Póliza Externa!";
+                    ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
+                    : "Utiliza PÃ³liza Externa!";
             }
 
             return detalle;
@@ -692,8 +763,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 id_nota = ObtenerLong(valores, "ID_NOTA"),
                 notas = ObtenerString(valores, "Notas"),
-                registro_fecha = ObtenerString(valores, "Registro_fecha"),
-                registro_usuario = ObtenerString(valores, "Registro_Usuario")
+                registro_fecha = ObtenerString(valores, ColRegistroFecha),
+                registro_usuario = ObtenerString(valores, ColRegistroUsuario)
             };
         }
 
@@ -716,16 +787,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new CrPrendaHistoricoAvaluoData
             {
                 id_avaluo_h = ObtenerLong(valores, "ID_AVALUO_H"),
-                prenda_id = ObtenerLong(valores, "Prenda_Id"),
+                prenda_id = ObtenerLong(valores, ColPrendaId),
                 inspector = ObtenerString(valores, "INSPECTOR"),
                 fecha_inspeccion = ObtenerString(valores, "FECHA_INSPECCION"),
                 valor_mercado = ObtenerDecimal(valores, "VALOR_MERCADO"),
                 valor_fiscal = ObtenerDecimal(valores, "VALOR_FISCAL"),
                 observaciones = ObtenerString(valores, "OBSERVACIONES"),
-                registro_fecha = ObtenerString(valores, "Registro_fecha"),
-                registro_usuario = ObtenerString(valores, "Registro_Usuario"),
-                actualiza_fecha = ObtenerString(valores, "ACTUALIZA_FECHA"),
-                actualiza_usuario = ObtenerString(valores, "ACTUALIZA_USUARIO")
+                registro_fecha = ObtenerString(valores, ColRegistroFecha),
+                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
+                actualiza_fecha = ObtenerString(valores, ColActualizaFecha),
+                actualiza_usuario = ObtenerString(valores, ColActualizaUsuario)
             };
         }
 
@@ -736,7 +807,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new CrPrendaHistoricoPolizaData
             {
                 pe_id = ObtenerInt(valores, "PE_Id"),
-                prenda_id = ObtenerLong(valores, "Prenda_Id"),
+                prenda_id = ObtenerLong(valores, ColPrendaId),
                 pe_numero = ObtenerString(valores, "PE_NUMERO"),
                 pe_activa = ObtenerInt(valores, "PE_ACTIVA"),
                 pe_frecuencia = ObtenerString(valores, "PE_FRECUENCIA"),
@@ -758,10 +829,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 a_email = ObtenerString(valores, "A_EMAIL"),
                 pe_cobertura = ObtenerString(valores, "PE_Cobertura"),
                 pe_notas = ObtenerString(valores, "PE_NOTAS"),
-                registro_fecha = ObtenerString(valores, "Registro_fecha"),
-                registro_usuario = ObtenerString(valores, "Registro_Usuario"),
-                actualiza_fecha = ObtenerString(valores, "ACTUALIZA_FECHA"),
-                actualiza_usuario = ObtenerString(valores, "ACTUALIZA_USUARIO")
+                registro_fecha = ObtenerString(valores, ColRegistroFecha),
+                registro_usuario = ObtenerString(valores, ColRegistroUsuario),
+                actualiza_fecha = ObtenerString(valores, ColActualizaFecha),
+                actualiza_usuario = ObtenerString(valores, ColActualizaUsuario)
             };
         }
 
@@ -805,8 +876,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (detalle.pe_indica == 1)
             {
                 detalle.pe_status = detalle.pe_vencida == 1
-                    ? "Utiliza Póliza Externa y se encuentra Vencida!"
-                    : "Utiliza Póliza Externa!";
+                    ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
+                    : "Utiliza PÃ³liza Externa!";
             }
 
             return detalle;
@@ -904,12 +975,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 && int.TryParse(partes[1], out var mes)
                 && int.TryParse(partes[2], out var anio))
             {
-                return new DateTime(anio, mes, dia).ToString("yyyy-MM-dd");
+                return new DateTime(anio, mes, dia, 0, 0, 0, DateTimeKind.Unspecified)
+                    .ToString(FormatoFechaSql, CultureInfo.InvariantCulture);
             }
 
-            return DateTime.TryParse(texto, out var fecha)
-                ? fecha.ToString("yyyy-MM-dd")
+            return DateTime.TryParse(
+                texto,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var fecha)
+                ? fecha.ToString(FormatoFechaSql, CultureInfo.InvariantCulture)
                 : texto;
         }
     }
 }
+

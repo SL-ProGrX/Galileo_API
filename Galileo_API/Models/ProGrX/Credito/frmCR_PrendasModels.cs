@@ -160,10 +160,6 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string usuario { get; set; } = string.Empty;
     }
 
-    public class CrPrendasGuardarRequest : CrPrendasEliminarRequest
-    {
-    }
-
     public class CrPrendaPolizaExternaGuardarRequest
     {
         public long prenda_id { get; set; } = 0;
