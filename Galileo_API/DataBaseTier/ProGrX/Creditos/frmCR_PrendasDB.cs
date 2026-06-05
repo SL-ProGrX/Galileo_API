@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Credito;
 using System.Globalization;
+using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -838,15 +839,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static string ObtenerString(IDictionary<string, object> valores, params string[] llaves)
         {
-            foreach (var llave in llaves)
-            {
-                if (valores.TryGetValue(llave, out var valor) && valor != null)
-                {
-                    return Convert.ToString(valor)?.Trim() ?? string.Empty;
-                }
-            }
-
-            return string.Empty;
+            return llaves
+                .Where(llave => valores.TryGetValue(llave, out var valor) && valor != null)
+                .Select(llave => Convert.ToString(valores[llave])?.Trim())
+                .FirstOrDefault() ?? string.Empty;
         }
 
         private static long ObtenerLong(IDictionary<string, object> valores, string llave)
