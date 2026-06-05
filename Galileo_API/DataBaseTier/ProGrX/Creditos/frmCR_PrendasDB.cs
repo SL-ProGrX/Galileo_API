@@ -234,7 +234,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     PolizaFactor = request.poliza_factor,
                     PolizaFormaliza = request.poliza_formaliza,
                     PolizaRstPlan = request.poliza_rst_plan,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
+                    Usuario = UsuarioNormalizado(request.usuario)
                 },
                 "AvalÃºo registrado satisfactoriamente!");
         }
@@ -258,7 +258,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Notario = request.notario ?? string.Empty,
                     Tomo = request.tomo ?? string.Empty,
                     Folio = request.folio ?? string.Empty,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
+                    Usuario = UsuarioNormalizado(request.usuario)
                 },
                 "InformaciÃ³n de notariado actualizada satisfactoriamente!");
         }
@@ -274,7 +274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     PrendaId = request.prenda_id,
                     Nota = request.nota ?? string.Empty,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
+                    Usuario = UsuarioNormalizado(request.usuario)
                 },
                 "Registro de Notas de Prenda realizado Satisfactoriamente!");
         }
@@ -294,7 +294,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 PrendaId = request.prenda_id,
                 CoberturaId = request.id_prenda_cobertura,
-                Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                Usuario = UsuarioNormalizado(request.usuario),
                 Asignado = request.asignado
             });
 
@@ -423,7 +423,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 PolizaFactor = request.poliza_factor,
                 PolizaFormaliza = request.poliza_mnt_formalizacion,
                 PolizaRstPlan = request.poliza_rst_plan,
-                Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                Usuario = UsuarioNormalizado(request.usuario),
                 TitularTercero = request.titular_tercero,
                 TitularNombre = request.titular_nombre ?? string.Empty,
                 Inspector = request.avaluo_inspector ?? string.Empty
@@ -516,6 +516,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        private static object CrearParametrosPolizaExterna(CrPrendaPolizaExternaGuardarRequest request)
+        {
+            return new
+            {
+                PrendaId = request.prenda_id,
+                AseguradoraId = request.id_aseguradora,
+                NumeroPoliza = request.pe_numero ?? string.Empty,
+                Prima = request.pe_prima,
+                Frecuencia = request.pe_frecuencia ?? string.Empty,
+                Inicio = ConvertirFechaSql(request.pe_inicio),
+                Corte = ConvertirFechaSql(request.pe_vence),
+                Activa = request.pe_activa,
+                PolizaIndica = request.pe_indica,
+                Cobertura = request.pe_cobertura ?? string.Empty,
+                Notas = request.pe_notas ?? string.Empty,
+                Usuario = UsuarioNormalizado(request.usuario),
+                TipoId = ObtenerEnteroSeguro(request.a_tipo_id),
+                Cedula = request.a_cedula ?? string.Empty,
+                Apellido1 = request.a_apellido_1 ?? string.Empty,
+                Apellido2 = request.a_apellido_2 ?? string.Empty,
+                Nombre = request.a_nombre ?? string.Empty,
+                Nacimiento = ConvertirFechaSql(request.a_nacimiento),
+                Sexo = ObtenerInicial(request.a_sexo),
+                Email = request.a_email ?? string.Empty,
+                Telefono = request.a_tel_movil ?? string.Empty,
+                Parentesco = request.a_cod_parentesco ?? string.Empty,
+                PolizaExtId = request.pe_id
+            };
+        }
+
         public ErrorDto<string> CrPrendas_PolizaExternaGuardar(
             int codEmpresa,
             CrPrendaPolizaExternaGuardarRequest request)
@@ -549,66 +579,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var resp = EjecutarPrimerResultado(
                 codEmpresa,
                 sql,
-                new
-                {
-                    PrendaId = request.prenda_id,
-                    AseguradoraId = request.id_aseguradora,
-                    NumeroPoliza = request.pe_numero ?? string.Empty,
-                    Prima = request.pe_prima,
-                    Frecuencia = request.pe_frecuencia ?? string.Empty,
-                    Inicio = ConvertirFechaSql(request.pe_inicio),
-                    Corte = ConvertirFechaSql(request.pe_vence),
-                    Activa = request.pe_activa,
-                    PolizaIndica = request.pe_indica,
-                    Cobertura = request.pe_cobertura ?? string.Empty,
-                    Notas = request.pe_notas ?? string.Empty,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
-                    TipoId = ObtenerEnteroSeguro(request.a_tipo_id),
-                    Cedula = request.a_cedula ?? string.Empty,
-                    Apellido1 = request.a_apellido_1 ?? string.Empty,
-                    Apellido2 = request.a_apellido_2 ?? string.Empty,
-                    Nombre = request.a_nombre ?? string.Empty,
-                    Nacimiento = ConvertirFechaSql(request.a_nacimiento),
-                    Sexo = ObtenerInicial(request.a_sexo),
-                    Email = request.a_email ?? string.Empty,
-                    Telefono = request.a_tel_movil ?? string.Empty,
-                    Parentesco = request.a_cod_parentesco ?? string.Empty,
-                    PolizaExtId = request.pe_id
-                });
+                CrearParametrosPolizaExterna(request));
 
-            if (resp.Code == -1)
-            {
-                return new ErrorDto<string>
-                {
-                    Code = resp.Code,
-                    Description = resp.Description,
-                    Result = string.Empty
-                };
-            }
-
-            if (resp.Result == null)
-            {
-                return new ErrorDto<string>
-                {
-                    Code = -1,
-                    Description = "No se obtuvo respuesta al registrar la pÃ³liza externa.",
-                    Result = string.Empty
-                };
-            }
-
-            var valores = CrearDiccionario(resp.Result);
-            var pass = ObtenerInt(valores, "Pass");
-            var mensaje = ObtenerString(valores, "Mensaje");
-            var movimiento = ObtenerString(valores, "Movimiento");
-
-            return new ErrorDto<string>
-            {
-                Code = pass == 1 ? 0 : -1,
-                Description = pass == 1 ? string.Empty : mensaje,
-                Result = pass == 1
-                    ? $"PÃ³liza Externa {movimiento} satisfactoriamente!"
-                    : mensaje
-            };
+            return CrearRespuestaMovimiento(
+                resp,
+                "No se obtuvo respuesta al registrar la pÃ³liza externa.",
+                new Func<string, string>(movimiento => $"PÃ³liza Externa {movimiento} satisfactoriamente!"));
         }
 
         public ErrorDto CrPrendas_Eliminar(int codEmpresa, CrPrendasEliminarRequest request)
@@ -622,7 +598,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new
                 {
                     PrendaId = request.prenda_id,
-                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant()
+                    Usuario = UsuarioNormalizado(request.usuario)
                 });
         }
 
@@ -751,6 +727,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 : "Utiliza PÃ³liza Externa!";
         }
 
+        private static string NombreCompletoAsegurado(CrPrendaDetalleData detalle)
+        {
+            return string.Join(" ", new[]
+            {
+                detalle.a_apellido_1,
+                detalle.a_apellido_2,
+                detalle.a_nombre
+            }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+
         private static CrPrendaAnotacionData MapearAnotacion(dynamic row)
         {
             var valores = CrearDiccionario(row);
@@ -799,32 +785,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static CrPrendaHistoricoPolizaData MapearHistoricoPoliza(dynamic row)
         {
             var valores = CrearDiccionario(row);
+            var poliza = new CrPrendaDetalleData();
+
+            CompletarPolizaExterna(poliza, valores);
 
             return new CrPrendaHistoricoPolizaData
             {
-                pe_id = ObtenerInt(valores, "PE_Id"),
+                pe_id = poliza.pe_id,
                 prenda_id = ObtenerLong(valores, ColPrendaId),
-                pe_numero = ObtenerString(valores, "PE_NUMERO"),
-                pe_activa = ObtenerInt(valores, "PE_ACTIVA"),
-                pe_frecuencia = ObtenerString(valores, "PE_FRECUENCIA"),
-                pe_prima = ObtenerDecimal(valores, "PE_PRIMA"),
-                pe_inicio = ObtenerString(valores, "PE_INICIO"),
-                pe_vence = ObtenerString(valores, "PE_VENCE"),
-                pe_vencida = ObtenerInt(valores, "PE_VENCIDA"),
-                aseguradora_desc = ObtenerString(valores, "ASEGURADORA_DESC"),
-                id_aseguradora = ObtenerInt(valores, "ID_ASEGURADORA"),
-                a_cedula = ObtenerString(valores, "A_CEDULA"),
-                asegurado = string.Join(" ", new[]
-                {
-                    ObtenerString(valores, "A_APELLIDO_1"),
-                    ObtenerString(valores, "A_APELLIDO_2"),
-                    ObtenerString(valores, "A_NOMBRE")
-                }.Where(x => !string.IsNullOrWhiteSpace(x))),
-                a_parentesco_desc = ObtenerString(valores, "A_PARENTESCO_DESC"),
-                a_tel_movil = ObtenerString(valores, "A_TEL_MOVIL"),
-                a_email = ObtenerString(valores, "A_EMAIL"),
-                pe_cobertura = ObtenerString(valores, "PE_Cobertura"),
-                pe_notas = ObtenerString(valores, "PE_NOTAS"),
+                pe_numero = poliza.pe_numero,
+                pe_activa = poliza.pe_activa,
+                pe_frecuencia = poliza.pe_frecuencia,
+                pe_prima = poliza.pe_prima,
+                pe_inicio = poliza.pe_inicio,
+                pe_vence = poliza.pe_vence,
+                pe_vencida = poliza.pe_vencida,
+                aseguradora_desc = poliza.aseguradora_desc,
+                id_aseguradora = poliza.id_aseguradora,
+                a_cedula = poliza.a_cedula,
+                asegurado = NombreCompletoAsegurado(poliza),
+                a_parentesco_desc = poliza.a_parentesco_desc,
+                a_tel_movil = poliza.a_tel_movil,
+                a_email = poliza.a_email,
+                pe_cobertura = poliza.pe_cobertura,
+                pe_notas = poliza.pe_notas,
                 registro_fecha = ObtenerString(valores, ColRegistroFecha),
                 registro_usuario = ObtenerString(valores, ColRegistroUsuario),
                 actualiza_fecha = ObtenerString(valores, ColActualizaFecha),
@@ -883,6 +867,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static decimal ObtenerDecimal(IDictionary<string, object> valores, string llave)
             => valores.TryGetValue(llave, out var valor) && valor != null ? Convert.ToDecimal(valor) : 0;
+
+        private static string UsuarioNormalizado(string usuario)
+            => (usuario ?? string.Empty).Trim().ToUpperInvariant();
+
+        private static ErrorDto<string> CrearRespuestaMovimiento(
+            dynamic resp,
+            string mensajeSinRespuesta,
+            Func<string, string> crearMensajeExito)
+        {
+            if (resp.Code == -1)
+            {
+                return new ErrorDto<string>
+                {
+                    Code = resp.Code,
+                    Description = resp.Description,
+                    Result = string.Empty
+                };
+            }
+
+            if (resp.Result == null)
+            {
+                return new ErrorDto<string>
+                {
+                    Code = -1,
+                    Description = mensajeSinRespuesta,
+                    Result = string.Empty
+                };
+            }
+
+            var valores = CrearDiccionario(resp.Result);
+            var pass = ObtenerInt(valores, "Pass");
+            var mensaje = ObtenerString(valores, "Mensaje");
+            var movimiento = ObtenerString(valores, "Movimiento");
+
+            return new ErrorDto<string>
+            {
+                Code = pass == 1 ? 0 : -1,
+                Description = pass == 1 ? string.Empty : mensaje,
+                Result = pass == 1 ? crearMensajeExito(movimiento) : mensaje
+            };
+        }
 
         private static ErrorDto<string> RespuestaSp(dynamic resp, string mensajeExito)
         {
