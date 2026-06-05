@@ -4,7 +4,7 @@
     {
         public Nullable<DateTime> fecha_inicio { get; set; }
         public Nullable<DateTime> fecha_corte { get; set; }
-        public int id_banco { get; set; }
+        public int id_banco { get; set; } = 0;
         public Nullable<DateTime> fecha_generacion { get; set; }
         public string usuario { get; set; } = string.Empty;
     }

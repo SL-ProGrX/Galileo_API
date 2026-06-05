@@ -92,7 +92,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDB,
                 CodEmpresa,
-                sql);
+                sql, 
+                new
+                {
+                    CodOperadora,
+                    CodPlan,
+                    Usuario
+                }
+                );
         }
 
         /// <summary>
