@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la lista de cargos adicionales manuales.
+        /// Obtiene la lista de cargos adicionales.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene la operacion activa y los datos visibles en el formulario.
+        /// Obtiene la operacion activa y los datos visibles.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
