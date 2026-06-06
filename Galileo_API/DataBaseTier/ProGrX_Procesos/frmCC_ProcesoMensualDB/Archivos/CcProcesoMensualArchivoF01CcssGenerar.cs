@@ -260,7 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
 
             return Path.Combine(
-                request.Ruta,
+                "C:\\ArchivosGenerados\\",
                 "Planilla",
                 nombreInstitucion,
                 anio);

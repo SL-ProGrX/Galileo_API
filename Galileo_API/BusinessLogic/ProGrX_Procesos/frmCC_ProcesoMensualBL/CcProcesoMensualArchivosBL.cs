@@ -14,14 +14,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
         private readonly CcProcesoMensualEnvioDb _db;
         private readonly PortalDB _portalDb;
-        private readonly string _directorioResultados;
+      
         public CcProcesoMensualArchivosBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
             _generadorArchivos = generadores;
             _db = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
-            _directorioResultados = config["ProcesoMensual:DirectorioResultados"]
-       ?? throw new InvalidOperationException("No está configurado el directorio de resultados.");
+           
         }
 
         public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, CcProcesoMensualGeneraDeduccionesRequest request)
@@ -227,7 +226,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo_Ejecutar(int codEmpresa, CcProcesoMensualGeneraArchivoRequest request)
         {
             using var connection = DbHelper.OpenConnection(  _portalDb, codEmpresa);
-            request.Ruta = _directorioResultados;
+             
 
             connection.Open();
 

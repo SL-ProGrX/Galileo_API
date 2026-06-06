@@ -71,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         {
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
-            var rutaBase = Path.GetFullPath(request.Ruta);
+            var rutaBase = Path.GetFullPath("C:\\ArchivosGenerados\\");
             return Path.Combine(
                rutaBase,
                 CarpetaPlanilla,
