@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         private const string CarpetaPlanilla = "Planilla";
         private const string NombreInstitucionDefault = "SinInstitucion";
         private const string DireccionDerecha = "D";
-
+        public static readonly Encoding Utf8SinBom = new UTF8Encoding(false);
         public static string CrearNombreArchivoEstandar(
             int codInstitucion,
             decimal fechaProceso,
@@ -67,13 +67,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         }
 
         public static string ObtenerRutaPlanilla(
-            CcProcesoMensualGeneraArchivoRequest request)
+            CcProcesoMensualGeneraArchivoRequest request, string directorioBasePermitido)
         {
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
-
+            var rutaBase = Path.GetFullPath(directorioBasePermitido);
             return Path.Combine(
-                request.DirectorioResultados,
+               rutaBase
                 CarpetaPlanilla,
                 nombreInstitucion,
                 anio);

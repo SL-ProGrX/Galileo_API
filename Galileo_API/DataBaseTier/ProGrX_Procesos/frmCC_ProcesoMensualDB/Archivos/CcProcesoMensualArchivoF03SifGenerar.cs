@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string CodigoFormato => "F03";
         protected override string ExtensionArchivo => ".txt";
         protected override string ContentType => ContentTypeText;
-        protected override Encoding EncodingArchivo => new UTF8Encoding(false);
+       protected override Encoding EncodingArchivo => CcProcesoMensualEncodingHelper.Utf8SinBom;
 
         protected override string QueryRegistros => @"
             SELECT

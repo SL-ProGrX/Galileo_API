@@ -15,15 +15,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected abstract string ExtensionArchivo { get; }
         protected abstract string ContentType { get; }
         protected abstract string QueryRegistros { get; }
-
-        protected static readonly Encoding Utf8SinBom = new UTF8Encoding(false);
+         
         protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
 
         public virtual CcProcesoMensualArchivoGeneradoModel GenerarArchivo( IDbConnection connection,CcProcesoMensualGeneraArchivoRequest request)
         {
             var nombreArchivo = CrearNombreArchivo(connection, request);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request,DirectorioResultadosBase);
 
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaDirectorio,nombreArchivo);
 
