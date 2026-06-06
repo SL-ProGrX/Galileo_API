@@ -57,7 +57,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
-            MProcesoMensualDb.SbBitacoraPlanilla(connection, "02.1", request.CodInstitucion, request.FechaProceso, "E", request.Usuario);
+            MProcesoMensualDb.SbBitacoraPlanilla(connection,
+                new CcProcesoMensualBitacoraPlanillaDto
+                {
+                    Transaccion = "02.1",
+                    CodInstitucion = request.CodInstitucion,
+                    Proceso = request.FechaProceso,
+                    Gestion = "E",
+                    Usuario = request.Usuario,                     
+                } );
+             
 
             var planillaEnvio = ObtenerPlanillaEnvio( connection,  request.CodInstitucion);
 
