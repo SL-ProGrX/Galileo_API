@@ -67,13 +67,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         }
 
         public static string ObtenerRutaPlanilla(
-            CcProcesoMensualGeneraArchivoRequest request, string directorioBasePermitido)
+            CcProcesoMensualGeneraArchivoRequest request)
         {
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
-            var rutaBase = Path.GetFullPath(directorioBasePermitido);
+            var rutaBase = Path.GetFullPath(request.Ruta);
             return Path.Combine(
-               rutaBase
+               rutaBase,
                 CarpetaPlanilla,
                 nombreInstitucion,
                 anio);

@@ -45,7 +45,8 @@
             public string NombreInstitucion { get; set; } = string.Empty;
             public string NombreEmpresa { get; set; } = string.Empty;
             public int EmpresaId { get; set; } = 0;
-            public string Unidad { get; set; } = string.Empty; 
+            public string Unidad { get; set; } = string.Empty;
+            public string Ruta { get; set; } = string.Empty;
         }
         public class CcProcesoMensualArchivoConfiguracionModel
         {

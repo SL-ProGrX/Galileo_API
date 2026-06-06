@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 configuracion.CodigoInstDeduc,
                 fechaServidor);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request,DirectorioResultadosBase);
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
 
             _rutaArchivoExcel = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
                 rutaDirectorio,

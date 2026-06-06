@@ -106,7 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 return new CcProcesoMensualArchivoContextoModel
                 {
                     FechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection),
-                    RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, DirectorioResultadosBase),
+                    RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request),
                     CodigoInstitucionArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(
                         request.CodInstitucion,
                         codigoInstDeduc)
@@ -155,9 +155,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 query,
                 new
                 {
-                    FechaProceso = request.FechaProceso,
+                    request.FechaProceso,
                     Movimientos = movimientos,
-                    CodInstitucion = request.CodInstitucion
+                    request.CodInstitucion
                 })];
             }
 
