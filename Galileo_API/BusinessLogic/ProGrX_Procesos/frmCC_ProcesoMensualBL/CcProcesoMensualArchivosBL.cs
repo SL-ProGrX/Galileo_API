@@ -223,7 +223,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             };
         }
 
-        public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo(int codEmpresa, CcProcesoMensualGeneraArchivoRequest request)
+        public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo_Ejecutar(int codEmpresa, CcProcesoMensualGeneraArchivoRequest request)
         {
             using var connection = DbHelper.OpenConnection(  _portalDb, codEmpresa);
 
