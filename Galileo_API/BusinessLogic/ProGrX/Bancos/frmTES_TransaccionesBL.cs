@@ -195,9 +195,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.fxTipoIdentificacion(CodEmpresa, cedula);
         }
 
-        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string? cedula, string? cuenta, string? usuario, int? tipoOrigen = 0)
         {
-            return _db.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario);
+            return _db.TES_TransaccionesValidaCuentaXCedula(CodEmpresa, cedula, cuenta, usuario, tipoOrigen);
         }
     }
 }

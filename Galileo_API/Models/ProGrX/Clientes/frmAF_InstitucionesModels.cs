@@ -33,10 +33,10 @@
 
     public class AfInstitucionesCodigosDto
     {
-        public int cod_institucion { get; set; }
+        public required int cod_institucion { get; set; }
         public string cod_deduccion { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
     }
 
     public class AfInstitucionesCodigosLineasDto
@@ -49,7 +49,7 @@
 
     public class AfInstitucionDto
     {
-        public int cod_institucion { get; set; }
+        public required int cod_institucion { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string? cod_cuenta { get; set; }
         public string? direccion { get; set; }
@@ -64,50 +64,50 @@
         public string? codigo_creditos { get; set; }
         public string? cta_inconsistencia { get; set; }
         public DateTime? pr_fecha_corte { get; set; }
-        public bool pr_genera { get; set; }
-        public bool pr_carga { get; set; }
-        public bool pr_desgloza { get; set; }
-        public bool pr_apaplica { get; set; }
-        public bool pr_apinco { get; set; }
-        public bool pr_apdev { get; set; }
-        public bool pr_craplica { get; set; }
-        public bool pr_crinco { get; set; }
-        public bool pr_crmora { get; set; }
-        public bool pr_cr_aplica_incon { get; set; }
-        public bool fnd_ap_aplica { get; set; }
-        public int fnd_ap_operadora { get; set; }
+        public required bool pr_genera { get; set; }
+        public required bool pr_carga { get; set; }
+        public required bool pr_desgloza { get; set; }
+        public required bool pr_apaplica { get; set; }
+        public required bool pr_apinco { get; set; }
+        public required bool pr_apdev { get; set; }
+        public required bool pr_craplica { get; set; }
+        public required bool pr_crinco { get; set; }
+        public required bool pr_crmora { get; set; }
+        public required bool pr_cr_aplica_incon { get; set; }
+        public required bool fnd_ap_aplica { get; set; }
+        public required int fnd_ap_operadora { get; set; }
         public string? fnd_ap_plan { get; set; }
-        public bool fnd_cr_soaplica { get; set; }
-        public int fnd_cr_sooperadora { get; set; }
+        public required bool fnd_cr_soaplica { get; set; }
+        public required int fnd_cr_sooperadora { get; set; }
         public string? fnd_cr_soplan { get; set; }
-        public bool fnd_cr_exaplica { get; set; }
-        public int fnd_cr_exoperadora { get; set; }
+        public required bool fnd_cr_exaplica { get; set; }
+        public required int fnd_cr_exoperadora { get; set; }
         public string? fnd_cr_explan { get; set; }
         public string? fnd_ap_planp { get; set; }
-        public int ind_cambia_fecpro { get; set; }
+        public required int ind_cambia_fecpro { get; set; }
         public string? codigo_aportes_env { get; set; }
         public string? codigo_creditos_env { get; set; }
-        public bool compara_indicador { get; set; }
+        public required bool compara_indicador { get; set; }
         public string? compara_valor { get; set; }
         public string? planilla_envio { get; set; }
-        public bool activa { get; set; }
+        public required bool activa { get; set; }
         public string? codigo_inst_deduc { get; set; }
-        public int historico_cobro_envio { get; set; }
-        public int tipo_cobro_mora { get; set; }
-        public bool incinclusiones { get; set; }
-        public bool incexclusiones { get; set; }
-        public bool incmodificaciones { get; set; }
-        public bool incmantienen { get; set; }
-        public int transito_planillas_mes { get; set; }
+        public required int historico_cobro_envio { get; set; }
+        public required int tipo_cobro_mora { get; set; }
+        public required bool incinclusiones { get; set; }
+        public required bool incexclusiones { get; set; }
+        public required bool incmodificaciones { get; set; }
+        public required bool incmantienen { get; set; }
+        public required int transito_planillas_mes { get; set; }
         public string? transito_compara { get; set; }
-        public bool mora_cierres { get; set; }
+        public required bool mora_cierres { get; set; }
         public string? cta_fondos { get; set; }
         public string? codigo_creditos_alt { get; set; }
         public string? codigo_creditos_alt_env { get; set; }
         public string? codigo_fondos { get; set; }
         public string? codigo_fondos_env { get; set; }
         public string desc_corta { get; set; } = string.Empty;
-        public bool deduccion_planilla { get; set; }
+        public required bool deduccion_planilla { get; set; }
         public string cod_divisa { get; set; } = string.Empty;
         public string? frecuencia { get; set; }
         public string? ind_aplica_pagos { get; set; }

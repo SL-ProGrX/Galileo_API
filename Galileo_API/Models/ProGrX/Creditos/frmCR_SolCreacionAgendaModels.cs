@@ -7,7 +7,7 @@
         public int? validaActa { get; set; }
         public Nullable<DateTime> fechaInicio { get; set; }
         public Nullable<DateTime> fechaCorte { get; set; }
-        public bool chkPreAnalisis { get; set; }
+        public required bool chkPreAnalisis { get; set; }
     }
 
     public class CrSolCreacionAgendaReporteData

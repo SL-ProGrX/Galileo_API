@@ -408,7 +408,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 documento = $"{documento}  - Cambios: Sí";
             }
 
-            MProcesoMensualDb.SbBitacoraPlanilla(connection, "02", request.CodInstitucion, request.FechaProceso, "E", request.Usuario, documento);
+            
+            MProcesoMensualDb.SbBitacoraPlanilla(connection,
+                                                    new CcProcesoMensualBitacoraPlanillaDto
+                                                    {
+                                                        Transaccion = "02",
+                                                        CodInstitucion = request.CodInstitucion,
+                                                        Proceso = request.FechaProceso,
+                                                        Gestion = "E",
+                                                        Usuario = request.Usuario,
+                                                        Documento = documento
+                                                    });
+
             _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,

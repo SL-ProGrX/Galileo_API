@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security; 
 using System.Data; 
 using static Galileo_API.Models.MProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 {
@@ -38,7 +39,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Movimiento = "Aplica - WEB",
                     Modulo = vModulo
                 });
-                MProcesoMensualDb.SbBitacoraPlanilla(  connection,  "05",codInstitucion,fechaProceso,"R", usuario);   
+
+                MProcesoMensualDb.SbBitacoraPlanilla(connection,
+                                                    new CcProcesoMensualBitacoraPlanillaDto
+                                                    {
+                                                        Transaccion = "05",
+                                                        CodInstitucion = codInstitucion,
+                                                        Proceso = fechaProceso,
+                                                        Gestion = "R",
+                                                        Usuario = usuario
+                                                    });
+                 
                 
 
                 return DbHelper.CreateOkResponse(true);

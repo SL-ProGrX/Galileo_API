@@ -5,6 +5,7 @@ using Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualEstadoModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
 
 namespace Galileo_API.Controllers.ProGrX_Procesos
 {
@@ -41,5 +42,25 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcProcesoMensual_ValidaPaso(codEmpresa, codInstitucion, fechaProceso, transaccion);
         }
 
+        [Authorize]
+        [HttpPost("CcProcesoMensual_CargarDeducciones")]
+        public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CcProcesoMensual_CargarDeducciones( [FromBody] CcProcesoMensualCargaDeduccionesRequest request)
+        {
+            return _bl.CcProcesoMensual_CargarDeducciones(request);
+        }
+
+        [Authorize]
+        [HttpGet("CcProcesoMensual_EstadoActualProceso_Obtener")]
+        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion)
+        {
+            return _bl.CcProcesoMensual_EstadoActualProceso_Obtener(codEmpresa, gInstitucion);
+        }
+
+        [Authorize]
+        [HttpGet("CcProcesoMensual_DatosInstitucion_Obtener")]
+        public ErrorDto<CcProcesoMensualCargaConfigDbModel> CcProcesoMensual_DatosInstitucion_Obtener(int codEmpresa, int codInstitucion)
+        {
+            return _bl.CcProcesoMensual_DatosInstitucion_Obtener(codEmpresa, codInstitucion);
+        }
     }
 }

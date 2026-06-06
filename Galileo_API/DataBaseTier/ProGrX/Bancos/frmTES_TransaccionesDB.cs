@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
@@ -165,7 +166,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
+                /** El SP ya trae el tipo_ced_origen, pero lo recalculamos para asegurarnos que esté correcto y evitar inconsistencias
                 trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                **/
 
                 trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
@@ -589,6 +592,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
+                //Valida cuenta:
+                var valCuenta = TES_TransaccionesValidaCuentaXCedula(CodEmpresa, transaccion.codigo, transaccion.cta_ahorros, usuario, transaccion.tipo_beneficiario);
+                if(valCuenta.Code == -1)
+                {
+                    return valCuenta;
+                }
+
                 NormalizarUsuarioSolicita(usuario, transaccion);
                 AsegurarAsientoDetalle(CodEmpresa, contabilidad, transaccion);
                 PrepararDetalleEnPartes(transaccion);
@@ -1823,14 +1833,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             });
         }
 
-        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string cedula, string cuenta, string usuario)
+        public ErrorDto TES_TransaccionesValidaCuentaXCedula(int CodEmpresa, string? cedula, string? cuenta, string? usuario, int? tipoOrigen = 0)
         {
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
                 //Busco si la cuenta esta registrada para la cedula
-                var query = @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
+                var query = tipoOrigen == 2
+                    ? @"select ID_BANCO as IDENTIFICACION , CTA as CUENTA_INTERNA, COD_DIVISA, DESCRIPCION as NOMBRE FROM TES_BANCOS
+                                    WHERE CTA = @cuenta
+                                    AND ESTADO = 'A'"
+                    : @"select c.IDENTIFICACION , c.CUENTA_INTERNA, c.COD_DIVISA, s.NOMBRE FROM SYS_CUENTAS_BANCARIAS c left JOIN SOCIOS s 
                                      ON s.CEDULA = c.IDENTIFICACION 
                                     WHERE CUENTA_INTERNA = @cuenta
                                     AND ACTIVA = 1";
@@ -1840,21 +1853,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if(cuentaInfo == null)
                 {
                     //Valido la cedula por Kindo
-                    var servicio = _factory.CrearServicio(CodEmpresa, usuario);
-                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+                    var servicio = _factory.CrearServicio(CodEmpresa, usuario!);
+                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula!, cuenta!, usuario!);
 
                     return result.Code == 0
                         ? DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.")
                         : DbHelper.ErrorResponse("La cuenta no es válida para la cédula proporcionada.");
                 }
 
-                var id1 = cuentaInfo.IDENTIFICACION
+                var id1 = cuentaInfo.IDENTIFICACION.ToString()
                             .Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');
 
-                var id2 = cedula.Trim()
+                var id2 = cedula!.ToString().Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');

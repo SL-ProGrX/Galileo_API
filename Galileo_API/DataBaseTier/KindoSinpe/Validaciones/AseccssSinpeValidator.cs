@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
@@ -88,7 +89,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     if (ConsultarIsPINEntity(info.CuentaIBAN).Result == true)
                     {
-                        if (ConsultarIsServiceAvailable(usuario).Result == false)
+                        if (!ConsultarIsServiceAvailable(CodEmpresa, usuario).Result)
                         {
                             response.Code = -1;
                             response.Description = solicitud.ToString() + " - " + "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
@@ -204,7 +205,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     if (ConsultarIsPINEntity(cuenta).Result == true)
                     {
-                        if (ConsultarIsServiceAvailable(usuario).Result == false)
+                        if (!ConsultarIsServiceAvailable(CodEmpresa, usuario).Result)
                         {
                             response.Code = -1;
                             response.Description = " - " + "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
@@ -518,14 +519,14 @@ namespace Galileo_API.DataBaseTier
             return response;
         }
 
-        public ErrorDto<bool> ConsultarIsServiceAvailable(string vUsuario)
+        public ErrorDto<bool> ConsultarIsServiceAvailable(int CodEmpresa, string vUsuario)
         {
             ErrorDto<bool> ErrorDto = new ErrorDto<bool>();
             try
             {
                 // Generar un nuevo GUID
                 Guid newGuid = Guid.NewGuid();
-
+                _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result ?? new Galileo.Models.KindoSinpe.ParametrosSinpe();
                 var context = new BaseRequest
                 {
                     HostId = _parametrosSinpe.vHostPin,
@@ -1076,7 +1077,7 @@ namespace Galileo_API.DataBaseTier
 
                     if (ConsultarIsPINEntity(solicitud!.Cuenta!).Result == true) // NOSONAR
                     {
-                        if (ConsultarIsServiceAvailable(vUsuario).Result == false) // NOSONAR
+                        if (!ConsultarIsServiceAvailable(CodEmpresa, vUsuario).Result) // NOSONAR
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
@@ -1961,7 +1962,7 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
         {
             var response = new ErrorDto();
-            if (!ConsultarIsServiceAvailable(cuenta.usuario).Result)
+            if (!ConsultarIsServiceAvailable(CodEmpresa, cuenta.usuario).Result)
             {
                 response.Code = -1;
                 response.Description = "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";

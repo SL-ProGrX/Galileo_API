@@ -2,7 +2,9 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
 using System.Data;
 using System.Text;
@@ -274,14 +276,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string query = "spTes_Bancos_Mov_Consulta";
 
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
+
                 var parameters = new
                 {
                     BancoId = filtro.cod_cuenta,
                     Documento = filtro.ndocumento,
                     Tipo = filtro.tipoMovimiento,
                     FechaTipo = filtro.base_,
-                    FInicio = filtro.fechaInicio,
-                    FCorte = filtro.fechaCorte,
+                    FInicio = fechaIni,
+                    FCorte = fechaFin,
                     MntInicio = filtro.montoInicio,
                     MntCorte = filtro.montoCorte,
                     Estado = filtro.estado,
@@ -307,18 +312,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="registroLista"></param>
         /// <returns></returns>
-        public ErrorDto TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
         {
             List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                var querySP = "";
+                string error = string.Empty;
                 foreach (var item in lista)
                 {
-                    querySP = "spTes_Bancos_Mov_Registro";
-                    conn.Execute(querySP, new
+
+                    var parametros = new
                     {
                         LineaId = item.Linea_Id,
                         Usuario = item.Usuario,
@@ -327,11 +332,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         Unidad = item.Unidad,
                         Centro = item.Centro,
                         Cuenta = item.Cuenta
-                    },
-                    commandType: CommandType.StoredProcedure);
+                    };
+
+                    var result = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                                    "spTes_Bancos_Mov_Registro",
+                                    parametros,
+                                    commandType: CommandType.StoredProcedure);
+
+                    if(result!.Ok == 0)
+                    {
+                        error = " - Linea: " + result.LineaId + " error: " +result.Mensaje;
+                    }
+
                 }
 
-                return DbHelper.OkResponse("Registro procesado correctamente!");
+                if (!string.IsNullOrEmpty(error))
+                {
+                    return DbHelper.ErrorResponse(error);
+                }
+
+                return DbHelper.OkResponse("Registros procesados correctamente!");
             }
             catch (Exception ex)
             {

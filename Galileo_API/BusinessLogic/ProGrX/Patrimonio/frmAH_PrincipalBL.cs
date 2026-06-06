@@ -13,30 +13,30 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
             _db = new FrmAHPrincipalDB(config);
         }
 
-        public ErrorDto<FrmAhPrincipalConsultaResponse?> Patrimonio_frmAH_Principal_Consulta_Obtener(
+        public ErrorDto<FrmAhPrincipalConsultaResponse?> Ah_Principal_Consulta_Obtener(
             int codEmpresa,
             string cedula,
             string usuario)
-            => _db.Patrimonio_frmAH_Principal_Consulta_Obtener(codEmpresa, cedula, usuario);
+            => _db.Ah_Principal_Consulta_Obtener(codEmpresa, cedula, usuario);
 
-        public ErrorDto<List<FrmAhPrincipalDetallePatrimonioResponse>> Patrimonio_frmAH_Principal_DetallePatrimonio_Obtener(
+        public ErrorDto<List<FrmAhPrincipalDetallePatrimonioResponse>> Ah_Principal_DetallePatrimonio_Obtener(
             int codEmpresa,
             FrmAhPrincipalDetallePatrimonioRequest request)
-            => _db.Patrimonio_frmAH_Principal_DetallePatrimonio_Obtener(codEmpresa, request);
+            => _db.Ah_Principal_DetallePatrimonio_Obtener(codEmpresa, request);
 
-        public ErrorDto<List<FrmAhPrincipalExcedentesResponse>> Patrimonio_frmAH_Principal_Excedentes_Obtener(
+        public ErrorDto<List<FrmAhPrincipalExcedentesResponse>> Ah_Principal_Excedentes_Obtener(
             int codEmpresa,
             string cedula)
-            => _db.Patrimonio_frmAH_Principal_Excedentes_Obtener(codEmpresa, cedula);
+            => _db.Ah_Principal_Excedentes_Obtener(codEmpresa, cedula);
 
-        public ErrorDto<List<FrmAhPrincipalHistoricoResponse>> Patrimonio_frmAH_Principal_Historico_Obtener(
+        public ErrorDto<List<FrmAhPrincipalHistoricoResponse>> Ah_Principal_Historico_Obtener(
             int codEmpresa,
             string cedula)
-            => _db.Patrimonio_frmAH_Principal_Historico_Obtener(codEmpresa, cedula);
+            => _db.Ah_Principal_Historico_Obtener(codEmpresa, cedula);
 
-        public ErrorDto<List<FrmAhPrincipalLiquidacionesResponse>> Patrimonio_frmAH_Principal_Liquidaciones_Obtener(
+        public ErrorDto<List<FrmAhPrincipalLiquidacionesResponse>> Ah_Principal_Liquidaciones_Obtener(
             int codEmpresa,
             string cedula)
-            => _db.Patrimonio_frmAH_Principal_Liquidaciones_Obtener(codEmpresa, cedula);
+            => _db.Ah_Principal_Liquidaciones_Obtener(codEmpresa, cedula);
     }
 }

@@ -130,8 +130,8 @@ where
   and (@Cedula = '' or D.Cedula like @CedulaLike)
 order by D.Fecha desc, D.Id_seq desc;";
 
-            string fechInicio = MProGrXAuxiliarDB.validaFechaGlobal(request!.fecha_inicio, "yyyy-MM-dd");
-            string fechFin = MProGrXAuxiliarDB.validaFechaGlobal(request!.fecha_corte, "yyyy-MM-dd");
+            string fechInicio = MProGrXAuxiliarDB.validaFechaGlobal(request!.fecha_inicio, "yyyy-MM-dd") ?? "";
+            string fechFin = MProGrXAuxiliarDB.validaFechaGlobal(request!.fecha_corte, "yyyy-MM-dd") ?? "";
 
             
 
