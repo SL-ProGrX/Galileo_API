@@ -71,6 +71,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ";"
                 + registro.Nombre;
         }
+
+
         public sealed class CcProcesoMensualArchivoF29RegistroDbModel
         {
             public string Cedula { get; set; } = string.Empty;

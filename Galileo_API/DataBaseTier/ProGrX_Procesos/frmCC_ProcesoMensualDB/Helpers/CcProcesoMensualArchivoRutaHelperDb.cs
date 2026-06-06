@@ -21,8 +21,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             string extension)
         {
             var codigoInstitucion = ObtenerCodigoInstitucionArchivo(
-                codInstitucion,
-                codigoInstDeduc);
+                   codInstitucion,
+                   codigoInstDeduc);
 
             var fechaProcesoTexto = FormatearFechaProceso(fechaProceso);
             var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
@@ -167,9 +167,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 File.Delete(rutaArchivo);
             }
 
+            var contenidoLimpio = contenido.TrimStart('\uFEFF');
+
             File.WriteAllText(
                 rutaArchivo,
-                contenido,
+                contenidoLimpio,
                 encoding);
         }
 

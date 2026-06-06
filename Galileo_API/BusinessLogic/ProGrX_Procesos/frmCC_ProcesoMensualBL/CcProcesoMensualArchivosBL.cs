@@ -22,9 +22,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             _portalDb = new PortalDB(config);
         }
 
-        public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, string usuario, CcProcesoMensualGeneraDeduccionesRequest request)
+        public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, CcProcesoMensualGeneraDeduccionesRequest request)
         {
-            var deduccionesResp = _db.CcProcesoMensual_GeneraDeducciones_Ejecutar(codEmpresa, usuario, request);
+            var deduccionesResp = _db.CcProcesoMensual_GeneraDeducciones_Ejecutar(codEmpresa, request);
 
              if(!deduccionesResp.Result)
             {
@@ -222,7 +222,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 ArchivosGenerados = archivosGenerados
             };
         }
-  
-    
+
+        public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo(int codEmpresa, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(  _portalDb, codEmpresa);
+
+            connection.Open();
+
+            var archivo = GenerarArchivo(connection, request);
+
+            return DbHelper.CreateOkResponse(archivo);
+        }
     }
 }
