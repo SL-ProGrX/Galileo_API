@@ -3,8 +3,11 @@ using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using Microsoft.ReportingServices.Diagnostics.Internal;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -245,18 +248,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             try
             {
-                var query = $@"select estado_asiento from Tes_Transacciones where nsolicitud = @nsolicitud";
-                var estado = conn.Query<string>(query,
-                    new
-                    {
-                        nsolicitud = data.nsolicitud
-                    }).FirstOrDefault();
-                if (estado == "G")
+                const string query = @"select estado_asiento, id_banco, tipo 
+                               from Tes_Transacciones 
+                               where nsolicitud = @nsolicitud";
+
+                var estado = (await conn.QueryAsync<dynamic>(query, new
+                {
+                    nsolicitud = data.nsolicitud
+                })).FirstOrDefault();
+
+                if (estado == null)
+                {
+                    return DbHelper.ErrorResponse("No se encontró la solicitud indicada.");
+                }
+
+                if ((estado.estado_asiento?.ToString() ?? string.Empty) == "G")
                 {
                     return DbHelper.ErrorResponse("El asiento de esta solicitud ya fue generado, no se puede reclasificar...");
                 }
@@ -266,32 +278,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     data.tipoId = -1;
                 }
 
-                query = $@"exec spTes_Reclasificacion @solicitud , @id_banco , @tipo , @usuario ,@nota, @tipoId ";
-                conn.ExecuteAsync(query,
-                    new
+                var parametros = new
+                {
+                    TesoreriaId = data.nsolicitud,
+                    BancoId = data.id_banco,
+                    Tipo = data.tipo,
+                    Usuario = data.usuario,
+                    Notas = data.nota,
+                    tipoId = data.tipoId,
+                    Cedula = data.cedula ?? string.Empty,
+                    cedulaValida = data.cedulaValida ? 1 : 0,
+                    CuentaIban = data.cuentaIban ?? string.Empty,
+                    cuentaIbanValida = data.cuentaIbanValida ? 1 : 0,
+                    Email = data.email ?? string.Empty,
+                    emailValido = data.emailValido ? 1 : 0
+                };
+
+                var result = await conn.QueryAsync<dynamic>(
+                    "spTES_W_Reclasificacion",
+                    parametros,
+                    commandType: CommandType.StoredProcedure);
+
+                var respuesta = result.FirstOrDefault();
+
+                if (respuesta == null)
+                {
+                    return DbHelper.ErrorResponse("El procedimiento no retornó respuesta.");
+                }
+
+                var exitoso = Convert.ToBoolean(respuesta.exitoso ?? false);
+                var mensaje = respuesta.mensaje?.ToString() ?? "No se recibió mensaje del procedimiento.";
+                var paso = respuesta.paso?.ToString() ?? string.Empty;
+
+                if (!exitoso)
+                {
+                    var detalleError = string.IsNullOrWhiteSpace(paso)
+                        ? mensaje
+                        : $"{mensaje} Paso: {paso}";
+
+                    return DbHelper.ErrorResponse(detalleError);
+                }
+
+                var bitacora =
+                    $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId}";
+
+                _Security_MainDB.Bitacora(
+                    new BitacoraInsertarDto
                     {
-                        solicitud = data.nsolicitud,
-                        id_banco = data.id_banco,
-                        tipo = data.tipo,
-                        usuario = data.usuario,
-                        nota = data.nota,
-                        tipoId = data.tipoId
+                        EmpresaId = CodEmpresa,
+                        Usuario = data.usuario!,
+                        DetalleMovimiento = bitacora,
+                        Movimiento = "RECLASIFICACION - WEB",
+                        Modulo = vModulo
                     });
 
-                var bitacora = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId}";
-                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario!);
-
-                _Security_MainDB.Bitacora
-                     (new BitacoraInsertarDto
-                     {
-                         EmpresaId = CodEmpresa,
-                         Usuario = data.usuario!,
-                         DetalleMovimiento = bitacora,
-                         Movimiento = "RECLASIFICACION - WEB",
-                         Modulo = vModulo
-                     });
-
-                return DbHelper.OkResponse("La solicitud ha sido reclasificada correctamente.");
+                return DbHelper.OkResponse(mensaje);
             }
             catch (Exception ex)
             {

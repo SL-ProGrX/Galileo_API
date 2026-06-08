@@ -57,9 +57,9 @@ namespace Galileo_API.Controllers
         }
 
         [HttpPost("TES_Reclasificacion_CambiaSolicitud")]
-        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
         {
-            return _ReclasificacionBL.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
+            return await _ReclasificacionBL.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
         }
 
         [HttpGet("TES_Solicitudes_Obtener")]
