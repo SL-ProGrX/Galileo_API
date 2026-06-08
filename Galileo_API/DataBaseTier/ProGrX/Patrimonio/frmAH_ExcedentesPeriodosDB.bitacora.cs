@@ -31,7 +31,7 @@ select
     rtrim(isnull(convert(varchar(19), TIME_INICIO, 120), '')) as time_inicio,
     rtrim(isnull(convert(varchar(19), TIME_CORTE, 120), '')) as time_corte,
     rtrim(isnull(cast(DURACION as varchar(50)), '')) as duracion,
-    rtrim(isnull(NOTAS, '')) as notas
+    rtrim(isnull(detalle, '')) as notas
 from vExc_Periodos_Bitacora
 where ID_PERIODO = @PeriodoId
   and (@Etapa = 'T' or ETAPA = @Etapa)
