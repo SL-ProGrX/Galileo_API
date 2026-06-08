@@ -7,6 +7,7 @@ using Galileo.Models.ProGrX.Cajas;
 using Galileo.Models.ProGrX.Clientes;
 using Galileo.Models.ProGrX.Credito;
 using System.Data;
+using System.Linq;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX.Credito
@@ -1204,13 +1205,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             persona.pat_tipoSaldo = "Saldos en Garantía";
 
             var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "C");
-            foreach (CrConsultaCrdCreditosData credito in listCredito.Result ?? new List<CrConsultaCrdCreditosData>())
+            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>()).Where(c => c.procesoCod == "J"))
             {
-                if (credito.procesoCod == "J")
-                {
-                    persona.vMora = true;
-                    persona.vMoraCaption = $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}";
-                }
+                persona.vMora = true;
+                persona.vMoraCaption = $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}";
             }
         }
 
