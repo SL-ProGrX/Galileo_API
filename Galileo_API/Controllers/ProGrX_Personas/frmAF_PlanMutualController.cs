@@ -27,9 +27,9 @@ namespace Galileo.Controllers.ProGrx_Personas
 
         [Authorize]
         [HttpGet("AF_PlanMutualPersonas_Obtener")]
-        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string plan, string estado, string filtro)
+        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string filtro, string? plan, string? estado)
         {
-            return _bl.AF_PlanMutualPersonas_Obtener(CodEmpresa, plan, estado, filtro);
+            return _bl.AF_PlanMutualPersonas_Obtener(CodEmpresa, filtro ,plan, estado );
         }
 
         [Authorize]
