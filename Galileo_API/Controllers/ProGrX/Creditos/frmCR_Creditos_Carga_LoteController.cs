@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Creditos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.Controllers.ProGrX.Creditos
 {
@@ -36,6 +37,27 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CrCreditosCargaLote_ConceptosDesembolso_Obtener(int CodEmpresa)
         {
             return _bl.CrCreditosCargaLote_ConceptosDesembolso_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("CrCreditosCargaLote_ObtenerDeductoras")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CrCreditosCargaLote_ObtenerDeductoras(int CodEmpresa)
+        {
+            return _bl.CrCreditosCargaLote_ObtenerDeductoras(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("CrCreditosCargaLote_ObtenerFrecuenciaDeductora")]
+        public ErrorDto<List<FrecuenciaReductora>> CrCreditosCargaLote_ObtenerFrecuenciaDeductora(int CodEmpresa, string CodInstitucion)
+        {
+            return _bl.CrCreditosCargaLote_ObtenerFrecuenciaDeductora(CodEmpresa, CodInstitucion);
+        }
+
+        [Authorize]
+        [HttpGet("CrCreditosCargaLote_Banco_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CrCreditosCargaLote_Banco_Obtener(int CodEmpresa, string usuario)
+        {
+            return _bl.CrCreditosCargaLote_Banco_Obtener(CodEmpresa, usuario);
         }
     }
 }
