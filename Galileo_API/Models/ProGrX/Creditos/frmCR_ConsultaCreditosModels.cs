@@ -566,10 +566,10 @@ namespace Galileo.Models.ProGrX.Credito
 
     public class AfiSociosMensajesData
     {
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public string? cedula { get; set; }
         public string? mensaje { get; set; }
-        public DateTime vencimiento { get; set; }
+        public DateTime? vencimiento { get; set; }
         public string? usuario { get; set; }
         public string? tipo { get; set; }
         public string? resolucion { get; set; }
