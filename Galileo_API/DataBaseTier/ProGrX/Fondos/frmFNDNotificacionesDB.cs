@@ -200,7 +200,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var result = DbHelper.WithConn(new PortalDB(_config), codEmpresa, connection =>
                 connection.QueryFirstOrDefault<FndNotificacionData>(
                     SpNotificaLoad,
-                    new { pNotifica = NormalizarTexto(pNotifica) },
+                    new { NotificaId = NormalizarTexto(pNotifica) },
                     commandType: System.Data.CommandType.StoredProcedure));
 
             return new ErrorDto<FndNotificacionData>

@@ -46,9 +46,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _reclasificacionDb.TES_Reclasificacion_CambiaDocumento(CodEmpresa, data);
         }
 
-        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
         {
-            return _reclasificacionDb.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
+            return await _reclasificacionDb.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
         }
 
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, string jFiltro)
