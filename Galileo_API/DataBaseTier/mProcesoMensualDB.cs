@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 using static Galileo_API.Models.MProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -42,7 +43,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="gestion"></param>
         /// <param name="usuario"></param>
         /// <param name="documento"></param>
-        public static void SbBitacoraPlanilla(IDbConnection connection, string transaccion, int codInstitucion, decimal proceso, string gestion, string usuario, string documento = "")
+        public static void SbBitacoraPlanilla(IDbConnection connection, CcProcesoMensualBitacoraPlanillaDto bitacora, IDbTransaction? transaccionDb = null)
         {
             const string query = @"
                 EXEC spPrm_Bitacora
@@ -55,13 +56,15 @@ namespace Galileo_API.DataBaseTier
 
             connection.Execute(query, new
             {
-                CodInstitucion = codInstitucion,
-                Proceso = proceso,
-                Usuario = usuario,
-                Transaccion = transaccion,
-                Gestion = gestion,
-                Documento = documento ?? string.Empty
-            });
+                bitacora.CodInstitucion,
+                bitacora.Proceso,
+                bitacora.Usuario,
+                bitacora.Transaccion,
+                bitacora.Gestion,
+                Documento = bitacora.Documento ?? string.Empty
+            },
+            transaction: transaccionDb
+            );
         }
 
         /// <summary>
