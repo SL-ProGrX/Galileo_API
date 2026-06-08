@@ -247,32 +247,53 @@ namespace Galileo.Models.ProGrX.Credito
     public class CrConsultaCobroDto
     {
         public int cod_seg { get; set; }
+
         public string? cod_gestion { get; set; }
+
         public string? usuario { get; set; }
+
         public string? cedula { get; set; }
-        public DateTime fecha { get; set; }
-        public decimal monto { get; set; }
+
+        public DateTime? fecha { get; set; }
+
+        public decimal? monto { get; set; }
+
         public string? observacion { get; set; }
+
         public int dias { get; set; }
+
         public int estado { get; set; }
+
         public string? cod_causa { get; set; }
+
         public string? cod_arreglo { get; set; }
+
         public string? hora { get; set; }
+
         public string? minuto { get; set; }
-        public DateTime fecha_compromiso { get; set; }
-        public DateTime fecha_registro { get; set; }
+
+        public DateTime? fecha_compromiso { get; set; }
+
+        public DateTime? fecha_registro { get; set; }
+
         public string? gestion { get; set; }
+
         public string? causa { get; set; }
+
         public string? arreglo { get; set; }
+
         public string? notas { get; set; }
-        public DateTime comision_vence { get; set; }
+
+        public DateTime? comision_vence { get; set; }
+
         public string? tiempo_resolucion { get; set; }
+
     }
 
     public class CrConsultaAsignacionCobroData
     {
-        public string? usuario { get; set; }
-        public string? cedula { get; set; }
+        public required string usuario { get; set; }
+        public required string cedula { get; set; }
         public DateTime fecha_asignacion { get; set; }
         public int mantener { get; set; }
         public int rebajo_doble { get; set; }
@@ -287,23 +308,23 @@ namespace Galileo.Models.ProGrX.Credito
         public string? cedula { get; set; }
         public string? cod_vendedor { get; set; }
         public string? estado { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public int plazo { get; set; }
-        public decimal monto { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public int? plazo { get; set; }
+        public decimal? monto { get; set; }
         public string? moneda { get; set; }
-        public decimal saldo { get; set; }
+        public decimal? saldo { get; set; }
         public string? tipo_cuenta { get; set; }
-        public decimal interes { get; set; }
-        public decimal mora { get; set; }
-        public decimal comision { get; set; }
-        public decimal otros_cargos { get; set; }
+        public decimal? interes { get; set; }
+        public decimal? mora { get; set; }
+        public decimal? comision { get; set; }
+        public decimal? otros_cargos { get; set; }
         public string? referencia { get; set; }
-        public int oficina { get; set; }
+        public int? oficina { get; set; }
         public string? ejecutivo { get; set; }
-        public int estado_contrato { get; set; }
+        public int? estado_contrato { get; set; }
         public string? tipo_producto { get; set; }
-        public DateTime fecha_vencimiento { get; set; }
-        public decimal monto_vencido { get; set; }
+        public DateTime? fecha_vencimiento { get; set; }
+        public decimal? monto_vencido { get; set; }
         public string? situacion { get; set; }
         public string? observaciones { get; set; }
         public string? canal { get; set; }
@@ -312,9 +333,9 @@ namespace Galileo.Models.ProGrX.Credito
         public string? producto_nombre { get; set; }
         public string? operadora { get; set; }
         public string? estado_actual { get; set; }
-        public decimal aportes { get; set; }
-        public decimal rendimiento { get; set; }
-        public decimal total { get; set; }
+        public decimal? aportes { get; set; }
+        public decimal? rendimiento { get; set; }
+        public decimal? total { get; set; }
         public string? plan_desc { get; set; }
         public string? operadora_desc { get; set; }
     }
@@ -616,11 +637,12 @@ namespace Galileo.Models.ProGrX.Credito
 
     public class CRConsultaInfoDto
     {
-        public List<AfTelefonoDto>? Telefonos { get; set; }
-        public List<AfCuentaBancariaDto>? CuentasBancarias { get; set; }
-        public List<AfPersonaBeneficiarioDto>? Beneficiarios { get; set; }
-        public List<AfTarjetaDto>? Tarjetas { get; set; }
-        public List<AfDireccionDto>? Localizaciones { get; set; }
+        public List<AfTelefonoDto> Telefonos { get; set; } = new();
+        public List<AfCuentaBancariaDto> CuentasBancarias { get; set; } = new();
+        public List<AfPersonaBeneficiarioDto> Beneficiarios { get; set; } = new();
+        public List<AfTarjetaDto> Tarjetas { get; set; } = new();
+        public List<AfDireccionDto> Localizaciones { get; set; } = new();
+
         public List<AfPersonaIngresoDto> Ingresos { get; set; } = new();
         public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
         public List<CRliquidacionDto> Liquidaciones { get; set; } = new();
@@ -643,8 +665,8 @@ namespace Galileo.Models.ProGrX.Credito
         public int id_solicitud { get; set; }
         public string? codigo { get; set; }
         public string? cedula { get; set; }
-        public DateTime fechasol { get; set; }
-        public decimal montoSol { get; set; }
+        public DateTime? fechasol { get; set; }
+        public decimal? montoSol { get; set; }
         public string? estadosol { get; set; }
         public string? estado { get; set; }
         public string? proceso { get; set; }
@@ -654,7 +676,7 @@ namespace Galileo.Models.ProGrX.Credito
         public string? cod_oficina_r { get; set; }
         public string? oficinaX { get; set; }
         public string? garantia { get; set; }
-        public int indicador_cbr { get; set; }
+        public int? indicador_cbr { get; set; }
         public string? garantia_detalle { get; set; }
         public string? cod_divisa { get; set; }
         public string? divisa_desc { get; set; }
@@ -671,8 +693,10 @@ namespace Galileo.Models.ProGrX.Credito
 
     public class CrPreferenciaDto
     {
-        public int cod_preferencia { get; set; }
+        public int CodPreferencia { get; set; }
         public string descripcion { get; set; } = string.Empty;
+        public string? Usuario { get; set; }
+        public string? Cedula { get; set; }
         public bool asignado { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; } = string.Empty;
@@ -706,5 +730,57 @@ namespace Galileo.Models.ProGrX.Credito
         public string? estadodesc { get; set; }
         public int consec { get; set; }
         public DateTime fecliq { get; set; }
+    }
+
+    public class CRPersonaLiquidacionDto
+    {
+        public int Consec { get; set; }
+        public DateTime? Fecliq { get; set; }
+        public string? estadoactliq { get; set; }
+        public string? estadoactliqdesc { get; set; }
+        public string? estadoactual { get; set; }
+        public string? estadoactualdesc { get; set; }
+        public string? estadopersona { get; set; }
+        public string? tdocumento { get; set; }
+        public string? ubicacion { get; set; }
+        public string? ubicaciondesc { get; set; }
+        public decimal tneto { get; set; }
+        public string? tneto_format { get; set; }
+        public string? estado { get; set; }
+        public string? estadodesc { get; set; }
+    }
+
+    public class AFPersonaBeneficiarioDto
+    {
+        public int linea_Id { get; set; }
+        public string? cedula { get; set; }
+        public string? tipo_Relacion { get; set; }
+        public string? cedula_Beneficiario { get; set; }
+        public string? nombre { get; set; }
+        public DateTime? fecha_Nac { get; set; }
+        public string? cod_Parentesco { get; set; }
+        public decimal? porcentaje { get; set; }
+        public string? telefono1 { get; set; }
+        public string? telefono2 { get; set; }
+        public string? notas { get; set; }
+        public string? email { get; set; }
+        public string? apto_Postal { get; set; }
+        public string? direccion { get; set; }
+        public bool? aplica_Seguros { get; set; }
+        public string? registro_Usuario { get; set; }
+        public DateTime? registro_Fecha { get; set; }
+        public string? sexo { get; set; }
+        public bool? albacea_Ind { get; set; }
+        public string? albacea_Cedula { get; set; }
+        public string? albacea_Nombre { get; set; }
+        public string? albacea_Movil { get; set; }
+        public string? albacea_Teltra { get; set; }
+        public string? albacea_Teltra_Ext { get; set; }
+        public int? tipo_Id { get; set; }
+        public bool? albacea_Check { get; set; }
+        public string? parentesco { get; set; }
+        public string? relacion_Desc { get; set; }
+        public int? tipo_Id_R { get; set; }
+        public string? tipo_Id_Desc { get; set; }
     }
 }
