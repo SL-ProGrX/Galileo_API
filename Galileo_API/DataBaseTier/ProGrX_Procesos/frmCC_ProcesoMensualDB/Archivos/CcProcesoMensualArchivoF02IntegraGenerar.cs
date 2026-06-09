@@ -3,6 +3,9 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -21,6 +24,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private const string ExtensionTxt = "txt";
         private const string ExtensionCsv = "csv";
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+        public CcProcesoMensualArchivoF02IntegraGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
 
         public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
 
@@ -32,13 +40,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
+            var rutaBase = _archivosOptions.RutaBase;
+
             var contexto = CrearContextoArchivo(
                 connection,
-                request);
+                request, rutaBase);
+             
 
             var archivosGenerados = new List<string>
             {
-                GenerarArchivo(
+                GenerarArchivo(rutaBase,
                     contexto.RutaDirectorio,
                     CrearNombreArchivo(PrefijoEnvio, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionTxt),
                     CrearContenidoEnvio(
@@ -48,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                             Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(configuracion)),
                         configuracion.PorcAhorro)),
 
-                GenerarArchivo(
+                GenerarArchivo(rutaBase,
                     contexto.RutaDirectorio,
                     CrearNombreArchivo(PrefijoMatricula, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
                     CrearContenidoCadenas(
@@ -58,7 +69,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                             request.CodInstitucion,
                             request.FechaProceso))),
 
-                GenerarArchivo(
+                GenerarArchivo(rutaBase,
                     contexto.RutaDirectorio,
                     CrearNombreArchivo(PrefijoIntegra, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
                     CrearContenidoCadenas(
@@ -72,27 +83,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return CrearRespuesta(archivosGenerados);
         }
 
-        private static CcProcesoMensualArchivoContextoModel CrearContextoArchivo(
-            IDbConnection connection,
-            CcProcesoMensualGeneraArchivoRequest request)
+        private static CcProcesoMensualArchivoContextoModel CrearContextoArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request,string rutaBase)
         {
             return new CcProcesoMensualArchivoContextoModel
             {
                 FechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection),
-                RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request)
+                RutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase)
             };
         }
 
         private static string GenerarArchivo(
             string rutaDirectorio,
             string nombreArchivo,
-            string contenido)
+            string contenido, string rutaBase )
         {
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,
                 rutaDirectorio,
                 nombreArchivo);
 
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
+            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase,
                 rutaDirectorio,
                 rutaArchivo,
                 contenido,

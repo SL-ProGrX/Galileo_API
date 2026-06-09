@@ -1,8 +1,8 @@
-﻿using Dapper;
-using System.Data;
-using System.Globalization;
-using System.Text;
+﻿
+using System.Globalization; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -51,7 +51,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ";"
                 + registro.IdAlterno.Trim();
         }
-
+        public CcProcesoMensualArchivoF31ExcelPorzaCashGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         private static string ReemplazarPuntoYComa(string? valor)
         {
             return (valor ?? string.Empty).Replace(";", " ");

@@ -14,17 +14,18 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
         private readonly CcProcesoMensualEnvioDb _db;
         private readonly PortalDB _portalDb;
-
+      
         public CcProcesoMensualArchivosBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
             _generadorArchivos = generadores;
             _db = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
+           
         }
 
-        public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, string usuario, CcProcesoMensualGeneraDeduccionesRequest request)
+        public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, CcProcesoMensualGeneraDeduccionesRequest request)
         {
-            var deduccionesResp = _db.CcProcesoMensual_GeneraDeducciones_Ejecutar(codEmpresa, usuario, request);
+            var deduccionesResp = _db.CcProcesoMensual_GeneraDeducciones_Ejecutar(codEmpresa, request);
 
              if(!deduccionesResp.Result)
             {
@@ -55,7 +56,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 
 
 
-        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
+        public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request )
         {
             MProcesoMensualDb.SbBitacoraPlanilla(connection,
                 new CcProcesoMensualBitacoraPlanillaDto
@@ -188,8 +189,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 EmpresaId = request.EmpresaId,
                 Usuario = request.Usuario,
                 NombreInstitucion = request.NombreInstitucion,
-                NombreEmpresa = request.NombreEmpresa,
-                DirectorioResultados = request.DirectorioResultados,
+                NombreEmpresa = request.NombreEmpresa, 
                 Unidad = request.Unidad
             };
         }
@@ -222,7 +222,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 ArchivosGenerados = archivosGenerados
             };
         }
-  
-    
+
+        public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo_Ejecutar(int codEmpresa, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            using var connection = DbHelper.OpenConnection(  _portalDb, codEmpresa);
+             
+
+            connection.Open();
+
+            var archivo = GenerarArchivo(connection, request);
+
+            return DbHelper.CreateOkResponse(archivo);
+        }
     }
 }
