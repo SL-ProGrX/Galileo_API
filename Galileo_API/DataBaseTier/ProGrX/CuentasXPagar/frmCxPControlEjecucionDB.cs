@@ -812,7 +812,7 @@ namespace Galileo.DataBaseTier
                     Factura = data.Cod_Factura,
                     NPago = data.Npago,
                     Disponible = data.Neto,
-                    Corte = $"{data.Fecha_Vencimiento.ToString("yyyy/MM/dd")} 23:59:59",
+                    Corte = $"{data.Fecha_Vencimiento:yyyy/MM/dd} 23:59:59",
                     AplicaCargos = data.Apl_Cargo_Flotante,
                     Usuario = data.Usuario,
 

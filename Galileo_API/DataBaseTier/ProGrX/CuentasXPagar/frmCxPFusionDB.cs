@@ -7,6 +7,8 @@ namespace Galileo.DataBaseTier
 {
     public class FrmCxPFusionDB
     {
+        #region Constructor y helper
+
         private readonly IConfiguration _config;
 
         /// <summary>
@@ -17,6 +19,26 @@ namespace Galileo.DataBaseTier
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
+
+        /// <summary>
+        /// Crea una respuesta vacía para el listado de proveedores.
+        /// </summary>
+        /// <returns>Listado vacío inicializado.</returns>
+        private static CxpProveedoresDataLista CrearListaVacia() => new()
+        {
+            Total = 0,
+            Proveedores = new List<CxpProveedorData>()
+        };
+
+        /// <summary>
+        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// </summary>
+        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
+        private PortalDB CreatePortalDb() => new(_config);
+
+        #endregion
+
+        #region Consultas
 
         /// <summary>
         /// Obtiene el listado paginado de proveedores activos no fusionados.
@@ -71,9 +93,13 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new CxpProveedoresDataLista { Total = 0, Proveedores = new List<CxpProveedorData>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener proveedores para fusión.", result.Code.GetValueOrDefault(-1), new CxpProveedoresDataLista { Total = 0, Proveedores = new List<CxpProveedorData>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener proveedores para fusión.", result.Code.GetValueOrDefault(-1), CrearListaVacia());
         }
+
+        #endregion
+
+        #region Mantenimiento
 
         /// <summary>
         /// Aplica la fusión de proveedores inactivando los fusionados y registrando la relación en la tabla de fusiones.
@@ -84,25 +110,41 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto Fusion_Aplicar(int CodCliente, int proveedor, List<CxpProveedorData> proveedores)
         {
+            if (proveedor <= 0)
+            {
+                return DbHelper.ErrorResponse("Debe indicar un proveedor principal válido.", -2);
+            }
+
             if (proveedores is null || proveedores.Count == 0)
             {
                 return DbHelper.ErrorResponse("Debe seleccionar al menos un proveedor para fusionar.", -2);
             }
 
+            var proveedoresFusion = proveedores
+                .Select(item => int.TryParse(item.Cod_Proveedor, out var codProveedor) ? codProveedor : 0)
+                .Where(codProveedor => codProveedor > 0 && codProveedor != proveedor)
+                .Distinct()
+                .ToList();
+
+            if (proveedoresFusion.Count == 0)
+            {
+                return DbHelper.ErrorResponse("No existen proveedores válidos para aplicar la fusión.", -2);
+            }
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
-                foreach (var codProveedor in proveedores.Select(item => item.Cod_Proveedor))
+                foreach (var codProveedor in proveedoresFusion)
                 {
                     connection.Execute(
-                        @"update cxp_proveedores
-                          set estado = 'I',
-                              fusion = Getdate()
-                          where cod_proveedor = @CodProveedor",
+                        @"UPDATE cxp_proveedores
+                          SET estado = 'I',
+                              fusion = GETDATE()
+                          WHERE cod_proveedor = @CodProveedor",
                         new { CodProveedor = codProveedor });
 
                     connection.Execute(
-                        @"insert cxp_fusiones(cod_proveedor, cod_proveedor_fus)
-                          values (@ProveedorPrincipal, @CodProveedor)",
+                        @"INSERT cxp_fusiones(cod_proveedor, cod_proveedor_fus)
+                          VALUES (@ProveedorPrincipal, @CodProveedor)",
                         new
                         {
                             ProveedorPrincipal = proveedor,
@@ -118,10 +160,6 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar la fusión de proveedores.", result.Code.GetValueOrDefault(-1));
         }
 
-        /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
-        /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
+        #endregion
     }
 }

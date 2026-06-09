@@ -18,26 +18,26 @@ namespace Galileo.Models.CxP
 
     public class FacturaPendientePago
     {
-        public int Npago { get; set; }
-        public int Cod_Proveedor { get; set; }
+        public required int Npago { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Factura { get; set; } = string.Empty;
-        public DateTime Fecha_Vencimiento { get; set; }
-        public decimal Monto { get; set; }
+        public DateTime? Fecha_Vencimiento { get; set; }
+        public required decimal Monto { get; set; }
         public string Proveedor { get; set; } = string.Empty;
-        public decimal Cargos { get; set; }
-        public bool Apl_Cargo_Flotante { get; set; }
+        public required decimal Cargos { get; set; }
+        public required bool Apl_Cargo_Flotante { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
-        public decimal Importe_Divisa_Real { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
+        public required decimal Importe_Divisa_Real { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public int Cod_Cargo { get; set; }
-        public decimal Neto { get; set; }
+        public required int Cod_Cargo { get; set; }
+        public required decimal Neto { get; set; }
         public string Datakey { get; set; } = string.Empty;
     }
 
     public class FactPenReq
     {
-        public int Proveedor { get; set; }
+        public required int Proveedor { get; set; }
         public string Divisa { get; set; } = string.Empty;
         public string Corte { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
@@ -92,15 +92,15 @@ namespace Galileo.Models.CxP
 
     public class TesTransAsiento
     {
-        public int NSolicitud { get; set; }
+        public required int NSolicitud { get; set; }
         public string Cuenta_Contable { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public string DebeHaber { get; set; } = string.Empty;
-        public int Linea { get; set; }
+        public required int Linea { get; set; }
         public string Cod_Unidad { get; set; } = string.Empty;
         public string Cod_Cc { get; set; } = string.Empty;
         public string Cod_Divisa { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
     }
     
 
@@ -116,12 +116,12 @@ namespace Galileo.Models.CxP
 
     public class TesTransacciones
     {
-        public int Id_Banco { get; set; }
+        public required int Id_Banco { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string Codigo { get; set; } = string.Empty;
         public string Beneficiario { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
-        public DateTime Fecha_Solicitud { get; set; }
+        public required decimal Monto { get; set; }
+        public  DateTime? Fecha_Solicitud { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string Estadoi { get; set; } = string.Empty;
         public string Modulo { get; set; } = string.Empty;
@@ -131,8 +131,8 @@ namespace Galileo.Models.CxP
         public string Detalle2 { get; set; } = string.Empty;
         public string Referencia { get; set; } = string.Empty;
         public string Op { get; set; } = string.Empty;
-        public bool Genera { get; set; }
-        public bool Actualiza { get; set; }
+        public required bool Genera { get; set; }
+        public required bool Actualiza { get; set; }
         public string Cod_Unidad { get; set; } = string.Empty;
         public string Cod_Concepto { get; set; } = string.Empty;
         public string User_Solicita { get; set; } = string.Empty;
@@ -140,7 +140,7 @@ namespace Galileo.Models.CxP
         public DateTime? Fecha_Autorizacion { get; set; }
         public string User_Autoriza { get; set; } = string.Empty;
         public string Tipo_Beneficiario { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
     }
 
@@ -154,11 +154,11 @@ namespace Galileo.Models.CxP
 
     public class PagoProvUpdate
     {
-        public int Tesoreria { get; set; }
+        public required int Tesoreria { get; set; }
         public string User_Traslada { get; set; } = string.Empty;
         public string Pago_Tercero { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
-        public bool IsPagoTerceroChecked { get; set; }
+        public required int Cod_Proveedor { get; set; }
+        public required bool IsPagoTerceroChecked { get; set; }
     }
 
     public class CargoPer
