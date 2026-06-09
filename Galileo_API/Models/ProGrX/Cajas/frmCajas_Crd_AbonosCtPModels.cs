@@ -250,6 +250,7 @@
         public string ctaamortiza { get; set; } = "";
 
         public int id_solicitud { get; set; } = 0;
-        public string codigo { get; set; } = "";
+        public string codigo { get; set; } = ""; 
+        public string ctacargos { get; set; } = "";
     }
 }

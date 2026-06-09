@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier;
 using Microsoft.Data.SqlClient;
 
@@ -319,6 +320,32 @@ namespace Galileo.DataBaseTier
         private static decimal Redondear(decimal valor)
         {
             return decimal.Round(valor, 2, MidpointRounding.AwayFromZero);
+        }
+
+        public static ErrorDto SbBitacoraCredito(PortalDB portalDb,
+            int codEmpresa, string usuario, string movimiento, string detalle,
+            string tipo, int operacion, string codigo, string notas = "")
+        {
+            const string sql = @"
+            insert into credito_subit ( usuario, tipo, fecha, 
+                movimiento, detalle, id_solicitud, codigo, notas
+            ) values ( @Usuario, @Tipo, Getdate(), @Movimiento,
+                @Detalle, @Operacion, @Codigo, @Notas);";
+
+            return DbHelper.ExecuteNonQuery(
+                portalDb,
+                codEmpresa,
+                sql,
+                new
+                {
+                    Usuario = (usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                    Tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Movimiento = (movimiento ?? string.Empty).Trim(),
+                    Detalle = (detalle ?? string.Empty).Trim(),
+                    Operacion = operacion,
+                    Codigo = (codigo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Notas = (notas ?? string.Empty).Trim()
+                });
         }
     }
 }
