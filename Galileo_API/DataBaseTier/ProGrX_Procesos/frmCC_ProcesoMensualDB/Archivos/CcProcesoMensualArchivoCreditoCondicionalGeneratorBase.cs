@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using System.Data;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -8,6 +10,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
     {
         private const string CodigoNo = "NO";
         private const string TipoCredito = "C";
+
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+      
+        protected CcProcesoMensualArchivoCreditoCondicionalGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        : base(archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
 
         protected IDbConnection? Connection { get; private set; }
 
@@ -67,11 +77,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 CodigoFormato,
                 ExtensionArchivo);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaBase = _archivosOptions.RutaBase;
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
 
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,rutaDirectorio, nombreArchivo);
 
             return new CcProcesoMensualArchivoGeneradoModel
             {

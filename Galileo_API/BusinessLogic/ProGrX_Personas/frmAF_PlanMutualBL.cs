@@ -20,10 +20,10 @@ namespace Galileo.BusinessLogic.ProGrX_Personas
             return _db.AF_PlanMutualLista_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string plan, string estado, string jfiltros)
+        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string jfiltros, string? plan, string? estado)
         {
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
-            return _db.AF_PlanMutualPersonas_Obtener(CodEmpresa, plan, estado, filtros);
+            return _db.AF_PlanMutualPersonas_Obtener(CodEmpresa, filtros, plan, estado);
         }
 
         public ErrorDto<AfPlanMutualLista> AF_PlanMutual_Obtener(int CodEmpresa, string jfiltros)
