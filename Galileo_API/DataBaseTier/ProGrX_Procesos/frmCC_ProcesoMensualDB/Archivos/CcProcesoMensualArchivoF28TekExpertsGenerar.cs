@@ -3,6 +3,9 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -50,6 +53,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             "02-D38",
             "02-D30"
         ];
+
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+        public CcProcesoMensualArchivoF28TekExpertsGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
+
         public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
                    IDbConnection connection,
@@ -69,9 +79,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 CodigoFormatoArchivo,
                 ExtensionCsv);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaBase = _archivosOptions.RutaBase;
 
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
+
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,
                 rutaDirectorio,
                 nombreArchivo);
 
@@ -82,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             var contenido = CrearContenidoArchivo(registros);
 
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
+            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase,
                 rutaDirectorio,
                 rutaArchivo,
                 contenido,

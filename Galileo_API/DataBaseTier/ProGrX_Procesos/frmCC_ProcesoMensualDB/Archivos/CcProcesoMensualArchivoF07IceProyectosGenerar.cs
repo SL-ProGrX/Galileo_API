@@ -1,8 +1,10 @@
 ﻿using Dapper;
 using System.Data;
-using System.Globalization;
-using System.Text;
+using System.Globalization; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -15,6 +17,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string CodigoFormato => "F07";
         protected override string ExtensionArchivo => ".txt";
         protected override string ContentType => ContentTypeText;
+        public CcProcesoMensualArchivoF07IceProyectosGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
 
         protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> FiltrarRegistros(
             IEnumerable<CcProcesoMensualArchivoRegistroDbModel> registros)

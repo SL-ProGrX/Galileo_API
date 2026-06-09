@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using System.Data;
-using System.Globalization;
-using System.Text;
+using System.Globalization; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
-
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -37,7 +37,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.movimiento";
 
-
+        public CcProcesoMensualArchivoF15PjGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
+       : base(archivosOptions)
+        {
+        }
         public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request)
@@ -73,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             {
                 request.FechaProceso,
                 Movimientos = _movimientos,
-                 request.CodInstitucion
+                request.CodInstitucion
             };
         }
         protected override string CrearLineaArchivo(
@@ -105,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return movimientos;
         }
 
-        private static void AgregarMovimientoSiAplica( List<string> movimientos, int indicador, string movimiento)
+        private static void AgregarMovimientoSiAplica(List<string> movimientos, int indicador, string movimiento)
         {
             if (indicador == 1)
             {

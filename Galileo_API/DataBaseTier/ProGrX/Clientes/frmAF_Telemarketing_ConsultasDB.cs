@@ -144,6 +144,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 connection.Query<AfTelemarketingColocacionData>(
                     SpTelemarketingConsulta,
                     CrearParametrosColocacion(filtros),
+                    commandTimeout: 0,
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0
@@ -203,8 +204,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     new
                     {
                         Usuario = usuario,
-                        ChkIntegral = filtros.chkAnalisis == true ? 1 : 0
+                        Grupo = filtros.chkAnalisis == true ? 1 : 0
                     },
+                    commandTimeout: 0,
                     commandType: System.Data.CommandType.StoredProcedure).ToList();
             });
 
@@ -226,9 +228,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     SpClientesComunDetalle,
                     new
                     {
-                        Cadena = NormalizarTexto(vCadena),
+                        Cedula = NormalizarTexto(vCadena),
                         Usuario = NormalizarTexto(usuario)
                     },
+                    commandTimeout: 0,
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0
@@ -270,6 +273,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 connection.Query<AfTelemarketingContactoData>(
                     SpTelemarketingContactos,
                     CrearParametrosContactos(filtros),
+                    commandTimeout: 0,
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0
@@ -305,27 +309,27 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             return new
             {
-                Tipo = ObtenerTipoColocacion(filtros.fechaTipo),
-                FechaInicio = filtros.chkFechas ? (DateTime?)null : filtros.fechaInicio.Date,
-                FechaCorte = filtros.chkFechas
+                Informe = ObtenerTipoColocacion(filtros.fechaTipo),
+                Inicio = filtros.chkFechas ? (DateTime?)null : filtros.fechaInicio.Date,
+                Corte = filtros.chkFechas
                     ? (DateTime?)null
                     : filtros.fechaCorte.Date.AddDays(1).AddSeconds(-1),
-                Credito = NormalizarNull(filtros.credito),
+                Linea = NormalizarNull(filtros.credito),
                 Destino = NormalizarNull(filtros.destino),
-                Producto = NormalizarNull(filtros.producto),
-                Canal = NormalizarNull(filtros.canal),
                 Institucion = NormalizarNull(filtros.institucion),
-                ChkSinMora = validaciones.ChkSinMora,
-                ChkEmail = validaciones.ChkEmail,
-                ChkMovil = validaciones.ChkMovil,
-                filtros.mFecUltMovUpdate,
+                Actividad = NormalizarNull(filtros.producto),
+                Canal = NormalizarNull(filtros.canal),
+                SinMora = validaciones.ChkSinMora,
+                Email_Valid = validaciones.ChkEmail,
+                Movil_Valid = validaciones.ChkMovil,
+                FecUltMovUpdate = filtros.mFecUltMovUpdate,
                 Categoria = string.Equals(
                     NormalizarTexto(filtros.categoria),
                     OpcionTodos,
                     StringComparison.OrdinalIgnoreCase)
                     ? null
                     : NormalizarNull(filtros.categoria),
-                Gyp = NormalizarNull(filtros.gyp)
+                Preferencia = NormalizarNull(filtros.gyp)
             };
         }
 
@@ -336,14 +340,14 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             return new
             {
-                FechaInicio = todos || filtros.fechaInicio is null
+                Inicio = todos || filtros.fechaInicio is null
                     ? (DateTime?)null
                     : filtros.fechaInicio.Value.Date,
-                FechaCorte = todos || filtros.fechaCorte is null
+                Corte = todos || filtros.fechaCorte is null
                     ? (DateTime?)null
                     : filtros.fechaCorte.Value.Date.AddDays(1).AddSeconds(-1),
-                FechaTipo = todos ? OpcionTodos : fechaTipo,
-                Estado = string.Equals(
+                TipoFecha = todos ? OpcionTodos : fechaTipo,
+                EstadoPersona = string.Equals(
                     NormalizarTexto(filtros.estado),
                     OpcionTodos,
                     StringComparison.OrdinalIgnoreCase)

@@ -3,6 +3,9 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -31,6 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.movimiento";
 
+        public CcProcesoMensualArchivoF13InaGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         public override CcProcesoMensualArchivoGeneradoModel GenerarArchivo(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request)
