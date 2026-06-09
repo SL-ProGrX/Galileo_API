@@ -46,6 +46,15 @@ namespace Galileo.Models.ProGrX.Bancos
     {
         public int tipoId { get; set; } = 0;
         public bool permiteReqId { get; set; } = false;
+
+        public string? cedula { get; set; }
+        public bool cedulaValida { get; set; } = false;
+
+        public string? cuentaIban { get; set; }
+        public bool cuentaIbanValida { get; set; } = false;
+
+        public string? email { get; set; }
+        public bool emailValido { get; set; } = false;
     }
 
     // =========================
