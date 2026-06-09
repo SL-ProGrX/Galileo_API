@@ -54,9 +54,9 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("RevisionPagos_Reactivar")]
-        public ErrorDto RevisionPagos_Reactivar(int CodEmpresa, string User)
+        public ErrorDto RevisionPagos_Reactivar(int CodEmpresa, string user)
         {
-            return _bl.RevisionPagos_Reactivar(CodEmpresa, User);
+            return _bl.RevisionPagos_Reactivar(CodEmpresa, user);
         }
 
         [HttpGet("Autorizaciones_Obtener")]
