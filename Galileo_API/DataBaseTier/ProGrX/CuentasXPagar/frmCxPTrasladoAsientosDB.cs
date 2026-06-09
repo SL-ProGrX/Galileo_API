@@ -4,6 +4,7 @@ using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
+using System.Globalization;
 using System.Text;
 
 namespace Galileo.DataBaseTier
@@ -393,12 +394,42 @@ namespace Galileo.DataBaseTier
         /// <returns>Número de asiento generado.</returns>
         private static string BuildNumAsiento(AsientoInfo data, TrasladoData inf)
         {
-            if (!string.IsNullOrWhiteSpace(data.vMascara))
+            if (TryBuildFormatoTransaccion(data.vMascara, inf.Cod_Transaccion, out var transaccionFormateada))
             {
-                return data.vTipoDoc + "." + $"{inf.Cod_Proveedor:D2}" + "." + string.Format("{0:" + data.vMascara + "}", inf.Cod_Transaccion);
+                return data.vTipoDoc + "." + $"{inf.Cod_Proveedor:D2}" + "." + transaccionFormateada;
             }
 
             return data.vTipoDoc + "." + $"{inf.Cod_Proveedor:D2}" + "." + inf.Cod_Transaccion;
+        }
+
+        private static bool TryBuildFormatoTransaccion(string? mascara, int codTransaccion, out string transaccionFormateada)
+        {
+            transaccionFormateada = string.Empty;
+            if (string.IsNullOrWhiteSpace(mascara) || !IsMascaraSegura(mascara))
+            {
+                return false;
+            }
+
+            transaccionFormateada = codTransaccion.ToString(mascara, CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        private static bool IsMascaraSegura(string mascara)
+        {
+            if (mascara.Length > 20)
+            {
+                return false;
+            }
+
+            foreach (var c in mascara)
+            {
+                if (c != '0' && c != '#' && c != '.' && c != ',')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
