@@ -9,25 +9,20 @@ using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF18ConaviGenerar :  CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF18RegistroDbModel>
+    public class CcProcesoMensualArchivoF18ConaviGenerar : CcProcesoMensualArchivoF18F19Base<CcProcesoMensualArchivoF18ConaviGenerar.CcProcesoMensualArchivoF18RegistroDbModel>
 
     {
-        public CcProcesoMensualArchivoF18ConaviGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        public CcProcesoMensualArchivoF18ConaviGenerar(
+         IOptions<ArchivosGeneradosOptions> archivosOptions)
+         : base(archivosOptions)
         {
         }
-        
-        private const string TipoAhorro = "A";
-        private const string TipoExtraordinario = "E";
-        private const string TipoCredito = "C";
-
-        private decimal _porcAhorro;
+         
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["18"];
 
         protected override string CodigoPlanillaEnvio => "18";
         protected override string CodigoFormato => "F18";
-        protected override string ExtensionArchivo => ".txt";
-        protected override string ContentType => ContentTypeText;
 
         protected override string QueryRegistros => @"
             SELECT
@@ -45,17 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.cod_deduccion, P.movimiento";
 
-        protected override void PrepararConfiguracion(
-            IDbConnection connection,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            _porcAhorro = configuracion.PorcAhorro;
-        }
-
-        protected override string CrearLineaArchivo(
-            CcProcesoMensualArchivoF18RegistroDbModel registro,
-            CcProcesoMensualGeneraArchivoRequest request)
+        protected override string CrearLineaArchivo(  CcProcesoMensualArchivoF18RegistroDbModel registro,  CcProcesoMensualGeneraArchivoRequest request)
         {
             return string.Join(
                 "\t",
@@ -66,17 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 "0");
         }
 
-        private string FormatearMontoPorTipo(
-            CcProcesoMensualArchivoF18RegistroDbModel registro)
-        {
-            return registro.Tipo?.Trim().ToUpperInvariant() switch
-            {
-                TipoAhorro => _porcAhorro.ToString("######0.00", CultureInfo.InvariantCulture),
-                TipoExtraordinario => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
-                TipoCredito => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
-                _ => string.Empty
-            };
-        }
+         
 
         private static string FormatearCedula(string? cedula)
         {
@@ -96,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 : texto;
         }
 
-        public sealed class CcProcesoMensualArchivoF18RegistroDbModel
+        public sealed class CcProcesoMensualArchivoF18RegistroDbModel : ICcProcesoMensualArchivoTipoMontoRegistro
         {
             public string Cedula { get; set; } = string.Empty;
             public string Tipo { get; set; } = string.Empty;

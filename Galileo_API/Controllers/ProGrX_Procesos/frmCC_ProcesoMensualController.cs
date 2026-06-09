@@ -31,8 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         {
             return _bl.CcProcesoMensual_Inicial_Obtener(
                 codEmpresa,
-                gInstitucion,
-                usuario);
+                gInstitucion);
         }
 
         [HttpGet("CcProcesoMensual_Bitacora_Obtener")]

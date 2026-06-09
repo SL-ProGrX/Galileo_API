@@ -23,9 +23,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
          
         }
 
-        public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion, string usuario)
+        public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion)
         {
-            return _dbEstado.CcProcesoMensual_Inicial_Obtener(codEmpresa, gInstitucion, usuario);
+            return _dbEstado.CcProcesoMensual_Inicial_Obtener(codEmpresa, gInstitucion);
         }
         public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(int codEmpresa, int gInstitucion, int proceso)
         {
