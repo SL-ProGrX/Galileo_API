@@ -68,20 +68,28 @@ namespace Galileo.DataBaseTier
                     Proveedores = new List<ProveedorPagos>()
                 };
 
-                var filtroAdicional = string.IsNullOrWhiteSpace(filtroQ) ? string.Empty : filtroQ;
                 var filtroTexto = string.IsNullOrWhiteSpace(filtro) ? null : filtro.Trim();
                 var offset = pagina.GetValueOrDefault();
                 var fetch = paginacion.GetValueOrDefault();
+                var whereAdicional = ConstruirFiltroProveedorSeguro(filtroQ);
 
-                var totalQuery = string.IsNullOrWhiteSpace(filtroAdicional)
-                    ? "SELECT COUNT(*) FROM CXP_PROVEEDORES"
-                    : "SELECT COUNT(*) FROM CXP_PROVEEDORES P inner join CntX_Divisas D ON P.cod_divisa = D.cod_divisa and D.cod_contabilidad = 1 " + filtroAdicional;
+                var totalQuery = @"SELECT COUNT(*)
+                                   FROM CXP_PROVEEDORES P
+                                   INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa AND D.cod_contabilidad = 1
+                                   WHERE 1 = 1 "
+                                   + whereAdicional;
 
-                respuesta.Total = connection.QueryFirstOrDefault<int>(totalQuery);
+                if (!string.IsNullOrWhiteSpace(filtroTexto))
+                {
+                    totalQuery += " AND (CONVERT(varchar(50), P.COD_PROVEEDOR) LIKE @Filtro OR P.DESCRIPCION LIKE @Filtro) ";
+                }
 
-                var whereFiltro = string.IsNullOrWhiteSpace(filtroTexto)
-                    ? string.Empty
-                    : " AND (P.COD_PROVEEDOR LIKE @Filtro OR P.DESCRIPCION LIKE @Filtro) ";
+                respuesta.Total = connection.QueryFirstOrDefault<int>(
+                    totalQuery,
+                    new
+                    {
+                        Filtro = filtroTexto is null ? null : $"%{filtroTexto}%"
+                    });
 
                 var paginaSql = pagina.HasValue && paginacion.HasValue
                     ? " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY "
@@ -94,11 +102,16 @@ namespace Galileo.DataBaseTier
                                       P.cod_banco,
                                       dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) AS Cuenta_Default
                                FROM cxp_proveedores P
-                               inner join CntX_Divisas D ON P.cod_divisa = D.cod_divisa and D.cod_contabilidad = 1 "
-                            + filtroAdicional
-                            + whereFiltro
-                            + @" ORDER BY COD_PROVEEDOR "
-                            + paginaSql;
+                               INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa AND D.cod_contabilidad = 1
+                               WHERE 1 = 1 "
+                            + whereAdicional;
+
+                if (!string.IsNullOrWhiteSpace(filtroTexto))
+                {
+                    query += " AND (CONVERT(varchar(50), P.COD_PROVEEDOR) LIKE @Filtro OR P.DESCRIPCION LIKE @Filtro) ";
+                }
+
+                query += " ORDER BY COD_PROVEEDOR " + paginaSql;
 
                 respuesta.Proveedores = connection.Query<ProveedorPagos>(
                     query,
@@ -115,6 +128,38 @@ namespace Galileo.DataBaseTier
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? new ProveedoresPagosLista { Total = 0, Proveedores = new List<ProveedorPagos>() })
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener proveedores.", result.Code.GetValueOrDefault(-1), new ProveedoresPagosLista { Total = 0, Proveedores = new List<ProveedorPagos>() });
+        }
+
+        /// <summary>
+        /// Construye un filtro seguro para proveedores a partir de un conjunto limitado de expresiones conocidas.
+        /// </summary>
+        /// <param name="filtroQ">Filtro adicional recibido desde la pantalla.</param>
+        /// <returns>Fragmento SQL seguro para el WHERE.</returns>
+        private static string ConstruirFiltroProveedorSeguro(string? filtroQ)
+        {
+            if (string.IsNullOrWhiteSpace(filtroQ))
+            {
+                return string.Empty;
+            }
+
+            var valor = filtroQ.Trim();
+            var permitido = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["AND P.WEB_AUTO_GESTION = 1"] = " AND P.WEB_AUTO_GESTION = 1 ",
+                ["AND P.WEB_FERIAS = 1"] = " AND P.WEB_FERIAS = 1 ",
+                ["AND P.ESTADO = 'A'"] = " AND P.ESTADO = 'A' ",
+                ["AND P.ESTADO = 'I'"] = " AND P.ESTADO = 'I' ",
+                ["AND P.ESTADO = 'S'"] = " AND P.ESTADO = 'S' ",
+                ["AND P.ESTADO = 'T'"] = " AND P.ESTADO = 'T' ",
+                ["AND (P.WEB_AUTO_GESTION = 1 OR P.WEB_FERIAS = 1)"] = " AND (P.WEB_AUTO_GESTION = 1 OR P.WEB_FERIAS = 1) ",
+                ["AND P.WEB_AUTO_GESTION = 1 AND P.ESTADO = 'A'"] = " AND P.WEB_AUTO_GESTION = 1 AND P.ESTADO = 'A' ",
+                ["AND P.WEB_FERIAS = 1 AND P.ESTADO = 'A'"] = " AND P.WEB_FERIAS = 1 AND P.ESTADO = 'A' ",
+                ["AND (P.WEB_AUTO_GESTION = 1 OR P.WEB_FERIAS = 1) AND P.ESTADO = 'A'"] = " AND (P.WEB_AUTO_GESTION = 1 OR P.WEB_FERIAS = 1) AND P.ESTADO = 'A' "
+            };
+
+            return permitido.TryGetValue(valor, out var resultado)
+                ? resultado
+                : string.Empty;
         }
 
         /// <summary>
@@ -554,104 +599,163 @@ namespace Galileo.DataBaseTier
                 };
         }
 
+        /// <summary>
+        /// Inserta el detalle contable de una transacción de tesorería.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Detalle a registrar.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Detalle_Insertar(int CodEmpresa, TesTransAsiento data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"INSERT Tes_Trans_Asiento(nsolicitud, cuenta_contable, monto, debehaber, linea, cod_unidad, cod_cc, cod_divisa, tipo_cambio)
+                  VALUES(@NSolicitud, @Cuenta_Contable, @Monto, @DebeHaber, @Linea, @Cod_Unidad, @Cod_Cc, @Cod_Divisa, @Tipo_Cambio)",
+                new
+                {
+                    data.NSolicitud,
+                    data.Cuenta_Contable,
+                    data.Monto,
+                    data.DebeHaber,
+                    data.Linea,
+                    data.Cod_Unidad,
+                    data.Cod_Cc,
+                    data.Cod_Divisa,
+                    data.Tipo_Cambio
+                });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT Tes_Trans_Asiento(nsolicitud,cuenta_contable,monto,debehaber,linea,cod_unidad,cod_cc,cod_divisa,tipo_cambio) 
-                        VALUES({data.NSolicitud},'{data.Cuenta_Contable}',{data.Monto}
-                       ,'{data.DebeHaber}',{data.Linea},'{data.Cod_Unidad}','{data.Cod_Cc}','{data.Cod_Divisa}',{data.Tipo_Cambio})";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Registro agregado correctamente";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro agregado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar detalle de tesorería.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Obtiene el monto de cargos asociados a anticipos ya trasladados a tesorería para un proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Información de anticipos aplicada al proveedor.</returns>
         public ErrorDto<Anticipo> MontoAnticipos_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Anticipo>
+            var result = DbHelper.ExecuteSingleQuery<Anticipo>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT ISNULL(SUM(Pc.monto), 0) AS Cargos
+                  FROM CXP_CARGOSPER Cp
+                  INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
+                  INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
+                  INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR AND Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
+                  WHERE Cp.COD_PROVEEDOR = @Cod_Proveedor
+                    AND Pf.user_traslada = 'xBITxTesx'",
+                null,
+                new { Cod_Proveedor });
+
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT isnull(Sum(Pc.monto),0) AS 'Cargos'
-                                FROM CXP_CARGOSPER Cp INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
-                                INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
-                                INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR  AND  Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
-                                Where Cp.COD_PROVEEDOR = {Cod_Proveedor}
-                                AND Pf.user_traslada = 'xBITxTesx' ";
-                response.Result = connection.Query<Anticipo>(query).FirstOrDefault();
+                return new ErrorDto<Anticipo>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener monto de anticipos.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<Anticipo>
+                {
+                    Code = -2,
+                    Description = "No se encontró información de anticipos.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Inserta una solicitud en tesorería.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Información de la solicitud.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Tesoreria_Insertar(int CodEmpresa, TesTransacciones data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"INSERT Tes_Transacciones(id_banco, tipo, codigo, beneficiario, monto, fecha_solicitud, estado, estadoi,
+                                           modulo, submodulo, cta_ahorros, detalle1, detalle2, referencia, op, genera, actualiza, cod_unidad,
+                                           cod_concepto, user_solicita, autoriza, fecha_autorizacion, user_autoriza, tipo_beneficiario, tipo_cambio, cod_divisa)
+                  VALUES(@Id_Banco, @Tipo, @Codigo, @Beneficiario, @Monto, @Fecha_Solicitud, @Estado, @Estadoi,
+                         @Modulo, @Submodulo, @Cta_Ahorros, @Detalle1, @Detalle2, @Referencia, @Op, @Genera, @Actualiza, @Cod_Unidad,
+                         @Cod_Concepto, @User_Solicita, @Autoriza, @Fecha_Autorizacion, @User_Autoriza, @Tipo_Beneficiario, @Tipo_Cambio, @Cod_Divisa)",
+                new
+                {
+                    data.Id_Banco,
+                    data.Tipo,
+                    data.Codigo,
+                    data.Beneficiario,
+                    data.Monto,
+                    data.Fecha_Solicitud,
+                    data.Estado,
+                    data.Estadoi,
+                    data.Modulo,
+                    data.Submodulo,
+                    data.Cta_Ahorros,
+                    data.Detalle1,
+                    data.Detalle2,
+                    data.Referencia,
+                    data.Op,
+                    data.Genera,
+                    data.Actualiza,
+                    data.Cod_Unidad,
+                    data.Cod_Concepto,
+                    data.User_Solicita,
+                    data.Autoriza,
+                    data.Fecha_Autorizacion,
+                    data.User_Autoriza,
+                    data.Tipo_Beneficiario,
+                    data.Tipo_Cambio,
+                    data.Cod_Divisa
+                });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var query = $@"INSERT Tes_Transacciones(id_banco,tipo,codigo,beneficiario,monto,fecha_solicitud,estado,estadoi
-                                ,modulo,submodulo,cta_ahorros,detalle1,detalle2,referencia,op,genera,actualiza,cod_unidad
-                                ,cod_concepto,user_solicita,autoriza,fecha_autorizacion,user_autoriza,TIPO_BENEFICIARIO,tipo_cambio,cod_divisa)  
-                                VALUES({data.Id_Banco},'{data.Tipo}','{data.Codigo}','{data.Beneficiario}',{data.Monto},'{data.Fecha_Solicitud}','{data.Estado}',
-                                '{data.Estadoi}','{data.Modulo}','{data.Submodulo}','{data.Cta_Ahorros}'),'{data.Detalle1}','{data.Detalle2}',{data.Referencia},
-                                {data.Op},'{data.Genera}','{data.Actualiza}','{data.Cod_Unidad}','{data.Cod_Concepto}','{data.User_Solicita}','{data.Autoriza}',
-                                '{data.Fecha_Autorizacion}','{data.User_Autoriza}',{data.Tipo_Beneficiario},{data.Tipo_Cambio}";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Registro agregado correctamente";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro agregado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar solicitud de tesorería.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Obtiene una solicitud de tesorería por número.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="nSolicitud">Número de solicitud.</param>
+        /// <returns>Información de la solicitud encontrada.</returns>
         public ErrorDto<TesTransacciones> Tesoreria_Obtener(int CodEmpresa, int nSolicitud)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesTransacciones>
+            var result = DbHelper.ExecuteSingleQuery<TesTransacciones>(
+                CreatePortalDb(),
+                CodEmpresa,
+                "SELECT * FROM Tes_Transacciones WHERE nsolicitud = @nSolicitud",
+                null,
+                new { nSolicitud });
+
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT * FROM Tes_Transacciones WHERE nsolicitud = {nSolicitud}";
-                response.Result = connection.Query<TesTransacciones>(query).FirstOrDefault();
+                return new ErrorDto<TesTransacciones>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener tesorería.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<TesTransacciones>
+                {
+                    Code = -2,
+                    Description = "No se encontró la solicitud de tesorería.",
+                    Result = null
+                };
         }
 
         public ErrorDto EjecucionPagosCargos_Registra(int CodEmpresa, FacturaPendientePago data)
@@ -746,87 +850,105 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        /// <summary>
+        /// Obtiene los desembolsos netos acumulados de un proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Totales netos del proveedor.</returns>
         public ErrorDto<DesembolsoNetos> DesembolsoNetos_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<DesembolsoNetos>
+            var result = DbHelper.ExecuteSingleQuery<DesembolsoNetos>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT CEDJUR,
+                         cod_proveedor,
+                         SUM(monto - cargos) AS Neto,
+                         SUM(Divisa_Real_Neto) AS Divisa_Real_Neto
+                  FROM vCXP_Pagos
+                  WHERE cod_Proveedor = @Cod_Proveedor
+                  GROUP BY cod_proveedor, CEDJUR",
+                null,
+                new { Cod_Proveedor });
+
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT CEDJUR, cod_proveedor, SUM(monto - cargos) AS Neto, SUM(Divisa_Real_Neto) AS 'Divisa_Real_Neto'
-                                FROM vCXP_Pagos 
-                                WHERE cod_Proveedor = {Cod_Proveedor}
-                                GROUP BY cod_proveedor, CEDJUR;
-                                ";
-                response.Result = connection.Query<DesembolsoNetos>(query).FirstOrDefault();
+                return new ErrorDto<DesembolsoNetos>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener desembolsos netos.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<DesembolsoNetos>
+                {
+                    Code = -2,
+                    Description = "No se encontró información de desembolsos netos.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Actualiza los indicadores de pagos enviados a tesorería para un proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos a actualizar.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Indicadores_Actualizar(int CodEmpresa, PagoProvUpdate data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"UPDATE cxp_pagoprov
+                  SET tesoreria = @Tesoreria,
+                      fecha_traslada = GETDATE(),
+                      user_traslada = @User_Traslada,
+                      pago_tercero = @Pago_Tercero
+                  WHERE user_traslada = 'xBITxTesx'
+                    AND cod_proveedor = @Cod_Proveedor",
+                new
+                {
+                    data.Tesoreria,
+                    data.User_Traslada,
+                    Pago_Tercero = data.IsPagoTerceroChecked ? data.Pago_Tercero : string.Empty,
+                    data.Cod_Proveedor
+                });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE cxp_pagoprov 
-                                    SET tesoreria = {data.Tesoreria},
-                                        fecha_traslada = Getdate(),
-                                        user_traslada = '{data.User_Traslada}',
-                                        pago_tercero = '{(data.IsPagoTerceroChecked ? data.Pago_Tercero : string.Empty)}'
-                                    WHERE user_traslada = 'xBITxTesx'
-                                    AND cod_proveedor = {data.Cod_Proveedor}";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Registro actualizado correctamente";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro actualizado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar indicadores de pago.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Actualiza la cancelación de cargos trasladados a tesorería.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="Usuario">Usuario que realiza la operación.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto CancelacionCargos_Actualizar(int CodEmpresa, int Cod_Proveedor, string Usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"UPDATE cxp_pagoprov
+                  SET tesoreria = 0,
+                      Tipo_Cancelacion = 'C',
+                      Tesoreria_Estado = 'E',
+                      fecha_traslada = GETDATE(),
+                      user_traslada = @Usuario,
+                      pago_tercero = '',
+                      Tesoreria_Emision = GETDATE()
+                  WHERE user_traslada = 'xBITxTesx'
+                    AND cod_proveedor = @Cod_Proveedor",
+                new { Usuario, Cod_Proveedor });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE cxp_pagoprov 
-                                    SET tesoreria = 0,
-                                        Tipo_Cancelacion = 'C',
-                                        Tesoreria_Estado = 'E',
-                                        fecha_traslada = Getdate(),
-                                        user_traslada = '{Usuario}',
-                                        pago_tercero = '',
-                                        Tesoreria_Emision = Getdate()
-                                    WHERE user_traslada = 'xBITxTesx'
-                                    AND cod_proveedor = {Cod_Proveedor}";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Cargos actualizado correctamente";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Cargos actualizado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar cancelación de cargos.", result.Code.GetValueOrDefault(-1));
         }
 
         public ErrorDto EjecucionPagos_TesoreriaDetalle_Actualizar(int CodEmpresa)
@@ -850,92 +972,104 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        /// <summary>
+        /// Obtiene los cargos periódicos asociados a anticipos trasladados del proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Listado de cargos periódicos.</returns>
         public ErrorDto<List<CargoPer>> CargosPer_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CargoPer>>
-            {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"SELECT Cr.COD_CARGO, Cr.DESCRIPCION, Cr.COD_CUENTA, Pc.monto, Pc.COD_DIVISA
-                                    FROM CXP_CARGOSPER Cp
-                                    INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
-                                    INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
-                                    INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR AND Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
-                                    INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
-                                    WHERE Cp.COD_PROVEEDOR = {Cod_Proveedor} AND Pf.user_traslada = 'xBITxTesx'";
-                response.Result = connection.Query<CargoPer>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+            return DbHelper.ExecuteListQuery<CargoPer>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT Cr.COD_CARGO,
+                         Cr.DESCRIPCION,
+                         Cr.COD_CUENTA,
+                         Pc.monto,
+                         Pc.COD_DIVISA
+                  FROM CXP_CARGOSPER Cp
+                  INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
+                  INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
+                  INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR AND Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
+                  INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
+                  WHERE Cp.COD_PROVEEDOR = @Cod_Proveedor
+                    AND Pf.user_traslada = 'xBITxTesx'",
+                new { Cod_Proveedor });
         }
 
+        /// <summary>
+        /// Obtiene la información del proveedor necesaria para tesorería.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="cod_contabilidad">Código de contabilidad.</param>
+        /// <returns>Información del proveedor para tesorería.</returns>
         public ErrorDto<ProveedorInfoEjecucion> ProveedorTesoreria_Obtener(int CodEmpresa, int Cod_Proveedor, int cod_contabilidad)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<ProveedorInfoEjecucion>
+            var result = DbHelper.ExecuteSingleQuery<ProveedorInfoEjecucion>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT P.CEDJUR,
+                         P.cod_proveedor,
+                         P.descripcion,
+                         P.cod_cuenta,
+                         P.cod_divisa,
+                         D.cod_cuenta AS CtaDivDifIng,
+                         D.cod_cuenta_Gasto AS CtaDivDifGst,
+                         dbo.fxCntXTipoCambio(1, P.COD_DIVISA, GETDATE(), 'V') AS TipoCambio,
+                         GETDATE() AS Fecha
+                  FROM Cxp_Proveedores P
+                  INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa
+                  WHERE D.cod_contabilidad = @cod_contabilidad
+                    AND P.cod_proveedor = @Cod_Proveedor",
+                null,
+                new { Cod_Proveedor, cod_contabilidad });
+
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select P.CEDJUR, P.cod_proveedor, P.descripcion, P.cod_cuenta, P.cod_divisa,
-                                       D.cod_cuenta as 'CtaDivDifIng', D.cod_cuenta_Gasto as 'CtaDivDifGst',
-                                       dbo.fxCntXTipoCambio(1, P.COD_DIVISA, Getdate(), 'V') as 'TipoCambio',
-                                       Getdate() as Fecha
-                                from  Cxp_Proveedores P
-                                inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa
-                                and D.cod_contabilidad = {cod_contabilidad}
-                                where P.cod_proveedor = {Cod_Proveedor}
-                                ";
-                response.Result = connection.Query<ProveedorInfoEjecucion>(query).FirstOrDefault();
+                return new ErrorDto<ProveedorInfoEjecucion>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener proveedor para tesorería.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<ProveedorInfoEjecucion>
+                {
+                    Code = -2,
+                    Description = "No se encontró información del proveedor para tesorería.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Obtiene los anticipos trasladados asociados al proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Listado de anticipos.</returns>
         public ErrorDto<List<Anticipo>> Anticipos_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Anticipo>>
-            {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"SELECT Cr.COD_CARGO, Cr.DESCRIPCION, Cr.COD_CUENTA, Pc.monto, Pc.COD_DIVISA
-                                    FROM CXP_CARGOSPER Cp
-                                    INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
-                                    INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
-                                    INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR AND Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
-                                    INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
-                                    WHERE Cp.COD_PROVEEDOR = {Cod_Proveedor} AND Pf.user_traslada = 'xBITxTesx'";
-                response.Result = connection.Query<Anticipo>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+            return DbHelper.ExecuteListQuery<Anticipo>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT Cr.COD_CARGO,
+                         Cr.DESCRIPCION,
+                         Cr.COD_CUENTA,
+                         Pc.monto,
+                         Pc.COD_DIVISA
+                  FROM CXP_CARGOSPER Cp
+                  INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR AND Cp.COD_CARGO = Ca.COD_CARGO AND Cp.ID = Ca.ID_CARGO
+                  INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
+                  INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR AND Pf.COD_FACTURA = Pc.COD_FACTURA AND Pc.NPAGO = Pf.NPAGO AND Pc.ID = Cp.ID
+                  INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
+                  WHERE Cp.COD_PROVEEDOR = @Cod_Proveedor
+                    AND Pf.user_traslada = 'xBITxTesx'",
+                new { Cod_Proveedor });
         }
         
         /// <summary>

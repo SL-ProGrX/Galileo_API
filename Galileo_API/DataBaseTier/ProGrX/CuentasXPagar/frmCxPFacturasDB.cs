@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using System.Data;
@@ -318,14 +317,16 @@ namespace Galileo.DataBaseTier
             return DbHelper.CreateOkResponse(result.Result ?? new List<AsientoFactura>());
         }
 
+        /// <summary>
+        /// Cambia el número de una factura mediante procedimiento almacenado.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos del cambio de número.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto FacturaNumero_Cambiar(int CodEmpresa, FacturaCambioNo data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto resp = new ErrorDto();
-            try
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
                 var procedure = "[spCxP_Factura_Cambio_No]";
                 var values = new
                 {
@@ -333,489 +334,584 @@ namespace Galileo.DataBaseTier
                     Factura = data.Cod_Factura,
                     FactNew = data.Cod_FacturaNew,
                     Usuario = data.Usuario,
-
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                resp.Description = "Ok";
-
-                if (resp.Code == 0)
+                var code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                return new ErrorDto
                 {
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = data.Usuario,
-                        DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " --> " + data.Cod_FacturaNew + " Prov.Id: " + data.Cod_Proveedor,
-                        Movimiento = "APLICA - WEB",
-                        Modulo = 30
-                    });
-                }
-            }
-            catch (Exception ex)
+                    Code = code,
+                    Description = "Ok"
+                };
+            });
+
+            var respuesta = result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(result.Description ?? "Error al cambiar número de factura.", result.Code.GetValueOrDefault(-1));
+
+            if (respuesta.Code == 0)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.Usuario,
+                    DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " --> " + data.Cod_FacturaNew + " Prov.Id: " + data.Cod_Proveedor,
+                    Movimiento = "APLICA - WEB",
+                    Modulo = 30
+                });
             }
-            return resp;
+
+            return respuesta;
         }
 
+        /// <summary>
+        /// Actualiza el impuesto de ventas de una factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos del impuesto a actualizar.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto FacturaImpuesto_Actualizar(int CodEmpresa, FacturaImpuesto data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE cxp_facturas SET 
-                                IMPUESTO_VENTAS = '{data.Impuesto_Ventas}'
-                                WHERE cod_proveedor = {data.Cod_Proveedor}
-                                AND cod_factura = '{data.Cod_Factura}'";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-
-                if (resp.Code == 0)
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"UPDATE cxp_facturas
+                  SET IMPUESTO_VENTAS = @Impuesto_Ventas
+                  WHERE cod_proveedor = @Cod_Proveedor
+                    AND cod_factura = @Cod_Factura",
+                new
                 {
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = data.Usuario,
-                        DetalleMovimiento = "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas,
-                        Movimiento = "MODIFICA - WEB",
-                        Modulo = 30
-                    });
-                }
-            }
-            catch (Exception ex)
+                    data.Impuesto_Ventas,
+                    data.Cod_Proveedor,
+                    data.Cod_Factura
+                });
+
+            if (result.Code == 0)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.Usuario,
+                    DetalleMovimiento = "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas,
+                    Movimiento = "MODIFICA - WEB",
+                    Modulo = 30
+                });
             }
-            return resp;
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar impuesto de factura.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Obtiene la información del proveedor asociada a la factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Información del proveedor para factura.</returns>
         public ErrorDto<ProveedorFactura> ProveedorFactura_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
+            var result = DbHelper.ExecuteSingleQuery<ProveedorFactura>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"select distinct P.cod_proveedor,
+                                        P.descripcion,
+                                        P.cod_divisa,
+                                        c.cod_cuenta,
+                                        C.COD_CUENTA_MASK,
+                                        c.DESCRIPCION as Desc_Cuenta,
+                                        rtrim(D.descripcion) as Divisa_Local
+                  from Cxp_Proveedores P
+                  inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa
+                  inner join CNTX_CUENTAS C on p.COD_CUENTA = c.COD_CUENTA
+                  where D.cod_contabilidad = 1
+                    and P.cod_proveedor = @Cod_Proveedor",
+                null,
+                new { Cod_Proveedor });
 
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var response = new ErrorDto<ProveedorFactura>
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select distinct P.cod_proveedor,P.descripcion,P.cod_divisa,c.cod_cuenta, C.COD_CUENTA_MASK, c.DESCRIPCION as Desc_Cuenta
-                                ,rtrim(D.descripcion) as 'Divisa_Local'
-                                from  Cxp_Proveedores P 
-                                inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa
-                                inner join CNTX_CUENTAS C on p.COD_CUENTA = c.COD_CUENTA
-                                and D.cod_contabilidad = 1
-                                where P.cod_proveedor = {Cod_Proveedor}";
-
-                response.Result = connection.Query<ProveedorFactura>(query).FirstOrDefault();
-
+                return new ErrorDto<ProveedorFactura>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener proveedor de factura.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<ProveedorFactura>
+                {
+                    Code = -2,
+                    Description = "No se encontró el proveedor de la factura.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Obtiene la factura anterior o siguiente según la dirección indicada.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Factura">Código actual de la factura.</param>
+        /// <param name="tipo">Dirección del desplazamiento: asc o desc.</param>
+        /// <returns>Factura encontrada para el desplazamiento.</returns>
         public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string query;
+            object parametros;
 
-            var response = new ErrorDto<FacturaAntSig>
+            if (tipo == "desc")
             {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = "";
-
-                if (tipo == "desc")
+                if (Cod_Factura == "0")
                 {
-                    if (Cod_Factura == "0")
-                    {
-                        query = $@"select Top 1 cod_factura from cxp_facturas
-                                    order by cod_factura desc";
-                    }
-                    else
-                    {
-                        query = $@"select Top 1 cod_factura from cxp_facturas
-                                    where cod_factura < '{Cod_Factura}' order by cod_factura desc";
-                    }
-
+                    query = @"select Top 1 cod_factura
+                              from cxp_facturas
+                              order by cod_factura desc";
+                    parametros = new { };
                 }
                 else
                 {
-                    query = $@"select Top 1 cod_factura from cxp_facturas
-                                    where cod_factura > '{Cod_Factura}' order by cod_factura asc";
+                    query = @"select Top 1 cod_factura
+                              from cxp_facturas
+                              where cod_factura < @Cod_Factura
+                              order by cod_factura desc";
+                    parametros = new { Cod_Factura };
                 }
-
-
-                response.Result = connection.Query<FacturaAntSig>(query).FirstOrDefault();
             }
-            catch (Exception ex)
+            else
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+                query = @"select Top 1 cod_factura
+                          from cxp_facturas
+                          where cod_factura > @Cod_Factura
+                          order by cod_factura asc";
+                parametros = new { Cod_Factura };
             }
-            return response;
+
+            var result = DbHelper.ExecuteSingleQuery<FacturaAntSig>(
+                CreatePortalDb(),
+                CodEmpresa,
+                query,
+                null,
+                parametros);
+
+            if (result.Code != 0)
+            {
+                return new ErrorDto<FacturaAntSig>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al consultar factura anterior o siguiente.",
+                    Result = null
+                };
+            }
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<FacturaAntSig>
+                {
+                    Code = -2,
+                    Description = "No se encontró una factura para el desplazamiento solicitado.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Anula una factura mediante procedimiento almacenado.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos de la anulación.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Factura_Anular(int CodEmpresa, FacturaAnular data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto resp = new()
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
                 var procedure = "[spCxPFacturaAnula]";
                 var values = new
                 {
                     Proveedor = data.Cod_Proveedor,
                     Factura = data.Cod_Factura,
                     Usuario = data.Usuario,
-
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                resp.Description = "Ok";
-
-                if (resp.Code == 0)
+                var code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                return new ErrorDto
                 {
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = data.Usuario,
-                        DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " Prov.Id: " + data.Cod_Proveedor,
-                        Movimiento = "APLICA - WEB",
-                        Modulo = 30
-                    });
-                }
-            }
-            catch (Exception ex)
+                    Code = code,
+                    Description = "Ok"
+                };
+            });
+
+            var respuesta = result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(result.Description ?? "Error al anular factura.", result.Code.GetValueOrDefault(-1));
+
+            if (respuesta.Code == 0)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.Usuario,
+                    DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " Prov.Id: " + data.Cod_Proveedor,
+                    Movimiento = "APLICA - WEB",
+                    Modulo = 30
+                });
             }
-            return resp;
+
+            return respuesta;
         }
 
+        /// <summary>
+        /// Obtiene el listado paginado de plantillas activas de factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="pagina">Fila inicial para paginación.</param>
+        /// <param name="paginacion">Cantidad de filas por página.</param>
+        /// <param name="filtro">Filtro opcional por código o descripción.</param>
+        /// <returns>Listado paginado de plantillas.</returns>
         public ErrorDto<FacturaPlantillaLista> Plantillas_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var response = new ErrorDto<FacturaPlantillaLista>
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                Code = 0,
-                Result = new FacturaPlantillaLista()
-            };
-            response.Result.Total = 0;
-            try
-            {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                using var connection = new SqlConnection(clienteConnString);
-                //Busco Total
-                query = "SELECT COUNT(*) from CXP_PLANTILLAS ";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-
-                if (filtro != null)
+                var respuesta = new FacturaPlantillaLista
                 {
-                    filtro = " and COD_PLANTILLA LIKE '%" + filtro + "%' OR DESCRIPCION LIKE '%" + filtro + "%' ";
+                    Total = 0,
+                    Plantillas = new List<FacturaPlantilla>()
+                };
+
+                var parametros = new DynamicParameters();
+                var totalBuilder = new System.Text.StringBuilder("SELECT COUNT(*) from CXP_PLANTILLAS WHERE ACTIVO = 1");
+                var detalleBuilder = new System.Text.StringBuilder("SELECT COD_PLANTILLA, DESCRIPCION From CXP_PLANTILLAS WHERE ACTIVO = 1");
+
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    totalBuilder.Append(" AND (COD_PLANTILLA LIKE @Filtro OR DESCRIPCION LIKE @Filtro)");
+                    detalleBuilder.Append(" AND (COD_PLANTILLA LIKE @Filtro OR DESCRIPCION LIKE @Filtro)");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
                 }
 
-                if (filtro != null)
+                respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
+
+                detalleBuilder.Append(" order by COD_PLANTILLA");
+                if (pagina.HasValue && paginacion.HasValue)
                 {
-                    paginaActual = " OFFSET " + pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                    detalleBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
                 }
 
-                query = $@"select COD_PLANTILLA, DESCRIPCION  From CXP_PLANTILLAS  WHERE ACTIVO = 1
-                                         {filtro} 
-                                        order by COD_PLANTILLA
-                                        {paginaActual}
-                                        {paginacionActual} ";
+                respuesta.Plantillas = connection.Query<FacturaPlantilla>(detalleBuilder.ToString(), parametros).ToList();
+                return respuesta;
+            });
 
-
-                response.Result.Plantillas = connection.Query<FacturaPlantilla>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new FacturaPlantillaLista { Total = 0, Plantillas = new List<FacturaPlantilla>() })
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener plantillas de factura.", result.Code.GetValueOrDefault(-1), new FacturaPlantillaLista { Total = 0, Plantillas = new List<FacturaPlantilla>() });
         }
 
+        /// <summary>
+        /// Obtiene los asientos de una plantilla de factura calculando el tipo de cambio y montos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Plantilla">Código de la plantilla.</param>
+        /// <param name="fecha">Fecha a usar para el tipo de cambio.</param>
+        /// <param name="total">Monto total para prorrateo.</param>
+        /// <returns>Listado de asientos calculados.</returns>
         public ErrorDto<List<AsientoFactura>> PlantillaAsientos_Obtener(int CodEmpresa, int Cod_Plantilla, string fecha, decimal total)
         {
-
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var response = new ErrorDto<List<AsientoFactura>>
-            {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select Cta.COD_CUENTA_MASK, Cta.DESCRIPCION, P.COD_UNIDAD, P.COD_CENTRO_COSTO, Cta.COD_DIVISA
-                                , dbo.fxCntXTipoCambio(P.COD_CONTABILIDAD, Cta.COD_DIVISA, '{fecha}', 'V') as 'Tipo_Cambio'
-                                , {total} * P.PORCENTAJE / 100 as 'Debito', 0 as 'Credito'
-                                , isnull(D.DESCRIPCION,'') as 'Divisa_Desc'
-                                , isnull(U.DESCRIPCION,'') as 'Unidad_Desc', isnull(C.DESCRIPCION,'') as 'Centro_Desc'
-                                from CXP_PLANTILLAS_ASIENTO P inner join CNTX_CUENTAS Cta on P.COD_CONTABILIDAD = Cta.COD_CONTABILIDAD
-                                and P.COD_CUENTA = Cta.COD_CUENTA
-                                left join CNTX_DIVISAS D on Cta.COD_CONTABILIDAD = D.COD_CONTABILIDAD and   Cta.COD_DIVISA = D.COD_DIVISA
-                                left join CNTX_UNIDADES U on P.COD_CONTABILIDAD = U.COD_CONTABILIDAD and P.COD_UNIDAD = U.COD_UNIDAD
-                                left join CNTX_CENTRO_COSTOS  C on P.COD_CONTABILIDAD = C.COD_CONTABILIDAD and P.COD_CENTRO_COSTO = C.COD_CENTRO_COSTO
-                                Where COD_PLANTILLA = {Cod_Plantilla}
-                                order by LINEA;";
-
-                response.Result = connection.Query<AsientoFactura>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+            return DbHelper.ExecuteListQuery<AsientoFactura>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"select Cta.COD_CUENTA_MASK,
+                         Cta.DESCRIPCION,
+                         P.COD_UNIDAD,
+                         P.COD_CENTRO_COSTO,
+                         Cta.COD_DIVISA,
+                         dbo.fxCntXTipoCambio(P.COD_CONTABILIDAD, Cta.COD_DIVISA, @fecha, 'V') as Tipo_Cambio,
+                         @total * P.PORCENTAJE / 100 as Debito,
+                         0 as Credito,
+                         isnull(D.DESCRIPCION,'') as Divisa_Desc,
+                         isnull(U.DESCRIPCION,'') as Unidad_Desc,
+                         isnull(C.DESCRIPCION,'') as Centro_Desc
+                  from CXP_PLANTILLAS_ASIENTO P
+                  inner join CNTX_CUENTAS Cta on P.COD_CONTABILIDAD = Cta.COD_CONTABILIDAD and P.COD_CUENTA = Cta.COD_CUENTA
+                  left join CNTX_DIVISAS D on Cta.COD_CONTABILIDAD = D.COD_CONTABILIDAD and Cta.COD_DIVISA = D.COD_DIVISA
+                  left join CNTX_UNIDADES U on P.COD_CONTABILIDAD = U.COD_CONTABILIDAD and P.COD_UNIDAD = U.COD_UNIDAD
+                  left join CNTX_CENTRO_COSTOS C on P.COD_CONTABILIDAD = C.COD_CONTABILIDAD and P.COD_CENTRO_COSTO = C.COD_CENTRO_COSTO
+                  Where COD_PLANTILLA = @Cod_Plantilla
+                  order by LINEA;",
+                new { Cod_Plantilla, fecha, total });
         }
 
+        /// <summary>
+        /// Obtiene las facturas marcadas como plantilla.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <returns>Listado de facturas plantilla.</returns>
         public ErrorDto<List<Factura>> PlantillaFactura_Obtener(int CodEmpresa)
         {
+            var result = DbHelper.ExecuteListQuery<Factura>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT F.cod_factura,
+                         F.cod_proveedor,
+                         P.descripcion AS Proveedor,
+                         F.total as total_factura,
+                         F.notas
+                  FROM cxp_facturas F
+                  INNER JOIN cxp_proveedores P ON F.cod_proveedor = P.cod_proveedor
+                  WHERE plantilla = 1;");
 
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var response = new ErrorDto<List<Factura>>
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT F.cod_factura,F.cod_proveedor, P.descripcion AS Proveedor,F.total as total_factura,F.notas
-                                FROM cxp_facturas F INNER JOIN cxp_proveedores P ON F.cod_proveedor = P.cod_proveedor
-                                AND plantilla = 1;";
-
-                response.Result = connection.Query<Factura>(query).ToList();
-
-                foreach (Factura ft in response.Result)
-                {
-                    ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
-                }
+                return DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas plantilla.", result.Code.GetValueOrDefault(-1), new List<Factura>());
             }
-            catch (Exception ex)
+
+            foreach (Factura ft in result.Result ?? new List<Factura>())
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+                ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
             }
-            return response;
+
+            return DbHelper.CreateOkResponse(result.Result ?? new List<Factura>());
         }
 
+        /// <summary>
+        /// Obtiene la cuenta contable asociada al proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Cuenta contable del proveedor.</returns>
         public ErrorDto<CuentaProveedor> CuentaProveedor_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteSingleQuery<CuentaProveedor>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT C.cod_cuenta,
+                         C.descripcion,
+                         C.Cod_Cuenta_Mask,
+                         P.cod_Divisa AS DivisaProv
+                  FROM cxp_proveedores P
+                  INNER JOIN Cntx_Cuentas C ON P.cod_cuenta = C.cod_cuenta and C.cod_Contabilidad = 1
+                  WHERE P.cod_proveedor = @Cod_Proveedor",
+                null,
+                new { Cod_Proveedor });
 
-            var response = new ErrorDto<CuentaProveedor>
+            if (result.Code != 0)
             {
-                Code = 0
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT C.cod_cuenta,C.descripcion,C.Cod_Cuenta_Mask,P.cod_Divisa AS 'DivisaProv'
-                                FROM cxp_proveedores P INNER JOIN Cntx_Cuentas C ON P.cod_cuenta = C.cod_cuenta and C.cod_Contabilidad = 1
-                                WHERE P.cod_proveedor = {Cod_Proveedor}";
-
-                response.Result = connection.Query<CuentaProveedor>(query).FirstOrDefault();
+                return new ErrorDto<CuentaProveedor>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? "Error al obtener cuenta del proveedor.",
+                    Result = null
+                };
             }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<CuentaProveedor>
+                {
+                    Code = -2,
+                    Description = "No se encontró la cuenta del proveedor.",
+                    Result = null
+                };
         }
 
+        /// <summary>
+        /// Obtiene el tipo de cambio de una divisa para una fecha determinada.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="cod_Divisa">Código de divisa.</param>
+        /// <param name="Fecha">Fecha de consulta.</param>
+        /// <returns>Tipo de cambio encontrado.</returns>
         public int TipoCambio_Obtener(int CodEmpresa, string cod_Divisa, string Fecha)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteSingleQuery<int>(
+                CreatePortalDb(),
+                CodEmpresa,
+                "select dbo.fxCntXTipoCambio(1, @cod_Divisa, @Fecha, 'V')",
+                0,
+                new { cod_Divisa, Fecha });
 
-            int result = 0;
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select dbo.fxCntXTipoCambio(1,'{cod_Divisa}','{Fecha}','V')";
-
-                result = connection.Query<int>(query).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            return result.Code == 0 ? result.Result : 0;
         }
 
+        /// <summary>
+        /// Elimina los asientos contables de una factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Factura">Código de factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto FacturaAsientos_Borrar(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"DELETE cxp_facturas_detalle
+                  WHERE cod_factura = @Cod_Factura
+                    AND cod_proveedor = @Cod_Proveedor",
+                new { Cod_Factura, Cod_Proveedor });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"DELETE cxp_facturas_detalle
-                                WHERE cod_factura = '{Cod_Factura}' AND cod_proveedor = {Cod_Proveedor}";
-
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al borrar asientos de factura.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Actualiza el saldo por pagar del proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Saldo">Saldo local a aplicar.</param>
+        /// <param name="Saldo_Divisa">Saldo en divisa real a aplicar.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto SaldoPagarProv_Actualizar(int CodEmpresa, decimal Saldo, decimal Saldo_Divisa, int Cod_Proveedor)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"UPDATE cxp_proveedores
+                  SET saldo = ISNULL(saldo,0) + @Saldo,
+                      SALDO_DIVISA_REAL = ISNULL(SALDO_DIVISA_REAL,0) + @Saldo_Divisa
+                  WHERE cod_proveedor = @Cod_Proveedor",
+                new { Saldo, Saldo_Divisa, Cod_Proveedor });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE cxp_proveedores SET saldo = ISNULL(saldo,0) + {Saldo}
-                                ,SALDO_DIVISA_REAL =  ISNULL(SALDO_DIVISA_REAL ,0) + {Saldo_Divisa}
-                                WHERE cod_proveedor = {Cod_Proveedor}";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar saldo por pagar del proveedor.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Inserta un asiento contable de factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos del asiento.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto FacturaAsiento_Insertar(int CodEmpresa, AsientoFactura data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"INSERT INTO cxp_facturas_detalle(linea, cod_factura, cod_proveedor, cod_contabilidad, cod_cuenta, cod_unidad, cod_centro_costo, cod_divisa,
+                                                   debeHaber, tipo_cambio, Monto)
+                  values(@Linea, @Cod_Factura, @Cod_Proveedor, @Cod_Contabilidad,
+                         @Cod_Cuenta, @Cod_Unidad, @Cod_Centro_Costo, @Cod_Divisa, @Debehaber, @Tipo_Cambio, @Monto)",
+                new
+                {
+                    data.Linea,
+                    data.Cod_Factura,
+                    data.Cod_Proveedor,
+                    data.Cod_Contabilidad,
+                    data.Cod_Cuenta,
+                    data.Cod_Unidad,
+                    data.Cod_Centro_Costo,
+                    data.Cod_Divisa,
+                    data.Debehaber,
+                    data.Tipo_Cambio,
+                    data.Monto
+                });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT INTO cxp_facturas_detalle(linea,cod_factura,cod_proveedor,cod_contabilidad,cod_cuenta,cod_unidad,cod_centro_costo,cod_divisa
-                                ,debeHaber,tipo_cambio,Monto) 
-                                values({data.Linea},'{data.Cod_Factura}',{data.Cod_Proveedor},{data.Cod_Contabilidad}
-                                ,'{data.Cod_Cuenta}','{data.Cod_Unidad}','{data.Cod_Centro_Costo}','{data.Cod_Divisa}', '{data.Debehaber}', {data.Tipo_Cambio},{data.Monto})";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar asiento de factura.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Inserta un pago de contado para la factura.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos del pago de contado.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto PagoContado_Insertar(int CodEmpresa, PagoContado data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"INSERT cxp_pagoProv(NPago, Cod_Proveedor, Cod_Factura, Fecha_Vencimiento, Monto, Frecuencia,
+                                      Tipo_Transac, User_TrasLada, Fecha_Traslada, Tesoreria, Pago_Tercero, Apl_Cargo_Flotante,
+                                      Pago_Anticipado, forma_pago, IMPORTE_DIVISA_REAL, TIPO_CAMBIO, COD_DIVISA)
+                  values(@NPago, @Cod_Proveedor, @Cod_Factura, @Fecha_Vencimiento,
+                         @Monto, @Frecuencia, @Tipo_Transac, @User_Traslada, @Fecha_Traslada,
+                         @Tesoreria, @Pago_Tercero, @Apl_Cargo_Flotante, @Pago_Anticipado, @Forma_Pago, @Importe_Divisa_Real,
+                         @Tipo_Cambio, @Cod_Divisa)",
+                new
+                {
+                    data.NPago,
+                    data.Cod_Proveedor,
+                    data.Cod_Factura,
+                    data.Fecha_Vencimiento,
+                    data.Monto,
+                    data.Frecuencia,
+                    data.Tipo_Transac,
+                    data.User_Traslada,
+                    data.Fecha_Traslada,
+                    data.Tesoreria,
+                    data.Pago_Tercero,
+                    data.Apl_Cargo_Flotante,
+                    data.Pago_Anticipado,
+                    data.Forma_Pago,
+                    data.Importe_Divisa_Real,
+                    data.Tipo_Cambio,
+                    data.Cod_Divisa
+                });
 
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT cxp_pagoProv(NPago,Cod_Proveedor,Cod_Factura,Fecha_Vencimiento,Monto,Frecuencia
-                                ,Tipo_Transac,User_TrasLada,Fecha_Traslada,Tesoreria,Pago_Tercero,Apl_Cargo_Flotante
-                                ,Pago_Anticipado,forma_pago,IMPORTE_DIVISA_REAL,TIPO_CAMBIO,COD_DIVISA) 
-                                values({data.NPago},{data.Cod_Proveedor},'{data.Cod_Factura}','{data.Fecha_Vencimiento}'
-                                ,{data.Monto},{data.Frecuencia},{data.Tipo_Transac},'{data.User_Traslada}', '{data.Fecha_Traslada}', 
-                                {data.Tesoreria},'{data.Pago_Tercero}',{data.Apl_Cargo_Flotante},{data.Pago_Anticipado},'{data.Forma_Pago}',{data.Importe_Divisa_Real}
-                                ,{data.Tipo_Cambio},'{data.Cod_Divisa}')";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar pago contado.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Inserta una nueva factura de cuentas por pagar.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Datos de la factura.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDto data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT cxp_facturas(estado,cod_factura,cod_proveedor,fecha,total,cxp_estado
-                                ,asiento_generado,plantilla,vence,creacion_fecha,creacion_user,notas,cod_forma_Pago
-                                ,cod_divisa,tipo_cambio,importe_divisa_real,IMPUESTO_VENTAS)
-                                values('{data.Estado}','{data.Cod_Factura}',{data.Cod_Proveedor},'{data.Fecha}'
-                                ,{data.Total},'{data.Cxp_Estado}','{data.Asiento_Generado}','{data.Plantilla}', '{data.Vence}', 
-                                '{DateTime.Now}','{data.Creacion_User}','{data.Notas}','{data.Cod_Forma_Pago}','{data.Cod_Divisa}',{data.Tipo_Cambio},
-                                {data.Importe_Divisa_Real}
-                                ,{data.Impuesto_Ventas})";
-
-                resp.Code = connection.Query<int>(query).FirstOrDefault();
-                resp.Description = "Ok";
-
-                if (resp.Code == 0)
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"INSERT cxp_facturas(estado, cod_factura, cod_proveedor, fecha, total, cxp_estado,
+                                      asiento_generado, plantilla, vence, creacion_fecha, creacion_user, notas, cod_forma_Pago,
+                                      cod_divisa, tipo_cambio, importe_divisa_real, IMPUESTO_VENTAS)
+                  values(@Estado, @Cod_Factura, @Cod_Proveedor, @Fecha,
+                         @Total, @Cxp_Estado, @Asiento_Generado, @Plantilla, @Vence,
+                         @Creacion_Fecha, @Creacion_User, @Notas, @Cod_Forma_Pago, @Cod_Divisa, @Tipo_Cambio,
+                         @Importe_Divisa_Real, @Impuesto_Ventas)",
+                new
                 {
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = data.Creacion_User,
-                        DetalleMovimiento = "CxP Factura: " + data.Cod_Factura + " Prov: " + data.Cod_Proveedor,
-                        Movimiento = "REGISTRA - WEB",
-                        Modulo = 30
-                    });
-                }
-            }
-            catch (Exception ex)
+                    data.Estado,
+                    data.Cod_Factura,
+                    data.Cod_Proveedor,
+                    data.Fecha,
+                    data.Total,
+                    data.Cxp_Estado,
+                    data.Asiento_Generado,
+                    data.Plantilla,
+                    data.Vence,
+                    Creacion_Fecha = DateTime.Now,
+                    data.Creacion_User,
+                    data.Notas,
+                    data.Cod_Forma_Pago,
+                    data.Cod_Divisa,
+                    data.Tipo_Cambio,
+                    data.Importe_Divisa_Real,
+                    data.Impuesto_Ventas
+                });
+
+            if (result.Code == 0)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.Creacion_User,
+                    DetalleMovimiento = "CxP Factura: " + data.Cod_Factura + " Prov: " + data.Cod_Proveedor,
+                    Movimiento = "REGISTRA - WEB",
+                    Modulo = 30
+                });
             }
-            return resp;
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar factura.", result.Code.GetValueOrDefault(-1));
         }
         /// <summary>
         /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
