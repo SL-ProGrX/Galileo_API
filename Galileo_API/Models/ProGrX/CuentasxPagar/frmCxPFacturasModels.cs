@@ -9,7 +9,7 @@ namespace Galileo.Models.CxP
     public class FacturaDto
     {
         public string Cod_Factura { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Forma_Pago { get; set; } = string.Empty;
         public DateTime? Fecha { get; set; }
         public char? Estado { get; set; }
@@ -21,7 +21,7 @@ namespace Galileo.Models.CxP
         public char? Asiento_Generado { get; set; }
         public DateTime? Creacion_Fecha { get; set; }
         public string Creacion_User { get; set; } = string.Empty;
-        public short Plantilla { get; set; }
+        public required short Plantilla { get; set; }
         public DateTime? Anula_Fecha { get; set; }
         public string Anula_User { get; set; } = string.Empty;
         public DateTime? Anula_Asiento_Fecha { get; set; }
@@ -39,24 +39,24 @@ namespace Galileo.Models.CxP
 
     public class AsientoFactura
     {
-        public int Linea { get; set; }
-        public int Cod_Contabilidad { get; set; }
+        public required int Linea { get; set; }
+        public required int Cod_Contabilidad { get; set; }
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Cuenta { get; set; } = string.Empty;
         public string Debehaber { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public required decimal Monto { get; set; }
         public string Cod_Unidad { get; set; } = string.Empty;
         public string Unidad { get; set; } = string.Empty;
         public string Cod_Centro_Costo { get; set; } = string.Empty;
         public string CentroCosto { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Factura { get; set; } = string.Empty;
         public string Cod_Divisa { get; set; } = string.Empty;
         public string Divisa { get; set; } = string.Empty;
-        public decimal Tipo_Cambio { get; set; }
-        public decimal Credito { get; set; }
-        public decimal Debito { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
+        public required decimal Credito { get; set; }
+        public required decimal Debito { get; set; }
         public string Divisa_Desc { get; set; } = string.Empty;
         public string Centro_Desc { get; set; } = string.Empty;
         public string DataKey { get; set; } = string.Empty;
@@ -65,7 +65,7 @@ namespace Galileo.Models.CxP
     public class FacturaCambioNo
     {
         public string Cod_Factura { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_FacturaNew { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
@@ -73,8 +73,8 @@ namespace Galileo.Models.CxP
     public class FacturaImpuesto
     {
         public string Cod_Factura { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
-        public decimal Impuesto_Ventas { get; set; }
+        public required int Cod_Proveedor { get; set; }
+        public required decimal Impuesto_Ventas { get; set; }
         public string Usuario { get; set; } = string.Empty;
 
     }
@@ -113,7 +113,7 @@ namespace Galileo.Models.CxP
     public class FacturaAnular
     {
         public string Cod_Factura { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
@@ -157,22 +157,22 @@ namespace Galileo.Models.CxP
 
     public class PagoContado
     {
-        public int NPago { get; set; }
-        public int Cod_Proveedor { get; set; }
+        public required int NPago { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Factura { get; set; } = string.Empty;
-        public DateTime Fecha_Vencimiento { get; set; }
-        public decimal Monto { get; set; }
-        public int Frecuencia { get; set; }
-        public int Tipo_Transac { get; set; }
+        public  DateTime? Fecha_Vencimiento { get; set; }
+        public required decimal Monto { get; set; }
+        public required int Frecuencia { get; set; }
+        public required int Tipo_Transac { get; set; }
         public string User_Traslada { get; set; } = string.Empty;
-        public DateTime Fecha_Traslada { get; set; }
-        public int Tesoreria { get; set; }
+        public DateTime? Fecha_Traslada { get; set; }
+        public required int Tesoreria { get; set; }
         public string Pago_Tercero { get; set; } = string.Empty;
-        public int Apl_Cargo_Flotante { get; set; }
-        public int Pago_Anticipado { get; set; }
+        public required int Apl_Cargo_Flotante { get; set; }
+        public required int Pago_Anticipado { get; set; }
         public string Forma_Pago { get; set; } = string.Empty;
-        public decimal Importe_Divisa_Real { get; set; }
-        public decimal Tipo_Cambio { get; set; }
+        public required decimal Importe_Divisa_Real { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
     }
 }
