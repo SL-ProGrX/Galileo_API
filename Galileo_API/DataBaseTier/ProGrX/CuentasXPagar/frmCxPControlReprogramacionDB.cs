@@ -12,6 +12,51 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb DBBitacora;
 
+        #region Helpers privados
+
+        /// <summary>
+        /// Crea una lista vacía de facturas para respuestas sin resultados.
+        /// </summary>
+        /// <returns>Lista de facturas inicializada.</returns>
+        private static FacturaLista CrearFacturaListaVacia() => new()
+        {
+            Total = 0,
+            Facturas = new List<Factura>()
+        };
+
+        /// <summary>
+        /// Convierte el resultado de una consulta única en una respuesta estándar.
+        /// </summary>
+        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
+        /// <param name="result">Resultado devuelto por DbHelper.</param>
+        /// <param name="errorMessage">Mensaje de error cuando la consulta falla.</param>
+        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
+        /// <returns>Respuesta estándar para consultas de una sola entidad.</returns>
+        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
+            where T : class
+        {
+            if (result.Code != 0)
+            {
+                return new ErrorDto<T>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? errorMessage,
+                    Result = null
+                };
+            }
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<T>
+                {
+                    Code = -2,
+                    Description = notFoundMessage,
+                    Result = null
+                };
+        }
+
+        #endregion
+
         /// <summary>
         /// Inicializa una nueva instancia de la clase <see cref="FrmCxPControlReprogramacionDB"/>.
         /// </summary>
@@ -45,11 +90,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new FacturaLista
-                {
-                    Total = 0,
-                    Facturas = new List<Factura>()
-                };
+                var respuesta = CrearFacturaListaVacia();
 
                 var parametros = new DynamicParameters();
                 parametros.Add("Cod_Proveedor", Cod_Proveedor);
@@ -93,8 +134,8 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new FacturaLista { Total = 0, Facturas = new List<Factura>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas.", result.Code.GetValueOrDefault(-1), new FacturaLista { Total = 0, Facturas = new List<Factura>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearFacturaListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas.", result.Code.GetValueOrDefault(-1), CrearFacturaListaVacia());
         }
 
         /// <summary>
@@ -117,24 +158,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Factura, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<VCxpProgramacionPago>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener el detalle de programación.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<VCxpProgramacionPago>
-                {
-                    Code = -2,
-                    Description = "No se encontró detalle de programación.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener el detalle de programación.",
+                "No se encontró detalle de programación.");
         }
 
         /// <summary>
@@ -158,24 +185,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Factura, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<Pago>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener montos del pago.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<Pago>
-                {
-                    Code = -2,
-                    Description = "No se encontraron montos del pago.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener montos del pago.",
+                "No se encontraron montos del pago.");
         }
 
         /// <summary>
@@ -244,24 +257,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Factura, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<FacturaDet>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener el detalle de factura.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<FacturaDet>
-                {
-                    Code = -2,
-                    Description = "No se encontró detalle de factura.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener el detalle de factura.",
+                "No se encontró detalle de factura.");
         }
 
         /// <summary>
@@ -309,24 +308,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Factura, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<FacturaDatos>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener datos de la compra.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<FacturaDatos>
-                {
-                    Code = -2,
-                    Description = "No se encontró información de la compra.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener datos de la compra.",
+                "No se encontró información de la compra.");
         }
 
         /// <summary>
@@ -350,24 +335,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Factura, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<FacturaDatos>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener datos de la factura.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<FacturaDatos>
-                {
-                    Code = -2,
-                    Description = "No se encontró información de la factura.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener datos de la factura.",
+                "No se encontró información de la factura.");
         }
 
         /// <summary>

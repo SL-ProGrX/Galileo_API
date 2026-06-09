@@ -12,6 +12,100 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb DBBitacora;
 
+        #region Helpers privados
+
+        /// <summary>
+        /// Crea una lista vacía para el resultado paginado de cargos periódicos.
+        /// </summary>
+        /// <returns>Lista vacía inicializada.</returns>
+        private static CargoPerDtoList CrearCargoPerDtoListVacia() => new()
+        {
+            Total = 0,
+            Cargoper = new List<CargoPerDto>()
+        };
+
+        /// <summary>
+        /// Crea una lista vacía para el resultado paginado de pagos asociados a cargos.
+        /// </summary>
+        /// <returns>Lista vacía inicializada.</returns>
+        private static PagoProvCargosDtoList CrearPagoProvCargosDtoListVacia() => new()
+        {
+            Total = 0,
+            Pagos = new List<PagoProvCargosDto>()
+        };
+
+        /// <summary>
+        /// Convierte el resultado de una consulta única en una respuesta estándar.
+        /// </summary>
+        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
+        /// <param name="result">Resultado devuelto por DbHelper.</param>
+        /// <param name="errorMessage">Mensaje de error cuando la consulta falla.</param>
+        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
+        /// <returns>Respuesta estándar para consultas de una sola entidad.</returns>
+        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
+            where T : class
+        {
+            if (result.Code != 0)
+            {
+                return new ErrorDto<T>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? errorMessage,
+                    Result = null
+                };
+            }
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<T>
+                {
+                    Code = -2,
+                    Description = notFoundMessage,
+                    Result = null
+                };
+        }
+
+        /// <summary>
+        /// Agrega un filtro LIKE a dos consultas y a la colección de parámetros.
+        /// </summary>
+        /// <param name="filtro">Texto de filtro.</param>
+        /// <param name="parametros">Parámetros Dapper.</param>
+        /// <param name="totalBuilder">Consulta de total.</param>
+        /// <param name="detalleBuilder">Consulta de detalle.</param>
+        /// <param name="condicionSql">Condición SQL a agregar.</param>
+        private static void AgregarFiltroLikeComun(string? filtro, DynamicParameters parametros, StringBuilder totalBuilder, StringBuilder detalleBuilder, string condicionSql)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return;
+            }
+
+            totalBuilder.Append(condicionSql);
+            detalleBuilder.Append(condicionSql);
+            parametros.Add("Filtro", $"%{filtro.Trim()}%");
+        }
+
+        /// <summary>
+        /// Agrega paginación OFFSET/FETCH a una consulta y a la colección de parámetros.
+        /// </summary>
+        /// <param name="pagina">Fila inicial.</param>
+        /// <param name="paginacion">Cantidad de filas.</param>
+        /// <param name="detalleBuilder">Consulta a modificar.</param>
+        /// <param name="parametros">Parámetros Dapper.</param>
+        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder detalleBuilder, DynamicParameters parametros)
+        {
+            if (!pagina.HasValue || !paginacion.HasValue)
+            {
+                return;
+            }
+
+            detalleBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
+            parametros.Add("Offset", pagina.Value);
+            parametros.Add("Fetch", paginacion.Value);
+        }
+
+        #endregion
+
         /// <summary>
         /// Inicializa una nueva instancia de la clase <see cref="FrmCxPProvCargoPerDB"/>.
         /// </summary>
@@ -75,24 +169,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Id, Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<CargoPerDto>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener detalle del cargo periódico.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<CargoPerDto>
-                {
-                    Code = -2,
-                    Description = "No se encontró el cargo periódico.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener detalle del cargo periódico.",
+                "No se encontró el cargo periódico.");
         }
 
         /// <summary>
@@ -116,24 +196,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<ProveedorInfo>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener detalle del proveedor.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<ProveedorInfo>
-                {
-                    Code = -2,
-                    Description = "No se encontró el proveedor.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener detalle del proveedor.",
+                "No se encontró el proveedor.");
         }
 
         /// <summary>
@@ -149,11 +215,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new CargoPerDtoList
-                {
-                    Total = 0,
-                    Cargoper = new List<CargoPerDto>()
-                };
+                var respuesta = CrearCargoPerDtoListVacia();
 
                 var parametros = new DynamicParameters();
                 parametros.Add("Cod_Proveedor", Cod_Proveedor);
@@ -168,30 +230,25 @@ namespace Galileo.DataBaseTier
                                                         INNER JOIN cxp_cargos D ON C.cod_cargo = D.cod_cargo
                                                         WHERE C.cod_proveedor = @Cod_Proveedor");
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    totalBuilder.Append(" AND (C.cod_Cargo LIKE @Filtro OR D.descripcion LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
-                    detalleBuilder.Append(" AND (C.cod_Cargo LIKE @Filtro OR D.descripcion LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                AgregarFiltroLikeComun(
+                    filtro,
+                    parametros,
+                    totalBuilder,
+                    detalleBuilder,
+                    " AND (C.cod_Cargo LIKE @Filtro OR D.descripcion LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
 
                 respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
 
                 detalleBuilder.Append(" ORDER BY C.ID desc");
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    detalleBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
-                    parametros.Add("Offset", pagina.Value);
-                    parametros.Add("Fetch", paginacion.Value);
-                }
+                AgregarPaginacion(pagina, paginacion, detalleBuilder, parametros);
 
                 respuesta.Cargoper = connection.Query<CargoPerDto>(detalleBuilder.ToString(), parametros).ToList();
                 return respuesta;
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new CargoPerDtoList { Total = 0, Cargoper = new List<CargoPerDto>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener cargos periódicos.", result.Code.GetValueOrDefault(-1), new CargoPerDtoList { Total = 0, Cargoper = new List<CargoPerDto>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearCargoPerDtoListVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener cargos periódicos.", result.Code.GetValueOrDefault(-1), CrearCargoPerDtoListVacia());
         }
 
         /// <summary>
@@ -208,11 +265,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new PagoProvCargosDtoList
-                {
-                    Total = 0,
-                    Pagos = new List<PagoProvCargosDto>()
-                };
+                var respuesta = CrearPagoProvCargosDtoListVacia();
 
                 var parametros = new DynamicParameters();
                 parametros.Add("Id", Id);
@@ -236,30 +289,25 @@ namespace Galileo.DataBaseTier
                                                           AND P.tesoreria IS NOT NULL
                                                         WHERE C.id = @Id AND C.cod_proveedor = @Cod_Proveedor");
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    totalBuilder.Append(" AND (C.cod_Cargo LIKE @Filtro OR CAST(C.IDX_CONSEC AS varchar(50)) LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
-                    detalleBuilder.Append(" AND (C.cod_Cargo LIKE @Filtro OR CAST(C.IDX_CONSEC AS varchar(50)) LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                AgregarFiltroLikeComun(
+                    filtro,
+                    parametros,
+                    totalBuilder,
+                    detalleBuilder,
+                    " AND (C.cod_Cargo LIKE @Filtro OR CAST(C.IDX_CONSEC AS varchar(50)) LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
 
                 respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
 
                 detalleBuilder.Append(" ORDER BY C.id desc");
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    detalleBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
-                    parametros.Add("Offset", pagina.Value);
-                    parametros.Add("Fetch", paginacion.Value);
-                }
+                AgregarPaginacion(pagina, paginacion, detalleBuilder, parametros);
 
                 respuesta.Pagos = connection.Query<PagoProvCargosDto>(detalleBuilder.ToString(), parametros).ToList();
                 return respuesta;
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new PagoProvCargosDtoList { Total = 0, Pagos = new List<PagoProvCargosDto>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener pagos del cargo periódico.", result.Code.GetValueOrDefault(-1), new PagoProvCargosDtoList { Total = 0, Pagos = new List<PagoProvCargosDto>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearPagoProvCargosDtoListVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener pagos del cargo periódico.", result.Code.GetValueOrDefault(-1), CrearPagoProvCargosDtoListVacia());
         }
 
         /// <summary>
