@@ -43,5 +43,30 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         {
             return _db.CrCreditosCargaLote_Banco_Obtener(CodEmpresa, usuario);
         }
+
+        public ErrorDto CrCreditosCargaLote_Cargado_Eliminar(int CodEmpresa, string Codigo, long Proceso)
+        {
+            return _db.CrCreditosCargaLote_Cargado_Eliminar(CodEmpresa, Codigo, Proceso);
+        }
+
+        public ErrorDto CrCreditosCargaLote_Cargado_Insertar(int CodEmpresa, CrCreditosCargaLoteCargadoInsertarRequest request)
+        {
+            return _db.CrCreditosCargaLote_Cargado_Insertar(CodEmpresa, request);
+        }
+
+        public ErrorDto<List<CrCreditosCargaLoteCargadoRevisadoResponse>> CrCreditosCargaLote_Cargado_Revisado(int CodEmpresa, CrCreditosCargaLoteCargadoRevisadoRequest request)
+        {
+            return _db.CrCreditosCargaLote_Cargado_Revisado(CodEmpresa, request);
+        }
+
+        public ErrorDto<List<ProveedorCxpModel>> CrCreditosCargaLote_ProveedorCxp_Obtener(int CodEmpresa)
+        {
+            return _db.CrCreditosCargaLote_ProveedorCxp_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto CrCreditosCargaLote_Procesa(int CodEmpresa, CrCreditosCargaLoteProcesaRequest request)
+        {
+            return _db.CrCreditosCargaLote_Procesa(CodEmpresa, request);
+        }
     }
 }

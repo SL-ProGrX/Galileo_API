@@ -2,7 +2,7 @@
 {
     public class ProveedorDto
     {
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Clasificacion { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
         public string Cod_Alter { get; set; } = string.Empty;
@@ -19,24 +19,24 @@
         public string Email { get; set; } = string.Empty;
         public string Aptopostal { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
-        public int Credito_Plazo { get; set; }
-        public decimal Credito_Monto { get; set; }
-        public decimal Descuento_Porc { get; set; }
-        public decimal Saldo { get; set; }
-        public DateTime Ultimo_Pago { get; set; }
-        public DateTime Ultima_Compra { get; set; }
+        public required int Credito_Plazo { get; set; }
+        public required decimal Credito_Monto { get; set; }
+        public required decimal Descuento_Porc { get; set; }
+        public required decimal Saldo { get; set; }
+        public  DateTime? Ultimo_Pago { get; set; }
+        public  DateTime? Ultima_Compra { get; set; }
         public string Ultima_Factura { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Tipo_Pago { get; set; } = string.Empty;
-        public int Cod_Banco { get; set; }
+        public required int Cod_Banco { get; set; }
         public string Cuenta_Ahorros { get; set; } = string.Empty;
         public string Nit_Codigo { get; set; } = string.Empty;
         public string Nit_Nombre { get; set; } = string.Empty;
         public string? Fusion { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
-        public decimal Saldo_Divisa_Real { get; set; }
+        public required decimal Saldo_Divisa_Real { get; set; }
         public string Email_02 { get; set; } = string.Empty;
-        public DateTime Suspende_Fecha { get; set; }
+        public DateTime? Suspende_Fecha { get; set; }
         public string Suspende_Usuario { get; set; } = string.Empty;
         public string TipoProv { get; set; } = string.Empty;
         public string CuentaConta { get; set; } = string.Empty;
@@ -46,8 +46,8 @@
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_Usuario { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_vencimiento { get; set; }
-        public int plazo { get; set; }
-        public int convenio { get; set; }
+        public required int plazo { get; set; }
+        public required int convenio { get; set; }
         public string? representante_legal { get; set; }
         public string? justificacion_estado { get; set; }
         public string? user_modifica { get; set; }
@@ -99,7 +99,7 @@
     public class Autorizacion
     {
         public string Datakey { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
     }
@@ -124,13 +124,13 @@
     public class Suspension
     {
         public int? Suspension_Id { get; set; }
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Suspension { get; set; } = string.Empty;
         public string Suspension_Desc { get; set; } = string.Empty;
         public string Registro_Fecha { get; set; } = string.Empty;
         public string Registro_Usuario { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
-        public int Activa { get; set; }
+        public  int? Activa { get; set; }
         public string Vencimiento { get; set; } = string.Empty;
         public string Reactiva_Fecha { get; set; } = string.Empty;
         public string Reactiva_Usuario { get; set; } = string.Empty;
@@ -140,15 +140,15 @@
     public class ProveedorUsuariosListaDatos
     {
         public string? usuario { get; set; }
-        public int cod_proveedor { get; set; }
+        public required int cod_proveedor { get; set; }
         public string? nombre { get; set; }
         public string? movil { get; set; }
         public string? email { get; set; }
         public string? clave { get; set; }
         public string? clave_renueva { get; set; }
-        public bool activo { get; set; }
-        public bool web_auto_gestion { get; set; }
-        public bool web_ferias { get; set; }
+        public required bool activo { get; set; }
+        public required bool web_auto_gestion { get; set; }
+        public required bool web_ferias { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }
         public Nullable<DateTime> modifica_fecha { get; set; }

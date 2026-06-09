@@ -3,6 +3,9 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -20,13 +23,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private const string ContentTypeText = "text/plain";
         private const string ExtensionTxt = ".txt";
 
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+        public CcProcesoMensualArchivoF03AseccssGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
+
         public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
 
         public CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
             var configuracion = ObtenerConfiguracion( connection,  request.CodInstitucion);
+            var rutaBase = _archivosOptions.RutaBase;
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
             var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
             var archivosGenerados = new List<string>();
 
@@ -36,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     configuracion,
                     rutaDirectorio,
                     fechaServidor,
-                    request.Unidad);
+                    request.Unidad, rutaBase);
 
                 archivosGenerados.Add(rutaArchivo);
         
@@ -61,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CcProcesoMensualArchivoF03ConfigDbModel configuracion,
             string rutaDirectorio,
             DateTime fechaServidor,
-            string unidad)
+            string unidad,string rutaBase)
         {
             var nombreArchivo = CrearNombreArchivo(
                 request.FechaProceso,
@@ -82,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 configuracion,
                 request.FechaProceso);
 
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
+            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase,
                 rutaDirectorio,
                 rutaArchivo,
                 contenido,
