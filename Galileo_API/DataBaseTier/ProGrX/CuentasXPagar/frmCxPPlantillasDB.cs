@@ -109,15 +109,9 @@ namespace Galileo.DataBaseTier
         /// <returns>Plantilla encontrada según el desplazamiento.</returns>
         public ErrorDto<PlantillaDto> PlantillaDetalle_Scroll(int CodEmpresa, int scroll, string Cod_Plantilla)
         {
-            string query;
-            if (scroll == 1)
-            {
-                query = "SELECT top 1 * FROM CxP_Plantillas WHERE cod_plantilla > @Cod_Plantilla ORDER BY cod_plantilla asc";
-            }
-            else
-            {
-                query = "SELECT top 1 * FROM CxP_Plantillas WHERE cod_plantilla < @Cod_Plantilla ORDER BY cod_plantilla desc";
-            }
+            string query = scroll == 1
+                ? "SELECT top 1 * FROM CxP_Plantillas WHERE cod_plantilla > @Cod_Plantilla ORDER BY cod_plantilla asc"
+                : "SELECT top 1 * FROM CxP_Plantillas WHERE cod_plantilla < @Cod_Plantilla ORDER BY cod_plantilla desc";
 
             var result = DbHelper.ExecuteSingleQuery<PlantillaDto>(
                 CreatePortalDb(),
