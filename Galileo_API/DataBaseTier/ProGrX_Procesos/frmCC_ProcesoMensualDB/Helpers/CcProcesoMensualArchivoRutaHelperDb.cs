@@ -70,8 +70,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var anio = ObtenerAnioProceso(request.FechaProceso);
-            var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
+            var anio = Path.GetFileName(ObtenerAnioProceso(request.FechaProceso));
+            var nombreInstitucion = Path.GetFileName(LimpiarNombreDirectorio(request.NombreInstitucion));
+
 
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
 
@@ -224,6 +225,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             var nombreArchivoSeguro = Path.GetFileName(nombreArchivo);
 
             if (!string.Equals(nombreArchivo, nombreArchivoSeguro, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
+            }
+            if (Path.IsPathRooted(nombreArchivoSeguro))
             {
                 throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
             }

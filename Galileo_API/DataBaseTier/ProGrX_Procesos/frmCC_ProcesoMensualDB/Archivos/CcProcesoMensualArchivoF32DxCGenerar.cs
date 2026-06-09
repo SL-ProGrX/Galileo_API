@@ -12,13 +12,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
     {
         private const string CodigoDeduccionCantidad = "DE31";
         private const string Encabezado = "empleado;concepto;cantidad;monto";
-         
+
         private string _rutaArchivoExcel = string.Empty;
 
         private readonly ArchivosGeneradosOptions _archivosOptions;
 
         public CcProcesoMensualArchivoF32DxCGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
         {
+            _archivosOptions = archivosOptions.Value;
         }
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["32"];
@@ -46,8 +47,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
            CcProcesoMensualArchivoConfiguracionModel configuracion,
            CcProcesoMensualGeneraArchivoRequest request)
         {
-            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor( connection);
-            
+            var fechaServidor = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerFechaServidor(connection);
+
             var nombreArchivoExcel = CrearNombreArchivoExcel(
                 request.CodInstitucion,
                 request.FechaProceso,

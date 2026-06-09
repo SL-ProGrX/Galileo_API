@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private readonly ArchivosGeneradosOptions _archivosOptions;
 
 
-        public CcProcesoMensualArchivoCadenaSpGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        protected CcProcesoMensualArchivoCadenaSpGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
         {
             _archivosOptions = archivosOptions.Value;
         }

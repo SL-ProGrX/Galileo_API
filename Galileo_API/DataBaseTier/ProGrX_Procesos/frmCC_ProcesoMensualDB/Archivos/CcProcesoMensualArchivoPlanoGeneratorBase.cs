@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
          
         protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
         private readonly ArchivosGeneradosOptions _archivosOptions;
-        public CcProcesoMensualArchivoPlanoGenerarBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        protected CcProcesoMensualArchivoPlanoGenerarBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
         {
             _archivosOptions = archivosOptions.Value;
         }

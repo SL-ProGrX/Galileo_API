@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return CodigoInstitucionArchivo;
         }
-        public CcProcesoMensualArchivoConMovimientosGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        protected CcProcesoMensualArchivoConMovimientosGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
         {
         }
         protected virtual List<string> ObtenerMovimientos(CcProcesoMensualArchivoConfiguracionModel configuracion)

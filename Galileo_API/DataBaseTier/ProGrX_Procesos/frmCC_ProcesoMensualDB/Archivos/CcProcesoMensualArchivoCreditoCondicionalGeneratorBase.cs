@@ -16,6 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected CcProcesoMensualArchivoCreditoCondicionalGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
         : base(archivosOptions)
         {
+            _archivosOptions = archivosOptions.Value;
         }
 
         protected IDbConnection? Connection { get; private set; }

@@ -264,17 +264,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return $"{institucion}[{fechaTexto}]-ARC{codigo}{ExtensionTxt}";
         }
 
-        private static string CrearRutaDirectorio(
+        private  string CrearRutaDirectorio(
             CcProcesoMensualGeneraArchivoRequest request)
         {
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
 
-            return Path.Combine(
-                "C:\\ArchivosGenerados\\",
-                "Planilla",
-                nombreInstitucion,
-                anio);
+            return Path.GetFullPath(Path.Combine(
+            _archivosOptions.RutaBase,
+            "Planilla",
+            nombreInstitucion,
+            anio));
+
+           
         }
 
         private static string ObtenerAnioProceso(decimal fechaProceso)
