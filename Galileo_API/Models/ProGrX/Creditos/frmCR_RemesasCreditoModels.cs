@@ -126,7 +126,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrRemesasCreditoArchivoDigitalRequest
     {
-        public int remesa { get; set; }
+        public int? remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -177,7 +177,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrRemesasCreditoReporteRequest
     {
-        public int remesa { get; set; }
+        public int? remesa { get; set; }
         public string tipo_reporte { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }

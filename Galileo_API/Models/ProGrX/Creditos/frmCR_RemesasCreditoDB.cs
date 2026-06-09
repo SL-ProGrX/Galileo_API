@@ -766,33 +766,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             try
             {
-                if (request == null || request.remesa <= 0)
+                if (request == null || request.remesa.GetValueOrDefault() <= 0)
                 {
                     return DbHelper.ErrorResponse("La remesa es requerida.");
                 }
 
+                var remesa = request.remesa.GetValueOrDefault();
+                var usuario = (request.usuario ?? string.Empty).Trim();
+
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 if (conn.State != ConnectionState.Open) conn.Open();
 
-                ValidarArchivoDigital(conn, request.remesa);
+                ValidarArchivoDigital(conn, remesa);
 
                 const string sql = @"
-                    update crd_remesas
-                    set Microfilm_Fecha = dbo.MyGetdate(),
-                        Microfilm_usuario = @usuario
-                    where remesa = @remesa;";
+            update crd_remesas
+            set Microfilm_Fecha = dbo.MyGetdate(),
+                Microfilm_usuario = @usuario
+            where remesa = @remesa;";
 
                 conn.Execute(sql, new
                 {
-                    request.remesa,
-                    usuario = (request.usuario ?? string.Empty).Trim()
+                    remesa,
+                    usuario
                 });
 
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = request.usuario ?? string.Empty,
-                    DetalleMovimiento = $"Remesa de Crédito recibida en Archivo Digital: {request.remesa}",
+                    Usuario = usuario,
+                    DetalleMovimiento = $"Remesa de Crédito recibida en Archivo Digital: {remesa}",
                     Movimiento = "MODIFICA-WEB",
                     Modulo = ModuloCreditos
                 });
@@ -912,20 +915,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             try
             {
-                if (request == null || request.remesa <= 0)
+                if (request == null || request.remesa.GetValueOrDefault() <= 0)
                 {
-                    return DbHelper.CreateErrorResponse<CrRemesasCreditoReporteDto>("La remesa es requerida.");
+                    return DbHelper.CreateErrorResponse<CrRemesasCreditoReporteDto>(
+                        "La remesa es requerida.");
                 }
 
                 var tipo = (request.tipo_reporte ?? string.Empty).Trim();
+                var remesa = request.remesa.GetValueOrDefault();
 
                 return DbHelper.CreateOkResponse(new CrRemesasCreditoReporteDto
                 {
-                    remesa = request.remesa,
+                    remesa = remesa,
                     titulo = "REMESA DE CREDITOS",
                     filtro = string.Empty,
                     nombre_reporte = NombreReporte(tipo),
-                    subtitulo = SubtituloReporte(tipo, request.remesa)
+                    subtitulo = SubtituloReporte(tipo, remesa)
                 });
             }
             catch (InvalidOperationException ex)
