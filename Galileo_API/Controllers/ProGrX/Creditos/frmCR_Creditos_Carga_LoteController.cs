@@ -59,5 +59,40 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             return _bl.CrCreditosCargaLote_Banco_Obtener(CodEmpresa, usuario);
         }
+
+        [Authorize]
+        [HttpDelete("CrCreditosCargaLote_Cargado_Eliminar")]
+        public ErrorDto CrCreditosCargaLote_Cargado_Eliminar(int CodEmpresa, string Codigo, long Proceso)
+        {
+            return _bl.CrCreditosCargaLote_Cargado_Eliminar(CodEmpresa, Codigo, Proceso);
+        }
+
+        [Authorize]
+        [HttpPost("CrCreditosCargaLote_Cargado_Insertar")]
+        public ErrorDto CrCreditosCargaLote_Cargado_Insertar(int CodEmpresa, CrCreditosCargaLoteCargadoInsertarRequest request)
+        {
+            return _bl.CrCreditosCargaLote_Cargado_Insertar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("CrCreditosCargaLote_Cargado_Revisado")]
+        public ErrorDto<List<CrCreditosCargaLoteCargadoRevisadoResponse>> CrCreditosCargaLote_Cargado_Revisado(int CodEmpresa, CrCreditosCargaLoteCargadoRevisadoRequest request)
+        {
+            return _bl.CrCreditosCargaLote_Cargado_Revisado(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpGet("CrCreditosCargaLote_ProveedorCxp_Obtener")]
+        public ErrorDto<List<ProveedorCxpModel>> CrCreditosCargaLote_ProveedorCxp_Obtener(int CodEmpresa)
+        {
+            return _bl.CrCreditosCargaLote_ProveedorCxp_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpPost("CrCreditosCargaLote_Procesa")]
+        public ErrorDto CrCreditosCargaLote_Procesa(int CodEmpresa, CrCreditosCargaLoteProcesaRequest request)
+        {
+            return _bl.CrCreditosCargaLote_Procesa(CodEmpresa, request);
+        }
     }
 }
