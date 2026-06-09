@@ -66,25 +66,56 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 alinearDerecha: false);
         }
 
-        public static string ObtenerRutaPlanilla(
-            CcProcesoMensualGeneraArchivoRequest request)
+        public static string ObtenerRutaPlanilla(  CcProcesoMensualGeneraArchivoRequest request, string rutaBaseConfigurada)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             var anio = ObtenerAnioProceso(request.FechaProceso);
             var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
-            var rutaBase = Path.GetFullPath("C:\\ArchivosGenerados\\");
-            return Path.Combine(
-               rutaBase,
+
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+
+            var rutaFinal = Path.GetFullPath(Path.Combine(
+                rutaBase,
                 CarpetaPlanilla,
                 nombreInstitucion,
-                anio);
+                anio));
+
+            ValidarRutaDentroDeBase(rutaBase, rutaFinal);
+
+            return rutaFinal;
         }
 
-        public static void CrearDirectorioSiNoExiste(string rutaDirectorio)
+        public static void CrearDirectorioSiNoExiste(
+     string rutaBaseConfigurada,
+     string rutaDirectorio)
         {
-            Directory.CreateDirectory(rutaDirectorio);
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+
+            Directory.CreateDirectory(rutaDirectorioSeguro);
         }
 
-      
+        private static void ValidarRutaDentroDeBase(
+    string rutaBase,
+    string rutaFinal)
+        {
+            var rutaBaseNormalizada = Path.GetFullPath(rutaBase);
+
+            if (!rutaBaseNormalizada.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            {
+                rutaBaseNormalizada += Path.DirectorySeparatorChar;
+            }
+
+            var rutaFinalNormalizada = Path.GetFullPath(rutaFinal);
+
+            if (!rutaFinalNormalizada.StartsWith(rutaBaseNormalizada, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("La ruta generada está fuera del directorio permitido.");
+            }
+        }
 
         public static DateTime ObtenerFechaServidor(IDbConnection connection)
         {
@@ -149,26 +180,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoConfiguracionModel();
         }
 
-        public static void GuardarArchivoTexto( string rutaDirectorio, string rutaArchivo, string contenido, Encoding encoding)
+        public static void GuardarArchivoTexto(
+    string rutaBaseConfigurada,
+    string rutaDirectorio,
+    string rutaArchivo,
+    string contenido,
+    Encoding encoding)
         {
-            
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+            var rutaArchivoSeguro = Path.GetFullPath(rutaArchivo);
 
-            CrearDirectorioSiNoExiste(Path.GetDirectoryName(rutaArchivo)!);
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+            ValidarRutaDentroDeBase(rutaBase, rutaArchivoSeguro);
 
-            if (File.Exists(rutaArchivo))
+            Directory.CreateDirectory(rutaDirectorioSeguro);
+
+            if (File.Exists(rutaArchivoSeguro))
             {
-                File.Delete(rutaArchivo);
+                File.Delete(rutaArchivoSeguro);
             }
 
             var contenidoLimpio = contenido.TrimStart('\uFEFF');
 
             File.WriteAllText(
-                rutaArchivo,
+                rutaArchivoSeguro,
                 contenidoLimpio,
                 encoding);
         }
 
-        public static string CombinarArchivo(    string rutaDirectorio,string nombreArchivo)
+        public static string CombinarArchivo(   string rutaBaseConfigurada,  string rutaDirectorio,  string nombreArchivo)
         {
             if (string.IsNullOrWhiteSpace(rutaDirectorio))
             {
@@ -187,13 +228,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
             }
 
-            var rutaBase = Path.GetFullPath(rutaDirectorio);
-            var rutaArchivo = Path.GetFullPath(Path.Combine(rutaBase, nombreArchivoSeguro));
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
 
-            if (!rutaArchivo.StartsWith(rutaBase, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("La ruta del archivo está fuera del directorio permitido.");
-            }
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+
+            var rutaArchivo = Path.GetFullPath(Path.Combine(
+                rutaDirectorioSeguro,
+                nombreArchivoSeguro));
+
+            ValidarRutaDentroDeBase(rutaBase, rutaArchivo);
 
             return rutaArchivo;
         }

@@ -1,8 +1,8 @@
-﻿using Dapper;
-using System.Data;
-using System.Globalization;
-using System.Text;
+﻿
+using System.Globalization; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -29,7 +29,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             WHERE P.Proceso = @FechaProceso
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.cedula, P.tipo, P.movimiento";
-
+        public CcProcesoMensualArchivoF14MsjGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         protected override string CrearLineaArchivo(
               CcProcesoMensualArchivoPlanillaBasicaDbModel registro,
               CcProcesoMensualGeneraArchivoRequest request)

@@ -4,7 +4,8 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
-
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -15,6 +16,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private const string CodigoNo = "NO";
         private const string TipoAporte = "A";
         private const string TipoCredito = "C";
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+        public CcProcesoMensualArchivoF05CoopeCajaOldGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
+
 
         public IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = [CodigoPlanillaEnvio];
 
@@ -27,7 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request.CodInstitucion);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaBase = _archivosOptions.RutaBase;
+
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
 
             var archivosGenerados = new List<string>();
 
@@ -36,6 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request,
                 configuracion,
+                 rutaBase,
                 rutaDirectorio,
                 TipoAporte,
                 configuracion.CodigoAportes);
@@ -45,6 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request,
                 configuracion,
+                 rutaBase,
                 rutaDirectorio,
                 TipoCredito,
                 configuracion.CodigoCreditos);
@@ -68,6 +79,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
+             string rutaBase,
             string rutaDirectorio,
             string tipo,
             string codigoConfigurado)
@@ -81,6 +93,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 connection,
                 request,
                 configuracion,
+                rutaBase,
                 rutaDirectorio,
                 tipo);
 
@@ -107,6 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             CcProcesoMensualArchivoF05OldConfigDbModel configuracion,
+            string rutaBase,
             string rutaDirectorio,
             string tipo)
         {
@@ -116,6 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 tipo);
 
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+                rutaBase,
                 rutaDirectorio,
                 nombreArchivo);
 
@@ -131,6 +146,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 tipo);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(
+                rutaBase,
                 rutaDirectorio,
                 rutaArchivo,
                 contenido,
@@ -165,7 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             if (!string.Equals(tipo, TipoCredito, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
-            } 
+            }
             return ObtenerTipoMovimientoCoopeCaja(registro.Movimiento) != 1;
         }
 

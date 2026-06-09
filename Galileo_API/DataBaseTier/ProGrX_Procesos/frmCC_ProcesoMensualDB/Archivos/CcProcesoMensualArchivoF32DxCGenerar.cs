@@ -1,6 +1,9 @@
 ﻿using System.Data;
 using System.Globalization;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -11,6 +14,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private const string Encabezado = "empleado;concepto;cantidad;monto";
          
         private string _rutaArchivoExcel = string.Empty;
+
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+
+        public CcProcesoMensualArchivoF32DxCGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["32"];
 
@@ -44,10 +53,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 request.FechaProceso,
                 configuracion.CodigoInstDeduc,
                 fechaServidor);
+            var rutaBase = _archivosOptions.RutaBase;
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
-
-            _rutaArchivoExcel = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+            _rutaArchivoExcel = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,
                 rutaDirectorio,
                 nombreArchivoExcel);
         }

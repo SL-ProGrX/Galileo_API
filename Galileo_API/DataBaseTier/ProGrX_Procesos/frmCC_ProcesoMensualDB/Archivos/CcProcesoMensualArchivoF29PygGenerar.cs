@@ -4,12 +4,18 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
     public class CcProcesoMensualArchivoF29PygGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF29PygGenerar.CcProcesoMensualArchivoF29RegistroDbModel>
 
     {
+
+        public CcProcesoMensualArchivoF29PygGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         private const string TipoDeduccionMonto = "M";  
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["29"];

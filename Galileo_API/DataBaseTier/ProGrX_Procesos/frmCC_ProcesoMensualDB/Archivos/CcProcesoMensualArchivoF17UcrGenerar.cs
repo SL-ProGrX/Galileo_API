@@ -1,15 +1,18 @@
-﻿using Dapper; 
+﻿using Dapper;
 using System.Data;
 using System.Globalization;
 using System.Security;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
-    public class CcProcesoMensualArchivoF17UcrGenerar :   CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoRegistroDbModel>
+    public class CcProcesoMensualArchivoF17UcrGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoRegistroDbModel>
     {
-     private const string TipoCredito = "C";
+        private const string TipoCredito = "C";
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["17"];
 
@@ -17,10 +20,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string CodigoFormato => "F17";
         protected override string ExtensionArchivo => ".XML";
         protected override string ContentType => "application/xml";
-       protected override Encoding EncodingArchivo => Helpers.CcProcesoMensualArchivoRutaHelperDb.Utf8SinBom;
+        protected override Encoding EncodingArchivo => Helpers.CcProcesoMensualArchivoRutaHelperDb.Utf8SinBom;
 
         protected override string QueryRegistros => string.Empty;
-
+        public CcProcesoMensualArchivoF17UcrGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         protected override IEnumerable<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistros(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request)
@@ -131,6 +136,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return monto.ToString(CultureInfo.InvariantCulture);
         }
-  
+
     }
 }

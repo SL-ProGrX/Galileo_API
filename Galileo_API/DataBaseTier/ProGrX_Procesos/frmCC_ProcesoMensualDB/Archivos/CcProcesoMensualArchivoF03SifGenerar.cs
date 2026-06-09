@@ -1,14 +1,19 @@
 ﻿using Dapper;
-using System.Data;
+ 
 using System.Globalization;
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
     public class CcProcesoMensualArchivoF03SifGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF03SifGenerar.CcProcesoMensualArchivoF03SifRegistroDbModel>
 
     {
+        public CcProcesoMensualArchivoF03SifGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["03_S"];
 
         protected override string CodigoPlanillaEnvio => "03_S";

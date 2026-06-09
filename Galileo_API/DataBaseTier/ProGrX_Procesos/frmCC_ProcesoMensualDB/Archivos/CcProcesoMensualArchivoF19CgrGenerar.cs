@@ -3,13 +3,17 @@ using System.Data;
 using System.Globalization; 
 using System.Text;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
-
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
     public class CcProcesoMensualArchivoF19CgrGenerar : CcProcesoMensualArchivoConMovimientosGeneratorBase<CcProcesoMensualArchivoF19CgrGenerar.CcProcesoMensualArchivoF19RegistroDbModel>
 
     {
+        public CcProcesoMensualArchivoF19CgrGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         private const string TipoAhorro = "A";
         private const string TipoExtraordinario = "E";
         private const string TipoCredito = "C"; 
