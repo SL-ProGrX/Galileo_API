@@ -8,6 +8,7 @@ using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using Org.BouncyCastle.Asn1.Ocsp;
+using Sinpe_TFT;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier
@@ -53,25 +54,10 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 var vFecha = DateTime.Now;
 
-                if(transferencia.tipoDoc == "TS")
-                {
-                    allowedSql= allowedSql.Replace("Estado = 'P'", "Estado IN ('P', 'I')");
-                }
+                allowedSql = ValTipoTransferenciaTS(transferencia.tipoDoc!, allowedSql);
 
                 var cantidadSolicitudes = transferencia.parametros!.cantidad;
-
-                if (cantidadSolicitudes <= 0 &&
-                    transferencia.parametros.maximo >= transferencia.parametros.minimo &&
-                    transferencia.parametros.minimo > 0)
-                {
-                    cantidadSolicitudes =
-                        (transferencia.parametros.maximo - transferencia.parametros.minimo) + 1;
-                }
-
-                if (cantidadSolicitudes <= 0)
-                {
-                    cantidadSolicitudes = int.MaxValue;
-                }
+                cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
 
                 // 2) Ejecutar SOLO SQL permitido
                 var result = conn.Query<TransferenciasData>(allowedSql.Trim('(', ')'), new
@@ -133,7 +119,7 @@ namespace Galileo_API.DataBaseTier
                     }
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec, transferencia.usuario!);
+                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
 
                     if(aplicaInterno.aplica == "1")
                     {
@@ -150,6 +136,32 @@ namespace Galileo_API.DataBaseTier
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        private static string ValTipoTransferenciaTS(string tipoDoc , string allowedSql)
+        {
+            if (tipoDoc == "TS")
+            {
+                return allowedSql.Replace("Estado = 'P'", "Estado IN ('P', 'I')");
+            }
+            return allowedSql;
+        }
+
+        private static  int ValCantidadSolicitudes(int cantidadSolicitudes, TesTransferenciasInfo transferencia)
+        {
+            if (cantidadSolicitudes <= 0 &&
+                    transferencia.parametros!.maximo >= transferencia.parametros.minimo &&
+                    transferencia.parametros.minimo > 0)
+            {
+                cantidadSolicitudes =
+                    (transferencia.parametros.maximo - transferencia.parametros.minimo) + 1;
+            }
+
+            if (cantidadSolicitudes <= 0)
+            {
+                cantidadSolicitudes = int.MaxValue;
+            }
+            return cantidadSolicitudes;
         }
 
         private static string NormalizeSql(string sql)

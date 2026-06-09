@@ -26,6 +26,12 @@ namespace Galileo_API.Controllers
             return _TransferenciaReversaBL.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
+        [HttpGet("Tes_BancoCargaCboSinpe")]
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboSinpe(int CodEmpresa, string usuario)
+        {
+            return _TransferenciaReversaBL.sbTesBancoCargaCboSinpe(CodEmpresa, usuario);
+        }
+
         [HttpGet("TES_ReversaPlanes_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TES_ReversaPlanes_Obtener(int CodEmpresa, string id_banco)
         {

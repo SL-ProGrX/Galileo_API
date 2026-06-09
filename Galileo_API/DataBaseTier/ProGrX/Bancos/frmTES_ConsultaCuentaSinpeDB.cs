@@ -87,11 +87,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 try
                 {
-                  
-                   
-
                     string sql = @"
-                        DELETE FROM SYS_CUENTAS_BANCARIAS
+                        UPDATE SYS_CUENTAS_BANCARIAS SET Activa = 0
                         WHERE REPLACE(identificacion, '-', '') = @Cedula
                           AND Cuenta_interna = @CuentaIBAN
                           AND Cod_banco = @Banco";
@@ -99,13 +96,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     var result = DbHelper.ExecuteNonQuery(conn.ConnectionString, sql, parameters);
                     if (result.Code != 0)
                     {
-                        return DbHelper.ErrorResponse($"Error al eliminar cuentas cerradas: {result.Description}");
+                        return DbHelper.ErrorResponse($"Error al desactivar cuentas cerradas: {result.Description}");
                     }
-                    return DbHelper.OkResponse("Cuenta Eliminada");
+                    return DbHelper.OkResponse("Cuenta Desactivada");
                 }
                 catch (Exception ex)
                 {
-                    return DbHelper.ErrorResponse($"Excepción al eliminar cuentas cerradas: {ex.Message}");
+                    return DbHelper.ErrorResponse($"Excepción al desactivar cuentas cerradas: {ex.Message}");
                 }
             }).Result ?? DbHelper.ErrorResponse("Error desconocido");
         }

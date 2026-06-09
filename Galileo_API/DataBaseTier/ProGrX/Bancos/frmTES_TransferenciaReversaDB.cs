@@ -43,6 +43,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
+        /// <summary>
+        /// Carga el combo de acceso a la gestión de transferencias bancarias SINPE.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="gestion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboSinpe(int CodEmpresa, string usuario)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                const string query = @"
+                        select id_banco as item, descripcion
+                                from Tes_Bancos
+                                where Estado = 'A'
+                                  and id_Banco in (
+                                      select id_banco
+                                      from tes_documentos_ASG
+                                      where nombre = @usuario and isnull(SOLICITA,0) = 1
+                                      group by id_banco
+                                  ) AND TS_APLICA = 1";
+
+                var parameters = new
+                {
+                    usuario = usuario
+                };
+
+                var response = conn.Query<DropDownListaGenericaModel>(query, parameters).ToList();
+
+                return DbHelper.CreateOkResponse<List<DropDownListaGenericaModel>>(response!);
+         
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
+            }
+        }
+
         #region Reversa Transferencia
         /// <summary>
         /// Obtiene las solicitudes de transferencia reversa según los criterios especificados.
