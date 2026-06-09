@@ -139,18 +139,31 @@ namespace Galileo.DataBaseTier
         /// <param name="sumar">Indica si se suma o se resta al saldo.</param>
         private static void ActualizarSaldoProveedor(IDbConnection connection, int Cod_Proveedor, decimal Valor, decimal Tipo_Cambio, bool sumar)
         {
-            var operador = sumar ? "+" : "-";
+            var parametros = new
+            {
+                Cod_Proveedor,
+                Valor,
+                Importe_Divisa_Real = Valor / Tipo_Cambio
+            };
+
+            if (sumar)
+            {
+                connection.Execute(
+                    @"UPDATE cxp_proveedores
+                       SET saldo = isnull(saldo, 0) + @Valor,
+                           SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) + @Importe_Divisa_Real
+                       WHERE cod_proveedor = @Cod_Proveedor",
+                    parametros);
+
+                return;
+            }
+
             connection.Execute(
-                $@"UPDATE cxp_proveedores
-                   SET saldo = isnull(saldo, 0) {operador} @Valor,
-                       SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) {operador} @Importe_Divisa_Real
+                @"UPDATE cxp_proveedores
+                   SET saldo = isnull(saldo, 0) - @Valor,
+                       SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) - @Importe_Divisa_Real
                    WHERE cod_proveedor = @Cod_Proveedor",
-                new
-                {
-                    Cod_Proveedor,
-                    Valor,
-                    Importe_Divisa_Real = Valor / Tipo_Cambio
-                });
+                parametros);
         }
 
         /// <summary>
