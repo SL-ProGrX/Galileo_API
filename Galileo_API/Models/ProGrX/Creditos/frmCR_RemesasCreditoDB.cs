@@ -883,7 +883,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 response.lista = lista;
                 response.total = lista.Count;
 
-                return DbHelper.CreateOkResponse(response, "Información Cargada Satisfactoriamente");
+                return DbHelper.CreateOkResponse(response, "Información Cargada Satisfactoriamente.");
             }
             catch (SqlException ex)
             {
