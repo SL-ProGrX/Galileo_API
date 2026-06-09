@@ -89,9 +89,8 @@ namespace Galileo.Models.CxP
         public decimal Procentaje { get; set; }
     }
 
-    /**
-    **Se repite en tes_transacciones -- cambiar nombre o heredar -- de TesTransAsientoDto
-    public class TesTransAsientoDto
+
+    public class TesTransAsiento
     {
         public int NSolicitud { get; set; }
         public string Cuenta_Contable { get; set; } = string.Empty;
@@ -103,7 +102,7 @@ namespace Galileo.Models.CxP
         public string Cod_Divisa { get; set; } = string.Empty;
         public decimal Tipo_Cambio { get; set; }
     }
-    **/
+    
 
     public class Anticipo
     {
@@ -115,7 +114,7 @@ namespace Galileo.Models.CxP
         public string Cod_Divisa { get; set; } = string.Empty;
     }
 
-    public class TesTransaccionesDto
+    public class TesTransacciones
     {
         public int Id_Banco { get; set; }
         public string Tipo { get; set; } = string.Empty;
