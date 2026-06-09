@@ -66,9 +66,8 @@ namespace Galileo.DataBaseTier
                         )",
                     new { Filtro = filtroTexto });
 
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    respuesta.Proveedores = connection.Query<CxpProveedorData>(
+                respuesta.Proveedores = (pagina.HasValue && paginacion.HasValue)
+                    ? connection.Query<CxpProveedorData>(
                         @"SELECT COD_PROVEEDOR, DESCRIPCION
                           FROM CXP_PROVEEDORES
                           WHERE ESTADO = 'A'
@@ -85,11 +84,8 @@ namespace Galileo.DataBaseTier
                             Filtro = filtroTexto,
                             Offset = pagina.Value,
                             Fetch = paginacion.Value
-                        }).ToList();
-                }
-                else
-                {
-                    respuesta.Proveedores = connection.Query<CxpProveedorData>(
+                        }).ToList()
+                    : connection.Query<CxpProveedorData>(
                         @"SELECT COD_PROVEEDOR, DESCRIPCION
                           FROM CXP_PROVEEDORES
                           WHERE ESTADO = 'A'
@@ -101,7 +97,6 @@ namespace Galileo.DataBaseTier
                             )
                           ORDER BY DESCRIPCION",
                         new { Filtro = filtroTexto }).ToList();
-                }
 
                 return respuesta;
             });
