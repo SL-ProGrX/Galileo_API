@@ -2,6 +2,9 @@
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 using Dapper;
 using System.Data;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -15,6 +18,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected abstract string ContentType { get; }
         protected abstract string QueryCadenas { get; }
         protected virtual Encoding EncodingArchivo => Encoding.GetEncoding(1252);
+        private readonly ArchivosGeneradosOptions _archivosOptions;
+
+
+        protected CcProcesoMensualArchivoCadenaSpGeneratorBase(IOptions<ArchivosGeneradosOptions> archivosOptions)
+        {
+            _archivosOptions = archivosOptions.Value;
+        }
+
+
         public virtual CcProcesoMensualArchivoGeneradoModel GenerarArchivo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request)
         {
             var configuracion = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerConfiguracionGeneral(
@@ -31,17 +43,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 CodigoFormato,
                 ExtensionArchivo);
 
-            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request);
+            var rutaBase = _archivosOptions.RutaBase;
 
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
-                rutaDirectorio,
-                nombreArchivo);
+            var rutaDirectorio = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(request, rutaBase);
+
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase, rutaDirectorio, nombreArchivo);
 
             var cadenas = ObtenerCadenas(connection, request);
 
             var contenido = CrearContenidoArchivo(cadenas);
 
-            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaDirectorio, rutaArchivo, contenido, EncodingArchivo);
+            Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase, rutaDirectorio, rutaArchivo, contenido, EncodingArchivo);
 
             return new CcProcesoMensualArchivoGeneradoModel
             {

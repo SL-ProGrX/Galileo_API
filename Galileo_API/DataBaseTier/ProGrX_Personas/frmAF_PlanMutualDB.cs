@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string plan, string estado, FiltrosLazyLoadData filtro)
+        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro, string? plan, string? estado)
         {
             if (filtro is null)
             {
@@ -103,8 +103,8 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                         cedula = string.Empty,
                         idAlterna = string.Empty,
                         nombre = string.Empty,
-                        estado,
-                        lineas = total
+                        Filtro = estado,
+                        Top = total
                     },
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
@@ -219,9 +219,9 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                     "spAFI_PM_Excluye",
                     new
                     {
-                        plan,
+                        Plan = plan,
                         cedula = persona.cedula,
-                        excluye = persona.excluye ? 1 : 0,
+                        Activa = persona.excluye ? 1 : 0,
                         usuario = usuario.ToUpper()
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
@@ -253,12 +253,12 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                     "spAFI_PM_Registro",
                     new
                     {
-                        cod_plan = plan.cod_plan,
+                        Plan = plan.cod_plan,
                         descripcion = plan.descripcion,
                         monto = plan.monto,
-                        codigio_retencion = plan.codigio_retencion,
+                        Retencion = plan.codigio_retencion,
                         activo = plan.activo ? 1 : 0,
-                        usuario,
+                        Usuario = usuario,
                         accion = "A"
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
@@ -289,12 +289,12 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                     "spAFI_PM_Registro",
                     new
                     {
-                        cod_plan = plan,
+                        Plan = plan,
                         descripcion = string.Empty,
                         monto = 0,
-                        codigio_retencion = string.Empty,
+                        Retencion = string.Empty,
                         activo = 0,
-                        usuario,
+                        Usuario = usuario,
                         accion = "E"
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
@@ -323,7 +323,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             {
                 connection.Execute(
                     "spAFI_PM_Recaudos_Update",
-                    new { plan, usuario },
+                    new { Plan = plan, Usuario = usuario },
                     commandType: System.Data.CommandType.StoredProcedure);
                 return true;
             });

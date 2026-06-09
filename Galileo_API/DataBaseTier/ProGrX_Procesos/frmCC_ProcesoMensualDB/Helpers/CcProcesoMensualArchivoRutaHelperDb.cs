@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         private const string CarpetaPlanilla = "Planilla";
         private const string NombreInstitucionDefault = "SinInstitucion";
         private const string DireccionDerecha = "D";
-
+        public static readonly Encoding Utf8SinBom = new UTF8Encoding(false);
         public static string CrearNombreArchivoEstandar(
             int codInstitucion,
             decimal fechaProceso,
@@ -21,8 +21,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             string extension)
         {
             var codigoInstitucion = ObtenerCodigoInstitucionArchivo(
-                codInstitucion,
-                codigoInstDeduc);
+                   codInstitucion,
+                   codigoInstDeduc);
 
             var fechaProcesoTexto = FormatearFechaProceso(fechaProceso);
             var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
@@ -66,29 +66,56 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 alinearDerecha: false);
         }
 
-        public static string ObtenerRutaPlanilla(
-            CcProcesoMensualGeneraArchivoRequest request)
+        public static string ObtenerRutaPlanilla(  CcProcesoMensualGeneraArchivoRequest request, string rutaBaseConfigurada)
         {
-            var anio = ObtenerAnioProceso(request.FechaProceso);
-            var nombreInstitucion = LimpiarNombreDirectorio(request.NombreInstitucion);
+            ArgumentNullException.ThrowIfNull(request);
 
-            return Path.Combine(
-                request.DirectorioResultados,
+            var anio = Path.GetFileName(ObtenerAnioProceso(request.FechaProceso));
+            var nombreInstitucion = Path.GetFileName(LimpiarNombreDirectorio(request.NombreInstitucion));
+
+
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+
+            var rutaFinal = Path.GetFullPath(Path.Combine(
+                rutaBase,
                 CarpetaPlanilla,
                 nombreInstitucion,
-                anio);
+                anio));
+
+            ValidarRutaDentroDeBase(rutaBase, rutaFinal);
+
+            return rutaFinal;
         }
 
-        public static void CrearDirectorioSiNoExiste(string rutaDirectorio)
+        public static void CrearDirectorioSiNoExiste(
+     string rutaBaseConfigurada,
+     string rutaDirectorio)
         {
-            Directory.CreateDirectory(rutaDirectorio);
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+
+            Directory.CreateDirectory(rutaDirectorioSeguro);
         }
 
-        public static string CombinarArchivo(
-            string rutaDirectorio,
-            string nombreArchivo)
+        private static void ValidarRutaDentroDeBase(
+    string rutaBase,
+    string rutaFinal)
         {
-            return Path.Combine(rutaDirectorio, nombreArchivo);
+            var rutaBaseNormalizada = Path.GetFullPath(rutaBase);
+
+            if (!rutaBaseNormalizada.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            {
+                rutaBaseNormalizada += Path.DirectorySeparatorChar;
+            }
+
+            var rutaFinalNormalizada = Path.GetFullPath(rutaFinal);
+
+            if (!rutaFinalNormalizada.StartsWith(rutaBaseNormalizada, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("La ruta generada está fuera del directorio permitido.");
+            }
         }
 
         public static DateTime ObtenerFechaServidor(IDbConnection connection)
@@ -155,22 +182,69 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         }
 
         public static void GuardarArchivoTexto(
-            string rutaDirectorio,
-            string rutaArchivo,
-            string contenido,
-            Encoding encoding)
+    string rutaBaseConfigurada,
+    string rutaDirectorio,
+    string rutaArchivo,
+    string contenido,
+    Encoding encoding)
         {
-            CrearDirectorioSiNoExiste(rutaDirectorio);
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+            var rutaArchivoSeguro = Path.GetFullPath(rutaArchivo);
 
-            if (File.Exists(rutaArchivo))
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+            ValidarRutaDentroDeBase(rutaBase, rutaArchivoSeguro);
+
+            Directory.CreateDirectory(rutaDirectorioSeguro);
+
+            if (File.Exists(rutaArchivoSeguro))
             {
-                File.Delete(rutaArchivo);
+                File.Delete(rutaArchivoSeguro);
             }
 
+            var contenidoLimpio = contenido.TrimStart('\uFEFF');
+
             File.WriteAllText(
-                rutaArchivo,
-                contenido,
+                rutaArchivoSeguro,
+                contenidoLimpio,
                 encoding);
+        }
+
+        public static string CombinarArchivo(   string rutaBaseConfigurada,  string rutaDirectorio,  string nombreArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(rutaDirectorio))
+            {
+                throw new ArgumentException("La ruta del directorio es requerida.", nameof(rutaDirectorio));
+            }
+
+            if (string.IsNullOrWhiteSpace(nombreArchivo))
+            {
+                throw new ArgumentException("El nombre del archivo es requerido.", nameof(nombreArchivo));
+            }
+
+            var nombreArchivoSeguro = Path.GetFileName(nombreArchivo);
+
+            if (!string.Equals(nombreArchivo, nombreArchivoSeguro, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
+            }
+            if (Path.IsPathRooted(nombreArchivoSeguro))
+            {
+                throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
+            }
+
+            var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
+            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+
+            ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
+
+            var rutaArchivo = Path.GetFullPath(Path.Combine(
+                rutaDirectorioSeguro,
+                nombreArchivoSeguro));
+
+            ValidarRutaDentroDeBase(rutaBase, rutaArchivo);
+
+            return rutaArchivo;
         }
 
         public static string DepurarCadena(string? valor)
