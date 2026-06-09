@@ -1,10 +1,12 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.FSL;
 using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using Org.BouncyCastle.Asn1.Ocsp;
 using System.Data;
 
@@ -84,12 +86,14 @@ namespace Galileo_API.DataBaseTier
                 },
                 commandTimeout: commandTimeoutSeconds).ToList();
 
+                long current = conn.QueryFirstOrDefault<long>("SELECT ISNULL(CONSECUTIVO_DET,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco", new { Tipo = transferencia.parametros.tipoDoc, Banco = transferencia.parametros.banco});
+                consc = current;
+
                 if (result.Count > 0)
                 {
                     foreach (var item in result)
                     {
-                        consc = NextConsecutivo(CodEmpresa, transferencia, consc);
-                        
+                       
                         var vDocumento = consc.ToString("D4");
 
                         item.documento = vDocumento;
@@ -124,10 +128,18 @@ namespace Galileo_API.DataBaseTier
                         {
                             ActualizaReferencia(conn, vDocumento, item);
                         }
+
+                        consc = NextConsecutivo(CodEmpresa, transferencia, consc);
                     }
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, consc.ToString("D4"), transferencia.usuario!);
+                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec, transferencia.usuario!);
+
+                    if(aplicaInterno.aplica == "1")
+                    {
+                        return DbHelper.OkResponse(
+                     $"Transferencias totales: [{aplicaInterno.total}] | Aplicados: [{aplicaInterno.aplicados}] | Pendientes: [{aplicaInterno.pendientes}]");
+                    }
 
                 }
 
@@ -286,7 +298,7 @@ Where ID_Solicitud = @IdSolicitud";
             }
         }
 
-        private void spTes_TEI_Acreaditacion(int CodEmpresa, int banco, string tipo, string documento, string usuario)
+        private TesTransferenciaAplicaInterno spTes_TEI_Acreaditacion(int CodEmpresa, int banco, string tipo, string documento, string usuario)
         {
             var connectionString = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -297,12 +309,12 @@ Where ID_Solicitud = @IdSolicitud";
             parametros.Add("@Documento", documento, DbType.String);
             parametros.Add("@Usuario", usuario, DbType.String);
 
-            DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
+            return DbHelper.ExecuteStoredProcedureSingle<TesTransferenciaAplicaInterno>(
                   connectionString,
                   "dbo.spTes_TEI_Acreaditacion",
                   default,
                   parametros
-              );
+              ).Result ?? new TesTransferenciaAplicaInterno();
 
         }
     }

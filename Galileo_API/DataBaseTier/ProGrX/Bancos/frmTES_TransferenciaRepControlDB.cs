@@ -127,7 +127,7 @@ Order by Nsolicitud";
                             bancoId: Banco,
                             tipoDoc: TipoDoc,
                             transaccionesList: LoadTransacciones(),
-                            resolveConsecutivo: () => NTransac),
+                            resolveConsecutivo: NTransac),
                     "C" => // BCR Planilla
                         ProcesarFormatoC(CodEmpresa, Banco, TipoDoc, NTransac, conn, parametros, LoadTransacciones()),
 
@@ -144,7 +144,7 @@ Order by Nsolicitud";
                                 fechaInicio = null,
                                 fechaCorte = null
                             },
-                            resolveConsecutivo: () => NTransac),
+                            resolveConsecutivo: NTransac),
 
                     "E" => sbTeBCT_Enlace(CodEmpresa, Banco, TipoDoc, NTransac),
 
@@ -161,12 +161,12 @@ Order by Nsolicitud";
                             fechaInicio = null,
                             fechaCorte = null
                         },
-                        resolveConsecutivo: () => NTransac),
+                        resolveConsecutivo: NTransac),
 
                     "G" => sbTeBNCR_Sinpe(CodEmpresa, Banco, TipoDoc, NTransac),
                     "DV1" or "DV2" => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan),
                     "S" => Err("SINPE INTERNO está en espera / no implementado."),
-                    "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(CodEmpresa, filtro, LoadTransacciones(), resolveConsecutivo: () => NTransac),
+                    "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(CodEmpresa, filtro, LoadTransacciones(), resolveConsecutivo: NTransac),
                     _ => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan)
                 };
             }
@@ -203,7 +203,7 @@ Where Estado = 'T'
                 tipoDoc: TipoDoc,
                 transaccionesList: transacciones,
                 curPlanilla: vMonto,
-                resolveConsecutivo: () => NTransac
+                resolveConsecutivo: NTransac
             );
         }
 
@@ -249,7 +249,7 @@ Where Estado = 'T'
                 vMontoTotal = totalMonto,
                 resolveConsecutivoArchivoDelDia = (c, banco, fecha) =>
                     MTesFuncionesDb.GetConsecutivoArchivoDelDia(conn, banco, fecha),
-                resolveBancoConsec = () => NTransac
+                resolveBancoConsec = NTransac
             };
 
             return mTesFunciones.SbTeBcrCore(request);
