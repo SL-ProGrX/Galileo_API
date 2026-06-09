@@ -12,6 +12,9 @@
         public string? documento { get; set; }
         public string? ndocumento { get; set; }
         public string? cod_plan { get; set; }
+        public int? rechazo_codigo { get; set; }
+        public string? rechazo_desc { get; set; }
+        public string? cod_referencia { get; set; }
     }
 
     public class TransferenciaReversaAplicaModel

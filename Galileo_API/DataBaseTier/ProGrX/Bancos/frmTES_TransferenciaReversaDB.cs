@@ -425,22 +425,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
               
                 const string query = @"
-                        SELECT
-                                nsolicitud,
-                                codigo,
-                                beneficiario,
-                                monto,
-                                fecha_emision,
-                                cta_ahorros,
-                                Ndocumento
-                            FROM Tes_Transacciones
-                            WHERE
-                                id_banco = @id_banco
-                                AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
-                                AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)
-                                AND REFERENCIA_SINPE IN (
-    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO  where ESTADO = 4
-                                )";
+                       SELECT DISTINCT
+                            t.nsolicitud,
+                            t.codigo,
+                            t.beneficiario,
+                            t.monto,
+                            t.fecha_emision,
+                            t.cta_ahorros,
+                            t.Ndocumento,
+                            t.REFERENCIA_SINPE,
+                            s.COD_REFERENCIA,
+                            s.RECHAZO_CODIGO,
+                            s.ESTADO,
+                            s.RECHAZO_DESC 
+                        FROM Tes_Transacciones t
+                        INNER JOIN SINPE_MOV_TRANSITO s
+                            ON s.COD_REFERENCIA = t.REFERENCIA_SINPE
+                        WHERE s.RECHAZO_CODIGO > 0 AND s.ESTADO = 4 and t.id_banco = @id_banco
+                        AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
+                        AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)";
 
                 var parameters = new
                 {
@@ -476,6 +479,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             using var conn = DbHelper.OpenConnection(_portalDB, reversa.codEmpresa);
 
+
             try
             {
                 var validacion = TES_TransferenciaRevSinpe_ValidarEntrada(reversa);
@@ -486,18 +490,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (autorizacion.Code != 0)
                     return autorizacion;
 
-                var existeReversion = TES_TransferenciaRevSinpe_ValidaReversionExistente(conn, reversa);
-                if (existeReversion.Code != 0)
-                    return existeReversion;
-
                 var reversionId = TES_TransferenciaRevSinpe_CrearReversion(conn, reversa);
                 if (reversionId.Code != 0)
                     return new ErrorDto { Code = reversionId.Code, Description = reversionId.Description };
 
-                var procesa = TES_TransferenciaRevSinpe_ProcesarSolicitudes(conn, reversa);
+                var procesa = TES_TransferenciaRevSinpe_ProcesarSolicitudes(reversionId.Result, conn, reversa);
                 if (procesa.Code != 0)
-                    return procesa;
-
+                {
+                    return new ErrorDto
+                    {
+                        Code = procesa.Code,
+                        Description = reversionId.Result + " | " + procesa.Description
+                    };
+                }
+                   
                 TES_TransferenciaRevSinpe_RegistrarBitacora(reversa, reversionId.Result);
 
                 return DbHelper.OkResponse(reversionId.Result.ToString());
@@ -556,16 +562,16 @@ Where Clave = @clave
         {
             const string query = @"
 select count(*) as Existe
-from TES_SINPE_REVERSA
+from TES_TE_REVERSION
 where id_Banco = @id_banco
-  and NDOCUMENTO = @documento";
+  and DOCUMENTO = @documento";
 
             var existe = conn.QueryFirstOrDefault<int>(
                 query,
                 new
                 {
                     reversa.id_banco,
-                    documento = reversa.documento!.Trim()
+                    documento = reversa.lista
                 });
 
             if (existe == 1)
@@ -586,9 +592,8 @@ where id_Banco = @id_banco
             TesReversaSinpeModel reversa)
         {
             const string query = @"
-exec spTES_TE_Reversion_Main
+exec spTES_W_SinpeReversion_Main
     @id_banco,
-    @tipo,
     @documento,
     @observaciones,
     @usuario";
@@ -598,7 +603,6 @@ exec spTES_TE_Reversion_Main
                 new
                 {
                     reversa.id_banco,
-                    tipo = "TS",
                     documento = reversa.documento!.Trim(),
                     observaciones = reversa.observaciones ?? string.Empty,
                     usuario = reversa.usuario!.ToUpper()
@@ -611,17 +615,41 @@ exec spTES_TE_Reversion_Main
         /// Procesa cada solicitud incluida en la reversa SINPE.
         /// </summary>
         private ErrorDto TES_TransferenciaRevSinpe_ProcesarSolicitudes(
+            long ReversaID,
             SqlConnection conn,
             TesReversaSinpeModel reversa)
         {
+            string msj = string.Empty;
             foreach (var item in reversa.lista!)
             {
-                var procesaItem = TES_TransferenciaRevSinpe_ProcesarSolicitud(conn, item);
-                if (procesaItem.Code != 0)
-                    return procesaItem;
+                try
+                {
+                    string sp = "spTES_W_SinpeReversion_Transaccion";
+                    var parametros = new
+                    {
+                        ReversionId = ReversaID,
+                        TesoreriaId = item.nsolicitud,
+                        Usuario = reversa.usuario!.ToUpper(),
+                    };
+
+                    conn.Execute(sp, parametros, commandTimeout: 0, commandType: CommandType.StoredProcedure);
+
+                    var procesaItem = TES_TransferenciaRevSinpe_ProcesarSolicitud(conn, item);
+                }
+                catch (Exception ex)
+                {
+                    msj += $" -Solicitud: [{item.nsolicitud}] | Error: {ex.Message}";
+                } 
             }
 
-            return DbHelper.CreateOkResponse();
+            if (string.IsNullOrEmpty(msj))
+            {
+                return DbHelper.OkResponse("Proceso ejecutado correctamente");
+            }
+            else
+            {
+                return DbHelper.ErrorResponse(msj, -2);
+            }
         }
 
         /// <summary>
