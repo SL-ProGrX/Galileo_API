@@ -1,15 +1,18 @@
 ﻿using System.Data;
 using System.Globalization;
-using System.Text;
-using Dapper;
+using System.Text; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
+using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
+using Microsoft.Extensions.Options;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
     public class CcProcesoMensualArchivoF00ExcelGenerar : CcProcesoMensualArchivoPlanoGenerarBase<CcProcesoMensualArchivoF00ExcelGenerar.CcProcesoMensualArchivoF00RegistroDbModel>
 
     {
-
+        public CcProcesoMensualArchivoF00ExcelGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
+        {
+        }
         private List<string> _movimientos = [];
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["00"];
@@ -18,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string CodigoFormato => "F00";
         protected override string ExtensionArchivo => ".csv";
         protected override string ContentType => ContentTypeCsv;
-        protected override Encoding EncodingArchivo => Encoding.UTF8;
+       protected override Encoding EncodingArchivo => Helpers.CcProcesoMensualArchivoRutaHelperDb.Utf8SinBom;
 
         protected override string QueryRegistros => @"
             SELECT
