@@ -2,6 +2,7 @@
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using System.Data;
 using System.Text;
 
 namespace Galileo.DataBaseTier
@@ -104,6 +105,103 @@ namespace Galileo.DataBaseTier
             parametros.Add("Fetch", paginacion.Value);
         }
 
+        /// <summary>
+        /// Crea los parámetros comunes para proveedor e identificador.
+        /// </summary>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="Id">Identificador del cargo periódico.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosProveedorId(int Cod_Proveedor, int Id) => new
+        {
+            Cod_Proveedor,
+            Id
+        };
+
+        /// <summary>
+        /// Crea los parámetros comunes para proveedor y filtro de búsqueda paginada.
+        /// </summary>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Parámetros Dapper inicializados.</returns>
+        private static DynamicParameters CrearParametrosProveedor(int Cod_Proveedor)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("Cod_Proveedor", Cod_Proveedor);
+            return parametros;
+        }
+
+        /// <summary>
+        /// Actualiza el saldo del proveedor con el valor y tipo de cambio indicados.
+        /// </summary>
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="Valor">Monto base.</param>
+        /// <param name="Tipo_Cambio">Tipo de cambio aplicado.</param>
+        /// <param name="sumar">Indica si se suma o se resta al saldo.</param>
+        private static void ActualizarSaldoProveedor(IDbConnection connection, int Cod_Proveedor, decimal Valor, decimal Tipo_Cambio, bool sumar)
+        {
+            var operador = sumar ? "+" : "-";
+            connection.Execute(
+                $@"UPDATE cxp_proveedores
+                   SET saldo = isnull(saldo, 0) {operador} @Valor,
+                       SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) {operador} @Importe_Divisa_Real
+                   WHERE cod_proveedor = @Cod_Proveedor",
+                new
+                {
+                    Cod_Proveedor,
+                    Valor,
+                    Importe_Divisa_Real = Valor / Tipo_Cambio
+                });
+        }
+
+        /// <summary>
+        /// Registra la bitácora de cargos periódicos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <param name="detalleMovimiento">Detalle del movimiento.</param>
+        /// <param name="movimiento">Tipo de movimiento.</param>
+        private void RegistrarBitacoraCargo(int CodEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalleMovimiento,
+                Movimiento = movimiento,
+                Modulo = 30
+            });
+        }
+
+        /// <summary>
+        /// Ejecuta una consulta paginada usando los builders y parámetros indicados.
+        /// </summary>
+        /// <typeparam name="T">Tipo del detalle a retornar.</typeparam>
+        /// <typeparam name="TLista">Tipo del contenedor paginado.</typeparam>
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="parametros">Parámetros Dapper.</param>
+        /// <param name="totalBuilder">Consulta de total.</param>
+        /// <param name="detalleBuilder">Consulta de detalle.</param>
+        /// <param name="crearListaVacia">Función que crea la respuesta vacía.</param>
+        /// <param name="asignarTotal">Acción para asignar el total.</param>
+        /// <param name="asignarDetalle">Acción para asignar el detalle.</param>
+        /// <returns>Respuesta paginada llena.</returns>
+        private static TLista EjecutarConsultaPaginada<T, TLista>(
+            IDbConnection connection,
+            DynamicParameters parametros,
+            StringBuilder totalBuilder,
+            StringBuilder detalleBuilder,
+            Func<TLista> crearListaVacia,
+            Action<TLista, int> asignarTotal,
+            Action<TLista, List<T>> asignarDetalle)
+        {
+            var respuesta = crearListaVacia();
+            var total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
+            var detalle = connection.Query<T>(detalleBuilder.ToString(), parametros).ToList();
+            asignarTotal(respuesta, total);
+            asignarDetalle(respuesta, detalle);
+            return respuesta;
+        }
+
         #endregion
 
         /// <summary>
@@ -167,7 +265,7 @@ namespace Galileo.DataBaseTier
                   inner join cxp_cargos D on C.cod_cargo = D.cod_cargo
                   where C.ID = @Id and C.cod_proveedor = @Cod_Proveedor",
                 null,
-                new { Id, Cod_Proveedor });
+                CrearParametrosProveedorId(Cod_Proveedor, Id));
 
             return CrearRespuestaSingle(
                 result,
@@ -215,10 +313,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = CrearCargoPerDtoListVacia();
-
-                var parametros = new DynamicParameters();
-                parametros.Add("Cod_Proveedor", Cod_Proveedor);
+                var parametros = CrearParametrosProveedor(Cod_Proveedor);
 
                 var totalBuilder = new StringBuilder(@"SELECT COUNT(C.cod_proveedor)
                                                       FROM cxp_cargosper C
@@ -237,13 +332,17 @@ namespace Galileo.DataBaseTier
                     detalleBuilder,
                     " AND (C.cod_Cargo LIKE @Filtro OR D.descripcion LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
 
-                respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
-
                 detalleBuilder.Append(" ORDER BY C.ID desc");
                 AgregarPaginacion(pagina, paginacion, detalleBuilder, parametros);
 
-                respuesta.Cargoper = connection.Query<CargoPerDto>(detalleBuilder.ToString(), parametros).ToList();
-                return respuesta;
+                return EjecutarConsultaPaginada<CargoPerDto, CargoPerDtoList>(
+                    connection,
+                    parametros,
+                    totalBuilder,
+                    detalleBuilder,
+                    CrearCargoPerDtoListVacia,
+                    (lista, total) => lista.Total = total,
+                    (lista, detalle) => lista.Cargoper = detalle);
             });
 
             return result.Code == 0
@@ -265,11 +364,8 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = CrearPagoProvCargosDtoListVacia();
-
-                var parametros = new DynamicParameters();
+                var parametros = CrearParametrosProveedor(Cod_Proveedor);
                 parametros.Add("Id", Id);
-                parametros.Add("Cod_Proveedor", Cod_Proveedor);
 
                 var totalBuilder = new StringBuilder(@"SELECT COUNT(C.IDX_CONSEC)
                                                       FROM cxp_pagoprov P
@@ -296,13 +392,17 @@ namespace Galileo.DataBaseTier
                     detalleBuilder,
                     " AND (C.cod_Cargo LIKE @Filtro OR CAST(C.IDX_CONSEC AS varchar(50)) LIKE @Filtro OR C.concepto LIKE @Filtro OR CAST(C.id AS varchar(50)) LIKE @Filtro)");
 
-                respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
-
                 detalleBuilder.Append(" ORDER BY C.id desc");
                 AgregarPaginacion(pagina, paginacion, detalleBuilder, parametros);
 
-                respuesta.Pagos = connection.Query<PagoProvCargosDto>(detalleBuilder.ToString(), parametros).ToList();
-                return respuesta;
+                return EjecutarConsultaPaginada<PagoProvCargosDto, PagoProvCargosDtoList>(
+                    connection,
+                    parametros,
+                    totalBuilder,
+                    detalleBuilder,
+                    CrearPagoProvCargosDtoListVacia,
+                    (lista, total) => lista.Total = total,
+                    (lista, detalle) => lista.Pagos = detalle);
             });
 
             return result.Code == 0
@@ -339,14 +439,11 @@ namespace Galileo.DataBaseTier
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Usuario_Sesion,
-                    DetalleMovimiento = "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + data.Id,
-                    Movimiento = "MODIFICA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraCargo(
+                    CodEmpresa,
+                    data.Usuario_Sesion,
+                    "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + data.Id,
+                    "MODIFICA - WEB");
             }
 
             return result.Code == 0
@@ -393,31 +490,18 @@ namespace Galileo.DataBaseTier
                         Fecha_Cobro_Cargo = data.Fecha_Cobro_Cargo
                     });
 
-                connection.Execute(
-                    @"UPDATE cxp_proveedores
-                      SET saldo = isnull(saldo, 0) - @Valor,
-                          SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) - @Importe_Divisa_Real
-                      WHERE cod_proveedor = @Cod_Proveedor",
-                    new
-                    {
-                        data.Cod_Proveedor,
-                        data.Valor,
-                        Importe_Divisa_Real = data.Valor / data.Tipo_Cambio
-                    });
+                ActualizarSaldoProveedor(connection, data.Cod_Proveedor, data.Valor, data.Tipo_Cambio, false);
 
                 return siguiente;
             });
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Registro_Usuario,
-                    DetalleMovimiento = "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + result.Result,
-                    Movimiento = "REGISTRA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraCargo(
+                    CodEmpresa,
+                    data.Registro_Usuario,
+                    "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + result.Result,
+                    "REGISTRA - WEB");
             }
 
             return result.Code == 0
@@ -448,17 +532,7 @@ namespace Galileo.DataBaseTier
 
                 if (filas > 0)
                 {
-                    connection.Execute(
-                        @"UPDATE cxp_proveedores
-                          SET saldo = isnull(saldo, 0) + @Valor,
-                              SALDO_DIVISA_REAL = isnull(SALDO_DIVISA_REAL, 0) + @Importe_Divisa_Real
-                          WHERE cod_proveedor = @Cod_Proveedor",
-                        new
-                        {
-                            data.Cod_Proveedor,
-                            data.Valor,
-                            Importe_Divisa_Real = data.Valor / data.Tipo_Cambio
-                        });
+                    ActualizarSaldoProveedor(connection, data.Cod_Proveedor, data.Valor, data.Tipo_Cambio, true);
                 }
 
                 return filas;
@@ -466,14 +540,11 @@ namespace Galileo.DataBaseTier
 
             if (result.Code == 0 && result.Result > 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Usuario_Sesion,
-                    DetalleMovimiento = "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + data.Id + "..Mnt..:" + data.Valor,
-                    Movimiento = "ELIMINA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraCargo(
+                    CodEmpresa,
+                    data.Usuario_Sesion,
+                    "Cargo Adicional a Prov: " + data.Cod_Proveedor + " Sec: " + data.Id + "..Mnt..:" + data.Valor,
+                    "ELIMINA - WEB");
             }
 
             return result.Code == 0

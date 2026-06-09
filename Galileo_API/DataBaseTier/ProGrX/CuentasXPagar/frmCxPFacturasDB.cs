@@ -10,6 +10,104 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb DBBitacora;
+
+        #region Helpers privados
+
+        /// <summary>
+        /// Crea una respuesta vacía para el listado de facturas.
+        /// </summary>
+        /// <returns>Listado vacío inicializado.</returns>
+        private static FacturaLista CrearFacturaListaVacia() => new()
+        {
+            Total = 0,
+            Facturas = new List<Factura>()
+        };
+
+        /// <summary>
+        /// Crea una respuesta vacía para el listado de plantillas de factura.
+        /// </summary>
+        /// <returns>Listado vacío inicializado.</returns>
+        private static FacturaPlantillaLista CrearFacturaPlantillaListaVacia() => new()
+        {
+            Total = 0,
+            Plantillas = new List<FacturaPlantilla>()
+        };
+
+        /// <summary>
+        /// Crea los parámetros comunes para factura y proveedor.
+        /// </summary>
+        /// <param name="Cod_Factura">Código de factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosFacturaProveedor(string Cod_Factura, int Cod_Proveedor) => new
+        {
+            Cod_Factura,
+            Cod_Proveedor
+        };
+
+        /// <summary>
+        /// Asigna la llave compuesta a una colección de facturas.
+        /// </summary>
+        /// <param name="facturas">Facturas a procesar.</param>
+        private static void AsignarDataKeysFacturas(IEnumerable<Factura> facturas)
+        {
+            foreach (Factura ft in facturas)
+            {
+                ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
+            }
+        }
+
+        /// <summary>
+        /// Registra una bitácora de facturas.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <param name="detalleMovimiento">Detalle del movimiento.</param>
+        /// <param name="movimiento">Tipo de movimiento.</param>
+        private void RegistrarBitacoraFactura(int CodEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalleMovimiento,
+                Movimiento = movimiento,
+                Modulo = 30
+            });
+        }
+
+        /// <summary>
+        /// Convierte el resultado de una consulta única en una respuesta estándar.
+        /// </summary>
+        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
+        /// <param name="result">Resultado devuelto por DbHelper.</param>
+        /// <param name="errorMessage">Mensaje de error cuando la consulta falla.</param>
+        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
+        /// <returns>Respuesta estándar para consultas de una sola entidad.</returns>
+        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
+            where T : class
+        {
+            if (result.Code != 0)
+            {
+                return new ErrorDto<T>
+                {
+                    Code = result.Code,
+                    Description = result.Description ?? errorMessage,
+                    Result = null
+                };
+            }
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : new ErrorDto<T>
+                {
+                    Code = -2,
+                    Description = notFoundMessage,
+                    Result = null
+                };
+        }
+
+        #endregion
         /// <summary>
         /// Inicializa una nueva instancia de la clase <see cref="FrmCxPFacturasDB"/>.
         /// </summary>
@@ -67,24 +165,10 @@ namespace Galileo.DataBaseTier
                     and Divisa_Local = 1",
                 null);
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<DivisaLocal>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener la divisa local.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<DivisaLocal>
-                {
-                    Code = -2,
-                    Description = "No se encontró la divisa local.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener la divisa local.",
+                "No se encontró la divisa local.");
         }
 
         /// <summary>
@@ -158,11 +242,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new FacturaLista
-                {
-                    Total = 0,
-                    Facturas = new List<Factura>()
-                };
+                var respuesta = CrearFacturaListaVacia();
 
                 var parametros = new DynamicParameters();
                 var totalBuilder = new System.Text.StringBuilder("SELECT COUNT(*) from cxp_facturas");
@@ -199,17 +279,14 @@ namespace Galileo.DataBaseTier
                 }
 
                 respuesta.Facturas = connection.Query<Factura>(detalleBuilder.ToString(), parametros).ToList();
-                foreach (Factura ft in respuesta.Facturas)
-                {
-                    ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
-                }
+                AsignarDataKeysFacturas(respuesta.Facturas);
 
                 return respuesta;
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new FacturaLista { Total = 0, Facturas = new List<Factura>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas.", result.Code.GetValueOrDefault(-1), new FacturaLista { Total = 0, Facturas = new List<Factura>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearFacturaListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas.", result.Code.GetValueOrDefault(-1), CrearFacturaListaVacia());
         }
 
         /// <summary>
@@ -247,24 +324,10 @@ namespace Galileo.DataBaseTier
                 null,
                 parametros);
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<FacturaDto>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener detalle de la factura.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<FacturaDto>
-                {
-                    Code = -2,
-                    Description = "No se encontró la factura.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener detalle de la factura.",
+                "No se encontró la factura.");
         }
 
         /// <summary>
@@ -350,14 +413,11 @@ namespace Galileo.DataBaseTier
 
             if (respuesta.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Usuario,
-                    DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " --> " + data.Cod_FacturaNew + " Prov.Id: " + data.Cod_Proveedor,
-                    Movimiento = "APLICA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraFactura(
+                    CodEmpresa,
+                    data.Usuario,
+                    "Cambio Factura: " + data.Cod_Factura + " --> " + data.Cod_FacturaNew + " Prov.Id: " + data.Cod_Proveedor,
+                    "APLICA - WEB");
             }
 
             return respuesta;
@@ -387,14 +447,11 @@ namespace Galileo.DataBaseTier
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Usuario,
-                    DetalleMovimiento = "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas,
-                    Movimiento = "MODIFICA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraFactura(
+                    CodEmpresa,
+                    data.Usuario,
+                    "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas,
+                    "MODIFICA - WEB");
             }
 
             return result.Code == 0
@@ -428,24 +485,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<ProveedorFactura>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener proveedor de factura.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<ProveedorFactura>
-                {
-                    Code = -2,
-                    Description = "No se encontró el proveedor de la factura.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener proveedor de factura.",
+                "No se encontró el proveedor de la factura.");
         }
 
         /// <summary>
@@ -494,24 +537,10 @@ namespace Galileo.DataBaseTier
                 null,
                 parametros);
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<FacturaAntSig>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al consultar factura anterior o siguiente.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<FacturaAntSig>
-                {
-                    Code = -2,
-                    Description = "No se encontró una factura para el desplazamiento solicitado.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al consultar factura anterior o siguiente.",
+                "No se encontró una factura para el desplazamiento solicitado.");
         }
 
         /// <summary>
@@ -546,14 +575,11 @@ namespace Galileo.DataBaseTier
 
             if (respuesta.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Usuario,
-                    DetalleMovimiento = "Cambio Factura: " + data.Cod_Factura + " Prov.Id: " + data.Cod_Proveedor,
-                    Movimiento = "APLICA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraFactura(
+                    CodEmpresa,
+                    data.Usuario,
+                    "Cambio Factura: " + data.Cod_Factura + " Prov.Id: " + data.Cod_Proveedor,
+                    "APLICA - WEB");
             }
 
             return respuesta;
@@ -571,11 +597,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new FacturaPlantillaLista
-                {
-                    Total = 0,
-                    Plantillas = new List<FacturaPlantilla>()
-                };
+                var respuesta = CrearFacturaPlantillaListaVacia();
 
                 var parametros = new DynamicParameters();
                 var totalBuilder = new System.Text.StringBuilder("SELECT COUNT(*) from CXP_PLANTILLAS WHERE ACTIVO = 1");
@@ -603,8 +625,8 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new FacturaPlantillaLista { Total = 0, Plantillas = new List<FacturaPlantilla>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener plantillas de factura.", result.Code.GetValueOrDefault(-1), new FacturaPlantillaLista { Total = 0, Plantillas = new List<FacturaPlantilla>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearFacturaPlantillaListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener plantillas de factura.", result.Code.GetValueOrDefault(-1), CrearFacturaPlantillaListaVacia());
         }
 
         /// <summary>
@@ -665,10 +687,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas plantilla.", result.Code.GetValueOrDefault(-1), new List<Factura>());
             }
 
-            foreach (Factura ft in result.Result ?? new List<Factura>())
-            {
-                ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
-            }
+            AsignarDataKeysFacturas(result.Result ?? new List<Factura>());
 
             return DbHelper.CreateOkResponse(result.Result ?? new List<Factura>());
         }
@@ -694,24 +713,10 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Proveedor });
 
-            if (result.Code != 0)
-            {
-                return new ErrorDto<CuentaProveedor>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? "Error al obtener cuenta del proveedor.",
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<CuentaProveedor>
-                {
-                    Code = -2,
-                    Description = "No se encontró la cuenta del proveedor.",
-                    Result = null
-                };
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener cuenta del proveedor.",
+                "No se encontró la cuenta del proveedor.");
         }
 
         /// <summary>
@@ -748,7 +753,7 @@ namespace Galileo.DataBaseTier
                 @"DELETE cxp_facturas_detalle
                   WHERE cod_factura = @Cod_Factura
                     AND cod_proveedor = @Cod_Proveedor",
-                new { Cod_Factura, Cod_Proveedor });
+                CrearParametrosFacturaProveedor(Cod_Factura, Cod_Proveedor));
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Ok")
@@ -899,14 +904,11 @@ namespace Galileo.DataBaseTier
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.Creacion_User,
-                    DetalleMovimiento = "CxP Factura: " + data.Cod_Factura + " Prov: " + data.Cod_Proveedor,
-                    Movimiento = "REGISTRA - WEB",
-                    Modulo = 30
-                });
+                RegistrarBitacoraFactura(
+                    CodEmpresa,
+                    data.Creacion_User,
+                    "CxP Factura: " + data.Cod_Factura + " Prov: " + data.Cod_Proveedor,
+                    "REGISTRA - WEB");
             }
 
             return result.Code == 0
