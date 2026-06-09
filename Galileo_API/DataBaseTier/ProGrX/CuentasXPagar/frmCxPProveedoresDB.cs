@@ -163,66 +163,48 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var condiciones = ConstruirCondicionesConsultaProveedor(filtro);
-                var parametros = new DynamicParameters();
+                var autoGestion = filtro?.autoGestion == true;
+                var ventas = filtro?.ventas == true;
+                var usarDesc = tipo == "desc";
 
-                if (tipo == "desc" && Cod_Proveedor > 0)
-                {
-                    condiciones.Add("cod_proveedor < @Cod_Proveedor");
-                    parametros.Add("Cod_Proveedor", Cod_Proveedor);
-                }
-                else if (tipo != "desc")
-                {
-                    condiciones.Add("cod_proveedor > @Cod_Proveedor");
-                    parametros.Add("Cod_Proveedor", Cod_Proveedor);
-                }
+                var query = @"SELECT TOP 1 cod_proveedor
+                      FROM cxp_proveedores
+                      WHERE (
+                            (@UsarFiltro = 0 AND ESTADO = 'A')
+                            OR
+                            (@UsarFiltro = 1 AND ESTADO IN ('A','T','S','I'))
+                          )
+                        AND (
+                            @UsarFiltro = 0
+                            OR (@AutoGestion = 0 AND @Ventas = 0)
+                            OR (@AutoGestion = 1 AND @Ventas = 0 AND WEB_AUTO_GESTION = 1)
+                            OR (@AutoGestion = 0 AND @Ventas = 1 AND WEB_FERIAS = 1)
+                            OR (@AutoGestion = 1 AND @Ventas = 1 AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1))
+                        )
+                        AND (
+                            (@UsarDesc = 1 AND (@Cod_Proveedor <= 0 OR cod_proveedor < @Cod_Proveedor))
+                            OR
+                            (@UsarDesc = 0 AND cod_proveedor > @Cod_Proveedor)
+                        )
+                      ORDER BY
+                        CASE WHEN @UsarDesc = 1 THEN cod_proveedor END DESC,
+                        CASE WHEN @UsarDesc = 0 THEN cod_proveedor END ASC";
 
-                var query = "SELECT TOP 1 cod_proveedor FROM cxp_proveedores WHERE "
-                    + string.Join(" AND ", condiciones)
-                    + (tipo == "desc" ? " ORDER BY cod_proveedor DESC" : " ORDER BY cod_proveedor ASC");
+                var encontrado = connection.QueryFirstOrDefault<int>(
+                    query,
+                    new
+                    {
+                        UsarFiltro = filtro is not null,
+                        AutoGestion = autoGestion,
+                        Ventas = ventas,
+                        UsarDesc = usarDesc,
+                        Cod_Proveedor
+                    });
 
-                var encontrado = connection.QueryFirstOrDefault<int>(query, parametros);
                 return encontrado == 0 || encontrado == Cod_Proveedor ? Cod_Proveedor : encontrado;
             });
 
             return result.Code == 0 ? result.Result : Cod_Proveedor;
-        }
-
-        /// <summary>
-        /// Construye las condiciones base de filtrado para la navegación de proveedores.
-        /// </summary>
-        /// <param name="filtro">Filtros del formulario.</param>
-        /// <returns>Listado de condiciones SQL permitidas.</returns>
-        private static List<string> ConstruirCondicionesConsultaProveedor(ProveedorDataFiltros filtro)
-        {
-            var condiciones = new List<string>();
-
-            if (filtro != null)
-            {
-                condiciones.Add("ESTADO IN ('A','T','S','I')");
-
-                var autoGestion = filtro.autoGestion == true;
-                var ventas = filtro.ventas == true;
-
-                if (autoGestion && ventas)
-                {
-                    condiciones.Add("(WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1)");
-                }
-                else if (autoGestion)
-                {
-                    condiciones.Add("WEB_AUTO_GESTION = 1");
-                }
-                else if (ventas)
-                {
-                    condiciones.Add("WEB_FERIAS = 1");
-                }
-            }
-            else
-            {
-                condiciones.Add("ESTADO = 'A'");
-            }
-
-            return condiciones;
         }
 
         /// <summary>

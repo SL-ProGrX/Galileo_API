@@ -402,7 +402,7 @@ namespace Galileo.DataBaseTier
             return data.vTipoDoc + "." + $"{inf.Cod_Proveedor:D2}" + "." + inf.Cod_Transaccion;
         }
 
-        private static bool TryBuildFormatoTransaccion(string? mascara, int codTransaccion, out string transaccionFormateada)
+        private static bool TryBuildFormatoTransaccion(string? mascara, string? codTransaccion, out string transaccionFormateada)
         {
             transaccionFormateada = string.Empty;
             if (string.IsNullOrWhiteSpace(mascara) || !IsMascaraSegura(mascara))
@@ -410,7 +410,12 @@ namespace Galileo.DataBaseTier
                 return false;
             }
 
-            transaccionFormateada = codTransaccion.ToString(mascara, CultureInfo.InvariantCulture);
+            if (!int.TryParse(codTransaccion, NumberStyles.Integer, CultureInfo.InvariantCulture, out var codTransaccionNumerico))
+            {
+                return false;
+            }
+
+            transaccionFormateada = codTransaccionNumerico.ToString(mascara, CultureInfo.InvariantCulture);
             return true;
         }
 
@@ -421,15 +426,7 @@ namespace Galileo.DataBaseTier
                 return false;
             }
 
-            foreach (var c in mascara)
-            {
-                if (c != '0' && c != '#' && c != '.' && c != ',')
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return !mascara.Any(c => c != '0' && c != '#' && c != '.' && c != ',');
         }
 
         /// <summary>
