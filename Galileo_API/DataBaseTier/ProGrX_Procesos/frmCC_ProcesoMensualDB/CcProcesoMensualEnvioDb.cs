@@ -30,13 +30,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
-        public ErrorDto<bool> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, string usuario, CcProcesoMensualGeneraDeduccionesRequest request)
+        public ErrorDto<bool> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa,  CcProcesoMensualGeneraDeduccionesRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
          
             try
             {
-                var globalesDto = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario); //codContabilidad
+                var globalesDto = _mProGrx.sbSifParametrosInicializa(codEmpresa, request.Usuario); //codContabilidad
                 var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
 
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "02", "PRE", request.Usuario, request.CodInstitucion, request.FechaProceso);
