@@ -25,6 +25,52 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
+        /// Crea los parámetros comunes para consultas por factura y proveedor.
+        /// </summary>
+        /// <param name="Cod_Factura">Código de la factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosFactura(string Cod_Factura, int Cod_Proveedor) => new
+        {
+            Cod_Factura,
+            Cod_Proveedor
+        };
+
+        /// <summary>
+        /// Asigna la llave compuesta a una colección de facturas.
+        /// </summary>
+        /// <param name="facturas">Listado de facturas.</param>
+        private static void AsignarDataKeys(IEnumerable<Factura> facturas)
+        {
+            foreach (Factura ft in facturas)
+            {
+                ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los datos de factura desde la tabla indicada usando un mismo formato de respuesta.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="query">Consulta SQL a ejecutar.</param>
+        /// <param name="Cod_Factura">Código de la factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="errorMessage">Mensaje de error.</param>
+        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
+        /// <returns>Respuesta estándar con datos de factura.</returns>
+        private ErrorDto<FacturaDatos> ObtenerFacturaDatosComun(int CodEmpresa, string query, string Cod_Factura, int Cod_Proveedor, string errorMessage, string notFoundMessage)
+        {
+            var result = DbHelper.ExecuteSingleQuery<FacturaDatos>(
+                CreatePortalDb(),
+                CodEmpresa,
+                query,
+                null,
+                CrearParametrosFactura(Cod_Factura, Cod_Proveedor));
+
+            return CrearRespuestaSingle(result, errorMessage, notFoundMessage);
+        }
+
+        /// <summary>
         /// Convierte el resultado de una consulta única en una respuesta estándar.
         /// </summary>
         /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
@@ -125,10 +171,7 @@ namespace Galileo.DataBaseTier
 
                 respuesta.Facturas = connection.Query<Factura>(builder.ToString(), parametros).ToList();
 
-                foreach (Factura ft in respuesta.Facturas)
-                {
-                    ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
-                }
+                AsignarDataKeys(respuesta.Facturas);
 
                 return respuesta;
             });
@@ -156,7 +199,7 @@ namespace Galileo.DataBaseTier
                     AND Cod_Factura = @Cod_Factura
                     AND Cod_Proveedor = @Cod_Proveedor",
                 null,
-                new { Cod_Factura, Cod_Proveedor });
+                CrearParametrosFactura(Cod_Factura, Cod_Proveedor));
 
             return CrearRespuestaSingle(
                 result,
@@ -183,7 +226,7 @@ namespace Galileo.DataBaseTier
                     AND Cod_Factura = @Cod_Factura
                     AND Cod_Proveedor = @Cod_Proveedor",
                 null,
-                new { Cod_Factura, Cod_Proveedor });
+                CrearParametrosFactura(Cod_Factura, Cod_Proveedor));
 
             return CrearRespuestaSingle(
                 result,
@@ -255,7 +298,7 @@ namespace Galileo.DataBaseTier
                     AND Cod_Factura = @Cod_Factura
                     AND Cod_Proveedor = @Cod_Proveedor",
                 null,
-                new { Cod_Factura, Cod_Proveedor });
+                CrearParametrosFactura(Cod_Factura, Cod_Proveedor));
 
             return CrearRespuestaSingle(
                 result,
@@ -296,8 +339,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Datos de la compra.</returns>
         public ErrorDto<FacturaDatos> CompraDatos_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<FacturaDatos>(
-                CreatePortalDb(),
+            return ObtenerFacturaDatosComun(
                 CodEmpresa,
                 @"SELECT CxP_Estado,
                          Total,
@@ -305,11 +347,8 @@ namespace Galileo.DataBaseTier
                   FROM CPR_COMPRAS
                   WHERE cod_factura = @Cod_Factura
                     AND cod_proveedor = @Cod_Proveedor",
-                null,
-                new { Cod_Factura, Cod_Proveedor });
-
-            return CrearRespuestaSingle(
-                result,
+                Cod_Factura,
+                Cod_Proveedor,
                 "Error al obtener datos de la compra.",
                 "No se encontró información de la compra.");
         }
@@ -323,8 +362,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Datos de la factura.</returns>
         public ErrorDto<FacturaDatos> FacturaDatos_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<FacturaDatos>(
-                CreatePortalDb(),
+            return ObtenerFacturaDatosComun(
                 CodEmpresa,
                 @"SELECT CxP_Estado,
                          Total,
@@ -332,11 +370,8 @@ namespace Galileo.DataBaseTier
                   FROM cxp_facturas
                   WHERE cod_factura = @Cod_Factura
                     AND cod_proveedor = @Cod_Proveedor",
-                null,
-                new { Cod_Factura, Cod_Proveedor });
-
-            return CrearRespuestaSingle(
-                result,
+                Cod_Factura,
+                Cod_Proveedor,
                 "Error al obtener datos de la factura.",
                 "No se encontró información de la factura.");
         }
@@ -358,14 +393,14 @@ namespace Galileo.DataBaseTier
                       WHERE nPago >= @Pago
                         AND cod_factura = @Cod_Factura
                         AND cod_proveedor = @Cod_Proveedor",
-                    new { Pago, Cod_Factura, Cod_Proveedor });
+                    CrearParametrosPago(Pago, Cod_Factura, Cod_Proveedor));
 
                 connection.Execute(
                     @"DELETE cxp_pagoProv
                       WHERE nPago >= @Pago
                         AND cod_factura = @Cod_Factura
                         AND cod_proveedor = @Cod_Proveedor",
-                    new { Pago, Cod_Factura, Cod_Proveedor });
+                    CrearParametrosPago(Pago, Cod_Factura, Cod_Proveedor));
 
                 return true;
             });
@@ -374,6 +409,20 @@ namespace Galileo.DataBaseTier
                 ? DbHelper.OkResponse("Registro eliminado correctamente")
                 : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar cargos y pagos.", result.Code.GetValueOrDefault(-1));
         }
+
+        /// <summary>
+        /// Crea los parámetros comunes para operaciones por pago, factura y proveedor.
+        /// </summary>
+        /// <param name="Pago">Número de pago.</param>
+        /// <param name="Cod_Factura">Código de factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosPago(int Pago, string Cod_Factura, int Cod_Proveedor) => new
+        {
+            Pago,
+            Cod_Factura,
+            Cod_Proveedor
+        };
 
         /// <summary>
         /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
