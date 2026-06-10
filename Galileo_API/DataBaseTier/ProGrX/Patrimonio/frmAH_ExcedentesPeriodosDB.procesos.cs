@@ -249,19 +249,8 @@ where ID_PERIODO = @PeriodoId;";
                 return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
-            var columna = Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(request.campo);
-            if (string.IsNullOrWhiteSpace(columna))
-            {
-                return DbHelper.CreateErrorResponse("La opción de visibilidad indicada no es válida.", -2, false);
-            }
-
-            // La columna proviene de una lista blanca cerrada.
-            // No existe entrada libre del usuario en la consulta SQL.
-            var sql = $@"
-update EXC_PERIODOS
-set {columna} = @Valor
-where ID_PERIODO = @PeriodoId;";
-
+            var sql = Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(request.campo);
+            
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -292,7 +281,7 @@ where ID_PERIODO = @PeriodoId;";
                     codEmpresa,
                     usuarioNormalizado,
                     "Actualiza visibilidad de excedentes",
-                    $"Período: {request.id_periodo}. Campo: {columna}. Valor: {request.valor}");
+                    $"Período: {request.id_periodo}. Campo: {request.campo}. Valor: {request.valor}");
 
                 return DbHelper.CreateOkResponse(true);
             }
@@ -306,11 +295,27 @@ where ID_PERIODO = @PeriodoId;";
         {
             return Ah_ExcedentesPeriodos_NormalizarTexto(campo).ToLowerInvariant() switch
             {
-                "visible_webapp" => "VISIBLE_WEBAPP",
-                "visible_sys" => "VISIBLE_SYS",
-                "mostrar_en_historial" => "MOSTRAR_EN_HISTORIAL",
-                "mostrar_tabla_renta" => "MOSTRAR_TABLA_RENTA",
-                _ => string.Empty
+                "visible_webapp" =>
+                    @"UPDATE EXC_PERIODOS
+              SET VISIBLE_WEBAPP = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "visible_sys" =>
+                    @"UPDATE EXC_PERIODOS
+              SET VISIBLE_SYS = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "mostrar_en_historial" =>
+                    @"UPDATE EXC_PERIODOS
+              SET MOSTRAR_EN_HISTORIAL = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "mostrar_tabla_renta" =>
+                    @"UPDATE EXC_PERIODOS
+              SET MOSTRAR_TABLA_RENTA = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                _ => throw new ArgumentException($"Campo no permitido: {campo}")
             };
         }
 
