@@ -8,6 +8,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
     public partial class FrmAhExcedentesPeriodosDB
     {
+        public const string validaSolicitud = "La solicitud es requerida.";
+        public const string indicaPeriodo = "Debe indicar el período.";
+        public const string indicaUsuario = "Debe indicar el usuario.";
+        public const string periodoNoExiste = "El período indicado no existe.";
+
         /// <summary>
         /// Actualiza el modo de aplicación mensual del período.
         /// Equivale al botón Actualiza del VB6.
@@ -18,18 +23,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             var tipoAplicacionNormalizado = Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(request.tipo_apl_mensual);
@@ -41,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 if (periodo.estado == "C")
@@ -77,18 +82,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             var notaNormalizada = Ah_ExcedentesPeriodos_NormalizarTexto(request.estado_notas);
@@ -104,7 +109,7 @@ where ID_PERIODO = @PeriodoId;";
 
                 if (!Ah_ExcedentesPeriodos_Existe(conn, request.id_periodo))
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 conn.Execute(
@@ -133,18 +138,18 @@ where ID_PERIODO = @PeriodoId;";
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             const string sqlCortes = @"
@@ -163,7 +168,7 @@ order by corte;";
                 var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 if (periodo.estado == "C")
@@ -230,18 +235,18 @@ where ID_PERIODO = @PeriodoId;";
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             var columna = Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(request.campo);
@@ -250,6 +255,8 @@ where ID_PERIODO = @PeriodoId;";
                 return DbHelper.CreateErrorResponse("La opción de visibilidad indicada no es válida.", -2, false);
             }
 
+            // La columna proviene de una lista blanca cerrada.
+            // No existe entrada libre del usuario en la consulta SQL.
             var sql = $@"
 update EXC_PERIODOS
 set {columna} = @Valor
@@ -262,7 +269,7 @@ where ID_PERIODO = @PeriodoId;";
                 var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 if (periodo.estado != "C")
@@ -306,6 +313,7 @@ where ID_PERIODO = @PeriodoId;";
                 _ => string.Empty
             };
         }
+
 
     }
 }
