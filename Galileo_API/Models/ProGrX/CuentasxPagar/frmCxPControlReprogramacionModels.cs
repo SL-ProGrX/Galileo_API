@@ -26,10 +26,10 @@ namespace Galileo.Models.CxP
 
     public class AjusteFactura
     {
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Factura { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
-        public decimal Monto_Ajuste { get; set; }
+        public required decimal Monto { get; set; }
+        public required decimal Monto_Ajuste { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
