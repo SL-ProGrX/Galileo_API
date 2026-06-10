@@ -98,5 +98,13 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         {
             return _bl.Ah_ExcedentesPeriodos_RecalcularBase(codEmpresa, request);
         }
+
+        [HttpPut("Ah_ExcedentesPeriodos_Visibilidad_Actualizar")]
+        public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_Visibilidad_Actualizar(
+    [FromQuery] int codEmpresa,
+    [FromBody] FrmAhExcedentesPeriodosVisibilidadRequest request)
+        {
+            return _bl.Ah_ExcedentesPeriodos_Visibilidad_Actualizar(codEmpresa, request);
+        }
     }
 }

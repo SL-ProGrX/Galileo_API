@@ -53,9 +53,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "spExc_Periodo_Modo_Aplicacion",
                     new
                     {
-                        pPeriodoId = request.id_periodo,
-                        pTipoAplicacion = tipoAplicacionNormalizado,
-                        pUsuario = usuarioNormalizado
+                        PeriodoId = request.id_periodo,
+                        Tipo = tipoAplicacionNormalizado,
+                        Usuario = usuarioNormalizado
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
@@ -189,8 +189,8 @@ order by corte;";
                         "spSIFAuxExcedentes_WLog",
                         new
                         {
-                            pAnio = corte.Year,
-                            pMes = corte.Month
+                            Anio = corte.Year,
+                            Mes = corte.Month
                         },
                         commandType: System.Data.CommandType.StoredProcedure);
                 }
@@ -219,6 +219,93 @@ where ID_PERIODO = @PeriodoId;";
                 new { PeriodoId = periodoId });
         }
 
-       
+
+        /// <summary>
+        /// Actualiza una bandera de visibilidad del estado de excedentes.
+        /// Equivale a marcar/desmarcar los checks del tab Estado Excedentes del VB6.
+        /// </summary>
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_Visibilidad_Actualizar(
+            int codEmpresa,
+            FrmAhExcedentesPeriodosVisibilidadRequest? request)
+        {
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+            }
+
+            if (request.id_periodo <= 0)
+            {
+                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+            }
+
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
+            if (string.IsNullOrWhiteSpace(usuarioNormalizado))
+            {
+                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+            }
+
+            var columna = Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(request.campo);
+            if (string.IsNullOrWhiteSpace(columna))
+            {
+                return DbHelper.CreateErrorResponse("La opción de visibilidad indicada no es válida.", -2, false);
+            }
+
+            var sql = $@"
+update EXC_PERIODOS
+set {columna} = @Valor
+where ID_PERIODO = @PeriodoId;";
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
+                if (periodo == null)
+                {
+                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                }
+
+                if (periodo.estado != "C")
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Solo se permite modificar la visibilidad de períodos cerrados.",
+                        -2,
+                        false);
+                }
+
+                conn.Execute(
+                    sql,
+                    new
+                    {
+                        Valor = request.valor,
+                        PeriodoId = request.id_periodo
+                    });
+
+                Ah_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
+                    codEmpresa,
+                    usuarioNormalizado,
+                    "Actualiza visibilidad de excedentes",
+                    $"Período: {request.id_periodo}. Campo: {columna}. Valor: {request.valor}");
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, false);
+            }
+        }
+
+        private static string Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(string? campo)
+        {
+            return Ah_ExcedentesPeriodos_NormalizarTexto(campo).ToLowerInvariant() switch
+            {
+                "visible_webapp" => "VISIBLE_WEBAPP",
+                "visible_sys" => "VISIBLE_SYS",
+                "mostrar_en_historial" => "MOSTRAR_EN_HISTORIAL",
+                "mostrar_tabla_renta" => "MOSTRAR_TABLA_RENTA",
+                _ => string.Empty
+            };
+        }
+
     }
 }
