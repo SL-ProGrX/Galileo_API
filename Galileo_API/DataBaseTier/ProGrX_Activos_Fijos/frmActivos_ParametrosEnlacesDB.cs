@@ -30,7 +30,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 query = $@"INSERT INTO Activos_proveedores(cod_proveedor,descripcion)
-                                (select cod_proveedor,descripcio From cxp_proveedores 
+                                (select cod_proveedor,descripcion From cxp_proveedores 
                                     where cod_proveedor not in(select cod_proveedor from Activos_proveedores))";
                 connection.Execute(query);
             }
