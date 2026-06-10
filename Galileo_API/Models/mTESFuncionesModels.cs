@@ -122,7 +122,7 @@ namespace Galileo.Models
        public long vTestKey { get; set; } = 0;
        public decimal vMontoTotal { get; set; } = 0;
        public Func<IDbConnection, int, DateTime, int> resolveConsecutivoArchivoDelDia { get; set; } = null!;
-       public Func<long> resolveBancoConsec { get; set; } = null!;
+       public long resolveBancoConsec { get; set; } = 0;
     }
 
 }

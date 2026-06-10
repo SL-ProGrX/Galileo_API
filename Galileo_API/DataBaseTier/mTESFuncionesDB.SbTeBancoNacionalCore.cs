@@ -16,7 +16,7 @@ namespace Galileo.DataBaseTier
                string tipoDoc,
                List<TesTransaccionDto> transaccionesList,
                int? curPlanilla,
-               Func<long> resolveConsecutivo
+               long resolveConsecutivo
            )
         {
             DateTime fecha = DateTime.Now;
@@ -46,7 +46,7 @@ namespace Galileo.DataBaseTier
                     numCliente = (bancoData.codigo_Cliente ?? "").ToString().PadLeft(6, '0');
                 }
 
-                long bancoConsec = resolveConsecutivo();
+                long bancoConsec = resolveConsecutivo;
 
                 var sb = new StringBuilder();
 

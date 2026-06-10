@@ -12,14 +12,14 @@ namespace Galileo.DataBaseTier
                int bancoId,
                string tipoDoc,
                List<TesTransaccionDto> transaccionesList,
-               Func<long> resolveConsecutivo
+               long resolveConsecutivo
            )
         {
             DateTime fecha = DateTime.Now;
 
             try
             {
-                long bancoConsec = resolveConsecutivo();
+                long bancoConsec = resolveConsecutivo;
 
                 var sb = new StringBuilder();
 
