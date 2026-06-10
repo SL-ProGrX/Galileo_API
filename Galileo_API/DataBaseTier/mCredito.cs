@@ -347,5 +347,31 @@ namespace Galileo.DataBaseTier
                     Notas = (notas ?? string.Empty).Trim()
                 });
         }
+
+        public static void sbCrdOperacionTags(SqlConnection conn, SqlTransaction tx, CrOperacionTagRegistrarRequest req)
+        {
+            const string sql = "exec spCrdOperacionTagRegistra @operacion,@linea,@tag,@usuario,@asignado,@notas";
+
+            conn.Execute(sql, new
+            {
+                req.operacion,
+                linea = (req.linea ?? string.Empty).Trim(),
+                tag = (req.tag ?? string.Empty).Trim(),
+                usuario = (req.usuario ?? string.Empty).Trim(),
+                asignado = (req.asignado ?? string.Empty).Trim()[..Math.Min((req.asignado ?? string.Empty).Trim().Length, 30)],
+                notas = (req.notas ?? string.Empty).Trim()[..Math.Min((req.notas ?? string.Empty).Trim().Length, 1000)]
+            }, tx);
+        }
+
+        public sealed class CrOperacionTagRegistrarRequest
+        {
+            public long operacion { get; set; }
+            public string linea { get; set; } = string.Empty;
+            public string tag { get; set; } = string.Empty;
+            public string usuario { get; set; } = string.Empty;
+            public string asignado { get; set; } = string.Empty;
+            public string notas { get; set; } = string.Empty;
+
+        }
     }
 }
