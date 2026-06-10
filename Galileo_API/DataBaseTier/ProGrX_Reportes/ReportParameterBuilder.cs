@@ -34,6 +34,10 @@ namespace Galileo.DataBaseTier
                     continue;
 
                 var val = prop.Value?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = null;
+                }
                 reportParams.Add(new ReportParameter(prop.Name, val));
                 dict[prop.Name] = val;
             }
