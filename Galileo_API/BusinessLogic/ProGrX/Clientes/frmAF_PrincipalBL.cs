@@ -19,7 +19,7 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_CatalogosGenerales_Obtener(CodEmpresa, Cod_Catalogo);
         }
 
-        public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string cod_institucion)
+        public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
         {
             return _db.AF_Catalogos_Obtener(CodEmpresa, cod_institucion);
         }

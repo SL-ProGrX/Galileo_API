@@ -26,7 +26,7 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpGet("AF_Catalogos_Obtener")]
-        public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string cod_institucion)
+        public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
         {
             return _bl.AF_Catalogos_Obtener(CodEmpresa, cod_institucion);
         }
