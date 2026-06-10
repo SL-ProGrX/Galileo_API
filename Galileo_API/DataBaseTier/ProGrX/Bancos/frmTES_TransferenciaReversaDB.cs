@@ -6,6 +6,7 @@ using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -619,7 +620,7 @@ exec spTES_W_SinpeReversion_Main
             SqlConnection conn,
             TesReversaSinpeModel reversa)
         {
-            string msj = string.Empty;
+            var msj = new StringBuilder();
             foreach (var item in reversa.lista!)
             {
                 try
@@ -635,20 +636,26 @@ exec spTES_W_SinpeReversion_Main
                     conn.Execute(sp, parametros, commandTimeout: 0, commandType: CommandType.StoredProcedure);
 
                     var procesaItem = TES_TransferenciaRevSinpe_ProcesarSolicitud(conn, item);
+                    if(procesaItem.Code == -1)
+                    {
+                        msj.AppendLine(
+                         $"Solicitud: [{item.nsolicitud}] | Error: {procesaItem.Description}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    msj += $" -Solicitud: [{item.nsolicitud}] | Error: {ex.Message}";
+                    msj.AppendLine(
+                       $"Solicitud: [{item.nsolicitud}] | Error: {ex.Message}");
                 } 
             }
-
-            if (string.IsNullOrEmpty(msj))
+            string mensajeFinal = msj.ToString();
+            if (string.IsNullOrEmpty(mensajeFinal))
             {
                 return DbHelper.OkResponse("Proceso ejecutado correctamente");
             }
             else
             {
-                return DbHelper.ErrorResponse(msj, -2);
+                return DbHelper.ErrorResponse(mensajeFinal, -2);
             }
         }
 
