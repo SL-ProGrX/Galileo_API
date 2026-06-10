@@ -649,14 +649,9 @@ exec spTES_W_SinpeReversion_Main
                 } 
             }
             string mensajeFinal = msj.ToString();
-            if (string.IsNullOrEmpty(mensajeFinal))
-            {
-                return DbHelper.OkResponse("Proceso ejecutado correctamente");
-            }
-            else
-            {
-                return DbHelper.ErrorResponse(mensajeFinal, -2);
-            }
+            return string.IsNullOrEmpty(mensajeFinal)
+                ? DbHelper.OkResponse("Proceso ejecutado correctamente")
+                : DbHelper.ErrorResponse(mensajeFinal, -2);
         }
 
         /// <summary>
