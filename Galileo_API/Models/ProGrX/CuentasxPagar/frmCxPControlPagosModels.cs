@@ -6,7 +6,7 @@
         public string fechaInicio { get; set; } = string.Empty;
         public string fechaCorte { get; set; } = string.Empty;
         public string tipo_Cancelacion { get; set; } = string.Empty;
-        public bool cboProveedor { get; set; }
+        public required bool cboProveedor { get; set; }
         public int? codProveedor { get; set; }
         public string? cboEstado { get; set; }
         public string? factura { get; set; }
