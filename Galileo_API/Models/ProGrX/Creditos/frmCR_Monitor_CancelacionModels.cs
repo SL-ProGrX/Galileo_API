@@ -2,8 +2,8 @@
 {
     public class CrMonitorCancelacionRequest
     {
-        public DateTime Fecha_Inicio { get; set; }
-        public DateTime Fecha_Corte { get; set; }
+        public DateTime? Fecha_Inicio { get; set; }
+        public DateTime? Fecha_Corte { get; set; }
         public decimal Porcentaje { get; set; } = 0;
     }
 
