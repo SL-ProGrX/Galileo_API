@@ -13,7 +13,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MProGrxMain _mProGrx;
         private readonly MCobroDb _mCobroDb;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
-        private readonly CcProcesoMensualEstadoDB _mEstado;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         public const string PlanillaEnvioAya = "08";
@@ -25,8 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
             _mCobroDb = new MCobroDb(config);
-            _mGeneral = new CcProcesoMensualGeneralDb(config);           
-            _mEstado = new CcProcesoMensualEstadoDB(config);
+            _mGeneral = new CcProcesoMensualGeneralDb(config);      
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
