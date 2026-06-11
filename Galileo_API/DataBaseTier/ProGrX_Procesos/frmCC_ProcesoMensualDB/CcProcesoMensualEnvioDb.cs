@@ -69,7 +69,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 RegistrarBitacoraGeneracion( connection, codEmpresa,request);
 
              
-                //_mEstado.CcProcesoMensual_EstadoActualProceso_Obtener( codEmpresa, request.CodInstitucion);
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "02", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
                 return DbHelper.CreateOkResponse(true);
@@ -77,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<bool>(
-                    "Error al generar las deducciones del proceso mensual." + ex.Message.ToString(),
+                    "Error al generar las deducciones del proceso mensual." + ex.Message,
                     -1,
                     false);
             }
