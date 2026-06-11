@@ -36,24 +36,24 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string? estadoLaboral { get; set; }
         public DateTime? formalizaInicio { get; set; }
         public DateTime? formalizaCorte { get; set; }
-        public bool aplicaPlazo { get; set; }
+        public bool? aplicaPlazo { get; set; }
         public int? plazoInicio { get; set; }
         public int? plazoCorte { get; set; }
-        public bool aplicaTasa { get; set; }
+        public bool? aplicaTasa { get; set; }
         public decimal? tasaInicio { get; set; }
         public decimal? tasaCorte { get; set; }
         public string? cobroTipo { get; set; }
         public string? operacionTipo { get; set; }
-        public bool aplicaPriDeduc { get; set; }
+        public bool? aplicaPriDeduc { get; set; }
         public string? priDeducFiltro { get; set; }
         public int? priDeduc { get; set; }
-        public bool aplicaUltDeduc { get; set; }
+        public bool? aplicaUltDeduc { get; set; }
         public string? ultDeducFiltro { get; set; }
         public int? ultDeduc { get; set; }
         public string tasaTipo { get; set; } = "R";
         public string tasaAplTipo { get; set; } = "N";
         public string tasaAplCtas { get; set; } = "R";
-        public decimal tasaAplRef { get; set; }
+        public decimal? tasaAplRef { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
     }
@@ -103,18 +103,18 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string tasaTipo { get; set; } = "R";
         public string tasaAplTipo { get; set; } = "N";
         public string tasaAplCtas { get; set; } = "R";
-        public decimal tasaAplRef { get; set; }
+        public decimal? tasaAplRef { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
     }
 
     public class CrCambioTasasOperacionAplicar
     {
-        public int id_solicitud { get; set; }
+        public int? id_solicitud { get; set; }
         public string codigo { get; set; } = string.Empty;
-        public decimal tasa { get; set; }
-        public decimal tasa_nueva { get; set; }
-        public decimal cuota_nueva { get; set; }
-        public int plazo_restante { get; set; }
+        public decimal? tasa { get; set; }
+        public decimal? tasa_nueva { get; set; }
+        public decimal? cuota_nueva { get; set; }
+        public int? plazo_restante { get; set; }
     }
 }

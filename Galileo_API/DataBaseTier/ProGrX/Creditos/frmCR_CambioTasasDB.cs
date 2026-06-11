@@ -167,6 +167,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (!TasaValida(request.tasaAplRef))
                 return DbHelper.ErrorResponse("La tasa indicada no es valida, verifique.");
 
+            var operacionInvalida = request.operaciones.Any(OperacionAplicarInvalida);
+            if (operacionInvalida)
+                return DbHelper.ErrorResponse("Hay operaciones con datos incompletos para aplicar el cambio de tasas.");
+
             try
             {
                 using var conn = _portalDb.CreateConnection(codEmpresa);
@@ -222,8 +226,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.CreateOkResponse();
         }
 
-        private static bool TasaValida(decimal tasa)
-            => tasa >= 0 && tasa <= 100;
+        private static bool TasaValida(decimal? tasa)
+            => tasa.HasValue && tasa.Value >= 0 && tasa.Value <= 100;
 
         private static DynamicParameters CrearParametrosConsulta(CrCambioTasasConsultaRequest request)
         {
@@ -239,20 +243,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             parameters.Add("@EstadoLaboral", ValorTexto(request.estadoLaboral));
             parameters.Add("@FormalizaInicio", InicioDia(request.formalizaInicio));
             parameters.Add("@FormalizaCorte", FinDia(request.formalizaCorte));
-            parameters.Add("@PlazoRng", request.aplicaPlazo ? 1 : 0);
-            parameters.Add("@PlazoInicio", request.aplicaPlazo ? request.plazoInicio : null);
-            parameters.Add("@PlazoCorte", request.aplicaPlazo ? request.plazoCorte : null);
-            parameters.Add("@TasaRng", request.aplicaTasa ? 1 : 0);
-            parameters.Add("@TasaInicio", request.aplicaTasa ? request.tasaInicio : null);
-            parameters.Add("@TasaCorte", request.aplicaTasa ? request.tasaCorte : null);
+            parameters.Add("@PlazoRng", request.aplicaPlazo == true ? 1 : 0);
+            parameters.Add("@PlazoInicio", request.aplicaPlazo == true ? request.plazoInicio : null);
+            parameters.Add("@PlazoCorte", request.aplicaPlazo == true ? request.plazoCorte : null);
+            parameters.Add("@TasaRng", request.aplicaTasa == true ? 1 : 0);
+            parameters.Add("@TasaInicio", request.aplicaTasa == true ? request.tasaInicio : null);
+            parameters.Add("@TasaCorte", request.aplicaTasa == true ? request.tasaCorte : null);
             parameters.Add("@CobroTipo", ValorTexto(request.cobroTipo));
             parameters.Add("@OperacionTipo", ValorTexto(request.operacionTipo));
-            parameters.Add("@PriDeducApl", request.aplicaPriDeduc ? 1 : 0);
-            parameters.Add("@PriDeducFiltro", request.aplicaPriDeduc ? ValorTexto(request.priDeducFiltro) : null);
-            parameters.Add("@PriDeducValor", request.aplicaPriDeduc ? request.priDeduc : null);
-            parameters.Add("@UltDeducApl", request.aplicaUltDeduc ? 1 : 0);
-            parameters.Add("@UltDeducFiltro", request.aplicaUltDeduc ? ValorTexto(request.ultDeducFiltro) : null);
-            parameters.Add("@UltDeducValor", request.aplicaUltDeduc ? request.ultDeduc : null);
+            parameters.Add("@PriDeducApl", request.aplicaPriDeduc == true ? 1 : 0);
+            parameters.Add("@PriDeducFiltro", request.aplicaPriDeduc == true ? ValorTexto(request.priDeducFiltro) : null);
+            parameters.Add("@PriDeducValor", request.aplicaPriDeduc == true ? request.priDeduc : null);
+            parameters.Add("@UltDeducApl", request.aplicaUltDeduc == true ? 1 : 0);
+            parameters.Add("@UltDeducFiltro", request.aplicaUltDeduc == true ? ValorTexto(request.ultDeducFiltro) : null);
+            parameters.Add("@UltDeducValor", request.aplicaUltDeduc == true ? request.ultDeduc : null);
             parameters.Add("@TasaTipo", NormalizarCodigo(request.tasaTipo, "R"));
             parameters.Add("@TasaAplTipo", NormalizarCodigo(request.tasaAplTipo, "N"));
             parameters.Add("@TasaAplCtas", NormalizarCodigo(request.tasaAplCtas, "R"));
@@ -261,6 +265,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             parameters.Add("@Detalle", (request.detalle ?? string.Empty).Trim());
             return parameters;
         }
+
+        private static bool OperacionAplicarInvalida(CrCambioTasasOperacionAplicar operacion)
+            => operacion.id_solicitud is null
+               || string.IsNullOrWhiteSpace(operacion.codigo)
+               || operacion.tasa is null
+               || operacion.tasa_nueva is null
+               || operacion.cuota_nueva is null
+               || operacion.plazo_restante is null;
 
         private static DynamicParameters CrearParametrosAplicar(
             CrCambioTasasAplicarRequest request,
