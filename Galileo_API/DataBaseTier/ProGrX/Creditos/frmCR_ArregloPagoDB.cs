@@ -339,7 +339,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var operacionResp = Cr_ArregloPago_Operacion_Obtener(
                 codEmpresa,
                 request.operacion,
-                request.usuario);
+                request.usuario,
+                request.tipo_intereses);
 
             if (operacionResp.Code != 0 || operacionResp.Result is null)
             {
@@ -876,6 +877,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     "Monto en cajas no corresponde al monto a recaudar para el abono especial.",
                     -2,
                     new CrArregloPagoAplicacionResultadoData());
+            }
+
+            if (!EsTipoExtraordinario(request.tipo_abono))
+            {
+                if (string.IsNullOrWhiteSpace(request.proceso_cuota))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Debe indicar el periodo de cuota para el abono ordinario.",
+                        -2,
+                        new CrArregloPagoAplicacionResultadoData());
+                }
+
+                if (ObtenerProcesoCuota(request.proceso_cuota) <= 0)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El periodo de cuota para el abono ordinario no es valido.",
+                        -2,
+                        new CrArregloPagoAplicacionResultadoData());
+                }
+
+                if (request.num_cuota <= 0)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Debe indicar el numero de cuota para el abono ordinario.",
+                        -2,
+                        new CrArregloPagoAplicacionResultadoData());
+                }
             }
 
             var operacionResp = Cr_ArregloPago_Operacion_Obtener(
