@@ -42,7 +42,7 @@ namespace Galileo.DataBaseTier
                 if (vTesKeyCh.Length > 12)
                     request.vTestKey = long.Parse(vTesKeyCh[^12..], CultureInfo.InvariantCulture);
 
-                long bancoConsec = request.resolveBancoConsec();
+                long bancoConsec = request.resolveBancoConsec;
 
                 var sb = new StringBuilder();
 
