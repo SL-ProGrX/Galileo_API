@@ -202,7 +202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (response.Result is null)
             {
                 return DbHelper.CreateErrorResponse<CrArregloPagoOperacionData?>(
-                    "No se encontro registro de la operacion activa o no es un credito.",
+                    "No se encontr&oacute; registro de la operaci&oacute;n activa o no es un cr&eacute;dito.",
                     -2,
                     null);
             }
@@ -346,8 +346,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacionResp.Code != 0 || operacionResp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    operacionResp.Description ?? "No se encontro la operacion.",
-                    operacionResp.Code.GetValueOrDefault(-1),
+                    operacionResp.Description ?? "No se encontr&oacute; la operaci&oacute;n.",
+                    operacionResp.Code.GetValueOrDefault(-2),
                     new CrArregloPagoAplicacionResultadoData());
             }
 
@@ -372,8 +372,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacion.mora_count <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Esta operacion no puede realizar una capitalizacion de deuda porque esta al dia.",
-                    -2,
+                    "Esta operaci&oacute;n no puede realizar una capitalizaci&oacute;n de deuda porque est&aacute; al d&iacute;a.",
+                    - 2,
                     new CrArregloPagoAplicacionResultadoData());
             }
 
@@ -700,7 +700,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacionResp.Result.mora_count > 0 && !request.retroactivo)
             {
                 return DbHelper.ErrorResponse(
-                    "A esta operacion no se le puede dar periodo de gracia porque no esta al dia.",
+                    "Esta operacion no puede realizar una capitalizaci&oacute;n de deuda porque est&aacute; al d&iacute;a.",
                     -2);
             }
 
@@ -859,7 +859,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (totalAbonoEspecial <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No se ha especificado ningun rubro para el abono especial.",
+                    "No se ha especificado ning&uacute;n rubro para el abono especial.",
                     -2,
                     new CrArregloPagoAplicacionResultadoData());
             }
@@ -893,7 +893,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (ObtenerProcesoCuota(request.proceso_cuota) <= 0)
                 {
                     return DbHelper.CreateErrorResponse(
-                        "El periodo de cuota para el abono ordinario no es valido.",
+                        "El periodo de cuota para el abono ordinario no es v&aacute;lido.",
                         -2,
                         new CrArregloPagoAplicacionResultadoData());
                 }
@@ -901,7 +901,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (request.num_cuota <= 0)
                 {
                     return DbHelper.CreateErrorResponse(
-                        "Debe indicar el numero de cuota para el abono ordinario.",
+                        "Debe indicar el n&uacute;mero de cuota para el abono ordinario.",
                         -2,
                         new CrArregloPagoAplicacionResultadoData());
                 }
@@ -933,7 +933,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request.principal > operacion.saldo)
             {
                 return DbHelper.CreateErrorResponse(
-                    "La amortizacion especificada es mayor al saldo.",
+                    "La amortizaci&oacute;n especificada es mayor al saldo.",
                     -2,
                     new CrArregloPagoAplicacionResultadoData());
             }
@@ -941,7 +941,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (!operacion.sys_plan_pagos && operacion.mora_count > 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No se puede aplicar Abono Especial porque esta operacion se encuentra en mora.",
+                    "No se puede aplicar Abono Especial porque esta operaci&oacute;n se encuentra en mora.",
                     -2,
                     new CrArregloPagoAplicacionResultadoData());
             }
@@ -2015,7 +2015,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.ErrorResponse("Debe indicar una operacion valida.", -2);
+                return DbHelper.ErrorResponse("Debe indicar una operaci&oacute;n v&aacute;lida.", -2);
             }
 
             if (string.IsNullOrWhiteSpace(usuario))
@@ -2025,7 +2025,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (string.IsNullOrWhiteSpace(notas) || notas.Trim().Length < 10)
             {
-                return DbHelper.ErrorResponse("Indique una nota valida para la transaccion.", -2);
+                return DbHelper.ErrorResponse("Indique una nota v&aacute;lida para la transacci&oacute;n.", -2);
             }
 
             return DbHelper.OkResponse("Ok");
