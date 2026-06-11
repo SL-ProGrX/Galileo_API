@@ -321,32 +321,23 @@ exec spPAT_PlanillaDirecta_Procesa
         }
 
         private static ErrorDto<List<FrmAhPlanillaDirectaCargadoDto>>? Ah_PlanillaDirecta_ValidarCargadoRequest(
-            FrmAhPlanillaDirectaCargadoRequest? request,
-            List<FrmAhPlanillaDirectaCargadoDto> response)
+    FrmAhPlanillaDirectaCargadoRequest? request,
+    List<FrmAhPlanillaDirectaCargadoDto> response)
         {
             if (request == null)
             {
                 return DbHelper.CreateErrorResponse("La solicitud es requerida.", -1, response);
             }
 
-            if (request.cod_institucion <= 0)
-            {
-                return DbHelper.CreateErrorResponse("La institución es requerida.", -1, response);
-            }
+            var mensajeBase = Ah_PlanillaDirecta_ValidarRequestBase(
+                request.cod_institucion,
+                request.proceso,
+                request.num_doc,
+                request.registro_usuario);
 
-            if (request.proceso <= 0)
+            if (!string.IsNullOrWhiteSpace(mensajeBase))
             {
-                return DbHelper.CreateErrorResponse("El período es requerido.", -1, response);
-            }
-
-            if (string.IsNullOrWhiteSpace(request.num_doc))
-            {
-                return DbHelper.CreateErrorResponse("El comprobante es requerido.", -1, response);
-            }
-
-            if (string.IsNullOrWhiteSpace(request.registro_usuario))
-            {
-                return DbHelper.CreateErrorResponse("El usuario es requerido.", -1, response);
+                return DbHelper.CreateErrorResponse(mensajeBase, -1, response);
             }
 
             if (request.registros == null || request.registros.Count == 0)
@@ -377,33 +368,53 @@ exec spPAT_PlanillaDirecta_Procesa
             return null;
         }
 
+        private static string? Ah_PlanillaDirecta_ValidarRequestBase(
+            int codInstitucion,
+            int proceso,
+            string? numDoc,
+            string? registroUsuario)
+        {
+            if (codInstitucion <= 0)
+            {
+                return "La institución es requerida.";
+            }
+
+            if (proceso <= 0)
+            {
+                return "El período es requerido.";
+            }
+
+            if (string.IsNullOrWhiteSpace(numDoc))
+            {
+                return "El comprobante es requerido.";
+            }
+
+            if (string.IsNullOrWhiteSpace(registroUsuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            return null;
+        }
+
         private static ErrorDto<FrmAhPlanillaDirectaProcesarResponse>? Ah_PlanillaDirecta_ValidarProcesarRequest(
-            FrmAhPlanillaDirectaProcesarRequest? request,
-            FrmAhPlanillaDirectaProcesarResponse response)
+    FrmAhPlanillaDirectaProcesarRequest? request,
+    FrmAhPlanillaDirectaProcesarResponse response)
         {
             if (request == null)
             {
                 return DbHelper.CreateErrorResponse("La solicitud es requerida.", -1, response);
             }
 
-            if (request.cod_institucion <= 0)
-            {
-                return DbHelper.CreateErrorResponse("La institución es requerida.", -1, response);
-            }
+            var mensajeBase = Ah_PlanillaDirecta_ValidarRequestBase(
+                request.cod_institucion,
+                request.proceso,
+                request.num_doc,
+                request.registro_usuario);
 
-            if (request.proceso <= 0)
+            if (!string.IsNullOrWhiteSpace(mensajeBase))
             {
-                return DbHelper.CreateErrorResponse("El período es requerido.", -1, response);
-            }
-
-            if (string.IsNullOrWhiteSpace(request.num_doc))
-            {
-                return DbHelper.CreateErrorResponse("El comprobante es requerido.", -1, response);
-            }
-
-            if (string.IsNullOrWhiteSpace(request.registro_usuario))
-            {
-                return DbHelper.CreateErrorResponse("El usuario es requerido.", -1, response);
+                return DbHelper.CreateErrorResponse(mensajeBase, -1, response);
             }
 
             return null;
