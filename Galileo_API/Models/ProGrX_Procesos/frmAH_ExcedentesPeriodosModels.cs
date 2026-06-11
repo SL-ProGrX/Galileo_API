@@ -137,4 +137,12 @@ namespace Galileo.Models.AH
         public string notas { get; set; } = string.Empty;
     }
 
+    public class FrmAhExcedentesPeriodosVisibilidadRequest
+    {
+        public int id_periodo { get; set; } = 0;
+        public string campo { get; set; } = string.Empty;
+        public bool valor { get; set; } = false;
+        public string usuario { get; set; } = string.Empty;
+    }
+
 }

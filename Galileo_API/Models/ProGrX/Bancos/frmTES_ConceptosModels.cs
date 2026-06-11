@@ -14,5 +14,6 @@
         public string cod_cuenta_mask { get; set; } = string.Empty;
         public bool auto_registro { get; set; } = false;
         public bool dp_tramite_apl { get; set; } = false;
+        public string criterio { get; set; } = string.Empty;
     }
 }
