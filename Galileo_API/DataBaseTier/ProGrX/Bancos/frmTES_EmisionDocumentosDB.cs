@@ -651,28 +651,29 @@ where B.estado = 'A'
                 ? ctx.Filtro.fecha_corte?.Date.AddDays(1).AddTicks(-1)
                 : (DateTime?)null;
 
+            _ = ResolverBancoConsecTransferencia(ctx);
+
             return ctx.Filtro.formatoTE switch
             {
                 "A" => ProcesarTE_BNCR_InternetBanking(
                     ctx.CodEmpresa,
                     ctx.Filtro,
                     ctx.Conn,
-                    ctx.Q,
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Q),
 
                 "B" => MTesFuncionesDb.SbTeBancoPopularCore(
                     codEmpresa: ctx.CodEmpresa,
                     bancoId: ctx.Filtro.banco,
                     tipoDoc: ctx.Filtro.tipoDoc,
                     transaccionesList: Trans(),
-                    resolveConsecutivo: () => ResolverBancoConsecTransferencia(ctx)),
+                    resolveConsecutivo: ctx.Filtro.docInicial),
 
                 "C" => ProcesarTE_BCR_Planilla(
                     ctx.CodEmpresa,
                     ctx.Filtro,
                     ctx.Conn,
-                    ctx.Q,
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Q
+                    ),
 
                 "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(
                     DbHelper.OpenConnection(_portalDB, ctx.CodEmpresa),
@@ -687,12 +688,11 @@ where B.estado = 'A'
                         fechaInicio = fechaInicio,
                         fechaCorte = fechaCorte
                     },
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Filtro.docInicial),
 
                 "E" => sbTeBCT_Enlace(
                     ctx.CodEmpresa,
-                    ctx.Filtro,
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Filtro),
 
                 "F" => mTesFunciones.SbTeBcrComercial(
                     DbHelper.OpenConnection(_portalDB, ctx.CodEmpresa),
@@ -707,32 +707,30 @@ where B.estado = 'A'
                                 fechaInicio = fechaInicio,
                                 fechaCorte = fechaCorte
                             },
-                            () => ResolverBancoConsecTransferencia(ctx)),
+                            ctx.Filtro.docInicial),
 
                 "G" => sbTeBNCR_Sinpe(
                     ctx.CodEmpresa,
-                    ctx.Filtro,
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Filtro),
 
                 "DV1" or "DV2" => sbTeFormatoEstandar(
                     ctx.CodEmpresa,
-                    ctx.Filtro,
-                    () => ResolverBancoConsecTransferencia(ctx)),
+                    ctx.Filtro),
 
                 "S" => sbTEFormato_Interno(
                        ctx.CodEmpresa,
-                       ctx.Filtro,
-                       () => ResolverBancoConsecTransferencia(ctx)),
+                       ctx.Filtro
+                      ),
 
                 "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(
                         ctx.CodEmpresa,
                         ctx.Filtro,
                         Trans(),
-                       () => ResolverBancoConsecTransferencia(ctx)),
+                       ctx.Filtro.docInicial),
                     _ => sbTeFormatoEstandar(
                        ctx.CodEmpresa,
-                       ctx.Filtro,
-                       () => ResolverBancoConsecTransferencia(ctx))
+                       ctx.Filtro
+                       )
             };
         }
 
@@ -1072,8 +1070,7 @@ Where Estado = 'P' And Tipo = @tipoDoc
             int codEmpresa,
             TesEmisionDocFiltros filtro,
             SqlConnection connection,
-            QueryBuildResult q,
-            Func<long> resolveConsecutivo)
+            QueryBuildResult q)
         {
             var queryA = "select sum(monto) as PLx from Tes_Transacciones where nsolicitud in ";
             queryA += q.BaseQuery;
@@ -1087,7 +1084,7 @@ Where Estado = 'P' And Tipo = @tipoDoc
                    tipoDoc: filtro.tipoDoc,
                    transaccionesList: transacciones,
                    curPlanilla: montoPL,
-                   resolveConsecutivo: resolveConsecutivo
+                   resolveConsecutivo: filtro.docInicial
                );
         }
 
@@ -1095,8 +1092,7 @@ Where Estado = 'P' And Tipo = @tipoDoc
                 int codEmpresa,
                 TesEmisionDocFiltros filtro,
                 SqlConnection connection,
-                QueryBuildResult q,
-                Func<long> resolveConsecutivo)
+                QueryBuildResult q)
         {
             var transacciones = connection.Query<TesTransaccionDto>(q.QueryTransac, q.Parametros).ToList();
 
@@ -1130,7 +1126,7 @@ where nsolicitud in ";
                 vTestKey = (int)xTestKey,
                 vMontoTotal = totalMonto,
                 resolveConsecutivoArchivoDelDia = (c, b, f) => MTesFuncionesDb.GetConsecutivoArchivoDelDia(connection, b, f),
-                resolveBancoConsec = resolveConsecutivo
+                resolveBancoConsec = filtro.docInicial
             };
 
             return mTesFunciones.SbTeBcrCore(request);
@@ -1142,8 +1138,8 @@ where nsolicitud in ";
 
         private ErrorDto<object> sbTeFormatoEstandar(
            int CodEmpresa,
-           TesEmisionDocFiltros filtros,
-           Func<long> resolveConsecutivo)
+           TesEmisionDocFiltros filtros
+           )
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1167,8 +1163,8 @@ where nsolicitud in ";
                 string BancoTDoc = filtros.tipoDoc;
                 string BancoPlan = filtros.plan ?? "-sp-";
 
-                long BancoConsec = resolveConsecutivo();
-    
+                long BancoConsec = filtros.docInicial;
+
                 var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
                 var sb = new StringBuilder();
@@ -1221,8 +1217,7 @@ where nsolicitud in ";
 
         private ErrorDto<object> sbTeBCT_Enlace(
             int CodEmpresa,
-            TesEmisionDocFiltros filtros,
-            Func<long> resolveConsecutivo)
+            TesEmisionDocFiltros filtros)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1232,7 +1227,7 @@ where nsolicitud in ";
 
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
-                long BancoConsec = resolveConsecutivo();
+                long BancoConsec = filtros.docInicial;
 
                 var sb = new StringBuilder();
 
@@ -1267,8 +1262,7 @@ where nsolicitud in ";
 
         private ErrorDto<object> sbTeBNCR_Sinpe(
     int CodEmpresa,
-    TesEmisionDocFiltros filtros,
-    Func<long> resolveConsecutivo)
+    TesEmisionDocFiltros filtros)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1293,7 +1287,7 @@ where nsolicitud in ";
             {
                 int BancoID = filtros.banco;
                 string BancoTDoc = filtros.tipoDoc;
-                long BancoConsec = resolveConsecutivo();
+                long BancoConsec = filtros.docInicial;
                 var parametros = new
                 {
                     banco = BancoID,
@@ -1407,8 +1401,7 @@ where nsolicitud in ";
         }
 
         public ErrorDto<object> sbTEFormato_Interno(int CodEmpresa,
-           TesEmisionDocFiltros filtros,
-           Func<long> resolveConsecutivo)
+           TesEmisionDocFiltros filtros)
         {
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1427,7 +1420,7 @@ where nsolicitud in ";
 
                 string BancoTDoc = filtros.tipoDoc;
 
-                long BancoConsec = resolveConsecutivo();
+                long BancoConsec = filtros.docInicial;
 
                 var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
 
