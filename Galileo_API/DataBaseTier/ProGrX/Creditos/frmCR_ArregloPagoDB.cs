@@ -113,7 +113,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         public ErrorDto<CrArregloPagoOperacionData?> Cr_ArregloPago_Operacion_Obtener(
             int codEmpresa,
             int operacion,
-            string usuario)
+            string usuario,
+            bool tipoIntereses = false)
         {
             usuario = NormalizarTexto(usuario);
 
@@ -253,20 +254,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 }
             }
 
+            resultado.tipo_intereses = tipoIntereses;
+
             resultado.mora = SbCargaMora(
                 codEmpresa,
                 operacion,
                 resultado.sys_plan_pagos,
                 resultado.fecha_servidor,
-                false);
+                tipoIntereses);
 
             resultado.mora_count = resultado.mora.Count;
 
+            decimal totalIntCor = 0;
+            decimal totalIntMor = 0;
+            decimal totalCargos = 0;
+            decimal totalPolizas = 0;
+            decimal totalPrincipal = 0;
+
+            foreach (var item in resultado.mora)
+            {
+                totalIntCor += item.int_c;
+                totalIntMor += item.int_m;
+                totalCargos += item.cargo;
+                totalPolizas += item.poliza;
+                totalPrincipal += item.amortiza;
+            }
+
+            resultado.int_cor = totalIntCor;
+            resultado.int_mor = totalIntMor;
+            resultado.cargos = totalCargos;
+            resultado.polizas = totalPolizas;
+            resultado.amortiza = totalPrincipal;
+
             resultado.cargos_intereses =
-                resultado.cargos +
-                resultado.polizas +
                 resultado.int_cor +
-                resultado.int_mor;
+                resultado.int_mor +
+                resultado.cargos +
+                resultado.polizas;
 
             resultado.deuda =
                 resultado.saldo +
@@ -276,11 +300,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 resultado.polizas;
 
             resultado.total_pagar =
-                resultado.amortiza +
                 resultado.int_cor +
                 resultado.int_mor +
                 resultado.cargos +
-                resultado.polizas;
+                resultado.polizas +
+                resultado.amortiza;
 
             return DbHelper.CreateOkResponse<CrArregloPagoOperacionData?>(resultado);
         }

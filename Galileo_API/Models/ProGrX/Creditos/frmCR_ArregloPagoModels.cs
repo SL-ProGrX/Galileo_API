@@ -39,6 +39,8 @@ namespace Galileo_API.Models.ProGrX.Credito
         public decimal deuda { get; set; } = 0;
         public decimal total_pagar { get; set; } = 0;
 
+        public bool tipo_intereses { get; set; } = false;
+
         public List<CrArregloPagoMoraData> mora { get; set; } = new();
     }
 

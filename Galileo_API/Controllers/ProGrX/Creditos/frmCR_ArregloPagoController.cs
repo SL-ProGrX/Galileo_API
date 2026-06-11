@@ -29,8 +29,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<CrArregloPagoOperacionData?> Cr_ArregloPago_Operacion_Obtener(
             int codEmpresa,
             int operacion,
-            string usuario)
-            => _bl.Cr_ArregloPago_Operacion_Obtener(codEmpresa, operacion, usuario);
+            string usuario,
+            bool tipoIntereses = false)
+            => _bl.Cr_ArregloPago_Operacion_Obtener(codEmpresa, operacion, usuario, tipoIntereses);
 
         [HttpPost("Cr_ArregloPago_Capitaliza_Aplicar")]
         public ErrorDto<CrArregloPagoAplicacionResultadoData> Cr_ArregloPago_Capitaliza_Aplicar(
