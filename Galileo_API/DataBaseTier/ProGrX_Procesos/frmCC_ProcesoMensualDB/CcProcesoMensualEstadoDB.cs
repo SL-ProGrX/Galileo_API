@@ -497,11 +497,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             const string query = @"
                SELECT
-                    ISNULL(I.planilla, '') AS Planilla,
-                    ISNULL(I.codigo_aportes, '') AS CodigoAportes,
-                    ISNULL(I.codigo_creditos, '') AS CodigoCreditos, 
+                    ISNULL(planilla, '') AS Planilla,
+                    ISNULL(codigo_aportes, '') AS CodigoAportes,
+                    ISNULL(codigo_creditos, '') AS CodigoCreditos
                 FROM instituciones                 
-                    WHERE I.cod_institucion = @CodInstitucion";
+                    WHERE cod_institucion = @CodInstitucion";
  
             var resultado = conn.QueryFirstOrDefault<CcProcesoMensualCargaConfigDbModel>(
                 query,
