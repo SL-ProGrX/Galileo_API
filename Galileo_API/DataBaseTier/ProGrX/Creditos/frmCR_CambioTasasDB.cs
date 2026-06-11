@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Credito;
 using System.Data;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -190,7 +191,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 tx.Commit();
                 return DbHelper.OkResponse("Cambio de Tasas Realizado Satisfactoriamente...");
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
