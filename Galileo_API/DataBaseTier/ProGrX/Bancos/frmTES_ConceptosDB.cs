@@ -92,7 +92,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             activo,
                             cod_cuenta_Mask,
                             AUTO_REGISTRO,
-                            DP_TRAMITE_APL
+                            DP_TRAMITE_APL,
+                            CRITERIO
                         FROM vTes_conceptos
                         WHERE
                             (@filtro IS NULL)
@@ -181,12 +182,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 string query = @"
                             INSERT INTO tes_conceptos (
                                 cod_concepto,descripcion,estado,cod_cuenta,
-                                AUTO_REGISTRO, DP_TRAMITE_APL, REGISTRO_FECHA, REGISTRO_USUARIO
+                                AUTO_REGISTRO, DP_TRAMITE_APL, REGISTRO_FECHA, REGISTRO_USUARIO, criterio
                             )
                             VALUES (
                                 @cod_concepto, @descripcion, @estado, @cod_cuenta,
                                 @auto_registro, @dp_tramite_apl,
-                                dbo.myGetdate(), @usuario
+                                dbo.myGetdate(), @usuario, @criterio
                             )";
 
                 conn.Execute(query, new
@@ -197,7 +198,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     cod_cuenta = cuenta,
                     auto_registro = concepto.auto_registro ? 1 : 0,
                     dp_tramite_apl = concepto.dp_tramite_apl ? 1 : 0,
-                    usuario = usuario
+                    usuario = usuario,
+                    criterio = concepto.criterio
                 });
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
@@ -239,6 +241,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                 cod_cuenta = @cod_cuenta,
                                 AUTO_REGISTRO = @auto_registro,
                                 DP_TRAMITE_APL = @dp_tramite_apl,
+                                CRITERIO = @criterio,
                                 MODIFICA_FECHA = dbo.myGetdate(),
                                 MODIFICA_USUARIO = @usuario
                             WHERE cod_concepto = @cod_concepto";
@@ -251,6 +254,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     cod_cuenta = cuenta,
                     auto_registro = concepto.auto_registro ? 1 : 0,
                     dp_tramite_apl = concepto.dp_tramite_apl ? 1 : 0,
+                    criterio = concepto.criterio,
                     usuario = usuario
                 });
 

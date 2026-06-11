@@ -22,6 +22,7 @@
         public decimal saldo_minimo { get; set; }
         public DateTime fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
+        public decimal cheques_pendientes { get; set; }
     }
 
     public class TesBancosSaldosCierresDto

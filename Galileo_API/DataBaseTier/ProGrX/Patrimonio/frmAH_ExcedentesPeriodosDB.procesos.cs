@@ -8,6 +8,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
     public partial class FrmAhExcedentesPeriodosDB
     {
+        public const string validaSolicitud = "La solicitud es requerida.";
+        public const string indicaPeriodo = "Debe indicar el período.";
+        public const string indicaUsuario = "Debe indicar el usuario.";
+        public const string periodoNoExiste = "El período indicado no existe.";
+
         /// <summary>
         /// Actualiza el modo de aplicación mensual del período.
         /// Equivale al botón Actualiza del VB6.
@@ -18,18 +23,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             var tipoAplicacionNormalizado = Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(request.tipo_apl_mensual);
@@ -41,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 if (periodo.estado == "C")
@@ -53,9 +58,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "spExc_Periodo_Modo_Aplicacion",
                     new
                     {
-                        pPeriodoId = request.id_periodo,
-                        pTipoAplicacion = tipoAplicacionNormalizado,
-                        pUsuario = usuarioNormalizado
+                        PeriodoId = request.id_periodo,
+                        Tipo = tipoAplicacionNormalizado,
+                        Usuario = usuarioNormalizado
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
@@ -77,18 +82,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             var notaNormalizada = Ah_ExcedentesPeriodos_NormalizarTexto(request.estado_notas);
@@ -104,7 +109,7 @@ where ID_PERIODO = @PeriodoId;";
 
                 if (!Ah_ExcedentesPeriodos_Existe(conn, request.id_periodo))
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 conn.Execute(
@@ -133,18 +138,18 @@ where ID_PERIODO = @PeriodoId;";
         {
             if (request == null)
             {
-                return DbHelper.CreateErrorResponse("La solicitud es requerida.", -2, false);
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
             }
 
             if (request.id_periodo <= 0)
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el período.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
             }
 
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
-                return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, false);
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
             }
 
             const string sqlCortes = @"
@@ -163,7 +168,7 @@ order by corte;";
                 var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
                 if (periodo == null)
                 {
-                    return DbHelper.CreateErrorResponse("El período indicado no existe.", -2, false);
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
                 }
 
                 if (periodo.estado == "C")
@@ -189,8 +194,8 @@ order by corte;";
                         "spSIFAuxExcedentes_WLog",
                         new
                         {
-                            pAnio = corte.Year,
-                            pMes = corte.Month
+                            Anio = corte.Year,
+                            Mes = corte.Month
                         },
                         commandType: System.Data.CommandType.StoredProcedure);
                 }
@@ -219,6 +224,101 @@ where ID_PERIODO = @PeriodoId;";
                 new { PeriodoId = periodoId });
         }
 
-       
+
+        /// <summary>
+        /// Actualiza una bandera de visibilidad del estado de excedentes.
+        /// Equivale a marcar/desmarcar los checks del tab Estado Excedentes del VB6.
+        /// </summary>
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_Visibilidad_Actualizar(
+            int codEmpresa,
+            FrmAhExcedentesPeriodosVisibilidadRequest? request)
+        {
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse(validaSolicitud, -2, false);
+            }
+
+            if (request.id_periodo <= 0)
+            {
+                return DbHelper.CreateErrorResponse(indicaPeriodo, -2, false);
+            }
+
+            var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(request.usuario);
+            if (string.IsNullOrWhiteSpace(usuarioNormalizado))
+            {
+                return DbHelper.CreateErrorResponse(indicaUsuario, -2, false);
+            }
+
+            var sql = Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(request.campo);
+            
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var periodo = Ah_ExcedentesPeriodos_ObtenerEstadoPeriodo(conn, request.id_periodo);
+                if (periodo == null)
+                {
+                    return DbHelper.CreateErrorResponse(periodoNoExiste, -2, false);
+                }
+
+                if (periodo.estado != "C")
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Solo se permite modificar la visibilidad de períodos cerrados.",
+                        -2,
+                        false);
+                }
+
+                conn.Execute(
+                    sql,
+                    new
+                    {
+                        Valor = request.valor,
+                        PeriodoId = request.id_periodo
+                    });
+
+                Ah_ExcedentesPeriodos_RegistrarBitacoraSeguridad(
+                    codEmpresa,
+                    usuarioNormalizado,
+                    "Actualiza visibilidad de excedentes",
+                    $"Período: {request.id_periodo}. Campo: {request.campo}. Valor: {request.valor}");
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, false);
+            }
+        }
+
+        private static string Ah_ExcedentesPeriodos_ObtenerColumnaVisibilidad(string? campo)
+        {
+            return Ah_ExcedentesPeriodos_NormalizarTexto(campo).ToLowerInvariant() switch
+            {
+                "visible_webapp" =>
+                    @"UPDATE EXC_PERIODOS
+              SET VISIBLE_WEBAPP = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "visible_sys" =>
+                    @"UPDATE EXC_PERIODOS
+              SET VISIBLE_SYS = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "mostrar_en_historial" =>
+                    @"UPDATE EXC_PERIODOS
+              SET MOSTRAR_EN_HISTORIAL = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                "mostrar_tabla_renta" =>
+                    @"UPDATE EXC_PERIODOS
+              SET MOSTRAR_TABLA_RENTA = @Valor
+              WHERE ID_PERIODO = @PeriodoId",
+
+                _ => throw new ArgumentException($"Campo no permitido: {campo}")
+            };
+        }
+
+
     }
 }
