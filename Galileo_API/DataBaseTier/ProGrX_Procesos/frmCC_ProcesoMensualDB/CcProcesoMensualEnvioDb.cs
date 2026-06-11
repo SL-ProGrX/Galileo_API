@@ -13,7 +13,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MProGrxMain _mProGrx;
         private readonly MCobroDb _mCobroDb;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
-        private readonly CcProcesoMensualEstadoDB _mEstado;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         public const string PlanillaEnvioAya = "08";
@@ -25,8 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
             _mCobroDb = new MCobroDb(config);
-            _mGeneral = new CcProcesoMensualGeneralDb(config);           
-            _mEstado = new CcProcesoMensualEstadoDB(config);
+            _mGeneral = new CcProcesoMensualGeneralDb(config);      
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
@@ -69,15 +67,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 RegistrarBitacoraGeneracion( connection, codEmpresa,request);
 
              
-                _mEstado.CcProcesoMensual_EstadoActualProceso_Obtener( codEmpresa, request.CodInstitucion);
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "02", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
                 return DbHelper.CreateOkResponse(true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<bool>(
-                    "Error al generar las deducciones del proceso mensual.",
+                    "Error al generar las deducciones del proceso mensual." + ex.Message,
                     -1,
                     false);
             }
@@ -444,6 +441,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             public int ComparaIndicador { get; set; } = 0;
             public string ComparaValor { get; set; } = string.Empty;
         }
+        public  DateTime ObtenerFechaCorteProceso( IDbConnection connection, decimal fechaProceso)
+        {
+            const string query = @" SELECT dbo.fxSIFCorteAFecha(@FechaProceso) AS Corte";
+            return connection.QueryFirstOrDefault<DateTime>(
+                query,
+                new { FechaProceso = fechaProceso });
+        }
+        public  void ActualizarInstitucionCambioFechaProceso(  IDbConnection connection, int codInstitucion, DateTime fechaCorte)
+        {
+            const string query = @"
+                        UPDATE instituciones SET pr_genera = 0,  pr_carga = 0,  pr_desgloza = 0,  pr_apAplica = 0,  pr_apInco = 0, pr_apDev = 0, pr_crAplica = 0,  pr_crInco = 0,  pr_crMora = 0,  pr_fecha_corte = @FechaCorte
+                        WHERE cod_institucion = @CodInstitucion";
+            connection.Execute(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaCorte = fechaCorte.Date
+                });
+        }
+        public  bool ObtenerIndicadorCambioFechaProceso(IDbConnection connection,int codInstitucion)
+        {
+            const string query = @"
+                SELECT ISNULL(IND_CAMBIA_FECPRO, 0) AS Cambia
+                FROM instituciones
+                WHERE cod_institucion = @CodInstitucion";
 
+            var cambia = connection.QueryFirstOrDefault<int>( query,  new { CodInstitucion = codInstitucion });
+            return cambia == 1;
+        }
+        public  void ActualizarFechaFormalizaciones( IDbConnection connection,DateTime fechaCorte)
+        {
+            const string query = @"
+                    UPDATE par_ahcr
+                    SET cr_fecha_calculo = @FechaCorte
+                    WHERE cr_fecha_calculo <= @FechaCorte";
+            connection.Execute(query,new { FechaCorte = fechaCorte.Date });
+        }
     }
 }

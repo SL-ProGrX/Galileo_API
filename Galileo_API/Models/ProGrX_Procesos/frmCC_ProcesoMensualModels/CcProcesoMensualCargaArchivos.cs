@@ -10,8 +10,8 @@
             public decimal FechaProceso { get; set; } = 0;
             public int Pago { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
-            public CcProcesoMensualCargaDeduccionesTipo TipoCarga { get; set; } = CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel;
-
+            public string TipoCarga { get; set; } = string.Empty;
+       
             public List<CcProcesoMensualCargaDeduccionFilaRequest> Filas { get; set; } = [];
         }
         public sealed class CcProcesoMensualCargaDeduccionFilaRequest
@@ -25,22 +25,13 @@
             public string Ut { get; set; } = string.Empty;
 
         }
-        public enum CcProcesoMensualCargaDeduccionesTipo
-        {
-            sbCargaDeduc_Excel = 1,
-            sbCargaDeduc_Excel_Tek_Experts = 2,
-            sbCargaDeduc_Excel_DxC_Costa_Rica = 3,
-            sbCargaDeduc_Excel_DxC_CentroAmerica =4,
-            sbCargaDeduc_ExcelNew=5,
-            sbCargaDeduc_Csv_Integra=6,
-            sbCargaDeduccionesArchivoPlano = 7
-
-        }
+ 
         public sealed class CcProcesoMensualCargaDeduccionesResponse
         {
             public bool Cargado { get; set; }
             public int RegistrosProcesados { get; set; } = 0;
             public int RegistrosInsertados { get; set; } = 0;
+            public int PersonasNoEncontradas { get; set; } = 0;
             public string Mensaje { get; set; } = string.Empty;
         }
         public sealed class CcProcesoMensualReglaDeduccionConfig
