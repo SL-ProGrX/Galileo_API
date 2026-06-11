@@ -178,14 +178,27 @@ select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmor
                 DateTime fechaServidor = conn.QueryFirstOrDefault<DateTime>("select dbo.MyGetdate()", transaction: tx);
                 decimal montoTotal = ObtenerMontoTotal(request);
 
-                InsertarDocumento(conn, tx, request, operacion, ctas, globales.GOficinaTitular, numDocumento, montoTotal);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, request.int_corriente, ctas.ctaintc, "D", numDocumento);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, request.int_morosidad, ctas.ctaintm, "D", numDocumento);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, request.cargos, ctas.CtaCargos, "D", numDocumento);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, request.poliza, ObtenerCuentaPoliza(conn, tx, ctas.ID_SOLICITUD), "D", numDocumento);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, request.amortizacion, ctas.ctaamortiza, "D", numDocumento);
-                RegistrarAsientoSiMonto(conn, tx, ctas, globales.GEnlace, montoTotal, destino.cuenta, "C", numDocumento);
-                RegistrarSaldoFavorSiAplica(conn, tx, request, operacion, ctas, destino, numDocumento, montoTotal);
+                var contexto = new AnulacionContext
+                {
+                    Conn = conn,
+                    Tx = tx,
+                    Request = request,
+                    Operacion = operacion,
+                    Ctas = ctas,
+                    OficinaTitular = globales.GOficinaTitular,
+                    Enlace = globales.GEnlace,
+                    NumDocumento = numDocumento,
+                    MontoTotal = montoTotal
+                };
+
+                InsertarDocumento(contexto);
+                RegistrarAsientoSiMonto(contexto, request.int_corriente, ctas.ctaintc, "D");
+                RegistrarAsientoSiMonto(contexto, request.int_morosidad, ctas.ctaintm, "D");
+                RegistrarAsientoSiMonto(contexto, request.cargos, ctas.CtaCargos, "D");
+                RegistrarAsientoSiMonto(contexto, request.poliza, ObtenerCuentaPoliza(conn, tx, ctas.ID_SOLICITUD), "D");
+                RegistrarAsientoSiMonto(contexto, request.amortizacion, ctas.ctaamortiza, "D");
+                RegistrarAsientoSiMonto(contexto, montoTotal, destino.cuenta, "C");
+                RegistrarSaldoFavorSiAplica(contexto, destino);
                 EjecutarAnulacionPlanPago(conn, tx, request, fechaServidor, numDocumento);
 
                 tx.Commit();
@@ -199,18 +212,22 @@ select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmor
                     DetalleMovimiento = $"OP: {request.id_solicitud} Doc.:{numDocumento} Total: {montoTotal:N2} Rec.Cuota.:{request.recalcular_cuota}"
                 });
 
+                var usuario = request.usuario ?? string.Empty;
                 var trazabilidad = _mProGrx.sbTrazabilidad_Inserta(
                     codEmpresa,
                     "06",
                     numDocumento,
                     numDocumento,
-                    request.usuario ?? string.Empty,
+                    usuario,
                     nuevo: true);
 
                 if (trazabilidad.Code.HasValue && trazabilidad.Code != 0)
-                    return DbHelper.CreateErrorResponse(trazabilidad.Description, trazabilidad.Code.Value, response);
+                    return DbHelper.CreateErrorResponse(
+                        trazabilidad.Description ?? "No se pudo registrar la trazabilidad.",
+                        trazabilidad.Code.Value,
+                        response);
 
-                var impresion = _mRecibos.sbImprimeRecibo(codEmpresa, numDocumento, TipoDocumento, request.usuario);
+                var impresion = _mRecibos.sbImprimeRecibo(codEmpresa, numDocumento, TipoDocumento, usuario);
 
                 response.tipo_documento = TipoDocumento;
                 response.num_documento = numDocumento;
@@ -376,18 +393,13 @@ where TIPO = 'S' and Activa = 1;", transaction: tx);
                 tx) ?? string.Empty;
         }
 
-        private static void InsertarDocumento(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAnulaAbonosProcesarRequest request,
-            CrAnulaAbonosOperacionData operacion,
-            CrAnulaAbonosOperacionCtasData ctas,
-            string oficinaTitular,
-            string numDocumento,
-            decimal montoTotal)
+        private static void InsertarDocumento(AnulacionContext contexto)
         {
+            var request = contexto.Request;
+            var operacion = contexto.Operacion;
+            var ctas = contexto.Ctas;
             var detalle = (request.notas ?? string.Empty).Trim();
-            conn.Execute(@"
+            contexto.Conn.Execute(@"
 insert SIF_TRANSACCIONES(
     COD_TRANSACCION,TIPO_DOCUMENTO,REGISTRO_FECHA,REGISTRO_USUARIO,Cliente_IDENTIFICACION,CLIENTE_NOMBRE,
     cod_concepto,monto,estado,Referencia_01,Referencia_02,Referencia_03,cod_oficina,
@@ -397,16 +409,16 @@ values(
     @concepto,@montoTotal,'P',@idSolicitud,@codigo,'',@oficina,
     @linea1,@linea2,@linea3,@linea4,@linea5,@linea6,@linea7,@linea8,@linea9,@linea10,@linea11,@detalle);", new
             {
-                numDocumento,
+                numDocumento = contexto.NumDocumento,
                 tipoDocumento = TipoDocumento,
                 usuario = request.usuario,
                 cedula = operacion.cedula,
                 nombre = operacion.nombre,
                 concepto = Concepto,
-                montoTotal,
+                montoTotal = contexto.MontoTotal,
                 idSolicitud = request.id_solicitud.ToString(),
                 operacion.codigo,
-                oficina = oficinaTitular,
+                oficina = contexto.OficinaTitular,
                 linea1 = $"Saldo Actual      {ctas.Saldo:N2}",
                 linea2 = $"Interes Corriente {request.int_corriente * -1:N2}",
                 linea3 = $"Interes Moratorio {request.int_morosidad * -1:N2}",
@@ -419,23 +431,20 @@ values(
                 linea10 = $"Usuario           {request.usuario}",
                 linea11 = $"Fecha Ult. Cta    {FormatearProceso(request.ultima_cuota_cancelada)}",
                 detalle
-            }, tx);
+            }, contexto.Tx);
         }
 
         private static void RegistrarAsientoSiMonto(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAnulaAbonosOperacionCtasData ctas,
-            int enlace,
+            AnulacionContext contexto,
             decimal monto,
             string cuenta,
-            string dc,
-            string numDocumento)
+            string dc)
         {
             if (monto <= 0 || string.IsNullOrWhiteSpace(cuenta))
                 return;
 
-            conn.Execute(@"
+            var ctas = contexto.Ctas;
+            contexto.Conn.Execute(@"
 exec spSIFDocsAsiento
     @tipoDocumento,
     @numDocumento,
@@ -452,33 +461,29 @@ exec spSIFDocsAsiento
     '';", new
             {
                 tipoDocumento = TipoDocumento,
-                numDocumento,
+                numDocumento = contexto.NumDocumento,
                 monto,
                 dc,
                 codDivisa = ctas.cod_Divisa,
-                enlace,
+                enlace = contexto.Enlace,
                 codUnidad = ctas.Cod_Unidad,
                 codCentroCosto = ctas.Cod_Centro_Costo,
                 cuenta,
                 idSolicitud = ctas.ID_SOLICITUD,
                 codigo = ctas.Codigo
-            }, tx);
+            }, contexto.Tx);
         }
 
         private static void RegistrarSaldoFavorSiAplica(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAnulaAbonosProcesarRequest request,
-            CrAnulaAbonosOperacionData operacion,
-            CrAnulaAbonosOperacionCtasData ctas,
-            CuentaDestino destino,
-            string numDocumento,
-            decimal montoTotal)
+            AnulacionContext contexto,
+            CuentaDestino destino)
         {
             if (!destino.requiere_saldo_favor)
                 return;
 
-            var sfId = conn.QueryFirstOrDefault<int>(@"
+            var request = contexto.Request;
+            var ctas = contexto.Ctas;
+            var sfId = contexto.Conn.QueryFirstOrDefault<int>(@"
 exec spCajas_SaldoFavor_Registra
     @formaPago,
     @referencia,
@@ -489,15 +494,15 @@ exec spCajas_SaldoFavor_Registra
     @divisa;", new
             {
                 formaPago = destino.forma_pago,
-                referencia = $"{TipoDocumento}-{numDocumento}",
-                monto = montoTotal,
-                cedula = operacion.cedula,
-                nombre = operacion.nombre,
+                referencia = $"{TipoDocumento}-{contexto.NumDocumento}",
+                monto = contexto.MontoTotal,
+                cedula = contexto.Operacion.cedula,
+                nombre = contexto.Operacion.nombre,
                 usuario = request.usuario,
                 divisa = ctas.cod_Divisa
-            }, tx);
+            }, contexto.Tx);
 
-            conn.Execute(@"
+            contexto.Conn.Execute(@"
 exec spSYS_Anulacion_Saldo_Favor
     @tipoDocumento,
     @numDocumento,
@@ -511,16 +516,16 @@ exec spSYS_Anulacion_Saldo_Favor
     @sfId;", new
             {
                 tipoDocumento = TipoDocumento,
-                numDocumento,
+                numDocumento = contexto.NumDocumento,
                 usuario = request.usuario,
                 formaPago = destino.forma_pago,
                 divisa = ctas.cod_Divisa,
-                monto = montoTotal,
+                monto = contexto.MontoTotal,
                 unidad = ctas.Cod_Unidad,
                 cuenta = destino.cuenta,
-                referencia = $"{TipoDocumento}-{numDocumento}",
+                referencia = $"{TipoDocumento}-{contexto.NumDocumento}",
                 sfId
-            }, tx);
+            }, contexto.Tx);
         }
 
         private static void EjecutarAnulacionPlanPago(
@@ -565,6 +570,19 @@ exec spCrdPlanPagoAnulaAbono
                 ultimaCuotaCancelada = request.ultima_cuota_cancelada,
                 notas = (request.notas ?? string.Empty).Trim()
             }, tx);
+        }
+
+        private sealed class AnulacionContext
+        {
+            public SqlConnection Conn { get; init; } = null!;
+            public SqlTransaction Tx { get; init; } = null!;
+            public CrAnulaAbonosProcesarRequest Request { get; init; } = null!;
+            public CrAnulaAbonosOperacionData Operacion { get; init; } = null!;
+            public CrAnulaAbonosOperacionCtasData Ctas { get; init; } = null!;
+            public string OficinaTitular { get; init; } = string.Empty;
+            public int Enlace { get; init; }
+            public string NumDocumento { get; init; } = string.Empty;
+            public decimal MontoTotal { get; init; }
         }
 
         private sealed class CuentaDestino

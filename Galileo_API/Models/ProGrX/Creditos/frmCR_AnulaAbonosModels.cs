@@ -55,22 +55,40 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrAnulaAbonosCuentaRecomendadaRequest
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_solicitud { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_amortizacion { get; set; }
     }
 
     public class CrAnulaAbonosProcesarRequest
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_solicitud { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = "S";
+
+        [System.Text.Json.Serialization.JsonRequired]
         public bool recalcular_cuota { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public int ultima_cuota_cancelada { get; set; }
         public string notas { get; set; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal int_corriente { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal int_morosidad { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal amortizacion { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal cargos { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal poliza { get; set; }
         public List<int> id_seq_movimientos { get; set; } = [];
     }
