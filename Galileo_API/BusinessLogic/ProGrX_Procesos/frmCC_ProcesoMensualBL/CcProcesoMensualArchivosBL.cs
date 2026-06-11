@@ -6,6 +6,8 @@ using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB;
 using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos;
 using System.Data;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels; 
+
+
 namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 {
     public class CcProcesoMensualArchivosBL
@@ -14,7 +16,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
         private readonly CcProcesoMensualEnvioDb _db;
         private readonly PortalDB _portalDb;
-      
+    
         public CcProcesoMensualArchivosBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
             _generadorArchivos = generadores;

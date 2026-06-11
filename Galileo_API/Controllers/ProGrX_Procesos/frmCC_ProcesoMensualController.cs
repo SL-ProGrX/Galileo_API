@@ -67,6 +67,13 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcProcesoMensual_CargarDeducciones(request);
         }
 
+
+        [HttpPost("CcProcesoMensual_CambiarFechaProceso_Ejecutar")]
+        public ErrorDto<CcProcesoMensualCambiarFechaResponse> CcProcesoMensual_CambiarFechaProceso_Ejecutar(int codEmpresa, [FromBody] CcProcesoMensualCambiarFechaRequest request) 
+        {
+            return _bl.CcProcesoMensual_CambiarFechaProceso_Ejecutar(codEmpresa,request);
+        }
+
         [HttpGet("CcProcesoMensual_EstadoActualProceso_Obtener")]
         public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(
             int codEmpresa,
