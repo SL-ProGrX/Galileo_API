@@ -161,6 +161,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(isnull(R.cod_divisa, 'COL')) as divisa,
                     Getdate() as fecha_servidor,
                     dbo.fxSIFCorteAFecha(isnull(R.fecult, R.prideduc)) as fecha_ult_mov,
+                    isnull(R.prideduc, 0) as prideduc,
                     isnull(V.amortiza, 0) as amortiza,
                     isnull(V.intC, 0) as int_cor,
                     isnull(V.intM, 0) as int_mor,
