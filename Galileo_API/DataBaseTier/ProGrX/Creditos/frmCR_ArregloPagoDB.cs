@@ -700,7 +700,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacionResp.Result.mora_count > 0 && !request.retroactivo)
             {
                 return DbHelper.ErrorResponse(
-                    "Esta operacion no puede realizar una capitalizaci&oacute;n de deuda porque est&aacute; al d&iacute;a.",
+                    "A esta operaci&oacute;n no se le puede dar periodo de gracia porque no est&aacute; al d&iacute;a.",
                     -2);
             }
 
