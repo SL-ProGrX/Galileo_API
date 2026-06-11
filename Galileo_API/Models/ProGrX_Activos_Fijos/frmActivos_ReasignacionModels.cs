@@ -94,7 +94,12 @@
             public string? fechaInicio { get; set; }
             public string? fechaCorte { get; set; }
         }
-        public class ActivosReasignacionesActivoResumen
+        public class ActivosReasignacionesPersonasLista
+        {
+            public int total { get; set; }
+            public List<DropDownListaGenericaModel> lista { get; set; } = new();
+        }
+    public class ActivosReasignacionesActivoResumen
         {
             public string num_placa { get; set; } = "";
             public string placa_alterna { get; set; } = "";
