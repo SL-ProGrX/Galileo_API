@@ -50,45 +50,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrArregloPagoDocumentoLineas
         {
-            public string linea1 { get; set; } = string.Empty;
-            public string linea2 { get; set; } = string.Empty;
-            public string linea3 { get; set; } = string.Empty;
-            public string linea4 { get; set; } = string.Empty;
-            public string linea5 { get; set; } = string.Empty;
-            public string linea6 { get; set; } = string.Empty;
-            public string linea7 { get; set; } = string.Empty;
-            public string linea8 { get; set; } = string.Empty;
-            public string linea9 { get; set; } = string.Empty;
-            public string linea10 { get; set; } = string.Empty;
-            public string linea11 { get; set; } = string.Empty;
+            public string linea1 { get; set; } = "";
+            public string linea2 { get; set; } = "";
+            public string linea3 { get; set; } = "";
+            public string linea4 { get; set; } = "";
+            public string linea5 { get; set; } = "";
+            public string linea6 { get; set; } = "";
+            public string linea7 { get; set; } = "";
+            public string linea8 { get; set; } = "";
+            public string linea9 { get; set; } = "";
+            public string linea10 { get; set; } = "";
+            public string linea11 { get; set; } = "";
         }
 
-        private sealed class CrArregloPagoAsientoRequest
+        private class CrArregloPagoAsientoDataBase
         {
-            public string tipo_doc { get; set; } = string.Empty;
-            public string num_doc { get; set; } = string.Empty;
             public decimal monto { get; set; }
-            public string tipo { get; set; } = string.Empty;
-            public string divisa { get; set; } = string.Empty;
+            public string tipo { get; set; } = "";
+            public string divisa { get; set; } = "";
             public decimal tipo_cambio { get; set; }
-            public string unidad { get; set; } = string.Empty;
-            public string centro_costo { get; set; } = string.Empty;
-            public string cuenta { get; set; } = string.Empty;
+            public string unidad { get; set; } = "";
+            public string centro_costo { get; set; } = "";
+            public string cuenta { get; set; } = "";
             public int operacion { get; set; }
-            public string codigo { get; set; } = string.Empty;
+            public string codigo { get; set; } = "";
         }
 
-        private sealed class CrArregloPagoAsientoFactoryData
+        private sealed class CrArregloPagoAsientoRequest : CrArregloPagoAsientoDataBase
         {
-            public decimal monto { get; set; }
-            public string tipo { get; set; } = string.Empty;
-            public string divisa { get; set; } = string.Empty;
-            public decimal tipo_cambio { get; set; }
-            public string unidad { get; set; } = string.Empty;
-            public string centro_costo { get; set; } = string.Empty;
-            public string cuenta { get; set; } = string.Empty;
-            public int operacion { get; set; }
-            public string codigo { get; set; } = string.Empty;
+            public string tipo_doc { get; set; } = "";
+            public string num_doc { get; set; } = "";
+        }
+
+        private sealed class CrArregloPagoAsientoFactoryData : CrArregloPagoAsientoDataBase
+        {
         }
 
         private sealed class CrArregloPagoAsientoCuentaData
