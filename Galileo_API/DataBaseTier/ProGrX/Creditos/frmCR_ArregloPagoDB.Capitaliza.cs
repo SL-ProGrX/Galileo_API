@@ -131,13 +131,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.notas = (request.notas ?? string.Empty).Trim();
         }
 
-        private ErrorDto Cr_ArregloPago_Capitaliza_ValidarSolicitud(
+        private static ErrorDto Cr_ArregloPago_Capitaliza_ValidarSolicitud(
             CrArregloPagoCapitalizaRequest request)
         {
             return ValidarNotasYOperacion(request.operacion, request.usuario, request.notas);
         }
 
-        private ErrorDto Cr_ArregloPago_Capitaliza_ValidarOperacion(
+        private static ErrorDto Cr_ArregloPago_Capitaliza_ValidarOperacion(
             CrArregloPagoCapitalizaRequest request,
             CrArregloPagoOperacionData operacion)
         {

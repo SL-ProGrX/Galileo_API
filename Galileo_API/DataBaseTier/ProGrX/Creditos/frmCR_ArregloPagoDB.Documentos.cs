@@ -376,7 +376,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
         }
 
-        private void Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(
+        private static void Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(
             SqlConnection conn,
             SqlTransaction tx,
             CrArregloPagoDocumentoContext ctx,
@@ -450,7 +450,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             conn.Execute(sql, Cr_ArregloPago_DocumentoInsertParametros_Crear(ctx, montos, lineas));
         }
 
-        private void Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(
+        private static void Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(
             SqlConnection conn,
             SqlTransaction tx,
             CrArregloPagoDocumentoContext ctx,

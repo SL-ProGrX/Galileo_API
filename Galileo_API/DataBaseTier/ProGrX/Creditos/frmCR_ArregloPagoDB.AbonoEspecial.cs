@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return Cr_ArregloPago_AbonoEspecial_ValidarCuota(request);
         }
 
-        private ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarCuota(
+        private static ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarCuota(
             CrArregloPagoAbonoEspecialRequest request)
         {
             if (EsTipoExtraordinario(request.tipo_abono))
@@ -198,7 +198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.OkResponse("Ok");
         }
 
-        private ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarOperacion(
+        private static ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarOperacion(
             CrArregloPagoAbonoEspecialRequest request,
             CrArregloPagoOperacionData operacion)
         {
