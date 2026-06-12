@@ -97,10 +97,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public string num_doc { get; set; } = "";
         }
 
-        private sealed class CrArregloPagoAsientoFactoryData : CrArregloPagoAsientoDataBase
-        {
-        }
-
         private sealed class CrArregloPagoAsientoCuentaData
         {
             public string divisa { get; set; } = string.Empty;
@@ -601,7 +597,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    new CrArregloPagoAsientoFactoryData
+                    new CrArregloPagoAsientoDataBase
                     {
                         monto = montos.int_mor * tipoCambio.factor,
                         tipo = "C",
@@ -636,7 +632,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    new CrArregloPagoAsientoFactoryData
+                    new CrArregloPagoAsientoDataBase
                     {
                         monto = montos.amortiza * tipoCambio.factor,
                         tipo = tipoAmortiza,
@@ -671,7 +667,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ctx.globales,
                     Cr_ArregloPago_AsientoRequest_Crear(
                         ctx,
-                        new CrArregloPagoAsientoFactoryData
+                        new CrArregloPagoAsientoDataBase
                         {
                             monto = montoCargo * tipoCambio.factor,
                             tipo = "C",
@@ -700,7 +696,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ctx.globales,
                     Cr_ArregloPago_AsientoRequest_Crear(
                         ctx,
-                        new CrArregloPagoAsientoFactoryData
+                        new CrArregloPagoAsientoDataBase
                         {
                             monto = (item.mov_monto ?? 0) * tipoCambio.factor,
                             tipo = "C",
@@ -739,7 +735,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    new CrArregloPagoAsientoFactoryData
+                    new CrArregloPagoAsientoDataBase
                     {
                         monto = montoPoliza * tipoCambio.factor,
                         tipo = "C",
@@ -793,7 +789,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static CrArregloPagoAsientoRequest Cr_ArregloPago_AsientoRequest_Crear(
             CrArregloPagoDocumentoContext ctx,
-            CrArregloPagoAsientoFactoryData data)
+            CrArregloPagoAsientoDataBase data)
         {
             return new CrArregloPagoAsientoRequest
             {
@@ -904,12 +900,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 tx) ?? string.Empty;
         }
 
-        private static CrArregloPagoAsientoFactoryData Cr_ArregloPago_AsientoFactoryData_Crear(
+        private static CrArregloPagoAsientoDataBase Cr_ArregloPago_AsientoFactoryData_Crear(
             decimal monto,
             string tipo,
             CrArregloPagoAsientoCuentaData cuentaData)
         {
-            return new CrArregloPagoAsientoFactoryData
+            return new CrArregloPagoAsientoDataBase
             {
                 monto = monto,
                 tipo = tipo,
