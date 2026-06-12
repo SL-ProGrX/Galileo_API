@@ -443,7 +443,11 @@ namespace Galileo.DataBaseTier
 
                 return DbHelper.OkResponse("OK");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.ErrorResponse($"Error al guardar desgloce de pago: {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.ErrorResponse($"Error al guardar desgloce de pago: {ex.Message}");
             }
