@@ -144,6 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 Cr_ArregloPago_Documento_Transaccion_Insertar(
                     conn,
+                    tx,
                     ctx,
                     montos,
                     lineas,
@@ -360,6 +361,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static void Cr_ArregloPago_Documento_Transaccion_Insertar(
             SqlConnection conn,
+            SqlTransaction transac,
             CrArregloPagoDocumentoContext ctx,
             CrArregloPagoDocumentoMontos montos,
             CrArregloPagoDocumentoLineas lineas,
@@ -367,11 +369,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (tipoDocumento == CrArregloPagoDocumentoTipo.Abono)
             {
-                Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
+                Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(conn, transac, ctx, montos, lineas);
                 return;
             }
 
-            Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
+            Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, transac, ctx, montos, lineas);
         }
 
         private static void Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(
@@ -450,7 +452,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static void Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(
             SqlConnection conn,
-            SqlTransaction tx,
+            SqlTransaction transac,
             CrArregloPagoDocumentoContext ctx,
             CrArregloPagoDocumentoMontos montos,
             CrArregloPagoDocumentoLineas lineas)
@@ -515,7 +517,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Linea11
                 );";
 
-            conn.Execute(sql, Cr_ArregloPago_DocumentoInsertParametros_Crear(ctx, montos, lineas), tx);
+            conn.Execute(sql, Cr_ArregloPago_DocumentoInsertParametros_Crear(ctx, montos, lineas), transac);
         }
 
         private static object Cr_ArregloPago_DocumentoInsertParametros_Crear(
