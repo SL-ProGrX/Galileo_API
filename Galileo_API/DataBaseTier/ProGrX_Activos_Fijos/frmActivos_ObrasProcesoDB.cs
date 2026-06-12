@@ -247,32 +247,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            monto
                     FROM   Activos_obras_ade
                     WHERE  contrato = @contrato
-                      AND (
-                            @filtro IS NULL
-                            OR cod_Adendum                      LIKE @filtro
-                            OR descripcion                      LIKE @filtro
-                            OR CONVERT(varchar(10), fecha,120) LIKE @filtro
-                            OR CONVERT(varchar(30), monto)      LIKE @filtro
-                          )
+                       AND (
+                        @filtro IS NULL
+                        OR CAST(cod_Adendum AS varchar(50)) LIKE @filtro
+                        OR descripcion LIKE @filtro
+                        OR CONVERT(varchar(10), fecha, 120) LIKE @filtro
+                        OR CONVERT(varchar(30), monto) LIKE @filtro
+                      )
                     ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN cod_Adendum
-                                WHEN 2 THEN descripcion
-                                WHEN 3 THEN fecha
-                                WHEN 4 THEN monto
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN cod_Adendum
-                                WHEN 2 THEN descripcion
-                                WHEN 3 THEN fecha
-                                WHEN 4 THEN monto
-                            END
-                        END DESC
+                        CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN CAST(cod_Adendum AS varchar(50)) END ASC,
+                        CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN descripcion END ASC,
+                        CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN fecha END ASC,
+                        CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN monto END ASC,
+
+                        CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN CAST(cod_Adendum AS varchar(50)) END DESC,
+                        CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN descripcion END DESC,
+                        CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN fecha END DESC,
+                        CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN monto END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
