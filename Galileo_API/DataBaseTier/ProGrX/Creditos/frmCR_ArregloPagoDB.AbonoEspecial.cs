@@ -127,7 +127,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.tipo_abono = NormalizarTexto(request.tipo_abono);
         }
 
-        private ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarSolicitud(
+        private static ErrorDto Cr_ArregloPago_AbonoEspecial_ValidarSolicitud(
             CrArregloPagoAbonoEspecialRequest request)
         {
             var validacion = ValidarNotasYOperacion(request.operacion, request.usuario, request.notas);

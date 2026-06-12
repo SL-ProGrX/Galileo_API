@@ -144,7 +144,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 Cr_ArregloPago_Documento_Transaccion_Insertar(
                     conn,
-                    tx,
                     ctx,
                     montos,
                     lineas,
@@ -359,9 +358,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}";
         }
 
-        private void Cr_ArregloPago_Documento_Transaccion_Insertar(
+        private static void Cr_ArregloPago_Documento_Transaccion_Insertar(
             SqlConnection conn,
-            SqlTransaction tx,
             CrArregloPagoDocumentoContext ctx,
             CrArregloPagoDocumentoMontos montos,
             CrArregloPagoDocumentoLineas lineas,
