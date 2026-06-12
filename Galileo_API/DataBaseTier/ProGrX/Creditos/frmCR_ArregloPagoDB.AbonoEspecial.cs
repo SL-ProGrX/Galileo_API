@@ -457,15 +457,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string codigoOperacion)
         {
             MCredito.SbBitacoraCredito(
-                _portalDb,
-                codEmpresa,
-                request.usuario,
-                "11",
-                $"Int: {request.int_cor:N2} Amort: {request.principal:N2}",
-                "C",
-                request.operacion,
-                codigoOperacion,
-                request.notas);
+            _portalDb,
+            codEmpresa,
+            new MCredito.CrBitacoraCreditoRequest
+            {
+                usuario = request.usuario,
+                movimiento = "11",
+                detalle = $"Int: {request.int_cor:N2} Amort: {request.principal:N2}",
+                tipo = "C",
+                operacion = request.operacion,
+                codigo = codigoOperacion,
+                notas = request.notas
+            });
 
             RegistrarBitacora(
                 codEmpresa,

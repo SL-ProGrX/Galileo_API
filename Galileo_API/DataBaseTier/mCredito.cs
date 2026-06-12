@@ -322,15 +322,34 @@ namespace Galileo.DataBaseTier
             return decimal.Round(valor, 2, MidpointRounding.AwayFromZero);
         }
 
-        public static ErrorDto SbBitacoraCredito(PortalDB portalDb,
-            int codEmpresa, string usuario, string movimiento, string detalle,
-            string tipo, int operacion, string codigo, string notas = "")
+        public static ErrorDto SbBitacoraCredito(
+            PortalDB portalDb,
+            int codEmpresa,
+            CrBitacoraCreditoRequest request)
         {
             const string sql = @"
-            insert into credito_subit ( usuario, tipo, fecha, 
-                movimiento, detalle, id_solicitud, codigo, notas
-            ) values ( @Usuario, @Tipo, Getdate(), @Movimiento,
-                @Detalle, @Operacion, @Codigo, @Notas);";
+            insert into credito_subit
+            (
+                usuario,
+                tipo,
+                fecha,
+                movimiento,
+                detalle,
+                id_solicitud,
+                codigo,
+                notas
+            )
+            values
+            (
+                @Usuario,
+                @Tipo,
+                Getdate(),
+                @Movimiento,
+                @Detalle,
+                @Operacion,
+                @Codigo,
+                @Notas
+            );";
 
             return DbHelper.ExecuteNonQuery(
                 portalDb,
@@ -338,13 +357,13 @@ namespace Galileo.DataBaseTier
                 sql,
                 new
                 {
-                    Usuario = (usuario ?? string.Empty).Trim().ToUpperInvariant(),
-                    Tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant(),
-                    Movimiento = (movimiento ?? string.Empty).Trim(),
-                    Detalle = (detalle ?? string.Empty).Trim(),
-                    Operacion = operacion,
-                    Codigo = (codigo ?? string.Empty).Trim().ToUpperInvariant(),
-                    Notas = (notas ?? string.Empty).Trim()
+                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                    Tipo = (request.tipo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Movimiento = (request.movimiento ?? string.Empty).Trim(),
+                    Detalle = (request.detalle ?? string.Empty).Trim(),
+                    Operacion = request.operacion,
+                    Codigo = (request.codigo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Notas = (request.notas ?? string.Empty).Trim()
                 });
         }
 
@@ -372,6 +391,17 @@ namespace Galileo.DataBaseTier
             public string asignado { get; set; } = string.Empty;
             public string notas { get; set; } = string.Empty;
 
+        }
+
+        public sealed class CrBitacoraCreditoRequest
+        {
+            public string usuario { get; set; } = string.Empty;
+            public string movimiento { get; set; } = string.Empty;
+            public string detalle { get; set; } = string.Empty;
+            public string tipo { get; set; } = string.Empty;
+            public int operacion { get; set; }
+            public string codigo { get; set; } = string.Empty;
+            public string notas { get; set; } = string.Empty;
         }
     }
 }
