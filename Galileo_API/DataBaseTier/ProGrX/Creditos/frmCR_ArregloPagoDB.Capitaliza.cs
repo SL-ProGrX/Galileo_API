@@ -276,15 +276,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     var docAbonoResp = Cr_ArregloPago_DocumentoAbono_Generar(
                         conn,
                         tx,
-                        codEmpresa,
-                        globales,
-                        operacion,
-                        cajaCtx,
-                        request.usuario,
-                        tipoDocumento,
-                        numDocumento,
-                        "CRD014",
-                        request.notas);
+                        new CrArregloPagoDocumentoContext
+                        {
+                            cod_empresa = codEmpresa,
+                            globales = globales,
+                            operacion = operacion,
+                            caja = cajaCtx,
+                            usuario = request.usuario,
+                            tipo_doc = tipoDocumento,
+                            num_doc = numDocumento,
+                            concepto = "CRD014",
+                            notas = request.notas
+                        });
 
                     if (docAbonoResp.Code != 0)
                     {
@@ -299,18 +302,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (!string.IsNullOrWhiteSpace(numNota))
                 {
                     var docReadecuacionResp = Cr_ArregloPago_DocumentoReadecuacion_Generar(
-                        conn,
-                        tx,
-                        codEmpresa,
-                        globales,
-                        operacion,
-                        cajaCtx,
-                        request.usuario,
-                        "REA",
-                        numNota,
-                        "CBR011",
-                        request.trasladar,
-                        request.notas);
+                    conn,
+                    tx,
+                    new CrArregloPagoDocumentoContext
+                    {
+                        cod_empresa = codEmpresa,
+                        globales = globales,
+                        operacion = operacion,
+                        caja = cajaCtx,
+                        usuario = request.usuario,
+                        tipo_doc = "REA",
+                        num_doc = numNota,
+                        concepto = "CBR011",
+                        notas = request.notas,
+                        trasladar = request.trasladar
+                    });
 
                     if (docReadecuacionResp.Code != 0)
                     {

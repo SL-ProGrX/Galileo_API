@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
-        private ErrorDto Cr_ArregloPago_CajaContexto_Validar(CrArregloPagoCajaContexto ctx)
+        private static ErrorDto Cr_ArregloPago_CajaContexto_Validar(CrArregloPagoCajaContexto ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.caja))
             {

@@ -10,75 +10,389 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrArregloPagoDb
     {
-        private ErrorDto SbDocumentoReadecuacion(
-            int codEmpresa,
-            string usuario,
-            CrArregloPagoOperacionData operacion,
-            string tipoDoc,
-            string numDoc,
-            string concepto,
-            bool trasladar)
+        private sealed class CrArregloPagoDocumentoContext
+        {
+            public int cod_empresa { get; set; }
+            public Globales globales { get; set; } = new();
+            public CrArregloPagoOperacionData operacion { get; set; } = new();
+            public CrArregloPagoCajaContexto caja { get; set; } = new();
+            public string usuario { get; set; } = string.Empty;
+            public string tipo_doc { get; set; } = string.Empty;
+            public string num_doc { get; set; } = string.Empty;
+            public string concepto { get; set; } = string.Empty;
+            public string notas { get; set; } = string.Empty;
+            public bool trasladar { get; set; }
+        }
+
+        private sealed class CrArregloPagoTipoCambioContext
+        {
+            public decimal tipo_cambio { get; set; }
+            public decimal factor { get; set; }
+        }
+
+        private sealed class CrArregloPagoDocumentoMontos
+        {
+            public decimal int_cor { get; set; }
+            public decimal int_mor { get; set; }
+            public decimal amortiza { get; set; }
+            public decimal cargos { get; set; }
+            public decimal polizas { get; set; }
+            public decimal iva { get; set; }
+            public decimal monto_documento { get; set; }
+            public decimal monto_pago_final { get; set; }
+        }
+
+        private sealed class CrArregloPagoDocumentoLineas
+        {
+            public string linea1 { get; set; } = string.Empty;
+            public string linea2 { get; set; } = string.Empty;
+            public string linea3 { get; set; } = string.Empty;
+            public string linea4 { get; set; } = string.Empty;
+            public string linea5 { get; set; } = string.Empty;
+            public string linea6 { get; set; } = string.Empty;
+            public string linea7 { get; set; } = string.Empty;
+            public string linea8 { get; set; } = string.Empty;
+            public string linea9 { get; set; } = string.Empty;
+            public string linea10 { get; set; } = string.Empty;
+            public string linea11 { get; set; } = string.Empty;
+        }
+
+        private sealed class CrArregloPagoAsientoRequest
+        {
+            public string tipo_doc { get; set; } = string.Empty;
+            public string num_doc { get; set; } = string.Empty;
+            public decimal monto { get; set; }
+            public string tipo { get; set; } = string.Empty;
+            public string divisa { get; set; } = string.Empty;
+            public decimal tipo_cambio { get; set; }
+            public string unidad { get; set; } = string.Empty;
+            public string centro_costo { get; set; } = string.Empty;
+            public string cuenta { get; set; } = string.Empty;
+            public int operacion { get; set; }
+            public string codigo { get; set; } = string.Empty;
+        }
+
+        private ErrorDto Cr_ArregloPago_DocumentoAbono_Generar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx)
         {
             try
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                var tipoCambio = Cr_ArregloPago_TipoCambio_Obtener(ctx);
+                var afectacion = Cr_ArregloPago_DocumentoAfectacion_Obtener(
+                    conn,
+                    tx,
+                    ctx.operacion.sys_plan_pagos,
+                    ctx.tipo_doc,
+                    ctx.num_doc);
 
-                decimal tipoCambio = 1;
-                string aseDocDeposito = string.Empty;
-                string aseDocDetalle = string.Empty;
-                string oficinaTitular = string.Empty;
-                string cuentaPoliza = string.Empty;
+                var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, ctx.operacion.operacion);
+                var proxPago = Cr_ArregloPago_ProxPago_Obtener(conn, tx, ctx.operacion.operacion);
+                var montos = Cr_ArregloPago_DocumentoAbono_Montos_Crear(afectacion);
+                var lineas = Cr_ArregloPago_DocumentoAbono_Lineas_Crear(ctx, montos, proxPago);
 
-                var globalesResp = ObtenerGlobales(codEmpresa, usuario);
-                if (globalesResp.Code == 0 && globalesResp.Result is not null)
-                {
-                    oficinaTitular = globalesResp.Result.GOficinaTitular ?? string.Empty;
-                }
+                Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
+                Cr_ArregloPago_AsientosDocumento_Registrar(
+                    conn,
+                    tx,
+                    ctx,
+                    tipoCambio,
+                    ctas,
+                    montos,
+                    "C");
 
-                var afectacion = operacion.sys_plan_pagos
-                    ? ObtenerAfectacionDocumento(codEmpresa, tipoDoc, numDoc)
-                    : ObtenerAfectacionDocumentoStp(codEmpresa, tipoDoc, numDoc);
+                Cr_ArregloPago_DocumentoPagoFinal_Registrar(conn, tx, ctx, ctas, montos);
 
-                decimal curIntC = afectacion.intcor;
-                decimal curIntM = afectacion.intmor;
-                decimal curCargo = afectacion.cargos;
-                decimal curPoliza = afectacion.polizas;
-                decimal curAmortiza = afectacion.intcor + afectacion.intmor + afectacion.cargos + afectacion.polizas;
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
 
-                var saldoResp = DbHelper.ExecuteSingleQuery<decimal>(
-                    _portalDb,
-                    codEmpresa,
+        private ErrorDto Cr_ArregloPago_DocumentoReadecuacion_Generar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx)
+        {
+            try
+            {
+                var tipoCambio = Cr_ArregloPago_TipoCambio_Obtener(ctx);
+                var afectacion = Cr_ArregloPago_DocumentoAfectacion_Obtener(
+                    conn,
+                    tx,
+                    ctx.operacion.sys_plan_pagos,
+                    ctx.tipo_doc,
+                    ctx.num_doc);
+
+                var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, ctx.operacion.operacion);
+                var saldoActual = conn.QueryFirstOrDefault<decimal>(
                     "select isnull(saldo, 0) from reg_creditos where id_solicitud = @Operacion;",
-                    0,
-                    new { Operacion = operacion.operacion });
+                    new { Operacion = ctx.operacion.operacion },
+                    tx);
 
-                decimal curSaldo = saldoResp.Result;
+                var proxPago = ctx.operacion.sys_plan_pagos
+                    ? Cr_ArregloPago_ProxPago_Obtener(conn, tx, ctx.operacion.operacion)
+                    : new CajasCrdOperacionProxPagoData();
 
-                var ctas = ObtenerCuentasOperacion(codEmpresa, operacion.operacion);
+                var montos = Cr_ArregloPago_DocumentoReadecuacion_Montos_Crear(afectacion);
+                var lineas = Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(ctx, montos, saldoActual, proxPago);
 
-                string linea1 = FormatearLineaDocumento("Saldo Anterior", curSaldo - curAmortiza);
-                string linea2 = FormatearLineaDocumento("Saldo Actual", curSaldo);
-                string linea3 = FormatearLineaDocumento("Interes Corriente", curIntC);
-                string linea4 = FormatearLineaDocumento("Interes Atrasado", curIntM);
-                string linea5 = FormatearLineaDocumento("Capitalizacion", curAmortiza * -1);
-                string linea6 = FormatearLineaDocumento("Cargos Totales", curCargo);
-                string linea7 = FormatearLineaDocumento("Polizas", curPoliza);
-                string linea8 = $"Operacion/Linea   ..: Op.:{operacion.operacion} L.:{operacion.codigo}-{(operacion.opex == 1 ? "OPEX" : string.Empty)}";
-                string linea9 = $"Descripcion       ..: {operacion.linea_desc}";
-                string linea10 = string.Empty;
-                string linea11 = trasladar ? "Trasladar Principal" : operacion.linea_desc;
+                Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
+                Cr_ArregloPago_AsientosDocumento_Registrar(
+                    conn,
+                    tx,
+                    ctx,
+                    tipoCambio,
+                    ctas,
+                    montos,
+                    "D");
 
-                if (operacion.sys_plan_pagos)
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        private CrArregloPagoTipoCambioContext Cr_ArregloPago_TipoCambio_Obtener(
+            CrArregloPagoDocumentoContext ctx)
+        {
+            var tipoCambio = _mCajas.fxCajasTipoCambio(
+                ctx.cod_empresa,
+                ctx.globales.GEnlace,
+                ctx.caja.divisa);
+
+            return new CrArregloPagoTipoCambioContext
+            {
+                tipo_cambio = tipoCambio,
+                factor = Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(tipoCambio))
+            };
+        }
+
+        private static CrArregloPagoDocumentoMontos Cr_ArregloPago_DocumentoAbono_Montos_Crear(
+            CajasCrdDocumentoAfectacionData afectacion)
+        {
+            var montos = new CrArregloPagoDocumentoMontos
+            {
+                int_cor = afectacion.intcor,
+                int_mor = afectacion.intmor,
+                amortiza = afectacion.principal,
+                cargos = afectacion.cargos,
+                polizas = afectacion.polizas,
+                iva = afectacion.iva
+            };
+
+            montos.monto_documento =
+                montos.int_cor +
+                montos.int_mor +
+                montos.amortiza +
+                montos.cargos;
+
+            montos.monto_pago_final =
+                montos.int_cor +
+                montos.int_mor +
+                montos.amortiza +
+                montos.cargos +
+                montos.polizas;
+
+            return montos;
+        }
+
+        private static CrArregloPagoDocumentoMontos Cr_ArregloPago_DocumentoReadecuacion_Montos_Crear(
+            CajasCrdDocumentoAfectacionData afectacion)
+        {
+            var montos = new CrArregloPagoDocumentoMontos
+            {
+                int_cor = afectacion.intcor,
+                int_mor = afectacion.intmor,
+                cargos = afectacion.cargos,
+                polizas = afectacion.polizas
+            };
+
+            montos.amortiza =
+                montos.int_cor +
+                montos.int_mor +
+                montos.cargos +
+                montos.polizas;
+
+            montos.monto_documento = montos.amortiza;
+            montos.monto_pago_final = montos.amortiza;
+
+            return montos;
+        }
+
+        private CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoAbono_Lineas_Crear(
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CajasCrdOperacionProxPagoData proxPago)
+        {
+            return new CrArregloPagoDocumentoLineas
+            {
+                linea1 = FormatearLineaDocumento(LineaSaldoAnterior, ctx.operacion.saldo),
+                linea2 = FormatearLineaDocumento(LineaSaldoActual, ctx.operacion.saldo - montos.amortiza),
+                linea3 = FormatearLineaDocumento(LineaInteresCorriente, montos.int_cor),
+                linea4 = FormatearLineaDocumento(LineaInteresAtrasado, montos.int_mor),
+                linea5 = FormatearLineaDocumento(LineaAmortizacion, montos.amortiza),
+                linea6 = FormatearLineaDocumento(LineaCargosTotales, montos.cargos),
+                linea7 = FormatearLineaDocumento(LineaPolizas, montos.polizas),
+                linea8 = $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}",
+                linea9 = $"Descripcion       ..: {ctx.operacion.linea_desc}",
+                linea10 = $"Notas: {proxPago.notas}",
+                linea11 = montos.iva > 0
+                    ? FormatearLineaDocumento("Monto IVA", montos.iva)
+                    : string.Empty
+            };
+        }
+
+        private CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            decimal saldoActual,
+            CajasCrdOperacionProxPagoData proxPago)
+        {
+            var lineas = new CrArregloPagoDocumentoLineas
+            {
+                linea1 = FormatearLineaDocumento(LineaSaldoAnterior, saldoActual - montos.amortiza),
+                linea2 = FormatearLineaDocumento(LineaSaldoActual, saldoActual),
+                linea3 = FormatearLineaDocumento(LineaInteresCorriente, montos.int_cor),
+                linea4 = FormatearLineaDocumento(LineaInteresAtrasado, montos.int_mor),
+                linea5 = FormatearLineaDocumento(LineaCapitalizacion, montos.amortiza * -1),
+                linea6 = FormatearLineaDocumento(LineaCargosTotales, montos.cargos),
+                linea7 = FormatearLineaDocumento(LineaPolizas, montos.polizas),
+                linea8 = $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}",
+                linea9 = $"Descripcion       ..: {ctx.operacion.linea_desc}",
+                linea10 = string.Empty,
+                linea11 = ctx.trasladar ? "Trasladar Principal" : ctx.operacion.linea_desc
+            };
+
+            if (!ctx.operacion.sys_plan_pagos)
+            {
+                return lineas;
+            }
+
+            lineas.linea9 = proxPago.fecha_pago.HasValue
+                ? $"Prox.Pago..:{proxPago.fecha_pago.Value:dd/MM/yyyy} Cta.({proxPago.num_cuota}) {proxPago.cuota:N2}"
+                : "Prox.Pago..: >> <<";
+
+            lineas.linea10 = $"Notas: {proxPago.notas}";
+            return lineas;
+        }
+
+        private void Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CrArregloPagoDocumentoLineas lineas)
+        {
+            conn.Execute(
+                @"
+                insert SIF_TRANSACCIONES
+                (
+                    COD_TRANSACCION,
+                    TIPO_DOCUMENTO,
+                    REGISTRO_FECHA,
+                    REGISTRO_USUARIO,
+                    Cliente_IDENTIFICACION,
+                    CLIENTE_NOMBRE,
+                    cod_concepto,
+                    monto,
+                    estado,
+                    Referencia_01,
+                    Referencia_02,
+                    Referencia_03,
+                    cod_oficina,
+                    linea1,
+                    linea2,
+                    linea3,
+                    linea4,
+                    linea5,
+                    linea6,
+                    linea7,
+                    linea8,
+                    linea9,
+                    linea10,
+                    linea11,
+                    detalle,
+                    documento,
+                    cod_caja,
+                    cod_apertura
+                )
+                values
+                (
+                    @NumDoc,
+                    @TipoDoc,
+                    Getdate(),
+                    @Usuario,
+                    @Cedula,
+                    @Nombre,
+                    @Concepto,
+                    @Monto,
+                    'P',
+                    @Operacion,
+                    @Codigo,
+                    '',
+                    @OficinaTitular,
+                    @Linea1,
+                    @Linea2,
+                    @Linea3,
+                    @Linea4,
+                    @Linea5,
+                    @Linea6,
+                    @Linea7,
+                    @Linea8,
+                    @Linea9,
+                    @Linea10,
+                    @Linea11,
+                    @Detalle,
+                    '',
+                    @Caja,
+                    @Apertura
+                );",
+                new
                 {
-                    var proxPago = ObtenerProxPago(codEmpresa, operacion.operacion);
-                    linea9 = proxPago.fecha_pago.HasValue
-                        ? $"Prox.Pago..:{proxPago.fecha_pago.Value:dd/MM/yyyy} Cta.({proxPago.num_cuota}) {proxPago.cuota:N2}"
-                        : "Prox.Pago..: >> <<";
-                    linea10 = $"Notas: {proxPago.notas}";
-                }
+                    NumDoc = ctx.num_doc,
+                    TipoDoc = ctx.tipo_doc,
+                    Usuario = ctx.usuario,
+                    Cedula = ctx.operacion.cedula.Trim(),
+                    Nombre = ctx.operacion.nombre.Trim(),
+                    Concepto = ctx.concepto,
+                    Monto = montos.monto_documento,
+                    Operacion = ctx.operacion.operacion.ToString(),
+                    Codigo = ctx.operacion.codigo,
+                    OficinaTitular = ctx.globales.GOficinaTitular ?? string.Empty,
+                    Linea1 = lineas.linea1,
+                    Linea2 = lineas.linea2,
+                    Linea3 = lineas.linea3,
+                    Linea4 = lineas.linea4,
+                    Linea5 = lineas.linea5,
+                    Linea6 = lineas.linea6,
+                    Linea7 = lineas.linea7,
+                    Linea8 = lineas.linea8,
+                    Linea9 = lineas.linea9,
+                    Linea10 = lineas.linea10,
+                    Linea11 = lineas.linea11,
+                    Detalle = ctx.notas,
+                    Caja = ctx.caja.caja,
+                    Apertura = ctx.caja.apertura
+                },
+                tx);
+        }
 
-                const string sqlInsert = @"
-                insert into SIF_TRANSACCIONES
+        private void Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CrArregloPagoDocumentoLineas lineas)
+        {
+            conn.Execute(
+                @"
+                insert SIF_TRANSACCIONES
                 (
                     COD_TRANSACCION,
                     TIPO_DOCUMENTO,
@@ -120,7 +434,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     'P',
                     @Operacion,
                     @Codigo,
-                    @AseDocDeposito,
+                    '',
                     @OficinaTitular,
                     @Linea1,
                     @Linea2,
@@ -133,649 +447,219 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Linea9,
                     @Linea10,
                     @Detalle,
-                    @Documento,
+                    '',
                     @Linea11
-                );";
-
-                var insertResp = DbHelper.ExecuteNonQuery(
-                    _portalDb,
-                    codEmpresa,
-                    sqlInsert,
-                    new
-                    {
-                        NumDoc = numDoc,
-                        TipoDoc = tipoDoc,
-                        Usuario = usuario,
-                        Cedula = operacion.cedula.Trim(),
-                        Nombre = operacion.nombre.Trim(),
-                        Concepto = concepto,
-                        Monto = curAmortiza,
-                        Operacion = operacion.operacion.ToString(),
-                        Codigo = operacion.codigo,
-                        AseDocDeposito = aseDocDeposito,
-                        OficinaTitular = oficinaTitular,
-                        Linea1 = linea1,
-                        Linea2 = linea2,
-                        Linea3 = linea3,
-                        Linea4 = linea4,
-                        Linea5 = linea5,
-                        Linea6 = linea6,
-                        Linea7 = linea7,
-                        Linea8 = linea8,
-                        Linea9 = linea9,
-                        Linea10 = linea10,
-                        Detalle = aseDocDetalle,
-                        Documento = aseDocDeposito,
-                        Linea11 = linea11
-                    });
-
-                if (insertResp.Code != 0)
+                );",
+                new
                 {
-                    return insertResp;
-                }
-
-                if (curAmortiza > 0)
-                {
-                    var asientoResp = RegistrarAsientoDocumento(
-                        codEmpresa,
-                        tipoDoc,
-                        numDoc,
-                        curAmortiza * tipoCambio,
-                        "D",
-                        ctas.cod_divisa,
-                        tipoCambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaamortiza,
-                        ctas.id_solicitud,
-                        ctas.codigo,
-                        aseDocDeposito);
-
-                    if (asientoResp.Code != 0)
-                    {
-                        return asientoResp;
-                    }
-                }
-
-                if (curIntC > 0)
-                {
-                    var asientoResp = RegistrarAsientoDocumento(
-                        codEmpresa,
-                        tipoDoc,
-                        numDoc,
-                        curIntC * tipoCambio,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaintc,
-                        ctas.id_solicitud,
-                        ctas.codigo,
-                        aseDocDeposito);
-
-                    if (asientoResp.Code != 0)
-                    {
-                        return asientoResp;
-                    }
-                }
-
-                if (curIntM > 0)
-                {
-                    var asientoResp = RegistrarAsientoDocumento(
-                        codEmpresa,
-                        tipoDoc,
-                        numDoc,
-                        curIntM * tipoCambio,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaintm,
-                        ctas.id_solicitud,
-                        ctas.codigo,
-                        aseDocDeposito);
-
-                    if (asientoResp.Code != 0)
-                    {
-                        return asientoResp;
-                    }
-                }
-
-                if (curCargo > 0)
-                {
-                    if (!operacion.sys_plan_pagos)
-                    {
-                        var asientoResp = RegistrarAsientoDocumento(
-                            codEmpresa,
-                            tipoDoc,
-                            numDoc,
-                            curCargo * tipoCambio,
-                            "C",
-                            ctas.cod_divisa,
-                            tipoCambio,
-                            ctas.cod_unidad,
-                            ctas.cod_centro_costo,
-                            ctas.ctacargos,
-                            ctas.id_solicitud,
-                            ctas.codigo,
-                            aseDocDeposito);
-
-                        if (asientoResp.Code != 0)
-                        {
-                            return asientoResp;
-                        }
-                    }
-                    else
-                    {
-                        var cargos = ObtenerAfectacionDocumentoCargos(codEmpresa, tipoDoc, numDoc);
-                        foreach (var item in cargos)
-                        {
-                            var asientoResp = RegistrarAsientoDocumento(
-                                codEmpresa,
-                                tipoDoc,
-                                numDoc,
-                                (item.mov_monto ?? 0) * tipoCambio,
-                                "C",
-                                ctas.cod_divisa,
-                                tipoCambio,
-                                item.cod_unidad,
-                                item.cod_centro_costo,
-                                item.cod_cuenta,
-                                item.id_solicitud,
-                                item.codigo,
-                                aseDocDeposito);
-
-                            if (asientoResp.Code != 0)
-                            {
-                                return asientoResp;
-                            }
-                        }
-                    }
-                }
-
-                if (curPoliza > 0)
-                {
-                    var cuentaPolizaResp = DbHelper.ExecuteSingleQuery<string>(
-                        _portalDb,
-                        codEmpresa,
-                        "select dbo.fxCrdOperacionCtaContaPolizas(@Operacion);",
-                        string.Empty,
-                        new { Operacion = operacion.operacion });
-
-                    cuentaPoliza = cuentaPolizaResp.Result ?? string.Empty;
-
-                    var asientoResp = RegistrarAsientoDocumento(
-                        codEmpresa,
-                        tipoDoc,
-                        numDoc,
-                        curPoliza * tipoCambio,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        cuentaPoliza,
-                        ctas.id_solicitud,
-                        ctas.codigo,
-                        aseDocDeposito);
-
-                    if (asientoResp.Code != 0)
-                    {
-                        return asientoResp;
-                    }
-                }
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+                    NumDoc = ctx.num_doc,
+                    TipoDoc = ctx.tipo_doc,
+                    Usuario = ctx.usuario,
+                    Cedula = ctx.operacion.cedula.Trim(),
+                    Nombre = ctx.operacion.nombre.Trim(),
+                    Concepto = ctx.concepto,
+                    Monto = montos.monto_documento,
+                    Operacion = ctx.operacion.operacion.ToString(),
+                    Codigo = ctx.operacion.codigo,
+                    OficinaTitular = ctx.globales.GOficinaTitular ?? string.Empty,
+                    Linea1 = lineas.linea1,
+                    Linea2 = lineas.linea2,
+                    Linea3 = lineas.linea3,
+                    Linea4 = lineas.linea4,
+                    Linea5 = lineas.linea5,
+                    Linea6 = lineas.linea6,
+                    Linea7 = lineas.linea7,
+                    Linea8 = lineas.linea8,
+                    Linea9 = lineas.linea9,
+                    Linea10 = lineas.linea10,
+                    Detalle = ctx.notas,
+                    Linea11 = lineas.linea11
+                },
+                tx);
         }
 
-        private ErrorDto SbDocumentoAbono(
-            int codEmpresa,
-            string usuario,
-            CrArregloPagoOperacionData operacion,
-            string tipoDoc,
-            string numDoc,
-            string concepto)
-        {
-            try
-            {
-                decimal tipoCambio = 1;
-                string aseDocDeposito = string.Empty;
-                string aseDocDetalle = string.Empty;
-                string oficinaTitular = string.Empty;
-                string cuentaPoliza = string.Empty;
-
-                var globalesResp = ObtenerGlobales(codEmpresa, usuario);
-                if (globalesResp.Code == 0 && globalesResp.Result is not null)
-                {
-                    oficinaTitular = globalesResp.Result.GOficinaTitular ?? string.Empty;
-                }
-
-                var afectacion = operacion.sys_plan_pagos
-                    ? ObtenerAfectacionDocumento(codEmpresa, tipoDoc, numDoc)
-                    : ObtenerAfectacionDocumentoStp(codEmpresa, tipoDoc, numDoc);
-
-                var proxPago = ObtenerProxPago(codEmpresa, operacion.operacion);
-                var ctas = ObtenerCuentasOperacion(codEmpresa, operacion.operacion);
-
-                decimal curIntC = afectacion.intcor;
-                decimal curIntM = afectacion.intmor;
-                decimal curAmortiza = afectacion.principal;
-                decimal curCargo = afectacion.cargos;
-                decimal curPoliza = afectacion.polizas;
-                decimal montoTotal = curIntC + curIntM + curAmortiza + curCargo + curPoliza + afectacion.iva;
-
-                string linea1 = FormatearLineaDocumento("Saldo Anterior", operacion.saldo);
-                string linea2 = FormatearLineaDocumento("Saldo Actual", operacion.saldo - curAmortiza);
-                string linea3 = FormatearLineaDocumento("Interes Corriente", curIntC);
-                string linea4 = FormatearLineaDocumento("Interes Atrasado", curIntM);
-                string linea5 = FormatearLineaDocumento("Amortizacion", curAmortiza);
-                string linea6 = FormatearLineaDocumento("Cargos Totales", curCargo);
-                string linea7 = FormatearLineaDocumento("Polizas", curPoliza);
-                string linea8 = $"Operacion/Linea   ..: Op.:{operacion.operacion} L.:{operacion.codigo}-{(operacion.retencion ? "Ret.:SI" : string.Empty)}";
-                string linea9 = $"Descripcion       ..: {operacion.linea_desc}";
-                string linea10 = $"Notas: {proxPago.notas}";
-                string linea11 = afectacion.iva > 0
-                    ? FormatearLineaDocumento("Monto IVA", afectacion.iva)
-                    : string.Empty;
-
-                const string sqlInsert = @"
-            insert into SIF_TRANSACCIONES
-            (
-                COD_TRANSACCION,
-                TIPO_DOCUMENTO,
-                REGISTRO_FECHA,
-                REGISTRO_USUARIO,
-                Cliente_IDENTIFICACION,
-                CLIENTE_NOMBRE,
-                cod_concepto,
-                monto,
-                estado,
-                Referencia_01,
-                Referencia_02,
-                Referencia_03,
-                cod_oficina,
-                linea1,
-                linea2,
-                linea3,
-                linea4,
-                linea5,
-                linea6,
-                linea7,
-                linea8,
-                linea9,
-                linea10,
-                linea11,
-                detalle,
-                documento
-            )
-            values
-            (
-                @NumDoc,
-                @TipoDoc,
-                Getdate(),
-                @Usuario,
-                @Cedula,
-                @Nombre,
-                @Concepto,
-                @Monto,
-                'P',
-                @Operacion,
-                @Codigo,
-                @AseDocDeposito,
-                @OficinaTitular,
-                @Linea1,
-                @Linea2,
-                @Linea3,
-                @Linea4,
-                @Linea5,
-                @Linea6,
-                @Linea7,
-                @Linea8,
-                @Linea9,
-                @Linea10,
-                @Linea11,
-                @Detalle,
-                @Documento
-            );";
-
-                var insertResp = DbHelper.ExecuteNonQuery(
-                    _portalDb,
-                    codEmpresa,
-                    sqlInsert,
-                    new
-                    {
-                        NumDoc = numDoc,
-                        TipoDoc = tipoDoc,
-                        Usuario = usuario,
-                        Cedula = operacion.cedula.Trim(),
-                        Nombre = operacion.nombre.Trim(),
-                        Concepto = concepto,
-                        Monto = montoTotal,
-                        Operacion = operacion.operacion.ToString(),
-                        Codigo = operacion.codigo,
-                        AseDocDeposito = aseDocDeposito,
-                        OficinaTitular = oficinaTitular,
-                        Linea1 = linea1,
-                        Linea2 = linea2,
-                        Linea3 = linea3,
-                        Linea4 = linea4,
-                        Linea5 = linea5,
-                        Linea6 = linea6,
-                        Linea7 = linea7,
-                        Linea8 = linea8,
-                        Linea9 = linea9,
-                        Linea10 = linea10,
-                        Linea11 = linea11,
-                        Detalle = aseDocDetalle,
-                        Documento = aseDocDeposito
-                    });
-
-                if (insertResp.Code != 0)
-                {
-                    return insertResp;
-                }
-
-                if (curIntC > 0)
-                {
-                    var resp = RegistrarAsientoDocumento(
-                        codEmpresa, tipoDoc, numDoc, curIntC * tipoCambio, "C",
-                        ctas.cod_divisa, tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo,
-                        ctas.ctaintc, ctas.id_solicitud, ctas.codigo, aseDocDeposito);
-
-                    if (resp.Code != 0) return resp;
-                }
-
-                if (curIntM > 0)
-                {
-                    var resp = RegistrarAsientoDocumento(
-                        codEmpresa, tipoDoc, numDoc, curIntM * tipoCambio, "C",
-                        ctas.cod_divisa, tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo,
-                        ctas.ctaintm, ctas.id_solicitud, ctas.codigo, aseDocDeposito);
-
-                    if (resp.Code != 0) return resp;
-                }
-
-                if (curAmortiza > 0)
-                {
-                    var resp = RegistrarAsientoDocumento(
-                        codEmpresa, tipoDoc, numDoc, curAmortiza * tipoCambio, "C",
-                        ctas.cod_divisa, tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo,
-                        ctas.ctaamortiza, ctas.id_solicitud, ctas.codigo, aseDocDeposito);
-
-                    if (resp.Code != 0) return resp;
-                }
-
-                if (curCargo > 0)
-                {
-                    if (!operacion.sys_plan_pagos)
-                    {
-                        var resp = RegistrarAsientoDocumento(
-                            codEmpresa, tipoDoc, numDoc, curCargo * tipoCambio, "C",
-                            ctas.cod_divisa, tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo,
-                            ctas.ctacargos, ctas.id_solicitud, ctas.codigo, aseDocDeposito);
-
-                        if (resp.Code != 0) return resp;
-                    }
-                    else
-                    {
-                        var cargos = ObtenerAfectacionDocumentoCargos(codEmpresa, tipoDoc, numDoc);
-
-                        foreach (var item in cargos)
-                        {
-                            var resp = RegistrarAsientoDocumento(
-                                codEmpresa,
-                                tipoDoc,
-                                numDoc,
-                                (item.mov_monto ?? 0) * tipoCambio,
-                                "C",
-                                ctas.cod_divisa,
-                                tipoCambio,
-                                item.cod_unidad,
-                                item.cod_centro_costo,
-                                item.cod_cuenta,
-                                item.id_solicitud,
-                                item.codigo,
-                                aseDocDeposito);
-
-                            if (resp.Code != 0) return resp;
-                        }
-                    }
-                }
-
-                if (curPoliza > 0)
-                {
-                    var cuentaPolizaResp = DbHelper.ExecuteSingleQuery<string>(
-                        _portalDb,
-                        codEmpresa,
-                        "select dbo.fxCrdOperacionCtaContaPolizas(@Operacion);",
-                        string.Empty,
-                        new { Operacion = operacion.operacion });
-
-                    cuentaPoliza = cuentaPolizaResp.Result ?? string.Empty;
-
-                    var resp = RegistrarAsientoDocumento(
-                        codEmpresa, tipoDoc, numDoc, curPoliza * tipoCambio, "C",
-                        ctas.cod_divisa, tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo,
-                        cuentaPoliza, ctas.id_solicitud, ctas.codigo, aseDocDeposito);
-
-                    if (resp.Code != 0) return resp;
-                }
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        private ErrorDto Cr_ArregloPago_DocumentoAbono_Generar(
+        private void Cr_ArregloPago_AsientosDocumento_Registrar(
             SqlConnection conn,
             SqlTransaction tx,
-            int codEmpresa,
-            Globales globales,
-            CrArregloPagoOperacionData operacion,
-            CrArregloPagoCajaContexto cajaCtx,
-            string usuario,
-            string tipoDoc,
-            string numDoc,
-            string concepto,
-            string notas)
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoTipoCambioContext tipoCambio,
+            CajasCrdOperacionCtasData ctas,
+            CrArregloPagoDocumentoMontos montos,
+            string tipoAmortiza)
         {
-            try
-            {
-                var tipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, globales.GEnlace, cajaCtx.divisa);
-                var factor = Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(tipoCambio));
+            Cr_ArregloPago_AsientoMonto_Registrar(
+                conn,
+                tx,
+                ctx.globales,
+                Cr_ArregloPago_AsientoRequest_Crear(
+                    ctx,
+                    montos.int_cor * tipoCambio.factor,
+                    "C",
+                    ctas.cod_divisa,
+                    tipoCambio.tipo_cambio,
+                    ctas.cod_unidad,
+                    ctas.cod_centro_costo,
+                    ctas.ctaintc,
+                    ctas.id_solicitud,
+                    ctas.codigo));
 
-                var afectacion = Cr_ArregloPago_DocumentoAfectacion_Obtener(
+            Cr_ArregloPago_AsientoMonto_Registrar(
+                conn,
+                tx,
+                ctx.globales,
+                Cr_ArregloPago_AsientoRequest_Crear(
+                    ctx,
+                    montos.int_mor * tipoCambio.factor,
+                    "C",
+                    ctas.cod_divisa,
+                    tipoCambio.tipo_cambio,
+                    ctas.cod_unidad,
+                    ctas.cod_centro_costo,
+                    ctas.ctaintm,
+                    ctas.id_solicitud,
+                    ctas.codigo));
+
+            Cr_ArregloPago_AsientoCargos_Registrar(
+                conn,
+                tx,
+                ctx,
+                tipoCambio,
+                ctas,
+                montos.cargos);
+
+            Cr_ArregloPago_AsientoPoliza_Registrar(
+                conn,
+                tx,
+                ctx,
+                tipoCambio,
+                ctas,
+                montos.polizas);
+
+            Cr_ArregloPago_AsientoMonto_Registrar(
+                conn,
+                tx,
+                ctx.globales,
+                Cr_ArregloPago_AsientoRequest_Crear(
+                    ctx,
+                    montos.amortiza * tipoCambio.factor,
+                    tipoAmortiza,
+                    ctas.cod_divisa,
+                    tipoCambio.tipo_cambio,
+                    ctas.cod_unidad,
+                    ctas.cod_centro_costo,
+                    ctas.ctaamortiza,
+                    ctas.id_solicitud,
+                    ctas.codigo));
+        }
+
+        private void Cr_ArregloPago_AsientoCargos_Registrar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoTipoCambioContext tipoCambio,
+            CajasCrdOperacionCtasData ctas,
+            decimal montoCargo)
+        {
+            if (montoCargo <= 0)
+            {
+                return;
+            }
+
+            if (!ctx.operacion.sys_plan_pagos)
+            {
+                Cr_ArregloPago_AsientoMonto_Registrar(
                     conn,
                     tx,
-                    operacion.sys_plan_pagos,
-                    tipoDoc,
-                    numDoc);
+                    ctx.globales,
+                    Cr_ArregloPago_AsientoRequest_Crear(
+                        ctx,
+                        montoCargo * tipoCambio.factor,
+                        "C",
+                        ctas.cod_divisa,
+                        tipoCambio.tipo_cambio,
+                        ctas.cod_unidad,
+                        ctas.cod_centro_costo,
+                        ctas.ctacargos,
+                        ctas.id_solicitud,
+                        ctas.codigo));
+                return;
+            }
 
-                var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, operacion.operacion);
+            var cargos = Cr_ArregloPago_DocumentoAfectacionCargos_Obtener(
+                conn,
+                tx,
+                ctx.tipo_doc,
+                ctx.num_doc);
 
-                var curIntC = afectacion.intcor;
-                var curIntM = afectacion.intmor;
-                var curAmortiza = afectacion.principal;
-                var curCargo = afectacion.cargos;
-                var curPoliza = afectacion.polizas;
-                var montoDocumento = curIntC + curIntM + curAmortiza + curCargo;
-                var montoPagoFinal = curIntC + curIntM + curPoliza + curCargo + curAmortiza;
+            foreach (var item in cargos)
+            {
+                Cr_ArregloPago_AsientoMonto_Registrar(
+                    conn,
+                    tx,
+                    ctx.globales,
+                    Cr_ArregloPago_AsientoRequest_Crear(
+                        ctx,
+                        (item.mov_monto ?? 0) * tipoCambio.factor,
+                        "C",
+                        ctas.cod_divisa,
+                        tipoCambio.tipo_cambio,
+                        item.cod_unidad,
+                        item.cod_centro_costo,
+                        item.cod_cuenta,
+                        item.id_solicitud,
+                        item.codigo));
+            }
+        }
 
-                var linea1 = FormatearLineaDocumento("Saldo Anterior", operacion.saldo);
-                var linea2 = FormatearLineaDocumento("Saldo Actual", operacion.saldo - curAmortiza);
-                var linea3 = FormatearLineaDocumento("Interes Corriente", curIntC);
-                var linea4 = FormatearLineaDocumento("Interes Atrasado", curIntM);
-                var linea5 = FormatearLineaDocumento("Amortizacion", curAmortiza);
-                var linea6 = FormatearLineaDocumento("Cargos Totales", curCargo);
-                var linea7 = FormatearLineaDocumento("Polizas", curPoliza);
-                var linea8 = $"Operacion/Linea   ..: Op.:{operacion.operacion} L.:{operacion.codigo}-{(operacion.opex == 1 ? "OPEX" : string.Empty)}";
-                var linea9 = $"Descripcion       ..: {operacion.linea_desc}";
-                var linea10 = string.Empty;
-                var linea11 = string.Empty;
+        private void Cr_ArregloPago_AsientoPoliza_Registrar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoTipoCambioContext tipoCambio,
+            CajasCrdOperacionCtasData ctas,
+            decimal montoPoliza)
+        {
+            if (montoPoliza <= 0)
+            {
+                return;
+            }
 
-                conn.Execute(
-                    @"
-                    insert SIF_TRANSACCIONES
-                    (
-                        COD_TRANSACCION,
-                        TIPO_DOCUMENTO,
-                        REGISTRO_FECHA,
-                        REGISTRO_USUARIO,
-                        Cliente_IDENTIFICACION,
-                        CLIENTE_NOMBRE,
-                        cod_concepto,
-                        monto,
-                        estado,
-                        Referencia_01,
-                        Referencia_02,
-                        Referencia_03,
-                        cod_oficina,
-                        linea1,
-                        linea2,
-                        linea3,
-                        linea4,
-                        linea5,
-                        linea6,
-                        linea7,
-                        linea8,
-                        linea9,
-                        linea10,
-                        linea11,
-                        detalle,
-                        documento,
-                        cod_caja,
-                        cod_apertura
-                    )
-                    values
-                    (
-                        @NumDoc,
-                        @TipoDoc,
-                        Getdate(),
-                        @Usuario,
-                        @Cedula,
-                        @Nombre,
-                        @Concepto,
-                        @Monto,
-                        'P',
-                        @Operacion,
-                        @Codigo,
-                        '',
-                        @OficinaTitular,
-                        @Linea1,
-                        @Linea2,
-                        @Linea3,
-                        @Linea4,
-                        @Linea5,
-                        @Linea6,
-                        @Linea7,
-                        @Linea8,
-                        @Linea9,
-                        @Linea10,
-                        @Linea11,
-                        @Detalle,
-                        '',
-                        @Caja,
-                        @Apertura
-                    );",
-                    new
-                    {
-                        NumDoc = numDoc,
-                        TipoDoc = tipoDoc,
-                        Usuario = usuario,
-                        Cedula = operacion.cedula.Trim(),
-                        Nombre = operacion.nombre.Trim(),
-                        Concepto = concepto,
-                        Monto = montoDocumento,
-                        Operacion = operacion.operacion.ToString(),
-                        Codigo = operacion.codigo,
-                        OficinaTitular = globales.GOficinaTitular ?? string.Empty,
-                        Linea1 = linea1,
-                        Linea2 = linea2,
-                        Linea3 = linea3,
-                        Linea4 = linea4,
-                        Linea5 = linea5,
-                        Linea6 = linea6,
-                        Linea7 = linea7,
-                        Linea8 = linea8,
-                        Linea9 = linea9,
-                        Linea10 = linea10,
-                        Linea11 = linea11,
-                        Detalle = notas,
-                        Caja = cajaCtx.caja,
-                        Apertura = cajaCtx.apertura
-                    },
-                    tx);
+            var cuentaPoliza = Cr_ArregloPago_CuentaPoliza_Obtener(
+                conn,
+                tx,
+                ctx.operacion.operacion);
 
-                if (curIntC > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curIntC * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaintc,
-                        ctas.id_solicitud, ctas.codigo);
-                }
+            Cr_ArregloPago_AsientoMonto_Registrar(
+                conn,
+                tx,
+                ctx.globales,
+                Cr_ArregloPago_AsientoRequest_Crear(
+                    ctx,
+                    montoPoliza * tipoCambio.factor,
+                    "C",
+                    ctas.cod_divisa,
+                    tipoCambio.tipo_cambio,
+                    ctas.cod_unidad,
+                    ctas.cod_centro_costo,
+                    cuentaPoliza,
+                    ctas.id_solicitud,
+                    ctas.codigo));
+        }
 
-                if (curIntM > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curIntM * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaintm,
-                        ctas.id_solicitud, ctas.codigo);
-                }
+        private void Cr_ArregloPago_DocumentoPagoFinal_Registrar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CajasCrdOperacionCtasData ctas,
+            CrArregloPagoDocumentoMontos montos)
+        {
+            if (montos.monto_pago_final <= 0)
+            {
+                return;
+            }
 
-                if (curCargo > 0)
-                {
-                    if (!operacion.sys_plan_pagos)
-                    {
-                        Cr_ArregloPago_AsientoDocumento_Registrar(
-                            conn, tx, globales, tipoDoc, numDoc, curCargo * factor, "C", ctas.cod_divisa,
-                            tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctacargos,
-                            ctas.id_solicitud, ctas.codigo);
-                    }
-                    else
-                    {
-                        var cargos = Cr_ArregloPago_DocumentoAfectacionCargos_Obtener(conn, tx, tipoDoc, numDoc);
-                        foreach (var item in cargos)
-                        {
-                            Cr_ArregloPago_AsientoDocumento_Registrar(
-                                conn, tx, globales, tipoDoc, numDoc, (item.mov_monto ?? 0) * factor, "C", ctas.cod_divisa,
-                                tipoCambio, item.cod_unidad, item.cod_centro_costo, item.cod_cuenta,
-                                item.id_solicitud, item.codigo);
-                        }
-                    }
-                }
-
-                if (curPoliza > 0)
-                {
-                    var cuentaPoliza = Cr_ArregloPago_CuentaPoliza_Obtener(conn, tx, operacion.operacion);
-
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curPoliza * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, cuentaPoliza,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                if (curAmortiza > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curAmortiza * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaamortiza,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                if (montoPagoFinal > 0)
-                {
-                    conn.Execute(
-                        @"exec spCajas_DesglocePagosDocFinal
+            conn.Execute(
+                @"exec spCajas_DesglocePagosDocFinal
                     @Caja,
                     @Apertura,
                     @Tiquete,
@@ -785,313 +669,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Unidad,
                     @Operacion,
                     @Codigo;",
-                        new
-                        {
-                            Caja = cajaCtx.caja,
-                            Apertura = cajaCtx.apertura,
-                            Tiquete = cajaCtx.tiquete,
-                            Usuario = usuario,
-                            TipoDoc = tipoDoc,
-                            NumDoc = numDoc,
-                            Unidad = cajaCtx.unidad,
-                            Operacion = ctas.id_solicitud,
-                            Codigo = ctas.codigo
-                        },
-                        tx);
-                }
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        private ErrorDto Cr_ArregloPago_DocumentoReadecuacion_Generar(
-            SqlConnection conn,
-            SqlTransaction tx,
-            int codEmpresa,
-            Globales globales,
-            CrArregloPagoOperacionData operacion,
-            CrArregloPagoCajaContexto cajaCtx,
-            string usuario,
-            string tipoDoc,
-            string numDoc,
-            string concepto,
-            bool trasladar,
-            string notas)
-        {
-            try
-            {
-                var tipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, globales.GEnlace, cajaCtx.divisa);
-                var factor = Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(tipoCambio));
-
-                var afectacion = Cr_ArregloPago_DocumentoAfectacion_Obtener(
-                    conn,
-                    tx,
-                    operacion.sys_plan_pagos,
-                    tipoDoc,
-                    numDoc);
-
-                var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, operacion.operacion);
-                var curSaldo = conn.QueryFirstOrDefault<decimal>(
-                    "select isnull(saldo, 0) from reg_creditos where id_solicitud = @Operacion;",
-                    new { Operacion = operacion.operacion },
-                    tx);
-
-                var curIntC = afectacion.intcor;
-                var curIntM = afectacion.intmor;
-                var curCargo = afectacion.cargos;
-                var curPoliza = afectacion.polizas;
-                var curAmortiza = curIntC + curIntM + curCargo + curPoliza;
-
-                var linea1 = FormatearLineaDocumento("Saldo Anterior", curSaldo - curAmortiza);
-                var linea2 = FormatearLineaDocumento("Saldo Actual", curSaldo);
-                var linea3 = FormatearLineaDocumento("Interes Corriente", curIntC);
-                var linea4 = FormatearLineaDocumento("Interes Atrasado", curIntM);
-                var linea5 = FormatearLineaDocumento("Capitalizacion", curAmortiza * -1);
-                var linea6 = FormatearLineaDocumento("Cargos Totales", curCargo);
-                var linea7 = FormatearLineaDocumento("Polizas", curPoliza);
-                var linea8 = $"Operacion/Linea   ..: Op.:{operacion.operacion} L.:{operacion.codigo}-{(operacion.opex == 1 ? "OPEX" : string.Empty)}";
-                var linea9 = $"Descripcion       ..: {operacion.linea_desc}";
-                var linea10 = string.Empty;
-                var linea11 = trasladar ? "Trasladar Principal" : operacion.linea_desc;
-
-                if (operacion.sys_plan_pagos)
-                {
-                    var proxPago = Cr_ArregloPago_ProxPago_Obtener(conn, tx, operacion.operacion);
-                    linea9 = proxPago.fecha_pago.HasValue
-                        ? $"Prox.Pago..:{proxPago.fecha_pago.Value:dd/MM/yyyy} Cta.({proxPago.num_cuota}) {proxPago.cuota:N2}"
-                        : "Prox.Pago..: >> <<";
-                    linea10 = $"Notas: {proxPago.notas}";
-                }
-
-                conn.Execute(
-                    @"
-            insert SIF_TRANSACCIONES
-            (
-                COD_TRANSACCION,
-                TIPO_DOCUMENTO,
-                REGISTRO_FECHA,
-                REGISTRO_USUARIO,
-                Cliente_IDENTIFICACION,
-                CLIENTE_NOMBRE,
-                cod_concepto,
-                monto,
-                estado,
-                Referencia_01,
-                Referencia_02,
-                Referencia_03,
-                cod_oficina,
-                linea1,
-                linea2,
-                linea3,
-                linea4,
-                linea5,
-                linea6,
-                linea7,
-                linea8,
-                linea9,
-                linea10,
-                detalle,
-                documento,
-                linea11
-            )
-            values
-            (
-                @NumDoc,
-                @TipoDoc,
-                Getdate(),
-                @Usuario,
-                @Cedula,
-                @Nombre,
-                @Concepto,
-                @Monto,
-                'P',
-                @Operacion,
-                @Codigo,
-                '',
-                @OficinaTitular,
-                @Linea1,
-                @Linea2,
-                @Linea3,
-                @Linea4,
-                @Linea5,
-                @Linea6,
-                @Linea7,
-                @Linea8,
-                @Linea9,
-                @Linea10,
-                @Detalle,
-                '',
-                @Linea11
-            );",
-                    new
-                    {
-                        NumDoc = numDoc,
-                        TipoDoc = tipoDoc,
-                        Usuario = usuario,
-                        Cedula = operacion.cedula.Trim(),
-                        Nombre = operacion.nombre.Trim(),
-                        Concepto = concepto,
-                        Monto = curAmortiza,
-                        Operacion = operacion.operacion.ToString(),
-                        Codigo = operacion.codigo,
-                        OficinaTitular = globales.GOficinaTitular ?? string.Empty,
-                        Linea1 = linea1,
-                        Linea2 = linea2,
-                        Linea3 = linea3,
-                        Linea4 = linea4,
-                        Linea5 = linea5,
-                        Linea6 = linea6,
-                        Linea7 = linea7,
-                        Linea8 = linea8,
-                        Linea9 = linea9,
-                        Linea10 = linea10,
-                        Detalle = notas,
-                        Linea11 = linea11
-                    },
-                    tx);
-
-                if (curAmortiza > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curAmortiza * factor, "D", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaamortiza,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                if (curIntC > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curIntC * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaintc,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                if (curIntM > 0)
-                {
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curIntM * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctaintm,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                if (curCargo > 0)
-                {
-                    if (!operacion.sys_plan_pagos)
-                    {
-                        Cr_ArregloPago_AsientoDocumento_Registrar(
-                            conn, tx, globales, tipoDoc, numDoc, curCargo * factor, "C", ctas.cod_divisa,
-                            tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, ctas.ctacargos,
-                            ctas.id_solicitud, ctas.codigo);
-                    }
-                    else
-                    {
-                        var cargos = Cr_ArregloPago_DocumentoAfectacionCargos_Obtener(conn, tx, tipoDoc, numDoc);
-                        foreach (var item in cargos)
-                        {
-                            Cr_ArregloPago_AsientoDocumento_Registrar(
-                                conn, tx, globales, tipoDoc, numDoc, (item.mov_monto ?? 0) * factor, "C", ctas.cod_divisa,
-                                tipoCambio, item.cod_unidad, item.cod_centro_costo, item.cod_cuenta,
-                                item.id_solicitud, item.codigo);
-                        }
-                    }
-                }
-
-                if (curPoliza > 0)
-                {
-                    var cuentaPoliza = Cr_ArregloPago_CuentaPoliza_Obtener(conn, tx, operacion.operacion);
-
-                    Cr_ArregloPago_AsientoDocumento_Registrar(
-                        conn, tx, globales, tipoDoc, numDoc, curPoliza * factor, "C", ctas.cod_divisa,
-                        tipoCambio, ctas.cod_unidad, ctas.cod_centro_costo, cuentaPoliza,
-                        ctas.id_solicitud, ctas.codigo);
-                }
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        private CajasCrdDocumentoAfectacionData ObtenerAfectacionDocumento(
-            int codEmpresa,
-            string tipoDoc,
-            string numDoc)
-        {
-            return DbHelper.ExecuteSingleQuery<CajasCrdDocumentoAfectacionData>(
-                _portalDb,
-                codEmpresa,
-                "exec spCrdDocumentoAfectacion @TipoDoc, @NumDoc, 'R';",
-                new CajasCrdDocumentoAfectacionData(),
                 new
                 {
-                    TipoDoc = tipoDoc,
-                    NumDoc = numDoc
-                }).Result ?? new CajasCrdDocumentoAfectacionData();
+                    Caja = ctx.caja.caja,
+                    Apertura = ctx.caja.apertura,
+                    Tiquete = ctx.caja.tiquete,
+                    Usuario = ctx.usuario,
+                    TipoDoc = ctx.tipo_doc,
+                    NumDoc = ctx.num_doc,
+                    Unidad = ctx.caja.unidad,
+                    Operacion = ctas.id_solicitud,
+                    Codigo = ctas.codigo
+                },
+                tx);
         }
 
-        private CajasCrdDocumentoAfectacionData ObtenerAfectacionDocumentoStp(
-            int codEmpresa,
-            string tipoDoc,
-            string numDoc)
-        {
-            return DbHelper.ExecuteSingleQuery<CajasCrdDocumentoAfectacionData>(
-                _portalDb,
-                codEmpresa,
-                "exec spCrdDocumentoAfectacionStP @TipoDoc, @NumDoc, 'R';",
-                new CajasCrdDocumentoAfectacionData(),
-                new
-                {
-                    TipoDoc = tipoDoc,
-                    NumDoc = numDoc
-                }).Result ?? new CajasCrdDocumentoAfectacionData();
-        }
-
-        private CajasCrdOperacionProxPagoData ObtenerProxPago(int codEmpresa, int operacion)
-        {
-            return DbHelper.ExecuteSingleQuery<CajasCrdOperacionProxPagoData>(
-                _portalDb,
-                codEmpresa,
-                "exec spCrdOperacionFechaProxPago @Operacion;",
-                new CajasCrdOperacionProxPagoData(),
-                new { Operacion = operacion }).Result ?? new CajasCrdOperacionProxPagoData();
-        }
-
-        private CajasCrdOperacionCtasData ObtenerCuentasOperacion(int codEmpresa, int operacion)
-        {
-            return DbHelper.ExecuteSingleQuery<CajasCrdOperacionCtasData>(
-                _portalDb,
-                codEmpresa,
-                "exec spCrdOperacionCtas @Operacion;",
-                new CajasCrdOperacionCtasData(),
-                new { Operacion = operacion }).Result ?? new CajasCrdOperacionCtasData();
-        }
-
-        private List<CajasCrdDocAfectacionCargoRow> ObtenerAfectacionDocumentoCargos(
-            int codEmpresa,
-            string tipoDoc,
-            string numDoc)
-        {
-            return DbHelper.ExecuteListQuery<CajasCrdDocAfectacionCargoRow>(
-                _portalDb,
-                codEmpresa,
-                "exec spCrdDocumentoAfectacionCargos @TipoDoc, @NumDoc;",
-                new
-                {
-                    TipoDoc = tipoDoc,
-                    NumDoc = numDoc
-                }).Result ?? new List<CajasCrdDocAfectacionCargoRow>();
-        }
-
-        private ErrorDto RegistrarAsientoDocumento(
-            int codEmpresa,
-            string tipoDoc,
-            string numDoc,
+        private static CrArregloPagoAsientoRequest Cr_ArregloPago_AsientoRequest_Crear(
+            CrArregloPagoDocumentoContext ctx,
             decimal monto,
             string tipo,
             string divisa,
@@ -1100,44 +694,66 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string centroCosto,
             string cuenta,
             int operacion,
-            string codigo,
-            string documento)
+            string codigo)
         {
-            const string sql = @"
-            exec spSIFDocsAsiento
-                @TipoDoc,
-                @NumDoc,
-                @Monto,
-                @Tipo,
-                @Divisa,
-                @TipoCambio,
-                0,
-                @Unidad,
-                @CentroCosto,
-                @Cuenta,
-                @Operacion,
-                @Codigo,
-                @Documento;";
+            return new CrArregloPagoAsientoRequest
+            {
+                tipo_doc = ctx.tipo_doc,
+                num_doc = ctx.num_doc,
+                monto = monto,
+                tipo = tipo,
+                divisa = divisa,
+                tipo_cambio = tipoCambio,
+                unidad = unidad,
+                centro_costo = centroCosto,
+                cuenta = cuenta,
+                operacion = operacion,
+                codigo = codigo
+            };
+        }
 
-            return DbHelper.ExecuteNonQuery(
-                _portalDb,
-                codEmpresa,
-                sql,
+        private void Cr_ArregloPago_AsientoMonto_Registrar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            Globales globales,
+            CrArregloPagoAsientoRequest request)
+        {
+            if (request.monto <= 0)
+            {
+                return;
+            }
+
+            conn.Execute(
+                @"exec spSIFDocsAsiento
+                    @TipoDoc,
+                    @NumDoc,
+                    @Monto,
+                    @Tipo,
+                    @Divisa,
+                    @TipoCambio,
+                    @Enlace,
+                    @Unidad,
+                    @CentroCosto,
+                    @Cuenta,
+                    @Operacion,
+                    @Codigo,
+                    '';",
                 new
                 {
-                    TipoDoc = tipoDoc,
-                    NumDoc = numDoc,
-                    Monto = monto,
-                    Tipo = tipo,
-                    Divisa = divisa,
-                    TipoCambio = tipoCambio,
-                    Unidad = unidad,
-                    CentroCosto = centroCosto,
-                    Cuenta = cuenta,
-                    Operacion = operacion,
-                    Codigo = codigo,
-                    Documento = documento
-                });
+                    TipoDoc = request.tipo_doc,
+                    NumDoc = request.num_doc,
+                    Monto = request.monto,
+                    Tipo = request.tipo,
+                    Divisa = request.divisa,
+                    TipoCambio = request.tipo_cambio,
+                    Enlace = globales.GEnlace,
+                    Unidad = request.unidad,
+                    CentroCosto = request.centro_costo,
+                    Cuenta = request.cuenta,
+                    Operacion = request.operacion,
+                    Codigo = request.codigo
+                },
+                tx);
         }
 
         private CajasCrdDocumentoAfectacionData Cr_ArregloPago_DocumentoAfectacion_Obtener(
@@ -1198,55 +814,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "select dbo.fxCrdOperacionCtaContaPolizas(@Operacion);",
                 new { Operacion = operacion },
                 tx) ?? string.Empty;
-        }
-
-        private void Cr_ArregloPago_AsientoDocumento_Registrar(
-            SqlConnection conn,
-            SqlTransaction tx,
-            Globales globales,
-            string tipoDoc,
-            string numDoc,
-            decimal monto,
-            string tipo,
-            string divisa,
-            decimal tipoCambio,
-            string unidad,
-            string centroCosto,
-            string cuenta,
-            int operacion,
-            string codigo)
-        {
-            conn.Execute(
-                @"exec spSIFDocsAsiento
-            @TipoDoc,
-            @NumDoc,
-            @Monto,
-            @Tipo,
-            @Divisa,
-            @TipoCambio,
-            @Enlace,
-            @Unidad,
-            @CentroCosto,
-            @Cuenta,
-            @Operacion,
-            @Codigo,
-            '';",
-                new
-                {
-                    TipoDoc = tipoDoc,
-                    NumDoc = numDoc,
-                    Monto = monto,
-                    Tipo = tipo,
-                    Divisa = divisa,
-                    TipoCambio = tipoCambio,
-                    Enlace = globales.GEnlace,
-                    Unidad = unidad,
-                    CentroCosto = centroCosto,
-                    Cuenta = cuenta,
-                    Operacion = operacion,
-                    Codigo = codigo
-                },
-                tx);
         }
     }
 }
