@@ -50,17 +50,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrArregloPagoDocumentoLineas
         {
-            public string linea1 { get; set; } = "";
-            public string linea2 { get; set; } = "";
-            public string linea3 { get; set; } = "";
-            public string linea4 { get; set; } = "";
-            public string linea5 { get; set; } = "";
-            public string linea6 { get; set; } = "";
-            public string linea7 { get; set; } = "";
-            public string linea8 { get; set; } = "";
-            public string linea9 { get; set; } = "";
-            public string linea10 { get; set; } = "";
-            public string linea11 { get; set; } = "";
+            public string linea1 { get; set; }
+            public string linea2 { get; set; }
+            public string linea3 { get; set; }
+            public string linea4 { get; set; }
+            public string linea5 { get; set; }
+            public string linea6 { get; set; }
+            public string linea7 { get; set; }
+            public string linea8 { get; set; }
+            public string linea9 { get; set; }
+            public string linea10 { get; set; }
+            public string linea11 { get; set; }
+
+            public CrArregloPagoDocumentoLineas()
+            {
+                linea1 = "";
+                linea2 = "";
+                linea3 = "";
+                linea4 = "";
+                linea5 = "";
+                linea6 = "";
+                linea7 = "";
+                linea8 = "";
+                linea9 = "";
+                linea10 = "";
+                linea11 = "";
+            }
         }
 
         private class CrArregloPagoAsientoDataBase
