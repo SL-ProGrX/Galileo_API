@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public CrArregloPagoCajaContexto caja { get; set; } = new();
             public string num_documento { get; set; } = string.Empty;
             public DateTime fecha_servidor { get; set; }
-            public DateTime glng_fecha_cr { get; set; }
+            public decimal glng_fecha_cr { get; set; }
         }
 
         /// <summary>
