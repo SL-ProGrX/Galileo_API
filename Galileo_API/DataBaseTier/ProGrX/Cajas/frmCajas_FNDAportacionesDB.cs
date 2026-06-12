@@ -11,16 +11,15 @@ namespace Galileo.DataBaseTier
     public class FrmCajasFndaportacionesDB
     {
         private readonly PortalDB _portalDb;
-        private readonly IConfiguration _config;
         private readonly MCajas _mCajas;
         private readonly MFndFuncionesDb _mFndFunciones;
 
         public FrmCajasFndaportacionesDB(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _portalDb = new PortalDB(_config);
-            _mCajas = new MCajas(_config);
-            _mFndFunciones = new MFndFuncionesDb(_config);
+            var safeConfig = config ?? throw new ArgumentNullException(nameof(config));
+            _portalDb = new PortalDB(safeConfig);
+            _mCajas = new MCajas(safeConfig);
+            _mFndFunciones = new MFndFuncionesDb(safeConfig);
         }
 
         /// <summary>

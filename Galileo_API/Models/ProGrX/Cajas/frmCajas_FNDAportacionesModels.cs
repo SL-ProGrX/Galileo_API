@@ -9,7 +9,7 @@
     public class FondosAporteAplicarDto
     {
         public string? cedula { get; set; }
-        public int operadora { get; set; }
+        public required int operadora { get; set; }
         public string? plan { get; set; }
         public required int contrato { get; set; }
         public required decimal aporte { get; set; }
@@ -21,12 +21,12 @@
         public string? tiquete { get; set; }
         public string? nombre { get; set; }
         public string? cod_divisa { get; set; }
-        public decimal totalcajas { get; set; }
-        public int gestionid { get; set; }
+        public required decimal totalcajas { get; set; }
+        public required int gestionid { get; set; }
         public string? notas { get; set; }
         public string? oficina { get; set; }
-        public int recibodigital { get; set; }
-        public decimal montoautorizado { get; set; }
+        public required int recibodigital { get; set; }
+        public required decimal montoautorizado { get; set; }
         public string? gestionestado { get; set; }
 
     }

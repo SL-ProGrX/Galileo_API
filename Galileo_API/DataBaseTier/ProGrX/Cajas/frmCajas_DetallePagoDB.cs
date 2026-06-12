@@ -488,75 +488,110 @@ namespace Galileo.DataBaseTier
                 "select top 1 Tipo from SIF_FORMAS_PAGO where COD_FORMA_PAGO = @FormaPago",
                 new { FormaPago = request.cod_forma_pago })?.Trim() ?? string.Empty;
 
-            if (tipoFormaPago == "B")
+            var validacionDeposito = ValidarDepositoRegistrado(connection, request, tipoFormaPago);
+            if (validacionDeposito.Code != 0)
             {
-                if (!request.dp_banco.HasValue || request.dp_banco.Value <= 0)
-                {
-                    return DbHelper.ErrorResponse("Debe seleccionar la cuenta bancaria del deposito");
-                }
-
-                var valDeposito = connection.ExecuteScalar<int>(
-                    "select dbo.fxTes_DP_Cargado(@Banco,@Documento,@Cedula,@Monto)",
-                    new
-                    {
-                        Banco = request.dp_banco,
-                        Documento = request.num_referencia,
-                        Cedula = request.usuario,
-                        Monto = request.monto
-                    });
-
-                if (valDeposito == 0)
-                {
-                    return DbHelper.ErrorResponse("Deposito no registrado en Tesoreria");
-                }
+                return validacionDeposito;
             }
 
-            if (!string.IsNullOrWhiteSpace(request.num_referencia) && !EsMismaReferencia(connection, request, lineaActual))
+            var validacionReferencia = ValidarReferenciaDocumento(connection, request, lineaActual);
+            if (validacionReferencia.Code != 0)
             {
-                var valDoc = connection.ExecuteScalar<int>(
-                    "select dbo.fxCajas_DocumentoVerifica(@FormaPago,@Documento,@Banco,@Cuenta)",
-                    new
-                    {
-                        FormaPago = request.cod_forma_pago,
-                        Documento = request.num_referencia,
-                        Banco = request.dp_banco,
-                        Cuenta = request.cuenta_bancaria
-                    });
-
-                if (valDoc > 0)
-                {
-                    return DbHelper.ErrorResponse("Documento ya existe (duplicado)");
-                }
-
-                var valRegistrado = connection.ExecuteScalar<int>(
-                    "select dbo.fxCajas_FP_Registada(@Ticket,@FormaPago,@Doc,@Banco,@Cuenta)",
-                    new
-                    {
-                        Ticket = request.ticket,
-                        FormaPago = request.cod_forma_pago,
-                        Doc = request.num_referencia,
-                        Banco = request.dp_banco,
-                        Cuenta = request.cuenta_bancaria
-                    });
-
-                if (valRegistrado > 0)
-                {
-                    return DbHelper.ErrorResponse("Este movimiento ya fue registrado");
-                }
+                return validacionReferencia;
             }
 
-            if (tipoFormaPago == "F" && !string.IsNullOrEmpty(request.cod_plan))
+            var validacionFondos = ValidarFormaPagoFondos(connection, request, tipoFormaPago);
+            if (validacionFondos.Code != 0)
             {
-                var valFondos = connection.ExecuteScalar<string>(
-                    "select dbo.fxCajas_FondosDivisa(@Plan)",
-                    new { Plan = request.cod_plan });
-
-                if (string.IsNullOrEmpty(valFondos))
-                {
-                    return DbHelper.ErrorResponse("El fondo no es valido");
-                }
+                return validacionFondos;
             }
 
+            return ValidarSaldoFavor(connection, request, tipoFormaPago);
+        }
+
+        private static ErrorDto ValidarDepositoRegistrado(SqlConnection connection, CajasDesglocePagoRequest request, string tipoFormaPago)
+        {
+            if (tipoFormaPago != "B")
+            {
+                return DbHelper.OkResponse("OK");
+            }
+
+            if (!request.dp_banco.HasValue || request.dp_banco.Value <= 0)
+            {
+                return DbHelper.ErrorResponse("Debe seleccionar la cuenta bancaria del deposito");
+            }
+
+            var valDeposito = connection.ExecuteScalar<int>(
+                "select dbo.fxTes_DP_Cargado(@Banco,@Documento,@Cedula,@Monto)",
+                new
+                {
+                    Banco = request.dp_banco,
+                    Documento = request.num_referencia,
+                    Cedula = request.usuario,
+                    Monto = request.monto
+                });
+
+            return valDeposito == 0
+                ? DbHelper.ErrorResponse("Deposito no registrado en Tesoreria")
+                : DbHelper.OkResponse("OK");
+        }
+
+        private static ErrorDto ValidarReferenciaDocumento(SqlConnection connection, CajasDesglocePagoRequest request, int? lineaActual)
+        {
+            if (string.IsNullOrWhiteSpace(request.num_referencia) || EsMismaReferencia(connection, request, lineaActual))
+            {
+                return DbHelper.OkResponse("OK");
+            }
+
+            var valDoc = connection.ExecuteScalar<int>(
+                "select dbo.fxCajas_DocumentoVerifica(@FormaPago,@Documento,@Banco,@Cuenta)",
+                new
+                {
+                    FormaPago = request.cod_forma_pago,
+                    Documento = request.num_referencia,
+                    Banco = request.dp_banco,
+                    Cuenta = request.cuenta_bancaria
+                });
+
+            if (valDoc > 0)
+            {
+                return DbHelper.ErrorResponse("Documento ya existe (duplicado)");
+            }
+
+            var valRegistrado = connection.ExecuteScalar<int>(
+                "select dbo.fxCajas_FP_Registada(@Ticket,@FormaPago,@Doc,@Banco,@Cuenta)",
+                new
+                {
+                    Ticket = request.ticket,
+                    FormaPago = request.cod_forma_pago,
+                    Doc = request.num_referencia,
+                    Banco = request.dp_banco,
+                    Cuenta = request.cuenta_bancaria
+                });
+
+            return valRegistrado > 0
+                ? DbHelper.ErrorResponse("Este movimiento ya fue registrado")
+                : DbHelper.OkResponse("OK");
+        }
+
+        private static ErrorDto ValidarFormaPagoFondos(SqlConnection connection, CajasDesglocePagoRequest request, string tipoFormaPago)
+        {
+            if (tipoFormaPago != "F" || string.IsNullOrEmpty(request.cod_plan))
+            {
+                return DbHelper.OkResponse("OK");
+            }
+
+            var valFondos = connection.ExecuteScalar<string>(
+                "select dbo.fxCajas_FondosDivisa(@Plan)",
+                new { Plan = request.cod_plan });
+
+            return string.IsNullOrEmpty(valFondos)
+                ? DbHelper.ErrorResponse("El fondo no es valido")
+                : DbHelper.OkResponse("OK");
+        }
+
+        private static ErrorDto ValidarSaldoFavor(SqlConnection connection, CajasDesglocePagoRequest request, string tipoFormaPago)
+        {
             if (tipoFormaPago == "S" && request.saldo_favor_id.HasValue && request.saldo_favor_id.Value > 0)
             {
                 var valSaldoFavor = connection.ExecuteScalar<string>(

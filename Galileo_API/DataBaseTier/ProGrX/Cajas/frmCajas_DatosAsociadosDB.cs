@@ -219,8 +219,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private sealed class CajasRaStatusDto
         {
-            public int PERSONA_ID { get; set; }
-            public int AUTORIZACION_ID { get; set; }
+            public int PERSONA_ID { get; set; } = 0;
+            public int AUTORIZACION_ID { get; set; } = 0;
         }
     }
 }

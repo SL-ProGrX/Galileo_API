@@ -419,10 +419,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private sealed class CajasCierreValidacionDto
         {
-            public DateTime? cierreFecha { get; set; }
-            public string? cierreUsuario { get; set; }
-            public DateTime? recibeFecha { get; set; }
-            public DateTime? revisaFecha { get; set; }
+            public DateTime? cierreFecha { get; set; } = null;
+            public string? cierreUsuario { get; set; } = null;
+            public DateTime? recibeFecha { get; set; } = null;
+            public DateTime? revisaFecha { get; set; } = null;
         }
     }
 }
