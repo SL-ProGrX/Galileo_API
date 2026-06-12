@@ -14,16 +14,22 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             DbfrmCajas_Sesion = new FrmCajasSesionDb(config);
         }
 
-        public ErrorDto<CajasSesionDto> Cajas_Sesion_Obtener(int codEmpresa, string usuario, string identificacion)
+        public ErrorDto<CajasSesionDto> Cajas_Sesion_Obtener(
+            int codEmpresa,
+            int sesionId,
+            string caja,
+            string usuario,
+            int apertura,
+            string identificacion)
         {
-            return DbfrmCajas_Sesion.Cajas_Sesion_Obtener(codEmpresa, usuario, identificacion);
+            return DbfrmCajas_Sesion.Cajas_Sesion_Obtener(codEmpresa, sesionId, caja, usuario, apertura, identificacion);
         }
-        public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario, int tipoId, string cedula, string nombre)
+        public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario, int apertura, int tipoId, string cedula, string nombre)
         {
-            return DbfrmCajas_Sesion.Cajas_Sesion_Inicia(codEmpresa, caja, usuario, tipoId, cedula, nombre);
+            return DbfrmCajas_Sesion.Cajas_Sesion_Inicia(codEmpresa, caja, usuario, apertura, tipoId, cedula, nombre);
         }
 
-        public ErrorDto Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
+        public ErrorDto<CajasSesionFinalizaResultDto> Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
         {
             return DbfrmCajas_Sesion.Cajas_Sesion_Finaliza(codEmpresa, sesionId, usuario);
         }

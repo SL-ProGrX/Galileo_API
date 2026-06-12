@@ -53,5 +53,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return DbfrmCajas_ReporteCierres.Cajas_Cierre_Forzar(codEmpresa, codCaja, codApertura, usuario);
         }
+
+        public ErrorDto<CajasCierreVerificacionDto> Cajas_Cierre_Verificacion(int codEmpresa, string codCaja, int codApertura)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_Cierre_Verificacion(codEmpresa, codCaja, codApertura);
+        }
+
+        public ErrorDto<bool> Cajas_Cierre_Preliminar_Aplicar(int codEmpresa, string codCaja, int codApertura, string usuario)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_Cierre_Preliminar_Aplicar(codEmpresa, codCaja, codApertura, usuario);
+        }
     }
 }

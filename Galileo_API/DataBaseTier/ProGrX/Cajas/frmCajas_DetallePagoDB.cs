@@ -282,15 +282,17 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Cajas_DesglocePago_Update(int codEmpresa, CajasDesglocePagoDto dto)
         {
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok",
-            };
-
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+
+                var validacion = ValidarDesglocePago(connection, ToGuardarRequest(dto), dto.linea);
+                if (validacion.Code != 0)
+                {
+                    return validacion;
+                }
+
                 string sql = @"
                         UPDATE CAJAS_DESGLOCE_PAGO SET
                             Monto = @monto,
@@ -321,14 +323,13 @@ namespace Galileo.DataBaseTier
                           AND Linea = @linea";
 
                 connection.Execute(sql, dto);
+
+                return DbHelper.OkResponse("OK");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse($"Error al actualizar desgloce de pago: {ex.Message}");
             }
-
-            return response;
         }
 
         /// <summary>
@@ -378,19 +379,122 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Cajas_DesglocePago_Guardar(int CodEmpresa, CajasDesglocePagoRequest request)
         {
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "OK",
-            };
-
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
                 connection.Open();
 
-                // 1. VALIDACIONES
-                // Validar dep�sito
+                var validacion = ValidarDesglocePago(connection, request);
+                if (validacion.Code != 0)
+                {
+                    return validacion;
+                }
+
+                var linea = connection.ExecuteScalar<int>(
+                    @"select isnull(max(linea), 0) + 1
+                      from CAJAS_DESGLOCE_PAGO
+                      where Cod_Caja = @cod_caja
+                        and Ticket = @ticket
+                        and Cod_Apertura = @cod_apertura",
+                    request);
+
+                const string sql = @"
+                    insert into CAJAS_DESGLOCE_PAGO
+                    (linea,ticket,cod_caja,cod_apertura,monto,cod_divisa,tipo_cambio,registro_fecha,registro_usuario,
+                    cod_tarjeta,tarjeta_numero,tarjeta_autorizacion,cheque_emisor,cheque_numero,
+                    cuenta_bancaria,num_referencia,cod_cuenta,aplica_saldo_favor,saldo_favor,saldo_favor_id,
+                    observaciones,cod_forma_pago,dp_banco,dp_fecha,cod_plan,cod_contrato,cod_entidad_pago,cod_origen_recursos)
+                    values
+                    (@linea,@ticket,@cod_caja,@cod_apertura,@monto,@cod_divisa,@tipo_cambio,GETDATE(),@usuario,
+                    @cod_tarjeta,@tarjeta_numero,@tarjeta_autorizacion,@cheque_emisor,@cheque_numero,
+                    @cuenta_bancaria,@num_referencia,@cod_cuenta,@aplica_saldo_favor,@saldo_favor,@saldo_favor_id,
+                    @notas,@cod_forma_pago,@dp_banco,@dp_fecha,@cod_plan,@cod_contrato,@cod_entidad_pago,@cod_origen_recursos)";
+
+                connection.Execute(sql, new
+                {
+                    linea,
+                    request.ticket,
+                    request.cod_caja,
+                    request.cod_apertura,
+                    request.monto,
+                    request.cod_divisa,
+                    request.tipo_cambio,
+                    request.usuario,
+                    request.cod_tarjeta,
+                    request.tarjeta_numero,
+                    request.tarjeta_autorizacion,
+                    request.cheque_emisor,
+                    request.cheque_numero,
+                    request.cuenta_bancaria,
+                    request.num_referencia,
+                    request.cod_cuenta,
+                    aplica_saldo_favor = request.aplica_saldo_favor ?? 0,
+                    saldo_favor = request.saldo_favor ?? 0,
+                    saldo_favor_id = request.saldo_favor_id ?? 0,
+                    request.notas,
+                    request.cod_forma_pago,
+                    dp_banco = request.dp_banco ?? 0,
+                    request.dp_fecha,
+                    request.cod_plan,
+                    request.cod_contrato,
+                    request.cod_entidad_pago,
+                    request.cod_origen_recursos
+                });
+
+                return DbHelper.OkResponse("OK");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse($"Error al guardar desgloce de pago: {ex.Message}");
+            }
+        }
+
+        private static CajasDesglocePagoRequest ToGuardarRequest(CajasDesglocePagoDto dto)
+        {
+            return new CajasDesglocePagoRequest
+            {
+                ticket = dto.ticket,
+                cod_caja = dto.cod_caja,
+                cod_apertura = dto.cod_apertura,
+                monto = dto.monto,
+                cod_divisa = dto.cod_divisa,
+                tipo_cambio = dto.tipo_cambio,
+                usuario = dto.registro_usuario,
+                cod_tarjeta = dto.cod_tarjeta,
+                tarjeta_numero = dto.tarjeta_numero,
+                tarjeta_autorizacion = dto.tarjeta_autorizacion,
+                cheque_emisor = dto.cheque_emisor,
+                cheque_numero = dto.cheque_numero,
+                cuenta_bancaria = dto.cuenta_bancaria,
+                num_referencia = dto.num_referencia,
+                cod_cuenta = dto.cod_cuenta,
+                cod_forma_pago = dto.cod_forma_pago,
+                dp_banco = dto.dp_banco,
+                dp_fecha = dto.dp_fecha,
+                cod_plan = dto.cod_plan,
+                cod_contrato = dto.cod_contrato,
+                saldo_favor_id = dto.saldo_favor_id,
+                aplica_saldo_favor = dto.aplica_saldo_favor,
+                saldo_favor = dto.saldo_favor,
+                cod_entidad_pago = dto.cod_entidad_pago,
+                cod_origen_recursos = dto.cod_origen_recursos,
+                notas = dto.observaciones
+            };
+        }
+
+        private static ErrorDto ValidarDesglocePago(SqlConnection connection, CajasDesglocePagoRequest request, int? lineaActual = null)
+        {
+            var tipoFormaPago = connection.ExecuteScalar<string?>(
+                "select top 1 Tipo from SIF_FORMAS_PAGO where COD_FORMA_PAGO = @FormaPago",
+                new { FormaPago = request.cod_forma_pago })?.Trim() ?? string.Empty;
+
+            if (tipoFormaPago == "B")
+            {
+                if (!request.dp_banco.HasValue || request.dp_banco.Value <= 0)
+                {
+                    return DbHelper.ErrorResponse("Debe seleccionar la cuenta bancaria del deposito");
+                }
+
                 var valDeposito = connection.ExecuteScalar<int>(
                     "select dbo.fxTes_DP_Cargado(@Banco,@Documento,@Cedula,@Monto)",
                     new
@@ -399,16 +503,16 @@ namespace Galileo.DataBaseTier
                         Documento = request.num_referencia,
                         Cedula = request.usuario,
                         Monto = request.monto
-                    }
-                );
+                    });
+
                 if (valDeposito == 0)
                 {
-                    response.Code = -1;
-                    response.Description = "Dep�sito no registrado en Tesorer�a";
-                    return response;
+                    return DbHelper.ErrorResponse("Deposito no registrado en Tesoreria");
                 }
+            }
 
-                // Validar documento duplicado
+            if (!string.IsNullOrWhiteSpace(request.num_referencia) && !EsMismaReferencia(connection, request, lineaActual))
+            {
                 var valDoc = connection.ExecuteScalar<int>(
                     "select dbo.fxCajas_DocumentoVerifica(@FormaPago,@Documento,@Banco,@Cuenta)",
                     new
@@ -417,16 +521,13 @@ namespace Galileo.DataBaseTier
                         Documento = request.num_referencia,
                         Banco = request.dp_banco,
                         Cuenta = request.cuenta_bancaria
-                    }
-                );
+                    });
+
                 if (valDoc > 0)
                 {
-                    response.Code = -1;
-                    response.Description = "Documento ya existe (duplicado)";
-                    return response;
+                    return DbHelper.ErrorResponse("Documento ya existe (duplicado)");
                 }
 
-                // Validar si ya fue registrado
                 var valRegistrado = connection.ExecuteScalar<int>(
                     "select dbo.fxCajas_FP_Registada(@Ticket,@FormaPago,@Doc,@Banco,@Cuenta)",
                     new
@@ -436,65 +537,72 @@ namespace Galileo.DataBaseTier
                         Doc = request.num_referencia,
                         Banco = request.dp_banco,
                         Cuenta = request.cuenta_bancaria
-                    }
-                );
+                    });
+
                 if (valRegistrado > 0)
                 {
-                    response.Code = -1;
-                    response.Description = "Este movimiento ya fue registrado";
-                    return response;
+                    return DbHelper.ErrorResponse("Este movimiento ya fue registrado");
                 }
-
-                // Validar fondos
-                if (!string.IsNullOrEmpty(request.cod_plan))
-                {
-                    var valFondos = connection.ExecuteScalar<string>(
-                        "select dbo.fxCajas_FondosDivisa(@Plan)",
-                        new { Plan = request.cod_plan }
-                    );
-                    if (string.IsNullOrEmpty(valFondos))
-                    {
-                        response.Code = -1;
-                        response.Description = "El fondo no es v�lido";
-                        return response;
-                    }
-                }
-
-                // Validar saldo a favor
-                if (request.saldo_favor_id.HasValue)
-                {
-                    var valSaldoFavor = connection.ExecuteScalar<string>(
-                        "select dbo.fxCajas_SaldoFavorDivisa(@IdSaldo)",
-                        new { IdSaldo = request.saldo_favor_id }
-                    );
-                    if (string.IsNullOrEmpty(valSaldoFavor))
-                    {
-                        response.Code = -1;
-                        response.Description = "Saldo a favor no v�lido";
-                        return response;
-                    }
-                }
-
-                // 2. GUARDAR
-                var sql = @"
-                    insert into CAJAS_DESGLOCE_PAGO
-                    (ticket,cod_caja,cod_apertura,monto,cod_divisa,tipo_cambio,registro_fecha,registro_usuario,
-                    cod_tarjeta,tarjeta_numero,tarjeta_autorizacion,cheque_emisor,cheque_numero,
-                    cuenta_bancaria,num_referencia,cod_cuenta,cod_forma_pago,dp_banco,dp_fecha,cod_plan,cod_contrato)
-                    values
-                    (@ticket,@cod_caja,@cod_apertura,@monto,@cod_divisa,@tipo_cambio,GETDATE(),@usuario,
-                    @cod_tarjeta,@tarjeta_numero,@tarjeta_autorizacion,@cheque_emisor,@cheque_numero,
-                    @cuenta_bancaria,@num_referencia,@cod_cuenta,@cod_forma_pago,@dp_banco,@dp_fecha,@cod_plan,@cod_contrato)";
-
-                connection.Execute(sql, request);
             }
-            catch (Exception ex)
+
+            if (tipoFormaPago == "F" && !string.IsNullOrEmpty(request.cod_plan))
             {
-                response.Code = -1;
-                response.Description = $"Error al guardar desgloce de pago: {ex.Message}";
+                var valFondos = connection.ExecuteScalar<string>(
+                    "select dbo.fxCajas_FondosDivisa(@Plan)",
+                    new { Plan = request.cod_plan });
+
+                if (string.IsNullOrEmpty(valFondos))
+                {
+                    return DbHelper.ErrorResponse("El fondo no es valido");
+                }
             }
 
-            return response;
+            if (tipoFormaPago == "S" && request.saldo_favor_id.HasValue && request.saldo_favor_id.Value > 0)
+            {
+                var valSaldoFavor = connection.ExecuteScalar<string>(
+                    "select dbo.fxCajas_SaldoFavorDivisa(@IdSaldo)",
+                    new { IdSaldo = request.saldo_favor_id });
+
+                if (string.IsNullOrEmpty(valSaldoFavor))
+                {
+                    return DbHelper.ErrorResponse("Saldo a favor no valido");
+                }
+            }
+
+            return DbHelper.OkResponse("OK");
+        }
+
+        private static bool EsMismaReferencia(SqlConnection connection, CajasDesglocePagoRequest request, int? lineaActual)
+        {
+            if (!lineaActual.HasValue)
+            {
+                return false;
+            }
+
+            var total = connection.ExecuteScalar<int>(
+                @"select count(1)
+                  from CAJAS_DESGLOCE_PAGO
+                  where Cod_Caja = @cod_caja
+                    and Ticket = @ticket
+                    and Cod_Apertura = @cod_apertura
+                    and Linea = @linea
+                    and Cod_Forma_Pago = @cod_forma_pago
+                    and isnull(Num_Referencia, '') = isnull(@num_referencia, '')
+                    and isnull(DP_Banco, 0) = isnull(@dp_banco, 0)
+                    and isnull(Cuenta_Bancaria, '') = isnull(@cuenta_bancaria, '')",
+                new
+                {
+                    request.cod_caja,
+                    request.ticket,
+                    request.cod_apertura,
+                    linea = lineaActual.Value,
+                    request.cod_forma_pago,
+                    request.num_referencia,
+                    dp_banco = request.dp_banco ?? 0,
+                    request.cuenta_bancaria
+                });
+
+            return total > 0;
         }
 
 

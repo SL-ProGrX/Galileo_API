@@ -2,6 +2,8 @@ using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cajas;
+using Galileo_API.DataBaseTier.ProGrX.Cajas;
+using Galileo_API.Models.ProGrX.Cajas;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -9,18 +11,24 @@ namespace Galileo.DataBaseTier
     public class FrmCajasFndaportacionesDB
     {
         private readonly PortalDB _portalDb;
+        private readonly IConfiguration _config;
+        private readonly MCajas _mCajas;
+        private readonly MFndFuncionesDb _mFndFunciones;
 
         public FrmCajasFndaportacionesDB(IConfiguration config)
         {
-            _portalDb = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _portalDb = new PortalDB(_config);
+            _mCajas = new MCajas(_config);
+            _mFndFunciones = new MFndFuncionesDb(_config);
         }
 
         /// <summary>
-        /// Obtener los tipos de documentos
+        /// Obtener los tipos de documentos.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codCaja"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="codCaja">Codigo de caja.</param>
+        /// <returns>Lista de documentos habilitados para la caja.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Documentos_Obtener(int codEmpresa, string codCaja)
         {
             const string sql = @"
@@ -42,182 +50,280 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Aplicar el aporte a la subcuenta
+        /// Aplicar el aporte a fondos.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="request">Datos del aporte.</param>
+        /// <returns>Resultado de la aplicacion del aporte.</returns>
         public ErrorDto Fondos_Aporte_Aplicar(int codEmpresa, FondosAporteAplicarDto request)
         {
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
-
             try
             {
-                // ?? 0. Obtener cod_oficina seg�n usuario y caja
-                string sqlOficina = @"
-                            SELECT TOP 1 C.cod_oficina
-                            FROM CAJAS_USUARIOS Cu
-                            INNER JOIN cajas_definicion C ON Cu.cod_caja = C.cod_caja
-                            WHERE Cu.usuario = @Usuario AND Cu.Cod_Caja = @Caja;
-                        ";
-
-                var codOficina = connection.QueryFirstOrDefault<string>(sqlOficina, new { Usuario = request.usuario, Caja = request.caja }, transaction) ?? string.Empty;
-
-                string? sqlCuenta = @"
-                            SELECT cuenta_conta, cuenta_rendimiento
-                            FROM fnd_planes
-                            WHERE cod_operadora = @Operadora
-                              AND cod_plan = @Plan;
-                        ";
-
-                var cuentas = connection.QueryFirstOrDefault<(string? cuenta_conta, string? cuenta_rendimiento)>(
-                    sqlCuenta,
-                    new { Operadora = 1, Plan = request.plan },
-                    transaction);
-
-                var cuentaConta = cuentas.cuenta_conta ?? string.Empty;
-
                 var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc)
                     ? throw new InvalidOperationException("El tipo de documento es requerido.")
-                    : request.tipodoc;
-                long vNumDoc = FxDocumentoConsecutivo(codEmpresa, vTipoDoc, 2);
+                    : request.tipodoc.Trim();
 
-                // ?? 1. Generar consecutivo de documento
-                string concepto = "FND001";
-                string fechaProceso = DateTime.Now.ToString("yyyyMM");
+                var validacion = ValidarAporte(codEmpresa, request);
+                if (validacion.Code != 0)
+                {
+                    return validacion;
+                }
 
-                // ?? 2. Insertar en SIF_TRANSACCIONES 
-                string sqlTransaccion = @"
-                    INSERT INTO SIF_TRANSACCIONES
-                    (COD_TRANSACCION, TIPO_DOCUMENTO, REGISTRO_FECHA, REGISTRO_USUARIO, 
-                     Cliente_IDENTIFICACION, CLIENTE_NOMBRE, cod_concepto, monto, estado, 
-                     Referencia_01, Referencia_02, cod_oficina,
-                     linea1,linea2,linea3,linea4,linea5,linea6,linea7,linea8,
-                     detalle, documento, cod_caja, cod_apertura, id_sesion)
-                    VALUES
-                    (@NumDoc, @TipoDoc, GETDATE(), @Usuario,
-                     @Cedula, @ClienteNombre, @Concepto, @Monto, 'P',
-                     @Plan, @Contrato, @Oficina,
-                     '', '', '', '', '', '', '', '',
-                     '', '', @Caja, @Apertura, @SesionId);
-                ";
-
-                var paramTrans = new DynamicParameters();
-                paramTrans.Add("@NumDoc", vNumDoc);
-                paramTrans.Add("@TipoDoc", vTipoDoc);
-                paramTrans.Add("@Usuario", request.usuario);
-                paramTrans.Add("@Cedula", request.cedula);
-                paramTrans.Add("@ClienteNombre", request.nombre);
-                paramTrans.Add("@Concepto", concepto);
-                paramTrans.Add("@Monto", request.aporte);
-                paramTrans.Add("@Plan", request.plan);
-                paramTrans.Add("@Contrato", request.contrato);
-                paramTrans.Add("@Oficina", codOficina);
-                paramTrans.Add("@Caja", request.caja);
-                paramTrans.Add("@Apertura", request.apertura);
-                paramTrans.Add("@SesionId", request.sesionid);
-
-                connection.Execute(sqlTransaccion, paramTrans, transaction);
-
-                // ?? 3. Insertar detalle de contrato y actualizar aportes
-                string sqlDetalle = @"
-                        INSERT INTO fnd_contratos_detalle
-                            (Cod_operadora, Cod_plan, Cod_Contrato, Fecha, Monto, Fecha_Proceso,
-                             Tcon, Ncon, cod_concepto, usuario, cod_Caja)
-                        VALUES
-                            (@Operadora, @Plan, @Contrato, GETDATE(), @Monto, @FechaProceso,
-                             @TipoDoc, @NumDoc, @Concepto, @Usuario, @Caja);
-
-                        UPDATE fnd_contratos
-                        SET Aportes = Aportes + @Monto
-                        WHERE Cod_operadora = @Operadora 
-                          AND Cod_plan = @Plan 
-                          AND Cod_Contrato = @Contrato;";
-
-                var paramDetalle = new DynamicParameters();
-                paramDetalle.Add("@Operadora", 1);
-                paramDetalle.Add("@Plan", request.plan);
-                paramDetalle.Add("@Contrato", request.contrato);
-                paramDetalle.Add("@Monto", request.aporte);
-                paramDetalle.Add("@FechaProceso", fechaProceso);
-                paramDetalle.Add("@TipoDoc", vTipoDoc);
-                paramDetalle.Add("@NumDoc", vNumDoc);
-                paramDetalle.Add("@Concepto", concepto);
-                paramDetalle.Add("@Usuario", request.usuario);
-                paramDetalle.Add("@Caja", request.caja);
-
-                connection.Execute(sqlDetalle, paramDetalle, transaction);
-
-                // ?? 4. Ejecutar asiento (spSIFDocsAsiento)
-                connection.Execute(
-                    "exec spSIFDocsAsiento @Tipo, @Transaccion, @Monto, 'C', @Divisa, @TipoCambio, @Contabilidad, @Unidad, @CentroCosto, @Cuenta, @Referencia1, @Referencia2, @Referencia3",
+                var codOficina = ObtenerCodigoOficina(codEmpresa, request);
+                var aplica = DbHelper.ExecuteSingleQuery<FondosAporteAplicarResultDto>(
+                    _portalDb,
+                    codEmpresa,
+                    @"EXEC spCajas_Fondos_Abono
+                        @Operadora,
+                        @Plan,
+                        @Contrato,
+                        @TipoDoc,
+                        @Aportes,
+                        @Rendimiento,
+                        @Caja_Codigo,
+                        @Caja_SesionId,
+                        @Caja_Apertura,
+                        @Caja_Tiquete,
+                        @Usuario,
+                        @Caja_Oficina,
+                        @Notas,
+                        @Documento,
+                        @Deposito,
+                        @ReciboDigital,
+                        @GestionId;",
+                    default,
                     new
                     {
-                        Tipo = vTipoDoc,
-                        Transaccion = vNumDoc,
-                        Monto = request.aporte,
-                        Divisa = request.cod_divisa,
-                        TipoCambio = 1,
-                        Contabilidad = 1,
-                        Unidad = codOficina,
-                        CentroCosto = "",
-                        Cuenta = cuentaConta,
-                        Referencia1 = request.plan,
-                        Referencia2 = request.contrato,
-                        Referencia3 = ""
-                    },
-                    transaction
-                );
-
-                // ?? 5. Ejecutar spCajas_DesglocePagosDocFinal
-                connection.Execute(
-                    "exec spCajas_DesglocePagosDocFinal @Caja, @Apertura, @Tiquete, @Usuario, @TipoDoc, @NumDoc, @Unidad, @Plan, @Contrato",
-                    new
-                    {
-                        Caja = request.caja,
-                        Apertura = request.apertura,
-                        Tiquete = request.tiquete,
-                        Usuario = request.usuario,
+                        Operadora = request.operadora,
+                        Plan = request.plan?.Trim(),
+                        Contrato = request.contrato,
                         TipoDoc = vTipoDoc,
-                        NumDoc = vNumDoc,
-                        Unidad = codOficina,
-                        Plan = request.plan,
-                        Contrato = request.contrato
-                    },
-                    transaction
-                );
+                        Aportes = request.aporte,
+                        Rendimiento = 0,
+                        Caja_Codigo = request.caja,
+                        Caja_SesionId = request.sesionid,
+                        Caja_Apertura = request.apertura,
+                        Caja_Tiquete = request.tiquete,
+                        Usuario = request.usuario,
+                        Caja_Oficina = string.IsNullOrWhiteSpace(request.oficina) ? codOficina : request.oficina,
+                        Notas = request.notas ?? string.Empty,
+                        Documento = string.Empty,
+                        Deposito = string.Empty,
+                        ReciboDigital = request.recibodigital,
+                        GestionId = request.gestionid
+                    });
 
-                transaction.Commit();
-                response.Description = $"{vNumDoc}";
+                if (aplica.Code != 0)
+                {
+                    return new ErrorDto { Code = aplica.Code, Description = aplica.Description };
+                }
+
+                if (aplica.Result?.Pass != 1)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = aplica.Result?.Mensaje ?? "No se pudo aplicar el aporte."
+                    };
+                }
+
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = aplica.Result.NumDoc
+                };
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                response.Code = -1;
-                response.Description = $"Error al aplicar aporte: {ex.Message}";
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = $"Error al aplicar aporte: {ex.Message}"
+                };
+            }
+        }
+
+
+        private ErrorDto ValidarAporte(int codEmpresa, FondosAporteAplicarDto request)
+        {
+            var contrato = ObtenerContratoValidacion(codEmpresa, request);
+            if (contrato.Code != 0)
+            {
+                return new ErrorDto { Code = contrato.Code, Description = contrato.Description };
             }
 
-            return response;
+            if (contrato.Result == null)
+            {
+                return new ErrorDto { Code = -1, Description = "No se encontraron datos del contrato de fondos." };
+            }
+
+            if (contrato.Result.Permite_Mov_Cajas == 0)
+            {
+                return new ErrorDto { Code = -1, Description = "Este plan no permite movimientos en Cajas, verifique..." };
+            }
+
+            if (string.Equals(contrato.Result.Estado?.Trim(), "L", StringComparison.OrdinalIgnoreCase))
+            {
+                return new ErrorDto { Code = -1, Description = "Este contrato se encuentra Liquidado, verifique..." };
+            }
+
+            if (request.aporte <= 0 || request.totalcajas <= 0)
+            {
+                return new ErrorDto { Code = -1, Description = "No se especificó ningún aporte, verifique..." };
+            }
+
+            if (request.aporte != request.totalcajas)
+            {
+                return new ErrorDto { Code = -1, Description = "El Monto en Cajas es diferente al Aporte a Registrar, verifique..." };
+            }
+
+            if (_mCajas.fxCajasAperturaEstado(codEmpresa, request.caja ?? string.Empty, request.apertura) == "C")
+            {
+                return new ErrorDto { Code = -1, Description = $"- La apertura ..:{request.apertura} de esta caja ha sido cerrada!" };
+            }
+
+            var seguridad = ValidarSeguridadAporte(codEmpresa, request);
+            if (seguridad.Code != 0)
+            {
+                return seguridad;
+            }
+
+            return ValidarTransaccionCajas(codEmpresa, request);
+        }
+
+        private ErrorDto<FondosContratoValidacionDto?> ObtenerContratoValidacion(int codEmpresa, FondosAporteAplicarDto request)
+        {
+            const string sql = @"
+                SELECT
+                    C.estado,
+                    P.Permite_Mov_Cajas
+                FROM dbo.fnd_contratos C
+                INNER JOIN dbo.fnd_planes P
+                    ON C.cod_plan = P.cod_plan
+                   AND C.cod_operadora = P.cod_operadora
+                WHERE C.cod_operadora = @Operadora
+                  AND C.cod_plan = @Plan
+                  AND C.cod_contrato = @Contrato;";
+
+            return DbHelper.ExecuteSingleQuery<FondosContratoValidacionDto?>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                default,
+                new
+                {
+                    Operadora = request.operadora,
+                    Plan = request.plan,
+                    Contrato = request.contrato
+                });
+        }
+
+        private ErrorDto ValidarSeguridadAporte(int codEmpresa, FondosAporteAplicarDto request)
+        {
+            if (_mFndFunciones.fxFndParametro(codEmpresa, "01.1") != "S")
+            {
+                return new ErrorDto { Code = 0, Description = "Ok" };
+            }
+
+            var autoriza = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                "EXEC spFndSeguridad_ApAnul @Operadora, @Plan, @Usuario;",
+                0,
+                new
+                {
+                    Operadora = request.operadora,
+                    Plan = request.plan,
+                    Usuario = request.usuario
+                });
+
+            if (autoriza.Code != 0)
+            {
+                return new ErrorDto { Code = autoriza.Code, Description = autoriza.Description };
+            }
+
+            if (autoriza.Result == 0)
+            {
+                return new ErrorDto { Code = -1, Description = "El Usuario no tiene nivel de Autorización para realizar este movimiento!" };
+            }
+
+            var gestionAprobada = request.gestionestado?.Trim().StartsWith("A", StringComparison.OrdinalIgnoreCase) == true;
+            if (request.aporte > request.montoautorizado && (request.gestionid <= 0 || !gestionAprobada))
+            {
+                return new ErrorDto { Code = -1, Description = "- Este movimiento requiere AUTORIZACION, verifique el estado de la misma y/o solicite una!" };
+            }
+
+            return new ErrorDto { Code = 0, Description = "Ok" };
+        }
+
+        private ErrorDto ValidarTransaccionCajas(int codEmpresa, FondosAporteAplicarDto request)
+        {
+            var validacion = DbHelper.ExecuteSingleQuery<CajasTransacValidacionResult?>(
+                _portalDb,
+                codEmpresa,
+                @"EXEC spCajas_Transac_Validacion
+                    @Caja,
+                    @Usuario,
+                    @Apertura,
+                    @SesionId,
+                    @TipoProc,
+                    @Producto,
+                    @Monto,
+                    @Ticket;",
+                default,
+                new
+                {
+                    Caja = request.caja,
+                    Usuario = request.usuario,
+                    Apertura = request.apertura,
+                    SesionId = request.sesionid,
+                    TipoProc = "Fnd",
+                    Producto = request.plan?.Trim(),
+                    Monto = request.totalcajas,
+                    Ticket = request.tiquete
+                });
+
+            if (validacion.Code != 0)
+            {
+                return new ErrorDto { Code = validacion.Code, Description = validacion.Description };
+            }
+
+            if (!string.IsNullOrWhiteSpace(validacion.Result?.Validacion))
+            {
+                return new ErrorDto { Code = -1, Description = validacion.Result.Validacion };
+            }
+
+            return new ErrorDto { Code = 0, Description = validacion.Result?.Advertencias ?? "Ok" };
+        }
+
+        private string ObtenerCodigoOficina(int codEmpresa, FondosAporteAplicarDto request)
+        {
+            const string sql = @"
+                SELECT TOP 1 C.cod_oficina
+                FROM CAJAS_USUARIOS Cu
+                INNER JOIN cajas_definicion C
+                    ON Cu.cod_caja = C.cod_caja
+                WHERE Cu.usuario = @Usuario
+                  AND Cu.Cod_Caja = @Caja;";
+
+            return DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                string.Empty,
+                new { Usuario = request.usuario, Caja = request.caja }).Result ?? string.Empty;
         }
 
 
 
         /// <summary>
-        /// Verifica si el aporte requiere autorizaci�n
+        /// Verifica si el aporte requiere autorizacion.
         /// </summary>
-        /// <param name="codempresa"></param>
-        /// <param name="plan"></param>
-        /// <param name="usuario"></param>
-        /// <param name="aporte"></param>
-        /// <returns></returns>
+        /// <param name="codempresa">Codigo de empresa.</param>
+        /// <param name="plan">Codigo de plan.</param>
+        /// <param name="usuario">Usuario que solicita el aporte.</param>
+        /// <param name="aporte">Monto del aporte.</param>
+        /// <returns>Resultado de la validacion de autorizacion.</returns>
         public ErrorDto<FondosRequiereAutorizacionDto> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
         {
             var response = DbHelper.CreateOkResponse<FondosRequiereAutorizacionDto>(default!);
@@ -262,11 +368,11 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Verifica el estado de la gesti�n
+        /// Verifica el estado de la gestion.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="gestionId"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="gestionId">Identificador de la gestion.</param>
+        /// <returns>Estado actual de la gestion.</returns>
         public ErrorDto<GestionEstadoDto> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
         {
             var response = DbHelper.CreateOkResponse<GestionEstadoDto>(default!);
@@ -295,32 +401,45 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        ///  Registra la gesti�n
+        /// Registra la gestion.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="CodEmpresa">Codigo de empresa.</param>
+        /// <param name="request">Datos de la gestion.</param>
+        /// <returns>Gestion registrada.</returns>
         public ErrorDto<FondosGestionRegistroDto> fondos_gestion_registro(int CodEmpresa, FondosGestionRegistroAddDto request)
         {
             var response = DbHelper.CreateOkResponse<FondosGestionRegistroDto>(default!);
 
             try
             {
-                var connectionString = _portalDb.ObtenerDbConnStringEmpresa(CodEmpresa);
-                var result = DbHelper.ExecuteStoredProcedureSingle<FondosGestionRegistroDto>(
-                    connectionString,
-                    "spFnd_Gestion_Registro",
+                const string sql = @"
+                    EXEC spFnd_Gestion_Registro
+                        @Cedula,
+                        @Tipo,
+                        @Operadora,
+                        @Plan,
+                        @Contrato,
+                        @MntSol,
+                        @MntCal,
+                        @Usuario,
+                        @GestionNota;";
+
+                var result = DbHelper.ExecuteSingleQuery<FondosGestionRegistroDto>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
                     default,
                     new
                     {
-                        cedula = request.cedula,
-                        tipo = request.tipo,
-                        operadora = request.operadora,
-                        plan = request.plan,
-                        contrato = request.contrato,
-                        montoautorizado = request.montoautorizado,
-                        aporte = request.aporte,
-                        usuario = request.usuario
+                        Cedula = request.cedula,
+                        Tipo = request.tipo,
+                        Operadora = request.operadora,
+                        Plan = request.plan,
+                        Contrato = request.contrato,
+                        MntSol = request.montoautorizado,
+                        MntCal = request.aporte,
+                        Usuario = request.usuario,
+                        GestionNota = request.nota
                     });
 
                 if (result.Code != 0)
@@ -351,15 +470,81 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
+        /// <summary>
+        /// Obtiene los datos del contrato de fondos usados al abrir aportaciones.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa donde se consulta la informacion.</param>
+        /// <param name="codCaja">Codigo de caja para validar el concepto auxiliar.</param>
+        /// <param name="operadora">Codigo de operadora del contrato.</param>
+        /// <param name="plan">Codigo de plan del contrato.</param>
+        /// <param name="contrato">Codigo de contrato de fondos.</param>
+        /// <returns>Datos generales del contrato de fondos.</returns>
+        public ErrorDto<FondosContratoDatosDto> Fondos_Contrato_Datos_Obtener(
+            int codEmpresa,
+            string codCaja,
+            int operadora,
+            string plan,
+            int contrato)
+        {
+            const string sql = @"
+                SELECT
+                    C.cedula,
+                    S.nombre,
+                    P.descripcion AS plan_desc,
+                    O.descripcion AS operadora_desc,
+                    C.monto,
+                    C.cod_plan,
+                    C.cod_contrato,
+                    C.cod_operadora,
+                    C.estado,
+                    C.fecha_inicio,
+                    P.cod_moneda,
+                    C.aportes,
+                    C.inversion,
+                    P.tipo_cdp,
+                    dbo.fxCajas_Valida_Auxiliar(@CodCaja, 'FND', C.cod_plan) AS caja_valida_concepto
+                FROM fnd_contratos C
+                INNER JOIN socios S
+                    ON C.cedula = S.cedula
+                INNER JOIN fnd_planes P
+                    ON C.cod_plan = P.cod_plan
+                   AND C.cod_operadora = P.cod_operadora
+                INNER JOIN fnd_operadoras O
+                    ON C.cod_operadora = O.cod_operadora
+                WHERE C.cod_operadora = @Operadora
+                  AND C.cod_plan = @Plan
+                  AND C.cod_contrato = @Contrato;";
+
+            var result = DbHelper.ExecuteSingleQuery<FondosContratoDatosDto?>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                default,
+                new
+                {
+                    CodCaja = codCaja,
+                    Operadora = operadora,
+                    Plan = plan,
+                    Contrato = contrato
+                });
+
+            return new ErrorDto<FondosContratoDatosDto>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? new FondosContratoDatosDto()
+            };
+        }
+
 
         /// <summary>
-        /// Obtuebe las sub cuentas
+        /// Obtiene las subcuentas.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="operadora"></param>
-        /// <param name="plan"></param>
-        /// <param name="contrato"></param>
-        /// <returns></returns>
+        /// <param name="CodEmpresa">Codigo de empresa.</param>
+        /// <param name="operadora">Codigo de operadora.</param>
+        /// <param name="plan">Codigo de plan.</param>
+        /// <param name="contrato">Codigo de contrato.</param>
+        /// <returns>Lista de subcuentas activas.</returns>
         public ErrorDto<List<FndSubCuentasDto>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
         {
             const string sql = @"SELECT IDx,
@@ -385,6 +570,13 @@ namespace Galileo.DataBaseTier
         }
 
 
+        /// <summary>
+        /// Obtiene el consecutivo del documento.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="vTipo">Tipo de documento.</param>
+        /// <param name="sysDocVersion">Version de consecutivo de documentos.</param>
+        /// <returns>Consecutivo asignado al documento.</returns>
         public long FxDocumentoConsecutivo(int codEmpresa, string vTipo, int sysDocVersion)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
