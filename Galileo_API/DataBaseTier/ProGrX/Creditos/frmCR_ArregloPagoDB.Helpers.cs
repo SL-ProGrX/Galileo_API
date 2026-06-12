@@ -193,5 +193,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 DetalleMovimiento = detalle
             });
         }
+
+        private static CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoLineas_BaseCrear(
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            decimal saldoAnterior,
+            decimal saldoActual,
+            string linea5)
+        {
+            return new CrArregloPagoDocumentoLineas
+            {
+                linea1 = FormatearLineaDocumento(LineaSaldoAnterior, saldoAnterior),
+                linea2 = FormatearLineaDocumento(LineaSaldoActual, saldoActual),
+                linea3 = FormatearLineaDocumento(LineaInteresCorriente, montos.int_cor),
+                linea4 = FormatearLineaDocumento(LineaInteresAtrasado, montos.int_mor),
+                linea5 = linea5,
+                linea6 = FormatearLineaDocumento(LineaCargosTotales, montos.cargos),
+                linea7 = FormatearLineaDocumento(LineaPolizas, montos.polizas),
+                linea8 = Cr_ArregloPago_DocumentoOperacion_Linea_Crear(ctx),
+                linea9 = $"Descripcion       ..: {ctx.operacion.linea_desc}",
+                linea10 = string.Empty,
+                linea11 = string.Empty
+            };
+        }
+
+        private static CrArregloPagoAsientoFactoryData Cr_ArregloPago_AsientoFactoryData_Crear(
+            decimal monto,
+            string tipo,
+            string divisa,
+            decimal tipoCambio,
+            string unidad,
+            string centroCosto,
+            string cuenta,
+            int operacion,
+            string codigo)
+        {
+            return new CrArregloPagoAsientoFactoryData
+            {
+                monto = monto,
+                tipo = tipo,
+                divisa = divisa,
+                tipo_cambio = tipoCambio,
+                unidad = unidad,
+                centro_costo = centroCosto,
+                cuenta = cuenta,
+                operacion = operacion,
+                codigo = codigo
+            };
+        }
     }
 }
