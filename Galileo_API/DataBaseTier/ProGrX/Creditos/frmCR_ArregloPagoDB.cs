@@ -16,6 +16,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const string usuarioInvalido = "Debe indicar el usuario.";
         private const string paramGlobalesNulos = "No fue posible obtener los parametros globales.";
 
+        private const string LineaSaldoAnterior = "Saldo Anterior";
+        private const string LineaSaldoActual = "Saldo Actual";
+        private const string LineaInteresCorriente = "Interes Corriente";
+        private const string LineaInteresAtrasado = "Interes Atrasado";
+        private const string LineaCargosTotales = "Cargos Totales";
+        private const string LineaPolizas = "Polizas";
+        private const string LineaAmortizacion = "Amortizacion";
+        private const string LineaCapitalizacion = "Capitalizacion";
+
         public FrmCrArregloPagoDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);

@@ -10,6 +10,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrArregloPagoDb
     {
+        private enum CrArregloPagoDocumentoTipo
+        {
+            Abono = 1,
+            Readecuacion = 2
+        }
+
         private sealed class CrArregloPagoDocumentoContext
         {
             public int cod_empresa { get; set; }
@@ -72,44 +78,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public string codigo { get; set; } = string.Empty;
         }
 
+        private sealed class CrArregloPagoAsientoFactoryData
+        {
+            public decimal monto { get; set; }
+            public string tipo { get; set; } = string.Empty;
+            public string divisa { get; set; } = string.Empty;
+            public decimal tipo_cambio { get; set; }
+            public string unidad { get; set; } = string.Empty;
+            public string centro_costo { get; set; } = string.Empty;
+            public string cuenta { get; set; } = string.Empty;
+            public int operacion { get; set; }
+            public string codigo { get; set; } = string.Empty;
+        }
+
         private ErrorDto Cr_ArregloPago_DocumentoAbono_Generar(
             SqlConnection conn,
             SqlTransaction tx,
             CrArregloPagoDocumentoContext ctx)
         {
-            try
-            {
-                var tipoCambio = Cr_ArregloPago_TipoCambio_Obtener(ctx);
-                var afectacion = Cr_ArregloPago_DocumentoAfectacion_Obtener(
-                    conn,
-                    tx,
-                    ctx.operacion.sys_plan_pagos,
-                    ctx.tipo_doc,
-                    ctx.num_doc);
-
-                var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, ctx.operacion.operacion);
-                var proxPago = Cr_ArregloPago_ProxPago_Obtener(conn, tx, ctx.operacion.operacion);
-                var montos = Cr_ArregloPago_DocumentoAbono_Montos_Crear(afectacion);
-                var lineas = Cr_ArregloPago_DocumentoAbono_Lineas_Crear(ctx, montos, proxPago);
-
-                Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
-                Cr_ArregloPago_AsientosDocumento_Registrar(
-                    conn,
-                    tx,
-                    ctx,
-                    tipoCambio,
-                    ctas,
-                    montos,
-                    "C");
-
-                Cr_ArregloPago_DocumentoPagoFinal_Registrar(conn, tx, ctx, ctas, montos);
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            return Cr_ArregloPago_DocumentoGenerar(
+                conn,
+                tx,
+                ctx,
+                CrArregloPagoDocumentoTipo.Abono);
         }
 
         private ErrorDto Cr_ArregloPago_DocumentoReadecuacion_Generar(
@@ -117,6 +108,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             SqlTransaction tx,
             CrArregloPagoDocumentoContext ctx)
         {
+            return Cr_ArregloPago_DocumentoGenerar(
+                conn,
+                tx,
+                ctx,
+                CrArregloPagoDocumentoTipo.Readecuacion);
+        }
+
+        private ErrorDto Cr_ArregloPago_DocumentoGenerar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
             try
             {
                 var tipoCambio = Cr_ArregloPago_TipoCambio_Obtener(ctx);
@@ -128,19 +132,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ctx.num_doc);
 
                 var ctas = Cr_ArregloPago_OperacionCtas_Obtener(conn, tx, ctx.operacion.operacion);
-                var saldoActual = conn.QueryFirstOrDefault<decimal>(
-                    "select isnull(saldo, 0) from reg_creditos where id_solicitud = @Operacion;",
-                    new { Operacion = ctx.operacion.operacion },
-                    tx);
+                var proxPago = Cr_ArregloPago_Documento_ProxPago_Obtener(conn, tx, ctx, tipoDocumento);
+                var saldoActual = Cr_ArregloPago_Documento_SaldoActual_Obtener(conn, tx, ctx, tipoDocumento);
+                var montos = Cr_ArregloPago_Documento_Montos_Crear(afectacion, tipoDocumento);
+                var lineas = Cr_ArregloPago_Documento_Lineas_Crear(
+                    ctx,
+                    montos,
+                    proxPago,
+                    saldoActual,
+                    tipoDocumento);
 
-                var proxPago = ctx.operacion.sys_plan_pagos
-                    ? Cr_ArregloPago_ProxPago_Obtener(conn, tx, ctx.operacion.operacion)
-                    : new CajasCrdOperacionProxPagoData();
+                Cr_ArregloPago_Documento_Transaccion_Insertar(
+                    conn,
+                    tx,
+                    ctx,
+                    montos,
+                    lineas,
+                    tipoDocumento);
 
-                var montos = Cr_ArregloPago_DocumentoReadecuacion_Montos_Crear(afectacion);
-                var lineas = Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(ctx, montos, saldoActual, proxPago);
-
-                Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
                 Cr_ArregloPago_AsientosDocumento_Registrar(
                     conn,
                     tx,
@@ -148,7 +157,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     tipoCambio,
                     ctas,
                     montos,
-                    "D");
+                    tipoDocumento);
+
+                if (tipoDocumento == CrArregloPagoDocumentoTipo.Abono)
+                {
+                    Cr_ArregloPago_DocumentoPagoFinal_Registrar(conn, tx, ctx, ctas, montos);
+                }
 
                 return DbHelper.CreateOkResponse();
             }
@@ -171,6 +185,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 tipo_cambio = tipoCambio,
                 factor = Convert.ToDecimal(MProGrxMain.fxSys_Tipo_Cambio_Apl(tipoCambio))
             };
+        }
+
+        private static decimal Cr_ArregloPago_Documento_SaldoActual_Obtener(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
+            if (tipoDocumento == CrArregloPagoDocumentoTipo.Abono)
+            {
+                return ctx.operacion.saldo;
+            }
+
+            return conn.QueryFirstOrDefault<decimal>(
+                "select isnull(saldo, 0) from reg_creditos where id_solicitud = @Operacion;",
+                new { Operacion = ctx.operacion.operacion },
+                tx);
+        }
+
+        private static CajasCrdOperacionProxPagoData Cr_ArregloPago_Documento_ProxPago_Obtener(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
+            if (tipoDocumento == CrArregloPagoDocumentoTipo.Readecuacion &&
+                !ctx.operacion.sys_plan_pagos)
+            {
+                return new CajasCrdOperacionProxPagoData();
+            }
+
+            return conn.QueryFirstOrDefault<CajasCrdOperacionProxPagoData>(
+                "exec spCrdOperacionFechaProxPago @Operacion;",
+                new { Operacion = ctx.operacion.operacion },
+                tx) ?? new CajasCrdOperacionProxPagoData();
+        }
+
+        private static CrArregloPagoDocumentoMontos Cr_ArregloPago_Documento_Montos_Crear(
+            CajasCrdDocumentoAfectacionData afectacion,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
+            return tipoDocumento == CrArregloPagoDocumentoTipo.Abono
+                ? Cr_ArregloPago_DocumentoAbono_Montos_Crear(afectacion)
+                : Cr_ArregloPago_DocumentoReadecuacion_Montos_Crear(afectacion);
         }
 
         private static CrArregloPagoDocumentoMontos Cr_ArregloPago_DocumentoAbono_Montos_Crear(
@@ -225,21 +283,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return montos;
         }
 
-        private CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoAbono_Lineas_Crear(
+        private static CrArregloPagoDocumentoLineas Cr_ArregloPago_Documento_Lineas_Crear(
             CrArregloPagoDocumentoContext ctx,
             CrArregloPagoDocumentoMontos montos,
-            CajasCrdOperacionProxPagoData proxPago)
+            CajasCrdOperacionProxPagoData proxPago,
+            decimal saldoActual,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
+            return tipoDocumento == CrArregloPagoDocumentoTipo.Abono
+                ? Cr_ArregloPago_DocumentoAbono_Lineas_Crear(ctx, montos, proxPago, saldoActual)
+                : Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(ctx, montos, proxPago, saldoActual);
+        }
+
+        private static CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoAbono_Lineas_Crear(
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CajasCrdOperacionProxPagoData proxPago,
+            decimal saldoActual)
         {
             return new CrArregloPagoDocumentoLineas
             {
-                linea1 = FormatearLineaDocumento(LineaSaldoAnterior, ctx.operacion.saldo),
-                linea2 = FormatearLineaDocumento(LineaSaldoActual, ctx.operacion.saldo - montos.amortiza),
+                linea1 = FormatearLineaDocumento(LineaSaldoAnterior, saldoActual),
+                linea2 = FormatearLineaDocumento(LineaSaldoActual, saldoActual - montos.amortiza),
                 linea3 = FormatearLineaDocumento(LineaInteresCorriente, montos.int_cor),
                 linea4 = FormatearLineaDocumento(LineaInteresAtrasado, montos.int_mor),
                 linea5 = FormatearLineaDocumento(LineaAmortizacion, montos.amortiza),
                 linea6 = FormatearLineaDocumento(LineaCargosTotales, montos.cargos),
                 linea7 = FormatearLineaDocumento(LineaPolizas, montos.polizas),
-                linea8 = $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}",
+                linea8 = Cr_ArregloPago_DocumentoOperacion_Linea_Crear(ctx),
                 linea9 = $"Descripcion       ..: {ctx.operacion.linea_desc}",
                 linea10 = $"Notas: {proxPago.notas}",
                 linea11 = montos.iva > 0
@@ -248,11 +319,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
-        private CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(
+        private static CrArregloPagoDocumentoLineas Cr_ArregloPago_DocumentoReadecuacion_Lineas_Crear(
             CrArregloPagoDocumentoContext ctx,
             CrArregloPagoDocumentoMontos montos,
-            decimal saldoActual,
-            CajasCrdOperacionProxPagoData proxPago)
+            CajasCrdOperacionProxPagoData proxPago,
+            decimal saldoActual)
         {
             var lineas = new CrArregloPagoDocumentoLineas
             {
@@ -263,7 +334,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 linea5 = FormatearLineaDocumento(LineaCapitalizacion, montos.amortiza * -1),
                 linea6 = FormatearLineaDocumento(LineaCargosTotales, montos.cargos),
                 linea7 = FormatearLineaDocumento(LineaPolizas, montos.polizas),
-                linea8 = $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}",
+                linea8 = Cr_ArregloPago_DocumentoOperacion_Linea_Crear(ctx),
                 linea9 = $"Descripcion       ..: {ctx.operacion.linea_desc}",
                 linea10 = string.Empty,
                 linea11 = ctx.trasladar ? "Trasladar Principal" : ctx.operacion.linea_desc
@@ -277,9 +348,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             lineas.linea9 = proxPago.fecha_pago.HasValue
                 ? $"Prox.Pago..:{proxPago.fecha_pago.Value:dd/MM/yyyy} Cta.({proxPago.num_cuota}) {proxPago.cuota:N2}"
                 : "Prox.Pago..: >> <<";
-
             lineas.linea10 = $"Notas: {proxPago.notas}";
+
             return lineas;
+        }
+
+        private static string Cr_ArregloPago_DocumentoOperacion_Linea_Crear(
+            CrArregloPagoDocumentoContext ctx)
+        {
+            return $"Operacion/Linea   ..: Op.:{ctx.operacion.operacion} L.:{ctx.operacion.codigo}-{(ctx.operacion.opex == 1 ? "OPEX" : string.Empty)}";
+        }
+
+        private void Cr_ArregloPago_Documento_Transaccion_Insertar(
+            SqlConnection conn,
+            SqlTransaction tx,
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CrArregloPagoDocumentoLineas lineas,
+            CrArregloPagoDocumentoTipo tipoDocumento)
+        {
+            if (tipoDocumento == CrArregloPagoDocumentoTipo.Abono)
+            {
+                Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
+                return;
+            }
+
+            Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(conn, tx, ctx, montos, lineas);
         }
 
         private void Cr_ArregloPago_DocumentoAbono_Transaccion_Insertar(
@@ -289,8 +383,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrArregloPagoDocumentoMontos montos,
             CrArregloPagoDocumentoLineas lineas)
         {
-            conn.Execute(
-                @"
+            const string sql = @"
                 insert SIF_TRANSACCIONES
                 (
                     COD_TRANSACCION,
@@ -352,35 +445,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     '',
                     @Caja,
                     @Apertura
-                );",
-                new
-                {
-                    NumDoc = ctx.num_doc,
-                    TipoDoc = ctx.tipo_doc,
-                    Usuario = ctx.usuario,
-                    Cedula = ctx.operacion.cedula.Trim(),
-                    Nombre = ctx.operacion.nombre.Trim(),
-                    Concepto = ctx.concepto,
-                    Monto = montos.monto_documento,
-                    Operacion = ctx.operacion.operacion.ToString(),
-                    Codigo = ctx.operacion.codigo,
-                    OficinaTitular = ctx.globales.GOficinaTitular ?? string.Empty,
-                    Linea1 = lineas.linea1,
-                    Linea2 = lineas.linea2,
-                    Linea3 = lineas.linea3,
-                    Linea4 = lineas.linea4,
-                    Linea5 = lineas.linea5,
-                    Linea6 = lineas.linea6,
-                    Linea7 = lineas.linea7,
-                    Linea8 = lineas.linea8,
-                    Linea9 = lineas.linea9,
-                    Linea10 = lineas.linea10,
-                    Linea11 = lineas.linea11,
-                    Detalle = ctx.notas,
-                    Caja = ctx.caja.caja,
-                    Apertura = ctx.caja.apertura
-                },
-                tx);
+                );";
+
+            conn.Execute(sql, Cr_ArregloPago_DocumentoInsertParametros_Crear(ctx, montos, lineas));
         }
 
         private void Cr_ArregloPago_DocumentoReadecuacion_Transaccion_Insertar(
@@ -390,8 +457,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrArregloPagoDocumentoMontos montos,
             CrArregloPagoDocumentoLineas lineas)
         {
-            conn.Execute(
-                @"
+            const string sql = @"
                 insert SIF_TRANSACCIONES
                 (
                     COD_TRANSACCION,
@@ -449,33 +515,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Detalle,
                     '',
                     @Linea11
-                );",
-                new
-                {
-                    NumDoc = ctx.num_doc,
-                    TipoDoc = ctx.tipo_doc,
-                    Usuario = ctx.usuario,
-                    Cedula = ctx.operacion.cedula.Trim(),
-                    Nombre = ctx.operacion.nombre.Trim(),
-                    Concepto = ctx.concepto,
-                    Monto = montos.monto_documento,
-                    Operacion = ctx.operacion.operacion.ToString(),
-                    Codigo = ctx.operacion.codigo,
-                    OficinaTitular = ctx.globales.GOficinaTitular ?? string.Empty,
-                    Linea1 = lineas.linea1,
-                    Linea2 = lineas.linea2,
-                    Linea3 = lineas.linea3,
-                    Linea4 = lineas.linea4,
-                    Linea5 = lineas.linea5,
-                    Linea6 = lineas.linea6,
-                    Linea7 = lineas.linea7,
-                    Linea8 = lineas.linea8,
-                    Linea9 = lineas.linea9,
-                    Linea10 = lineas.linea10,
-                    Detalle = ctx.notas,
-                    Linea11 = lineas.linea11
-                },
-                tx);
+                );";
+
+            conn.Execute(sql, Cr_ArregloPago_DocumentoInsertParametros_Crear(ctx, montos, lineas), tx);
+        }
+
+        private static object Cr_ArregloPago_DocumentoInsertParametros_Crear(
+            CrArregloPagoDocumentoContext ctx,
+            CrArregloPagoDocumentoMontos montos,
+            CrArregloPagoDocumentoLineas lineas)
+        {
+            return new
+            {
+                NumDoc = ctx.num_doc,
+                TipoDoc = ctx.tipo_doc,
+                Usuario = ctx.usuario,
+                Cedula = ctx.operacion.cedula.Trim(),
+                Nombre = ctx.operacion.nombre.Trim(),
+                Concepto = ctx.concepto,
+                Monto = montos.monto_documento,
+                Operacion = ctx.operacion.operacion.ToString(),
+                Codigo = ctx.operacion.codigo,
+                OficinaTitular = ctx.globales.GOficinaTitular ?? string.Empty,
+                Linea1 = lineas.linea1,
+                Linea2 = lineas.linea2,
+                Linea3 = lineas.linea3,
+                Linea4 = lineas.linea4,
+                Linea5 = lineas.linea5,
+                Linea6 = lineas.linea6,
+                Linea7 = lineas.linea7,
+                Linea8 = lineas.linea8,
+                Linea9 = lineas.linea9,
+                Linea10 = lineas.linea10,
+                Linea11 = lineas.linea11,
+                Detalle = ctx.notas,
+                Caja = ctx.caja.caja,
+                Apertura = ctx.caja.apertura
+            };
         }
 
         private void Cr_ArregloPago_AsientosDocumento_Registrar(
@@ -485,23 +561,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrArregloPagoTipoCambioContext tipoCambio,
             CajasCrdOperacionCtasData ctas,
             CrArregloPagoDocumentoMontos montos,
-            string tipoAmortiza)
+            CrArregloPagoDocumentoTipo tipoDocumento)
         {
-            Cr_ArregloPago_AsientoMonto_Registrar(
-                conn,
-                tx,
-                ctx.globales,
-                Cr_ArregloPago_AsientoRequest_Crear(
-                    ctx,
-                    montos.int_cor * tipoCambio.factor,
-                    "C",
-                    ctas.cod_divisa,
-                    tipoCambio.tipo_cambio,
-                    ctas.cod_unidad,
-                    ctas.cod_centro_costo,
-                    ctas.ctaintc,
-                    ctas.id_solicitud,
-                    ctas.codigo));
+            var tipoAmortiza = tipoDocumento == CrArregloPagoDocumentoTipo.Readecuacion ? "D" : "C";
 
             Cr_ArregloPago_AsientoMonto_Registrar(
                 conn,
@@ -509,15 +571,37 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    montos.int_mor * tipoCambio.factor,
-                    "C",
-                    ctas.cod_divisa,
-                    tipoCambio.tipo_cambio,
-                    ctas.cod_unidad,
-                    ctas.cod_centro_costo,
-                    ctas.ctaintm,
-                    ctas.id_solicitud,
-                    ctas.codigo));
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montos.int_cor * tipoCambio.factor,
+                        tipo = "C",
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaintc,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
+
+            Cr_ArregloPago_AsientoMonto_Registrar(
+                conn,
+                tx,
+                ctx.globales,
+                Cr_ArregloPago_AsientoRequest_Crear(
+                    ctx,
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montos.int_mor * tipoCambio.factor,
+                        tipo = "C",
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaintm,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
 
             Cr_ArregloPago_AsientoCargos_Registrar(
                 conn,
@@ -541,15 +625,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    montos.amortiza * tipoCambio.factor,
-                    tipoAmortiza,
-                    ctas.cod_divisa,
-                    tipoCambio.tipo_cambio,
-                    ctas.cod_unidad,
-                    ctas.cod_centro_costo,
-                    ctas.ctaamortiza,
-                    ctas.id_solicitud,
-                    ctas.codigo));
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montos.amortiza * tipoCambio.factor,
+                        tipo = tipoAmortiza,
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaamortiza,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
         }
 
         private void Cr_ArregloPago_AsientoCargos_Registrar(
@@ -573,15 +660,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ctx.globales,
                     Cr_ArregloPago_AsientoRequest_Crear(
                         ctx,
-                        montoCargo * tipoCambio.factor,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio.tipo_cambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctacargos,
-                        ctas.id_solicitud,
-                        ctas.codigo));
+                        new CrArregloPagoAsientoFactoryData
+                        {
+                            monto = montoCargo * tipoCambio.factor,
+                            tipo = "C",
+                            divisa = ctas.cod_divisa,
+                            tipo_cambio = tipoCambio.tipo_cambio,
+                            unidad = ctas.cod_unidad,
+                            centro_costo = ctas.cod_centro_costo,
+                            cuenta = ctas.ctacargos,
+                            operacion = ctas.id_solicitud,
+                            codigo = ctas.codigo
+                        }));
                 return;
             }
 
@@ -599,15 +689,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ctx.globales,
                     Cr_ArregloPago_AsientoRequest_Crear(
                         ctx,
-                        (item.mov_monto ?? 0) * tipoCambio.factor,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio.tipo_cambio,
-                        item.cod_unidad,
-                        item.cod_centro_costo,
-                        item.cod_cuenta,
-                        item.id_solicitud,
-                        item.codigo));
+                        new CrArregloPagoAsientoFactoryData
+                        {
+                            monto = (item.mov_monto ?? 0) * tipoCambio.factor,
+                            tipo = "C",
+                            divisa = ctas.cod_divisa,
+                            tipo_cambio = tipoCambio.tipo_cambio,
+                            unidad = item.cod_unidad,
+                            centro_costo = item.cod_centro_costo,
+                            cuenta = item.cod_cuenta,
+                            operacion = item.id_solicitud,
+                            codigo = item.codigo
+                        }));
             }
         }
 
@@ -635,15 +728,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    montoPoliza * tipoCambio.factor,
-                    "C",
-                    ctas.cod_divisa,
-                    tipoCambio.tipo_cambio,
-                    ctas.cod_unidad,
-                    ctas.cod_centro_costo,
-                    cuentaPoliza,
-                    ctas.id_solicitud,
-                    ctas.codigo));
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montoPoliza * tipoCambio.factor,
+                        tipo = "C",
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = cuentaPoliza,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
         }
 
         private void Cr_ArregloPago_DocumentoPagoFinal_Registrar(
@@ -686,29 +782,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static CrArregloPagoAsientoRequest Cr_ArregloPago_AsientoRequest_Crear(
             CrArregloPagoDocumentoContext ctx,
-            decimal monto,
-            string tipo,
-            string divisa,
-            decimal tipoCambio,
-            string unidad,
-            string centroCosto,
-            string cuenta,
-            int operacion,
-            string codigo)
+            CrArregloPagoAsientoFactoryData data)
         {
             return new CrArregloPagoAsientoRequest
             {
                 tipo_doc = ctx.tipo_doc,
                 num_doc = ctx.num_doc,
-                monto = monto,
-                tipo = tipo,
-                divisa = divisa,
-                tipo_cambio = tipoCambio,
-                unidad = unidad,
-                centro_costo = centroCosto,
-                cuenta = cuenta,
-                operacion = operacion,
-                codigo = codigo
+                monto = data.monto,
+                tipo = data.tipo,
+                divisa = data.divisa,
+                tipo_cambio = data.tipo_cambio,
+                unidad = data.unidad,
+                centro_costo = data.centro_costo,
+                cuenta = data.cuenta,
+                operacion = data.operacion,
+                codigo = data.codigo
             };
         }
 
@@ -780,17 +868,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "exec spCrdOperacionCtas @Operacion;",
                 new { Operacion = operacion },
                 tx) ?? new CajasCrdOperacionCtasData();
-        }
-
-        private CajasCrdOperacionProxPagoData Cr_ArregloPago_ProxPago_Obtener(
-            SqlConnection conn,
-            SqlTransaction tx,
-            int operacion)
-        {
-            return conn.QueryFirstOrDefault<CajasCrdOperacionProxPagoData>(
-                "exec spCrdOperacionFechaProxPago @Operacion;",
-                new { Operacion = operacion },
-                tx) ?? new CajasCrdOperacionProxPagoData();
         }
 
         private List<CajasCrdDocAfectacionCargoRow> Cr_ArregloPago_DocumentoAfectacionCargos_Obtener(
