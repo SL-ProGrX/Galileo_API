@@ -9,16 +9,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         private const int TipoCredito = 3;
 
         public static IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> ObtenerReglas(
-            CcProcesoMensualCargaDeduccionesTipo tipoCarga)
+            string tipoCarga)
         {
+          
             return tipoCarga switch
             {
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel_Tek_Experts => sbCargaDeduc_Excel_Tek_Experts,
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel_DxC_Costa_Rica => sbCargaDeduc_Excel_DxC_Costa_Rica,
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel => sbCargaDeduc_Excel,
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Excel_DxC_CentroAmerica =>  sbCargaDeduc_Excel_DxC_CentroAmerica,
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_ExcelNew => [],
-                CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Csv_Integra => [],
+                "00" => sbCargaDeduc_Excel,
+                "03" => sbCargaDeduc_Excel,
+                "28" => sbCargaDeduc_Excel_Tek_Experts,
+                "32" => sbCargaDeduc_Excel_DxC_Costa_Rica,                
+                "33" =>  sbCargaDeduc_Excel_DxC_CentroAmerica,
+                "30" => [],
+                "02" => [],
                 _ => []
             };
         }

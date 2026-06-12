@@ -18,8 +18,6 @@ using System.Text.Json;
 namespace Galileo_API.DataBaseTier
 {
     #pragma warning disable S3776
-    #pragma warning disable S2077
-    #pragma warning disable S1450
     #pragma warning disable S2325
     #pragma warning disable S1854
     #pragma warning disable S1172
@@ -33,7 +31,6 @@ namespace Galileo_API.DataBaseTier
     #pragma warning disable S2583
     #pragma warning disable S2559
     #pragma warning disable S3241
-    #pragma warning disable S2259
     // LEGACY: código histórico, no modificar sin plan de refactor
     public class AseccssSinpeValidator : IWfcSinpe
     {
