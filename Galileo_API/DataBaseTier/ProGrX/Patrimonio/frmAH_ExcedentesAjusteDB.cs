@@ -466,17 +466,13 @@ WHERE AJUSTE_ID = @AjusteId;";
                 casos = pendientes.Count
             };
 
-            foreach (var item in pendientes)
-            {
-                if (item.ajuste < 0)
-                {
-                    resumen.ajuste_negativo += Math.Abs(item.ajuste);
-                }
-                else
-                {
-                    resumen.ajuste_positivo += item.ajuste;
-                }
-            }
+            resumen.ajuste_negativo += pendientes
+                .Where(x => x.ajuste < 0)
+                .Sum(x => Math.Abs(x.ajuste));
+
+            resumen.ajuste_positivo += pendientes
+                .Where(x => x.ajuste >= 0)
+                .Sum(x => x.ajuste);
 
             return resumen;
         }

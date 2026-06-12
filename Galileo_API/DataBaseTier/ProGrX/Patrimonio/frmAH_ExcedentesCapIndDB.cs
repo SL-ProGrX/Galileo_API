@@ -273,7 +273,7 @@ WHERE EXC_CAP_IND = @ExcCapInd;";
                             ExcCapInd = excCapInd,
                             Cedula = cedula,
                             Porcentaje = porcentaje,
-                            VencimientoFecha = new DateTime(vencimiento, 12, 31),
+                            VencimientoFecha = new DateTime(vencimiento, 12, 31, 0, 0, 0, DateTimeKind.Unspecified),
                             Usuario = usuario
                         });
 
@@ -310,7 +310,7 @@ WHERE EXC_CAP_IND = @ExcCapInd;";
                         ExcCapInd = excCapInd,
                         Cedula = cedula,
                         Porcentaje = porcentaje,
-                        VencimientoFecha = new DateTime(vencimiento, 12, 31),
+                        VencimientoFecha = new DateTime(vencimiento, 12, 31, 0, 0, 0, DateTimeKind.Unspecified),
                         Usuario = usuario
                     });
 
