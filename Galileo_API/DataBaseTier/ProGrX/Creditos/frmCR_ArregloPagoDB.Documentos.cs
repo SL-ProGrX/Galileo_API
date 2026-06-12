@@ -91,6 +91,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public string codigo { get; set; } = string.Empty;
         }
 
+        private sealed class CrArregloPagoAsientoCuentaData
+        {
+            public string divisa { get; set; } = string.Empty;
+            public decimal tipo_cambio { get; set; }
+            public string unidad { get; set; } = string.Empty;
+            public string centro_costo { get; set; } = string.Empty;
+            public string cuenta { get; set; } = string.Empty;
+            public int operacion { get; set; }
+            public string codigo { get; set; } = string.Empty;
+        }
+
         private ErrorDto Cr_ArregloPago_DocumentoAbono_Generar(
             SqlConnection conn,
             SqlTransaction tx,
@@ -558,22 +569,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ? "D"
                 : "C";
 
-            Cr_ArregloPago_AsientoMonto_Registrar(
-                conn,
-                tx,
-                ctx.globales,
-                Cr_ArregloPago_AsientoRequest_Crear(
-                    ctx,
-                    Cr_ArregloPago_AsientoFactoryData_Crear(
-                        montos.int_cor * tipoCambio.factor,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio.tipo_cambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaintc,
-                        ctas.id_solicitud,
-                        ctas.codigo)));
+            Cr_ArregloPago_AsientoRequest_Crear(
+                ctx,
+                Cr_ArregloPago_AsientoFactoryData_Crear(
+                    montos.int_cor * tipoCambio.factor,
+                    "C",
+                    new CrArregloPagoAsientoCuentaData
+                    {
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaintc,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
 
             Cr_ArregloPago_AsientoMonto_Registrar(
                 conn,
@@ -581,16 +591,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    Cr_ArregloPago_AsientoFactoryData_Crear(
-                        montos.int_mor * tipoCambio.factor,
-                        "C",
-                        ctas.cod_divisa,
-                        tipoCambio.tipo_cambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaintm,
-                        ctas.id_solicitud,
-                        ctas.codigo)));
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montos.int_mor * tipoCambio.factor,
+                        tipo = "C",
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaintm,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
 
             Cr_ArregloPago_AsientoCargos_Registrar(
                 conn,
@@ -614,16 +626,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ctx.globales,
                 Cr_ArregloPago_AsientoRequest_Crear(
                     ctx,
-                    Cr_ArregloPago_AsientoFactoryData_Crear(
-                        montos.amortiza * tipoCambio.factor,
-                        tipoAmortiza,
-                        ctas.cod_divisa,
-                        tipoCambio.tipo_cambio,
-                        ctas.cod_unidad,
-                        ctas.cod_centro_costo,
-                        ctas.ctaamortiza,
-                        ctas.id_solicitud,
-                        ctas.codigo)));
+                    new CrArregloPagoAsientoFactoryData
+                    {
+                        monto = montos.amortiza * tipoCambio.factor,
+                        tipo = tipoAmortiza,
+                        divisa = ctas.cod_divisa,
+                        tipo_cambio = tipoCambio.tipo_cambio,
+                        unidad = ctas.cod_unidad,
+                        centro_costo = ctas.cod_centro_costo,
+                        cuenta = ctas.ctaamortiza,
+                        operacion = ctas.id_solicitud,
+                        codigo = ctas.codigo
+                    }));
         }
 
         private void Cr_ArregloPago_AsientoCargos_Registrar(
@@ -878,6 +892,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "select dbo.fxCrdOperacionCtaContaPolizas(@Operacion);",
                 new { Operacion = operacion },
                 tx) ?? string.Empty;
+        }
+
+        private static CrArregloPagoAsientoFactoryData Cr_ArregloPago_AsientoFactoryData_Crear(
+            decimal monto,
+            string tipo,
+            CrArregloPagoAsientoCuentaData cuentaData)
+        {
+            return new CrArregloPagoAsientoFactoryData
+            {
+                monto = monto,
+                tipo = tipo,
+                divisa = cuentaData.divisa,
+                tipo_cambio = cuentaData.tipo_cambio,
+                unidad = cuentaData.unidad,
+                centro_costo = cuentaData.centro_costo,
+                cuenta = cuentaData.cuenta,
+                operacion = cuentaData.operacion,
+                codigo = cuentaData.codigo
+            };
         }
     }
 }

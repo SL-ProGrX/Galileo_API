@@ -216,30 +216,5 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 linea11 = string.Empty
             };
         }
-
-        private static CrArregloPagoAsientoFactoryData Cr_ArregloPago_AsientoFactoryData_Crear(
-            decimal monto,
-            string tipo,
-            string divisa,
-            decimal tipoCambio,
-            string unidad,
-            string centroCosto,
-            string cuenta,
-            int operacion,
-            string codigo)
-        {
-            return new CrArregloPagoAsientoFactoryData
-            {
-                monto = monto,
-                tipo = tipo,
-                divisa = divisa,
-                tipo_cambio = tipoCambio,
-                unidad = unidad,
-                centro_costo = centroCosto,
-                cuenta = cuenta,
-                operacion = operacion,
-                codigo = codigo
-            };
-        }
     }
 }
