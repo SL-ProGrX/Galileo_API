@@ -96,7 +96,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         public decimal ab_poliza { get; set; } = 0;
     }
 
-    public class CrArregloPagoCapitalizaRequest
+    public class CrArregloPagoCajaRequestBase
     {
         public string usuario { get; set; } = string.Empty;
         public string caja { get; set; } = string.Empty;
@@ -108,22 +108,16 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string tipo_doc { get; set; } = string.Empty;
         public decimal total_cajas { get; set; } = 0;
         public string notas { get; set; } = string.Empty;
+    }
+
+    public class CrArregloPagoCapitalizaRequest : CrArregloPagoCajaRequestBase
+    {
         public bool trasladar { get; set; } = false;
         public bool tipo_intereses { get; set; } = false;
     }
 
-    public class CrArregloPagoAbonoEspecialRequest
+    public class CrArregloPagoAbonoEspecialRequest : CrArregloPagoCajaRequestBase
     {
-        public string usuario { get; set; } = string.Empty;
-        public string caja { get; set; } = string.Empty;
-        public int apertura { get; set; } = 0;
-        public string tiquete { get; set; } = string.Empty;
-        public string unidad { get; set; } = string.Empty;
-        public string divisa { get; set; } = string.Empty;
-        public int operacion { get; set; } = 0;
-        public string tipo_doc { get; set; } = string.Empty;
-        public decimal total_cajas { get; set; } = 0;
-        public string notas { get; set; } = string.Empty;
         public string tipo_abono { get; set; } = "E";
         public string proceso_cuota { get; set; } = string.Empty;
         public int num_cuota { get; set; } = 0;
