@@ -762,11 +762,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 var dto = JsonConvert.DeserializeObject<CrEnCobroCuotasFiltroDto>(filtros.filtro);
-                return (dto?.texto ?? filtros.filtro ?? string.Empty).Trim();
+                return (dto?.texto ?? filtros.filtro).Trim();
             }
             catch (JsonException)
             {
-                return (filtros.filtro ?? string.Empty).Trim();
+                return filtros.filtro.Trim();
             }
         }
 
