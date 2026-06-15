@@ -14,20 +14,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MProGrxMain _mProGrx;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly CcProcesoMensualGeneralDb _mGeneral;
+
         public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
             _Security_MainDB = new MSecurityMainDb(config);
+            _mGeneral = new CcProcesoMensualGeneralDb(config);
+
         }
  
-
-        public ErrorDto<bool> CcProcesoMensual_Ahorros_Aplicar(  int codEmpresa,int codInstitucion,decimal fechaProceso,string usuario)
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(  int codEmpresa,int codInstitucion,decimal fechaProceso,string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
             DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
             try
             {
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "05", "PRE", usuario, codInstitucion, fechaProceso);
+
+
                 EjecutarAplicacionAportes(connection, codInstitucion, fechaProceso, usuario);
                 ProcesarDevolucionesAhorros(connection, codInstitucion, fechaProceso, vFecha, usuario);
                 ActualizarEstadoAplicacionAhorros(connection, codInstitucion);
@@ -49,17 +55,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                                                         Gestion = "R",
                                                         Usuario = usuario
                                                     });
-                 
-                
 
-                return DbHelper.CreateOkResponse(true);
+                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
+
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "05", "POS", usuario, codInstitucion, fechaProceso);
+
+                return DbHelper.CreateOkResponse(
+                  new CcProcesoMensualAhorros
+                  {
+                      Aplicado = true,
+                      ParametrosReporte = datosReporte
+
+                  });
+                 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Error al aplicar los aportes del proceso mensual.",
-                    -1,
-                    false);
+                return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
+                 ex.Message,
+                 -1,
+                 new CcProcesoMensualAhorros());
+ 
             }
         }
 
@@ -228,27 +244,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                         Tipo = "A",
                         Fecha = fecha
                     });
-            }
-
-            if (socio.Aporte > 0)
-            {
-                EjecutarDevolucionFondo(
-                    connection,
-                    new CcProcesoMensualDevolucionFondoRequest
-                    {
-                        CodInstitucion = codInstitucion,
-                        FechaProceso = fechaProceso,
-                        Operadora = parametros.FndApOperadora,
-                        Plan = parametros.FndApPlan,
-                        Cedula = socio.Cedula,
-                        Monto = socio.Aporte,
-                        Documento = documento,
-                        CuentaInconsistencia = parametros.CtaInconsistencia,
-                        Tipo = "A",
-                        Fecha = fecha
-                    }   );
-            }
-
+            } 
             if (socio.Aporte > 0)
             {
                 EjecutarDevolucionFondo(
@@ -324,9 +320,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
 
-        private static void ActualizarEstadoInconsistenciasAhorros(
-            IDbConnection connection,
-            int codInstitucion)
+        private static void ActualizarEstadoInconsistenciasAhorros( IDbConnection connection, int codInstitucion)
         {
             const string query = @"
                 UPDATE instituciones
@@ -336,9 +330,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
 
-        private static void ActualizarEstadoDevolucionesAhorros(
-            IDbConnection connection,
-            int codInstitucion)
+        private static void ActualizarEstadoDevolucionesAhorros(IDbConnection connection,int codInstitucion)
         {
             const string query = @"
                 UPDATE instituciones
@@ -348,6 +340,54 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
 
+        public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener(int codEmpresa, int codInstitucion)
+        {
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string query = @"
+            SELECT
+                ISNULL(porc_aporte, 0) / 100.0 AS Porcentaje,
+                ISNULL(porc_ahorro, 0) / 100.0 AS PorcAhorro
+            FROM instituciones
+            WHERE cod_institucion = @CodInstitucion";
+
+                var result = connection.QueryFirstOrDefault<CcProcesoMensualAhorroReporteModel>(
+                    query,
+                    new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualAhorroReporteModel();
+
+                return new ErrorDto<CcProcesoMensualAhorroReporteModel>
+                {
+                    Code = 0,
+                    Description = "Consulta realizada correctamente.",
+                    Result = result
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<CcProcesoMensualAhorroReporteModel>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = new CcProcesoMensualAhorroReporteModel()
+                };
+            }
+        }
+
+        private static CcProcesoMensualAhorroReporteModel ObtenerParametrosAhorroReporte(IDbConnection connection, int codInstitucion)
+        {
+            const string query = @"
+                SELECT
+                    ISNULL(porc_aporte, 0) / 100 AS Porcentaje,
+                    ISNULL(porc_ahorro, 0) / 100 AS PorcAhorro
+                FROM instituciones
+                WHERE cod_institucion = @CodInstitucion";
+
+            return connection.QueryFirstOrDefault<CcProcesoMensualAhorroReporteModel>(
+                query,
+                new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualAhorroReporteModel();
+        }
         private sealed class CcProcesoMensualAhorroParametrosDbModel
         {
             public int FndApAplica { get; set; } =0;

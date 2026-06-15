@@ -1,4 +1,5 @@
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo_API.Models.ProGrX.Cajas;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
 
@@ -12,6 +13,20 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public FrmCajasAplicacionMultipleBl(IConfiguration config)
             : this(new FrmCajasAplicacionMultipleDb(config))
         {
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_AM_Documentos_Obtener(
+            int codEmpresa,
+            string codCaja)
+        {
+            return DbFrmCajas_AM.Cajas_AM_Documentos_Obtener(codEmpresa, codCaja);
+        }
+
+        public ErrorDto<CajasAmClienteInicialDto> Cajas_AM_ClienteInicial_Obtener(
+            int codEmpresa,
+            string cedula)
+        {
+            return DbFrmCajas_AM.Cajas_AM_ClienteInicial_Obtener(codEmpresa, cedula);
         }
 
         public ErrorDto<CajasAmValidacionDto> Cajas_AM_Validar(
@@ -52,6 +67,18 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return DbFrmCajas_AM.Cajas_AM_Aplicar(
                 codEmpresa, request
+            );
+        }
+
+        public ErrorDto<List<CajasAmSeleccionadoDto>> Cajas_AM_Seleccionados(
+            int codEmpresa,
+            string cedula,
+            string codCaja,
+            int codApertura,
+            string tiquete)
+        {
+            return DbFrmCajas_AM.Cajas_AM_Seleccionados(
+                codEmpresa, cedula, codCaja, codApertura, tiquete
             );
         }
     }
