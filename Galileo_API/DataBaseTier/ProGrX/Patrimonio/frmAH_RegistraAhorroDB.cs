@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var acceso = _mProGrx.fxSys_RA_Consulta(codEmpresa, cedula, usuario);
             if (acceso.Code < 0)
-                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code ?? -1, response);
+                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code, response);
 
             if (!acceso.Result)
             {
@@ -418,8 +418,21 @@ exec spPAT_Autorizaciones_Aplica
             }
             catch (Exception ex)
             {
-                try { tx.Rollback(); } catch {}
-                return DbHelper.CreateErrorResponse(ex.Message, -1, response);
+                string rollbackError = null;
+                try
+                {
+                    tx.Rollback();
+                }
+                catch (Exception rollbackEx)
+                {
+                    rollbackError = rollbackEx.Message;
+                }
+
+                var errorMessage = rollbackError == null
+                    ? ex.Message
+                    : $"{ex.Message} | Rollback failed: {rollbackError}";
+
+                return DbHelper.CreateErrorResponse(errorMessage, -1, response);
             }
         }
 
