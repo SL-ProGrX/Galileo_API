@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var acceso = _mProGrx.fxSys_RA_Consulta(codEmpresa, cedula, usuario);
             if (acceso.Code < 0)
-                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code ?? -1, response);
+                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code, response);
 
             if (!acceso.Result)
             {
