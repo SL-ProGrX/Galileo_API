@@ -1,4 +1,4 @@
-﻿ 
+﻿
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB;
@@ -19,6 +19,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly CcProcesoMensualBitacoraDb _dbBitacora;
         private readonly CcProcesoMensualCargaArchivosDb _dbCargaArchivos;
         private readonly CcProcesoMensualEnvioDb _dbEnvio;
+        private readonly CcProcesoMensualRecepcionDb _dbRecepcion;
+        private readonly CcProcesoMensualAplicacionAhorrosDb _dbAplicacionAhorros;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
 
@@ -31,6 +33,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             _dbEnvio = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
+            _dbRecepcion = new CcProcesoMensualRecepcionDb(config);
+            _dbAplicacionAhorros = new CcProcesoMensualAplicacionAhorrosDb(config);
         }
         public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion)
         {
@@ -69,7 +73,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         {
             return _dbEstado.DatosInstitucion_Obtener(codEmpresa, codInstitucion);
         }
-
         public ErrorDto<CcProcesoMensualCambiarFechaResponse> CcProcesoMensual_CambiarFechaProceso_Ejecutar(int codEmpresa, CcProcesoMensualCambiarFechaRequest request)
         {
             try
@@ -80,23 +83,23 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                    "La solicitud es requerida.",
                    -1,
                    new CcProcesoMensualCambiarFechaResponse());
- 
+
                 }
 
 
-                if (request.Anio.Trim() =="" || request.Mes is < 1 or > 12 || request.Quincena <0)
+                if (request.Anio.Trim() == "" || request.Mes is < 1 or > 12 || request.Quincena < 0)
                 {
                     return DbHelper.CreateErrorResponse<CcProcesoMensualCambiarFechaResponse>(
                         "Los datos del período no son válidos.",
                         -1,
                         new CcProcesoMensualCambiarFechaResponse());
- 
+
                 }
-                 
+
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var fechaProcesoTexto = $"{request.Anio}{request.Mes:00}.{request.Quincena}";
-                var fechaProceso = decimal.Parse( fechaProcesoTexto,  CultureInfo.InvariantCulture);
+                var fechaProceso = decimal.Parse(fechaProcesoTexto, CultureInfo.InvariantCulture);
 
                 var fechaCorte = _dbEnvio.ObtenerFechaCorteProceso(
                     connection,
@@ -146,8 +149,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                        FechaCorte = fechaCorte,
                        Mensaje = $"La fecha de proceso fue cambiada a :  {request.Anio}{request.Mes:00} "
                    });
-              
-                  
+
+
             }
             catch (Exception ex)
             {
@@ -155,8 +158,22 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                    ex.Message,
                   -1,
                   new CcProcesoMensualCambiarFechaResponse());
-                 
+
             }
+        }
+        public ErrorDto<CcProcesoMensualDesglosePlanillaResponse> CcProcesoMensual_DesglosarPlanilla_Ejecutar(CcProcesoMensualDesgloseRequest request)
+        {
+            return _dbRecepcion.CcProcesoMensual_DesglosarPlanilla_Ejecutar(request);  
+        }
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _dbAplicacionAhorros.CcProcesoMensual_Ahorros_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+
+        }
+        public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener( int codEmpresa,int codInstitucion)
+        {
+            return _dbAplicacionAhorros.CcProcesoMensual_ParametrosAhorroReporte_Obtener(codEmpresa, codInstitucion);
+
         }
     }
 }

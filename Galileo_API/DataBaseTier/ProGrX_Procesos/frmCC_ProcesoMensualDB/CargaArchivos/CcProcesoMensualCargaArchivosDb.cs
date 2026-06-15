@@ -354,7 +354,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 transaction: transaction);
         }
 
-        private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, IReadOnlyCollection<CcProcesoMensualPrmCargadoDbModel> registros)
+        private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, List<CcProcesoMensualPrmCargadoDbModel> registros)
         {
             if (registros.Count == 0)
             {
