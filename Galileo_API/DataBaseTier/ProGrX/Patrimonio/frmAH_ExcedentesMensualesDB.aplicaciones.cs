@@ -255,7 +255,7 @@ where id_periodo = @PeriodoId;";
             conn.Execute(sql, new { PeriodoId = periodoId });
         }
 
-        private static dynamic? EjecutarSpIterativo(SqlConnection conn, string sql, object parameters)
+        private static void EjecutarSpIterativo(SqlConnection conn, string sql, object parameters)
         {
             var result = conn.QueryFirstOrDefault(sql, parameters);
 
@@ -264,7 +264,6 @@ where id_periodo = @PeriodoId;";
                 result = conn.QueryFirstOrDefault(sql, parameters);
             }
 
-            return result;
         }
 
         private string EjecutarInsolventes(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)

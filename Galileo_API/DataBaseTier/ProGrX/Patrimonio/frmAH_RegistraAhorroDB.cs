@@ -245,7 +245,6 @@ exec spPAT_Gestion_Estado
             var fechaProceso = AH_RegistraAhorro_NormalizarTexto(request.fecha_proceso, 20);
             var tipoDocumento = AH_RegistraAhorro_NormalizarTexto(request.tipo_documento, 20);
             var tiquete = AH_RegistraAhorro_NormalizarTexto(request.tiquete, 80);
-            var notas = AH_RegistraAhorro_NormalizarTexto(request.notas, 500);
             var montoAplicar = request.total_cajas > 0 ? request.total_cajas : request.monto;
 
             var globalesResp = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario);
@@ -614,11 +613,7 @@ values(
         private static string AH_RegistraAhorro_NormalizarTipoRubro(string? tipoRubro)
         {
             var tipo = AH_RegistraAhorro_NormalizarTexto(tipoRubro, 5).ToUpperInvariant();
-            return tipo switch
-            {
-                "O" or "P" or "C" or "X" => tipo,
-                _ => tipo
-            };
+            return tipo is "O" or "P" or "C" or "X" ? tipo : string.Empty;
         }
 
         private static string AH_RegistraAhorro_NormalizarTexto(string? value, int maxLength)
