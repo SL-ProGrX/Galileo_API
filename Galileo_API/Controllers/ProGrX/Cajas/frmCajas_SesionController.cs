@@ -21,21 +21,27 @@ namespace Galileo.Controllers.ProGrX.Cajas
 
             [Authorize]
             [HttpGet("Cajas_Sesion_Obtener")]
-            public ErrorDto<CajasSesionDto> Cajas_Sesion_ObtenerActiva(int CodEmpresa, string usuario, string identificacion)
+            public ErrorDto<CajasSesionDto> Cajas_Sesion_ObtenerActiva(
+                int CodEmpresa,
+                int sesionId,
+                string caja,
+                string usuario,
+                int apertura,
+                string identificacion)
             {
-                return BL_Cajas_Sesion.Cajas_Sesion_Obtener(CodEmpresa, usuario, identificacion);
+                return BL_Cajas_Sesion.Cajas_Sesion_Obtener(CodEmpresa, sesionId, caja, usuario, apertura, identificacion);
             }
 
             [Authorize]
             [HttpPost("Cajas_Sesion_Inicia")]
-            public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario, int tipoId, string cedula, string nombre)
+            public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario, int apertura, int tipoId, string cedula, string nombre)
             {
-                return BL_Cajas_Sesion.Cajas_Sesion_Inicia(codEmpresa, caja, usuario, tipoId, cedula, nombre);
+                return BL_Cajas_Sesion.Cajas_Sesion_Inicia(codEmpresa, caja, usuario, apertura, tipoId, cedula, nombre);
             }
 
             [Authorize]
             [HttpPost("Cajas_Sesion_Finaliza")]
-            public ErrorDto Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
+            public ErrorDto<CajasSesionFinalizaResultDto> Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
             {
                 return BL_Cajas_Sesion.Cajas_Sesion_Finaliza(codEmpresa, sesionId, usuario);
             }

@@ -57,5 +57,19 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         {
             return BL_Cajas_DatosAsociados.Cajas_Consulta_RecibosMultiples(codEmpresa, cedula);
         }
+
+        [Authorize]
+        [HttpGet("Cajas_DatosPersona_Operacion_Obtener")]
+        public ErrorDto<CajasDatosPersonaDto?> Cajas_DatosPersona_Operacion_Obtener(int codEmpresa, int operacion)
+        {
+            return BL_Cajas_DatosAsociados.Cajas_DatosPersona_Operacion_Obtener(codEmpresa, operacion);
+        }
+
+        [Authorize]
+        [HttpGet("Cajas_DatosPersona_Validar")]
+        public ErrorDto<CajasDatosPersonaDto> Cajas_DatosPersona_Validar(int codEmpresa, string cedula, string usuario)
+        {
+            return BL_Cajas_DatosAsociados.Cajas_DatosPersona_Validar(codEmpresa, cedula, usuario);
+        }
     }
 }

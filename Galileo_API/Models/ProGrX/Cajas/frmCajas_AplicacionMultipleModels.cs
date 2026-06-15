@@ -16,6 +16,11 @@
         public string? garantia { get; set; }
         public string? descripcion { get; set; }
         public long? creditos_id { get; set; }
+        public decimal? intCor { get; set; }
+        public decimal? intMor { get; set; }
+        public decimal? principal { get; set; }
+        public decimal? cargos { get; set; }
+        public decimal? polizas { get; set; }
     }
 
     public class CajasCreditoPendienteDto
@@ -27,6 +32,11 @@
         public string? ultimoPago { get; set; }
         public string? garantia { get; set; }
         public string? descripcion { get; set; }
+        public decimal? intC { get; set; }
+        public decimal? intM { get; set; }
+        public decimal? principal { get; set; }
+        public decimal? cargos { get; set; }
+        public decimal? polizas { get; set; }
     }
 
     public class CajasAmAgregarRequestDto
@@ -57,9 +67,27 @@
         public string? cedula { get; set; }
         public decimal? total { get; set; }
         public string? divisa { get; set; }
+        public decimal? tipoCambio { get; set; }
         public string? notas { get; set; }
         public int? sesionId { get; set; }
         public string? tipoDocumento { get; set; }
+    }
+
+    public class CajasAmClienteInicialDto
+    {
+        public string? cedula { get; set; }
+        public string? nombre { get; set; }
+        public string? divisa { get; set; }
+    }
+
+    public class CajasAMValidarRequestDto
+    {
+        public string? codcaja { get; set; }
+        public int? codapertura { get; set; }
+        public int? sesionid { get; set; }
+        public string? usuario { get; set; }
+        public decimal? monto { get; set; }
+        public string? tiquete { get; set; }
     }
 
     public class CajasAMCreditosPendientesRequestDto
@@ -70,6 +98,7 @@
         public string? tiquete { get; set; }
         public DateTime? fechacorte { get; set; }
         public string? tipomovimiento { get; set; }
+        public DateTime? plancorte { get; set; }
         public DateTime? fechapago { get; set; }
     }
 

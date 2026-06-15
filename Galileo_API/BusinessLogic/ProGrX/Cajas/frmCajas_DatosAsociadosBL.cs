@@ -39,5 +39,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return dbfrmCajas_DatosAsociados.Cajas_Consulta_RecibosMultiples(codEmpresa, cedula);
         }
+
+        public ErrorDto<CajasDatosPersonaDto?> Cajas_DatosPersona_Operacion_Obtener(int codEmpresa, int operacion)
+        {
+            return dbfrmCajas_DatosAsociados.Cajas_DatosPersona_Operacion_Obtener(codEmpresa, operacion);
+        }
+
+        public ErrorDto<CajasDatosPersonaDto> Cajas_DatosPersona_Validar(int codEmpresa, string cedula, string usuario)
+        {
+            return dbfrmCajas_DatosAsociados.Cajas_DatosPersona_Validar(codEmpresa, cedula, usuario);
+        }
     }
 }
