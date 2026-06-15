@@ -418,8 +418,21 @@ exec spPAT_Autorizaciones_Aplica
             }
             catch (Exception ex)
             {
-                try { tx.Rollback(); } catch { }
-                return DbHelper.CreateErrorResponse(ex.Message, -1, response);
+                string rollbackError = null;
+                try
+                {
+                    tx.Rollback();
+                }
+                catch (Exception rollbackEx)
+                {
+                    rollbackError = rollbackEx.Message;
+                }
+
+                var errorMessage = rollbackError == null
+                    ? ex.Message
+                    : $"{ex.Message} | Rollback failed: {rollbackError}";
+
+                return DbHelper.CreateErrorResponse(errorMessage, -1, response);
             }
         }
 
