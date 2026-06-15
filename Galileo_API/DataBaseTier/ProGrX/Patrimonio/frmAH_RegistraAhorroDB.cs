@@ -193,7 +193,7 @@ exec spPAT_Gestion_Registro
                     MntCal = request.mnt_cal,
                     MntSol = request.mnt_sol,
                     Usuario = usuario
-                });
+                }) ;
         }
 
         /// <summary>
@@ -418,7 +418,7 @@ exec spPAT_Autorizaciones_Aplica
             }
             catch (Exception ex)
             {
-                try { tx.Rollback(); } catch { }
+                try { tx.Rollback(); } catch {}
                 return DbHelper.CreateErrorResponse(ex.Message, -1, response);
             }
         }

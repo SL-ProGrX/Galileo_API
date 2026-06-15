@@ -471,11 +471,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse(vfiltro, -2, new List<FndTraspasoTesoreriaLiquidacionConsultaResult>());
             }
 
-            return DbHelper.ExecuteListQuery<FndTraspasoTesoreriaLiquidacionConsultaResult>(
+            var result =  DbHelper.ExecuteListQuery<FndTraspasoTesoreriaLiquidacionConsultaResult>(
                 new PortalDB(_config),
                 param.CodEmpresa,
                 SqlLiquidacionConsulta,
                 CrearParametrosConsultaLiquidacion(param));
+
+            return result;
         }
 
         /// <summary>

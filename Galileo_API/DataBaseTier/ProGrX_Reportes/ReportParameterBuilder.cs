@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier
                     val = null;
                 }
                 reportParams.Add(new ReportParameter(prop.Name, val));
-                dict[prop.Name] = val;
+                dict[prop.Name] = val!;
             }
 
             if (data.parametros.Contains( ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))
@@ -47,11 +47,11 @@ namespace Galileo.DataBaseTier
                 //SI @filtros es " " lo cambio a null
                 if(string.IsNullOrWhiteSpace(connString))
                 {
-                    connString = null;
+                    connString = string.Empty;
                 }
 
                 reportParams.Add(new ReportParameter(ParamKeys.Filtros, connString));
-                dict[ParamKeys.Filtros] = connString;
+                dict[ParamKeys.Filtros] = connString!;
             }
 
             if (data.parametros.Contains(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase))
