@@ -245,35 +245,61 @@ from sif_empresa;";
             }
         }
 
-        private enum CampoLimpiezaExcCierre
+        private enum ExcCierreLimpiezaTipo
         {
-            Estado,
-            Error,
-            FechaProceso
+            Mora,
+            Ajustes,
+            SaldosGarantia,
+            MoraOpcf
         }
 
-        private static void LimpiarExcCierre(
-            SqlConnection conn,
-            int periodoId,
-            IEnumerable<CampoLimpiezaExcCierre> campos)
+        private static void LimpiarExcCierre(SqlConnection conn, int periodoId, ExcCierreLimpiezaTipo tipo)
         {
-            var sets = campos.Select(campo => campo switch
+            string sql = tipo switch
             {
-                CampoLimpiezaExcCierre.Estado => "estado = NULL",
-                CampoLimpiezaExcCierre.Error => "mensaje_error = NULL",
-                CampoLimpiezaExcCierre.FechaProceso => "fecha_proceso = NULL",
-                _ => throw new ArgumentOutOfRangeException(nameof(campos))
-            }).ToList();
-
-            if (sets.Count == 0)
-                return;
-
-            var sql = $@"
+                ExcCierreLimpiezaTipo.Mora => @"
 update exc_cierre
-set {string.Join(", ", sets)}
-where id_periodo = @PeriodoId;";
+set mora_cargada = 0,
+    mora_aplicada = 0,
+    exc_posmora = exc_PosSaldos_ASE
+where id_periodo = @PeriodoId;",
+
+                ExcCierreLimpiezaTipo.Ajustes => @"
+update exc_cierre
+set Ajuste_cargado = 0,
+    ajuste_aplicado = 0,
+    excedente_posajuste = 0
+where id_periodo = @PeriodoId;",
+
+                ExcCierreLimpiezaTipo.SaldosGarantia => @"
+update exc_cierre
+set saldos_ase_cargado = 0,
+    saldos_ase_aplicados = 0,
+    exc_posSaldos_ASE = excedente_PosAjuste
+where id_periodo = @PeriodoId;",
+
+                ExcCierreLimpiezaTipo.MoraOpcf => @"
+update exc_cierre
+set moraopcf_cargada = 0,
+    moraopcf_aplicada = 0,
+    exc_posmoraopcf = 0
+where id_periodo = @PeriodoId;",
+
+                _ => throw new InvalidOperationException("Tipo de limpieza no soportado.")
+            };
 
             conn.Execute(sql, new { PeriodoId = periodoId });
+        }
+
+        private static void EjecutarSpIterativo(SqlConnection conn, string sql, object parameters)
+        {
+            var result = conn.QueryFirstOrDefault(sql, parameters);
+
+            while (result != null && Convert.ToInt32(result!.Pendientes) > 0)
+            {
+                result = conn.QueryFirstOrDefault(sql, parameters);
+            }
+
         }
 
         private string EjecutarInsolventes(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
@@ -304,7 +330,7 @@ where id_periodo = @PeriodoId;";
                 LimpiarExcCierre(
                     conn,
                     request.periodoId,
-                    "Ajuste_cargado = 0, ajuste_aplicado = 0, excedente_posajuste = 0");
+                    ExcCierreLimpiezaTipo.Ajustes);
             }
 
             conn.Execute(
@@ -328,7 +354,7 @@ where id_periodo = @PeriodoId;";
                 LimpiarExcCierre(
                     conn,
                     request.periodoId,
-                    "saldos_ase_cargado = 0, saldos_ase_aplicados = 0, exc_posSaldos_ASE = excedente_PosAjuste");
+                    ExcCierreLimpiezaTipo.SaldosGarantia);
             }
 
             conn.Execute(
@@ -349,8 +375,7 @@ where id_periodo = @PeriodoId;";
             {
                 LimpiarExcCierre(
                     conn,
-                    request.periodoId,
-                    "mora_cargada = 0, mora_aplicada = 0, exc_posmora = exc_PosSaldos_ASE");
+                    request.periodoId, ExcCierreLimpiezaTipo.Mora);
             }
 
             conn.Execute(
@@ -412,8 +437,7 @@ values
             {
                 LimpiarExcCierre(
                     conn,
-                    request.periodoId,
-                    "moraopcf_cargada = 0, moraopcf_aplicada = 0, exc_posmoraopcf = 0");
+                    request.periodoId, ExcCierreLimpiezaTipo.MoraOpcf);
             }
 
             conn.Execute(
