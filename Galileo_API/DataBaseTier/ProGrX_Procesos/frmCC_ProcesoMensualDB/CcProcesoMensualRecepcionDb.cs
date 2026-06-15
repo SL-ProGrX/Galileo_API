@@ -50,9 +50,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                      Cantidad = 50
                  });
 
-            var total = resultado.Total + 1;
+
+             
+            var total = resultado.Total;
             var pendientes = total == 0 ? 0 : resultado.Pendientes;
-            var procesados = total == 0 ? 0 : resultado.Procesados;
 
             while (pendientes > 0)
             {
@@ -67,10 +68,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                       PrimeraVez = 0,
                       Cantidad = 350
                   });
-
+                 
                 total = resultado.Total;
-                pendientes = resultado.Pendientes;
-                procesados = resultado.Procesados;
+                pendientes = total == 0 ? 0 : resultado.Pendientes;
             }
         }
         private static CcProcesoMensualCreditoDesgloseConfigDbModel ObtenerConfiguracionCreditoDesglose(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
