@@ -1,4 +1,5 @@
-﻿using Galileo.Models.ERROR;
+﻿using Galileo.Models.AH;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Patrimonio;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio

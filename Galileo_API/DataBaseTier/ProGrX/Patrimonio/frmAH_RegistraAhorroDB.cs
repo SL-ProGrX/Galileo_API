@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models.AH;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cajas;
@@ -54,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var acceso = _mProGrx.fxSys_RA_Consulta(codEmpresa, cedula, usuario);
             if (acceso.Code < 0)
-                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code, response);
+                return DbHelper.CreateErrorResponse(acceso.Description ?? "No fue posible validar el acceso restringido.", acceso.Code ?? -1, response);
 
             if (!acceso.Result)
             {
@@ -181,7 +182,7 @@ exec spPAT_Gestion_Registro
     @MntSol,
     @Usuario;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -193,7 +194,8 @@ exec spPAT_Gestion_Registro
                     MntCal = request.mnt_cal,
                     MntSol = request.mnt_sol,
                     Usuario = usuario
-                }) ;
+                }).Result;
+            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result!);
         }
 
         /// <summary>
@@ -212,12 +214,14 @@ exec spPAT_Gestion_Registro
 exec spPAT_Gestion_Estado
     @GestionId;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
                 response,
-                new { GestionId = gestionId });
+                new { GestionId = gestionId }).Result;
+            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result!);
+
         }
 
         /// <summary>
@@ -418,7 +422,7 @@ exec spPAT_Autorizaciones_Aplica
             }
             catch (Exception ex)
             {
-                string rollbackError = null;
+                string rollbackError = string.Empty;
                 try
                 {
                     tx.Rollback();
@@ -428,7 +432,7 @@ exec spPAT_Autorizaciones_Aplica
                     rollbackError = rollbackEx.Message;
                 }
 
-                var errorMessage = rollbackError == null
+                var errorMessage = string.IsNullOrEmpty(rollbackError)
                     ? ex.Message
                     : $"{ex.Message} | Rollback failed: {rollbackError}";
 
