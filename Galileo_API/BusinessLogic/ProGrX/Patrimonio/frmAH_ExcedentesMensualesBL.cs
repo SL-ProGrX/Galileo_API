@@ -275,5 +275,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
                 request.tipoDocumento,
                 request.codTransaccion);
         }
+
+        public ErrorDto<FrmAhExcedentesMensualesAplicacionProcesoResponse?> AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar(
+    int codEmpresa,
+    FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            return _db.AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar(
+                codEmpresa,
+                request);
+        }
     }
 }
