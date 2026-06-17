@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Pasivos;
 using System.Data;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 {
@@ -37,7 +38,11 @@ ORDER BY DESCRIPCION;";
 
                 return DbHelper.CreateOkResponse(conn.Query<FrmCrApaOperacionAcreedorDto>(sql).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionAcreedorDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionAcreedorDto>>(ex.Message);
             }
@@ -74,7 +79,11 @@ ORDER BY COD_CONTACTO;";
                         sql,
                         new { cod_acreedor = (cod_acreedor ?? string.Empty).Trim() }).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionContactoDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionContactoDto>>(ex.Message);
             }
@@ -171,7 +180,11 @@ ORDER BY fila;";
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmCrApaOperacionListaDto>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaOperacionListaDto>(ex.Message);
             }
@@ -245,7 +258,11 @@ WHERE O.COD_ACREEDOR = @cod_acreedor
                     ? DbHelper.CreateErrorResponse<FrmCrApaOperacionDatosDto>("No se encontró la operación.")
                     : DbHelper.CreateOkResponse(data);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmCrApaOperacionDatosDto>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaOperacionDatosDto>(ex.Message);
             }
