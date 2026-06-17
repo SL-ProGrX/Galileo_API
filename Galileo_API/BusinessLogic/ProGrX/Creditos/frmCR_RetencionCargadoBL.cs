@@ -26,8 +26,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<CrRetencionCargadoDeductoraDetalleData> CrRetencionCargado_DeductoraDetalle_Obtener(
             int codEmpresa,
+            string codigo,
             int codDeductora)
-            => _db.CrRetencionCargado_DeductoraDetalle_Obtener(codEmpresa, codDeductora);
+            => _db.CrRetencionCargado_DeductoraDetalle_Obtener(codEmpresa, codigo, codDeductora);
 
         public ErrorDto<CrRetencionCargadoCargaData> CrRetencionCargado_Cargar(
             int codEmpresa,

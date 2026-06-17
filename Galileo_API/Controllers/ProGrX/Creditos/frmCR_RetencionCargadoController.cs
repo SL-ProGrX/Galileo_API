@@ -34,8 +34,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpGet("CrRetencionCargado_DeductoraDetalle_Obtener")]
         public ErrorDto<CrRetencionCargadoDeductoraDetalleData> CrRetencionCargado_DeductoraDetalle_Obtener(
             int codEmpresa,
+            string codigo,
             int codDeductora)
-            => _bl.CrRetencionCargado_DeductoraDetalle_Obtener(codEmpresa, codDeductora);
+            => _bl.CrRetencionCargado_DeductoraDetalle_Obtener(codEmpresa, codigo, codDeductora);
 
         [HttpPost("CrRetencionCargado_Cargar")]
         public ErrorDto<CrRetencionCargadoCargaData> CrRetencionCargado_Cargar(

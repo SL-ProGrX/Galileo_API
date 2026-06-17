@@ -126,12 +126,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Obtiene la frecuencia y primera deduccion para la deductora seleccionada.
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
         /// <param name="codDeductora"></param>
         /// <returns></returns>
         public ErrorDto<CrRetencionCargadoDeductoraDetalleData> CrRetencionCargado_DeductoraDetalle_Obtener(
             int codEmpresa,
+            string codigo,
             int codDeductora)
         {
+            codigo = NormalizarTexto(codigo);
+
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar el cliente.",
+                    -2,
+                    new CrRetencionCargadoDeductoraDetalleData());
+            }
+
             if (codDeductora <= 0)
             {
                 return DbHelper.CreateErrorResponse(
@@ -164,7 +176,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string frecuenciaId = NormalizarTexto(frecuenciaResp.Result ?? "M");
             decimal primerDeduccion = _mSeguimientoDb.fxPrimerDeduccion(
                 codEmpresa,
-                pDeductora: codDeductora);
+                codigo,
+                codDeductora);
 
             return DbHelper.CreateOkResponse(new CrRetencionCargadoDeductoraDetalleData
             {
@@ -330,6 +343,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     },
                     tx).ToList();
 
+                foreach (var item in detalle)
+                {
+                    item.existe_inst = CrRetencionCargado_ExisteInst_Normalizar(item.existe_inst);
+                }
+
                 tx.Commit();
 
                 totales.casos = detalle.Count;
@@ -401,7 +419,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 using var tx = conn.BeginTransaction();
 
                 var cambios = request.detalle
-                    .Where(x => NormalizarTexto(x.existe_inst) == "CAMBIAR" && !string.IsNullOrWhiteSpace(x.cedula))
+                    .Where(x =>
+                        string.Equals(NormalizarTexto(x.existe_inst), "CAMBIAR", StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(x.cedula))
                     .ToList();
 
                 if (cambios.Count > 0)
@@ -633,6 +653,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return decimal.TryParse(valor, NumberStyles.Any, CultureInfo.InvariantCulture, out var priDeduc)
                 ? priDeduc
                 : 0m;
+        }
+
+        private static string CrRetencionCargado_ExisteInst_Normalizar(string? value)
+        {
+            string valor = NormalizarTexto(value ?? string.Empty);
+
+            return valor.ToUpperInvariant() switch
+            {
+                "OK" => "Ok",
+                "IGNORAR" => "Ignorar",
+                "CAMBIAR" => "Cambiar",
+                _ => "Ok"
+            };
         }
 
         private static string NormalizarTexto(string valor)
