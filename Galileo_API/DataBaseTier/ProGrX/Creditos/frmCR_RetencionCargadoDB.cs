@@ -606,13 +606,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string movimientoId = CrRetencionCargado_Movimiento_Resolver(item.movimiento);
             bool esIndefinida = request.tipo_deduccion.StartsWith("I", StringComparison.OrdinalIgnoreCase);
 
-            int plazo = request.archivo_excel
-                ? (item.plazo ?? 999)
-                : (esIndefinida ? 999 : 1);
+            int plazo;
+            if (request.archivo_excel)
+            {
+                plazo = item.plazo ?? 999;
+            }
+            else if (esIndefinida)
+            {
+                plazo = 999;
+            }
+            else
+            {
+                plazo = 1;
+            }
 
-            decimal cuota = request.archivo_excel
-                ? (item.cuota ?? 0)
-                : (plazo <= 0 ? 0 : Math.Round(item.monto / plazo, 2));
+            decimal cuota;
+            if (request.archivo_excel)
+            {
+                cuota = item.cuota ?? 0;
+            }
+            else if (plazo <= 0)
+            {
+                cuota = 0;
+            }
+            else
+            {
+                cuota = Math.Round(item.monto / plazo, 2);
+            }
 
             return new CrRetencionCargadoCargaLineaDb
             {
