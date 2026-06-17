@@ -322,7 +322,7 @@ VALUES
                     new { request.cod_acreedor, request.operacion });
 
                 var puedeEditarTodo = pagos == 0 && request.edita_todo;
-                var sql = puedeEditarTodo ? CR_APA_Operacion_SqlActualizarTodo() : CR_APA_Operacion_SqlActualizarParcial();
+                var sql = puedeEditarTodo ? CR_APA_OperacionSqlActualizarTodo : CR_APA_OperacionSqlActualizarParcial;
                 var rows = conn.Execute(sql, CR_APA_Operacion_NormalizarParametros(request));
 
                 return rows == 0
@@ -547,9 +547,7 @@ ORDER BY DESCRIPCION;";
             };
         }
 
-        private static string CR_APA_Operacion_SqlActualizarTodo()
-        {
-            return @"
+        private const string CR_APA_OperacionSqlActualizarTodo = @"
 UPDATE CRD_APA_OPERACIONES
 SET
     PORC_RESPONSABILIDAD = @porc_responsabilidad,
@@ -577,11 +575,8 @@ SET
     MODIFICA_USUARIO = @usuario
 WHERE COD_ACREEDOR = @cod_acreedor
   AND OPERACION = @operacion;";
-        }
 
-        private static string CR_APA_Operacion_SqlActualizarParcial()
-        {
-            return @"
+        private const string CR_APA_OperacionSqlActualizarParcial = @"
 UPDATE CRD_APA_OPERACIONES
 SET
     PORC_RESPONSABILIDAD = @porc_responsabilidad,
@@ -602,6 +597,5 @@ SET
     MODIFICA_USUARIO = @usuario
 WHERE COD_ACREEDOR = @cod_acreedor
   AND OPERACION = @operacion;";
-        }
     }
 }

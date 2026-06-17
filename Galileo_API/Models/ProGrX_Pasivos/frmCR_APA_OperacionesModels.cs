@@ -72,26 +72,26 @@ namespace Galileo_API.Models.ProGrX_Pasivos
     {
         public string cod_acreedor { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
-        public decimal porc_responsabilidad { get; set; }
+        public required decimal porc_responsabilidad { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
-        public decimal monto { get; set; }
-        public decimal tasa { get; set; }
-        public int plazo { get; set; }
-        public decimal cuota { get; set; }
-        public DateTime fecha_formaliza { get; set; }
-        public DateTime fecha_primer_pago { get; set; }
-        public int dia_de_pago { get; set; }
-        public decimal comision_admin { get; set; }
+        public required decimal monto { get; set; }
+        public required decimal tasa { get; set; }
+        public required int plazo { get; set; }
+        public required decimal cuota { get; set; }
+        public required DateTime fecha_formaliza { get; set; }
+        public required DateTime fecha_primer_pago { get; set; }
+        public required int dia_de_pago { get; set; }
+        public required decimal comision_admin { get; set; }
         public string responsabilidad_base { get; set; } = string.Empty;
         public string comision_base { get; set; } = string.Empty;
         public string cod_oficina { get; set; } = string.Empty;
         public string periocidad_pago { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
-        public decimal tipo_cambio { get; set; }
+        public required decimal tipo_cambio { get; set; }
         public int? cod_linea { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public bool edita_todo { get; set; }
+        public required bool edita_todo { get; set; }
     }
 
     public class FrmCrApaOperacionPagoGridDto
@@ -140,14 +140,14 @@ namespace Galileo_API.Models.ProGrX_Pasivos
     {
         public string cod_acreedor { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
-        public DateTime fecha_pago { get; set; }
-        public decimal monto { get; set; }
-        public decimal detalle_intereses { get; set; }
-        public decimal detalle_cargos { get; set; }
-        public decimal detalle_amortiza { get; set; }
-        public decimal detalle_tasa { get; set; }
-        public decimal detalle_saldo { get; set; }
-        public decimal detalle_comision { get; set; }
+        public required DateTime fecha_pago { get; set; }
+        public required decimal monto { get; set; }
+        public required decimal detalle_intereses { get; set; }
+        public required decimal detalle_cargos { get; set; }
+        public required decimal detalle_amortiza { get; set; }
+        public required decimal detalle_tasa { get; set; }
+        public required decimal detalle_saldo { get; set; }
+        public required decimal detalle_comision { get; set; }
         public string documento { get; set; } = string.Empty;
         public string forma_pago { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
@@ -176,7 +176,7 @@ namespace Galileo_API.Models.ProGrX_Pasivos
     {
         public string cod_acreedor { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
-        public int npago { get; set; }
+        public required int npago { get; set; }
         public string cedula_autorizado { get; set; } = string.Empty;
     }
 
