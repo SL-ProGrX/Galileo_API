@@ -25,8 +25,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class CrRetencionCargadoCargaRequest
     {
         public string codigo { get; set; } = string.Empty;
-        public int cod_institucion { get; set; }
-        public int cod_deductora { get; set; }
+        public int cod_institucion { get; set; } = 0;
+        public int cod_deductora { get; set; } = 0;
         public string proceso { get; set; } = string.Empty;
         public string tipo_deduccion { get; set; } = "I";
         public bool archivo_excel { get; set; } = true;
@@ -38,7 +38,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal monto { get; set; } = 0;
         public decimal? cuota { get; set; }
         public string operacion { get; set; } = string.Empty;
         public DateTime? formalizacion { get; set; }
@@ -56,29 +56,29 @@ namespace Galileo_API.Models.ProGrX.Creditos
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal monto { get; set; } = 0;
         public string movimiento_name { get; set; } = string.Empty;
         public string existe_inst { get; set; } = string.Empty;
-        public int plazo { get; set; }
-        public decimal cuota { get; set; }
+        public int plazo { get; set; } = 0;
+        public decimal cuota { get; set; } = 0;
         public string operacion { get; set; } = string.Empty;
         public DateTime? formaliza { get; set; }
     }
 
     public class CrRetencionCargadoTotalesData
     {
-        public decimal monto { get; set; }
-        public int casos { get; set; }
-        public int inclusion { get; set; }
-        public int exclusion { get; set; }
-        public int cambio { get; set; }
-        public int errores { get; set; }
+        public decimal monto { get; set; } = 0;
+        public int casos { get; set; } = 0;
+        public int inclusion { get; set; } = 0;
+        public int exclusion { get; set; } = 0;
+        public int cambio { get; set; } = 0;
+        public int errores { get; set; } = 0;
     }
 
     public class CrRetencionCargadoAplicarRequest
     {
         public string codigo { get; set; } = string.Empty;
-        public int cod_institucion { get; set; }
+        public int cod_institucion { get; set; } = 0;
         public string proceso { get; set; } = string.Empty;
         public string frecuencia_id { get; set; } = "0";
         public List<CrRetencionCargadoAplicarDetalleRequest> detalle { get; set; } = new();
