@@ -314,7 +314,11 @@ VALUES
                 conn.Execute(sql, CR_APA_Operacion_NormalizarParametros(request));
                 return DbHelper.CreateOkResponse(1);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
@@ -346,7 +350,11 @@ VALUES
                     ? DbHelper.CreateErrorResponse<int>("No se encontró la operación.")
                     : DbHelper.CreateOkResponse(1);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
@@ -392,7 +400,11 @@ WHERE COD_ACREEDOR = @cod_acreedor AND OPERACION = @operacion",
 
                 return DbHelper.CreateOkResponse(1);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
@@ -420,7 +432,11 @@ WHERE COD_ACREEDOR = @cod_acreedor AND OPERACION = @operacion",
 
                 return DbHelper.CreateOkResponse(total);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
@@ -452,7 +468,11 @@ ORDER BY DESCRIPCION;";
                 return DbHelper.CreateOkResponse(
                     conn.Query<FrmCrApaOperacionCatalogoDto>(sql, new { cod_acreedor = (cod_acreedor ?? string.Empty).Trim() }).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
             }
@@ -478,7 +498,11 @@ ORDER BY DESCRIPCION;";
 
                 return DbHelper.CreateOkResponse(conn.Query<FrmCrApaOperacionCatalogoDto>(sql).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
             }
@@ -504,7 +528,11 @@ ORDER BY DESCRIPCION;";
 
                 return DbHelper.CreateOkResponse(conn.Query<FrmCrApaOperacionCatalogoDto>(sql).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionCatalogoDto>>(ex.Message);
             }
