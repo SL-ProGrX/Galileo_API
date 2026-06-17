@@ -85,7 +85,7 @@
             });
         }
 
-        private (string, DynamicParameters) BuildBitacoraEspecialQuery(CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static (string, DynamicParameters) BuildBitacoraEspecialQuery(CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             var sql = new StringBuilder(@"
                 select
