@@ -25,6 +25,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene la informacion inicial de la pantalla.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto<CrRetencionCargadoPantallaData> CrRetencionCargado_Pantalla_Obtener(
             int codEmpresa,
             string usuario)
@@ -89,6 +92,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene las deductoras segun la institucion seleccionada.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codInstitucion"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrRetencionCargado_Deductoras_Obtener(
             int codEmpresa,
             int codInstitucion)
@@ -119,6 +125,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene la frecuencia y primera deduccion para la deductora seleccionada.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDeductora"></param>
+        /// <returns></returns>
         public ErrorDto<CrRetencionCargadoDeductoraDetalleData> CrRetencionCargado_DeductoraDetalle_Obtener(
             int codEmpresa,
             int codDeductora)
@@ -169,6 +178,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Carga el detalle temporal del archivo y ejecuta la revision del proceso.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrRetencionCargadoCargaData> CrRetencionCargado_Cargar(
             int codEmpresa,
             string usuario,
@@ -339,6 +352,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Aplica el cargado temporal de retenciones.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CrRetencionCargado_Aplicar(
             int codEmpresa,
             string usuario,
