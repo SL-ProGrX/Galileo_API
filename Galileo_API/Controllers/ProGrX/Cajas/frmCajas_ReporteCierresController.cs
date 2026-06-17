@@ -74,5 +74,19 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         {
             return _bl.Cajas_Cierre_Forzar(codEmpresa, codCaja, codApertura, usuario);
         }
+
+        [Authorize]
+        [HttpPost("Cajas_Cierre_Verificacion")]
+        public ErrorDto<CajasCierreVerificacionDto> Cajas_Cierre_Verificacion(int codEmpresa, string codCaja, int codApertura)
+        {
+            return _bl.Cajas_Cierre_Verificacion(codEmpresa, codCaja, codApertura);
+        }
+
+        [Authorize]
+        [HttpPost("Cajas_Cierre_Preliminar_Aplicar")]
+        public ErrorDto<bool> Cajas_Cierre_Preliminar_Aplicar(int codEmpresa, string codCaja, int codApertura, string usuario)
+        {
+            return _bl.Cajas_Cierre_Preliminar_Aplicar(codEmpresa, codCaja, codApertura, usuario);
+        }
     }
 }

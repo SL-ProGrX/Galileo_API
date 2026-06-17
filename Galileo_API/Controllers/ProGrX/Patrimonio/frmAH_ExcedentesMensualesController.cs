@@ -220,5 +220,15 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
                 codEmpresa,
                 request);
         }
+
+        [HttpPost("AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar")]
+        public ErrorDto<FrmAhExcedentesMensualesAplicacionProcesoResponse?> AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar(
+    [FromQuery] int codEmpresa,
+    [FromBody] FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            return _bl.AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar(
+                codEmpresa,
+                request);
+        }
     }
 }

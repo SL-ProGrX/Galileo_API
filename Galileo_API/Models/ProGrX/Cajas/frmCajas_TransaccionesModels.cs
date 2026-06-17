@@ -9,7 +9,7 @@
 
     public class CajasServicioConsultaParams
     {
-        public int? CodCaja { get; set; }
+        public string? CodCaja { get; set; }
         public string? ServicioBusqueda { get; set; }
     }
 

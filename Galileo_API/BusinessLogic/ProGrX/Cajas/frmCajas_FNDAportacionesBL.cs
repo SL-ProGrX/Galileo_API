@@ -39,6 +39,16 @@ namespace Galileo.BusinessLogic
             return _db.fondos_gestion_registro(CodEmpresa, request);
         }
 
+        public ErrorDto<FondosContratoDatosDto> Fondos_Contrato_Datos_Obtener(
+            int codEmpresa,
+            string codCaja,
+            int operadora,
+            string plan,
+            int contrato)
+        {
+            return _db.Fondos_Contrato_Datos_Obtener(codEmpresa, codCaja, operadora, plan, contrato);
+        }
+
         public ErrorDto<List<FndSubCuentasDto>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
         {
             return _db.SubCuentas_Obtener(CodEmpresa, operadora, plan, contrato);

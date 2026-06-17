@@ -53,6 +53,18 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpGet("Fondos_Contrato_Datos_Obtener")]
+        public ErrorDto<FondosContratoDatosDto> Fondos_Contrato_Datos_Obtener(
+            int codEmpresa,
+            string codCaja,
+            int operadora,
+            string plan,
+            int contrato)
+        {
+            return _bl.Fondos_Contrato_Datos_Obtener(codEmpresa, codCaja, operadora, plan, contrato);
+        }
+
+        [Authorize]
         [HttpGet("subcuentas_obtener")]
         public ErrorDto<List<FndSubCuentasDto>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
         {

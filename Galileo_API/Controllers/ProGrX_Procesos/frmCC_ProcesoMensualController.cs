@@ -93,5 +93,26 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 codEmpresa,
                 codInstitucion);
         }
+
+        [HttpPost("CcProcesoMensual_DesglosarPlanilla_Ejecutar")]
+        public ErrorDto<CcProcesoMensualDesglosePlanillaResponse> CcProcesoMensual_DesglosarPlanilla_Ejecutar([FromBody] CcProcesoMensualDesgloseRequest request)
+        {
+            return _bl.CcProcesoMensual_DesglosarPlanilla_Ejecutar(request);
+        }
+
+        [HttpPost("CcProcesoMensual_Ahorros_Aplicar")]
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_Ahorros_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+
+        }
+
+        [HttpGet("CcProcesoMensual_ParametrosAhorroReporte_Obtener")]
+        public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener(int codEmpresa, int codInstitucion)
+        {
+            return _bl.CcProcesoMensual_ParametrosAhorroReporte_Obtener(codEmpresa, codInstitucion);
+
+        }
+
     }
 }

@@ -12,6 +12,7 @@ namespace Galileo.Models.AH
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
+        public bool modo_automatico { get; set; } = false;
     }
 
     public class ResumenExcedenteMDto
@@ -85,6 +86,21 @@ namespace Galileo.Models.AH
         public decimal factor { get; set; } = 0;
         public decimal total_distribuido { get; set; } = 0;
         public int casos_proceso { get; set; } = 0;
+    }
+
+    public class FrmAhExcedentesMensualesAplicacionProcesoRequest
+    {
+        public int periodoId { get; set; } = 0;
+        public string procesoId { get; set; } = string.Empty;
+        public bool limpiaAplicacionAnterior { get; set; } = false;
+        public bool cargaInfoCero { get; set; } = false;
+        public string salida { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesMensualesAplicacionProcesoResponse
+    {
+        public string mensaje { get; set; } = string.Empty;
     }
 
 }
