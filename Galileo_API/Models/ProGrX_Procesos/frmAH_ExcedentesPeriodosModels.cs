@@ -61,6 +61,7 @@ namespace Galileo.Models.AH
         public int linea { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
+        public string cod_proceso { get; set; } = string.Empty;
         public string proceso_desc { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
         public string tipo_documento { get; set; } = string.Empty;
@@ -135,6 +136,14 @@ namespace Galileo.Models.AH
         public decimal monto { get; set; } = 0;
         public int casos { get; set; } = 0;
         public string notas { get; set; } = string.Empty;
+    }
+
+    public class FrmAhExcedentesPeriodosVisibilidadRequest
+    {
+        public int id_periodo { get; set; } = 0;
+        public string campo { get; set; } = string.Empty;
+        public bool valor { get; set; } = false;
+        public string usuario { get; set; } = string.Empty;
     }
 
 }

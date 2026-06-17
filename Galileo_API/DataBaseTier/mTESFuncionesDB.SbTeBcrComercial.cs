@@ -13,7 +13,7 @@ namespace Galileo.DataBaseTier
                SqlConnection conn,
                int CodEmpresa,
                SbTeBcrParametros parametros,
-               Func<long> resolveConsecutivo)
+               long resolveConsecutivo)
         {
             try
             {
@@ -21,7 +21,7 @@ namespace Galileo.DataBaseTier
 
                 int bancoId = parametros.vBanco;
                 string bancoTDoc = parametros.vTipoDoc;
-                long bancoConsec = resolveConsecutivo();
+                long bancoConsec = resolveConsecutivo;
                 DateTime fecha = DateTime.Now;
 
                 string conArchivo = GetConsecutivoArchivoDelDia(conn, bancoId, fecha)

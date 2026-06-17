@@ -15,6 +15,12 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? clienteid { get; set; }
         public int? referencia { get; set; }
         public string? referenciatexto { get; set; }
+        public decimal monto { get; set; }
+        public decimal saldo { get; set; }
+        public string? cod_divisa { get; set; }
+        public decimal tipocambio { get; set; }
+        public string? divisa { get; set; }
+        public string? divisa_desc { get; set; }
 
     }
 
@@ -107,8 +113,13 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? cheque_numero { get; set; }
         public DateTime? dp_fecha { get; set; }
         public int? dp_banco { get; set; }
+        public string? cod_cuenta { get; set; }
+        public int? aplica_saldo_favor { get; set; }
+        public decimal? saldo_favor { get; set; }
         public string? cod_plan { get; set; }
         public int? cod_contrato { get; set; }
+        public string? cod_entidad_pago { get; set; }
+        public string? cod_origen_recursos { get; set; }
 
         public class CajasSaldoaFavorDto
         {

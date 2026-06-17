@@ -34,14 +34,31 @@ namespace Galileo.DataBaseTier
                     continue;
 
                 var val = prop.Value?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = null;
+                }
                 reportParams.Add(new ReportParameter(prop.Name, val));
-                dict[prop.Name] = val;
+                dict[prop.Name] = val!;
             }
 
-            if (data.parametros.Contains( ParamKeys.ConString, StringComparison.OrdinalIgnoreCase))
+            if (data.parametros.Contains( ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))
             {
-                reportParams.Add(new ReportParameter(ParamKeys.ConString, connString));
-                dict[ParamKeys.ConString] = connString;
+                //SI @filtros es " " lo cambio a null
+                if(string.IsNullOrWhiteSpace(connString))
+                {
+                    connString = string.Empty;
+                }
+
+                reportParams.Add(new ReportParameter(ParamKeys.Filtros, connString));
+                dict[ParamKeys.Filtros] = connString!;
+            }
+
+            if (data.parametros.Contains(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase))
+            {
+                var logo = connection.QueryFirstOrDefault<string>("SELECT LOGO_WEB_SITE FROM SIF_EMPRESA") ?? string.Empty;
+                reportParams.Add(new ReportParameter(ParamKeys.UrlLogo, logo));
+                dict[ParamKeys.UrlLogo] = logo;
             }
 
             if (data.parametros.Contains(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase))

@@ -20,7 +20,6 @@ SELECT TOP 1
     Inicio,
     Corte,
     Estado,
-    ISNULL(Reserva, 0) AS Reserva,
     ISNULL(Capitaliza_Porc, 0) AS Capitaliza_Porc,
     ISNULL(Capitaliza_Renta_Aplica, 0) AS Capitaliza_Renta_Aplica,
     ISNULL(Nc_Saldos, 0) AS Nc_Saldos,

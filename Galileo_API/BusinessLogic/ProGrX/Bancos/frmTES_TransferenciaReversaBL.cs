@@ -20,6 +20,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _TransferenciaReversaDB.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboSinpe(int CodEmpresa, string usuario)
+        {
+            return _TransferenciaReversaDB.sbTesBancoCargaCboSinpe(CodEmpresa, usuario);
+        }
         public ErrorDto<List<DropDownListaGenericaModel>> TES_ReversaPlanes_Obtener(int CodEmpresa, string id_banco)
         {
             return _TransferenciaReversaDB.TES_ReversaPlanes_Obtener(CodEmpresa, id_banco);

@@ -23,6 +23,16 @@
         public DateTime fecha_finalizacion { get; set; }
         public string? cod_caja { get; set; }
         public int cod_apertura { get; set; }
+        public int tipo_id { get; set; }
+        public string? tipoId_Desc { get; set; }
+        public string? nombre { get; set; }
+        public string? estado_desc { get; set; }
+        public int roe { get; set; }
+    }
+
+    public sealed class CajasSesionFinalizaResultDto
+    {
+        public int roe { get; set; }
     }
 
     public sealed class CajasSesionMovimientosDto

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier;
 using Microsoft.Data.SqlClient;
 
@@ -320,6 +321,52 @@ namespace Galileo.DataBaseTier
         {
             return decimal.Round(valor, 2, MidpointRounding.AwayFromZero);
         }
+
+        public static ErrorDto SbBitacoraCredito(
+            PortalDB portalDb,
+            int codEmpresa,
+            CrBitacoraCreditoRequest request)
+        {
+            const string sql = @"
+            insert into credito_subit
+            (
+                usuario,
+                tipo,
+                fecha,
+                movimiento,
+                detalle,
+                id_solicitud,
+                codigo,
+                notas
+            )
+            values
+            (
+                @Usuario,
+                @Tipo,
+                Getdate(),
+                @Movimiento,
+                @Detalle,
+                @Operacion,
+                @Codigo,
+                @Notas
+            );";
+
+            return DbHelper.ExecuteNonQuery(
+                portalDb,
+                codEmpresa,
+                sql,
+                new
+                {
+                    Usuario = (request.usuario ?? string.Empty).Trim().ToUpperInvariant(),
+                    Tipo = (request.tipo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Movimiento = (request.movimiento ?? string.Empty).Trim(),
+                    Detalle = (request.detalle ?? string.Empty).Trim(),
+                    Operacion = request.operacion,
+                    Codigo = (request.codigo ?? string.Empty).Trim().ToUpperInvariant(),
+                    Notas = (request.notas ?? string.Empty).Trim()
+                });
+        }
+
         public static void sbCrdOperacionTags(SqlConnection conn, SqlTransaction tx, CrOperacionTagRegistrarRequest req)
         {
             const string sql = "exec spCrdOperacionTagRegistra @operacion,@linea,@tag,@usuario,@asignado,@notas";
@@ -334,6 +381,7 @@ namespace Galileo.DataBaseTier
                 notas = (req.notas ?? string.Empty).Trim()[..Math.Min((req.notas ?? string.Empty).Trim().Length, 1000)]
             }, tx);
         }
+
         public sealed class CrOperacionTagRegistrarRequest
         {
             public long operacion { get; set; }
@@ -341,6 +389,18 @@ namespace Galileo.DataBaseTier
             public string tag { get; set; } = string.Empty;
             public string usuario { get; set; } = string.Empty;
             public string asignado { get; set; } = string.Empty;
+            public string notas { get; set; } = string.Empty;
+
+        }
+
+        public sealed class CrBitacoraCreditoRequest
+        {
+            public string usuario { get; set; } = string.Empty;
+            public string movimiento { get; set; } = string.Empty;
+            public string detalle { get; set; } = string.Empty;
+            public string tipo { get; set; } = string.Empty;
+            public int operacion { get; set; }
+            public string codigo { get; set; } = string.Empty;
             public string notas { get; set; } = string.Empty;
         }
     }

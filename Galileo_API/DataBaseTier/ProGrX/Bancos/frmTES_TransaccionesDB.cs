@@ -167,10 +167,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
                 /** El SP ya trae el tipo_ced_origen, pero lo recalculamos para asegurarnos que esté correcto y evitar inconsistencias
-                trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                 trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
                 **/
 
-                trx.detalle = string.Join(" ",
+                if (trx.tipo_ced_destino == null)
+                {
+                    trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                }
+
+                    trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
                         trx.detalle2 ?? "",
                         trx.detalle3 ?? "",

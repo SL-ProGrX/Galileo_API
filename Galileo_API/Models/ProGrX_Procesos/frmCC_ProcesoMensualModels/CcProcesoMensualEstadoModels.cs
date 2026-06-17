@@ -13,15 +13,15 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public bool HabilitarAhorros { get; set; }
             public CcProcesoMensualEstadoResponse EstadoActual { get; set; } = new();
         }
-        
+
         public class CcProcesoMensualEstadoResponse
-        {  
+        {
             public string FrecuenciaId { get; set; } = string.Empty;
             public bool ExisteParametroProceso { get; set; }
             public string Mensaje { get; set; } = string.Empty;
             public CcProcesoMensualIndicadoresModel Indicadores { get; set; } = new();
-      
-        
+
+
         }
 
         public class CcProcesoMensualFrecuenciaSeleccionModel
@@ -49,7 +49,7 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public int? OpcionAhorrosSeleccionada { get; set; }
             public int? OpcionCreditosSeleccionada { get; set; }
         }
-        
+
         public class CcProcesoMensualReportesModel
         {
             public bool AhorrosAplica { get; set; }
@@ -90,7 +90,8 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public DateTime? Fecha { get; set; }
         }
 
-        public  class CcProcesoMensualValidaPasoResponse        {
+        public class CcProcesoMensualValidaPasoResponse
+        {
             public bool Valido { get; set; } = false;
             public string Mensaje { get; set; } = string.Empty;
         }
@@ -99,6 +100,25 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public int CodInstitucion { get; init; } = 0;
             public decimal FechaProceso { get; init; } = 0;
             public string Transaccion { get; init; } = "08";
+        }
+
+        public sealed class CcProcesoMensualCambiarFechaRequest
+        {
+            public int CodInstitucion { get; set; } = 0;
+
+            public string Anio { get; set; } = string.Empty;
+
+            public int Mes { get; set; } = 0;
+
+            public int Quincena { get; set; } = 0; 
+
+            public string Usuario { get; set; } = string.Empty;
+        }
+        public sealed class CcProcesoMensualCambiarFechaResponse
+        {
+            public decimal FechaProceso { get; set; } = 0;
+            public DateTime FechaCorte { get; set; }
+            public string Mensaje { get; set; } = string.Empty;
         }
     }
 }
