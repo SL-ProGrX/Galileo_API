@@ -123,7 +123,7 @@
             return (sql.ToString(), parameters);
         }
 
-        private void AddCedulaFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddCedulaFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             if (!string.IsNullOrWhiteSpace(request.Cedula))
             {
@@ -132,7 +132,7 @@
             }
         }
 
-        private void AddFechasFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddFechasFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             if (!request.ChkFechas && request.Fecha_Inicio.HasValue && request.Fecha_Corte.HasValue)
             {
@@ -147,7 +147,7 @@
             }
         }
 
-        private void AddMovimientosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddMovimientosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             if (request.Movimientos != null && request.Movimientos.Count > 0)
             {
@@ -164,7 +164,7 @@
             }
         }
 
-        private void AddUsuariosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddUsuariosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             if (!request.ChkUsuarios && !string.IsNullOrWhiteSpace(request.Usuario))
             {
@@ -176,7 +176,7 @@
             }
         }
 
-        private void AddTipoFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddTipoFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             var tipo = (request.Tipo ?? string.Empty).Trim().ToUpperInvariant();
             if (tipo == "C" || tipo == "R")
@@ -186,7 +186,7 @@
             }
         }
 
-        private void AddRevisionFilter(StringBuilder sql, CrBitacoraEspecialRegistrosObtenerRequest request)
+        private static void AddRevisionFilter(StringBuilder sql, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
             var revision = (request.Revision ?? string.Empty).Trim().ToUpperInvariant();
             if (revision == "PENDIENTES")
