@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Pasivos;
 using System.Data;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 {
@@ -106,7 +107,11 @@ ORDER BY fila;";
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmCrApaOperacionPagoListaDto>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaOperacionPagoListaDto>(ex.Message);
             }
@@ -176,7 +181,11 @@ WHERE P.COD_ACREEDOR = @cod_acreedor
                     ? DbHelper.CreateErrorResponse<FrmCrApaOperacionPagoDatosDto>("No se encontró el pago.")
                     : DbHelper.CreateOkResponse(data);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmCrApaOperacionPagoDatosDto>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaOperacionPagoDatosDto>(ex.Message);
             }
@@ -247,7 +256,11 @@ WHERE COD_ACREEDOR = @cod_acreedor
 
                 return DbHelper.CreateOkResponse(data ?? new FrmCrApaOperacionUltimoPagoDto());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmCrApaOperacionUltimoPagoDto>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<FrmCrApaOperacionUltimoPagoDto>(ex.Message);
             }
@@ -313,7 +326,11 @@ EXEC spCRDAPA_PAGOS_A
 
                 return DbHelper.CreateOkResponse(1);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
@@ -344,7 +361,11 @@ ORDER BY NOMBRE;";
                 return DbHelper.CreateOkResponse(
                     conn.Query<FrmCrApaOperacionAutorizadoDto>(sql, new { cod_acreedor = (cod_acreedor ?? string.Empty).Trim() }).ToList());
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionAutorizadoDto>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaOperacionAutorizadoDto>>(ex.Message);
             }
@@ -413,7 +434,11 @@ WHERE COD_ACREEDOR = @cod_acreedor
                     ? DbHelper.CreateErrorResponse<int>("No se encontró el pago.")
                     : DbHelper.CreateOkResponse(1);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
