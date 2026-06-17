@@ -80,109 +80,121 @@
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                var sql = new StringBuilder(@"
-                    select
-                        C.id_Credito_SuBit as ID,
-                        C.id_solicitud as Id_Solicitud,
-                        C.Movimiento,
-                        C.Codigo,
-                        C.Tipo,
-                        C.Detalle,
-                        C.Notas,
-                        C.Fecha,
-                        C.Usuario,
-                        C.Revisado_Fecha,
-                        C.Revisado_Usuario,
-                        S.cedula as Cedula,
-                        S.nombre as Nombre,
-                        M.Descripcion as MovimientoDesc,
-                        case when C.revisado_fecha is null then 0 else 1 end as Revisado
-                    from credito_subit C
-                    inner join reg_Creditos R
-                        on C.id_solicitud = R.id_solicitud
-                    inner join Socios S
-                        on S.cedula = R.cedula
-                    inner join US_MOVIMIENTOS_BE M
-                        on C.Movimiento = M.Movimiento
-                    where M.Modulo = 3");
-
-                var parameters = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(request.Cedula))
-                {
-                    sql.Append(" and S.cedula like @Cedula");
-                    parameters.Add("Cedula", $"%{request.Cedula.Trim()}%");
-                }
-
-                if (!request.ChkFechas && request.Fecha_Inicio.HasValue && request.Fecha_Corte.HasValue)
-                {
-                    var fechaInicio = request.Fecha_Inicio.Value.Date;
-                    var fechaCorte = request.Fecha_Corte.Value.Date.AddHours(23).AddMinutes(59);
-
-                    if (request.ChkRevision)
-                    {
-                        sql.Append(" and C.Revisado_fecha between @FechaInicio and @FechaCorte");
-                    }
-                    else
-                    {
-                        sql.Append(" and C.Fecha between @FechaInicio and @FechaCorte");
-                    }
-
-                    parameters.Add("FechaInicio", fechaInicio);
-                    parameters.Add("FechaCorte", fechaCorte);
-                }
-
-                if (request.Movimientos != null && request.Movimientos.Count > 0)
-                {
-                    var movimientos = request.Movimientos
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .Select(x => x.Trim())
-                        .Distinct()
-                        .ToList();
-
-                    if (movimientos.Count > 0)
-                    {
-                        sql.Append(" and C.movimiento in @Movimientos");
-                        parameters.Add("Movimientos", movimientos);
-                    }
-                }
-
-                if (!request.ChkUsuarios && !string.IsNullOrWhiteSpace(request.Usuario))
-                {
-                    if (request.ChkRevision)
-                    {
-                        sql.Append(" and C.Revisado_Usuario = @Usuario");
-                    }
-                    else
-                    {
-                        sql.Append(" and C.Usuario = @Usuario");
-                    }
-
-                    parameters.Add("Usuario", request.Usuario.Trim());
-                }
-
-                var tipo = (request.Tipo ?? string.Empty).Trim().ToUpperInvariant();
-                if (tipo == "C" || tipo == "R")
-                {
-                    sql.Append(" and C.Tipo = @Tipo");
-                    parameters.Add("Tipo", tipo);
-                }
-
-                var revision = (request.Revision ?? string.Empty).Trim().ToUpperInvariant();
-                if (revision == "PENDIENTES")
-                {
-                    sql.Append(" and C.Revisado_Fecha is null");
-                }
-                else if (revision == "REVISADOS")
-                {
-                    sql.Append(" and C.Revisado_Fecha is not null");
-                }
-
-                sql.Append(request.ChkRevision ? " order by C.Revisado_fecha" : " order by C.Fecha");
-
-                return conn.Query<CrBitacoraEspecialRegistroModel>(sql.ToString(), parameters).ToList();
+                var (sql, parameters) = BuildBitacoraEspecialQuery(request);
+                return conn.Query<CrBitacoraEspecialRegistroModel>(sql, parameters).ToList();
             });
         }
+
+        private (string, DynamicParameters) BuildBitacoraEspecialQuery(CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            var sql = new StringBuilder(@"
+                select
+                    C.id_Credito_SuBit as ID,
+                    C.id_solicitud as Id_Solicitud,
+                    C.Movimiento,
+                    C.Codigo,
+                    C.Tipo,
+                    C.Detalle,
+                    C.Notas,
+                    C.Fecha,
+                    C.Usuario,
+                    C.Revisado_Fecha,
+                    C.Revisado_Usuario,
+                    S.cedula as Cedula,
+                    S.nombre as Nombre,
+                    M.Descripcion as MovimientoDesc,
+                    case when C.revisado_fecha is null then 0 else 1 end as Revisado
+                from credito_subit C
+                inner join reg_Creditos R on C.id_solicitud = R.id_solicitud
+                inner join Socios S on S.cedula = R.cedula
+                inner join US_MOVIMIENTOS_BE M on C.Movimiento = M.Movimiento
+                where M.Modulo = 3");
+
+            var parameters = new DynamicParameters();
+
+            AddCedulaFilter(sql, parameters, request);
+            AddFechasFilter(sql, parameters, request);
+            AddMovimientosFilter(sql, parameters, request);
+            AddUsuariosFilter(sql, parameters, request);
+            AddTipoFilter(sql, parameters, request);
+            AddRevisionFilter(sql, request);
+            sql.Append(request.ChkRevision ? " order by C.Revisado_fecha" : " order by C.Fecha");
+
+            return (sql.ToString(), parameters);
+        }
+
+        private void AddCedulaFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.Cedula))
+            {
+                sql.Append(" and S.cedula like @Cedula");
+                parameters.Add("Cedula", $"%{request.Cedula.Trim()}%");
+            }
+        }
+
+        private void AddFechasFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            if (!request.ChkFechas && request.Fecha_Inicio.HasValue && request.Fecha_Corte.HasValue)
+            {
+                var fechaInicio = request.Fecha_Inicio.Value.Date;
+                var fechaCorte = request.Fecha_Corte.Value.Date.AddHours(23).AddMinutes(59);
+                if (request.ChkRevision)
+                    sql.Append(" and C.Revisado_fecha between @FechaInicio and @FechaCorte");
+                else
+                    sql.Append(" and C.Fecha between @FechaInicio and @FechaCorte");
+                parameters.Add("FechaInicio", fechaInicio);
+                parameters.Add("FechaCorte", fechaCorte);
+            }
+        }
+
+        private void AddMovimientosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            if (request.Movimientos != null && request.Movimientos.Count > 0)
+            {
+                var movimientos = request.Movimientos
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct()
+                    .ToList();
+                if (movimientos.Count > 0)
+                {
+                    sql.Append(" and C.movimiento in @Movimientos");
+                    parameters.Add("Movimientos", movimientos);
+                }
+            }
+        }
+
+        private void AddUsuariosFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            if (!request.ChkUsuarios && !string.IsNullOrWhiteSpace(request.Usuario))
+            {
+                if (request.ChkRevision)
+                    sql.Append(" and C.Revisado_Usuario = @Usuario");
+                else
+                    sql.Append(" and C.Usuario = @Usuario");
+                parameters.Add("Usuario", request.Usuario.Trim());
+            }
+        }
+
+        private void AddTipoFilter(StringBuilder sql, DynamicParameters parameters, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            var tipo = (request.Tipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (tipo == "C" || tipo == "R")
+            {
+                sql.Append(" and C.Tipo = @Tipo");
+                parameters.Add("Tipo", tipo);
+            }
+        }
+
+        private void AddRevisionFilter(StringBuilder sql, CrBitacoraEspecialRegistrosObtenerRequest request)
+        {
+            var revision = (request.Revision ?? string.Empty).Trim().ToUpperInvariant();
+            if (revision == "PENDIENTES")
+                sql.Append(" and C.Revisado_Fecha is null");
+            else if (revision == "REVISADOS")
+                sql.Append(" and C.Revisado_Fecha is not null");
+        }
+
 
         /// <summary>
         /// Asigna usuario y fecha de revisión a un registro de bitácora especial.
