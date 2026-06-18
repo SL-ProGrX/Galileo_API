@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security; 
-using System.Data; 
+using Galileo.Models.Security;
+using System.Data;
 using static Galileo_API.Models.MProcesoMensualModels;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
@@ -24,8 +24,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _mGeneral = new CcProcesoMensualGeneralDb(config);
 
         }
- 
-        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(  int codEmpresa,int codInstitucion,decimal fechaProceso,string usuario)
+
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
             DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
@@ -67,7 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                       ParametrosReporte = datosReporte
 
                   });
-                 
+
             }
             catch (Exception ex)
             {
@@ -75,55 +75,82 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                  ex.Message,
                  -1,
                  new CcProcesoMensualAhorros());
- 
+
             }
         }
-
-        public ErrorDto<bool> CcProcesoMensual_AhorrosInconsistencias_Marcar(int codEmpresa, int codInstitucion)
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-
+            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
             try
             {
-                ActualizarEstadoInconsistenciasAhorros(connection, codInstitucion);
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "06", "PRE", usuario, codInstitucion, fechaProceso);
 
-                // Pendiente: Bitacora("Aplica", ...)
-                // Pendiente: sbBitacoraPlanilla("06", ...)
+                ActualizarEstadoAplicacionAhorrosInconsistencias(connection, codInstitucion);
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = $"PRM-AHORRO Reporte Inconsistencias Inst: {codInstitucion}",
+                    Movimiento = "Aplica - WEB",
+                    Modulo = vModulo
+                });
 
-                return DbHelper.CreateOkResponse(true);
+                MProcesoMensualDb.SbBitacoraPlanilla(connection, new CcProcesoMensualBitacoraPlanillaDto
+                { Transaccion = "06", CodInstitucion = codInstitucion, Proceso = fechaProceso, Gestion = "R", Usuario = usuario });
+
+                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "06", "POS", usuario, codInstitucion, fechaProceso);
+
+                return DbHelper.CreateOkResponse(new CcProcesoMensualAhorros { Aplicado = true, ParametrosReporte = datosReporte });
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Error al marcar las inconsistencias de ahorros.",
-                    -1,
-                    false);
+                return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
+                 ex.Message,
+                 -1,
+                 new CcProcesoMensualAhorros());
+
             }
         }
-
-        public ErrorDto<bool> CcProcesoMensual_AhorrosDevoluciones_Marcar(int codEmpresa, int codInstitucion)
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-
+            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
             try
             {
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "07", "PRE", usuario, codInstitucion, fechaProceso);
+
                 ActualizarEstadoDevolucionesAhorros(connection, codInstitucion);
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = $"PRM-AHORRO Reporte Devoluciones Inst: {codInstitucion}",
+                    Movimiento = "Aplica - WEB",
+                    Modulo = vModulo
+                });
 
-                // Pendiente: Bitacora("Aplica", ...)
-                // Pendiente: sbBitacoraPlanilla("07", ...)
+                MProcesoMensualDb.SbBitacoraPlanilla(connection, new CcProcesoMensualBitacoraPlanillaDto
+                { Transaccion = "07", CodInstitucion = codInstitucion, Proceso = fechaProceso, Gestion = "R", Usuario = usuario });
 
-                return DbHelper.CreateOkResponse(true);
+                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "07", "POS", usuario, codInstitucion, fechaProceso);
+
+                return DbHelper.CreateOkResponse(new CcProcesoMensualAhorros { Aplicado = true, ParametrosReporte = datosReporte });
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<bool>(
-                    "Error al marcar las devoluciones de ahorros.",
-                    -1,
-                    false);
+                return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
+                 ex.Message,
+                 -1,
+                 new CcProcesoMensualAhorros());
+
             }
         }
-
-        private static void EjecutarAplicacionAportes( IDbConnection connection, int codInstitucion,decimal fechaProceso,string usuario)
+        private static void EjecutarAplicacionAportes(IDbConnection connection, int codInstitucion, decimal fechaProceso, string usuario)
         {
             const string query = @"
                 EXEC spPrmAporteAplica
@@ -136,7 +163,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             EjecutarPasoAplicacionAportes(connection, query, fechaProceso, codInstitucion, usuario, 2);
         }
 
-        private static void EjecutarPasoAplicacionAportes(IDbConnection connection,string query,decimal fechaProceso,int codInstitucion,string usuario,int paso)
+        private static void EjecutarPasoAplicacionAportes(IDbConnection connection, string query, decimal fechaProceso, int codInstitucion, string usuario, int paso)
         {
             connection.Execute(query, new
             {
@@ -147,7 +174,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
-        private static void ProcesarDevolucionesAhorros( IDbConnection connection,int codInstitucion,decimal fechaProceso,DateTime fecha,string usuario)
+        private static void ProcesarDevolucionesAhorros(IDbConnection connection, int codInstitucion, decimal fechaProceso, DateTime fecha, string usuario)
         {
             var parametros = ObtenerParametrosAhorros(connection, codInstitucion);
 
@@ -173,17 +200,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             EliminarSociosTempDevolucion(connection, codInstitucion, fechaProceso);
 
-    
-             MProcesoMensualDb.SbFndAsiento(connection, new ProcesoMensualFndAsientoRequest
-             {
-                 Proceso = fechaProceso,
-                 CodInstitucion = codInstitucion,
-                 Operadora = parametros.FndApOperadora,
-                 Plan = parametros.FndApPlan,
-                 Cuenta = parametros.CtaInconsistencia,
-                 Usuario = usuario,
-                 NumeroDocumento = documento
-             });
+
+            MProcesoMensualDb.SbFndAsiento(connection, new ProcesoMensualFndAsientoRequest
+            {
+                Proceso = fechaProceso,
+                CodInstitucion = codInstitucion,
+                Operadora = parametros.FndApOperadora,
+                Plan = parametros.FndApPlan,
+                Cuenta = parametros.CtaInconsistencia,
+                Usuario = usuario,
+                NumeroDocumento = documento
+            });
         }
 
         private static CcProcesoMensualAhorroParametrosDbModel? ObtenerParametrosAhorros(IDbConnection connection, int codInstitucion)
@@ -203,7 +230,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new { CodInstitucion = codInstitucion });
         }
 
-        private static List<CcProcesoMensualSocioDevolucionDbModel> ObtenerSociosDevolucion(IDbConnection connection,int codInstitucion,decimal fechaProceso)
+        private static List<CcProcesoMensualSocioDevolucionDbModel> ObtenerSociosDevolucion(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             const string query = @"
                 SELECT
@@ -225,7 +252,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 })];
         }
 
-        private static void EjecutarDevolucionSiAplica( IDbConnection connection,CcProcesoMensualAhorroParametrosDbModel parametros,CcProcesoMensualSocioDevolucionDbModel socio,int codInstitucion,decimal fechaProceso,string documento, DateTime fecha)
+        private static void EjecutarDevolucionSiAplica(IDbConnection connection, CcProcesoMensualAhorroParametrosDbModel parametros, CcProcesoMensualSocioDevolucionDbModel socio, int codInstitucion, decimal fechaProceso, string documento, DateTime fecha)
         {
             if (socio.Monto > 0)
             {
@@ -244,7 +271,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                         Tipo = "A",
                         Fecha = fecha
                     });
-            } 
+            }
             if (socio.Aporte > 0)
             {
                 EjecutarDevolucionFondo(
@@ -265,7 +292,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
         }
 
-        private static void EjecutarDevolucionFondo( IDbConnection connection, CcProcesoMensualDevolucionFondoRequest request)
+        private static void EjecutarDevolucionFondo(IDbConnection connection, CcProcesoMensualDevolucionFondoRequest request)
         {
             const string query = @"
         EXEC spPrmDevFondos
@@ -295,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
-        private static void EliminarSociosTempDevolucion(IDbConnection connection,int codInstitucion,decimal fechaProceso)
+        private static void EliminarSociosTempDevolucion(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             const string query = @"
                 DELETE sociosTemp
@@ -310,27 +337,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
-        private static void ActualizarEstadoAplicacionAhorros(IDbConnection connection,int codInstitucion)
+        private static void ActualizarEstadoAplicacionAhorros(IDbConnection connection, int codInstitucion)
         {
-            const string query = @"
-                UPDATE instituciones
-                SET pr_apAplica = 1
-                WHERE cod_institucion = @CodInstitucion";
+            const string query = @"  UPDATE instituciones  SET pr_apAplica = 1  WHERE cod_institucion = @CodInstitucion";
 
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
-
-        private static void ActualizarEstadoInconsistenciasAhorros( IDbConnection connection, int codInstitucion)
+        private static void ActualizarEstadoAplicacionAhorrosInconsistencias(IDbConnection connection, int codInstitucion)
         {
-            const string query = @"
-                UPDATE instituciones
-                SET pr_apInco = 1
-                WHERE cod_institucion = @CodInstitucion";
+            const string query = @" UPDATE instituciones  SET pr_apInco = 1 WHERE cod_institucion = @CodInstitucion";
 
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
-
-        private static void ActualizarEstadoDevolucionesAhorros(IDbConnection connection,int codInstitucion)
+        
+        private static void ActualizarEstadoDevolucionesAhorros(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
                 UPDATE instituciones
@@ -390,7 +410,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         }
         private sealed class CcProcesoMensualAhorroParametrosDbModel
         {
-            public int FndApAplica { get; set; } =0;
+            public int FndApAplica { get; set; } = 0;
             public int FndApOperadora { get; set; } = 0;
             public string FndApPlan { get; set; } = string.Empty;
             public string FndApPlanP { get; set; } = string.Empty;
@@ -405,4 +425,3 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         }
     }
 }
- 

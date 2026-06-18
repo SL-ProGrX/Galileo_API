@@ -1,6 +1,6 @@
 ﻿
 using Galileo.Models;
-using Galileo.Models.ERROR; 
+using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -69,9 +69,9 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
 
         [HttpPost("CcProcesoMensual_CambiarFechaProceso_Ejecutar")]
-        public ErrorDto<CcProcesoMensualCambiarFechaResponse> CcProcesoMensual_CambiarFechaProceso_Ejecutar(int codEmpresa, [FromBody] CcProcesoMensualCambiarFechaRequest request) 
+        public ErrorDto<CcProcesoMensualCambiarFechaResponse> CcProcesoMensual_CambiarFechaProceso_Ejecutar(int codEmpresa, [FromBody] CcProcesoMensualCambiarFechaRequest request)
         {
-            return _bl.CcProcesoMensual_CambiarFechaProceso_Ejecutar(codEmpresa,request);
+            return _bl.CcProcesoMensual_CambiarFechaProceso_Ejecutar(codEmpresa, request);
         }
 
         [HttpGet("CcProcesoMensual_EstadoActualProceso_Obtener")]
@@ -104,15 +104,48 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return _bl.CcProcesoMensual_Ahorros_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+        }
 
+        [HttpPost("CcProcesoMensual_AhorrosInconsistencias_Aplicar")]
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_AhorrosInconsistencias_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+        }
+
+        [HttpPost("CcProcesoMensual_AhorrosDevoluciones_Aplicar")]
+        public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_AhorrosDevoluciones_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
         }
 
         [HttpGet("CcProcesoMensual_ParametrosAhorroReporte_Obtener")]
         public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener(int codEmpresa, int codInstitucion)
         {
             return _bl.CcProcesoMensual_ParametrosAhorroReporte_Obtener(codEmpresa, codInstitucion);
-
         }
 
+        [HttpPost("CcProcesoMensual_CrAbonos_Aplicar")]
+        public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrAbonos_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, DateTime fechaSistema, string usuario)
+        {
+            return _bl.CcProcesoMensual_CrAbonos_Aplicar(codEmpresa, codInstitucion, fechaProceso, fechaSistema, usuario);
+        }
+
+        [HttpPost("CcProcesoMensual_CrdReporteInconsistencia_Aplicar")]
+        public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdReporteInconsistencia_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_CrdReporteInconsistencia_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+        }
+
+        [HttpPost("CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar")]
+        public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+        }
+
+        [HttpPost("CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar")]
+        public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
+        {
+            return _bl.CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
+        }
     }
 }
