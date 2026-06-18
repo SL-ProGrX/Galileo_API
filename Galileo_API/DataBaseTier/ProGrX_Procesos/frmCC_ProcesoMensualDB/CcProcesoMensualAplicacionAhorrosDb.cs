@@ -15,8 +15,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
-
-        public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
+        private readonly string movimientoBitacora = "Aplica - WEB";
+       public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
@@ -42,7 +42,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM - Aplicación de Aportes Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
 
@@ -81,7 +81,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
+          
             try
             {
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "06", "PRE", usuario, codInstitucion, fechaProceso);
@@ -92,7 +92,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-AHORRO Reporte Inconsistencias Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
 
@@ -117,7 +117,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
+         
             try
             {
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "07", "PRE", usuario, codInstitucion, fechaProceso);
@@ -128,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-AHORRO Reporte Devoluciones Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
 

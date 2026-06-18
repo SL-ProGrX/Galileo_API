@@ -487,8 +487,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
         private sealed class CreditoAplicaAbonosMasivoResult
         {
-            public int PasoSiguiente { get; set; }
-            public long Pendientes { get; set; }
+            public int PasoSiguiente { get; set; } = 0;
         }
         private sealed class CreditoAplicacionContext
         {
