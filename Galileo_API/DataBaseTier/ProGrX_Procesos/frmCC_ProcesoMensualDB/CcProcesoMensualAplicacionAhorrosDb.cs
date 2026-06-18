@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
         private readonly string movimientoBitacora = "Aplica - WEB";
-       public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
+        public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _mProGrx = new MProGrxMain(config);
@@ -27,130 +27,134 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            DateTime vFecha = _mProGrx.fxFechaServidor(codEmpresa, 0);
-            try
-            {
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "05", "PRE", usuario, codInstitucion, fechaProceso);
-
-
-                EjecutarAplicacionAportes(connection, codInstitucion, fechaProceso, usuario);
-                ProcesarDevolucionesAhorros(connection, codInstitucion, fechaProceso, vFecha, usuario);
-                ActualizarEstadoAplicacionAhorros(connection, codInstitucion);
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            return EjecutarAplicacionAhorro(
+                codEmpresa,
+                codInstitucion,
+                fechaProceso,
+                usuario,
+                new AplicacionAhorroConfig
                 {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
+                    Transaccion = "05",
                     DetalleMovimiento = $"PRM - Aplicación de Aportes Inst: {codInstitucion}",
-                    Movimiento = movimientoBitacora,
-                    Modulo = vModulo
+                    EjecutarProceso = context =>
+                    {
+                        EjecutarAplicacionAportes(context);
+                        ProcesarDevolucionesAhorros(context);
+                        ActualizarEstadoInstitucion(context, "pr_apAplica");
+                    }
                 });
-
-                MProcesoMensualDb.SbBitacoraPlanilla(connection,
-                                                    new CcProcesoMensualBitacoraPlanillaDto
-                                                    {
-                                                        Transaccion = "05",
-                                                        CodInstitucion = codInstitucion,
-                                                        Proceso = fechaProceso,
-                                                        Gestion = "R",
-                                                        Usuario = usuario
-                                                    });
-
-                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
-
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "05", "POS", usuario, codInstitucion, fechaProceso);
-
-                return DbHelper.CreateOkResponse(
-                  new CcProcesoMensualAhorros
-                  {
-                      Aplicado = true,
-                      ParametrosReporte = datosReporte
-
-                  });
-
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
-                 ex.Message,
-                 -1,
-                 new CcProcesoMensualAhorros());
-
-            }
         }
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-          
-            try
-            {
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "06", "PRE", usuario, codInstitucion, fechaProceso);
-
-                ActualizarEstadoAplicacionAhorrosInconsistencias(connection, codInstitucion);
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            return EjecutarAplicacionAhorro(
+                codEmpresa,
+                codInstitucion,
+                fechaProceso,
+                usuario,
+                new AplicacionAhorroConfig
                 {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
+                    Transaccion = "06",
                     DetalleMovimiento = $"PRM-AHORRO Reporte Inconsistencias Inst: {codInstitucion}",
-                    Movimiento = movimientoBitacora,
-                    Modulo = vModulo
+                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, "pr_apInco")
                 });
-
-                MProcesoMensualDb.SbBitacoraPlanilla(connection, new CcProcesoMensualBitacoraPlanillaDto
-                { Transaccion = "06", CodInstitucion = codInstitucion, Proceso = fechaProceso, Gestion = "R", Usuario = usuario });
-
-                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "06", "POS", usuario, codInstitucion, fechaProceso);
-
-                return DbHelper.CreateOkResponse(new CcProcesoMensualAhorros { Aplicado = true, ParametrosReporte = datosReporte });
-
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
-                 ex.Message,
-                 -1,
-                 new CcProcesoMensualAhorros());
-
-            }
         }
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
+            return EjecutarAplicacionAhorro(
+                codEmpresa,
+                codInstitucion,
+                fechaProceso,
+                usuario,
+                new AplicacionAhorroConfig
+                {
+                    Transaccion = "07",
+                    DetalleMovimiento = $"PRM-AHORRO Reporte Devoluciones Inst: {codInstitucion}",
+                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, "pr_apDev")
+                });
+        }
+
+        private ErrorDto<CcProcesoMensualAhorros> EjecutarAplicacionAhorro(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario, AplicacionAhorroConfig config)
+        {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-         
+
+            var context = new AplicacionAhorroContext
+            {
+                Connection = connection,
+                CodEmpresa = codEmpresa,
+                CodInstitucion = codInstitucion,
+                FechaProceso = fechaProceso,
+                Usuario = usuario,
+                FechaServidor = _mProGrx.fxFechaServidor(codEmpresa, 0)
+            };
+
             try
             {
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "07", "PRE", usuario, codInstitucion, fechaProceso);
+                EjecutarProcesoMensual(context, config.Transaccion, "PRE");
 
-                ActualizarEstadoDevolucionesAhorros(connection, codInstitucion);
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"PRM-AHORRO Reporte Devoluciones Inst: {codInstitucion}",
-                    Movimiento = movimientoBitacora,
-                    Modulo = vModulo
-                });
+                config.EjecutarProceso(context);
 
-                MProcesoMensualDb.SbBitacoraPlanilla(connection, new CcProcesoMensualBitacoraPlanillaDto
-                { Transaccion = "07", CodInstitucion = codInstitucion, Proceso = fechaProceso, Gestion = "R", Usuario = usuario });
+                RegistrarBitacora(context, config.DetalleMovimiento);
+                RegistrarBitacoraPlanilla(context, config.Transaccion);
 
-                var datosReporte = ObtenerParametrosAhorroReporte(connection, codInstitucion);
-                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, codEmpresa, "07", "POS", usuario, codInstitucion, fechaProceso);
+                var datosReporte = ObtenerParametrosAhorroReporte(
+                    context.Connection,
+                    context.CodInstitucion);
 
-                return DbHelper.CreateOkResponse(new CcProcesoMensualAhorros { Aplicado = true, ParametrosReporte = datosReporte });
+                EjecutarProcesoMensual(context, config.Transaccion, "POS");
 
+                return DbHelper.CreateOkResponse(
+                    new CcProcesoMensualAhorros
+                    {
+                        Aplicado = true,
+                        ParametrosReporte = datosReporte
+                    });
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<CcProcesoMensualAhorros>(
-                 ex.Message,
-                 -1,
-                 new CcProcesoMensualAhorros());
-
+                    ex.Message,
+                    -1,
+                    new CcProcesoMensualAhorros());
             }
         }
-        private static void EjecutarAplicacionAportes(IDbConnection connection, int codInstitucion, decimal fechaProceso, string usuario)
+        private static void RegistrarBitacoraPlanilla(AplicacionAhorroContext context, string transaccion)
+        {
+            MProcesoMensualDb.SbBitacoraPlanilla(
+                context.Connection,
+                new CcProcesoMensualBitacoraPlanillaDto
+                {
+                    Transaccion = transaccion,
+                    CodInstitucion = context.CodInstitucion,
+                    Proceso = context.FechaProceso,
+                    Gestion = "R",
+                    Usuario = context.Usuario
+                });
+        }
+
+        private void RegistrarBitacora(AplicacionAhorroContext context, string detalleMovimiento)
+        {
+            _Security_MainDB.Bitacora(
+                new BitacoraInsertarDto
+                {
+                    EmpresaId = context.CodEmpresa,
+                    Usuario = context.Usuario,
+                    DetalleMovimiento = detalleMovimiento,
+                    Movimiento = movimientoBitacora,
+                    Modulo = vModulo
+                });
+        }
+        private void EjecutarProcesoMensual(AplicacionAhorroContext context, string transaccion, string estado)
+        {
+            _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(
+                context.Connection,
+                context.CodEmpresa,
+                transaccion,
+                estado,
+                context.Usuario,
+                context.CodInstitucion,
+                context.FechaProceso);
+        }
+        private static void EjecutarAplicacionAportes(AplicacionAhorroContext context)
         {
             const string query = @"
                 EXEC spPrmAporteAplica
@@ -159,58 +163,67 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     @Usuario,
                     @Paso";
 
-            EjecutarPasoAplicacionAportes(connection, query, fechaProceso, codInstitucion, usuario, 1);
-            EjecutarPasoAplicacionAportes(connection, query, fechaProceso, codInstitucion, usuario, 2);
+            EjecutarPasoAplicacionAportes(context, query, 1);
+            EjecutarPasoAplicacionAportes(context, query, 2);
         }
 
-        private static void EjecutarPasoAplicacionAportes(IDbConnection connection, string query, decimal fechaProceso, int codInstitucion, string usuario, int paso)
+        private static void EjecutarPasoAplicacionAportes(AplicacionAhorroContext context, string query, int paso)
         {
-            connection.Execute(query, new
-            {
-                FechaProceso = fechaProceso,
-                CodInstitucion = codInstitucion,
-                Usuario = usuario,
-                Paso = paso
-            });
+            context.Connection.Execute(
+                query,
+                new
+                {
+                    context.FechaProceso,
+                    context.CodInstitucion,
+                    context.Usuario,
+                    Paso = paso
+                });
         }
 
-        private static void ProcesarDevolucionesAhorros(IDbConnection connection, int codInstitucion, decimal fechaProceso, DateTime fecha, string usuario)
+        private static void ProcesarDevolucionesAhorros(AplicacionAhorroContext context)
         {
-            var parametros = ObtenerParametrosAhorros(connection, codInstitucion);
+            var parametros = ObtenerParametrosAhorros(
+                context.Connection,
+                context.CodInstitucion);
 
             if (parametros is null || parametros.FndApAplica != 1)
             {
                 return;
             }
 
-            var documento = $"{fechaProceso}.{codInstitucion}.PAT.01";
-            var socios = ObtenerSociosDevolucion(connection, codInstitucion, fechaProceso);
+            var documento = $"{context.FechaProceso}.{context.CodInstitucion}.PAT.01";
+
+            var socios = ObtenerSociosDevolucion(
+                context.Connection,
+                context.CodInstitucion,
+                context.FechaProceso);
 
             foreach (var socio in socios)
             {
                 EjecutarDevolucionSiAplica(
-                    connection,
+                    context,
                     parametros,
                     socio,
-                    codInstitucion,
-                    fechaProceso,
-                    documento,
-                    fecha);
+                    documento);
             }
 
-            EliminarSociosTempDevolucion(connection, codInstitucion, fechaProceso);
+            EliminarSociosTempDevolucion(
+                context.Connection,
+                context.CodInstitucion,
+                context.FechaProceso);
 
-
-            MProcesoMensualDb.SbFndAsiento(connection, new ProcesoMensualFndAsientoRequest
-            {
-                Proceso = fechaProceso,
-                CodInstitucion = codInstitucion,
-                Operadora = parametros.FndApOperadora,
-                Plan = parametros.FndApPlan,
-                Cuenta = parametros.CtaInconsistencia,
-                Usuario = usuario,
-                NumeroDocumento = documento
-            });
+            MProcesoMensualDb.SbFndAsiento(
+                context.Connection,
+                new ProcesoMensualFndAsientoRequest
+                {
+                    Proceso = context.FechaProceso,
+                    CodInstitucion = context.CodInstitucion,
+                    Operadora = parametros.FndApOperadora,
+                    Plan = parametros.FndApPlan,
+                    Cuenta = parametros.CtaInconsistencia,
+                    Usuario = context.Usuario,
+                    NumeroDocumento = documento
+                });
         }
 
         private static CcProcesoMensualAhorroParametrosDbModel? ObtenerParametrosAhorros(IDbConnection connection, int codInstitucion)
@@ -252,16 +265,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 })];
         }
 
-        private static void EjecutarDevolucionSiAplica(IDbConnection connection, CcProcesoMensualAhorroParametrosDbModel parametros, CcProcesoMensualSocioDevolucionDbModel socio, int codInstitucion, decimal fechaProceso, string documento, DateTime fecha)
+        private static void EjecutarDevolucionSiAplica(AplicacionAhorroContext context, CcProcesoMensualAhorroParametrosDbModel parametros, CcProcesoMensualSocioDevolucionDbModel socio, string documento)
         {
             if (socio.Monto > 0)
             {
                 EjecutarDevolucionFondo(
-                    connection,
+                    context.Connection,
                     new CcProcesoMensualDevolucionFondoRequest
                     {
-                        CodInstitucion = codInstitucion,
-                        FechaProceso = fechaProceso,
+                        CodInstitucion = context.CodInstitucion,
+                        FechaProceso = context.FechaProceso,
                         Operadora = parametros.FndApOperadora,
                         Plan = parametros.FndApPlan,
                         Cedula = socio.Cedula,
@@ -269,17 +282,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                         Documento = documento,
                         CuentaInconsistencia = parametros.CtaInconsistencia,
                         Tipo = "A",
-                        Fecha = fecha
+                        Fecha = context.FechaServidor
                     });
             }
+
             if (socio.Aporte > 0)
             {
                 EjecutarDevolucionFondo(
-                    connection,
+                    context.Connection,
                     new CcProcesoMensualDevolucionFondoRequest
                     {
-                        CodInstitucion = codInstitucion,
-                        FechaProceso = fechaProceso,
+                        CodInstitucion = context.CodInstitucion,
+                        FechaProceso = context.FechaProceso,
                         Operadora = parametros.FndApOperadora,
                         Plan = parametros.FndApPlanP,
                         Cedula = socio.Cedula,
@@ -287,11 +301,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                         Documento = documento,
                         CuentaInconsistencia = parametros.CtaInconsistencia,
                         Tipo = "P",
-                        Fecha = fecha
+                        Fecha = context.FechaServidor
                     });
             }
         }
-
         private static void EjecutarDevolucionFondo(IDbConnection connection, CcProcesoMensualDevolucionFondoRequest request)
         {
             const string query = @"
@@ -337,29 +350,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
-        private static void ActualizarEstadoAplicacionAhorros(IDbConnection connection, int codInstitucion)
+        private static void ActualizarEstadoInstitucion(AplicacionAhorroContext context, string campo)
         {
-            const string query = @"  UPDATE instituciones  SET pr_apAplica = 1  WHERE cod_institucion = @CodInstitucion";
+            var camposPermitidos = new Dictionary<string, string>
+            {
+                ["pr_apAplica"] = "pr_apAplica",
+                ["pr_apInco"] = "pr_apInco",
+                ["pr_apDev"] = "pr_apDev"
+            };
 
-            connection.Execute(query, new { CodInstitucion = codInstitucion });
-        }
-        private static void ActualizarEstadoAplicacionAhorrosInconsistencias(IDbConnection connection, int codInstitucion)
-        {
-            const string query = @" UPDATE instituciones  SET pr_apInco = 1 WHERE cod_institucion = @CodInstitucion";
+            if (!camposPermitidos.TryGetValue(campo, out var campoSql))
+            {
+                throw new ArgumentException("Campo de actualización inválido.", nameof(campo));
+            }
 
-            connection.Execute(query, new { CodInstitucion = codInstitucion });
-        }
-        
-        private static void ActualizarEstadoDevolucionesAhorros(IDbConnection connection, int codInstitucion)
-        {
-            const string query = @"
+            var query = $"""
                 UPDATE instituciones
-                SET pr_apDev = 1
-                WHERE cod_institucion = @CodInstitucion";
+                SET {campoSql} = 1
+                WHERE cod_institucion = @CodInstitucion
+                """;
 
-            connection.Execute(query, new { CodInstitucion = codInstitucion });
+            context.Connection.Execute(
+                query,
+                new { context.CodInstitucion });
         }
-
         public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener(int codEmpresa, int codInstitucion)
         {
             try
@@ -407,6 +421,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             return connection.QueryFirstOrDefault<CcProcesoMensualAhorroReporteModel>(
                 query,
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualAhorroReporteModel();
+        }
+
+        private sealed class AplicacionAhorroContext
+        {
+            public required IDbConnection Connection { get; init; }
+            public required int CodEmpresa { get; init; }
+            public required int CodInstitucion { get; init; }
+            public required decimal FechaProceso { get; init; }
+            public required string Usuario { get; init; }
+            public DateTime FechaServidor { get; init; }
+        }
+        private sealed class AplicacionAhorroConfig
+        {
+            public required string Transaccion { get; init; }
+            public required string DetalleMovimiento { get; init; }
+            public required Action<AplicacionAhorroContext> EjecutarProceso { get; init; }
         }
         private sealed class CcProcesoMensualAhorroParametrosDbModel
         {

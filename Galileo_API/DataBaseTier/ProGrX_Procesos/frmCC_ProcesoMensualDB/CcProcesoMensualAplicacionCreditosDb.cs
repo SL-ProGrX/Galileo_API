@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
-
+        private readonly string movimientoBitacora = "Aplica - WEB";
         public CcProcesoMensualAplicacionCreditosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -80,7 +80,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-CREDITO Aplica Abonos Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
 
@@ -125,7 +125,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-CREDITO Reporte Inconsistencias Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
                 ActualizarEstadoCreditosDevoluciones(connection, codInstitucion);
@@ -172,7 +172,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-CREDITO Recalcula Mora Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
                 ActualizarEstadoCreditosInteresesMoratorios(connection, codInstitucion);
@@ -220,7 +220,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"PRM-CREDITO Recalcula Mora Inst: {codInstitucion}",
-                    Movimiento = "Aplica - WEB",
+                    Movimiento = movimientoBitacora,
                     Modulo = vModulo
                 });
 
