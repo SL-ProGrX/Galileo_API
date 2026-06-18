@@ -40,7 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     {
                         EjecutarAplicacionAportes(context);
                         ProcesarDevolucionesAhorros(context);
-                        ActualizarEstadoInstitucion(context, "pr_apAplica");
+                        ActualizarEstadoInstitucion(context, TipoAplicacionAhorro.Aportes);
                     }
                 });
         }
@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 {
                     Transaccion = "06",
                     DetalleMovimiento = $"PRM-AHORRO Reporte Inconsistencias Inst: {codInstitucion}",
-                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, "pr_apInco")
+                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, TipoAplicacionAhorro.Inconsistencias)
                 });
         }
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
@@ -69,7 +69,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 {
                     Transaccion = "07",
                     DetalleMovimiento = $"PRM-AHORRO Reporte Devoluciones Inst: {codInstitucion}",
-                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, "pr_apDev")
+                    EjecutarProceso = context => ActualizarEstadoInstitucion(context, TipoAplicacionAhorro.Devoluciones)
                 });
         }
 
@@ -350,25 +350,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
-        private static void ActualizarEstadoInstitucion(AplicacionAhorroContext context, string campo)
+        private static void ActualizarEstadoInstitucion(  AplicacionAhorroContext context,   TipoAplicacionAhorro tipoAplicacion)
         {
-            var camposPermitidos = new Dictionary<string, string>
+            var query = tipoAplicacion switch
             {
-                ["pr_apAplica"] = "pr_apAplica",
-                ["pr_apInco"] = "pr_apInco",
-                ["pr_apDev"] = "pr_apDev"
+                TipoAplicacionAhorro.Aportes => """
+            UPDATE instituciones
+            SET pr_apAplica = 1
+            WHERE cod_institucion = @CodInstitucion
+            """,
+
+                TipoAplicacionAhorro.Inconsistencias => """
+            UPDATE instituciones
+            SET pr_apInco = 1
+            WHERE cod_institucion = @CodInstitucion
+            """,
+
+                TipoAplicacionAhorro.Devoluciones => """
+            UPDATE instituciones
+            SET pr_apDev = 1
+            WHERE cod_institucion = @CodInstitucion
+            """,
+
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(tipoAplicacion),
+                    tipoAplicacion,
+                    "Tipo de aplicación no soportado.")
             };
-
-            if (!camposPermitidos.TryGetValue(campo, out var campoSql))
-            {
-                throw new ArgumentException("Campo de actualización inválido.", nameof(campo));
-            }
-
-            var query = $"""
-                UPDATE instituciones
-                SET {campoSql} = 1
-                WHERE cod_institucion = @CodInstitucion
-                """;
 
             context.Connection.Execute(
                 query,
@@ -452,6 +460,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             public string Cedula { get; set; } = string.Empty;
             public decimal Monto { get; set; } = 0;
             public decimal Aporte { get; set; } = 0;
+        }
+        private enum TipoAplicacionAhorro
+        {
+            Aportes,
+            Inconsistencias,
+            Devoluciones
         }
     }
 }
