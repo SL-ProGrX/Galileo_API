@@ -17,14 +17,6 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// </summary>
         public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
-            string empresa = string.Empty;
-            if (codEmpresa <= 0)
-            {
-                empresa = "ProGrx";
-            }
-
-            empresa = codEmpresa.ToString();
-
             if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
             {
                 throw new SecurityException("La carpeta especificada no es válida.");
@@ -33,7 +25,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             var root = Path.GetFullPath(dirRdlc);
 
             // Normaliza el código de empresa para que solo se use como segmento de ruta.
-            var empresaSegment = Path.GetFileName(empresa);
+            var empresaSegment = Path.GetFileName(codEmpresa.ToString());
 
             // Normaliza la carpeta opcional para que se use solo como segmento de ruta.
             string? safeFolder = null;
@@ -175,7 +167,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             return normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
         }
 
-        private string validaRutaFinal(string ruta, int codEmpresa)
+        private static string validaRutaFinal(string ruta, int codEmpresa)
         {
             //valido si la ruta final con el documento existe si no busco el archivo en la carpeta ProGrx
             if(!File.Exists(ruta))
