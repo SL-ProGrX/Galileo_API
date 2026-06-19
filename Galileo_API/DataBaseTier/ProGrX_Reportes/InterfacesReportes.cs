@@ -9,7 +9,7 @@ namespace Galileo.DataBaseTier
     public interface IRdlcPathResolver
     {
         string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null);
-        string ResolveReportPath(string basePath);
+        string ResolveReportPath(int codEmpresa, string basePath);
         string CombineUnderRoot(string basePath, params string[] reportFile);
     }
 
@@ -43,8 +43,8 @@ namespace Galileo.DataBaseTier
 
     public interface ISubreportCoordinator
     {
-        Dictionary<string, List<RdlcDataSetMeta>> LoadSubreports(LocalReport report, string basePath, IEnumerable<string> subreportNames);
-        Dictionary<string, Dictionary<string, string>> BuildAutoAliasMap(string parentRdlcPath, string basePath);
+        Dictionary<string, List<RdlcDataSetMeta>> LoadSubreports(int codEmpresa, LocalReport report, string basePath, IEnumerable<string> subreportNames);
+        Dictionary<string, Dictionary<string, string>> BuildAutoAliasMap(int codEmpresa, string parentRdlcPath, string basePath);
         void ConfigureSubreportProcessing(LocalReport report,
                                           IReadOnlyDictionary<string, List<RdlcDataSetMeta>> subMeta,
                                           SqlConnection connection,
