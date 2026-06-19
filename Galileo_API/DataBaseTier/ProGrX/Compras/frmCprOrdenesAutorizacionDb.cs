@@ -62,7 +62,7 @@ WHERE O.autoriza_fecha IS NULL
                     {
                         Tipo = req.tipo,
                         Usuario = req.usuario.ToUpper(),
-                        TodosPendientes = req.todosPendientes.GetValueOrDefault() ? 1 : 0,
+                        TodosPendientes = req.todosPendientes ? 1 : 0,
                         FechaInicio = fechaIni,
                         FechaCorte = fechaFin,
                         F = like
