@@ -8,12 +8,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public class FrmCrReporteDiferidosDb
     {
         private readonly PortalDB _portalDb;
-        private readonly MProGrxMain _mProGrxMain;
 
         public FrmCrReporteDiferidosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
-            _mProGrxMain = new MProGrxMain(config);
         }
 
         /// <summary>
@@ -173,7 +171,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             decimal montoCalculo = item.montocalculo ?? item.montoapr;
             DateTime fechaForma = item.fechaforp?.Date ?? fechaCorte;
             DateTime fechaFinal = item.fecha_calculo_int?.Date ?? fechaForma;
-            DateTime fechaInicioMes = new(fechaCorte.Year, fechaCorte.Month, 1);
+            DateTime fechaInicioMes = new(
+            fechaCorte.Year,
+            fechaCorte.Month,
+            1,
+            0,
+            0,
+            0,
+            DateTimeKind.Unspecified);
 
             int diasTotal = DateDiffIncluyente(fechaForma, fechaFinal);
             int diasCorte = DateDiffIncluyente(fechaInicioMes, fechaCorte);
