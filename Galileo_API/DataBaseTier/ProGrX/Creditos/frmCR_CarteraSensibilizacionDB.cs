@@ -470,7 +470,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     R.fechaforp,
                     R.int as tasaoriginal,
                     C.Liq_Valor,
-                    R.plazo + DATEDIFF(mm, dbo.MyGetdate(),
+                    R.plazo + DATEDIFF(mm, Getdate(),
                         CONVERT(DATETIME,
                             substring(convert(varchar(6), R.prideduc), 1,4) + '/' +
                             substring(convert(varchar(6), R.prideduc), 5,2) + '/28'

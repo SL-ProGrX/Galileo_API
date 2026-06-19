@@ -100,6 +100,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class CrCarteraSensibilizacionLiquidezItem
     {
         public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
         public decimal cuota_01 { get; set; } = 0;
         public decimal cuota_02 { get; set; } = 0;
         public decimal cuota_03 { get; set; } = 0;
