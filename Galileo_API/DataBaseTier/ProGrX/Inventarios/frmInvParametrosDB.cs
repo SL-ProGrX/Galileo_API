@@ -94,6 +94,34 @@ namespace Galileo.DataBaseTier
                 query);
         }
 
+        /// <summary>
+        /// Crea el objeto de parámetros para actualización de parámetros generales.
+        /// </summary>
+        private static object CrearParametrosActualizacion(ParametrosGenDto data) => new
+        {
+            data.Cta_Comisiones,
+            data.Cta_Imp_Renta,
+            data.Cta_Imp_Consumo,
+            data.Cta_Gastos,
+            data.Cta_Costo_Ventas,
+            data.Cta_Recibos,
+            data.Cta_Notas,
+            data.Cta_Ventas_Ing,
+            data.Ta_Factura_Man,
+            data.Ta_Factura_Auto,
+            data.Ta_Entradas,
+            data.Ta_Salidas,
+            data.Ta_Traslados,
+            data.Ta_Devoluciones,
+            data.Ta_Nc,
+            data.Ta_Recibos,
+            data.Ta_Nd,
+            data.Ta_Gen,
+            data.Enlace_Conta,
+            data.Enlace_Sif,
+            data.Cod_Par
+        };
+
         #endregion
 
         #region Consultas
@@ -122,7 +150,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Listado de contabilidades.</returns>
-        public ErrorDto<List<CntXContaDto>> obtenerContabilidades(int CodEmpresa)
+        public ErrorDto<List<CntXContaDto>> ObtenerContabilidades(int CodEmpresa)
         {
             return EjecutarListado<CntXContaDto>(CodEmpresa, QueryContabilidades);
         }
@@ -194,30 +222,7 @@ namespace Galileo.DataBaseTier
                         Enlace_Conta = @Enlace_Conta,
                         Enlace_Sif = @Enlace_Sif
                   WHERE COD_PAR = @Cod_Par;",
-                new
-                {
-                    data.Cta_Comisiones,
-                    data.Cta_Imp_Renta,
-                    data.Cta_Imp_Consumo,
-                    data.Cta_Gastos,
-                    data.Cta_Costo_Ventas,
-                    data.Cta_Recibos,
-                    data.Cta_Notas,
-                    data.Cta_Ventas_Ing,
-                    data.Ta_Factura_Man,
-                    data.Ta_Factura_Auto,
-                    data.Ta_Entradas,
-                    data.Ta_Salidas,
-                    data.Ta_Traslados,
-                    data.Ta_Devoluciones,
-                    data.Ta_Nc,
-                    data.Ta_Recibos,
-                    data.Ta_Nd,
-                    data.Ta_Gen,
-                    data.Enlace_Conta,
-                    data.Enlace_Sif,
-                    data.Cod_Par
-                });
+                CrearParametrosActualizacion(data));
 
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarParametros);
         }
