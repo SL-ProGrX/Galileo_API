@@ -516,6 +516,14 @@ namespace Galileo.DataBaseTier
                                 WHERE cod2.COD_ORDEN = O.COD_ORDEN
                                       AND ppc2.DESCRIPCION IS NOT NULL
                                 FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia,
+                           STUFF((
+                                SELECT DISTINCT ', ' + ppc2.DESCRIPCION
+                                FROM CPR_ORDENES_DETALLE cod2
+                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                      AND ppc2.DESCRIPCION IS NOT NULL
+                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia_desc,
                             STUFF((
                                 SELECT DISTINCT ', ' + CAST(pp2.COD_LINEA_SUB AS VARCHAR)
                                 FROM CPR_ORDENES_DETALLE cod2

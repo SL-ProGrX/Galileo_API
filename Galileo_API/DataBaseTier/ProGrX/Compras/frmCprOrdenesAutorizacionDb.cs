@@ -26,6 +26,9 @@ namespace Galileo.DataBaseTier
             {
                 if (conn.State != ConnectionState.Open) conn.Open();
 
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
+
                 var like = NormalizeLike(filtro);
                 var (offset, fetch) = NormalizePaging(pagina, paginacion);
 
@@ -36,10 +39,10 @@ INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
 WHERE O.autoriza_fecha IS NULL
   AND O.estado = 'S'
   AND O.tipo_orden = @Tipo
-  AND O.genera_user IN (
-        SELECT usuario_asignado
+  AND UPPER(O.genera_user) IN (
+        SELECT UPPER(usuario_asignado)
         FROM cpr_orden_autousers
-        WHERE usuario = @Usuario
+        WHERE UPPER(usuario) = @Usuario
   )
   AND (@TodosPendientes = 1 OR O.genera_fecha BETWEEN @FechaInicio AND @FechaCorte)
   AND (
@@ -50,16 +53,18 @@ WHERE O.autoriza_fecha IS NULL
         OR O.proceso LIKE @F
   );
 ";
+                
 
+      
                 var total = conn.QueryFirstOrDefault<int>(
                     sqlTotal,
                     new
                     {
                         Tipo = req.tipo,
-                        Usuario = req.usuario,
+                        Usuario = req.usuario.ToUpper(),
                         TodosPendientes = req.todosPendientes ? 1 : 0,
-                        FechaInicio = req.fechaInicio,
-                        FechaCorte = req.fechaCorte,
+                        FechaInicio = fechaIni,
+                        FechaCorte = fechaFin,
                         F = like
                     }
                 );
@@ -79,10 +84,10 @@ INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
 WHERE O.autoriza_fecha IS NULL
   AND O.estado = 'S'
   AND O.tipo_orden = @Tipo
-  AND O.genera_user IN (
-        SELECT usuario_asignado
+  AND UPPER(O.genera_user) IN (
+        SELECT UPPER(usuario_asignado)
         FROM cpr_orden_autousers
-        WHERE usuario = @Usuario
+        WHERE UPPER(usuario) = @Usuario
   )
   AND (@TodosPendientes = 1 OR O.genera_fecha BETWEEN @FechaInicio AND @FechaCorte)
   AND (
@@ -101,10 +106,10 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
                     new
                     {
                         Tipo = req.tipo,
-                        Usuario = req.usuario,
+                        Usuario = req.usuario.ToUpper(),
                         TodosPendientes = req.todosPendientes ? 1 : 0,
-                        FechaInicio = req.fechaInicio,
-                        FechaCorte = req.fechaCorte,
+                        FechaInicio = fechaIni,
+                        FechaCorte = fechaFin,
                         F = like,
                         Offset = offset,
                         Fetch = fetch
