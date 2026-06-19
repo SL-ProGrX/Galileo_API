@@ -10,6 +10,23 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string DateFormatYMD = "yyyy-MM-dd";
+        private const string MensajeOk = "Ok";
+        private const string ErrorObtenerPaquetes = "Error al obtener paquetes.";
+        private const string ErrorObtenerPaquete = "Error al obtener el paquete.";
+        private const string SinPaquete = "No se encontró el paquete indicado.";
+        private const string ErrorObtenerDetalle = "Error al obtener el detalle del paquete.";
+        private const string ErrorActualizarPaquete = "Error al actualizar el paquete.";
+        private const string ErrorInsertarPaquete = "Error al insertar el paquete.";
+        private const string ErrorInsertarDetalle = "Error al insertar el detalle del paquete.";
+        private const string ErrorActualizarDetalle = "Error al actualizar el detalle del paquete.";
+        private const string ErrorEliminarDetalle = "Error al eliminar el detalle del paquete.";
+        private const string ErrorEliminarDetalles = "Error al eliminar los detalles del paquete.";
+        private const string ErrorCodigoPaquete = "Código de paquete inválido.";
+        private const string QueryPaquetes = "SELECT * FROM pv_paquetes";
+        private const string QueryTotalPaquetes = "SELECT COUNT(*) FROM pv_paquetes";
+        private const string QueryObtenerPaquete = "SELECT * FROM pv_paquetes WHERE cod_paquete = @Cod_Paquete";
+        private const string QueryEliminarDetalle = "DELETE pv_paquetes_detalle WHERE linea = @Linea";
+        private const string QueryEliminarDetalles = "DELETE pv_paquetes_detalle WHERE cod_paquete = @Cod_Paquete";
 
         #region Constructor y helpers
 
@@ -142,6 +159,22 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
+        /// Crea parámetros comunes para operaciones de detalle de paquete.
+        /// </summary>
+        /// <param name="request">Datos del detalle.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosDetalle(PaqueteDetalleDto request) => new
+        {
+            request.Cod_Producto,
+            request.Cod_Paquete,
+            request.Cantidad,
+            request.Porc_Utilidad,
+            request.Precio,
+            request.Imp_Ventas,
+            request.Imp_Consumo
+        };
+
+        /// <summary>
         /// Obtiene la unidad del producto asociado al detalle.
         /// </summary>
         /// <param name="connection">Conexión activa.</param>
@@ -217,7 +250,7 @@ namespace Galileo.DataBaseTier
             }
 
             return result.Result == 0
-                ? DbHelper.OkResponse("Ok")
+                ? DbHelper.OkResponse(MensajeOk)
                 : DbHelper.ErrorResponse(errorMessage, result.Result);
         }
 
@@ -238,10 +271,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>("SELECT COUNT(*) FROM pv_paquetes");
+                respuesta.Total = connection.QueryFirstOrDefault<int>(QueryTotalPaquetes);
 
                 var parametros = new DynamicParameters();
-                var queryBuilder = new StringBuilder("SELECT * FROM pv_paquetes");
+                var queryBuilder = new StringBuilder(QueryPaquetes);
                 AgregarFiltroPaquetes(filtro, queryBuilder, parametros);
                 queryBuilder.Append(" ORDER BY cod_paquete ");
                 AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
@@ -252,7 +285,7 @@ namespace Galileo.DataBaseTier
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener paquetes.", result.Code.GetValueOrDefault(-1), CrearListaVacia());
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPaquetes, result.Code.GetValueOrDefault(-1), CrearListaVacia());
         }
 
         /// <summary>
@@ -265,7 +298,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<PaqueteDto>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT * FROM pv_paquetes");
+                QueryPaquetes);
         }
 
         /// <summary>
@@ -279,11 +312,11 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteSingleQuery<PaqueteDto>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT * FROM pv_paquetes WHERE cod_paquete = @Cod_Paquete",
+                QueryObtenerPaquete,
                 null,
                 CrearParametrosPaquete(Cod_Paquete));
 
-            return CrearRespuestaSingle(result, "Error al obtener el paquete.", "No se encontró el paquete indicado.");
+            return CrearRespuestaSingle(result, ErrorObtenerPaquete, SinPaquete);
         }
 
         /// <summary>
@@ -318,7 +351,7 @@ namespace Galileo.DataBaseTier
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? new List<PaqueteDetalleDto>())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener el detalle del paquete.", result.Code.GetValueOrDefault(-1), new List<PaqueteDetalleDto>());
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerDetalle, result.Code.GetValueOrDefault(-1), new List<PaqueteDetalleDto>());
         }
 
         /// <summary>
@@ -369,7 +402,7 @@ namespace Galileo.DataBaseTier
                     request.Frecuencia_Domingo
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar el paquete.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarPaquete);
         }
 
         /// <summary>
@@ -388,8 +421,8 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? new ErrorDto { Code = result.Result, Description = "Ok" }
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el paquete.", result.Code.GetValueOrDefault(-1));
+                ? new ErrorDto { Code = result.Result, Description = MensajeOk }
+                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarPaquete, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -414,17 +447,8 @@ namespace Galileo.DataBaseTier
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
                 "[spINV_W_PaqueteDetalle_Agregar]",
-                new
-                {
-                    request.Cod_Producto,
-                    request.Cod_Paquete,
-                    request.Cantidad,
-                    request.Porc_Utilidad,
-                    request.Precio,
-                    request.Imp_Ventas,
-                    request.Imp_Consumo
-                },
-                "Error al insertar el detalle del paquete.");
+                CrearParametrosDetalle(request),
+                ErrorInsertarDetalle);
         }
 
         /// <summary>
@@ -438,17 +462,8 @@ namespace Galileo.DataBaseTier
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
                 "[spINV_W_PaqueteDetalle_Actualizar]",
-                new
-                {
-                    request.Cod_Producto,
-                    request.Cod_Paquete,
-                    request.Cantidad,
-                    request.Porc_Utilidad,
-                    request.Precio,
-                    request.Imp_Ventas,
-                    request.Imp_Consumo
-                },
-                "Error al actualizar el detalle del paquete.");
+                CrearParametrosDetalle(request),
+                ErrorActualizarDetalle);
         }
 
         /// <summary>
@@ -462,10 +477,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "DELETE pv_paquetes_detalle WHERE linea = @Linea",
+                QueryEliminarDetalle,
                 CrearParametrosLinea(request.Linea));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar el detalle del paquete.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalle);
         }
 
         /// <summary>
@@ -489,16 +504,16 @@ namespace Galileo.DataBaseTier
         {
             if (!request.Cod_Paquete.HasValue)
             {
-                return DbHelper.ErrorResponse("Código de paquete inválido.", -1);
+                return DbHelper.ErrorResponse(ErrorCodigoPaquete, -1);
             }
 
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "DELETE pv_paquetes_detalle WHERE cod_paquete = @Cod_Paquete",
+                QueryEliminarDetalles,
                 CrearParametrosPaquete(request.Cod_Paquete.Value));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar los detalles del paquete.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalles);
         }
 
         #endregion
