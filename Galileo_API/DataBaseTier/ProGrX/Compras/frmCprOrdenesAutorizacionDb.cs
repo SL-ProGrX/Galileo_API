@@ -107,7 +107,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
                     {
                         Tipo = req.tipo,
                         Usuario = req.usuario.ToUpper(),
-                        TodosPendientes = req.todosPendientes == true ? 1:0,
+                        TodosPendientes = req.todosPendientes ? 1 : 0,
                         FechaInicio = fechaIni,
                         FechaCorte = fechaFin,
                         F = like,
