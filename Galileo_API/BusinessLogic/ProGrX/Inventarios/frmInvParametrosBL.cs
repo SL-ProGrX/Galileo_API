@@ -20,7 +20,7 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto<List<CntXContaDto>> obtenerContabilidades(int CodEmpresa)
         {
-            return _db.obtenerContabilidades(CodEmpresa);
+            return _db.ObtenerContabilidades(CodEmpresa);
         }
 
         public ErrorDto actualizar_Parametros(int CodEmpresa, ParametrosGenDto data)
