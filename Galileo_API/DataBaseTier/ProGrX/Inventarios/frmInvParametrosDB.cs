@@ -7,6 +7,16 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
 
+        private const string MensajeOk = "Ok";
+        private const string ErrorParametrosGenerales = "Error al obtener los parámetros generales.";
+        private const string SinParametrosGenerales = "No se encontraron parámetros generales.";
+        private const string ErrorActualizarParametros = "Error al actualizar los parámetros generales.";
+        private const string QueryParametrosGenerales = "SELECT * FROM PV_PARAMETROS_GEN";
+        private const string QueryContabilidades = "SELECT * FROM CntX_Contabilidades";
+        private const string QueryDescripcionesCuenta = "SELECT Cod_Cuenta, Descripcion FROM CNTX_CUENTAS";
+        private const string QueryDescripcionesAsiento = "SELECT Tipo_Asiento, Descripcion FROM CntX_Tipos_Asientos";
+        private const string QueryAsientos = "SELECT * FROM CNTX_TIPOS_ASIENTOS";
+
         #region Constructor y helpers
 
         /// <summary>
@@ -69,6 +79,21 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Ejecuta una consulta de listado usando el helper estándar de base de datos.
+        /// </summary>
+        /// <typeparam name="T">Tipo de datos a devolver.</typeparam>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="query">Consulta SQL fija.</param>
+        /// <returns>Listado solicitado.</returns>
+        private ErrorDto<List<T>> EjecutarListado<T>(int codEmpresa, string query)
+        {
+            return DbHelper.ExecuteListQuery<T>(
+                CreatePortalDb(),
+                codEmpresa,
+                query);
+        }
+
         #endregion
 
         #region Consultas
@@ -83,13 +108,13 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteSingleQuery<ParametrosGenDto>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT * FROM PV_PARAMETROS_GEN",
+                QueryParametrosGenerales,
                 null);
 
             return CrearRespuestaSingle(
                 result,
-                "Error al obtener los parámetros generales.",
-                "No se encontraron parámetros generales.");
+                ErrorParametrosGenerales,
+                SinParametrosGenerales);
         }
 
         /// <summary>
@@ -99,10 +124,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado de contabilidades.</returns>
         public ErrorDto<List<CntXContaDto>> obtenerContabilidades(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<CntXContaDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "SELECT * FROM CntX_Contabilidades");
+            return EjecutarListado<CntXContaDto>(CodEmpresa, QueryContabilidades);
         }
 
         /// <summary>
@@ -112,10 +134,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado de cuentas contables.</returns>
         public ErrorDto<List<DescripcionCuentasDto>> Obtener_DescripcionesCuenta(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DescripcionCuentasDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "SELECT Cod_Cuenta, Descripcion FROM CNTX_CUENTAS");
+            return EjecutarListado<DescripcionCuentasDto>(CodEmpresa, QueryDescripcionesCuenta);
         }
 
         /// <summary>
@@ -125,10 +144,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado de tipos de asiento.</returns>
         public ErrorDto<List<DescripcionTipoAsientoDto>> Obtener_DescripcionesAsiento(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DescripcionTipoAsientoDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "SELECT Tipo_Asiento, Descripcion FROM CntX_Tipos_Asientos");
+            return EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, QueryDescripcionesAsiento);
         }
 
         /// <summary>
@@ -138,10 +154,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado de tipos de asientos.</returns>
         public ErrorDto<List<DescripcionTipoAsientoDto>> Asientos_Obtener(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<DescripcionTipoAsientoDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "SELECT * FROM CNTX_TIPOS_ASIENTOS");
+            return EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, QueryAsientos);
         }
 
         #endregion
@@ -206,7 +219,7 @@ namespace Galileo.DataBaseTier
                     data.Cod_Par
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar los parámetros generales.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarParametros);
         }
 
         #endregion
