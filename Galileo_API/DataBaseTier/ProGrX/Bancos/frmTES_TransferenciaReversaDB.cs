@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             Ndocumento
                         FROM Tes_Transacciones
                         WHERE
-                            TRIM(documento_base) = @documento
+                            LTRIM(RTRIM(documento_base)) = @documento
                             AND id_banco = @id_banco
 
                             AND (@Codigo IS NULL OR Codigo LIKE @CodigoLike)

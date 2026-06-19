@@ -104,7 +104,7 @@ namespace Galileo.DataBaseTier
             bool dentro = rangos.Any(r => montoUsdR.Result >= r.MONTO_MINIMO && montoUsdR.Result <= r.MONTO_MAXIMO);
 
             if (!dentro)
-                return DbHelper.ErrorResponse($"No tiene permisos para visualizar la orden #{orden.Cod_Orden}", -2);
+                return DbHelper.ErrorResponse($"No tiene permisos para visualizar la orden #{orden.cod_orden}", -2);
 
             return DbHelper.CreateOkResponse();
         }
@@ -113,7 +113,7 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                decimal total = Convert.ToDecimal(orden.Total);
+                decimal total = Convert.ToDecimal(orden.total);
 
                 if (string.Equals(orden.divisa, "USD", StringComparison.OrdinalIgnoreCase))
                     return DbHelper.CreateOkResponse(total);
@@ -396,15 +396,15 @@ namespace Galileo.DataBaseTier
         {
             foreach (var item in lineas)
             {
-                if (item.Cantidad <= 0) continue;
+                if (item.cantidad <= 0) continue;
 
                 var estado = conn.QueryFirstOrDefault<string>(
                     @"SELECT estado FROM pv_productos WHERE cod_producto = @CodProducto;",
-                    new { CodProducto = item.Cod_Producto }
+                    new { CodProducto = item.cod_producto }
                 );
 
-                if (estado == null) return $"El producto {item.Cod_Producto} no existe";
-                if (estado == "I") return $"El producto {item.Cod_Producto} no esta activo";
+                if (estado == null) return $"El producto {item.cod_producto} no existe";
+                if (estado == "I") return $"El producto {item.cod_producto} no esta activo";
             }
 
             return "";
@@ -565,11 +565,11 @@ namespace Galileo.DataBaseTier
                     {
                         Linea = linea,
                         CodOrden = ordenes.cod_orden ?? "",
-                        CodProducto = item.Cod_Producto,
-                        Cantidad = item.Cantidad,
-                        Precio = item.Precio,
-                        Descuento = item.Descuento,
-                        ImpVentas = item.Imp_Ventas
+                        CodProducto = item.cod_producto,
+                        Cantidad = item.cantidad,
+                        Precio = item.precio,
+                        Descuento = item.descuento,
+                        ImpVentas = item.imp_ventas
                     },
                     transaction: tx
                 );
@@ -603,16 +603,16 @@ namespace Galileo.DataBaseTier
 
             foreach (var item in lineas)
             {
-                curSubTotal += item.Cantidad * item.Precio;
+                curSubTotal += item.cantidad * item.precio;
 
-                float tmpDesc = (item.Cantidad * item.Precio) * (item.Descuento / 100);
+                float tmpDesc = (item.cantidad * item.precio) * (item.descuento / 100);
                 curDescuento += tmpDesc;
 
-                float tmpIV = ((item.Cantidad * item.Precio) - tmpDesc) * (item.Imp_Ventas / 100);
+                float tmpIV = ((item.cantidad * item.precio) - tmpDesc) * (item.imp_ventas / 100);
                 curIV += tmpIV;
 
-                item.Total = (item.Cantidad * item.Precio) - tmpDesc + tmpIV;
-                curCantidad += item.Cantidad;
+                item.total = (item.cantidad * item.precio) - tmpDesc + tmpIV;
+                curCantidad += item.cantidad;
             }
 
             curTotal = curSubTotal + curIV - curDescuento;
