@@ -17,41 +17,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene los valores iniciales de pantalla para el reporte de diferidos.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<CrReporteDiferidosPantallaData> CrReporteDiferidos_Pantalla_Obtener(
-            int codEmpresa,
-            string usuario)
-        {
-            usuario = NormalizarTexto(usuario);
-
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar el usuario.",
-                    -2,
-                    new CrReporteDiferidosPantallaData());
-            }
-
-            var globalesResp = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario);
-            if (globalesResp.Code != 0 || globalesResp.Result is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    globalesResp.Description ?? "No fue posible obtener la fecha del servidor.",
-                    globalesResp.Code.GetValueOrDefault(-1),
-                    new CrReporteDiferidosPantallaData());
-            }
-
-            return DbHelper.CreateOkResponse(new CrReporteDiferidosPantallaData
-            {
-                fecha_servidor = globalesResp.Result.fxFechaServidor ?? DateTime.Now,
-            });
-        }
-
-        /// <summary>
         /// Obtiene la lista de líneas de crédito para búsqueda con FrmBusquedasComponent.
         /// </summary>
         /// <param name="codEmpresa"></param>

@@ -15,11 +15,6 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             _db = new FrmCrReporteDiferidosDb(config);
         }
 
-        public ErrorDto<CrReporteDiferidosPantallaData> CrReporteDiferidos_Pantalla_Obtener(
-            int codEmpresa,
-            string usuario)
-            => _db.CrReporteDiferidos_Pantalla_Obtener(codEmpresa, usuario);
-
         public ErrorDto<List<DropDownListaGenericaModel>> CrReporteDiferidos_Catalogo_Obtener(
             int codEmpresa)
             => _db.CrReporteDiferidos_Catalogo_Obtener(codEmpresa);

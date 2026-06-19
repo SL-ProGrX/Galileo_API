@@ -19,12 +19,6 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             _bl = new FrmCrReporteDiferidosBl(config);
         }
 
-        [HttpGet("CrReporteDiferidos_Pantalla_Obtener")]
-        public ErrorDto<CrReporteDiferidosPantallaData> CrReporteDiferidos_Pantalla_Obtener(
-            int codEmpresa,
-            string usuario)
-            => _bl.CrReporteDiferidos_Pantalla_Obtener(codEmpresa, usuario);
-
         [HttpGet("CrReporteDiferidos_Catalogo_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrReporteDiferidos_Catalogo_Obtener(
             int codEmpresa)

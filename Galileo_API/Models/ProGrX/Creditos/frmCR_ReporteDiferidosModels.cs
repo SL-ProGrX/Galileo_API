@@ -2,11 +2,6 @@
 
 namespace Galileo_API.Models.ProGrX.Creditos
 {
-    public class CrReporteDiferidosPantallaData
-    {
-        public DateTime? fecha_servidor { get; set; }
-    }
-
     public class CrReporteDiferidosConsultaRequest
     {
         public DateTime? fecha_inicio { get; set; }
