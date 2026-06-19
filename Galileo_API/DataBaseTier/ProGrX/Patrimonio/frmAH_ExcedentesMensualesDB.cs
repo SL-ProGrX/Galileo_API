@@ -8,12 +8,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
     public partial class FrmAhExcedentesMensualesDB
     {
-        private readonly IConfiguration _config;
+
         private readonly PortalDB _portalDb;
 
         public FrmAhExcedentesMensualesDB(IConfiguration config)
         {
-            _config = config;
             _portalDb = new PortalDB(config);
         }
 

@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
     public partial class FrmAhExcedentesMensualesDB
     {
+        private const string NumDoc = "NumDoc";
         /// <summary>
         /// Obtiene el último periodo cerrado para el tab Aplicaciones.
         /// </summary>
@@ -369,7 +370,7 @@ from sif_empresa;";
                 var documentos = ConstruirDocumentosMorosidad(
                     conn,
                     request.periodoId,
-                    ObtenerValorDinamico(pago, "NumDoc"),
+                    ObtenerValorDinamico(pago, NumDoc),
                     "NC");
 
                 return CrearRespuestaProceso("Morosidad aplicada satisfactoriamente.", documentos);
@@ -418,7 +419,7 @@ from sif_empresa;";
                 var documentos = ConstruirDocumentosMoraOpcf(
                     conn,
                     request.periodoId,
-                    ObtenerValorDinamico(pago, "NumDoc"),
+                    ObtenerValorDinamico(pago, NumDoc),
                     "NC");
 
                 return CrearRespuestaProceso("Morosidad OPCF aplicada satisfactoriamente.", documentos);
@@ -476,7 +477,7 @@ from sif_empresa;";
                 AgregarDocumentoSiTieneValor(
                     documentos,
                     ObtenerValorDinamico(rs, "TipoDoc"),
-                    ObtenerValorDinamico(rs, "NumDoc"));
+                    ObtenerValorDinamico(rs, NumDoc));
             }
 
             return CrearRespuestaProceso(
@@ -530,7 +531,7 @@ from sif_empresa;";
             var documentos = ConstruirDocumentosCreditos(
                 conn,
                 request.periodoId,
-                ObtenerValorDinamico(rs, "NumDoc"),
+                ObtenerValorDinamico(rs, NumDoc),
                 "NC");
 
             return CrearRespuestaProceso("Créditos actualizados satisfactoriamente.", documentos);
@@ -553,7 +554,7 @@ from sif_empresa;";
             AgregarDocumentoSiTieneValor(
                 documentos,
                 ObtenerValorDinamico(rs, "TipoDoc"),
-                ObtenerValorDinamico(rs, "NumDoc"));
+                ObtenerValorDinamico(rs, NumDoc));
 
             return CrearRespuestaProceso("Asiento general de excedentes creado satisfactoriamente.", documentos);
         }
