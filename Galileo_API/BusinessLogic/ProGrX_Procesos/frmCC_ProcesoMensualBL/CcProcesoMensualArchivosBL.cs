@@ -43,6 +43,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             CcProcesoMensualGeneraArchivoRequest archivoRequest = new()
             {
                 CodInstitucion = request.CodInstitucion,
+                NombreInstitucion= request.NombreInstitucion,
                 FechaProceso = request.FechaProceso,
                 Usuario = request.Usuario
             };
