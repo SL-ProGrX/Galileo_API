@@ -324,6 +324,37 @@ namespace Galileo.DataBaseTier
             parametros.Add("Fetch", filtros.paginacion.Value);
         }
 
+        /// <summary>
+        /// Crea la consulta para validar el rol requerido en la UEN.
+        /// </summary>
+        /// <param name="codProceso">Código del proceso a validar.</param>
+        /// <returns>Consulta SQL fija según el rol requerido.</returns>
+        private static string CrearConsultaValidacionRol(string codProceso)
+        {
+            if (codProceso == "P")
+            {
+                return @"
+                                        SELECT 1
+                                        WHERE EXISTS (
+                                            SELECT 1
+                                            FROM CORE_UENS_USUARIOS_ROLES r
+                                            WHERE r.CORE_USUARIO = @usuario
+                                              AND r.ROL_ENCARGADO = 1
+                                              AND r.COD_UNIDAD = @cod_unidad
+                                        );";
+            }
+
+            return @"
+                                        SELECT 1
+                                        WHERE EXISTS (
+                                            SELECT 1
+                                            FROM CORE_UENS_USUARIOS_ROLES r
+                                            WHERE r.CORE_USUARIO = @usuario
+                                              AND r.ROL_AUTORIZA = 1
+                                              AND r.COD_UNIDAD = @cod_unidad
+                                        );";
+        }
+
         private const string QueryActivosRequisicion = @"SELECT 
                             A.ID_CONTROL,
                             P.COD_PRODUCTO,
@@ -888,16 +919,7 @@ namespace Galileo.DataBaseTier
                     }
                 }
 
-                string campoRol = cod_proceso == "P" ? "ROL_ENCARGADO" : "ROL_AUTORIZA";
-                string queryAutoriza = $@"
-                                        SELECT 1
-                                        WHERE EXISTS (
-                                            SELECT 1
-                                            FROM CORE_UENS_USUARIOS_ROLES r
-                                            WHERE r.CORE_USUARIO = @usuario
-                                              AND r.{campoRol} = 1
-                                              AND r.COD_UNIDAD = @cod_unidad
-                                        );";
+                string queryAutoriza = CrearConsultaValidacionRol(cod_proceso);
 
                 bool esAutoriza = connection.ExecuteScalar<int?>(queryAutoriza, new { usuario, cod_unidad }) == 1;
                 return new ErrorDto { Code = esAutoriza ? 1 : 0 };

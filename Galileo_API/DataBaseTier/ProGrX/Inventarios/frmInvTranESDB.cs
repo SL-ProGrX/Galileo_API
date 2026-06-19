@@ -184,11 +184,11 @@ namespace Galileo.DataBaseTier
         /// <param name="item">Detalle a insertar.</param>
         private static void InsertarLineaDetalle(IDbConnection connection, string codBoleta, string tipoTran, int linea, InvProducLineasInsert item)
         {
-            string trasladoCol = tipoTran == "T" ? ",cod_bodega_destino" : string.Empty;
-            string trasladoVal = tipoTran == "T" ? ",@Cod_Bodega_Destino" : string.Empty;
-
-            string query = $@"insert pv_InvTraDet(linea,Boleta,tipo,cod_producto,cod_bodega,cantidad,despacho,precio {trasladoCol})
-                              values(@Linea, @CodBoleta, @TipoTran, @Cod_Producto, @Cod_Bodega, @Cantidad, @Despacho, @Precio {trasladoVal})";
+            string query = tipoTran == "T"
+                ? @"insert pv_InvTraDet(linea,Boleta,tipo,cod_producto,cod_bodega,cantidad,despacho,precio,cod_bodega_destino)
+                    values(@Linea, @CodBoleta, @TipoTran, @Cod_Producto, @Cod_Bodega, @Cantidad, @Despacho, @Precio, @Cod_Bodega_Destino)"
+                : @"insert pv_InvTraDet(linea,Boleta,tipo,cod_producto,cod_bodega,cantidad,despacho,precio)
+                    values(@Linea, @CodBoleta, @TipoTran, @Cod_Producto, @Cod_Bodega, @Cantidad, @Despacho, @Precio)";
 
             connection.Execute(
                 query,

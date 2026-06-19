@@ -153,6 +153,34 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
+        /// Crea la consulta de actualización de subcategoría según si cambia o no la línea madre.
+        /// </summary>
+        /// <param name="actualizaLineaMadre">Indica si debe actualizarse COD_LINEA_SUB_MADRE.</param>
+        /// <returns>Consulta SQL de actualización.</returns>
+        private static string CrearConsultaActualizarSubcategoria(bool actualizaLineaMadre)
+        {
+            if (actualizaLineaMadre)
+            {
+                return @"Update pv_prod_clasifica_Sub set
+                                    descripcion = @Descripcion,
+                                    activo = @Activo,
+                                    CABYS = @CABYS,
+                                    COD_CUENTA = @COD_CUENTA,
+                                    COD_LINEA_SUB_MADRE = @COD_LINEA_SUB_MADRE,
+                                    NIVEL = @NIVEL
+                                WHERE Cod_Prodclas = @Cod_Prodclas AND COD_LINEA_SUB = @Cod_Linea_Sub";
+            }
+
+            return @"Update pv_prod_clasifica_Sub set
+                                    descripcion = @Descripcion,
+                                    activo = @Activo,
+                                    CABYS = @CABYS,
+                                    COD_CUENTA = @COD_CUENTA,
+                                    NIVEL = @NIVEL
+                                WHERE Cod_Prodclas = @Cod_Prodclas AND COD_LINEA_SUB = @Cod_Linea_Sub";
+        }
+
+        /// <summary>
         /// Obtiene la lista de subcategorías hijas de un padre.
         /// </summary>
         /// <param name="connection">Conexión activa.</param>
@@ -559,10 +587,9 @@ namespace Galileo.DataBaseTier
                     nivel = ObtenerNivelPadre(connection, request.Cod_Linea_Sub_Madre);
                 }
 
-                string updateCodLinea = "";
-                if (nivel > 0)
+                bool actualizaLineaMadre = nivel > 0;
+                if (actualizaLineaMadre)
                 {
-                    updateCodLinea = " COD_LINEA_SUB_MADRE = @COD_LINEA_SUB_MADRE, ";
                     nivel += 1;
 
                     if (nivel > 5)
@@ -575,14 +602,7 @@ namespace Galileo.DataBaseTier
                     nivel = request.Nivel;
                 }
 
-                var query = $@"Update pv_prod_clasifica_Sub set
-                                    descripcion = @Descripcion,
-                                    activo = @Activo,
-                                    CABYS = @CABYS,
-                                    COD_CUENTA = @COD_CUENTA,
-                                    {updateCodLinea}
-                                    NIVEL = @NIVEL
-                                WHERE Cod_Prodclas = @Cod_Prodclas AND COD_LINEA_SUB = @Cod_Linea_Sub";
+                var query = CrearConsultaActualizarSubcategoria(actualizaLineaMadre);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("Cod_Prodclas", request.Cod_Prodclas, DbType.Int32);
@@ -593,7 +613,7 @@ namespace Galileo.DataBaseTier
                 parameters.Add("COD_CUENTA", request.Cod_Cuenta, DbType.String);
                 parameters.Add("NIVEL", nivel, DbType.Int32);
 
-                if (request.Cod_Linea_Sub_Madre != "")
+                if (actualizaLineaMadre)
                 {
                     parameters.Add("COD_LINEA_SUB_MADRE", request.Cod_Linea_Sub_Madre, DbType.Int32);
                 }

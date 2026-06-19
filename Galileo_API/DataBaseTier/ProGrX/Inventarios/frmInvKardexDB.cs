@@ -142,6 +142,60 @@ namespace Galileo.DataBaseTier
             parametros.Add("Fetch", paginacion.Value);
         }
 
+        /// <summary>
+        /// Construye la consulta para contar movimientos del kardex.
+        /// </summary>
+        /// <param name="whereBuilder">Cláusula WHERE construida con fragmentos controlados.</param>
+        /// <returns>Consulta SQL de conteo.</returns>
+        private static string CrearConsultaTotal(System.Text.StringBuilder whereBuilder)
+        {
+            var totalQuery = new System.Text.StringBuilder(@"SELECT COUNT(M.cod_producto)
+                                          FROM pv_inventario_mov M
+                                          INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
+                                          INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega");
+
+            totalQuery.Append(whereBuilder);
+            return totalQuery.ToString();
+        }
+
+        /// <summary>
+        /// Construye la consulta de detalle para movimientos del kardex.
+        /// </summary>
+        /// <param name="whereBuilder">Cláusula WHERE construida con fragmentos controlados.</param>
+        /// <returns>Consulta SQL de detalle.</returns>
+        private static System.Text.StringBuilder CrearConsultaDetalle(System.Text.StringBuilder whereBuilder)
+        {
+            var detalleQuery = new System.Text.StringBuilder(@"SELECT
+                                    M.Fecha,
+                                    (RTRIM(M.cod_producto) + ' - ' + RTRIM(P.descripcion)) AS Producto,
+                                    CASE M.tipo
+                                        WHEN 'E' THEN 'ENTRADA'
+                                        WHEN 'S' THEN 'SALIDA'
+                                    END AS TipoX,
+                                    M.origen,
+                                    M.codigo,
+                                    ISNULL(M.existencia, 0) AS Existencia,
+                                    M.cantidad,
+                                    CASE
+                                        WHEN M.tipo = 'E' THEN ISNULL(M.existencia, 0) + M.Cantidad
+                                        WHEN M.tipo = 'S' THEN ISNULL(M.existencia, 0) - M.Cantidad
+                                    END AS ExistenciaX,
+                                    M.precio,
+                                    (M.cantidad * M.precio) AS TotalSinImp,
+                                    (M.cantidad * M.precio) * (M.imp_ventas / 100) AS ImpVentas,
+                                    (M.cantidad * M.precio) * (M.imp_consumo / 100) AS ImpConsumo,
+                                    (M.cantidad * M.precio) + ((M.cantidad * M.precio) * (M.imp_ventas / 100)) + ((M.cantidad * M.precio) * (M.imp_consumo / 100)) AS TotalConImp,
+                                    (RTRIM(M.cod_bodega) + ' - ' + RTRIM(B.descripcion)) AS Bodega,
+                                    dbo.fxINVBodegaTraslado(M.Origen, M.Tipo, M.Linea) AS BodegaEnlace
+                                FROM pv_inventario_mov M
+                                INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
+                                INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega");
+
+            detalleQuery.Append(whereBuilder);
+            detalleQuery.Append(" ORDER BY M.Fecha desc ");
+            return detalleQuery;
+        }
+
         #endregion
 
         #region Consultas
@@ -178,44 +232,10 @@ namespace Galileo.DataBaseTier
 
                     AgregarFiltrosKardex(filtros, whereBuilder, parametros);
 
-                    string whereClause = whereBuilder.ToString();
-
-                    string totalQuery = @"SELECT COUNT(M.cod_producto)
-                                          FROM pv_inventario_mov M
-                                          INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
-                                          INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega"
-                                          + whereClause;
-
+                    string totalQuery = CrearConsultaTotal(whereBuilder);
                     respuesta.Total = connection.QueryFirstOrDefault<int>(totalQuery, parametros);
 
-                    var detalleQuery = new System.Text.StringBuilder(@"SELECT
-                                    M.Fecha,
-                                    (RTRIM(M.cod_producto) + ' - ' + RTRIM(P.descripcion)) AS Producto,
-                                    CASE M.tipo
-                                        WHEN 'E' THEN 'ENTRADA'
-                                        WHEN 'S' THEN 'SALIDA'
-                                    END AS TipoX,
-                                    M.origen,
-                                    M.codigo,
-                                    ISNULL(M.existencia, 0) AS Existencia,
-                                    M.cantidad,
-                                    CASE
-                                        WHEN M.tipo = 'E' THEN ISNULL(M.existencia, 0) + M.Cantidad
-                                        WHEN M.tipo = 'S' THEN ISNULL(M.existencia, 0) - M.Cantidad
-                                    END AS ExistenciaX,
-                                    M.precio,
-                                    (M.cantidad * M.precio) AS TotalSinImp,
-                                    (M.cantidad * M.precio) * (M.imp_ventas / 100) AS ImpVentas,
-                                    (M.cantidad * M.precio) * (M.imp_consumo / 100) AS ImpConsumo,
-                                    (M.cantidad * M.precio) + ((M.cantidad * M.precio) * (M.imp_ventas / 100)) + ((M.cantidad * M.precio) * (M.imp_consumo / 100)) AS TotalConImp,
-                                    (RTRIM(M.cod_bodega) + ' - ' + RTRIM(B.descripcion)) AS Bodega,
-                                    dbo.fxINVBodegaTraslado(M.Origen, M.Tipo, M.Linea) AS BodegaEnlace
-                                FROM pv_inventario_mov M
-                                INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
-                                INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega");
-
-                    detalleQuery.Append(whereClause);
-                    detalleQuery.Append(" ORDER BY M.Fecha desc ");
+                    var detalleQuery = CrearConsultaDetalle(whereBuilder);
                     AgregarPaginacion(filtros.pagina, filtros.paginacion, detalleQuery, parametros);
 
                     respuesta.Movimientos = connection.Query<MovimientosDto>(detalleQuery.ToString(), parametros).ToList();
