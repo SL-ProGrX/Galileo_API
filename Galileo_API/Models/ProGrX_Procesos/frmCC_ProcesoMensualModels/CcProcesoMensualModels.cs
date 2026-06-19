@@ -24,6 +24,7 @@
             public bool UsaPlanillaTransito { get; set; } = false;
             public bool AplicaCambioDeducciones { get; set; } = false;
             public int Redondeo { get; set; } = 0;
+            public string NombreInstitucion { get; set; } = string.Empty;
         }
 
         public class CcProcesoMensualArchivoGeneradoModel
@@ -148,5 +149,13 @@
 
         #endregion
 
+        #region Creditos (Aplicación)
+        public sealed class CcProcesoMensualCreditosAplicacionResponse
+        {
+            public bool Procesado { get; set; } = false;
+            public string Mensaje { get; set; } = string.Empty;
+        }
+        #endregion
+     
     }
 }
