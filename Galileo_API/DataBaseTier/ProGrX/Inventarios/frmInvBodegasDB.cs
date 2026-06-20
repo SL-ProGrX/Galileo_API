@@ -11,9 +11,7 @@ namespace Galileo.DataBaseTier
 
         private const string MensajeOk = "Ok";
         private const string ErrorDesplazamiento = "Error al obtener el desplazamiento de bodega.";
-        private const string SinDesplazamiento = "No se encontró otra bodega para el desplazamiento solicitado.";
         private const string ErrorBodegaConsecutivo = "Error al obtener la bodega por consecutivo.";
-        private const string SinBodega = "No se encontró la bodega indicada.";
         private const string ErrorInsertarBodega = "Error al insertar la bodega.";
         private const string ErrorActualizarBodega = "Error al actualizar la bodega.";
         private const string ErrorEliminarBodega = "Error al eliminar la bodega.";
@@ -28,61 +26,6 @@ namespace Galileo.DataBaseTier
 
         private const string QueryEliminarBodega = "DELETE FROM PV_BODEGAS WHERE COD_BODEGA = @CodBodega";
 
-        private static readonly string[] CamposInsertarBodega =
-        {
-            nameof(BodegasDto.Cod_Bodega),
-            nameof(BodegasDto.Descripcion),
-            nameof(BodegasDto.Observacion),
-            nameof(BodegasDto.Estado),
-            "Fecha_Inclusion",
-            nameof(BodegasDto.Permite_Entradas),
-            nameof(BodegasDto.Permite_Salidas),
-            nameof(BodegasDto.Cod_Cuenta),
-            nameof(BodegasDto.Cod_Cta_Ingresostf),
-            nameof(BodegasDto.Cod_Cta_Gastostf),
-            nameof(BodegasDto.Utiliza_Permisos)
-        };
-
-        private static readonly string[] ColumnasInsertarBodega =
-        {
-            "cod_bodega",
-            "descripcion",
-            "observacion",
-            "estado",
-            "fecha_inclusion",
-            "permite_entradas",
-            "permite_salidas",
-            "cod_cuenta",
-            "cod_cta_ingresosTF",
-            "cod_cta_gastosTF",
-            "UTILIZA_PERMISOS"
-        };
-
-        private static readonly string[] CamposActualizarBodega =
-        {
-            nameof(BodegasDto.Observacion),
-            nameof(BodegasDto.Cod_Cuenta),
-            nameof(BodegasDto.Cod_Cta_Gastostf),
-            nameof(BodegasDto.Cod_Cta_Ingresostf),
-            nameof(BodegasDto.Permite_Entradas),
-            nameof(BodegasDto.Permite_Salidas),
-            nameof(BodegasDto.Utiliza_Permisos),
-            nameof(BodegasDto.Estado),
-            nameof(BodegasDto.Descripcion)
-        };
-
-        private static readonly string[] ColumnasActualizarBodega =
-        {
-            "observacion",
-            "cod_cuenta",
-            "cod_cta_gastoSTF",
-            "cod_cta_ingresostf",
-            "permite_entradas",
-            "permite_salidas",
-            "utiliza_permisos",
-            "estado",
-            "descripcion"
-        };
 
         #region Constructor y helpers
 
@@ -101,63 +44,6 @@ namespace Galileo.DataBaseTier
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones de consulta única.
-        /// </summary>
-        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="errorMessage">Mensaje cuando ocurre un error.</param>
-        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
-        /// <returns>Respuesta estándar para una sola entidad.</returns>
-        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
-            where T : class
-        {
-            if (result.Code != 0)
-            {
-                return new ErrorDto<T>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? errorMessage,
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<T>
-                {
-                    Code = -2,
-                    Description = notFoundMessage,
-                    Result = null
-                };
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para resultados generados dentro de WithConn.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="errorMessage">Mensaje de error estándar.</param>
-        /// <returns>Respuesta estándar.</returns>
-        private static ErrorDto CrearRespuestaWithConn(ErrorDto<ErrorDto> result, string errorMessage)
-        {
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Crea los parámetros comunes para una bodega.
@@ -169,65 +55,6 @@ namespace Galileo.DataBaseTier
             CodBodega
         };
 
-        /// <summary>
-        /// Crea los parámetros para insertar una bodega.
-        /// </summary>
-        /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Parámetros para Dapper.</returns>
-        private static DynamicParameters CrearParametrosInsertarBodega(BodegasDto data)
-        {
-            var parametros = new DynamicParameters();
-            var tipo = typeof(BodegasDto);
-
-            foreach (var campo in CamposInsertarBodega)
-            {
-                parametros.Add(campo, campo == "Fecha_Inclusion" ? DateTime.Now : tipo.GetProperty(campo)?.GetValue(data));
-            }
-
-            return parametros;
-        }
-
-        /// <summary>
-        /// Crea los parámetros para actualizar una bodega.
-        /// </summary>
-        /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Parámetros para Dapper.</returns>
-        private static DynamicParameters CrearParametrosActualizarBodega(BodegasDto data)
-        {
-            var parametros = new DynamicParameters();
-            var tipo = typeof(BodegasDto);
-
-            foreach (var campo in CamposActualizarBodega)
-            {
-                parametros.Add(campo, tipo.GetProperty(campo)?.GetValue(data));
-            }
-
-            parametros.Add(nameof(BodegasDto.Cod_Bodega), data.Cod_Bodega);
-            return parametros;
-        }
-
-        /// <summary>
-        /// Crea la consulta para insertar una bodega.
-        /// </summary>
-        /// <returns>Consulta SQL de inserción.</returns>
-        private static string CrearConsultaInsertarBodega()
-        {
-            var columnas = string.Join(", ", ColumnasInsertarBodega);
-            var valores = string.Join(", ", CamposInsertarBodega.Select(campo => $"@{campo}"));
-            return $"INSERT INTO pv_bodegas ({columnas}) VALUES ({valores})";
-        }
-
-        /// <summary>
-        /// Crea la consulta para actualizar una bodega.
-        /// </summary>
-        /// <returns>Consulta SQL de actualización.</returns>
-        private static string CrearConsultaActualizarBodega()
-        {
-            var asignaciones = ColumnasActualizarBodega
-                .Zip(CamposActualizarBodega, (columna, campo) => $"{columna} = @{campo}");
-
-            return $"UPDATE pv_bodegas SET {string.Join(", ", asignaciones)} WHERE cod_bodega = @Cod_Bodega";
-        }
 
         /// <summary>
         /// Crea los parámetros para actualizar permisos de bodega.
@@ -244,15 +71,6 @@ namespace Galileo.DataBaseTier
             cod_bodega = codBodega
         };
 
-        /// <summary>
-        /// Crea una respuesta de operación correcta.
-        /// </summary>
-        /// <returns>Respuesta Ok.</returns>
-        private static ErrorDto CrearOk() => new()
-        {
-            Code = 0,
-            Description = MensajeOk
-        };
 
         /// <summary>
         /// Ejecuta un procedimiento almacenado que devuelve un código entero y lo transforma en <see cref="ErrorDto"/>.
@@ -368,8 +186,9 @@ namespace Galileo.DataBaseTier
                 query,
                 null,
                 parametros);
-
-            return CrearRespuestaSingle(result, ErrorDesplazamiento, SinDesplazamiento);
+            return result.Code == 0
+                            ? DbHelper.CreateOkResponse(result.Result!)
+                            : DbHelper.CreateErrorResponse(result.Description ?? ErrorDesplazamiento, result.Code.GetValueOrDefault(-1), (BodegasDto)null!);
         }
 
         /// <summary>
@@ -386,20 +205,15 @@ namespace Galileo.DataBaseTier
                 QueryBodegaPorCodigo,
                 null,
                 CrearParametrosBodega(consecutivo));
-
-            return CrearRespuestaSingle(result, ErrorBodegaConsecutivo, SinBodega);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result!)
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorBodegaConsecutivo, result.Code.GetValueOrDefault(-1), (BodegasDto)null!);
         }
 
         #endregion
 
         #region Mantenimiento
 
-        /// <summary>
-        /// Inserta una nueva bodega.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDto data)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -414,30 +228,70 @@ namespace Galileo.DataBaseTier
                 }
 
                 connection.Execute(
-                    CrearConsultaInsertarBodega(),
-                    CrearParametrosInsertarBodega(data));
+                    @"INSERT INTO pv_bodegas
+                        (cod_bodega, descripcion, observacion, estado, fecha_inclusion, permite_entradas, permite_salidas, cod_cuenta, cod_cta_ingresosTF, cod_cta_gastosTF, UTILIZA_PERMISOS)
+                      VALUES
+                        (@Cod_Bodega, @Descripcion, @Observacion, @Estado, @Fecha_Inclusion, @Permite_Entradas, @Permite_Salidas, @Cod_Cuenta, @Cod_Cta_Ingresostf, @Cod_Cta_Gastostf, @Utiliza_Permisos)",
+                    new
+                    {
+                        data.Cod_Bodega,
+                        data.Descripcion,
+                        data.Observacion,
+                        data.Estado,
+                        Fecha_Inclusion = DateTime.Now,
+                        data.Permite_Entradas,
+                        data.Permite_Salidas,
+                        data.Cod_Cuenta,
+                        data.Cod_Cta_Ingresostf,
+                        data.Cod_Cta_Gastostf,
+                        data.Utiliza_Permisos
+                    });
 
-                return CrearOk();
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = MensajeOk
+                };
             });
 
-            return CrearRespuestaWithConn(result, ErrorInsertarBodega);
+            return result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarBodega, result.Code.GetValueOrDefault(-1));
         }
 
-        /// <summary>
-        /// Actualiza una bodega.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDto data)
         {
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                CrearConsultaActualizarBodega(),
-                CrearParametrosActualizarBodega(data));
+                @"UPDATE pv_bodegas
+                  SET observacion = @Observacion,
+                      cod_cuenta = @Cod_Cuenta,
+                      cod_cta_gastoSTF = @Cod_Cta_Gastostf,
+                      cod_cta_ingresostf = @Cod_Cta_Ingresostf,
+                      permite_entradas = @Permite_Entradas,
+                      permite_salidas = @Permite_Salidas,
+                      utiliza_permisos = @Utiliza_Permisos,
+                      estado = @Estado,
+                      descripcion = @Descripcion
+                  WHERE cod_bodega = @Cod_Bodega",
+                new
+                {
+                    data.Cod_Bodega,
+                    data.Observacion,
+                    data.Cod_Cuenta,
+                    data.Cod_Cta_Gastostf,
+                    data.Cod_Cta_Ingresostf,
+                    data.Permite_Entradas,
+                    data.Permite_Salidas,
+                    data.Utiliza_Permisos,
+                    data.Estado,
+                    data.Descripcion
+                });
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarBodega);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorActualizarBodega, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -457,11 +311,16 @@ namespace Galileo.DataBaseTier
                 connection.Execute(
                     QueryEliminarBodega,
                     CrearParametrosBodega(cod_bodega));
-
-                return CrearOk();
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = MensajeOk
+                };
             });
 
-            return CrearRespuestaWithConn(result, ErrorEliminarBodega);
+            return result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarBodega, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>

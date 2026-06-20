@@ -50,19 +50,6 @@ namespace Galileo.DataBaseTier
             Lista = new List<TipoProductoSubDto>()
         };
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Agrega filtro LIKE al listado de tipos de producto.
@@ -373,7 +360,9 @@ namespace Galileo.DataBaseTier
                     request.Cod_Alter
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar el tipo de producto.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar el tipo de producto.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -397,7 +386,9 @@ namespace Galileo.DataBaseTier
                     request.Cod_Alter
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar el tipo de producto.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el tipo de producto.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -414,7 +405,9 @@ namespace Galileo.DataBaseTier
                 $"DELETE pv_prod_clasifica where cod_prodclas = @{ParamCodProdclas}",
                 new { Cod_Prodclas = producto });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar el tipo de producto.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el tipo de producto.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

@@ -56,19 +56,6 @@ namespace Galileo.DataBaseTier
             Usuarios = new List<UsuarioaCambioFechaDto>()
         };
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Agrega un filtro de usuario y descripción a la consulta.
@@ -262,7 +249,9 @@ namespace Galileo.DataBaseTier
                     estado = "A"
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar el autorizador.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el autorizador.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -465,7 +454,9 @@ namespace Galileo.DataBaseTier
                     tipo = request.Tipo
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar el permiso de cambio de fecha.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el permiso de cambio de fecha.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -482,7 +473,9 @@ namespace Galileo.DataBaseTier
                 "DELETE pv_invusrfechas WHERE USUARIO = @usuario AND TIPO = @tipo",
                 CrearParametrosUsuarioTipo(request.Usuario, request.Tipo));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar el permiso de cambio de fecha.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el permiso de cambio de fecha.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

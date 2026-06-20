@@ -32,43 +32,6 @@ namespace Galileo.DataBaseTier
         private const string ProcedureDetalleAgregar = "[spINV_W_PaqueteDetalle_Agregar]";
         private const string ProcedureDetalleActualizar = "[spINV_W_PaqueteDetalle_Actualizar]";
 
-        private static readonly string[] CamposActualizarPaquete =
-        {
-            nameof(PaqueteDto.Descripcion),
-            nameof(PaqueteDto.Notas),
-            nameof(PaqueteDto.User_Modifica),
-            "Fecha_Modifica",
-            nameof(PaqueteDto.Fecha_Inicio),
-            nameof(PaqueteDto.Fecha_Corte),
-            nameof(PaqueteDto.Frecuencia_Horai),
-            nameof(PaqueteDto.Frecuencia_Horac),
-            nameof(PaqueteDto.Frecuencia_Lunes),
-            nameof(PaqueteDto.Frecuencia_Martes),
-            nameof(PaqueteDto.Frecuencia_Miercoles),
-            nameof(PaqueteDto.Frecuencia_Jueves),
-            nameof(PaqueteDto.Frecuencia_Viernes),
-            nameof(PaqueteDto.Frecuencia_Sabado),
-            nameof(PaqueteDto.Frecuencia_Domingo)
-        };
-
-        private static readonly string[] ColumnasActualizarPaquete =
-        {
-            "descripcion",
-            "notas",
-            "user_modifica",
-            "fecha_modifica",
-            "fecha_inicio",
-            "fecha_corte",
-            "frecuencia_horai",
-            "frecuencia_horac",
-            "frecuencia_lunes",
-            "frecuencia_martes",
-            "frecuencia_miercoles",
-            "frecuencia_jueves",
-            "frecuencia_viernes",
-            "frecuencia_sabado",
-            "frecuencia_domingo"
-        };
 
         public FrmInvPaquetesDB(IConfiguration config)
         {
@@ -168,40 +131,6 @@ namespace Galileo.DataBaseTier
             return parameters;
         }
 
-        private static string CrearConsultaActualizarPaquete()
-        {
-            var asignaciones = ColumnasActualizarPaquete
-                .Zip(CamposActualizarPaquete, (columna, campo) => $"{columna} = @{campo}");
-
-            return $"UPDATE pv_paquetes SET {string.Join(", ", asignaciones)} WHERE cod_paquete = @Cod_Paquete";
-        }
-
-        private static DynamicParameters CrearParametrosActualizarPaquete(PaqueteDto request)
-        {
-            var parameters = new DynamicParameters();
-
-            parameters.Add(nameof(PaqueteDto.Cod_Paquete), request.Cod_Paquete);
-
-            foreach (var campo in CamposActualizarPaquete)
-            {
-                parameters.Add(campo, ObtenerValorActualizacionPaquete(request, campo));
-            }
-
-            return parameters;
-        }
-
-        private static object? ObtenerValorActualizacionPaquete(PaqueteDto request, string campo)
-        {
-            return campo switch
-            {
-                "Fecha_Modifica" => DateTime.Now,
-                nameof(PaqueteDto.Fecha_Inicio) => request.Fecha_Inicio.ToLocalTime(),
-                nameof(PaqueteDto.Fecha_Corte) => request.Fecha_Corte.ToLocalTime(),
-                nameof(PaqueteDto.Frecuencia_Horai) => request.Frecuencia_Horai.ToLocalTime(),
-                nameof(PaqueteDto.Frecuencia_Horac) => request.Frecuencia_Horac.ToLocalTime(),
-                _ => typeof(PaqueteDto).GetProperty(campo)?.GetValue(request)
-            };
-        }
 
         private ErrorDto EjecutarProcedimientoConCodigo(int CodEmpresa, string procedure, object values, string errorMessage)
         {
@@ -258,8 +187,8 @@ namespace Galileo.DataBaseTier
                 CrearParametrosPaquete(Cod_Paquete));
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result!)
-                : DbHelper.CreateErrorResponse<PaqueteDto>(result.Description ?? ErrorObtenerPaquete, result.Code.GetValueOrDefault(-1), null!);
+                ? DbHelper.CreateOkResponse(result.Result ?? default(PaqueteDto)!)
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPaquete, result.Code.GetValueOrDefault(-1), default(PaqueteDto)!);
         }
 
         public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
@@ -296,8 +225,42 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                CrearConsultaActualizarPaquete(),
-                CrearParametrosActualizarPaquete(request));
+                @"UPDATE pv_paquetes
+                  SET descripcion = @Descripcion,
+                      notas = @Notas,
+                      user_modifica = @User_Modifica,
+                      fecha_modifica = @Fecha_Modifica,
+                      fecha_inicio = @Fecha_Inicio,
+                      fecha_corte = @Fecha_Corte,
+                      frecuencia_horai = @Frecuencia_Horai,
+                      frecuencia_horac = @Frecuencia_Horac,
+                      frecuencia_lunes = @Frecuencia_Lunes,
+                      frecuencia_martes = @Frecuencia_Martes,
+                      frecuencia_miercoles = @Frecuencia_Miercoles,
+                      frecuencia_jueves = @Frecuencia_Jueves,
+                      frecuencia_viernes = @Frecuencia_Viernes,
+                      frecuencia_sabado = @Frecuencia_Sabado,
+                      frecuencia_domingo = @Frecuencia_Domingo
+                  WHERE cod_paquete = @Cod_Paquete",
+                new
+                {
+                    request.Cod_Paquete,
+                    request.Descripcion,
+                    request.Notas,
+                    request.User_Modifica,
+                    Fecha_Modifica = DateTime.Now,
+                    Fecha_Inicio = request.Fecha_Inicio.ToLocalTime(),
+                    Fecha_Corte = request.Fecha_Corte.ToLocalTime(),
+                    Frecuencia_Horai = request.Frecuencia_Horai.ToLocalTime(),
+                    Frecuencia_Horac = request.Frecuencia_Horac.ToLocalTime(),
+                    request.Frecuencia_Lunes,
+                    request.Frecuencia_Martes,
+                    request.Frecuencia_Miercoles,
+                    request.Frecuencia_Jueves,
+                    request.Frecuencia_Viernes,
+                    request.Frecuencia_Sabado,
+                    request.Frecuencia_Domingo
+                });
 
             return result.Code == 0
                 ? DbHelper.OkResponse(MensajeOk)
