@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _db = new FrmInvParametrosDB(config);
         }
 
-        public ErrorDto<ParametrosGenDto> Parametros_Obtener(int CodEmpresa)
+        public ErrorDto<ParametrosGenDto?> Parametros_Obtener(int CodEmpresa)
         {
             return _db.Parametros_Obtener(CodEmpresa);
         }

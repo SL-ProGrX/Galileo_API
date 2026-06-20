@@ -27,50 +27,6 @@ namespace Galileo.DataBaseTier
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones de consulta única.
-        /// </summary>
-        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="errorMessage">Mensaje cuando ocurre un error.</param>
-        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
-        /// <returns>Respuesta estándar para una sola entidad.</returns>
-        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
-            where T : class
-        {
-            if (result.Code != 0)
-            {
-                return new ErrorDto<T>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? errorMessage,
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<T>
-                {
-                    Code = -2,
-                    Description = notFoundMessage,
-                    Result = null
-                };
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones de actualización.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Crea los parámetros comunes para una asignación de ubicación.
@@ -192,18 +148,11 @@ namespace Galileo.DataBaseTier
 
         #region Consultas
 
-        /// <summary>
-        /// Obtiene las ubicaciones del producto en inventario.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="CodAsignaUbicacion">Código de asignación de ubicación.</param>
-        /// <returns>Cabecera de la asignación de ubicación.</returns>
-        public ErrorDto<AsignaUbicacionDto> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion) =>
-    CrearRespuestaSingle(
-        DbHelper.ExecuteSingleQuery<AsignaUbicacionDto>(
-            CreatePortalDb(),
-            CodEmpresa,
-            @"SELECT COD_ASIGNAUBICACION,
+        public ErrorDto<AsignaUbicacionDto?> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion) =>
+            DbHelper.ExecuteSingleQuery<AsignaUbicacionDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT COD_ASIGNAUBICACION,
                          ESTADO,
                          COD_BODEGA,
                          RESPONSABLE,
@@ -211,10 +160,8 @@ namespace Galileo.DataBaseTier
                          NOTAS
                   FROM INV_UBICACIONES
                   WHERE COD_ASIGNAUBICACION = @CodAsignaUbicacion",
-            null,
-            CrearParametrosAsignacion(CodAsignaUbicacion)),
-        "Error al obtener la ubicación de inventario.",
-        "No se encontró la asignación de ubicación.");
+                null,
+                CrearParametrosAsignacion(CodAsignaUbicacion));
 
         /// <summary>
         /// Obtiene la línea del producto en inventario para su ubicación.
@@ -240,33 +187,23 @@ namespace Galileo.DataBaseTier
                 CrearParametrosAsignacion(CodAsignaUbicacion));
         }
 
-        /// <summary>
-        /// Obtiene una asignación de ubicación anterior o siguiente según el desplazamiento indicado.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="scrollValue">Dirección del desplazamiento.</param>
-        /// <param name="CodAsignaUbicacion">Código actual de asignación.</param>
-        /// <returns>Asignación encontrada para el desplazamiento.</returns>
-        public ErrorDto<AsignaUbicacionDto> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion) =>
-     CrearRespuestaSingle(
-         DbHelper.ExecuteSingleQuery<AsignaUbicacionDto>(
-             CreatePortalDb(),
-             CodEmpresa,
-             @"select Top 1 COD_ASIGNAUBICACION
+        public ErrorDto<AsignaUbicacionDto?> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion) =>
+            DbHelper.ExecuteSingleQuery<AsignaUbicacionDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"select Top 1 COD_ASIGNAUBICACION
                                    from INV_UBICACIONES
                                    where ((@ScrollValue = 1 and COD_ASIGNAUBICACION > @CodAsignaUbicacion)
                                        or (@ScrollValue <> 1 and COD_ASIGNAUBICACION < @CodAsignaUbicacion))
                                    order by
                                        case when @ScrollValue = 1 then COD_ASIGNAUBICACION end asc,
                                        case when @ScrollValue <> 1 then COD_ASIGNAUBICACION end desc",
-             null,
-             new
-             {
-                 ScrollValue = scrollValue,
-                 CodAsignaUbicacion
-             }),
-         "Error al obtener el desplazamiento de asignación de ubicación.",
-         "No se encontró otra asignación para el desplazamiento solicitado.");
+                null,
+                new
+                {
+                    ScrollValue = scrollValue,
+                    CodAsignaUbicacion
+                });
 
         /// <summary>
         /// Obtiene la lista de tareas de ubicaciones de inventario.
@@ -333,7 +270,9 @@ namespace Galileo.DataBaseTier
                   WHERE COD_ASIGNAUBICACION = @CodAsignaUbicacion",
                 CrearParametrosActualizar(request));
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar la asignación de ubicación.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro actualizado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar la asignación de ubicación.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -406,7 +345,9 @@ namespace Galileo.DataBaseTier
                   where COD_ASIGNAUBICACION = @CodAsignaUbicacion",
                 CrearParametrosCerrarOrden(codigoAsignaUbicacion, Usuario, Estado));
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar el estado de la asignación de ubicación.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro actualizado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar el estado de la asignación de ubicación.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -426,7 +367,9 @@ namespace Galileo.DataBaseTier
                     and linea = @Linea",
                 CrearParametrosAsignacionLinea(CodAsignaUbicacion, Linea));
 
-            return CrearRespuestaNonQuery(result, "Registro eliminado correctamente", "Error al eliminar el producto de la ubicación.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro eliminado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el producto de la ubicación.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion
