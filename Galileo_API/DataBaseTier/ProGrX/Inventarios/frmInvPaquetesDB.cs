@@ -10,6 +10,7 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string DateFormatYMD = "yyyy-MM-dd";
+        private const string TimeFormat = "HH:mm:ss";
         private const string MensajeOk = "Ok";
         private const string ErrorObtenerPaquetes = "Error al obtener paquetes.";
         private const string ErrorObtenerPaquete = "Error al obtener el paquete.";
@@ -27,41 +28,62 @@ namespace Galileo.DataBaseTier
         private const string QueryObtenerPaquete = "SELECT * FROM pv_paquetes WHERE cod_paquete = @Cod_Paquete";
         private const string QueryEliminarDetalle = "DELETE pv_paquetes_detalle WHERE linea = @Linea";
         private const string QueryEliminarDetalles = "DELETE pv_paquetes_detalle WHERE cod_paquete = @Cod_Paquete";
+        private const string QueryUnidadProducto = "SELECT COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO = @Cod_Producto";
+        private const string ProcedurePaqueteAgregar = "[spINV_W_Paquete_Agregar]";
+        private const string ProcedureDetalleAgregar = "[spINV_W_PaqueteDetalle_Agregar]";
+        private const string ProcedureDetalleActualizar = "[spINV_W_PaqueteDetalle_Actualizar]";
 
-        #region Constructor y helpers
+        private static readonly string[] CamposActualizarPaquete =
+        {
+            nameof(PaqueteDto.Descripcion),
+            nameof(PaqueteDto.Notas),
+            nameof(PaqueteDto.User_Modifica),
+            "Fecha_Modifica",
+            nameof(PaqueteDto.Fecha_Inicio),
+            nameof(PaqueteDto.Fecha_Corte),
+            nameof(PaqueteDto.Frecuencia_Horai),
+            nameof(PaqueteDto.Frecuencia_Horac),
+            nameof(PaqueteDto.Frecuencia_Lunes),
+            nameof(PaqueteDto.Frecuencia_Martes),
+            nameof(PaqueteDto.Frecuencia_Miercoles),
+            nameof(PaqueteDto.Frecuencia_Jueves),
+            nameof(PaqueteDto.Frecuencia_Viernes),
+            nameof(PaqueteDto.Frecuencia_Sabado),
+            nameof(PaqueteDto.Frecuencia_Domingo)
+        };
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvPaquetesDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
+        private static readonly string[] ColumnasActualizarPaquete =
+        {
+            "descripcion",
+            "notas",
+            "user_modifica",
+            "fecha_modifica",
+            "fecha_inicio",
+            "fecha_corte",
+            "frecuencia_horai",
+            "frecuencia_horac",
+            "frecuencia_lunes",
+            "frecuencia_martes",
+            "frecuencia_miercoles",
+            "frecuencia_jueves",
+            "frecuencia_viernes",
+            "frecuencia_sabado",
+            "frecuencia_domingo"
+        };
+
         public FrmInvPaquetesDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
-        /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
-        /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de paquetes.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
         private static PaqueteDataLista CrearListaVacia() => new()
         {
             Total = 0,
             Lista = new List<PaqueteDto>()
         };
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
         private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
         {
             return result.Code == 0
@@ -69,14 +91,6 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
         }
 
-        /// <summary>
-        /// Crea una respuesta estándar para consultas únicas.
-        /// </summary>
-        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="errorMessage">Mensaje cuando ocurre un error.</param>
-        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
-        /// <returns>Respuesta estándar para una sola entidad.</returns>
         private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
             where T : class
         {
@@ -100,12 +114,6 @@ namespace Galileo.DataBaseTier
                 };
         }
 
-        /// <summary>
-        /// Agrega filtro LIKE al listado de paquetes.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
         private static void AgregarFiltroPaquetes(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
         {
             if (string.IsNullOrWhiteSpace(filtro))
@@ -117,13 +125,6 @@ namespace Galileo.DataBaseTier
             parametros.Add("Filtro", $"%{filtro.Trim()}%");
         }
 
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH a una consulta.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
         private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
         {
             if (!pagina.HasValue || !paginacion.HasValue)
@@ -136,33 +137,18 @@ namespace Galileo.DataBaseTier
             parametros.Add("Fetch", paginacion.Value);
         }
 
-        /// <summary>
-        /// Crea parámetros para código de paquete.
-        /// </summary>
-        /// <param name="codPaquete">Código del paquete.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
         private static object CrearParametrosPaquete(int codPaquete) => new
         {
             Cod_Paquete = codPaquete,
             cod_paquete = codPaquete
         };
 
-        /// <summary>
-        /// Crea parámetros para línea de detalle.
-        /// </summary>
-        /// <param name="linea">Línea del detalle.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
         private static object CrearParametrosLinea(int linea) => new
         {
             Linea = linea,
             linea
         };
 
-        /// <summary>
-        /// Crea parámetros comunes para operaciones de detalle de paquete.
-        /// </summary>
-        /// <param name="request">Datos del detalle.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
         private static object CrearParametrosDetalle(PaqueteDetalleDto request) => new
         {
             request.Cod_Producto,
@@ -174,24 +160,13 @@ namespace Galileo.DataBaseTier
             request.Imp_Consumo
         };
 
-        /// <summary>
-        /// Obtiene la unidad del producto asociado al detalle.
-        /// </summary>
-        /// <param name="connection">Conexión activa.</param>
-        /// <param name="codProducto">Código del producto.</param>
-        /// <returns>Unidad encontrada o cadena vacía.</returns>
         private static string ObtenerUnidadProducto(IDbConnection connection, string codProducto)
         {
             return connection.QuerySingleOrDefault<string>(
-                "SELECT COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO = @Cod_Producto",
+                QueryUnidadProducto,
                 new { Cod_Producto = codProducto }) ?? string.Empty;
         }
 
-        /// <summary>
-        /// Completa la unidad de cada producto del detalle del paquete.
-        /// </summary>
-        /// <param name="connection">Conexión activa.</param>
-        /// <param name="detalles">Lista de detalles del paquete.</param>
         private static void CompletarUnidadDetalles(IDbConnection connection, IEnumerable<PaqueteDetalleDto> detalles)
         {
             foreach (PaqueteDetalleDto item in detalles)
@@ -200,45 +175,64 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        /// <summary>
-        /// Crea los parámetros del procedimiento de cabecera para insertar paquete.
-        /// </summary>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Parámetros Dapper inicializados.</returns>
         private static DynamicParameters CrearParametrosInsertarPaquete(PaqueteDto request)
         {
-            string? fechaInicio = MProGrXAuxiliarDB.validaFechaGlobal(request.Fecha_Inicio, DateFormatYMD);
-            string? fechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(request.Fecha_Corte, DateFormatYMD);
-            string? frecuenciaHorai = MProGrXAuxiliarDB.validaFechaGlobal(request.Frecuencia_Horai, "HH:mm:ss");
-            string? frecuenciaHorac = MProGrXAuxiliarDB.validaFechaGlobal(request.Frecuencia_Horac, "HH:mm:ss");
-
             var parameters = new DynamicParameters();
-            parameters.Add("Descripcion", request.Descripcion);
-            parameters.Add("Notas", request.Notas);
-            parameters.Add("User_Crea", request.User_Crea);
-            parameters.Add("Fecha_Inicio", fechaInicio);
-            parameters.Add("Fecha_Corte", fechaCorte);
-            parameters.Add("Frecuencia_Horai", frecuenciaHorai);
-            parameters.Add("Frecuencia_Horac", frecuenciaHorac);
-            parameters.Add("Frecuencia_Lunes", request.Frecuencia_Lunes);
-            parameters.Add("Frecuencia_Martes", request.Frecuencia_Martes);
-            parameters.Add("Frecuencia_Miercoles", request.Frecuencia_Miercoles);
-            parameters.Add("Frecuencia_Jueves", request.Frecuencia_Jueves);
-            parameters.Add("Frecuencia_Viernes", request.Frecuencia_Viernes);
-            parameters.Add("Frecuencia_Sabado", request.Frecuencia_Sabado);
-            parameters.Add("Frecuencia_Domingo", request.Frecuencia_Domingo);
+
+            parameters.Add(nameof(PaqueteDto.Descripcion), request.Descripcion);
+            parameters.Add(nameof(PaqueteDto.Notas), request.Notas);
+            parameters.Add(nameof(PaqueteDto.User_Crea), request.User_Crea);
+            parameters.Add(nameof(PaqueteDto.Fecha_Inicio), MProGrXAuxiliarDB.validaFechaGlobal(request.Fecha_Inicio, DateFormatYMD));
+            parameters.Add(nameof(PaqueteDto.Fecha_Corte), MProGrXAuxiliarDB.validaFechaGlobal(request.Fecha_Corte, DateFormatYMD));
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Horai), MProGrXAuxiliarDB.validaFechaGlobal(request.Frecuencia_Horai, TimeFormat));
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Horac), MProGrXAuxiliarDB.validaFechaGlobal(request.Frecuencia_Horac, TimeFormat));
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Lunes), request.Frecuencia_Lunes);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Martes), request.Frecuencia_Martes);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Miercoles), request.Frecuencia_Miercoles);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Jueves), request.Frecuencia_Jueves);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Viernes), request.Frecuencia_Viernes);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Sabado), request.Frecuencia_Sabado);
+            parameters.Add(nameof(PaqueteDto.Frecuencia_Domingo), request.Frecuencia_Domingo);
             parameters.Add("NewID", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
             return parameters;
         }
 
-        /// <summary>
-        /// Ejecuta un procedimiento almacenado que devuelve un código entero y lo transforma en <see cref="ErrorDto"/>.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="procedure">Nombre del procedimiento almacenado.</param>
-        /// <param name="values">Parámetros del procedimiento.</param>
-        /// <param name="errorMessage">Mensaje de error estándar.</param>
-        /// <returns>Respuesta estándar con el resultado del procedimiento.</returns>
+        private static string CrearConsultaActualizarPaquete()
+        {
+            var asignaciones = ColumnasActualizarPaquete
+                .Zip(CamposActualizarPaquete, (columna, campo) => $"{columna} = @{campo}");
+
+            return $"UPDATE pv_paquetes SET {string.Join(", ", asignaciones)} WHERE cod_paquete = @Cod_Paquete";
+        }
+
+        private static DynamicParameters CrearParametrosActualizarPaquete(PaqueteDto request)
+        {
+            var parameters = new DynamicParameters();
+
+            parameters.Add(nameof(PaqueteDto.Cod_Paquete), request.Cod_Paquete);
+
+            foreach (var campo in CamposActualizarPaquete)
+            {
+                parameters.Add(campo, ObtenerValorActualizacionPaquete(request, campo));
+            }
+
+            return parameters;
+        }
+
+        private static object? ObtenerValorActualizacionPaquete(PaqueteDto request, string campo)
+        {
+            return campo switch
+            {
+                "Fecha_Modifica" => DateTime.Now,
+                nameof(PaqueteDto.Fecha_Inicio) => request.Fecha_Inicio.ToLocalTime(),
+                nameof(PaqueteDto.Fecha_Corte) => request.Fecha_Corte.ToLocalTime(),
+                nameof(PaqueteDto.Frecuencia_Horai) => request.Frecuencia_Horai.ToLocalTime(),
+                nameof(PaqueteDto.Frecuencia_Horac) => request.Frecuencia_Horac.ToLocalTime(),
+                _ => typeof(PaqueteDto).GetProperty(campo)?.GetValue(request)
+            };
+        }
+
         private ErrorDto EjecutarProcedimientoConCodigo(int CodEmpresa, string procedure, object values, string errorMessage)
         {
             var result = DbHelper.WithConn<int>(CreatePortalDb(), CodEmpresa, connection =>
@@ -254,18 +248,6 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(errorMessage, result.Result);
         }
 
-        #endregion
-
-        #region Paquetes
-
-        /// <summary>
-        /// Obtiene la lista paginada de paquetes.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="pagina">Fila inicial para paginación.</param>
-        /// <param name="paginacion">Cantidad de filas a retornar.</param>
-        /// <param name="filtro">Filtro por código o descripción.</param>
-        /// <returns>Listado de paquetes.</returns>
         public ErrorDto<PaqueteDataLista> Paquetes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
@@ -288,11 +270,6 @@ namespace Galileo.DataBaseTier
                 : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPaquetes, result.Code.GetValueOrDefault(-1), CrearListaVacia());
         }
 
-        /// <summary>
-        /// Obtiene todos los paquetes.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado completo de paquetes.</returns>
         public ErrorDto<List<PaqueteDto>> Paquetes_ObtenerTodos(int CodEmpresa)
         {
             return DbHelper.ExecuteListQuery<PaqueteDto>(
@@ -301,12 +278,6 @@ namespace Galileo.DataBaseTier
                 QueryPaquetes);
         }
 
-        /// <summary>
-        /// Obtiene un paquete por su código.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="Cod_Paquete">Código del paquete.</param>
-        /// <returns>Paquete encontrado.</returns>
         public ErrorDto<PaqueteDto> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
         {
             var result = DbHelper.ExecuteSingleQuery<PaqueteDto>(
@@ -319,12 +290,6 @@ namespace Galileo.DataBaseTier
             return CrearRespuestaSingle(result, ErrorObtenerPaquete, SinPaquete);
         }
 
-        /// <summary>
-        /// Obtiene el detalle de un paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="Cod_Paquete">Código del paquete.</param>
-        /// <returns>Listado de detalles del paquete.</returns>
         public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -354,69 +319,23 @@ namespace Galileo.DataBaseTier
                 : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerDetalle, result.Code.GetValueOrDefault(-1), new List<PaqueteDetalleDto>());
         }
 
-        /// <summary>
-        /// Actualiza un paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Paquete_Actualizar(int CodEmpresa, PaqueteDto request)
         {
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                @"UPDATE pv_paquetes
-                  SET descripcion = @Descripcion,
-                      notas = @Notas,
-                      user_modifica = @User_Modifica,
-                      fecha_modifica = @Fecha_Modifica,
-                      fecha_inicio = @Fecha_Inicio,
-                      fecha_corte = @Fecha_Corte,
-                      frecuencia_horai = @Frecuencia_Horai,
-                      frecuencia_horac = @Frecuencia_Horac,
-                      frecuencia_lunes = @Frecuencia_Lunes,
-                      frecuencia_martes = @Frecuencia_Martes,
-                      frecuencia_miercoles = @Frecuencia_Miercoles,
-                      frecuencia_jueves = @Frecuencia_Jueves,
-                      frecuencia_viernes = @Frecuencia_Viernes,
-                      frecuencia_sabado = @Frecuencia_Sabado,
-                      frecuencia_domingo = @Frecuencia_Domingo
-                  WHERE cod_paquete = @Cod_Paquete",
-                new
-                {
-                    request.Cod_Paquete,
-                    request.Descripcion,
-                    request.Notas,
-                    request.User_Modifica,
-                    Fecha_Modifica = DateTime.Now,
-                    Fecha_Inicio = request.Fecha_Inicio.ToLocalTime(),
-                    Fecha_Corte = request.Fecha_Corte.ToLocalTime(),
-                    Frecuencia_Horai = request.Frecuencia_Horai.ToLocalTime(),
-                    Frecuencia_Horac = request.Frecuencia_Horac.ToLocalTime(),
-                    request.Frecuencia_Lunes,
-                    request.Frecuencia_Martes,
-                    request.Frecuencia_Miercoles,
-                    request.Frecuencia_Jueves,
-                    request.Frecuencia_Viernes,
-                    request.Frecuencia_Sabado,
-                    request.Frecuencia_Domingo
-                });
+                CrearConsultaActualizarPaquete(),
+                CrearParametrosActualizarPaquete(request));
 
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarPaquete);
         }
 
-        /// <summary>
-        /// Inserta un paquete usando procedimiento almacenado y devuelve el nuevo identificador.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Resultado de la operación con el nuevo identificador en Code.</returns>
         public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDto request)
         {
             var result = DbHelper.WithConn<int>(CreatePortalDb(), CodEmpresa, connection =>
             {
                 var parameters = CrearParametrosInsertarPaquete(request);
-                connection.Execute("[spINV_W_Paquete_Agregar]", parameters, commandType: CommandType.StoredProcedure);
+                connection.Execute(ProcedurePaqueteAgregar, parameters, commandType: CommandType.StoredProcedure);
                 return parameters.Get<int>("NewID");
             });
 
@@ -425,53 +344,29 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarPaquete, result.Code.GetValueOrDefault(-1));
         }
 
-        /// <summary>
-        /// Mantiene compatibilidad con el método alternativo de inserción de paquetes.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Paquete_Insertar2(int CodEmpresa, PaqueteDto request)
         {
             return Paquete_Insertar(CodEmpresa, request);
         }
 
-        /// <summary>
-        /// Inserta un detalle de paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del detalle.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDto request)
         {
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
-                "[spINV_W_PaqueteDetalle_Agregar]",
+                ProcedureDetalleAgregar,
                 CrearParametrosDetalle(request),
                 ErrorInsertarDetalle);
         }
 
-        /// <summary>
-        /// Actualiza un detalle de paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del detalle.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDto request)
         {
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
-                "[spINV_W_PaqueteDetalle_Actualizar]",
+                ProcedureDetalleActualizar,
                 CrearParametrosDetalle(request),
                 ErrorActualizarDetalle);
         }
 
-        /// <summary>
-        /// Elimina un detalle de paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del detalle.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDto request)
         {
             var result = DbHelper.ExecuteNonQuery(
@@ -483,23 +378,11 @@ namespace Galileo.DataBaseTier
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalle);
         }
 
-        /// <summary>
-        /// Mantiene compatibilidad con la eliminación lógica del paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Paquete_Eliminar(int CodEmpresa, PaqueteDto request)
         {
             return Paquete_Actualizar(CodEmpresa, request);
         }
 
-        /// <summary>
-        /// Elimina todos los detalles de un paquete.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del paquete.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto Paquete_EliminarDetalles(int CodEmpresa, PaqueteDto request)
         {
             if (!request.Cod_Paquete.HasValue)
@@ -515,7 +398,5 @@ namespace Galileo.DataBaseTier
 
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalles);
         }
-
-        #endregion
     }
 }

@@ -11,6 +11,22 @@ namespace Galileo.DataBaseTier
 
         #region Constructor y helpers
 
+        private const string MensajeActualizado = "Registro actualizado correctamente";
+        private const string MensajeEliminado = "Registro eliminado correctamente";
+        private const string MensajeDetalleGuardado = "Informacion guardada satisfactoriamente...";
+        private const string ErrorObtenerUbicacion = "Error al obtener la ubicación de inventario.";
+        private const string SinUbicacion = "No se encontró la asignación de ubicación.";
+        private const string ErrorScroll = "Error al obtener el desplazamiento de asignación de ubicación.";
+        private const string SinScroll = "No se encontró otra asignación para el desplazamiento solicitado.";
+        private const string ErrorInsertar = "Error al insertar la asignación de ubicación.";
+        private const string ErrorActualizar = "Error al actualizar la asignación de ubicación.";
+        private const string ErrorEliminar = "Error al eliminar la asignación de ubicación.";
+        private const string ErrorGuardarDetalle = "Error al guardar el detalle de la ubicación.";
+        private const string ErrorActualizarEstado = "Error al actualizar el estado de la asignación de ubicación.";
+        private const string ErrorEliminarProducto = "Error al eliminar el producto de la ubicación.";
+        private const string QueryEliminarDetalleAsignacion = "delete INV_UBICACIONES_DETALLE where COD_ASIGNAUBICACION = @CodAsignaUbicacion";
+        private const string QueryEliminarAsignacion = "delete INV_UBICACIONES where COD_ASIGNAUBICACION = @CodAsignaUbicacion";
+
         /// <summary>
         /// Inicializa una nueva instancia de la clase <see cref="FrmInvAsignaUbicacionDB"/>.
         /// </summary>
@@ -72,6 +88,21 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
+        /// Crea una respuesta estándar para operaciones ejecutadas con WithConn.
+        /// </summary>
+        /// <typeparam name="T">Tipo del resultado interno.</typeparam>
+        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
+        /// <param name="successMessage">Mensaje de éxito.</param>
+        /// <param name="errorMessage">Mensaje de error.</param>
+        /// <returns>Respuesta estándar.</returns>
+        private static ErrorDto CrearRespuestaWithConn<T>(ErrorDto<T> result, string successMessage, string errorMessage)
+        {
+            return result.Code == 0
+                ? DbHelper.OkResponse(successMessage)
+                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
+        }
+
+        /// <summary>
         /// Crea los parámetros comunes para una asignación de ubicación.
         /// </summary>
         /// <param name="CodAsignaUbicacion">Código de asignación de ubicación.</param>
@@ -91,6 +122,68 @@ namespace Galileo.DataBaseTier
         {
             CodAsignaUbicacion,
             Linea
+        };
+
+        /// <summary>
+        /// Crea los parámetros para insertar una asignación de ubicación.
+        /// </summary>
+        /// <param name="request">Datos de la asignación.</param>
+        /// <param name="consecutivo">Consecutivo generado.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosInsertar(AsignaUbicacionDto request, string consecutivo) => new
+        {
+            Cod_AsignaUbicacion = consecutivo,
+            Cod_Bodega = request.cod_bodega,
+            Notas = request.notas,
+            Estado = request.estado,
+            Responsable = request.responsable,
+            Cod_Unidad = request.cod_unidad,
+            Genera_User = request.genera_user
+        };
+
+        /// <summary>
+        /// Crea los parámetros para actualizar una asignación de ubicación.
+        /// </summary>
+        /// <param name="request">Datos de la asignación.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosActualizar(AsignaUbicacionDto request) => new
+        {
+            CodAsignaUbicacion = request.cod_asignaubicacion,
+            Cod_Bodega = request.cod_bodega,
+            Documento = request.documento,
+            Notas = request.notas,
+            Cod_Unidad = request.cod_unidad,
+            Responsable = request.responsable
+        };
+
+        /// <summary>
+        /// Crea los parámetros para cerrar o finalizar una asignación de ubicación.
+        /// </summary>
+        /// <param name="codigoAsignaUbicacion">Código de asignación.</param>
+        /// <param name="usuario">Usuario que autoriza.</param>
+        /// <param name="estado">Estado a aplicar.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosCerrarOrden(int codigoAsignaUbicacion, string usuario, string estado) => new
+        {
+            CodAsignaUbicacion = codigoAsignaUbicacion,
+            Autoriza_User = usuario,
+            Estado = estado
+        };
+
+        /// <summary>
+        /// Crea los parámetros para insertar una línea de detalle de ubicación.
+        /// </summary>
+        /// <param name="linea">Número de línea.</param>
+        /// <param name="codAsignaUbicacion">Código de asignación.</param>
+        /// <param name="item">Detalle del producto.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosDetalle(int linea, int codAsignaUbicacion, AsignaUbicacionDetalleDto item) => new
+        {
+            Linea = linea,
+            CodAsignaUbicacion = codAsignaUbicacion,
+            Cod_Producto = item.cod_producto,
+            Cantidad = item.existencia,
+            Ubicacion = item.ubicacion
         };
 
         /// <summary>
@@ -121,14 +214,7 @@ namespace Galileo.DataBaseTier
                 connection.Execute(
                     @"insert INV_UBICACIONES_DETALLE(linea, COD_ASIGNAUBICACION, COD_PRODUCTO, CANTIDAD, UBICACION)
                       values(@Linea, @CodAsignaUbicacion, @Cod_Producto, @Cantidad, @Ubicacion)",
-                    new
-                    {
-                        Linea = linea,
-                        CodAsignaUbicacion,
-                        Cod_Producto = item.cod_producto,
-                        Cantidad = item.existencia,
-                        Ubicacion = item.ubicacion
-                    });
+                    CrearParametrosDetalle(linea, CodAsignaUbicacion, item));
             }
         }
 
@@ -158,10 +244,7 @@ namespace Galileo.DataBaseTier
                 null,
                 CrearParametrosAsignacion(CodAsignaUbicacion));
 
-            return CrearRespuestaSingle(
-                result,
-                "Error al obtener la ubicación de inventario.",
-                "No se encontró la asignación de ubicación.");
+            return CrearRespuestaSingle(result, ErrorObtenerUbicacion, SinUbicacion);
         }
 
         /// <summary>
@@ -216,10 +299,7 @@ namespace Galileo.DataBaseTier
                     CodAsignaUbicacion
                 });
 
-            return CrearRespuestaSingle(
-                result,
-                "Error al obtener el desplazamiento de asignación de ubicación.",
-                "No se encontró otra asignación para el desplazamiento solicitado.");
+            return CrearRespuestaSingle(result, ErrorScroll, SinScroll);
         }
 
         /// <summary>
@@ -256,23 +336,14 @@ namespace Galileo.DataBaseTier
                 connection.Execute(
                     @"INSERT INTO INV_UBICACIONES(cod_asignaubicacion, cod_bodega, notas, estado, responsable, cod_unidad, fecha, genera_user, fecha_user)
                       VALUES(@Cod_AsignaUbicacion, @Cod_Bodega, @Notas, @Estado, @Responsable, @Cod_Unidad, getdate(), @Genera_User, getdate())",
-                    new
-                    {
-                        Cod_AsignaUbicacion = consecutivo,
-                        Cod_Bodega = request.cod_bodega,
-                        Notas = request.notas,
-                        Estado = request.estado,
-                        Responsable = request.responsable,
-                        Cod_Unidad = request.cod_unidad,
-                        Genera_User = request.genera_user
-                    });
+                    CrearParametrosInsertar(request, consecutivo));
 
                 return consecutivo;
             });
 
             return result.Code == 0
                 ? new ErrorDto { Code = 0, Description = result.Result ?? string.Empty }
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar la asignación de ubicación.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertar, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -294,17 +365,9 @@ namespace Galileo.DataBaseTier
                       cod_unidad = @Cod_Unidad,
                       responsable = @Responsable
                   WHERE COD_ASIGNAUBICACION = @CodAsignaUbicacion",
-                new
-                {
-                    CodAsignaUbicacion = request.cod_asignaubicacion,
-                    Cod_Bodega = request.cod_bodega,
-                    Documento = request.documento,
-                    Notas = request.notas,
-                    Cod_Unidad = request.cod_unidad,
-                    Responsable = request.responsable
-                });
+                CrearParametrosActualizar(request));
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar la asignación de ubicación.");
+            return CrearRespuestaNonQuery(result, MensajeActualizado, ErrorActualizar);
         }
 
         /// <summary>
@@ -318,19 +381,17 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 connection.Execute(
-                    "delete INV_UBICACIONES_DETALLE where COD_ASIGNAUBICACION = @CodAsignaUbicacion",
+                    QueryEliminarDetalleAsignacion,
                     CrearParametrosAsignacion(CodAsignaUbicacion));
 
                 connection.Execute(
-                    "delete INV_UBICACIONES where COD_ASIGNAUBICACION = @CodAsignaUbicacion",
+                    QueryEliminarAsignacion,
                     CrearParametrosAsignacion(CodAsignaUbicacion));
 
                 return true;
             });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Registro eliminado correctamente")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar la asignación de ubicación.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaWithConn(result, MensajeEliminado, ErrorEliminar);
         }
 
         /// <summary>
@@ -345,16 +406,14 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 connection.Execute(
-                    "delete INV_UBICACIONES_DETALLE where COD_ASIGNAUBICACION = @CodAsignaUbicacion",
+                    QueryEliminarDetalleAsignacion,
                     CrearParametrosAsignacion(CodAsignaUbicacion));
 
                 InsertarDetalleUbicacion(connection, CodAsignaUbicacion, producLineas);
                 return true;
             });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Informacion guardada satisfactoriamente...")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar el detalle de la ubicación.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaWithConn(result, MensajeDetalleGuardado, ErrorGuardarDetalle);
         }
 
         /// <summary>
@@ -375,14 +434,9 @@ namespace Galileo.DataBaseTier
                       Autoriza_user = @Autoriza_User,
                       autoriza_fecha = getdate()
                   where COD_ASIGNAUBICACION = @CodAsignaUbicacion",
-                new
-                {
-                    CodAsignaUbicacion = codigoAsignaUbicacion,
-                    Autoriza_User = Usuario,
-                    Estado
-                });
+                CrearParametrosCerrarOrden(codigoAsignaUbicacion, Usuario, Estado));
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar el estado de la asignación de ubicación.");
+            return CrearRespuestaNonQuery(result, MensajeActualizado, ErrorActualizarEstado);
         }
 
         /// <summary>
@@ -402,7 +456,7 @@ namespace Galileo.DataBaseTier
                     and linea = @Linea",
                 CrearParametrosAsignacionLinea(CodAsignaUbicacion, Linea));
 
-            return CrearRespuestaNonQuery(result, "Registro eliminado correctamente", "Error al eliminar el producto de la ubicación.");
+            return CrearRespuestaNonQuery(result, MensajeEliminado, ErrorEliminarProducto);
         }
 
         #endregion

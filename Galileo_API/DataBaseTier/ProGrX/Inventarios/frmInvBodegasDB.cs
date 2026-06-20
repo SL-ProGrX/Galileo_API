@@ -25,7 +25,64 @@ namespace Galileo.DataBaseTier
                   FROM PV_BODEGAS
                   WHERE COD_BODEGA = @CodBodega";
         private const string QueryEliminarPermisosBodega = "DELETE FROM PV_BODEGAS_PERMISOS WHERE COD_BODEGA = @CodBodega";
+
         private const string QueryEliminarBodega = "DELETE FROM PV_BODEGAS WHERE COD_BODEGA = @CodBodega";
+
+        private static readonly string[] CamposInsertarBodega =
+        {
+            nameof(BodegasDto.Cod_Bodega),
+            nameof(BodegasDto.Descripcion),
+            nameof(BodegasDto.Observacion),
+            nameof(BodegasDto.Estado),
+            "Fecha_Inclusion",
+            nameof(BodegasDto.Permite_Entradas),
+            nameof(BodegasDto.Permite_Salidas),
+            nameof(BodegasDto.Cod_Cuenta),
+            nameof(BodegasDto.Cod_Cta_Ingresostf),
+            nameof(BodegasDto.Cod_Cta_Gastostf),
+            nameof(BodegasDto.Utiliza_Permisos)
+        };
+
+        private static readonly string[] ColumnasInsertarBodega =
+        {
+            "cod_bodega",
+            "descripcion",
+            "observacion",
+            "estado",
+            "fecha_inclusion",
+            "permite_entradas",
+            "permite_salidas",
+            "cod_cuenta",
+            "cod_cta_ingresosTF",
+            "cod_cta_gastosTF",
+            "UTILIZA_PERMISOS"
+        };
+
+        private static readonly string[] CamposActualizarBodega =
+        {
+            nameof(BodegasDto.Observacion),
+            nameof(BodegasDto.Cod_Cuenta),
+            nameof(BodegasDto.Cod_Cta_Gastostf),
+            nameof(BodegasDto.Cod_Cta_Ingresostf),
+            nameof(BodegasDto.Permite_Entradas),
+            nameof(BodegasDto.Permite_Salidas),
+            nameof(BodegasDto.Utiliza_Permisos),
+            nameof(BodegasDto.Estado),
+            nameof(BodegasDto.Descripcion)
+        };
+
+        private static readonly string[] ColumnasActualizarBodega =
+        {
+            "observacion",
+            "cod_cuenta",
+            "cod_cta_gastoSTF",
+            "cod_cta_ingresostf",
+            "permite_entradas",
+            "permite_salidas",
+            "utiliza_permisos",
+            "estado",
+            "descripcion"
+        };
 
         #region Constructor y helpers
 
@@ -116,40 +173,61 @@ namespace Galileo.DataBaseTier
         /// Crea los parámetros para insertar una bodega.
         /// </summary>
         /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosInsertarBodega(BodegasDto data) => new
+        /// <returns>Parámetros para Dapper.</returns>
+        private static DynamicParameters CrearParametrosInsertarBodega(BodegasDto data)
         {
-            data.Cod_Bodega,
-            data.Descripcion,
-            data.Observacion,
-            data.Estado,
-            Fecha_Inclusion = DateTime.Now,
-            data.Permite_Entradas,
-            data.Permite_Salidas,
-            data.Cod_Cuenta,
-            data.Cod_Cta_Ingresostf,
-            data.Cod_Cta_Gastostf,
-            data.Utiliza_Permisos
-        };
+            var parametros = new DynamicParameters();
+            var tipo = typeof(BodegasDto);
+
+            foreach (var campo in CamposInsertarBodega)
+            {
+                parametros.Add(campo, campo == "Fecha_Inclusion" ? DateTime.Now : tipo.GetProperty(campo)?.GetValue(data));
+            }
+
+            return parametros;
+        }
 
         /// <summary>
         /// Crea los parámetros para actualizar una bodega.
         /// </summary>
         /// <param name="data">Datos de la bodega.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosActualizarBodega(BodegasDto data) => new
+        /// <returns>Parámetros para Dapper.</returns>
+        private static DynamicParameters CrearParametrosActualizarBodega(BodegasDto data)
         {
-            data.Observacion,
-            data.Cod_Cuenta,
-            data.Cod_Cta_Gastostf,
-            data.Cod_Cta_Ingresostf,
-            data.Permite_Entradas,
-            data.Permite_Salidas,
-            data.Utiliza_Permisos,
-            data.Estado,
-            data.Descripcion,
-            data.Cod_Bodega
-        };
+            var parametros = new DynamicParameters();
+            var tipo = typeof(BodegasDto);
+
+            foreach (var campo in CamposActualizarBodega)
+            {
+                parametros.Add(campo, tipo.GetProperty(campo)?.GetValue(data));
+            }
+
+            parametros.Add(nameof(BodegasDto.Cod_Bodega), data.Cod_Bodega);
+            return parametros;
+        }
+
+        /// <summary>
+        /// Crea la consulta para insertar una bodega.
+        /// </summary>
+        /// <returns>Consulta SQL de inserción.</returns>
+        private static string CrearConsultaInsertarBodega()
+        {
+            var columnas = string.Join(", ", ColumnasInsertarBodega);
+            var valores = string.Join(", ", CamposInsertarBodega.Select(campo => $"@{campo}"));
+            return $"INSERT INTO pv_bodegas ({columnas}) VALUES ({valores})";
+        }
+
+        /// <summary>
+        /// Crea la consulta para actualizar una bodega.
+        /// </summary>
+        /// <returns>Consulta SQL de actualización.</returns>
+        private static string CrearConsultaActualizarBodega()
+        {
+            var asignaciones = ColumnasActualizarBodega
+                .Zip(CamposActualizarBodega, (columna, campo) => $"{columna} = @{campo}");
+
+            return $"UPDATE pv_bodegas SET {string.Join(", ", asignaciones)} WHERE cod_bodega = @Cod_Bodega";
+        }
 
         /// <summary>
         /// Crea los parámetros para actualizar permisos de bodega.
@@ -336,30 +414,7 @@ namespace Galileo.DataBaseTier
                 }
 
                 connection.Execute(
-                    @"INSERT INTO pv_bodegas (
-                            cod_bodega,
-                            descripcion,
-                            observacion,
-                            estado,
-                            fecha_inclusion,
-                            permite_entradas,
-                            permite_salidas,
-                            cod_cuenta,
-                            cod_cta_ingresosTF,
-                            cod_cta_gastosTF,
-                            UTILIZA_PERMISOS)
-                      VALUES(
-                            @Cod_Bodega,
-                            @Descripcion,
-                            @Observacion,
-                            @Estado,
-                            @Fecha_Inclusion,
-                            @Permite_Entradas,
-                            @Permite_Salidas,
-                            @Cod_Cuenta,
-                            @Cod_Cta_Ingresostf,
-                            @Cod_Cta_Gastostf,
-                            @Utiliza_Permisos)",
+                    CrearConsultaInsertarBodega(),
                     CrearParametrosInsertarBodega(data));
 
                 return CrearOk();
@@ -379,17 +434,7 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                @"UPDATE pv_bodegas
-                  SET observacion = @Observacion,
-                      cod_cuenta = @Cod_Cuenta,
-                      cod_cta_gastoSTF = @Cod_Cta_Gastostf,
-                      cod_cta_ingresostf = @Cod_Cta_Ingresostf,
-                      permite_entradas = @Permite_Entradas,
-                      permite_salidas = @Permite_Salidas,
-                      utiliza_permisos = @Utiliza_Permisos,
-                      estado = @Estado,
-                      descripcion = @Descripcion
-                  WHERE cod_bodega = @Cod_Bodega",
+                CrearConsultaActualizarBodega(),
                 CrearParametrosActualizarBodega(data));
 
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarBodega);

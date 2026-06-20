@@ -11,6 +11,22 @@ namespace Galileo.DataBaseTier
 
         #region Constructor y helpers
 
+        private const string MensajeOk = "Ok";
+        private const string ErrorObtenerPrecios = "Error al obtener tipos de precio.";
+        private const string ErrorObtenerTodosPrecios = "Error al obtener todos los tipos de precio.";
+        private const string ErrorActualizarPrecio = "Error al actualizar el tipo de precio.";
+        private const string ErrorInsertarPrecio = "Error al insertar el tipo de precio.";
+        private const string ErrorEliminarPrecio = "Error al eliminar el tipo de precio.";
+        private const string QueryTotalPrecios = "SELECT COUNT(*) FROM pv_tipos_precios";
+        private const string QueryPreciosBase = @"SELECT cod_precio,
+                                                             descripcion,
+                                                             defecto as activo
+                                                      FROM pv_tipos_precios";
+        private const string QueryPreciosTodos = "SELECT cod_precio, descripcion, defecto as activo FROM pv_tipos_precios ORDER BY cod_precio";
+        private const string QueryActualizarPrecio = "UPDATE pv_tipos_precios SET descripcion = @Descripcion, defecto = @Defecto WHERE cod_precio = @Cod_Precio";
+        private const string QueryInsertarPrecio = "INSERT INTO pv_tipos_precios(cod_precio, descripcion, defecto) VALUES(@Cod_Precio, @Descripcion, @Defecto)";
+        private const string QueryEliminarPrecio = "DELETE pv_tipos_precios WHERE Cod_Precio = @Cod_Precio";
+
         /// <summary>
         /// Inicializa una nueva instancia de la clase <see cref="FrmInvTiposPreciosDB"/>.
         /// </summary>
@@ -49,6 +65,52 @@ namespace Galileo.DataBaseTier
                 ? DbHelper.OkResponse(successMessage)
                 : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
         }
+
+        /// <summary>
+        /// Crea una respuesta estándar para el listado paginado de tipos de precio.
+        /// </summary>
+        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
+        /// <returns>Respuesta de listado paginado.</returns>
+        private static ErrorDto<PreciosDataLista> CrearRespuestaLista(ErrorDto<PreciosDataLista> result)
+        {
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPrecios, result.Code.GetValueOrDefault(-1), CrearListaVacia());
+        }
+
+        /// <summary>
+        /// Crea una respuesta estándar para listados completos de tipos de precio.
+        /// </summary>
+        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
+        /// <returns>Respuesta de listado completo.</returns>
+        private static ErrorDto<List<Precio>> CrearRespuestaTodos(ErrorDto<List<Precio>> result)
+        {
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<Precio>())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerTodosPrecios, result.Code.GetValueOrDefault(-1), new List<Precio>());
+        }
+
+        /// <summary>
+        /// Crea los parámetros comunes para insertar o actualizar tipos de precio.
+        /// </summary>
+        /// <param name="request">Datos del tipo de precio.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosPrecio(Precio request) => new
+        {
+            request.Cod_Precio,
+            request.Descripcion,
+            Defecto = request.activo
+        };
+
+        /// <summary>
+        /// Crea los parámetros para eliminar un tipo de precio.
+        /// </summary>
+        /// <param name="precio">Código del tipo de precio.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametrosEliminar(string precio) => new
+        {
+            Cod_Precio = precio
+        };
 
         /// <summary>
         /// Agrega filtro LIKE al listado de tipos de precio.
@@ -115,13 +177,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>("SELECT COUNT(*) FROM pv_tipos_precios");
+                respuesta.Total = connection.QueryFirstOrDefault<int>(QueryTotalPrecios);
 
                 var parametros = new DynamicParameters();
-                var queryBuilder = new StringBuilder(@"SELECT cod_precio,
-                                                             descripcion,
-                                                             defecto as activo
-                                                      FROM pv_tipos_precios");
+                var queryBuilder = new StringBuilder(QueryPreciosBase);
 
                 AgregarFiltroPrecios(filtro, queryBuilder, parametros);
                 queryBuilder.Append(" ORDER BY cod_precio ");
@@ -131,9 +190,7 @@ namespace Galileo.DataBaseTier
                 return respuesta;
             });
 
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener tipos de precio.", result.Code.GetValueOrDefault(-1), CrearListaVacia());
+            return CrearRespuestaLista(result);
         }
 
         /// <summary>
@@ -146,16 +203,14 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteListQuery<Precio>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT cod_precio, descripcion, defecto as activo FROM pv_tipos_precios ORDER BY cod_precio");
+                QueryPreciosTodos);
 
             if (result.Code == 0 && result.Result is not null)
             {
                 CompletarOmisionPrecios(result.Result);
             }
 
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<Precio>())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener todos los tipos de precio.", result.Code.GetValueOrDefault(-1), new List<Precio>());
+            return CrearRespuestaTodos(result);
         }
 
         #endregion
@@ -173,15 +228,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "UPDATE pv_tipos_precios SET descripcion = @Descripcion, defecto = @Defecto WHERE cod_precio = @Cod_Precio",
-                new
-                {
-                    request.Cod_Precio,
-                    request.Descripcion,
-                    Defecto = request.activo
-                });
+                QueryActualizarPrecio,
+                CrearParametrosPrecio(request));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar el tipo de precio.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarPrecio);
         }
 
         /// <summary>
@@ -195,15 +245,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "INSERT INTO pv_tipos_precios(cod_precio, descripcion, defecto) VALUES(@Cod_Precio, @Descripcion, @Defecto)",
-                new
-                {
-                    request.Cod_Precio,
-                    request.Descripcion,
-                    Defecto = request.activo
-                });
+                QueryInsertarPrecio,
+                CrearParametrosPrecio(request));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar el tipo de precio.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorInsertarPrecio);
         }
 
         /// <summary>
@@ -217,10 +262,10 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "DELETE pv_tipos_precios WHERE Cod_Precio = @Cod_Precio",
-                new { Cod_Precio = precio });
+                QueryEliminarPrecio,
+                CrearParametrosEliminar(precio));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar el tipo de precio.");
+            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarPrecio);
         }
 
         #endregion

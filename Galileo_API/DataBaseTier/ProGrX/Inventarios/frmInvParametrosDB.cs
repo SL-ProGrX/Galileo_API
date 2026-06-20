@@ -17,6 +17,30 @@ namespace Galileo.DataBaseTier
         private const string QueryDescripcionesAsiento = "SELECT Tipo_Asiento, Descripcion FROM CntX_Tipos_Asientos";
         private const string QueryAsientos = "SELECT * FROM CNTX_TIPOS_ASIENTOS";
 
+        private static readonly string[] CamposActualizacion =
+        {
+            nameof(ParametrosGenDto.Cta_Comisiones),
+            nameof(ParametrosGenDto.Cta_Imp_Renta),
+            nameof(ParametrosGenDto.Cta_Imp_Consumo),
+            nameof(ParametrosGenDto.Cta_Gastos),
+            nameof(ParametrosGenDto.Cta_Costo_Ventas),
+            nameof(ParametrosGenDto.Cta_Recibos),
+            nameof(ParametrosGenDto.Cta_Notas),
+            nameof(ParametrosGenDto.Cta_Ventas_Ing),
+            nameof(ParametrosGenDto.Ta_Factura_Man),
+            nameof(ParametrosGenDto.Ta_Factura_Auto),
+            nameof(ParametrosGenDto.Ta_Entradas),
+            nameof(ParametrosGenDto.Ta_Salidas),
+            nameof(ParametrosGenDto.Ta_Traslados),
+            nameof(ParametrosGenDto.Ta_Devoluciones),
+            nameof(ParametrosGenDto.Ta_Nc),
+            nameof(ParametrosGenDto.Ta_Recibos),
+            nameof(ParametrosGenDto.Ta_Nd),
+            nameof(ParametrosGenDto.Ta_Gen),
+            nameof(ParametrosGenDto.Enlace_Conta),
+            nameof(ParametrosGenDto.Enlace_Sif)
+        };
+
         #region Constructor y helpers
 
         /// <summary>
@@ -95,32 +119,33 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
+        /// Crea la consulta de actualización de parámetros generales.
+        /// </summary>
+        /// <returns>Consulta SQL de actualización.</returns>
+        private static string CrearConsultaActualizacion()
+        {
+            var asignaciones = string.Join(", ", CamposActualizacion.Select(campo => $"{campo} = @{campo}"));
+            return $"UPDATE PV_PARAMETROS_GEN SET {asignaciones} WHERE COD_PAR = @Cod_Par;";
+        }
+
+        /// <summary>
         /// Crea el objeto de parámetros para actualización de parámetros generales.
         /// </summary>
-        private static object CrearParametrosActualizacion(ParametrosGenDto data) => new
+        /// <param name="data">Datos de parámetros generales.</param>
+        /// <returns>Parámetros para Dapper.</returns>
+        private static Dapper.DynamicParameters CrearParametrosActualizacion(ParametrosGenDto data)
         {
-            data.Cta_Comisiones,
-            data.Cta_Imp_Renta,
-            data.Cta_Imp_Consumo,
-            data.Cta_Gastos,
-            data.Cta_Costo_Ventas,
-            data.Cta_Recibos,
-            data.Cta_Notas,
-            data.Cta_Ventas_Ing,
-            data.Ta_Factura_Man,
-            data.Ta_Factura_Auto,
-            data.Ta_Entradas,
-            data.Ta_Salidas,
-            data.Ta_Traslados,
-            data.Ta_Devoluciones,
-            data.Ta_Nc,
-            data.Ta_Recibos,
-            data.Ta_Nd,
-            data.Ta_Gen,
-            data.Enlace_Conta,
-            data.Enlace_Sif,
-            data.Cod_Par
-        };
+            var parametros = new Dapper.DynamicParameters();
+            var tipo = typeof(ParametrosGenDto);
+
+            foreach (var campo in CamposActualizacion)
+            {
+                parametros.Add(campo, tipo.GetProperty(campo)?.GetValue(data));
+            }
+
+            parametros.Add(nameof(ParametrosGenDto.Cod_Par), data.Cod_Par);
+            return parametros;
+        }
 
         #endregion
 
@@ -200,28 +225,7 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                @"UPDATE PV_PARAMETROS_GEN SET
-                        Cta_Comisiones = @Cta_Comisiones,
-                        Cta_Imp_Renta = @Cta_Imp_Renta,
-                        Cta_Imp_Consumo = @Cta_Imp_Consumo,
-                        Cta_Gastos = @Cta_Gastos,
-                        Cta_Costo_Ventas = @Cta_Costo_Ventas,
-                        Cta_Recibos = @Cta_Recibos,
-                        Cta_Notas = @Cta_Notas,
-                        Cta_Ventas_Ing = @Cta_Ventas_Ing,
-                        Ta_Factura_Man = @Ta_Factura_Man,
-                        Ta_Factura_Auto = @Ta_Factura_Auto,
-                        Ta_Entradas = @Ta_Entradas,
-                        Ta_Salidas = @Ta_Salidas,
-                        Ta_Traslados = @Ta_Traslados,
-                        Ta_Devoluciones = @Ta_Devoluciones,
-                        Ta_Nc = @Ta_Nc,
-                        Ta_Recibos = @Ta_Recibos,
-                        Ta_Nd = @Ta_Nd,
-                        Ta_Gen = @Ta_Gen,
-                        Enlace_Conta = @Enlace_Conta,
-                        Enlace_Sif = @Enlace_Sif
-                  WHERE COD_PAR = @Cod_Par;",
+                CrearConsultaActualizacion(),
                 CrearParametrosActualizacion(data));
 
             return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarParametros);
