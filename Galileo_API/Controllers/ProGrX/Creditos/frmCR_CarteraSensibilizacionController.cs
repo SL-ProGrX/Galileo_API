@@ -40,13 +40,13 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpPost("CrCarteraSensibilizacion_Buscar")]
         public ErrorDto<CrCarteraSensibilizacionResultadoData> CrCarteraSensibilizacion_Buscar(
             int codEmpresa,
-            [FromBody] CrCarteraSensibilizacionRequest request)
+            CrCarteraSensibilizacionRequest request)
             => _bl.CrCarteraSensibilizacion_Buscar(codEmpresa, request);
 
         [HttpPost("CrCarteraSensibilizacion_Generar")]
         public ErrorDto<CrCarteraSensibilizacionGenerarData> CrCarteraSensibilizacion_Generar(
             int codEmpresa,
-            [FromBody] CrCarteraSensibilizacionResultadoData request)
+            CrCarteraSensibilizacionResultadoData request)
             => _bl.CrCarteraSensibilizacion_Generar(codEmpresa, request);
 
         [HttpGet("CrCarteraSensibilizacion_Liquidez_Obtener")]
