@@ -7,16 +7,6 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
 
-        private const string MensajeOk = "Ok";
-        private const string ErrorParametrosGenerales = "Error al obtener los parámetros generales.";
-        private const string SinParametrosGenerales = "No se encontraron parámetros generales.";
-        private const string ErrorActualizarParametros = "Error al actualizar los parámetros generales.";
-        private const string QueryParametrosGenerales = "SELECT * FROM PV_PARAMETROS_GEN";
-        private const string QueryContabilidades = "SELECT * FROM CntX_Contabilidades";
-        private const string QueryDescripcionesCuenta = "SELECT Cod_Cuenta, Descripcion FROM CNTX_CUENTAS";
-        private const string QueryDescripcionesAsiento = "SELECT Tipo_Asiento, Descripcion FROM CntX_Tipos_Asientos";
-        private const string QueryAsientos = "SELECT * FROM CNTX_TIPOS_ASIENTOS";
-
         private static readonly string[] CamposActualizacion =
         {
             nameof(ParametrosGenDto.Cta_Comisiones),
@@ -57,6 +47,27 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
+
+        /// <summary>
+        /// Ejecuta una consulta única usando el helper estándar y aplica el formato de respuesta esperado.
+        /// </summary>
+        /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="query">Consulta SQL fija.</param>
+        /// <param name="errorMessage">Mensaje cuando ocurre un error.</param>
+        /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
+        /// <returns>Respuesta estándar para una sola entidad.</returns>
+        private ErrorDto<T> EjecutarConsultaUnica<T>(int codEmpresa, string query, string errorMessage, string notFoundMessage)
+            where T : class
+        {
+            var result = DbHelper.ExecuteSingleQuery<T>(
+                CreatePortalDb(),
+                codEmpresa,
+                query,
+                null);
+
+            return CrearRespuestaSingle(result, errorMessage, notFoundMessage);
+        }
 
         /// <summary>
         /// Crea una respuesta estándar para operaciones de consulta única.
@@ -151,75 +162,29 @@ namespace Galileo.DataBaseTier
 
         #region Consultas
 
-        /// <summary>
-        /// Obtiene los parámetros generales de inventario.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Parámetros generales encontrados.</returns>
-        public ErrorDto<ParametrosGenDto> Parametros_Obtener(int CodEmpresa)
-        {
-            var result = DbHelper.ExecuteSingleQuery<ParametrosGenDto>(
-                CreatePortalDb(),
+        public ErrorDto<ParametrosGenDto> Parametros_Obtener(int CodEmpresa) =>
+            EjecutarConsultaUnica<ParametrosGenDto>(
                 CodEmpresa,
-                QueryParametrosGenerales,
-                null);
+                "SELECT * FROM PV_PARAMETROS_GEN",
+                "Error al obtener los parámetros generales.",
+                "No se encontraron parámetros generales.");
 
-            return CrearRespuestaSingle(
-                result,
-                ErrorParametrosGenerales,
-                SinParametrosGenerales);
-        }
+        public ErrorDto<List<CntXContaDto>> ObtenerContabilidades(int CodEmpresa) =>
+            EjecutarListado<CntXContaDto>(CodEmpresa, "SELECT * FROM CntX_Contabilidades");
 
-        /// <summary>
-        /// Obtiene las contabilidades disponibles.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de contabilidades.</returns>
-        public ErrorDto<List<CntXContaDto>> ObtenerContabilidades(int CodEmpresa)
-        {
-            return EjecutarListado<CntXContaDto>(CodEmpresa, QueryContabilidades);
-        }
+        public ErrorDto<List<DescripcionCuentasDto>> Obtener_DescripcionesCuenta(int CodEmpresa) =>
+            EjecutarListado<DescripcionCuentasDto>(CodEmpresa, "SELECT Cod_Cuenta, Descripcion FROM CNTX_CUENTAS");
 
-        /// <summary>
-        /// Obtiene las descripciones de cuentas contables.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de cuentas contables.</returns>
-        public ErrorDto<List<DescripcionCuentasDto>> Obtener_DescripcionesCuenta(int CodEmpresa)
-        {
-            return EjecutarListado<DescripcionCuentasDto>(CodEmpresa, QueryDescripcionesCuenta);
-        }
+        public ErrorDto<List<DescripcionTipoAsientoDto>> Obtener_DescripcionesAsiento(int CodEmpresa) =>
+            EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, "SELECT Tipo_Asiento, Descripcion FROM CntX_Tipos_Asientos");
 
-        /// <summary>
-        /// Obtiene las descripciones de tipos de asiento.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de tipos de asiento.</returns>
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Obtener_DescripcionesAsiento(int CodEmpresa)
-        {
-            return EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, QueryDescripcionesAsiento);
-        }
-
-        /// <summary>
-        /// Obtiene todos los tipos de asientos.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de tipos de asientos.</returns>
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Asientos_Obtener(int CodEmpresa)
-        {
-            return EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, QueryAsientos);
-        }
+        public ErrorDto<List<DescripcionTipoAsientoDto>> Asientos_Obtener(int CodEmpresa) =>
+            EjecutarListado<DescripcionTipoAsientoDto>(CodEmpresa, "SELECT * FROM CNTX_TIPOS_ASIENTOS");
 
         #endregion
 
         #region Mantenimiento
 
-        /// <summary>
-        /// Actualiza los parámetros generales de inventario.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="data">Datos de parámetros a actualizar.</param>
-        /// <returns>Resultado de la operación.</returns>
         public ErrorDto actualizar_Parametros(int CodEmpresa, ParametrosGenDto data)
         {
             var result = DbHelper.ExecuteNonQuery(
@@ -228,7 +193,7 @@ namespace Galileo.DataBaseTier
                 CrearConsultaActualizacion(),
                 CrearParametrosActualizacion(data));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarParametros);
+            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar los parámetros generales.");
         }
 
         #endregion
