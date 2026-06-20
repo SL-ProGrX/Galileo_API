@@ -53,44 +53,6 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para el listado paginado de marcas.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <returns>Respuesta de listado paginado.</returns>
-        private static ErrorDto<MarcasDataLista> CrearRespuestaLista(ErrorDto<MarcasDataLista> result)
-        {
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerMarcas, result.Code.GetValueOrDefault(-1), CrearListaVacia());
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para listados completos de marcas.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <returns>Respuesta de listado completo.</returns>
-        private static ErrorDto<List<MarcasDto>> CrearRespuestaTodas(ErrorDto<List<MarcasDto>> result)
-        {
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<MarcasDto>())
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerTodasMarcas, result.Code.GetValueOrDefault(-1), new List<MarcasDto>());
-        }
-
-        /// <summary>
         /// Crea los parámetros comunes para insertar o actualizar marcas.
         /// </summary>
         /// <param name="request">Datos de la marca.</param>
@@ -190,7 +152,9 @@ namespace Galileo.DataBaseTier
                 return respuesta;
             });
 
-            return CrearRespuestaLista(result);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerMarcas, result.Code.GetValueOrDefault(-1), CrearListaVacia());
         }
 
         /// <summary>
@@ -210,7 +174,9 @@ namespace Galileo.DataBaseTier
                 CompletarEstadoMarcas(result.Result);
             }
 
-            return CrearRespuestaTodas(result);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<MarcasDto>())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerTodasMarcas, result.Code.GetValueOrDefault(-1), new List<MarcasDto>());
         }
 
         #endregion
@@ -231,7 +197,9 @@ namespace Galileo.DataBaseTier
                 QueryActualizarMarca,
                 CrearParametrosMarca(request));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarMarca);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorActualizarMarca, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -248,7 +216,9 @@ namespace Galileo.DataBaseTier
                 QueryInsertarMarca,
                 CrearParametrosMarca(request));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorInsertarMarca);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarMarca, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -265,7 +235,9 @@ namespace Galileo.DataBaseTier
                 QueryEliminarMarca,
                 CrearParametrosEliminar(marca));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarMarca);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarMarca, result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

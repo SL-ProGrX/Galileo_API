@@ -53,44 +53,6 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para el listado paginado de tipos de precio.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <returns>Respuesta de listado paginado.</returns>
-        private static ErrorDto<PreciosDataLista> CrearRespuestaLista(ErrorDto<PreciosDataLista> result)
-        {
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPrecios, result.Code.GetValueOrDefault(-1), CrearListaVacia());
-        }
-
-        /// <summary>
-        /// Crea una respuesta estándar para listados completos de tipos de precio.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <returns>Respuesta de listado completo.</returns>
-        private static ErrorDto<List<Precio>> CrearRespuestaTodos(ErrorDto<List<Precio>> result)
-        {
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<Precio>())
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerTodosPrecios, result.Code.GetValueOrDefault(-1), new List<Precio>());
-        }
-
-        /// <summary>
         /// Crea los parámetros comunes para insertar o actualizar tipos de precio.
         /// </summary>
         /// <param name="request">Datos del tipo de precio.</param>
@@ -190,7 +152,9 @@ namespace Galileo.DataBaseTier
                 return respuesta;
             });
 
-            return CrearRespuestaLista(result);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPrecios, result.Code.GetValueOrDefault(-1), CrearListaVacia());
         }
 
         /// <summary>
@@ -210,7 +174,9 @@ namespace Galileo.DataBaseTier
                 CompletarOmisionPrecios(result.Result);
             }
 
-            return CrearRespuestaTodos(result);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<Precio>())
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerTodosPrecios, result.Code.GetValueOrDefault(-1), new List<Precio>());
         }
 
         #endregion
@@ -231,7 +197,9 @@ namespace Galileo.DataBaseTier
                 QueryActualizarPrecio,
                 CrearParametrosPrecio(request));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarPrecio);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorActualizarPrecio, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -248,7 +216,9 @@ namespace Galileo.DataBaseTier
                 QueryInsertarPrecio,
                 CrearParametrosPrecio(request));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorInsertarPrecio);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarPrecio, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -265,7 +235,9 @@ namespace Galileo.DataBaseTier
                 QueryEliminarPrecio,
                 CrearParametrosEliminar(precio));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarPrecio);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarPrecio, result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

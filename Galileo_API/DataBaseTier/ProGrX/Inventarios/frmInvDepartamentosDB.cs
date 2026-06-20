@@ -35,19 +35,6 @@ namespace Galileo.DataBaseTier
             Departamentos = new List<DepartamentosDto>()
         };
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Agrega un filtro LIKE al listado de departamentos.
@@ -171,7 +158,9 @@ namespace Galileo.DataBaseTier
                     request.Activo
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar el departamento.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar el departamento.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -194,7 +183,9 @@ namespace Galileo.DataBaseTier
                     request.Activo
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar el departamento.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el departamento.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -211,7 +202,9 @@ namespace Galileo.DataBaseTier
                 "DELETE pv_Departamentos WHERE cod_departamento = @cod_departamento",
                 CrearParametrosDepartamento(departamento));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar el departamento.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el departamento.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion
@@ -257,7 +250,9 @@ namespace Galileo.DataBaseTier
                 "INSERT PV_LINEASDEP(cod_departamento, cod_prodclas) VALUES(@Cod_Departamento, @Cod_Prodclas)",
                 CrearParametrosAsignacion(request.Cod_Departamento, request.Cod_Prodclas));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al insertar la asignación.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar la asignación.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -275,7 +270,9 @@ namespace Galileo.DataBaseTier
                 "DELETE PV_LINEASDEP WHERE cod_departamento = @cod_departamento AND cod_prodclas = @cod_prodclas",
                 CrearParametrosAsignacion(Cod_Departamento, Cod_Prodclas));
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar la asignación.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar la asignación.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

@@ -27,19 +27,6 @@ namespace Galileo.DataBaseTier
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
 
         /// <summary>
         /// Traduce el estado interno de la transacción a una descripción legible.
@@ -385,7 +372,9 @@ namespace Galileo.DataBaseTier
                     request.Plantilla
                 });
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar la transacción.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro actualizado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar la transacción.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -456,7 +445,9 @@ namespace Galileo.DataBaseTier
                 "delete pv_InvTraDet where tipo = @TipoTran and Boleta = @CodBoleta and linea = @Linea",
                 new { TipoTran, CodBoleta, Linea });
 
-            return CrearRespuestaNonQuery(result, "Registro eliminado correctamente", "Error al eliminar la línea de la transacción.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Registro eliminado correctamente")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar la línea de la transacción.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion
