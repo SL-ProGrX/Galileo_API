@@ -16,7 +16,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Parametros_Obtener")]
-        public ErrorDto<ParametrosGenDto> Parametros_Obtener(int CodEmpresa)
+        public ErrorDto<ParametrosGenDto?> Parametros_Obtener(int CodEmpresa)
         {
             return _bl.Parametros_Obtener(CodEmpresa);
         }

@@ -14,7 +14,6 @@ namespace Galileo.DataBaseTier
         private const string MensajeOk = "Ok";
         private const string ErrorObtenerPaquetes = "Error al obtener paquetes.";
         private const string ErrorObtenerPaquete = "Error al obtener el paquete.";
-        private const string SinPaquete = "No se encontró el paquete indicado.";
         private const string ErrorObtenerDetalle = "Error al obtener el detalle del paquete.";
         private const string ErrorActualizarPaquete = "Error al actualizar el paquete.";
         private const string ErrorInsertarPaquete = "Error al insertar el paquete.";
@@ -84,35 +83,6 @@ namespace Galileo.DataBaseTier
             Lista = new List<PaqueteDto>()
         };
 
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
-            where T : class
-        {
-            if (result.Code != 0)
-            {
-                return new ErrorDto<T>
-                {
-                    Code = result.Code,
-                    Description = result.Description ?? errorMessage,
-                    Result = null
-                };
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<T>
-                {
-                    Code = -2,
-                    Description = notFoundMessage,
-                    Result = null
-                };
-        }
 
         private static void AgregarFiltroPaquetes(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
         {
@@ -287,7 +257,9 @@ namespace Galileo.DataBaseTier
                 null,
                 CrearParametrosPaquete(Cod_Paquete));
 
-            return CrearRespuestaSingle(result, ErrorObtenerPaquete, SinPaquete);
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result!)
+                : DbHelper.CreateErrorResponse<PaqueteDto>(result.Description ?? ErrorObtenerPaquete, result.Code.GetValueOrDefault(-1), null!);
         }
 
         public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
@@ -327,7 +299,9 @@ namespace Galileo.DataBaseTier
                 CrearConsultaActualizarPaquete(),
                 CrearParametrosActualizarPaquete(request));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorActualizarPaquete);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorActualizarPaquete, result.Code.GetValueOrDefault(-1));
         }
 
         public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDto request)
@@ -375,7 +349,9 @@ namespace Galileo.DataBaseTier
                 QueryEliminarDetalle,
                 CrearParametrosLinea(request.Linea));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalle);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarDetalle, result.Code.GetValueOrDefault(-1));
         }
 
         public ErrorDto Paquete_Eliminar(int CodEmpresa, PaqueteDto request)
@@ -396,7 +372,9 @@ namespace Galileo.DataBaseTier
                 QueryEliminarDetalles,
                 CrearParametrosPaquete(request.Cod_Paquete.Value));
 
-            return CrearRespuestaNonQuery(result, MensajeOk, ErrorEliminarDetalles);
+            return result.Code == 0
+                ? DbHelper.OkResponse(MensajeOk)
+                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarDetalles, result.Code.GetValueOrDefault(-1));
         }
     }
 }

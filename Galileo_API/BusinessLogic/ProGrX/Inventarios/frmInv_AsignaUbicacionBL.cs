@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _db = new FrmInvAsignaUbicacionDB(config);
         }
 
-        public ErrorDto<AsignaUbicacionDto> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto?> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             return _db.InvUbicaciones_Obtener(CodEmpresa, CodAsignaUbicacion);
         }
@@ -23,7 +23,7 @@ namespace Galileo.BusinessLogic
             return _db.InvUbicacionProduc_Obtener(CodEmpresa, CodAsignaUbicacion);
         }
 
-        public ErrorDto<AsignaUbicacionDto> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto?> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
         {
             return _db.InvUbicacion_scroll(CodEmpresa, scrollValue, CodAsignaUbicacion);
         }

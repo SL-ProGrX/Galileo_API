@@ -37,20 +37,6 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
         /// Agrega filtro LIKE al listado de unidades.
         /// </summary>
         /// <param name="filtro">Texto de filtro.</param>
@@ -196,7 +182,9 @@ namespace Galileo.DataBaseTier
                     Hacienda = request.Hacienda
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar la unidad de medición.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar la unidad de medición.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -221,7 +209,9 @@ namespace Galileo.DataBaseTier
                     request.Registro_Usuario
                 });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al agregar la unidad de medición.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al agregar la unidad de medición.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -238,7 +228,9 @@ namespace Galileo.DataBaseTier
                 "DELETE pv_unidades where Cod_Unidad = @Cod_Unidad",
                 new { Cod_Unidad = unidad });
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar la unidad de medición.");
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar la unidad de medición.", result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

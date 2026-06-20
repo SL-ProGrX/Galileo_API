@@ -18,7 +18,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("InvUbicaciones_Obtener")]
-        public ErrorDto<AsignaUbicacionDto> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto?> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             return _bl.InvUbicaciones_Obtener(CodEmpresa, CodAsignaUbicacion);
         }
@@ -30,7 +30,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("InvUbicacion_scroll")]
-        public ErrorDto<AsignaUbicacionDto> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto?> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
         {
             return _bl.InvUbicacion_scroll(CodEmpresa, scrollValue, CodAsignaUbicacion);
         }
