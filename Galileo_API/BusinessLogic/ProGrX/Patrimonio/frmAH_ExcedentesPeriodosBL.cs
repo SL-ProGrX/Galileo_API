@@ -82,5 +82,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Patrimonio
         {
             return _db.Ah_ExcedentesPeriodos_RecalcularBase(codEmpresa, request);
         }
+
+        public ErrorDto<bool> Ah_ExcedentesPeriodos_Visibilidad_Actualizar(
+    int codEmpresa,
+    FrmAhExcedentesPeriodosVisibilidadRequest request)
+        {
+            return _db.Ah_ExcedentesPeriodos_Visibilidad_Actualizar(codEmpresa, request);
+        }
     }
 }

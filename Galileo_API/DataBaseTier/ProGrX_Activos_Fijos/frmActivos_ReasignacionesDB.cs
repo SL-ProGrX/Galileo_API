@@ -308,9 +308,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
                 p.Add("@sortDir", sortDir);
 
-                var pagina     = filtros?.pagina     ?? 1;
-                var paginacion = filtros?.paginacion ?? 10;
-                var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
+                var pagina = filtros?.pagina ?? 0;
+                var paginacion = filtros?.paginacion ?? 30;
+                var offset = pagina <= 0 ? 0 : pagina * paginacion;
 
                 p.Add("@offset", offset);
                 p.Add("@fetch",  paginacion);
@@ -425,48 +425,43 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// Buscar personas para reasignación de responsables (sin paginación).
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reasignacion_Personas_Buscar(
-            int CodEmpresa,
-            FiltrosLazyLoadData filtros)
+     int CodEmpresa,
+     FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code        = 0,
+                Code = 0,
                 Description = MensajeOk,
-                Result      = new List<DropDownListaGenericaModel>()
+                Result = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p           = new DynamicParameters();
-                var filtroTexto = filtros?.filtro;
-                var tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
-
-                p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro",      tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                var p = new DynamicParameters();
 
                 string? excluir = null;
+
                 if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
                     filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
                 {
-                    var splitArr = filtros.sortField.Split(':');
-                    excluir      = splitArr[^1];
+                    excluir = filtros.sortField.Split(':')[^1].Trim();
                 }
 
                 var tieneExcluir = !string.IsNullOrWhiteSpace(excluir);
+
                 p.Add("@tieneExcluir", tieneExcluir ? 1 : 0);
-                p.Add("@excluir",      tieneExcluir ? excluir : null);
+                p.Add("@excluir", tieneExcluir ? excluir : null);
 
                 const string query = @"
-                    SELECT Identificacion AS item, Nombre AS descripcion
-                    FROM Activos_Personas
-                    WHERE (@tieneFiltro = 0
-                           OR Nombre         LIKE @filtro
-                           OR Identificacion LIKE @filtro)
-                      AND (@tieneExcluir = 0
-                           OR Identificacion <> @excluir)
-                    ORDER BY Nombre ASC;";
+            SELECT
+                Identificacion AS item,
+                Nombre AS descripcion
+            FROM Activos_Personas
+            WHERE (@tieneExcluir = 0
+                   OR Identificacion <> @excluir)
+            ORDER BY Nombre ASC;";
 
                 resp.Result = connection
                     .Query<DropDownListaGenericaModel>(query, p)
@@ -474,9 +469,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result      = null;
+                resp.Result = null;
             }
 
             return resp;
@@ -589,6 +584,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 errores.Add("No se indicó el motivo.");
             if (!data.fecha_aplicacion.HasValue)
                 errores.Add("No se indicó la fecha de aplicación.");
+            if (!data.fecha_aplicacion.HasValue)
+                errores.Add("Debe indicar la fecha de aplicación para ejecutar la reasignación.");
 
             return errores;
         }
@@ -597,14 +594,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// Ejecuta el SP de cambio de responsable (Reasignaciones).
         /// </summary>
         public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(
-            int CodEmpresa,
-            ActivosReasignacionesCambioRequest data)
+     int CodEmpresa,
+     ActivosReasignacionesCambioRequest data)
         {
             var resp = new ErrorDto<ActivosReasignacionesBoletaResult>
             {
-                Code        = 0,
+                Code = 0,
                 Description = string.Empty,
-                Result      = null
+                Result = null
             };
 
             try
@@ -613,34 +610,47 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code        = -1,
+                        Code = -1,
                         Description = MensajeDatosNoProv,
-                        Result      = null
+                        Result = null
                     };
                 }
 
                 var errores = ValidarCambioResponsable(data);
+
                 if (errores.Count > 0)
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code        = -1,
+                        Code = -1,
                         Description = string.Join(" | ", errores),
-                        Result      = null
+                        Result = null
+                    };
+                }
+
+                var fechaAplicacion = data.fecha_aplicacion;
+
+                if (!fechaAplicacion.HasValue)
+                {
+                    return new ErrorDto<ActivosReasignacionesBoletaResult>
+                    {
+                        Code = -1,
+                        Description = "Debe indicar la fecha de aplicación para ejecutar la reasignación.",
+                        Result = null
                     };
                 }
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                p.Add("@Boleta",          data.cod_traslado);
-                p.Add("@Placa",           data.num_placa);
-                p.Add("@Motivo",          data.cod_motivo);
-                p.Add("@Identificacion",  data.identificacion_destino);
-                p.Add("@Usuario",         data.usuario);
-                p.Add("@Notas",           data.notas);
-                p.Add("@Estado",          "P");
-                p.Add("@FechaAplicacion", data.fecha_aplicacion, DbType.DateTime);
+                p.Add("@Boleta", data.cod_traslado);
+                p.Add("@Placa", data.num_placa);
+                p.Add("@Motivo", data.cod_motivo);
+                p.Add("@Identificacion", data.identificacion_destino);
+                p.Add("@Usuario", data.usuario);
+                p.Add("@Notas", data.notas);
+                p.Add("@Estado", "P");
+                p.Add("@FechaAplicacion", fechaAplicacion.Value.Date, DbType.DateTime);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_ResponsableCambio",
@@ -653,35 +663,43 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code        = -2,
+                        Code = -2,
                         Description = MensajeBoletaNoGen,
-                        Result      = null
+                        Result = null
                     };
                 }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = data.usuario ?? string.Empty,
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.usuario ?? string.Empty,
                     DetalleMovimiento = $"Reasignación de activo: {data.num_placa}, " +
                                         $"Persona Origen: {data.identificacion}, " +
                                         $"Persona Destino: {data.identificacion_destino}",
-                    Movimiento        = "Registra - WEB",
-                    Modulo            = vModulo
+                    Movimiento = "Registra - WEB",
+                    Modulo = vModulo
                 });
 
-                resp.Code        = 0;
+                resp.Code = 0;
                 resp.Description = MensajeTrasladoOk;
-                resp.Result      = new ActivosReasignacionesBoletaResult
+                resp.Result = new ActivosReasignacionesBoletaResult
                 {
                     cod_traslado = boleta
                 };
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-                resp.Result      = null;
+                var mensaje = ex.Message ?? string.Empty;
+
+                if (mensaje.Contains("was not recognized as a valid DateTime", StringComparison.OrdinalIgnoreCase) ||
+                    mensaje.Contains("no se reconoce como DateTime", StringComparison.OrdinalIgnoreCase))
+                {
+                    mensaje = "Debe indicar una fecha de aplicación válida para ejecutar la reasignación.";
+                }
+
+                resp.Code = -1;
+                resp.Description = mensaje;
+                resp.Result = null;
             }
 
             return resp;
@@ -918,10 +936,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                     var parametros = new
                     {
-                        filtros     = $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
-                        Empresa     = (string?)null,
-                        fxUsuario   = request.Usuario,
-                        fxSubTitulo = "TRASLADO DE ACTIVOS Y CAMBIO DE RESPONSABLES"
+                        filtros = $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
+                        Empresa = (string?)null,
+                        fxUsuario = request.Usuario,
+                        fxSubTitulo = "TRASLADO DE ACTIVOS Y CAMBIO DE RESPONSABLES",
+                        fxFecha = DateTime.Now.ToString("dd/MM/yyyy"),
                     };
 
                     var reporteData = new FrmReporteGlobal
@@ -985,6 +1004,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 response.Result      = null;
                 return response;
             }
+
         }
     }
 }

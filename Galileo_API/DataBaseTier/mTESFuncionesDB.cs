@@ -48,10 +48,10 @@ namespace Galileo.DataBaseTier
             int codEmpresa,
             TesEmisionDocFiltros filtro,
             List<TesTransaccionDto> transaccionesList,
-            Func<long> resolveConsecutivo)
+            long resolveConsecutivo)
         {
             long bancoConsec = 0;
-            resolveConsecutivo();
+
             if (filtro.docInicial > 0)
             {
                 bancoConsec = filtro.docInicial!;

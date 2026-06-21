@@ -2,8 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
-using System.Data;
-using System.Linq;
+using System.Data; 
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
@@ -14,49 +13,60 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         private readonly PortalDB _portalDb;
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly CcProcesoMensualGeneralDb _mGeneral;
         public CcProcesoMensualCargaArchivosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
-
+            _mGeneral = new CcProcesoMensualGeneralDb(config);
         }
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CargarDeduccionesGenerico(CcProcesoMensualCargaDeduccionesRequest request, IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> reglas)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, request.CodEmpresa);
 
+            _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "03", "PRE", request.Usuario, request.CodInstitucion, request.FechaProceso);
             connection.Open();
             using var transaction = connection.BeginTransaction();
 
             try
             {
+              
+
                 var configuracion = ObtenerConfiguracionCarga(connection, transaction, request.CodInstitucion);
 
                 EliminarCargaAnterior(connection, transaction, request);
-
+                var tiposArchivoPlano = new HashSet<string>
+                    {
+                        "00",
+                        "03",
+                        "28",
+                        "32",
+                        "33"
+                    };
 
                 var registros = request.TipoCarga switch
                 {
-                    CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_ExcelNew =>
+                    "30" =>
                         CrearRegistrosPrmCargadoDetallePorFila(
                             request,
                             configuracion,
                             usarCodigoObreroPatronal: true,
                             insertarSoloSiMontoMayorQueCero: true),
 
-                    CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduc_Csv_Integra =>
+                    "02" =>
                         CrearRegistrosPrmCargadoDetallePorFila(
                             request,
                             configuracion,
                             usarCodigoObreroPatronal: false,
                             insertarSoloSiMontoMayorQueCero: false),
 
-                    CcProcesoMensualCargaDeduccionesTipo.sbCargaDeduccionesArchivoPlano =>
-                           CrearRegistrosPrmCargadoDesdeFilasProcesadas(request),
+                    _ when tiposArchivoPlano.Contains(request.TipoCarga) =>
+                          CrearRegistrosPrmCargado(
+                                                    request,
+                                                    reglas,
+                                                    configuracion),
                     _ =>
-                        CrearRegistrosPrmCargado(
-                            request,
-                            reglas,
-                            configuracion)
+                       CrearRegistrosPrmCargadoDesdeFilasProcesadas(request),
                 };
 
                 InsertarRegistrosPrmCargado(connection, transaction, registros);
@@ -85,13 +95,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 });
 
                 MarcarInstitucionCargaRealizada(connection, transaction, request.CodInstitucion);
+              
 
                 transaction.Commit();
 
+                _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "03", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
+                var existenNoEncontrados = ObtenerPersonasNoEncontradas(  connection, request.CodInstitucion, request.FechaProceso);
+                
                 return DbHelper.CreateOkResponse(
                     new CcProcesoMensualCargaDeduccionesResponse
                     {
                         Cargado = true,
+                        PersonasNoEncontradas = existenNoEncontrados,
                         RegistrosProcesados = request.Filas.Count,
                         RegistrosInsertados = registros.Count,
                         Mensaje = "Información cargada correctamente."
@@ -339,7 +354,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 transaction: transaction);
         }
 
-        private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, IReadOnlyCollection<CcProcesoMensualPrmCargadoDbModel> registros)
+        private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, List<CcProcesoMensualPrmCargadoDbModel> registros)
         {
             if (registros.Count == 0)
             {
@@ -408,8 +423,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 new { CodInstitucion = codInstitucion },
                 transaction: transaction);
         }
-    }
+        public static int ObtenerPersonasNoEncontradas( IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        {
+            const string query = @"  EXEC spPrmCargadoPersonasNoEncontradas  @CodInstitucion, @FechaProceso";
+            var result = connection.QueryFirstOrDefault<PersonasNoEncontradasDbModel>(
+                query,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    FechaProceso = fechaProceso
+                });
 
+            return result?.Existen ?? 0;
+        }
+    }
+    public sealed class PersonasNoEncontradasDbModel
+    {
+        public int Existen { get; set; }
+    }
     internal sealed class CcProcesoMensualPrmCargadoDbModel
     {
         public int CodInstitucion { get; set; }

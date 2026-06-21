@@ -43,4 +43,12 @@
         public string? tipoDoc { get; set; }
         public string? plan { get; set; }
     }
+
+    public class TesTransferenciaAplicaInterno
+    {
+        public string? aplica { get; set; }
+        public long total { get; set; } = 0;
+        public long aplicados { get; set; } = 0;
+        public long pendientes { get; set; } = 0;
+    }
 }
