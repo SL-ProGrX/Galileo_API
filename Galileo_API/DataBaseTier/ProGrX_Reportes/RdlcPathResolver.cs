@@ -17,11 +17,6 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// </summary>
         public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
-            if (codEmpresa <= 0)
-            {
-                throw new SecurityException("El código de empresa no es válido.");
-            }
-
             if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
             {
                 throw new SecurityException("La carpeta especificada no es válida.");
@@ -51,13 +46,28 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                     + Path.DirectorySeparatorChar + safeFolder;
             }
 
+            //Valido si el forder existe, si no existe reemplazo codEmpresa por ProGrx
+            if(!Directory.Exists(basePath))
+            {
+                empresaSegment = "ProGrx";
+                if (string.IsNullOrWhiteSpace(safeFolder))
+                {
+                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
+                }
+                else
+                {
+                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
+                        + Path.DirectorySeparatorChar + safeFolder;
+                }
+            }
+
             return Path.GetFullPath(basePath);
         }
 
         /// <summary>
         /// Resuelve la ruta final del reporte usando únicamente extensiones permitidas.
         /// </summary>
-        public string ResolveReportPath(string basePath)
+        public string ResolveReportPath(int codEmpresa, string basePath)
         {
             if (string.IsNullOrWhiteSpace(basePath))
                 throw new SecurityException("La ruta base del reporte es requerida.");
@@ -83,6 +93,22 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                         Path.GetFileNameWithoutExtension(path),
                         requestedName,
                         StringComparison.OrdinalIgnoreCase));
+            if(match == null)
+            {
+                normalizedDirectory = validaRutaFinal(normalizedDirectory, codEmpresa);
+                match = Directory
+                .EnumerateFiles(normalizedDirectory)
+                .Select(Path.GetFullPath)
+                .Where(path => IsUnderDirectory(normalizedDirectory, path))
+                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                .FirstOrDefault(path =>
+                    string.Equals(
+                        Path.GetFileNameWithoutExtension(path),
+                        requestedName,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
+            
 
             return match ?? string.Empty;
         }
@@ -139,6 +165,16 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             var normalizedCandidate = Path.GetFullPath(candidatePath);
 
             return normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string validaRutaFinal(string ruta, int codEmpresa)
+        {
+            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta ProGrx
+            if(!File.Exists(ruta))
+            {
+                ruta = ruta.Replace(codEmpresa.ToString(), "ProGrx");
+            }
+            return ruta;
         }
     }
 }

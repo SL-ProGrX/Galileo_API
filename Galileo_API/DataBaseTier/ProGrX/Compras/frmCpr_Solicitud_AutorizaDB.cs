@@ -643,11 +643,11 @@ VALUES (
                     {
                         linea,
                         cod_orden = vConsecutivo,
-                        cod_producto = item.Cod_Producto,
-                        cantidad = item.Cantidad,
-                        precio = item.Precio,
-                        descuento = item.Descuento,
-                        imp_ventas = item.Imp_Ventas
+                        cod_producto = item.cod_producto,
+                        cantidad = item.cantidad,
+                        precio = item.precio,
+                        descuento = item.descuento,
+                        imp_ventas = item.imp_ventas    
                     });
                 }
 
@@ -734,16 +734,16 @@ UPDATE CPR_SOLICITUD_PROV
 
         private static ErrorDto? ValidateProducto(SqlConnection conn, OrdenLineas item)
         {
-            if (item.Cantidad <= 0) return null;
+            if (item.cantidad <= 0) return null;
 
             const string sql = "SELECT estado FROM pv_productos WHERE cod_producto = @cod;";
-            var estado = conn.QueryFirstOrDefault<string>(sql, new { cod = item.Cod_Producto });
+            var estado = conn.QueryFirstOrDefault<string>(sql, new { cod = item.cod_producto });
 
             if (estado == null)
-                return new ErrorDto { Code = -1, Description = $"El producto {item.Cod_Producto} no existe" };
+                return new ErrorDto { Code = -1, Description = $"El producto {item.cod_producto} no existe" };
 
             if (estado == "I")
-                return new ErrorDto { Code = -1, Description = $"El producto {item.Cod_Producto} no está activo" };
+                return new ErrorDto { Code = -1, Description = $"El producto {item.cod_producto} no está activo" };
 
             return null;
         }
@@ -788,15 +788,15 @@ UPDATE CPR_SOLICITUD_PROV
             {
                 foreach (var item in vGrid)
                 {
-                    curSubTotal += (item.Cantidad * item.Precio);
-                    var curTmpDesc = ((item.Cantidad * item.Precio) * (item.Descuento / 100f));
+                    curSubTotal += (item.cantidad * item.precio);
+                    var curTmpDesc = ((item.cantidad * item.precio) * (item.descuento / 100f));
                     curDescuento += curTmpDesc;
 
-                    var curTmpIV = (((item.Cantidad * item.Precio) - curTmpDesc) * (item.Imp_Ventas / 100f));
+                    var curTmpIV = (((item.cantidad * item.precio) - curTmpDesc) * (item.imp_ventas / 100f));
                     curIV += curTmpIV;
 
-                    item.Total = (item.Cantidad * item.Precio) - curTmpDesc + curTmpIV;
-                    curCantidad += item.Cantidad;
+                    item.total = (item.cantidad * item.precio) - curTmpDesc + curTmpIV;
+                    curCantidad += item.cantidad;
                 }
 
                 curTotal = curSubTotal + curIV - curDescuento;

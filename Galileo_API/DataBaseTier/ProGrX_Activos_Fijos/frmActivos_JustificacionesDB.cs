@@ -206,7 +206,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 int result = cn.QueryFirstOrDefault<int>(query, new { cod = NormalizeCode(cod_justificacion) });
 
                 (resp.Code, resp.Description) =
-                    result == 0 ? (0, "JUSTIFICACION: Libre!") : (-2, "JUSTIFICACION: Ocupado!");
+                    result == 0 ? (0, "JUSTIFICACIÓN: Libre!") : (-2, "JUSTIFICACIÓN: Ocupada!");
             }
             catch (Exception ex)
             {

@@ -172,7 +172,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 if (trx.tipo_ced_destino == null)
                 {
-                    trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                    if (string.IsNullOrEmpty(trx.codigo!.Trim()))
+                    {
+                        trx.tipo_ced_destino = 1;
+                    }
+                    else
+                    {
+                        trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                    }
+                    
                 }
 
                     trx.detalle = string.Join(" ",
@@ -1842,6 +1850,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
+                if(cuenta == "9999999999999999")
+                {
+                    return DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.");
+                }
+
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 //Busco si la cuenta esta registrada para la cedula
                 var query = tipoOrigen == 2

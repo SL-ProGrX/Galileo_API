@@ -101,6 +101,15 @@ namespace Galileo.Models.AH
     public class FrmAhExcedentesMensualesAplicacionProcesoResponse
     {
         public string mensaje { get; set; } = string.Empty;
+        public List<FrmAhExcedentesMensualesAplicacionDocumentoDto> documentos { get; set; } = [];
     }
+
+    public class FrmAhExcedentesMensualesAplicacionDocumentoDto
+    {
+        public string tipo_documento { get; set; } = string.Empty;
+        public string cod_transaccion { get; set; } = string.Empty;
+    }
+
+  
 
 }
