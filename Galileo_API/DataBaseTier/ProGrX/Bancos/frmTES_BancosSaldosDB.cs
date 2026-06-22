@@ -385,7 +385,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                     return response;
                 }
 
-                //Saca Debitos y Creditos de las Cuentas Bancarias
+                //Saca Debitos y Créditos de las Cuentas Bancarias
                 decimal vDebitos = 0, vCreditos = 0;
 
                 //Emisiones de Documentos
