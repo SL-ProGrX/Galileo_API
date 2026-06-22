@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             Ndocumento
                         FROM Tes_Transacciones
                         WHERE
-                            TRIM(documento_base) = @documento
+                            LTRIM(RTRIM(documento_base)) = @documento
                             AND id_banco = @id_banco
 
                             AND (@Codigo IS NULL OR Codigo LIKE @CodigoLike)
@@ -323,7 +323,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Usuario = transferencia.usuario,
                     Modulo = module, // Tesoreria
                     Movimiento = "Aplica",
-                    DetalleMovimiento = "Reversion Transferencia = " + ReversionId + " Id.Cuenta:" + transferencia.id_banco + ", Tipo: " + transferencia.tipo,
+                    DetalleMovimiento = "Reversión Transferencia = " + ReversionId + " Id.Cuenta:" + transferencia.id_banco + ", Tipo: " + transferencia.tipo,
                 });
 
                 return DbHelper.OkResponse(ReversionId.ToString());
@@ -766,7 +766,7 @@ WHERE T.NSOLICITUD = @Cod_Referencia";
                 Usuario = reversa.usuario!,
                 Modulo = module,
                 Movimiento = "Aplica",
-                DetalleMovimiento = "Reversion Transferencia = " + reversionId +
+                DetalleMovimiento = "Reversión Transferencia = " + reversionId +
                                     " Id.Cuenta:" + reversa.id_banco + ", Tipo: TS",
             });
         }

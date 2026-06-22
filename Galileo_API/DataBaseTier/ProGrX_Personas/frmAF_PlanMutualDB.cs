@@ -293,7 +293,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                         descripcion = string.Empty,
                         monto = 0,
                         Retencion = string.Empty,
-                        activo = 0,
+                        activo = 1,
                         Usuario = usuario,
                         accion = "E"
                     },

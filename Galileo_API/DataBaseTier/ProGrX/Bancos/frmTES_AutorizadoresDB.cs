@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesAutorizadoresDB
     {
         private readonly PortalDB _portalDB;
-        private readonly int vModulo = 9; // Modulo de Tesorería
+        private readonly int vModulo = 9; // Módulo de Tesorería
         private readonly MSecurityMainDb _mSecurityMainDb;
 
         public FrmTesAutorizadoresDB(IConfiguration config)
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                        firmas_gen_inicio = @firmas_gen_inicio, 
                                        firmas_gen_corte = @firmas_gen_corte 
                                    WHERE nombre = @nombre";
-                    response.Code = conn.Execute(query, autorizador);
+                   conn.Execute(query, autorizador);
 
                     _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
                     {
@@ -193,7 +193,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     // Inserta un nuevo registro
                     query = $@"INSERT INTO tes_autorizaciones (nombre, notas, clave, estado, rango_gen_inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte) 
                                    VALUES (@nombre, @notas, @clave, @estado, @rango_gen_inicio, @rango_gen_corte, @firmas_gen_inicio, @firmas_gen_corte)";
-                    response.Code = conn.Execute(query, autorizador);
+                    conn.Execute(query, autorizador);
                     _mSecurityMainDb.Bitacora
                         (new BitacoraInsertarDto
                         {

@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
     public class FrmSysOrigenRecursosDB
     {
         private readonly IConfiguration _config;
-        private readonly int vModulo = 10; // Modulo de Tesorería
+        private readonly int vModulo = 10; // Módulo de Tesorería
         private readonly MSecurityMainDb _Security_MainDB;
 
         public FrmSysOrigenRecursosDB(IConfiguration config)

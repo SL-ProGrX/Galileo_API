@@ -89,12 +89,13 @@
 
     public class OrdenData
     {
-        public string Cod_Orden { get; set; } = string.Empty;
-        public string Genera_User { get; set; } = string.Empty;
-        public string? Nota { get; set; }
-        public string? cod_solicitud { get; set; }
-        public string? proveedor { get; set; }
-        public string? familia { get; set; }
+        public string cod_orden { get; set; } = string.Empty;
+        public string genera_user { get; set; } = string.Empty;
+        public string? nota { get; set; } = string.Empty;
+        public string? cod_solicitud { get; set; } = string.Empty;
+        public string? proveedor { get; set; } = string.Empty;
+        public string? familia { get; set; } = string.Empty;
+        public string? familia_desc { get; set; } = string.Empty;
     }
 
     public class FacturasData

@@ -3,13 +3,13 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.AH;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 {
     public partial class FrmAhExcedentesMensualesDB
     {
+        private const string NumDoc = "NumDoc";
         /// <summary>
         /// Obtiene el último periodo cerrado para el tab Aplicaciones.
         /// </summary>
@@ -102,7 +102,7 @@ exec spExc_Aplicaciones_Procesos_Pendientes @PeriodoId;";
                     descripcion = x.descripcion
                 }).ToList();
 
-                return DbHelper.CreateOkResponse<List<DropDownListaGenericaModel>>(lista);  
+                return DbHelper.CreateOkResponse(lista);
             }
             catch (Exception ex)
             {
@@ -191,7 +191,6 @@ exec spExc_Procesos_Salidas_Fondos @PeriodoId, @Salida, @Usuario;";
                 });
         }
 
-
         /// <summary>
         /// Ejecuta un proceso del tab Aplicaciones según el radio seleccionado.
         /// Replica el flujo manual de VB6 en una sola entrada de API.
@@ -212,13 +211,13 @@ from sif_empresa;";
                 var aplicaCero = request.cargaInfoCero ? 1 : 0;
                 var sysPlanPagos = conn.QueryFirstOrDefault<int>(sqlSysPlanPagos);
 
-                string mensaje = procesoId switch
+                FrmAhExcedentesMensualesAplicacionProcesoResponse response = procesoId switch
                 {
                     "INSOLVENTES" => EjecutarInsolventes(conn, request),
                     "DONACIONES" => EjecutarDonaciones(conn, request),
                     "AJUSTES" => EjecutarAjustes(conn, request, aplicaCero),
                     "SALDOS_GARANTIA" => EjecutarSaldosGarantia(conn, request, aplicaCero),
-                    "MORA" => EjecutarMora(codEmpresa, conn, request, aplicaCero, sysPlanPagos),
+                    "MORA" => EjecutarMora(conn, request, aplicaCero, sysPlanPagos),
                     "MORA_OPCF" => EjecutarMoraOpcf(conn, request, aplicaCero, sysPlanPagos),
                     "CAPITALIZA_EXTRA" => EjecutarCapitalizacionExtra(conn, request),
                     "ABONO_PATRONAL" => EjecutarAbonoPatronal(conn, request),
@@ -233,11 +232,7 @@ from sif_empresa;";
                     _ => throw new InvalidOperationException("El proceso seleccionado no es válido.")
                 };
 
-                return DbHelper.CreateOkResponse<FrmAhExcedentesMensualesAplicacionProcesoResponse?>(
-                    new FrmAhExcedentesMensualesAplicacionProcesoResponse
-                    {
-                        mensaje = mensaje
-                    });
+                return DbHelper.CreateOkResponse<FrmAhExcedentesMensualesAplicacionProcesoResponse?>(response);
             }
             catch (Exception ex)
             {
@@ -253,7 +248,371 @@ from sif_empresa;";
             MoraOpcf
         }
 
-        private static void LimpiarExcCierre(SqlConnection conn, int periodoId, ExcCierreLimpiezaTipo tipo)
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarInsolventes(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Insolventes @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Indicador de insolventes aplicado satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarDonaciones(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Procesos_Donacion_Aplica @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Donaciones aplicadas satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarAjustes(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
+            int aplicaCero)
+        {
+            if (request.limpiaAplicacionAnterior)
+            {
+                LimpiarExcCierre(conn, request.periodoId, ExcCierreLimpiezaTipo.Ajustes);
+            }
+
+            conn.Execute(
+                "exec spExc_Procesos_Ajustes_Cargado @PeriodoId, @AplicaCero, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    AplicaCero = aplicaCero,
+                    Usuario = request.usuario
+                });
+
+            conn.Execute(
+                "exec spExc_Procesos_Ajustes_Aplica @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Ajustes cargados y aplicados satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarSaldosGarantia(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
+            int aplicaCero)
+        {
+            if (request.limpiaAplicacionAnterior)
+            {
+                LimpiarExcCierre(conn, request.periodoId, ExcCierreLimpiezaTipo.SaldosGarantia);
+            }
+
+            conn.Execute(
+                "exec spExc_Procesos_Creditos_EXC_Cargado @PeriodoId, @AplicaCero, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    AplicaCero = aplicaCero,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Créditos con garantía cargados y aplicados satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarMora(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
+            int aplicaCero,
+            int sysPlanPagos)
+        {
+            if (request.limpiaAplicacionAnterior)
+            {
+                LimpiarExcCierre(conn, request.periodoId, ExcCierreLimpiezaTipo.Mora);
+            }
+
+            conn.Execute(
+                "exec spExc_Procesos_Morosidad_Cargado @PeriodoId, @AplicaCero, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    AplicaCero = aplicaCero,
+                    Usuario = request.usuario
+                });
+
+            if (request.cargaInfoCero)
+            {
+                InsertarBitacoraAplicacion(conn, request.periodoId, "04", "Actualiza", request.usuario);
+                return CrearRespuestaProceso("Morosidad cargada en cero satisfactoriamente.");
+            }
+
+            if (sysPlanPagos == 1)
+            {
+                var pago = EjecutarSpIterativo(
+                    conn,
+                    "exec spExc_Procesos_Morosidad_Pago @PeriodoId, @Usuario;",
+                    new
+                    {
+                        PeriodoId = request.periodoId,
+                        Usuario = request.usuario
+                    });
+
+                var documentos = ConstruirDocumentosMorosidad(
+                    conn,
+                    request.periodoId,
+                    ObtenerValorDinamico(pago, NumDoc),
+                    "NC");
+
+                return CrearRespuestaProceso("Morosidad aplicada satisfactoriamente.", documentos);
+            }
+
+            throw new InvalidOperationException("Falta migrar la rama VB6 de morosidad sin plan de pagos.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarMoraOpcf(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
+            int aplicaCero,
+            int sysPlanPagos)
+        {
+            if (request.limpiaAplicacionAnterior)
+            {
+                LimpiarExcCierre(conn, request.periodoId, ExcCierreLimpiezaTipo.MoraOpcf);
+            }
+
+            conn.Execute(
+                "exec spExc_Procesos_Morosidad_OPCF_Cargado @PeriodoId, @AplicaCero, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    AplicaCero = aplicaCero,
+                    Usuario = request.usuario
+                });
+
+            if (request.cargaInfoCero)
+            {
+                InsertarBitacoraAplicacion(conn, request.periodoId, "05", "Actualiza", request.usuario);
+                return CrearRespuestaProceso("Morosidad OPCF cargada en cero satisfactoriamente.");
+            }
+
+            if (sysPlanPagos == 1)
+            {
+                var pago = EjecutarSpIterativo(
+                    conn,
+                    "exec spExc_Procesos_Morosidad_OPCF_Pago @PeriodoId, @Usuario;",
+                    new
+                    {
+                        PeriodoId = request.periodoId,
+                        Usuario = request.usuario
+                    });
+
+                var documentos = ConstruirDocumentosMoraOpcf(
+                    conn,
+                    request.periodoId,
+                    ObtenerValorDinamico(pago, NumDoc),
+                    "NC");
+
+                return CrearRespuestaProceso("Morosidad OPCF aplicada satisfactoriamente.", documentos);
+            }
+
+            throw new InvalidOperationException("Falta migrar la rama VB6 de morosidad OPCF sin plan de pagos.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarCapitalizacionExtra(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Procesos_CAP_Individual_Cargado @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Capitalización extraordinaria aplicada satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarAbonoPatronal(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_AbonosExtraordinariosRenunciaPatronal @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Abono extraordinario por renuncia patronal aplicado satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarActualizaAhorrosExtra(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            var rs = conn.QueryFirstOrDefault<dynamic>(
+                "exec spExc_Procesos_CAP_Individual_Fondos @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            if (ObtenerEnteroDinamico(rs, "Casos") > 0)
+            {
+                AgregarDocumentoSiTieneValor(
+                    documentos,
+                    ObtenerValorDinamico(rs, "TipoDoc"),
+                    ObtenerValorDinamico(rs, NumDoc));
+            }
+
+            return CrearRespuestaProceso(
+                "Ahorros con capitalizaciones extraordinarias actualizados satisfactoriamente.",
+                documentos);
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarActualizaAhorrosGeneral(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Capitalizacion_General_Actualiza @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Capitalización general actualizada satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarActualizaAjustes(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Procesos_Ajustes_Actualiza @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Información de ajustes actualizada satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarActualizaCreditos(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            var rs = EjecutarSpIterativo(
+                conn,
+                "exec spExc_Procesos_Creditos_EXC_Pago @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            var documentos = ConstruirDocumentosCreditos(
+                conn,
+                request.periodoId,
+                ObtenerValorDinamico(rs, NumDoc),
+                "NC");
+
+            return CrearRespuestaProceso("Créditos actualizados satisfactoriamente.", documentos);
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarAsientoGeneral(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            var rs = conn.QueryFirstOrDefault<dynamic>(
+                "exec spExc_Comprobante @PeriodoId, @Usuario, '';",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            AgregarDocumentoSiTieneValor(
+                documentos,
+                ObtenerValorDinamico(rs, "TipoDoc"),
+                ObtenerValorDinamico(rs, NumDoc));
+
+            return CrearRespuestaProceso("Asiento general de excedentes creado satisfactoriamente.", documentos);
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarFacturaElectronica(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_FacturaElectronica @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Factura electrónica registrada satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarSalidasSepara(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Procesos_Salidas_Separa @PeriodoId, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Usuario = request.usuario
+                });
+
+            return CrearRespuestaProceso("Salidas separadas satisfactoriamente.");
+        }
+
+        private FrmAhExcedentesMensualesAplicacionProcesoResponse EjecutarSalidasFondos(
+            SqlConnection conn,
+            FrmAhExcedentesMensualesAplicacionProcesoRequest request)
+        {
+            conn.Execute(
+                "exec spExc_Procesos_Salidas_Fondos @PeriodoId, @Salida, @Usuario;",
+                new
+                {
+                    PeriodoId = request.periodoId,
+                    Salida = (request.salida ?? string.Empty).Trim(),
+                    Usuario = request.usuario
+                });
+
+            InsertarBitacoraAplicacion(conn, request.periodoId, "12", "Actualiza", request.usuario);
+
+            var documentos = ConstruirDocumentosSalidas(conn, request.periodoId);
+
+            return CrearRespuestaProceso("Excedentes trasladados a fondos satisfactoriamente.", documentos);
+        }
+
+        private static void LimpiarExcCierre(
+            SqlConnection conn,
+            int periodoId,
+            ExcCierreLimpiezaTipo tipo)
         {
             string sql = tipo switch
             {
@@ -291,299 +650,61 @@ where id_periodo = @PeriodoId;",
             conn.Execute(sql, new { PeriodoId = periodoId });
         }
 
-        private static void EjecutarSpIterativo(SqlConnection conn, string sql, object parameters)
-        {
-            var result = conn.QueryFirstOrDefault(sql, parameters);
-
-            while (result != null && Convert.ToInt32(result!.Pendientes) > 0)
-            {
-                result = conn.QueryFirstOrDefault(sql, parameters);
-            }
-
-        }
-
-        private string EjecutarInsolventes(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Insolventes @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Indicador de insolventes aplicado satisfactoriamente.";
-        }
-
-        private string EjecutarDonaciones(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Procesos_Donacion_Aplica @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Donaciones aplicadas satisfactoriamente.";
-        }
-
-        private string EjecutarAjustes(
+        private static dynamic? EjecutarSpIterativo(
             SqlConnection conn,
-            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
-            int aplicaCero)
+            string sql,
+            object parameters)
         {
-            if (request.limpiaAplicacionAnterior)
+            dynamic? result = conn.QueryFirstOrDefault<dynamic>(sql, parameters);
+
+            while (ObtenerEnteroDinamico(result, "Pendientes") > 0)
             {
-                LimpiarExcCierre(
-                    conn,
-                    request.periodoId,
-                    ExcCierreLimpiezaTipo.Ajustes);
+                result = conn.QueryFirstOrDefault<dynamic>(sql, parameters);
             }
 
-            conn.Execute(
-                "exec spExc_Procesos_Ajustes_Cargado @PeriodoId, @AplicaCero, @Usuario;",
-                new { PeriodoId = request.periodoId, AplicaCero = aplicaCero, Usuario = request.usuario });
-
-            conn.Execute(
-                "exec spExc_Procesos_Ajustes_Aplica @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Ajustes cargados y aplicados satisfactoriamente.";
+            return result;
         }
 
-        private string EjecutarSaldosGarantia(
+        private static FrmAhExcedentesMensualesAplicacionProcesoResponse CrearRespuestaProceso(
+            string mensaje,
+            List<FrmAhExcedentesMensualesAplicacionDocumentoDto>? documentos = null)
+        {
+            return new FrmAhExcedentesMensualesAplicacionProcesoResponse
+            {
+                mensaje = mensaje,
+                documentos = documentos ?? new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>()
+            };
+        }
+
+        private static void InsertarBitacoraAplicacion(
             SqlConnection conn,
-            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
-            int aplicaCero)
+            int periodoId,
+            string codProceso,
+            string detalle,
+            string usuario)
         {
-            if (request.limpiaAplicacionAnterior)
-            {
-                LimpiarExcCierre(
-                    conn,
-                    request.periodoId,
-                    ExcCierreLimpiezaTipo.SaldosGarantia);
-            }
-
-            conn.Execute(
-                "exec spExc_Procesos_Creditos_EXC_Cargado @PeriodoId, @AplicaCero, @Usuario;",
-                new { PeriodoId = request.periodoId, AplicaCero = aplicaCero, Usuario = request.usuario });
-
-            return "Créditos con garantía cargados y aplicados satisfactoriamente.";
-        }
-
-        private string EjecutarMora(
-            int codEmpresa,
-            SqlConnection conn,
-            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
-            int aplicaCero,
-            int sysPlanPagos)
-        {
-            if (request.limpiaAplicacionAnterior)
-            {
-                LimpiarExcCierre(
-                    conn,
-                    request.periodoId, ExcCierreLimpiezaTipo.Mora);
-            }
-
-            conn.Execute(
-                "exec spExc_Procesos_Morosidad_Cargado @PeriodoId, @AplicaCero, @Usuario;",
-                new { PeriodoId = request.periodoId, AplicaCero = aplicaCero, Usuario = request.usuario });
-
-            if (request.cargaInfoCero)
-            {
-                AH_ExcedentesMensuales_Bitacora_Registrar(codEmpresa: codEmpresa, periodoId: request.periodoId, codProceso: "", detalle: "", usuario: request.usuario);
-            }
-
-            if (request.cargaInfoCero)
-            {
-                conn.Execute(@"
-insert into EXC_PERIODOS_BITACORA
-(
-    ID_PERIODO, LINEA, COD_PROCESO, DETALLE, REGISTRO_FECHA, REGISTRO_USUARIO,
-    TIPO_DOCUMENTO, COD_TRANSACCION, MONTO, CASOS, TIME_INICIO, TIME_CORTE
-)
-values
-(
-    @PeriodoId,
-    (select isnull(max(LINEA), 0) + 1 from EXC_PERIODOS_BITACORA where ID_PERIODO = @PeriodoId),
-    '04',
-    'Actualiza',
-    dbo.MyGetdate(),
-    @Usuario,
-    '',
-    '',
-    0,
-    0,
-    dbo.MyGetdate(),
-    dbo.MyGetdate()
-);", new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-                return "Morosidad cargada en cero satisfactoriamente.";
-            }
-
-            if (sysPlanPagos != 1)
-            {
-                throw new InvalidOperationException("La empresa no usa plan de pagos. Falta migrar la rama VB6 de morosidad sin plan de pagos.");
-            }
-
-            EjecutarSpIterativo(
-                conn,
-                "exec spExc_Procesos_Morosidad_Pago @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Morosidad aplicada satisfactoriamente.";
-        }
-
-        private string EjecutarMoraOpcf(
-            SqlConnection conn,
-            FrmAhExcedentesMensualesAplicacionProcesoRequest request,
-            int aplicaCero,
-            int sysPlanPagos)
-        {
-            if (request.limpiaAplicacionAnterior)
-            {
-                LimpiarExcCierre(
-                    conn,
-                    request.periodoId, ExcCierreLimpiezaTipo.MoraOpcf);
-            }
-
-            conn.Execute(
-                "exec spExc_Procesos_Morosidad_OPCF_Cargado @PeriodoId, @AplicaCero, @Usuario;",
-                new { PeriodoId = request.periodoId, AplicaCero = aplicaCero, Usuario = request.usuario });
-
-            if (request.cargaInfoCero)
-            {
-                conn.Execute(@"
-insert into EXC_PERIODOS_BITACORA
-(
-    ID_PERIODO, LINEA, COD_PROCESO, DETALLE, REGISTRO_FECHA, REGISTRO_USUARIO,
-    TIPO_DOCUMENTO, COD_TRANSACCION, MONTO, CASOS, TIME_INICIO, TIME_CORTE
-)
-values
-(
-    @PeriodoId,
-    (select isnull(max(LINEA), 0) + 1 from EXC_PERIODOS_BITACORA where ID_PERIODO = @PeriodoId),
-    '05',
-    'Actualiza',
-    dbo.MyGetdate(),
-    @Usuario,
-    '',
-    '',
-    0,
-    0,
-    dbo.MyGetdate(),
-    dbo.MyGetdate()
-);", new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-                return "Morosidad OPCF cargada en cero satisfactoriamente.";
-            }
-
-            if (sysPlanPagos != 1)
-            {
-                throw new InvalidOperationException("La empresa no usa plan de pagos. Falta migrar la rama VB6 de morosidad OPCF sin plan de pagos.");
-            }
-
-            EjecutarSpIterativo(
-                conn,
-                "exec spExc_Procesos_Morosidad_OPCF_Pago @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Morosidad OPCF aplicada satisfactoriamente.";
-        }
-
-        private string EjecutarCapitalizacionExtra(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Procesos_CAP_Individual_Cargado @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Capitalización extraordinaria aplicada satisfactoriamente.";
-        }
-
-        private string EjecutarAbonoPatronal(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_AbonosExtraordinariosRenunciaPatronal @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Abono extraordinario por renuncia patronal aplicado satisfactoriamente.";
-        }
-
-        private string EjecutarActualizaAhorrosExtra(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.QueryFirstOrDefault(
-                "exec spExc_Procesos_CAP_Individual_Fondos @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Ahorros con capitalizaciones extraordinarias actualizados satisfactoriamente.";
-        }
-
-        private string EjecutarActualizaAhorrosGeneral(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Capitalizacion_General_Actualiza @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Capitalización general actualizada satisfactoriamente.";
-        }
-
-        private string EjecutarActualizaAjustes(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Procesos_Ajustes_Actualiza @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Información de ajustes actualizada satisfactoriamente.";
-        }
-
-        private string EjecutarActualizaCreditos(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            EjecutarSpIterativo(
-                conn,
-                "exec spExc_Procesos_Creditos_EXC_Pago @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Créditos actualizados satisfactoriamente.";
-        }
-
-        private string EjecutarAsientoGeneral(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.QueryFirstOrDefault(
-                "exec spExc_Comprobante @PeriodoId, @Usuario, '';",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Asiento general de excedentes creado satisfactoriamente.";
-        }
-
-        private string EjecutarFacturaElectronica(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_FacturaElectronica @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Factura electrónica registrada satisfactoriamente.";
-        }
-
-        private string EjecutarSalidasSepara(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Procesos_Salidas_Separa @PeriodoId, @Usuario;",
-                new { PeriodoId = request.periodoId, Usuario = request.usuario });
-
-            return "Salidas separadas satisfactoriamente.";
-        }
-
-        private string EjecutarSalidasFondos(SqlConnection conn, FrmAhExcedentesMensualesAplicacionProcesoRequest request)
-        {
-            conn.Execute(
-                "exec spExc_Procesos_Salidas_Fondos @PeriodoId, @Salida, @Usuario;",
-                new { PeriodoId = request.periodoId, Salida = request.salida, Usuario = request.usuario });
-
             conn.Execute(@"
 insert into EXC_PERIODOS_BITACORA
 (
-    ID_PERIODO, LINEA, COD_PROCESO, DETALLE, REGISTRO_FECHA, REGISTRO_USUARIO,
-    TIPO_DOCUMENTO, COD_TRANSACCION, MONTO, CASOS, TIME_INICIO, TIME_CORTE
+    ID_PERIODO,
+    LINEA,
+    COD_PROCESO,
+    DETALLE,
+    REGISTRO_FECHA,
+    REGISTRO_USUARIO,
+    TIPO_DOCUMENTO,
+    COD_TRANSACCION,
+    MONTO,
+    CASOS,
+    TIME_INICIO,
+    TIME_CORTE
 )
 values
 (
     @PeriodoId,
     (select isnull(max(LINEA), 0) + 1 from EXC_PERIODOS_BITACORA where ID_PERIODO = @PeriodoId),
-    '12',
-    'Actualiza',
+    @CodProceso,
+    @Detalle,
     dbo.MyGetdate(),
     @Usuario,
     '',
@@ -592,9 +713,158 @@ values
     0,
     dbo.MyGetdate(),
     dbo.MyGetdate()
-);", new { PeriodoId = request.periodoId, Usuario = request.usuario });
+);",
+            new
+            {
+                PeriodoId = periodoId,
+                CodProceso = codProceso,
+                Detalle = detalle,
+                Usuario = usuario
+            });
+        }
 
-            return "Excedentes trasladados a fondos satisfactoriamente.";
+        private static List<FrmAhExcedentesMensualesAplicacionDocumentoDto> ConstruirDocumentosMorosidad(
+            SqlConnection conn,
+            int periodoId,
+            string numDocNc,
+            string tipoDocNc)
+        {
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            AgregarDocumentoSiTieneValor(documentos, tipoDocNc, numDocNc);
+
+            var periodo = conn.QueryFirstOrDefault<dynamic>(@"
+select NC_MORA, Doc_Asiento
+from vExc_Periodos_Consulta
+where ID_PERIODO = @PeriodoId;",
+                new { PeriodoId = periodoId });
+
+            AgregarDocumentoSiTieneValor(documentos, "NC", ObtenerValorDinamico(periodo, "NC_MORA"));
+            AgregarDocumentoSiTieneValor(documentos, "PLA", ObtenerValorDinamico(periodo, "Doc_Asiento"));
+
+            return documentos;
+        }
+
+        private static List<FrmAhExcedentesMensualesAplicacionDocumentoDto> ConstruirDocumentosMoraOpcf(
+            SqlConnection conn,
+            int periodoId,
+            string numDocNc,
+            string tipoDocNc)
+        {
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            AgregarDocumentoSiTieneValor(documentos, tipoDocNc, numDocNc);
+
+            var periodo = conn.QueryFirstOrDefault<dynamic>(@"
+select NC_OPCF
+from vExc_Periodos_Consulta
+where ID_PERIODO = @PeriodoId;",
+                new { PeriodoId = periodoId });
+
+            AgregarDocumentoSiTieneValor(documentos, "NC", ObtenerValorDinamico(periodo, "NC_OPCF"));
+
+            return documentos;
+        }
+
+        private static List<FrmAhExcedentesMensualesAplicacionDocumentoDto> ConstruirDocumentosCreditos(
+            SqlConnection conn,
+            int periodoId,
+            string numDocNc,
+            string tipoDocNc)
+        {
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            AgregarDocumentoSiTieneValor(documentos, tipoDocNc, numDocNc);
+
+            var periodo = conn.QueryFirstOrDefault<dynamic>(@"
+select NC_Saldos
+from vExc_Periodos_Consulta
+where ID_PERIODO = @PeriodoId;",
+                new { PeriodoId = periodoId });
+
+            AgregarDocumentoSiTieneValor(documentos, "NC", ObtenerValorDinamico(periodo, "NC_Saldos"));
+
+            return documentos;
+        }
+
+        private static List<FrmAhExcedentesMensualesAplicacionDocumentoDto> ConstruirDocumentosSalidas(
+            SqlConnection conn,
+            int periodoId)
+        {
+            var documentos = new List<FrmAhExcedentesMensualesAplicacionDocumentoDto>();
+
+            var periodo = conn.QueryFirstOrDefault<dynamic>(@"
+select NC_FND_Extra
+from vExc_Periodos_Consulta
+where ID_PERIODO = @PeriodoId;",
+                new { PeriodoId = periodoId });
+
+            AgregarDocumentoSiTieneValor(documentos, "NC", ObtenerValorDinamico(periodo, "NC_FND_Extra"));
+
+            return documentos;
+        }
+
+        private static void AgregarDocumentoSiTieneValor(
+            List<FrmAhExcedentesMensualesAplicacionDocumentoDto> documentos,
+            string tipoDocumento,
+            string codTransaccion)
+        {
+            var tipo = (tipoDocumento ?? string.Empty).Trim();
+            var codigo = (codTransaccion ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(tipo) || string.IsNullOrWhiteSpace(codigo))
+            {
+                return;
+            }
+
+            var existe = documentos.Any(x =>
+                string.Equals(x.tipo_documento, tipo, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.cod_transaccion, codigo, StringComparison.OrdinalIgnoreCase));
+
+            if (existe)
+            {
+                return;
+            }
+
+            documentos.Add(new FrmAhExcedentesMensualesAplicacionDocumentoDto
+            {
+                tipo_documento = tipo,
+                cod_transaccion = codigo
+            });
+        }
+
+        private static string ObtenerValorDinamico(dynamic? source, string propertyName)
+        {
+            if (source == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var value = source[propertyName];
+                return value?.ToString()?.Trim() ?? string.Empty;
+            }
+            catch
+            {
+                try
+                {
+                    var value = source.GetType().GetProperty(propertyName)?.GetValue(source, null);
+                    return value?.ToString()?.Trim() ?? string.Empty;
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
+        private static int ObtenerEnteroDinamico(dynamic? source, string propertyName)
+        {
+            var value = ObtenerValorDinamico(source, propertyName);
+            int numero = 0;
+
+            return int.TryParse(value, out numero) ? numero : 0;
         }
     }
 }

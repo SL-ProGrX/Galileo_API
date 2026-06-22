@@ -112,7 +112,7 @@ namespace Galileo.DataBaseTier
                 var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
 
                 var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-                var finalPath = _path.ResolveReportPath(mainPath);
+                var finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
 
                 // CxSuppress: PathTraversal
                 if (!System.IO.File.Exists(finalPath))
@@ -122,8 +122,8 @@ namespace Galileo.DataBaseTier
                 report.LoadReportDefinition(patched);
 
                 var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
-                var subMeta = _subs.LoadSubreports(report, basePath, subreportNames);
-                var autoAliases = _subs.BuildAutoAliasMap(finalPath, basePath);
+                var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames);
+                var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath);
 
                 var (reportParams, paramDict, jParams) = _params.Build(data, connection, connString);
                 if (reportParams.Count > 0)
@@ -275,7 +275,7 @@ namespace Galileo.DataBaseTier
 
             var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
             var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-            var finalPath = _path.ResolveReportPath(mainPath);
+            var finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
 
             if (string.IsNullOrWhiteSpace(finalPath) || !File.Exists(finalPath))
                 throw new FileNotFoundException("No se encontró el reporte principal.");
@@ -324,7 +324,7 @@ namespace Galileo.DataBaseTier
                 ValidateSegment(subreportName, nameof(subreportName), allowEmpty: false);
 
                 var mainPath = _path.CombineUnderRoot(basePath, subreportName ?? string.Empty);
-                var subPath = _path.ResolveReportPath(mainPath);
+                var subPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
 
                 if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
                     continue;
@@ -428,8 +428,5 @@ namespace Galileo.DataBaseTier
             if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new SecurityException($"{paramName} contiene caracteres inválidos.");
         }
-
-       
-
     }
 }
