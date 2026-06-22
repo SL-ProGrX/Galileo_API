@@ -132,7 +132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
             RegistrarBitacora(
                 param.CodEmpresa,
                 param.Usuario,
-                $"Fondos: General a Creditos - Masivo.. {data.TipoDoc}_{data.NumDoc}");
+                $"Fondos: General a Créditos - Masivo.. {data.TipoDoc}_{data.NumDoc}");
 
             return DbHelper.CreateOkResponse(data);
         }
@@ -171,7 +171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
             RegistrarBitacora(
                 codEmpresa,
                 param.Usuario,
-                $"Fondos: {NormalizarTexto(param.CodPlan)} a Creditos - Masivo.. {data.TipoDoc}_{data.NumDoc}");
+                $"Fondos: {NormalizarTexto(param.CodPlan)} a Créditos - Masivo.. {data.TipoDoc}_{data.NumDoc}");
 
             return DbHelper.CreateOkResponse(data);
         }

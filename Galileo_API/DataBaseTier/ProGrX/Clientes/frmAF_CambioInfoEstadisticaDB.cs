@@ -9,7 +9,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
     public class FrmAfCambioInfoEstadisticaDB
     {
         private readonly IConfiguration _config;
-        private readonly int vModulo = 1; //Modulo de clientes
+        private readonly int vModulo = 1; // Módulo de clientes
         private readonly MSecurityMainDb _Security_MainDB;
 
         private const string SqlListaSectores = @"

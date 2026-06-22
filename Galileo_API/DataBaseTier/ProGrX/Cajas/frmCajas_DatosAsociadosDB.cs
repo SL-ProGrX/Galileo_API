@@ -15,11 +15,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Obtiene los creditos asociados a una persona.
+        /// Obtiene los Créditos asociados a una persona.
         /// </summary>
         /// <param name="codEmpresa">Codigo de empresa donde se consulta la informacion.</param>
         /// <param name="cedula">Identificacion de la persona.</param>
-        /// <returns>Lista de creditos asociados.</returns>
+        /// <returns>Lista de Créditos asociados.</returns>
         public ErrorDto<List<CajasCreditoDto>> Cajas_Consulta_Creditos(
             int codEmpresa,
             string cedula)
@@ -202,11 +202,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 }
                 else if (datos.cobroJudicial && datos.incobrable)
                 {
-                    datos.mensaje = "Presenta Creditos en Cobro Judicial e Incobrables";
+                    datos.mensaje = "Presenta Créditos en Cobro Judicial e Incobrables";
                 }
                 else if (datos.cobroJudicial)
                 {
-                    datos.mensaje = "Presenta Creditos en Cobro Judicial";
+                    datos.mensaje = "Presenta Créditos en Cobro Judicial";
                 }
                 else if (datos.incobrable)
                 {
