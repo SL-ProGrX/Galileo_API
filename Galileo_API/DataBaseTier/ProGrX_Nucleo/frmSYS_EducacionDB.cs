@@ -15,7 +15,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
     public class FrmSysEducacionDB
     {
         private readonly PortalDB _portalDb;
-        private readonly int vModulo = 10; // Modulo de Tesorería
+        private readonly int vModulo = 10; // Módulo de Tesorería
         private readonly MSecurityMainDb _Security_MainDB;
 
 

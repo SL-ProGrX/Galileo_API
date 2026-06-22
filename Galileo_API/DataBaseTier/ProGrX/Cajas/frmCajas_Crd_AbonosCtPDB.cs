@@ -531,7 +531,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 mensajes.Add("Esta Operación -> No Permite Movimientos en Cajas! Puede que sea recaudo de ahorros o porque el código de linea no lo admite, revise!");
 
             if (req.proceso == "J" && !_mCajas.fxCajasAbonosCbrJud(codempresa, req.mcaja, req.usuario))
-                mensajes.Add("Esta CAJA no cuenta con permisos para realizar abonos a Creditos en Cobro Judicial, verifique...");
+                mensajes.Add("Esta CAJA no cuenta con permisos para realizar abonos a Créditos en Cobro Judicial, verifique...");
 
             if (req.diferencia < 0 && (req.saldo_nuevo + req.diferencia) < 0)
                 mensajes.Add("La diferencia supera el saldo!, verifique...");

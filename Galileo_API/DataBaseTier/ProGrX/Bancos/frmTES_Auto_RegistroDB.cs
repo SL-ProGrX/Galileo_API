@@ -531,7 +531,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
             catch (Exception ex)
             {
-                DbHelper.CreateErrorResponse<TesAutoRegistroDto>(ex.Message);
+                return DbHelper.CreateErrorResponse<TesAutoRegistroDto>(ex.Message);
             }
             return response;
 

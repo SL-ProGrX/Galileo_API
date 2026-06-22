@@ -10,7 +10,7 @@ namespace Galileo.DataBaseTier
     public class FrmAfComisionesDB
     {
         private readonly IConfiguration _config;
-        private readonly int vModulo = 1; //Modulo de clientes
+        private readonly int vModulo = 1; // Módulo de clientes
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly MTesFuncionesDb _TesFuncionesDB;
 

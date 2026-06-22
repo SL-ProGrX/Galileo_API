@@ -128,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Obtiene creditos pendientes.
+        /// Obtiene Créditos pendientes.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -155,7 +155,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Agrega creditos al lote.
+        /// Agrega Créditos al lote.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="items"></param>
@@ -198,7 +198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Elimina creditos del lote.
+        /// Elimina Créditos del lote.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="ids"></param>
@@ -276,7 +276,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Obtiene los creditos ya seleccionados para el lote de aplicacion multiple.
+        /// Obtiene los Créditos ya seleccionados para el lote de aplicación múltiple.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>

@@ -8,7 +8,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     public class FrmFndSubCuentasDB
     {
         private readonly IConfiguration _config;
-        private readonly int vModulo = 18; // Modulo de Fondo de Inversion
+        private readonly int vModulo = 18; // Módulo de Fondo de Inversión
         private readonly MSecurityMainDb _Security_MainDB;
 
         private const string SqlSubCuentas = @"
