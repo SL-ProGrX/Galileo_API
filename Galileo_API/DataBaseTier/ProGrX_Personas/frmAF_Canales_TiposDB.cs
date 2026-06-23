@@ -10,7 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
     public class FrmAFCanalesTiposDB
     {
         private readonly IConfiguration _config;
-        private readonly int vModulo = 1; // Modulo de Tesorería
+        private readonly int vModulo = 1; // Módulo de Tesorería
         private readonly MSecurityMainDb _Security_MainDB;
 
         public FrmAFCanalesTiposDB(IConfiguration config)

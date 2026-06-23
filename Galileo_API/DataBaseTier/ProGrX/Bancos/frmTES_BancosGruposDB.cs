@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesBancosGruposDB
     {
         private readonly PortalDB _portalDB;
-        private readonly int vModulo = 9; // Modulo de Tesorería
+        private readonly int vModulo = 9; // Módulo de Tesorería
         private readonly MSecurityMainDb DBBitacora;
 
         public FrmTesBancosGruposDB(IConfiguration config)

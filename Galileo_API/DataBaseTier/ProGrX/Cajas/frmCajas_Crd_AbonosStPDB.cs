@@ -740,7 +740,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     var result = conn.QueryFirstOrDefault<bool>(sql, new { pCaja = request.codigo, usuario = request.cedula });
 
                     if (!result)
-                        return "- Esta CAJA no cuenta con permisos para realizar abonos a Creditos en Cobro Judicial, verifique...";
+                        return "- Esta CAJA no cuenta con permisos para realizar abonos a Créditos en Cobro Judicial, verifique...";
                 }
                 return string.Empty;
             }
