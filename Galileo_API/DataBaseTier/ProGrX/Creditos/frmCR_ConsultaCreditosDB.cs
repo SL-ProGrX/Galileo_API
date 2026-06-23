@@ -222,7 +222,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         /// <summary>
-        /// Obtiene creditos en PreAnalisis
+        /// Obtiene Créditos en PreAnalisis
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
@@ -236,7 +236,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         /// <summary>
-        /// Obtiene creditos en Incobrable
+        /// Obtiene Créditos en Incobrable
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>

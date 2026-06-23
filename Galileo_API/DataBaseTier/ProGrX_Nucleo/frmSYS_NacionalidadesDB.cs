@@ -10,7 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
     public class FrmSysNacionalidadesDB
     {
         private readonly PortalDB _portalDB;
-        private readonly int vModulo = 10; // Modulo de Tesorería
+        private readonly int vModulo = 10; // Módulo de Tesorería
         private readonly MSecurityMainDb _Security_MainDB;
 
         private const string ErrorValidarNacionalidad = "Error al validar nacionalidad.";

@@ -158,27 +158,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 parameters.Add("@fetch",  paginacion);
 
                 string query = BaseSelectProveedoresSelect + BaseSelectProveedoresFromWhere + @"
-                    ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN COD_PROVEEDOR
-                                WHEN 2 THEN DESCRIPCION
-                                WHEN 3 THEN ACTIVO
-                                WHEN 4 THEN REGISTRO_USUARIO
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN COD_PROVEEDOR
-                                WHEN 2 THEN DESCRIPCION
-                                WHEN 3 THEN ACTIVO
-                                WHEN 4 THEN REGISTRO_USUARIO
-                            END
-                        END DESC
-                    OFFSET @offset ROWS
-                    FETCH NEXT @fetch ROWS ONLY;";
+                ORDER BY
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN CAST(COD_PROVEEDOR AS int) END ASC,
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN DESCRIPCION END ASC,
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN REGISTRO_USUARIO END ASC,
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN ACTIVO END ASC,
+
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN CAST(COD_PROVEEDOR AS int) END DESC,
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN DESCRIPCION END DESC,
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN REGISTRO_USUARIO END DESC,
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN ACTIVO END DESC
+
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = cn.Query<ActivosProveedoresData>(query, parameters).ToList();
             }
