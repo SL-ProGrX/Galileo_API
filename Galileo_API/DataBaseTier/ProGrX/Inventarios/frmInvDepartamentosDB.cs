@@ -37,42 +37,6 @@ namespace Galileo.DataBaseTier
 
 
         /// <summary>
-        /// Agrega un filtro LIKE al listado de departamentos.
-        /// </summary>
-        /// <param name="filtro">Texto a filtrar.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroDepartamentos(string? filtro, System.Text.StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" WHERE COD_departamento LIKE @Filtro OR DESCRIPCION LIKE @Filtro");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH al listado de departamentos.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, System.Text.StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
-
-        /// <summary>
         /// Crea los parámetros comunes para un departamento.
         /// </summary>
         /// <param name="codDepartamento">Código del departamento.</param>
@@ -123,9 +87,20 @@ namespace Galileo.DataBaseTier
                                                                          activo
                                                                   FROM pv_Departamentos");
 
-                AgregarFiltroDepartamentos(filtro, detalleQuery, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    detalleQuery.Append(" WHERE COD_departamento LIKE @Filtro OR DESCRIPCION LIKE @Filtro");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 detalleQuery.Append(" ORDER BY COD_departamento");
-                AgregarPaginacion(pagina, paginacion, detalleQuery, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    detalleQuery.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Departamentos = connection.Query<DepartamentosDto>(detalleQuery.ToString(), parametros).ToList();
                 return respuesta;

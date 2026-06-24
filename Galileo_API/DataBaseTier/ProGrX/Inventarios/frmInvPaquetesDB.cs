@@ -47,28 +47,6 @@ namespace Galileo.DataBaseTier
         };
 
 
-        private static void AgregarFiltroPaquetes(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" WHERE cod_paquete LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
 
         private static object CrearParametrosPaquete(int codPaquete) => new
         {
@@ -156,9 +134,20 @@ namespace Galileo.DataBaseTier
 
                 var parametros = new DynamicParameters();
                 var queryBuilder = new StringBuilder(QueryPaquetes);
-                AgregarFiltroPaquetes(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" WHERE cod_paquete LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY cod_paquete ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Lista = connection.Query<PaqueteDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;

@@ -57,41 +57,6 @@ namespace Galileo.DataBaseTier
         };
 
 
-        /// <summary>
-        /// Agrega un filtro de usuario y descripción a la consulta.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroUsuarios(string? filtro, System.Text.StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH a una consulta.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, System.Text.StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
 
         /// <summary>
         /// Crea parámetros para usuario.
@@ -180,9 +145,20 @@ namespace Galileo.DataBaseTier
                                                                  LEFT JOIN pv_orden_autorizadores A ON U.nombre = A.usuario
                                                                  WHERE U.Estado = 'A'");
 
-                AgregarFiltroUsuarios(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY A.fecha ASC ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Autorizadores = connection.Query<AutorizadorDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
@@ -307,9 +283,20 @@ namespace Galileo.DataBaseTier
                                                                  LEFT JOIN pv_orden_autousers C ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
                                                                  WHERE U.Estado = 'A'");
 
-                AgregarFiltroUsuarios(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY C.fecha_asignacion DESC ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Usuarios = connection.Query<UsuarioaCargoDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
@@ -403,9 +390,20 @@ namespace Galileo.DataBaseTier
                                                                  LEFT JOIN PV_INVUSRFECHAS A ON U.nombre = A.usuario AND A.tipo = @Tipo
                                                                  WHERE U.EStado = 'A'");
 
-                AgregarFiltroUsuarios(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY A.tipo ASC ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Usuarios = connection.Query<UsuarioaCambioFechaDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;

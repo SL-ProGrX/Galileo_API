@@ -51,61 +51,6 @@ namespace Galileo.DataBaseTier
         };
 
 
-        /// <summary>
-        /// Agrega filtro LIKE al listado de tipos de producto.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroTipoProducto(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(@" WHERE T.cod_prodclas LIKE @Filtro
-                                   OR T.DESCRIPCION LIKE @Filtro
-                                   OR T.costeo LIKE @Filtro
-                                   OR T.valuacion LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega filtro LIKE al listado de subcategorías.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroSubcategoria(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" WHERE Descripcion LIKE @Filtro OR Niveles LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH a la consulta.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
 
         /// <summary>
         /// Completa el texto de estado para una subcategoría.
@@ -298,9 +243,23 @@ namespace Galileo.DataBaseTier
                                                       FROM pv_prod_clasifica T
                                                       LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta AND C.cod_contabilidad = @cod_contabilidad");
 
-                AgregarFiltroTipoProducto(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(@" WHERE T.cod_prodclas LIKE @Filtro
+                                   OR T.DESCRIPCION LIKE @Filtro
+                                   OR T.costeo LIKE @Filtro
+                                   OR T.valuacion LIKE @Filtro ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY T.cod_prodclas desc ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Lista = connection.Query<TipoProductoDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
@@ -476,9 +435,20 @@ namespace Galileo.DataBaseTier
                                    Niveles
                             FROM RecursiveHierarchy");
 
-                AgregarFiltroSubcategoria(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" WHERE Descripcion LIKE @Filtro OR Niveles LIKE @Filtro ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY Niveles ASC ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Lista = connection.Query<TipoProductoSubDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using System.Text;
