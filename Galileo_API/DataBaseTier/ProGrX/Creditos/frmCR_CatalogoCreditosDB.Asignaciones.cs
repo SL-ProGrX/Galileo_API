@@ -184,44 +184,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return new ErrorDto { Code = -1, Description = "Debe indicar la linea y el codigo de asignacion." };
             }
 
-            var query = request.tipo switch
-            {
-                "destinos" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM catalogo_DestinosAsg WHERE codigo = @Codigo AND cod_destino = @CodigoAsignacion)
-                        INSERT catalogo_DestinosAsg(codigo, cod_destino) VALUES(@Codigo, @CodigoAsignacion);"
-                    : @"DELETE catalogo_DestinosAsg WHERE codigo = @Codigo AND cod_destino = @CodigoAsignacion;",
-                "cargos" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM cargos_asignacion WHERE codigo = @Codigo AND cod_cargo = @CodigoAsignacion)
-                        INSERT cargos_asignacion(codigo, cod_cargo) VALUES(@Codigo, @CodigoAsignacion);"
-                    : @"DELETE cargos_asignacion WHERE codigo = @Codigo AND cod_cargo = @CodigoAsignacion;",
-                "requisitos" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM requisitos_asignacion WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion)
-                            INSERT requisitos_asignacion(codigo, cod_requisito, opcional) VALUES(@Codigo, @CodigoAsignacion, @Opcional);
-                        ELSE
-                            UPDATE requisitos_asignacion SET opcional = @Opcional WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion;"
-                    : @"DELETE requisitos_asignacion WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion;",
-                "recursos" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM catalogo_asignaGrp WHERE codigo = @Codigo AND cod_grupo = @CodigoAsignacion)
-                        INSERT catalogo_asignaGrp(codigo, cod_grupo) VALUES(@Codigo, @CodigoAsignacion);"
-                    : @"DELETE catalogo_asignaGrp WHERE codigo = @Codigo AND cod_grupo = @CodigoAsignacion;",
-                "cartera" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM CBR_CLASIFICACION_DETALLE WHERE codigo = @Codigo AND cod_clasificacion = @CodigoAsignacion)
-                        INSERT CBR_CLASIFICACION_DETALLE(codigo, cod_clasificacion) VALUES(@Codigo, @CodigoAsignacion);"
-                    : @"DELETE CBR_CLASIFICACION_DETALLE WHERE codigo = @Codigo AND cod_clasificacion = @CodigoAsignacion;",
-                "refundibles" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CATALOGO_REFUNDIBLES WHERE codigo = @Codigo AND cod_refundible = @CodigoAsignacion)
-                        INSERT CRD_CATALOGO_REFUNDIBLES(codigo, cod_refundible, registro_fecha, registro_usuario)
-                        VALUES(@Codigo, @CodigoAsignacion, dbo.mygetdate(), @Usuario);"
-                    : @"DELETE CRD_CATALOGO_REFUNDIBLES WHERE codigo = @Codigo AND cod_refundible = @CodigoAsignacion;",
-                "adjuntos" => request.asignado
-                    ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CATALOGO_ADJUNTOS WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion)
-                            INSERT CRD_CATALOGO_ADJUNTOS(codigo, COD_ADJUNTO, opcional, REGISTRO_USUARIO, REGISTRO_FECHA)
-                            VALUES(@Codigo, @CodigoAsignacion, @Opcional, @Usuario, dbo.mygetdate());
-                        ELSE
-                            UPDATE CRD_CATALOGO_ADJUNTOS SET opcional = @Opcional WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;"
-                    : @"DELETE CRD_CATALOGO_ADJUNTOS WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;",
-                _ => string.Empty
-            };
+            var query = ObtenerSqlAsignacion(request);
 
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -250,6 +213,71 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             return respuesta;
+        }
+
+        private static string ObtenerSqlAsignacion(CrCatalogoCreditoAsignacionGuardarRequest request)
+        {
+            return request.tipo switch
+            {
+                "destinos" => SqlAsignacionSimple(
+                    request.asignado,
+                    "catalogo_DestinosAsg",
+                    "cod_destino"),
+                "cargos" => SqlAsignacionSimple(
+                    request.asignado,
+                    "cargos_asignacion",
+                    "cod_cargo"),
+                "requisitos" => SqlRequisitosAsignacion(request.asignado),
+                "recursos" => SqlAsignacionSimple(
+                    request.asignado,
+                    "catalogo_asignaGrp",
+                    "cod_grupo"),
+                "cartera" => SqlAsignacionSimple(
+                    request.asignado,
+                    "CBR_CLASIFICACION_DETALLE",
+                    "cod_clasificacion"),
+                "refundibles" => SqlRefundiblesAsignacion(request.asignado),
+                "adjuntos" => SqlAdjuntosAsignacion(request.asignado),
+                _ => string.Empty
+            };
+        }
+
+        private static string SqlAsignacionSimple(bool asignado, string tabla, string columnaAsignacion)
+        {
+            return asignado
+                ? $@"IF NOT EXISTS (SELECT 1 FROM {tabla} WHERE codigo = @Codigo AND {columnaAsignacion} = @CodigoAsignacion)
+                        INSERT {tabla}(codigo, {columnaAsignacion}) VALUES(@Codigo, @CodigoAsignacion);"
+                : $@"DELETE {tabla} WHERE codigo = @Codigo AND {columnaAsignacion} = @CodigoAsignacion;";
+        }
+
+        private static string SqlRequisitosAsignacion(bool asignado)
+        {
+            return asignado
+                ? @"IF NOT EXISTS (SELECT 1 FROM requisitos_asignacion WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion)
+                            INSERT requisitos_asignacion(codigo, cod_requisito, opcional) VALUES(@Codigo, @CodigoAsignacion, @Opcional);
+                        ELSE
+                            UPDATE requisitos_asignacion SET opcional = @Opcional WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion;"
+                : @"DELETE requisitos_asignacion WHERE codigo = @Codigo AND cod_requisito = @CodigoAsignacion;";
+        }
+
+        private static string SqlRefundiblesAsignacion(bool asignado)
+        {
+            return asignado
+                ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CATALOGO_REFUNDIBLES WHERE codigo = @Codigo AND cod_refundible = @CodigoAsignacion)
+                        INSERT CRD_CATALOGO_REFUNDIBLES(codigo, cod_refundible, registro_fecha, registro_usuario)
+                        VALUES(@Codigo, @CodigoAsignacion, dbo.mygetdate(), @Usuario);"
+                : @"DELETE CRD_CATALOGO_REFUNDIBLES WHERE codigo = @Codigo AND cod_refundible = @CodigoAsignacion;";
+        }
+
+        private static string SqlAdjuntosAsignacion(bool asignado)
+        {
+            return asignado
+                ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CATALOGO_ADJUNTOS WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion)
+                            INSERT CRD_CATALOGO_ADJUNTOS(codigo, COD_ADJUNTO, opcional, REGISTRO_USUARIO, REGISTRO_FECHA)
+                            VALUES(@Codigo, @CodigoAsignacion, @Opcional, @Usuario, dbo.mygetdate());
+                        ELSE
+                            UPDATE CRD_CATALOGO_ADJUNTOS SET opcional = @Opcional WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;"
+                : @"DELETE CRD_CATALOGO_ADJUNTOS WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;";
         }
     }
 }
