@@ -393,7 +393,7 @@ namespace Galileo.DataBaseTier
                   from pv_requisiciones X 
                   inner join pv_entrada_salida C on X.cod_entsal = C.cod_entsal
                   where X.cod_requisicion = @CodRequisicion",
-                new TranRequisicionData(),
+                new TranRequisicionData { Cod_Requisicion = 0 },
                 new { CodRequisicion });
 
             if (result.Result is not null)
@@ -402,8 +402,8 @@ namespace Galileo.DataBaseTier
             }
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new TranRequisicionData())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener la requisición.", result.Code.GetValueOrDefault(-1), new TranRequisicionData());
+                ? DbHelper.CreateOkResponse(result.Result ?? new TranRequisicionData { Cod_Requisicion = 0 })
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener la requisición.", result.Code.GetValueOrDefault(-1), new TranRequisicionData { Cod_Requisicion = 0 });
         }
 
         /// <summary>
@@ -456,12 +456,12 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 query,
-                new TranRequisicionData(),
+                new TranRequisicionData { Cod_Requisicion = 0 },
                 new { CodRequisicion = CodRequisicion ?? 0 });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new TranRequisicionData())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al desplazar la requisición.", result.Code.GetValueOrDefault(-1), new TranRequisicionData());
+                ? DbHelper.CreateOkResponse(result.Result ?? new TranRequisicionData { Cod_Requisicion = 0 })
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al desplazar la requisición.", result.Code.GetValueOrDefault(-1), new TranRequisicionData { Cod_Requisicion = 0 });
         }
 
         /// <summary>

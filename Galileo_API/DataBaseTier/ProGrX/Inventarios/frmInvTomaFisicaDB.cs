@@ -47,9 +47,10 @@ namespace Galileo.DataBaseTier
         /// <typeparam name="T">Tipo del resultado esperado.</typeparam>
         /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
         /// <param name="errorMessage">Mensaje cuando ocurre un error.</param>
+        /// <param name="fallbackResult">Instancia por defecto cuando no hay resultado.</param>
         /// <returns>Respuesta estándar para una sola entidad.</returns>
-        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage)
-            where T : class, new()
+        private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, T fallbackResult)
+            where T : class
         {
             if (result.Code != 0)
             {
@@ -57,7 +58,7 @@ namespace Galileo.DataBaseTier
                 {
                     Code = result.Code,
                     Description = result.Description ?? errorMessage,
-                    Result = new T()
+                    Result = fallbackResult
                 };
             }
 
@@ -67,7 +68,7 @@ namespace Galileo.DataBaseTier
                 {
                     Code = -2,
                     Description = errorMessage,
-                    Result = new T()
+                    Result = fallbackResult
                 };
         }
 
@@ -370,10 +371,25 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 query,
-                new TomaFisicaDto(),
+                new TomaFisicaDto
+                {
+                    consecutivo = default!,
+                    Cod_Proveedor_Entrada = default!,
+                    Cod_Entradag = default!,
+                    Cod_Salidag = default!
+                },
                 parametros);
 
-            return CrearRespuestaSingle(result, "Error al consultar la toma física.");
+            return CrearRespuestaSingle(
+                result,
+                "Error al consultar la toma física.",
+                new TomaFisicaDto
+                {
+                    consecutivo = default!,
+                    Cod_Proveedor_Entrada = default!,
+                    Cod_Entradag = default!,
+                    Cod_Salidag = default!
+                });
         }
 
         /// <summary>
@@ -388,10 +404,25 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 "SELECT * FROM PV_INVTOMAFISICA WHERE CONSECUTIVO = @Consecutivo",
-                new TomaFisicaDto(),
+                new TomaFisicaDto
+                {
+                    consecutivo = default!,
+                    Cod_Proveedor_Entrada = default!,
+                    Cod_Entradag = default!,
+                    Cod_Salidag = default!
+                },
                 new { Consecutivo = consecutivo });
 
-            return CrearRespuestaSingle(result, "Error al obtener la toma física por consecutivo.");
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener la toma física por consecutivo.",
+                new TomaFisicaDto
+                {
+                    consecutivo = default!,
+                    Cod_Proveedor_Entrada = default!,
+                    Cod_Entradag = default!,
+                    Cod_Salidag = default!
+                });
         }
 
         /// <summary>
@@ -408,7 +439,12 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 ObtenerQueryProductoPorBarras(tipo),
-                new TomaFisicaDetalleDto(),
+                new TomaFisicaDetalleDto
+                {
+                    consecutivo = default!,
+                    Existencia_Logica = default!,
+                    Existencia_Fisica = default!
+                },
                 new
                 {
                     cod_bodega,
@@ -424,7 +460,12 @@ namespace Galileo.DataBaseTier
             {
                 Code = -1,
                 Description = result.Description ?? "No existe Producto con este codigo",
-                Result = new TomaFisicaDetalleDto()
+                Result = new TomaFisicaDetalleDto
+                {
+                    consecutivo = default!,
+                    Existencia_Logica = default!,
+                    Existencia_Fisica = default!
+                }
             };
         }
 
