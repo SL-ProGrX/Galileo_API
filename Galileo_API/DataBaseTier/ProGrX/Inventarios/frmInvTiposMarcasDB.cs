@@ -74,41 +74,6 @@ namespace Galileo.DataBaseTier
             Cod_Marca = marca
         };
 
-        /// <summary>
-        /// Agrega filtro LIKE al listado de marcas.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroMarcas(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" WHERE cod_marca LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH a la consulta.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
 
         /// <summary>
         /// Asigna la descripción del estado a cada marca.
@@ -144,9 +109,20 @@ namespace Galileo.DataBaseTier
                 var parametros = new DynamicParameters();
                 var queryBuilder = new StringBuilder(QueryMarcasBase);
 
-                AgregarFiltroMarcas(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" WHERE cod_marca LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY cod_marca ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Marcas = connection.Query<MarcasDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;

@@ -37,42 +37,6 @@ namespace Galileo.DataBaseTier
         };
 
         /// <summary>
-        /// Agrega filtro LIKE al listado de unidades.
-        /// </summary>
-        /// <param name="filtro">Texto de filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroUnidades(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            queryBuilder.Append(" WHERE COD_UNIDAD LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH a la consulta.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
-            {
-                return;
-            }
-
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
-
-        /// <summary>
         /// Completa la descripción de estado en cada unidad.
         /// </summary>
         /// <param name="unidades">Listado de unidades.</param>
@@ -110,9 +74,20 @@ namespace Galileo.DataBaseTier
                                                              activo
                                                       FROM pv_unidades");
 
-                AgregarFiltroUnidades(filtro, queryBuilder, parametros);
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    queryBuilder.Append(" WHERE COD_UNIDAD LIKE @Filtro OR DESCRIPCION LIKE @Filtro ");
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 queryBuilder.Append(" ORDER BY COD_unidad ");
-                AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
+                    parametros.Add("Offset", pagina.Value);
+                    parametros.Add("Fetch", paginacion.Value);
+                }
 
                 respuesta.Unidades = connection.Query<UnidadMedicionDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
