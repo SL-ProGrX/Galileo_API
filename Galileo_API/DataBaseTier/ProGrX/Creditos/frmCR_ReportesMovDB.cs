@@ -120,16 +120,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 where A.codigo = @Codigo
                 order by R.descripcion;";
 
+            if (lineaActiva)
+            {
+                return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                    _portalDb,
+                    codEmpresa,
+                    sqlGruposLinea,
+                    new
+                    {
+                        Codigo = codigo!.Trim()
+                    }
+                );
+            }
+
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
-                lineaActiva ? sqlGruposLinea : sqlGruposBase,
-                lineaActiva
-                    ? new
-                    {
-                        Codigo = (codigo ?? string.Empty).Trim()
-                    }
-                    : null
+                sqlGruposBase
             );
         }
 
@@ -172,16 +179,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 where A.codigo = @Codigo
                 order by R.descripcion;";
 
+            if (lineaActiva)
+            {
+                return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                    _portalDb,
+                    codEmpresa,
+                    sqlDestinosLinea,
+                    new
+                    {
+                        Codigo = codigo!.Trim()
+                    }
+                );
+            }
+
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
-                lineaActiva ? sqlDestinosLinea : sqlDestinosBase,
-                lineaActiva
-                    ? new
-                    {
-                        Codigo = (codigo ?? string.Empty).Trim()
-                    }
-                    : null
+                sqlDestinosBase
             );
         }
 
