@@ -13,8 +13,8 @@ namespace Galileo.Models.INV
     public class GenerateSatoRequest
     {
         public string Redondeo { get; set; } = string.Empty;
-        public decimal Value { get; set; }
-        public int Opcion { get; set; }
+        public required decimal Value { get; set; }
+        public required int Opcion { get; set; }
         public string? CodProducto { get; set; } = string.Empty;
         public string? CodFactura { get; set; } = string.Empty;
         public int? CodProveedor { get; set; }

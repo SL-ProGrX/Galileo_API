@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier
         /// <param name="notFoundMessage">Mensaje cuando no se encuentra información.</param>
         /// <returns>Respuesta estándar para una sola entidad.</returns>
         private static ErrorDto<T> CrearRespuestaSingle<T>(ErrorDto<T?> result, string errorMessage, string notFoundMessage)
-            where T : class, new()
+            where T : class
         {
             if (result.Code != 0)
             {
@@ -47,7 +47,7 @@ namespace Galileo.DataBaseTier
                 {
                     Code = result.Code,
                     Description = result.Description ?? errorMessage,
-                    Result = new T()
+                    Result = default!
                 };
             }
 
@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier
             {
                 Code = -2,
                 Description = notFoundMessage,
-                Result = new T()
+                Result = default!
             };
         }
 
@@ -362,7 +362,28 @@ namespace Galileo.DataBaseTier
                   INNER JOIN PV_PROD_CLASIFICA_SUB Cs ON P.cod_prodclas = Cs.cod_prodclas
                                                     AND P.COD_LINEA_SUB = Cs.COD_LINEA_SUB
                   WHERE P.cod_producto = @Cod_Producto",
-                new ProductoDto(),
+                new ProductoDto
+                {
+                    Cod_Prodclas = default!,
+                    Lotes = default!,
+                    Lotesbool = default!,
+                    Costo_Regular = default!,
+                    Precio_Regular = default!,
+                    Comision_Monto = default!,
+                    Comision_Unidad = default!,
+                    Impuesto_Ventas = default!,
+                    Impuesto_Consumo = default!,
+                    Inventario_Calculabool = default!,
+                    Inventario_Minimo = default!,
+                    Inventario_Maximo = default!,
+                    Fracciones = default!,
+                    Precio_Compra = default!,
+                    Descuento_Valor = default!,
+                    Existencia = default!,
+                    Porc_Utilidad = default!,
+                    Tipo_Cambio = default!,
+                    Similar = default!
+                },
                 new { Cod_Producto });
 
             var respuesta = CrearRespuestaSingle(result, "Error al obtener el detalle del producto.", "No se encontró el producto indicado.");

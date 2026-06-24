@@ -213,7 +213,7 @@ namespace Galileo.DataBaseTier
                   from PV_INVTRANSAC X
                   inner join pv_entrada_salida C on X.cod_entsal = C.cod_entsal
                   where X.boleta = @CodBoleta and X.tipo = @TipoTran",
-                new TranESData(),
+                new TranESData { Total = 0 },
                 new { CodBoleta, TipoTran });
 
             if (result.Result is not null)
@@ -222,8 +222,8 @@ namespace Galileo.DataBaseTier
             }
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new TranESData())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener la transacción.", result.Code.GetValueOrDefault(-1), new TranESData());
+                ? DbHelper.CreateOkResponse(result.Result ?? new TranESData { Total = 0 })
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener la transacción.", result.Code.GetValueOrDefault(-1), new TranESData { Total = 0 });
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 ObtenerQueryScroll(scrollValue),
-                new TranESData(),
+                new TranESData { Total = 0 },
                 new
                 {
                     TipoTran,
@@ -268,8 +268,8 @@ namespace Galileo.DataBaseTier
                 });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new TranESData())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al desplazar la transacción.", result.Code.GetValueOrDefault(-1), new TranESData());
+                ? DbHelper.CreateOkResponse(result.Result ?? new TranESData { Total = 0 })
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al desplazar la transacción.", result.Code.GetValueOrDefault(-1), new TranESData { Total = 0 });
         }
 
         /// <summary>
