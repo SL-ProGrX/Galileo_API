@@ -83,7 +83,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 response.Description = "No se encontró sesión activa.";
             }
 
-            return response;
+            return new ErrorDto<CajasSesionDto>
+            {
+                Code = response.Code,
+                Description = response.Description,
+                Result = response.Result!
+            };
         }
 
         private static int ObtenerAperturaActiva(SqlConnection connection, string caja)

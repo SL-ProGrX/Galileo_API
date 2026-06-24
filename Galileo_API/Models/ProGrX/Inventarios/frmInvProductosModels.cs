@@ -6,39 +6,39 @@
         public string Cod_Producto { get; set; } = string.Empty;
         public string Cod_Marca { get; set; } = string.Empty;
         public string Cod_Unidad { get; set; } = string.Empty;
-        public int Cod_Prodclas { get; set; }
+        public required int Cod_Prodclas { get; set; }
         public string Cod_Barras { get; set; } = string.Empty;
-        public int Lotes { get; set; }
-        public bool Lotesbool { get; set; }
+        public required int Lotes { get; set; }
+        public required bool Lotesbool { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public string Tipo_Producto { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Modelo { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
-        public decimal Costo_Regular { get; set; }
-        public decimal Precio_Regular { get; set; }
+        public required decimal Costo_Regular { get; set; }
+        public required decimal Precio_Regular { get; set; }
         public string Dir_Fotografia { get; set; } = string.Empty;
         public string Cod_Fabricante { get; set; } = string.Empty;
-        public decimal Comision_Monto { get; set; }
-        public decimal Comision_Unidad { get; set; }
-        public decimal Impuesto_Ventas { get; set; }
-        public decimal Impuesto_Consumo { get; set; }
+        public required decimal Comision_Monto { get; set; }
+        public required decimal Comision_Unidad { get; set; }
+        public required decimal Impuesto_Ventas { get; set; }
+        public required decimal Impuesto_Consumo { get; set; }
         public string Inventario_Calcula { get; set; } = string.Empty;
-        public bool Inventario_Calculabool { get; set; }
-        public decimal Inventario_Minimo { get; set; }
-        public decimal Inventario_Maximo { get; set; }
-        public decimal Fracciones { get; set; }
-        public decimal Precio_Compra { get; set; }
+        public required bool Inventario_Calculabool { get; set; }
+        public required decimal Inventario_Minimo { get; set; }
+        public required decimal Inventario_Maximo { get; set; }
+        public required decimal Fracciones { get; set; }
+        public required decimal Precio_Compra { get; set; }
         public string Descuento_Tipo { get; set; } = string.Empty;
-        public decimal Descuento_Valor { get; set; }
+        public required decimal Descuento_Valor { get; set; }
         public string Cod_Cuenta { get; set; } = string.Empty;
-        public decimal Existencia { get; set; }
+        public required decimal Existencia { get; set; }
         public string User_Crea { get; set; } = string.Empty;
         public string User_Modifica { get; set; } = string.Empty;
         public Nullable<DateTime> Ultima_Modificacion { get; set; }
-        public decimal Porc_Utilidad { get; set; }
-        public decimal Tipo_Cambio { get; set; }
-        public int Similar { get; set; }
+        public required decimal Porc_Utilidad { get; set; }
+        public required decimal Tipo_Cambio { get; set; }
+        public required int Similar { get; set; }
         public string Cod_Linea_Sub { get; set; } = string.Empty;
         public string Cabys { get; set; } = string.Empty;
         public Nullable<DateTime> Fe_Sinc_Fecha { get; set; }
@@ -69,8 +69,8 @@
         public string Cod_Producto { get; set; } = string.Empty;
         public string Cod_Precio { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
-        public decimal Utilidad { get; set; }
+        public required decimal Monto { get; set; }
+        public required decimal Utilidad { get; set; }
     }
 
     public class MovimientoProducto
@@ -90,19 +90,19 @@
     public class BonificacionProducto
     {
         public string Cod_Producto { get; set; } = string.Empty;
-        public int Consec { get; set; }
-        public int Desde { get; set; }
-        public int Hasta { get; set; }
-        public int Bonificacion { get; set; }
+        public required int Consec { get; set; }
+        public required int Desde { get; set; }
+        public required int Hasta { get; set; }
+        public required int Bonificacion { get; set; }
     }
 
     public class DescuentoProducto
     {
         public string Cod_Producto { get; set; } = string.Empty;
-        public int Consec { get; set; }
-        public decimal Desde { get; set; }
-        public decimal Hasta { get; set; }
-        public decimal Porcentaje { get; set; }
+        public required int Consec { get; set; }
+        public required decimal Desde { get; set; }
+        public required decimal Hasta { get; set; }
+        public required decimal Porcentaje { get; set; }
     }
 
     public class SimilarProducto
@@ -115,12 +115,12 @@
 
     public class ProveedorProducto
     {
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Producto { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Cedjur { get; set; } = string.Empty;
-        public DateTime Fecha_Factura { get; set; }
-        public int CodX { get; set; }
+        public DateTime? Fecha_Factura { get; set; }
+        public required int CodX { get; set; }
     }
 
     public class ProvProductoDataLista
@@ -134,8 +134,8 @@
         public string Cod_Producto { get; set; } = string.Empty;
         public string Cod_Bodega { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public decimal Existencias { get; set; }
-        public DateTime Fecha_Corte { get; set; }
+        public required decimal Existencias { get; set; }
+        public DateTime? Fecha_Corte { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 

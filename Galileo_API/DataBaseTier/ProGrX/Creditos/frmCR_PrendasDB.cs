@@ -625,13 +625,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 peso = ObtenerDecimal(valores, "Peso"),
                 capacidad = ObtenerDecimal(valores, "Capacidad"),
                 cilindraje = ObtenerDecimal(valores, "Cilindraje"),
-                valor_fiscal = ObtenerDecimal(valores, "VALOR_FISCAL"),
-                monto_extras = ObtenerDecimal(valores, "Monto_Extras"),
-                avaluo_observacion = ObtenerString(valores, "AVALUO_OBSERVACION"),
-                avaluo_inspeccion = ObtenerString(valores, "AVALUO_INSPECCION"),
-                avaluo_inspector = ObtenerString(valores, "AVALUO_INSPECTOR"),
-                poliza_mnt_formalizacion = ObtenerDecimal(valores, "POLIZA_MNT_FORMALIZACION"),
-                poliza_rst_plan = ObtenerDecimal(valores, "POLIZA_RST_PLAN"),
+                valor_fiscal = ObtenerDecimal(valores, "VALOR_FISCAL", "ValorFiscal"),
+                monto_extras = ObtenerDecimal(valores, "Monto_Extras", "MONTO_EXTRAS", "MontoExtras"),
+                avaluo_observacion = ObtenerString(valores, "AVALUO_OBSERVACION", "AvaluoNotas", "OBSERVACIONES"),
+                avaluo_inspeccion = ObtenerString(valores, "AVALUO_INSPECCION", "FechaInspeccion", "FECHA_INSPECCION"),
+                avaluo_inspector = ObtenerString(valores, "AVALUO_INSPECTOR", "Inspector", "INSPECTOR"),
+                poliza_mnt_formalizacion = ObtenerDecimal(valores, "POLIZA_MNT_FORMALIZACION", "PolizaMntFormalizacion"),
+                poliza_rst_plan = ObtenerDecimal(valores, "POLIZA_RST_PLAN", "PolizaRstPlan"),
                 notario_registro_usuario = ObtenerString(valores, "NOTARIO_REGISTRO_USUARIO"),
                 notario_actualiza_usuario = ObtenerString(valores, "NOTARIO_ACTUALIZA_USUARIO"),
                 notario_actualiza_fecha = ObtenerString(valores, "NOTARIO_ACTUALIZA_FECHA"),
@@ -856,8 +856,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 .FirstOrDefault();
         }
 
-        private static decimal ObtenerDecimal(IDictionary<string, object> valores, string llave)
-            => valores.TryGetValue(llave, out var valor) && valor != null ? Convert.ToDecimal(valor) : 0;
+        private static decimal ObtenerDecimal(IDictionary<string, object> valores, params string[] llaves)
+        {
+            return llaves
+                .Where(llave => valores.TryGetValue(llave, out var valor) && valor != null)
+                .Select(llave => Convert.ToDecimal(valores[llave]))
+                .FirstOrDefault();
+        }
 
         private static string UsuarioNormalizado(string usuario)
             => (usuario ?? string.Empty).Trim().ToUpperInvariant();

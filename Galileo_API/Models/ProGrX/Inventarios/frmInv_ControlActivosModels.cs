@@ -8,15 +8,15 @@ namespace Galileo.Models.INV
 
     public class InvControlActivosDto
     {
-        public int id_control { get; set; }
+        public required int id_control { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public float costo_total { get; set; }
-        public float costo_unitario { get; set; }
+        public required float costo_total { get; set; }
+        public required float costo_unitario { get; set; }
         public string? factura { get; set; }
         public string cod_compra { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_compra { get; set; }
-        public int cod_proveedor { get; set; }
+        public required int cod_proveedor { get; set; }
         public string? cod_bodega { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string? numero_placa { get; set; } = string.Empty;

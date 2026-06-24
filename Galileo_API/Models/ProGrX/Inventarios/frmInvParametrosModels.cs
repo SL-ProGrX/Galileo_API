@@ -2,7 +2,7 @@ namespace Galileo.Models.INV
 {
     public class ParametrosGenDto
     {
-        public int Cod_Par { get; set; }
+        public required int Cod_Par { get; set; }
         public string Cta_Comisiones { get; set; } = string.Empty;
         public string Cta_Imp_Renta { get; set; } = string.Empty;
         public string Cta_Imp_Consumo { get; set; } = string.Empty;
