@@ -2,13 +2,13 @@ namespace Galileo.Models.INV
 {
     public class TranRequisicionData
     {
-        public int Cod_Requisicion { get; set; }
+        public required int Cod_Requisicion { get; set; }
         public string Cod_Entsal { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Genera_User { get; set; } = string.Empty;
-        public DateTime Genera_Fecha { get; set; }
+        public DateTime? Genera_Fecha { get; set; }
         public string Autoriza_User { get; set; } = string.Empty;
-        public DateTime Autoriza_Fecha { get; set; }
+        public DateTime? Autoriza_Fecha { get; set; }
         public string Documento { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
         public bool Plantilla { get; set; } = false;
@@ -23,19 +23,19 @@ namespace Galileo.Models.INV
 
     public class InvReqProduc
     {
-        public int Linea { get; set; }
+        public required int Linea { get; set; }
         public string Cod_Producto { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public float Cantidad { get; set; }
-        public float Costo { get; set; }
-        public float Total { get; set; }
-        public float Despacho { get; set; }
+        public required float Cantidad { get; set; }
+        public required float Costo { get; set; }
+        public required float Total { get; set; }
+        public  required float Despacho { get; set; }
         public string Cod_Bodega { get; set; } = string.Empty;
         public string Bodega { get; set; } = string.Empty;
         public string numero_placa { get; set; } = string.Empty;
         public int? id_control { get; set; }
 
-        public float solicitado { get; set; }
+        public required float solicitado { get; set; }
     }
 
     public class InvRequsUsuarioRecibe

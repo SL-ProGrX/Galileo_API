@@ -4,7 +4,7 @@
     {
         public string Cod_Marca { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public required bool Activo { get; set; }
         public string Estado { get; set; } = string.Empty;
     }
 
