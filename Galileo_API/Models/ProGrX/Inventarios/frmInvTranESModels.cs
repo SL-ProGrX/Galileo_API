@@ -10,14 +10,14 @@ namespace Galileo.Models.INV
         public bool Plantilla { get; set; } = false;
         public string Documento { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
+        public DateTime? Fecha { get; set; }
         public string Genera_User { get; set; } = string.Empty;
-        public DateTime Genera_Fecha { get; set; }
+        public DateTime? Genera_Fecha { get; set; }
         public string Autoriza_User { get; set; } = string.Empty;
-        public DateTime Autoriza_Fecha { get; set; }
+        public DateTime? Autoriza_Fecha { get; set; }
         public string Procesa_User { get; set; } = string.Empty;
-        public DateTime Procesa_Fecha { get; set; }
-        public float Total { get; set; }
+        public DateTime? Procesa_Fecha { get; set; }
+        public required float Total { get; set; }
         public string Asiento_Numero { get; set; } = string.Empty;
     }
 
@@ -29,7 +29,7 @@ namespace Galileo.Models.INV
         public bool Plantilla { get; set; } = false;
         public string Documento { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
-        public float Total { get; set; }
+        public required float Total { get; set; }
     }
 
     public class InvProducLineas
@@ -48,15 +48,15 @@ namespace Galileo.Models.INV
 
     public class InvProducLineasInsert
     {
-        public int Linea { get; set; }
+        public  required int Linea { get; set; }
         public string Boleta { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
         public string Cod_Bodega { get; set; } = string.Empty;
         public string Cod_Producto { get; set; } = string.Empty;
         public string? Cod_Bodega_Destino { get; set; } = string.Empty;
-        public float Cantidad { get; set; }
-        public float Precio { get; set; }
-        public float Despacho { get; set; }
+        public required float Cantidad { get; set; }
+        public required float Precio { get; set; }
+        public required float Despacho { get; set; }
     }
 
     public class InvTranPlantilla

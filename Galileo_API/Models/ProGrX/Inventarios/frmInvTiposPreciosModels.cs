@@ -4,7 +4,7 @@
     {
         public string Cod_Precio { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
         public string omision { get; set; } = string.Empty;
     }
 
