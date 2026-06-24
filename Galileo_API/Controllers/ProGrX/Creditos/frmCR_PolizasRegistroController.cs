@@ -20,8 +20,15 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [HttpGet("CrPolizasRegistro_PolizaLinea_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CrPolizasRegistro_PolizaLinea_Obtener(int codEmpresa)
+        public ErrorDto<List<CrPolizasRegistroPolizaLineaItem>> CrPolizasRegistro_PolizaLinea_Obtener(int codEmpresa)
             => _bl.CrPolizasRegistro_PolizaLinea_Obtener(codEmpresa);
+
+        [HttpGet("CrPolizasRegistro_Operacion_Navegar_Obtener")]
+        public ErrorDto<int> CrPolizasRegistro_Operacion_Navegar_Obtener(
+            int codEmpresa,
+            int operacion,
+            int direccion)
+            => _bl.CrPolizasRegistro_Operacion_Navegar_Obtener(codEmpresa, operacion, direccion);
 
         [HttpGet("CrPolizasRegistro_Operacion_Obtener")]
         public ErrorDto<CrPolizasRegistroOperacionData> CrPolizasRegistro_Operacion_Obtener(
@@ -41,6 +48,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int operacion,
             int num_poliza)
             => _bl.CrPolizasRegistro_Detalle_Obtener(codEmpresa, operacion, num_poliza);
+
+        [HttpGet("CrPolizasRegistro_OperacionPoliza_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CrPolizasRegistro_OperacionPoliza_Obtener(
+            int codEmpresa,
+            int operacion)
+            => _bl.CrPolizasRegistro_OperacionPoliza_Obtener(codEmpresa, operacion);
 
         [HttpGet("CrPolizasRegistro_Pagos_Obtener")]
         public ErrorDto<List<CrPolizasRegistroPagoItem>> CrPolizasRegistro_Pagos_Obtener(
@@ -68,5 +81,36 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int codEmpresa,
             int operacion)
             => _bl.CrPolizasRegistro_PlanPagos_Obtener(codEmpresa, operacion);
+
+        [HttpGet("CrPolizasRegistro_Beneficiarios_Obtener")]
+        public ErrorDto<List<CrPolizasRegistroBeneficiarioItem>> CrPolizasRegistro_Beneficiarios_Obtener(
+            int codEmpresa,
+            int operacion,
+            int numPoliza)
+            => _bl.CrPolizasRegistro_Beneficiarios_Obtener(codEmpresa, operacion, numPoliza);
+
+        [HttpPost("CrPolizasRegistro_Acreedor_Aplicar")]
+        public ErrorDto<bool> CrPolizasRegistro_Acreedor_Aplicar(
+            int codEmpresa,
+            CrPolizasRegistroAcreedorAplicarRequest request)
+            => _bl.CrPolizasRegistro_Acreedor_Aplicar(codEmpresa, request);
+
+        [HttpGet("CrPolizasRegistro_PlanPago_Detalle_Obtener")]
+        public ErrorDto<CrPolizasRegistroPlanPagoDetalleData> CrPolizasRegistro_PlanPago_Detalle_Obtener(
+            int codEmpresa,
+            string request)
+            => _bl.CrPolizasRegistro_PlanPago_Detalle_Obtener(codEmpresa, request);
+
+        [HttpPost("CrPolizasRegistro_PolizaIntegrada_Guardar")]
+        public ErrorDto<int> CrPolizasRegistro_PolizaIntegrada_Guardar(
+            int codEmpresa,
+            CrPolizasRegistroPolizaIntegradaGuardarRequest request)
+            => _bl.CrPolizasRegistro_PolizaIntegrada_Guardar(codEmpresa, request);
+
+        [HttpPost("CrPolizasRegistro_PolizaRetencion_Guardar")]
+        public ErrorDto<int> CrPolizasRegistro_PolizaRetencion_Guardar(
+            int codEmpresa,
+            CrPolizasRegistroPolizaRetencionGuardarRequest request)
+            => _bl.CrPolizasRegistro_PolizaRetencion_Guardar(codEmpresa, request);
     }
 }

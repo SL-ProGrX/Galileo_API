@@ -2,6 +2,13 @@
 
 namespace Galileo_API.Models.ProGrX.Creditos
 {
+    public class CrPolizasRegistroPolizaLineaItem
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public int integra_plan_pagos { get; set; } = 0;
+    }
+
     public class CrPolizasRegistroOperacionData
     {
         public int operacion { get; set; } = 0;
@@ -90,7 +97,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     internal sealed class CrPolizasRegistroOperacionBase
     {
-        public int id_solicitud { get; set; }
+        public int id_solicitud { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
@@ -129,7 +136,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public int num_ctas_deduce { get; set; } = 0;
         public DateTime? recaudado_corte { get; set; }
         public decimal recaudado_saldo { get; set; } = 0;
-
+        public int id_solicitud_poliza { get; set; } = 0;
         public string codigo { get; set; } = string.Empty;
         public int cod_destino { get; set; } = 0;
         public string destino { get; set; } = string.Empty;
@@ -142,6 +149,84 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public DateTime? fechaforp { get; set; }
         public decimal pagado { get; set; } = 0;
         public int plazo_transcurrido { get; set; } = 0;
-        public long prideduc { get; set; } = 0;
+        public int? prideduc { get; set; } = 0;
+    }
+
+    public class CrPolizasRegistroBeneficiarioItem
+    {
+        public string id_beneficiario { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public DateTime? fecha_nac { get; set; }
+        public string parentesco { get; set; } = string.Empty;
+        public decimal porcentaje { get; set; } = 0;
+    }
+
+    public class CrPolizasRegistroAcreedorAplicarRequest
+    {
+        public int operacion { get; set; } = 0;
+        public int num_poliza { get; set; } = 0;
+        public string codigo { get; set; } = string.Empty;
+        public string cod_acreedor { get; set; } = string.Empty;
+        public bool checked_item { get; set; } = false;
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CrPolizasRegistroPlanPagoDetalleRequest
+    {
+        public int operacion { get; set; } = 0;
+        public int id_seq { get; set; } = 0;
+        public decimal poliza_monto { get; set; } = 0;
+        public string poliza_pago_frecuencia { get; set; } = string.Empty;
+        public DateTime? poliza_fecha_pago { get; set; }
+        public DateTime? poliza_cobertura_inicio { get; set; }
+        public DateTime? poliza_cobertura_corte { get; set; }
+    }
+
+    public class CrPolizasRegistroPlanPagoDetalleData
+    {
+        public int id_seq { get; set; } = 0;
+        public int poliza_cobertura_meses { get; set; } = 0;
+        public int poliza_pagos_num { get; set; } = 0;
+        public decimal poliza_pago_monto { get; set; } = 0;
+        public decimal poliza_cuota { get; set; } = 0;
+        public int poliza_ctas_deduce { get; set; } = 0;
+        public decimal poliza_cuota_resto_plazo { get; set; } = 0;
+    }
+
+    public class CrPolizasRegistroPolizaIntegradaGuardarRequest
+    {
+        public int operacion { get; set; } = 0;
+        public int poliza_id { get; set; } = 0;
+        public string codigo { get; set; } = string.Empty;
+        public string poliza_linea { get; set; } = string.Empty;
+        public string poliza_estado { get; set; } = string.Empty;
+        public string poliza_contrato { get; set; } = string.Empty;
+        public int poliza_plan { get; set; } = 0;
+        public string poliza_pago_frecuencia { get; set; } = string.Empty;
+        public decimal poliza_monto { get; set; } = 0;
+        public decimal poliza_cuota { get; set; } = 0;
+        public decimal poliza_pago_monto { get; set; } = 0;
+        public decimal poliza_cuota_resto_plazo { get; set; } = 0;
+        public int poliza_ctas_deduce { get; set; } = 0;
+        public bool poliza_plazo_credito { get; set; } = false;
+        public DateTime? poliza_fecha_pago { get; set; }
+        public DateTime? poliza_cobertura_inicio { get; set; }
+        public DateTime? poliza_cobertura_corte { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CrPolizasRegistroPolizaRetencionGuardarRequest
+    {
+        public int operacion { get; set; } = 0;
+        public string poliza_linea { get; set; } = string.Empty;
+        public string destino { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public string documento { get; set; } = string.Empty;
+        public int plazo { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
+        public string observaciones { get; set; } = string.Empty;
+        public int anio { get; set; } = 0;
+        public string mes { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 }
