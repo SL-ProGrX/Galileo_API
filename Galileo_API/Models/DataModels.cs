@@ -96,6 +96,7 @@
         public string? proveedor { get; set; } = string.Empty;
         public string? familia { get; set; } = string.Empty;
         public string? familia_desc { get; set; } = string.Empty;
+        public string? subFamilia { get; set; } = string.Empty;
     }
 
     public class FacturasData

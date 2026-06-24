@@ -40,9 +40,9 @@ namespace Galileo.BusinessLogic
         }
 
         public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
-            string? filtro, string? proveedor, string? familia, string? subfamilia)
+            string? filtro, string? proveedor, string? familia, string? subfamilia, int comp)
         {
-            return DbData.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia);
+            return DbData.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia, comp);
         }
 
         public FacturasDataLista Facturas_Obtener(int CodCliente, int CodProveedor, int? pagina, int? paginacion, string? filtro)
@@ -90,14 +90,14 @@ namespace Galileo.BusinessLogic
             return DbData.UENS_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa, int comp)
         {
-            return DbData.CompraOrdenProveedoresLista_Obtener(CodEmpresa);
+            return DbData.CompraOrdenProveedoresLista_Obtener(CodEmpresa, comp);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa, int comp)
         {
-            return DbData.CompraOrdenFamiliaLista_Obtener(CodEmpresa);
+            return DbData.CompraOrdenFamiliaLista_Obtener(CodEmpresa, comp);
         }
 
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)

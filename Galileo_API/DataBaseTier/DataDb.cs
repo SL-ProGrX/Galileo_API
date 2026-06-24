@@ -472,7 +472,8 @@ namespace Galileo.DataBaseTier
             string? filtro,
             string? proveedor,
             string? familia,
-            string? subfamilia)
+            string? subfamilia,
+            int comp)
         {
             var info = new OrdenesDataLista();
 
@@ -486,8 +487,15 @@ namespace Galileo.DataBaseTier
                     LEFT JOIN CPR_SOLICITUD_PROV sp 
                         ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
                        AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                    WHERE O.Estado IN ('A') AND O.Proceso IN ('A','X');";
-                info.Total = connection.QueryFirstOrDefault<int>(totalSql);
+                   WHERE (
+                            @comp = 0
+                            OR (
+                                @comp = 1
+                                AND O.Estado IN ('A') 
+                                AND O.Proceso IN ('A', 'X')
+                            )
+                        )";
+                info.Total = connection.QueryFirstOrDefault<int>(totalSql, new { comp = comp });
 
                 var parameters = new DynamicParameters();
 
@@ -499,6 +507,8 @@ namespace Galileo.DataBaseTier
                 AddLikeFilter(parameters, "@Subfamilia", subfamilia == "5" ? null : subfamilia);
 
                 AddPaginationParameters(parameters, pagina, paginacion);
+
+                parameters.Add("@comp", dbType: DbType.Int32, value: comp);
 
                 const string dataSql = @"
                     SELECT * FROM (  
@@ -538,8 +548,14 @@ namespace Galileo.DataBaseTier
                         LEFT JOIN CXP_PROVEEDORES cp 
                             ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
                         WHERE 
-                            O.Estado IN ('A') 
-                            AND O.Proceso IN ('A', 'X')
+                           (
+                            @comp = 0
+                                OR (
+                                    @comp = 1
+                                    AND O.Estado IN ('A') 
+                                    AND O.Proceso IN ('A', 'X')
+                                )
+                            )
                         GROUP BY 
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
                     ) T 
@@ -1186,7 +1202,7 @@ namespace Galileo.DataBaseTier
 
         #region Listas para filtros de órdenes
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa, int comp)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0 };
 
@@ -1205,12 +1221,18 @@ namespace Galileo.DataBaseTier
                     LEFT JOIN CXP_PROVEEDORES cp 
                         ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
                     WHERE 
-                        O.Estado IN ('A') 
-                        AND O.Proceso IN ('A', 'X')
+                        (
+                            @comp = 0
+                            OR (
+                                @comp = 1
+                                AND O.Estado IN ('A') 
+                                AND O.Proceso IN ('A', 'X')
+                            )
+                        )
                     GROUP BY 
                         sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(sql, new { comp = comp }).ToList();
             }
             catch (Exception ex)
             {
@@ -1222,7 +1244,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa, int comp)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0 };
 
@@ -1255,12 +1277,18 @@ namespace Galileo.DataBaseTier
                     LEFT JOIN CXP_PROVEEDORES cp 
                         ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
                     WHERE 
-                        O.Estado IN ('A') 
-                        AND O.Proceso IN ('A', 'X')
+                        (
+                            @comp = 0
+                            OR (
+                                @comp = 1
+                                AND O.Estado IN ('A') 
+                                AND O.Proceso IN ('A', 'X')
+                            )
+                        )
                     GROUP BY 
                         sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(sql, new { comp = comp }).ToList();
             }
             catch (Exception ex)
             {

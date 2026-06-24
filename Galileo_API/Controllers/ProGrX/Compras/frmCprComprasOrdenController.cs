@@ -34,7 +34,7 @@ namespace Galileo.Controllers
             return _bl.OrdenesDetalle_Obtener(CodEmpresa, filtros);
         }
 
-        [HttpPost("ComprasOrden_Insertar")]
+        [HttpPost("ComprasOrden_Guardar")]
         public ErrorDto ComprasOrden_Guardar(int CodEmpresa, ComprasOrdenDatos orden)
         {
             return _bl.ComprasOrden_Guardar(CodEmpresa, orden);
