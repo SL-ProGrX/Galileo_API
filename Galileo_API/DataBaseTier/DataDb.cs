@@ -14,6 +14,7 @@ namespace Galileo.DataBaseTier
         private const string FiltroParam = "@Filtro";
         private const string _familiaParam = "@Familia";
         private const string _proveedorParam = "@Proveedor";
+      
 
         public DataDB(IConfiguration config)
         {
@@ -384,6 +385,63 @@ namespace Galileo.DataBaseTier
 
         #region Órdenes de compra
 
+        private const string ComprasOrdenCompWhere = @"
+                    (
+                        @comp = 0
+                        OR (
+                            @comp = 1
+                            AND O.Estado IN ('A')
+                            AND O.Proceso IN ('A', 'X')
+                        )
+                    )";
+        private const string OrdenesFiltroObtenerTotalSql = @"
+                    SELECT COUNT(O.cod_orden) 
+                    FROM cpr_ordenes O
+                    LEFT JOIN CPR_SOLICITUD_PROV sp 
+                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                    WHERE " + ComprasOrdenCompWhere;
+        private const string CompraOrdenProveedoresListaSql = @"
+                    SELECT DISTINCT
+                        O.COD_PROVEEDOR AS item,
+                        cp.DESCRIPCION AS descripcion
+                    FROM cpr_ordenes O
+                    LEFT JOIN CPR_SOLICITUD_PROV sp 
+                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                    LEFT JOIN CXP_PROVEEDORES cp 
+                        ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                    WHERE " + ComprasOrdenCompWhere + @"
+                    GROUP BY 
+                        sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
+        private const string CompraOrdenFamiliaListaSql = @"
+                    SELECT DISTINCT
+                        STUFF((
+                            SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
+                            FROM CPR_ORDENES_DETALLE cod2
+                            INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                            LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                            WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                  AND ppc2.DESCRIPCION IS NOT NULL
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS item,
+                        STUFF((
+                            SELECT DISTINCT ', ' + ppc2.DESCRIPCION
+                            FROM CPR_ORDENES_DETALLE cod2
+                            INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                            LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                            WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                  AND ppc2.DESCRIPCION IS NOT NULL
+                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS descripcion        
+                    FROM cpr_ordenes O
+                    LEFT JOIN CPR_SOLICITUD_PROV sp 
+                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                    LEFT JOIN CXP_PROVEEDORES cp 
+                        ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                    WHERE " + ComprasOrdenCompWhere + @"
+                    GROUP BY 
+                        sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
+
         public OrdenesDataLista Ordenes_Obtener(
             int CodCliente,
             int? pagina,
@@ -475,20 +533,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string totalSql = @"
-                    SELECT COUNT(O.cod_orden) 
-                    FROM cpr_ordenes O
-                    LEFT JOIN CPR_SOLICITUD_PROV sp 
-                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                   WHERE (
-                            @comp = 0
-                            OR (
-                                @comp = 1
-                                AND O.Estado IN ('A') 
-                                AND O.Proceso IN ('A', 'X')
-                            )
-                        )";
+                const string totalSql = OrdenesFiltroObtenerTotalSql;
                 info.Total = connection.QueryFirstOrDefault<int>(totalSql, new { comp = parametros.comp });
 
                 var parameters = new DynamicParameters();
@@ -1204,27 +1249,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string sql = @"
-                    SELECT DISTINCT
-                        O.COD_PROVEEDOR AS item,
-                        cp.DESCRIPCION AS descripcion
-                    FROM cpr_ordenes O
-                    LEFT JOIN CPR_SOLICITUD_PROV sp 
-                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                    LEFT JOIN CXP_PROVEEDORES cp 
-                        ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                    WHERE 
-                        (
-                            @comp = 0
-                            OR (
-                                @comp = 1
-                                AND O.Estado IN ('A') 
-                                AND O.Proceso IN ('A', 'X')
-                            )
-                        )
-                    GROUP BY 
-                        sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
+                const string sql = CompraOrdenProveedoresListaSql;
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(sql, new { comp = comp }).ToList();
             }
@@ -1246,41 +1271,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string sql = @"
-                    SELECT DISTINCT
-                        STUFF((
-                            SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
-                            FROM CPR_ORDENES_DETALLE cod2
-                            INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                            LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                            WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                  AND ppc2.DESCRIPCION IS NOT NULL
-                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS item,
-                        STUFF((
-                            SELECT DISTINCT ', ' + ppc2.DESCRIPCION
-                            FROM CPR_ORDENES_DETALLE cod2
-                            INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                            LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                            WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                  AND ppc2.DESCRIPCION IS NOT NULL
-                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS descripcion        
-                    FROM cpr_ordenes O
-                    LEFT JOIN CPR_SOLICITUD_PROV sp 
-                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                    LEFT JOIN CXP_PROVEEDORES cp 
-                        ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                    WHERE 
-                        (
-                            @comp = 0
-                            OR (
-                                @comp = 1
-                                AND O.Estado IN ('A') 
-                                AND O.Proceso IN ('A', 'X')
-                            )
-                        )
-                    GROUP BY 
-                        sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
+                const string sql = CompraOrdenFamiliaListaSql;
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(sql, new { comp = comp }).ToList();
             }
