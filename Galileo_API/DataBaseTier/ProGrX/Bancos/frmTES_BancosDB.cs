@@ -327,7 +327,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto param)
+        public ErrorDto<int> TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto param)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -336,7 +336,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 // 1) Validación duplicado
                 if (CuentaBancariaDuplicada(conn, param.cod_cuenta, vEdita ? param.id_banco : 0))
                 {
-                    return DbHelper.ErrorResponse("Existe ya un Banco registrado con la misma Cuenta Bancaria.");
+                    return DbHelper.CreateErrorResponse<int>("Existe ya un Banco registrado con la misma Cuenta Bancaria.");
                 }
 
                 // 2) Cuentas contables formateadas (una sola vez)
@@ -347,9 +347,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var sqlParams = BuildSqlParams(param, ctaContable, ctaComisionSINPE);
 
                 // 4) Insert/Update
-                int idBanco = vEdita
-                    ? UpdateBanco(conn, param.id_banco, sqlParams)
-                    : InsertBanco(conn, sqlParams);
+                var idBanco = 0;
+                if (vEdita)
+                {
+                    UpdateBanco(conn, param.id_banco, sqlParams);
+                    idBanco = param.id_banco;   
+                }
+                else
+                {
+                    idBanco = InsertBanco(conn, sqlParams);
+                }
+
 
                 // 4) Insert/Update
                 string msj = vEdita
@@ -359,11 +367,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 // 5) Bitácora
                 RegistrarBitacora(CodEmpresa, Usuario, idBanco, vEdita);
 
-                return DbHelper.OkResponse(msj);
+                return DbHelper.CreateOkResponse<int>(idBanco, msj);
             }
             catch (Exception ex)
             {
-               return DbHelper.ErrorResponse(ex.Message);   
+               return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
             
         }
@@ -445,7 +453,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static int InsertBanco(SqlConnection conn, object sqlParams)
         {
-            string SqlInsertBanco = @"INSERT Tes_Bancos
+            try
+            {
+                string SqlInsertBanco = @"INSERT Tes_Bancos
                                         (
                                             descripcion,estado,Utiliza_Plan,formato_transferencia,formato_transferencias_N2,
                                             Cta,CtaConta,Desc_Corta,firmas_desde,firmas_hasta,saldo,fecha_envia,
@@ -467,7 +477,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                         );
 
                                         SELECT CAST(SCOPE_IDENTITY() AS int);";
-            return conn.QueryFirst<int>(SqlInsertBanco, sqlParams);
+                var result = conn.QueryFirst<int>(SqlInsertBanco, sqlParams);
+                return result;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+
+            
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, int idBanco, bool edita)

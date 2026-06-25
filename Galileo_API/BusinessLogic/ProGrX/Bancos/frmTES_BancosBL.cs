@@ -65,7 +65,7 @@ namespace Galileo_API.BusinessLogic
             return BancosDb.TES_Bancos_Cierres_Obtener(CodEmpresa, Banco);
         }
 
-        public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto Parametros)
+        public ErrorDto<int> TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto Parametros)
         {
             return BancosDb.TES_Bancos_Guardar(CodEmpresa, vEdita, Usuario, Parametros);
         }

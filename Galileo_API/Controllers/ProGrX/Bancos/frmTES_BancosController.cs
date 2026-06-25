@@ -93,7 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         [Authorize]
         [HttpPost("TES_Bancos_Guardar")]
-        public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto Parametros)
+        public ErrorDto<int> TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto Parametros)
         {
             return BancosBL.TES_Bancos_Guardar(CodEmpresa, vEdita, Usuario, Parametros);
         }

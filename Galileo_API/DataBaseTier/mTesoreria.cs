@@ -1149,7 +1149,7 @@ namespace Galileo.DataBaseTier
             };
             decimal curMonto = 0;
             long lngCasos = 0;
-            string strDivisa = "", vLetra = "";
+            string strDivisa = "", vLetra = "", vBancoNom = "";
             try
             {
                 string query = "";
@@ -1197,6 +1197,10 @@ namespace Galileo.DataBaseTier
                     resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
                     resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
                     resp.Result.letras1 = vLetra;
+                }
+                else
+                {
+
                 }
             }
             catch (Exception ex)
