@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic
 {
@@ -39,10 +40,10 @@ namespace Galileo.BusinessLogic
             return DbData.Ordenes_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia);
         }
 
-        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
-            string? filtro, string? proveedor, string? familia, string? subfamilia)
+        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, string parametros)
         {
-            return DbData.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia);
+            OrdenesFiltroParametros para =  JsonConvert.DeserializeObject<OrdenesFiltroParametros>(parametros) ?? new OrdenesFiltroParametros();
+            return DbData.OrdenesFiltro_Obtener(CodCliente, para);
         }
 
         public FacturasDataLista Facturas_Obtener(int CodCliente, int CodProveedor, int? pagina, int? paginacion, string? filtro)
@@ -90,14 +91,14 @@ namespace Galileo.BusinessLogic
             return DbData.UENS_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa, int comp)
         {
-            return DbData.CompraOrdenProveedoresLista_Obtener(CodEmpresa);
+            return DbData.CompraOrdenProveedoresLista_Obtener(CodEmpresa, comp);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa, int comp)
         {
-            return DbData.CompraOrdenFamiliaLista_Obtener(CodEmpresa);
+            return DbData.CompraOrdenFamiliaLista_Obtener(CodEmpresa, comp);
         }
 
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)

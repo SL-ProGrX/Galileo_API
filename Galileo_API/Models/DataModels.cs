@@ -96,6 +96,7 @@
         public string? proveedor { get; set; } = string.Empty;
         public string? familia { get; set; } = string.Empty;
         public string? familia_desc { get; set; } = string.Empty;
+        public string? subFamilia { get; set; } = string.Empty;
     }
 
     public class FacturasData
@@ -228,4 +229,18 @@
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
     }
+
+    public class OrdenesFiltroParametros
+    {
+        public int? pagina { get; set; }
+        public int? paginacion { get; set; }
+        public string? filtro { get; set; }
+        public string? proveedor { get; set; }
+        public string? familia { get; set; }
+        public string? subfamilia { get; set; }
+        public int comp { get; set; } = 0;
+
+    }
+     
+
 }

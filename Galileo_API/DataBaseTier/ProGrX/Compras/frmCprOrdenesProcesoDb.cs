@@ -156,9 +156,13 @@ namespace Galileo.DataBaseTier
 
         private  static ErrorDto ValidarAutorizacion(SqlConnection conn, SqlTransaction tx, string codOrden, string usuario)
         {
-            var codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
+            var codUnidad = "GEN";
+            /**
+             * Si son directas no pido UEN
+            codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
             if (string.IsNullOrWhiteSpace(codUnidad))
                 return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);
+            **/
 
             var montoColones = ObtenerMontoOrden(conn, tx, codOrden);
             var tipoCambio = ObtenerTipoCambio(conn, tx);

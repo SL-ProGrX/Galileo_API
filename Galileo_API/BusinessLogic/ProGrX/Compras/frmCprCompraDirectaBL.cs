@@ -33,5 +33,10 @@ namespace Galileo.BusinessLogic
             return _db.CompraDirecta_Insertar(CodEmpresa, orden);
         }
 
+        public ErrorDto<List<CompraDirectaResumenData>> CprCompraDirecta_Lista_Obtener(int codEmpresa)
+        {
+            return _db.CprCompraDirecta_Lista_Obtener(codEmpresa);
+        }
+
     }
 }
