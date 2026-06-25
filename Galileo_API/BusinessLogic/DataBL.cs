@@ -42,7 +42,7 @@ namespace Galileo.BusinessLogic
 
         public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, string parametros)
         {
-            OrdenesFiltroParametros para =  JsonConvert.DeserializeObject<OrdenesFiltroParametros>(parametros) ?? new OrdenesFiltroParametros(); ;
+            OrdenesFiltroParametros para =  JsonConvert.DeserializeObject<OrdenesFiltroParametros>(parametros) ?? new OrdenesFiltroParametros();
             return DbData.OrdenesFiltro_Obtener(CodCliente, para);
         }
 
