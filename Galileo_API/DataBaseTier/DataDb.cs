@@ -467,13 +467,7 @@ namespace Galileo.DataBaseTier
 
         public OrdenesDataLista OrdenesFiltro_Obtener(
             int CodCliente,
-            int? pagina,
-            int? paginacion,
-            string? filtro,
-            string? proveedor,
-            string? familia,
-            string? subfamilia,
-            int comp)
+            OrdenesFiltroParametros parametros)
         {
             var info = new OrdenesDataLista();
 
@@ -495,20 +489,20 @@ namespace Galileo.DataBaseTier
                                 AND O.Proceso IN ('A', 'X')
                             )
                         )";
-                info.Total = connection.QueryFirstOrDefault<int>(totalSql, new { comp = comp });
+                info.Total = connection.QueryFirstOrDefault<int>(totalSql, new { comp = parametros.comp });
 
                 var parameters = new DynamicParameters();
 
-                AddLikeFilter(parameters, FiltroParam, filtro);
-                AddLikeFilterCleaningNull(parameters, _proveedorParam, proveedor);
-                AddLikeFilterCleaningNull(parameters, _familiaParam, familia);
+                AddLikeFilter(parameters, FiltroParam, parametros.filtro);
+                AddLikeFilterCleaningNull(parameters, _proveedorParam, parametros.proveedor);
+                AddLikeFilterCleaningNull(parameters, _familiaParam, parametros.familia);
 
-                subfamilia = subfamilia?.Replace("null", string.Empty).Trim();
-                AddLikeFilter(parameters, "@Subfamilia", subfamilia == "5" ? null : subfamilia);
+                parametros.subfamilia = parametros.subfamilia?.Replace("null", string.Empty).Trim();
+                AddLikeFilter(parameters, "@Subfamilia", parametros.subfamilia == "5" ? null : parametros.subfamilia);
 
-                AddPaginationParameters(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, parametros.pagina, parametros.paginacion);
 
-                parameters.Add("@comp", dbType: DbType.Int32, value: comp);
+                parameters.Add("@comp", dbType: DbType.Int32, value: parametros.comp);
 
                 const string dataSql = @"
                     SELECT * FROM (  

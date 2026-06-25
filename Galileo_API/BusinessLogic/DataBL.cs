@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic
 {
@@ -39,10 +40,10 @@ namespace Galileo.BusinessLogic
             return DbData.Ordenes_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia);
         }
 
-        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
-            string? filtro, string? proveedor, string? familia, string? subfamilia, int comp)
+        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, string parametros)
         {
-            return DbData.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia, comp);
+            OrdenesFiltroParametros para =  JsonConvert.DeserializeObject<OrdenesFiltroParametros>(parametros) ?? new OrdenesFiltroParametros(); ;
+            return DbData.OrdenesFiltro_Obtener(CodCliente, para);
         }
 
         public FacturasDataLista Facturas_Obtener(int CodCliente, int CodProveedor, int? pagina, int? paginacion, string? filtro)

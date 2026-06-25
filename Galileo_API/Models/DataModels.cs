@@ -229,4 +229,18 @@
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
     }
+
+    public class OrdenesFiltroParametros
+    {
+        public int? pagina { get; set; }
+        public int? paginacion { get; set; }
+        public string? filtro { get; set; }
+        public string? proveedor { get; set; }
+        public string? familia { get; set; }
+        public string? subfamilia { get; set; }
+        public int comp { get; set; } = 0;
+
+    }
+     
+
 }

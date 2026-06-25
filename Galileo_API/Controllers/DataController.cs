@@ -52,10 +52,9 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("OrdenesFiltro_Obtener")]
-        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
-            string? filtro, string? proveedor, string? familia, string? subfamilia, int comp)
+        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, string parametros)
         {
-            return Databl.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia, comp);
+            return Databl.OrdenesFiltro_Obtener(CodCliente, parametros);
         }
 
         [HttpGet("Facturas_Obtener")]
