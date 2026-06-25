@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Creditos;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 {
@@ -57,5 +58,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<List<DropDownListaGenericaModel>> CrReportesMov_Gestores_Obtener(int codEmpresa)
             => _db.CrReportesMov_Gestores_Obtener(codEmpresa);
+
+        public ErrorDto CrReportesMov_AnalisisCubo_Ejecutar(int codEmpresa, CrReportesMovAnalisisCuboRequest request)
+            => _db.CrReportesMov_AnalisisCubo_Ejecutar(codEmpresa, request);
     }
 }
