@@ -52,10 +52,9 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("OrdenesFiltro_Obtener")]
-        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
-            string? filtro, string? proveedor, string? familia, string? subfamilia)
+        public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, string parametros)
         {
-            return Databl.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia);
+            return Databl.OrdenesFiltro_Obtener(CodCliente, parametros);
         }
 
         [HttpGet("Facturas_Obtener")]
@@ -126,15 +125,15 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("CompraOrdenProveedoresLista_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa, int comp)
         {
-            return Databl.CompraOrdenProveedoresLista_Obtener(CodEmpresa);
+            return Databl.CompraOrdenProveedoresLista_Obtener(CodEmpresa, comp);
         }
 
         [HttpGet("CompraOrdenFamiliaLista_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa, int comp)
         {
-            return Databl.CompraOrdenFamiliaLista_Obtener(CodEmpresa);
+            return Databl.CompraOrdenFamiliaLista_Obtener(CodEmpresa, comp);
         }
 
         [HttpGet("TipoProductoSub_ObtenerTodos")]

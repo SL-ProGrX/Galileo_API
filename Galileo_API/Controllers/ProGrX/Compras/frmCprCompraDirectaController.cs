@@ -41,5 +41,11 @@ namespace Galileo.Controllers
         {
             return _bl.CostoArticulos_Actualiza(CodEmpresa, Usuario, CodCompra);
         }
+
+        [HttpGet("ComprasDirectas_Lista_Obtener")]
+        public ErrorDto<List<CompraDirectaResumenData?>> ComprasDirectas_Lista_Obtener(int CodEmpresa)
+        {
+            return _bl.CprCompraDirecta_Lista_Obtener(CodEmpresa);
+        }
     }
 }
