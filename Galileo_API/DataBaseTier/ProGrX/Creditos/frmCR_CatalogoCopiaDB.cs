@@ -191,14 +191,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 response.Description = ex.Message;
                 response.Result = null;
             }
-            catch (Exception)
+            catch (InvalidOperationException)
             {
-                response.Code = -1;
-                response.Description = "Ocurrió un error inesperado al obtener la línea de crédito.";
-                response.Result = null;
+                SetScrollError(response);
+            }
+            catch (ArgumentException)
+            {
+                SetScrollError(response);
             }
 
             return response;
+        }
+
+        private static void SetScrollError(ErrorDto<CrCatalogoCopiaScrollDto> response)
+        {
+            response.Code = -1;
+            response.Description = "Ocurrió un error inesperado al obtener la línea de crédito.";
+            response.Result = null;
         }
         /// <summary>
         /// Copia la configuración de una línea base hacia líneas destino o una nueva línea.
