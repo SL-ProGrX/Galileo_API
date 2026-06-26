@@ -106,15 +106,15 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     internal sealed class CrPolizasRegistroListaBase
     {
-        public int id_solicitud { get; set; }
-        public int num_poliza { get; set; }
+        public int id_solicitud { get; set; } = 0;
+        public int num_poliza { get; set; } = 0;
         public string cod_poliza { get; set; } = string.Empty;
         public string poliza_descripcion { get; set; } = string.Empty;
         public string integra_plan_pagos { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public decimal cuota { get; set; }
-        public decimal monto { get; set; }
-        public int id_solicitud_poliza { get; set; }
+        public decimal cuota { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
+        public int id_solicitud_poliza { get; set; } = 0;
     }
 
     internal sealed class CrPolizasRegistroDetalleBase
