@@ -23,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             public string codigo_retencion { get; set; } = string.Empty;
             public string codigo_cargo { get; set; } = string.Empty;
-            public int integra_plan_pagos { get; set; }
+            public int integra_plan_pagos { get; set; } = 0;
         }
 
         private sealed class CrPolizasRegistroFxVerificaData
