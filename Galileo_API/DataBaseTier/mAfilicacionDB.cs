@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-
+using System.Text.RegularExpressions;
 namespace Galileo.DataBaseTier
 {
     public class MAfilicacionDB
@@ -128,6 +128,19 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
+        }
+        public static bool fxEmail_Valida(string correo)
+        {
+            correo = (correo ?? string.Empty).Trim();
+
+            if (correo.Length < 8)
+                return false;
+
+            return Regex.IsMatch(
+                correo,
+                @"^[\w\.-]+@[\w\.-]+\.\w+$",
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromSeconds(1));
         }
     }
 }
