@@ -129,6 +129,45 @@ namespace Galileo.DataBaseTier
                 _ = ex.Message;
             }
         }
+
+        public static string fxParentesco(string parentesco)
+        {
+            return (parentesco ?? string.Empty).Trim() switch
+            {
+                "E" => "Esposo(a)",
+                "H" => "Hijo(a)",
+                "R" => "Hermano(a)",
+                "S" => "Sobrino(a)",
+                "M" => "Madre",
+                "P" => "Padre",
+                "A" => "Abuelo(a)",
+                "I" => "Primo(a)",
+                "G" => "Amigo(a)",
+                "T" => "Tío(a)",
+                "J" => "Madrastra",
+                "K" => "Padrastro",
+                "N" => "Nieto(a)",
+                "L" => "Hermanastro(a)",
+                "O" => "Otro...",
+                "Esposo(a)" => "E",
+                "Hijo(a)" => "H",
+                "Hermano(a)" => "R",
+                "Sobrino(a)" => "S",
+                "Madre" => "M",
+                "Padre" => "P",
+                "Abuelo(a)" => "A",
+                "Primo(a)" => "I",
+                "Amigo(a)" => "G",
+                "Tío(a)" => "T",
+                "Madrastra" => "J",
+                "Padrastro" => "K",
+                "Nieto(a)" => "N",
+                "Hermanastro(a)" => "L",
+                "Otro..." => "O",
+                _ => "Otro..."
+            };
+        }
+
         public static bool fxEmail_Valida(string correo)
         {
             correo = (correo ?? string.Empty).Trim();
