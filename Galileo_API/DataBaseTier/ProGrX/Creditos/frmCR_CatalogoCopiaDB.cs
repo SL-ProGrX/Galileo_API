@@ -139,7 +139,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return response;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CrCatalogoCopiaDescripcionDto>(
+                    ex.Message,
+                    -1,
+                    new CrCatalogoCopiaDescripcionDto());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<CrCatalogoCopiaDescripcionDto>(
                     ex.Message,
@@ -178,16 +185,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     response.Description = "Ok";
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result = null;
             }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Ocurrió un error inesperado al obtener la línea de crédito.";
+                response.Result = null;
+            }
 
             return response;
         }
-
         /// <summary>
         /// Copia la configuración de una línea base hacia líneas destino o una nueva línea.
         /// </summary>
@@ -209,11 +221,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var data = NormalizarRequest(request);
                 var destinos = ResolverDestinos(data);
 
-                foreach (var destino in destinos)
-                {
-                    var item = CopiarDestino(conn, CodEmpresa, data, destino);
-                    response.Result!.detalle.Add(item);
-                }
+                response.Result!.detalle.AddRange(
+                    destinos
+                        .Select(destino => CopiarDestino(conn, CodEmpresa, data, destino))
+                        .ToList());
 
                 response.Result!.total_procesadas = response.Result.detalle.Count(x => x.procesada);
                 response.Description = "Copia Realizada Satisfactoriamente.";
@@ -224,15 +235,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return CrearErrorSqlCopia(ex);
             }
-            catch (Exception)
+            catch (InvalidOperationException)
             {
-                return DbHelper.CreateErrorResponse<CrCatalogoCopiaResultadoDto>(
-                    "No se pudo completar la copia de configuración. Verifique los datos e intente nuevamente.",
-                    -1,
-                    new CrCatalogoCopiaResultadoDto());
+                return CrearErrorCopiaGenerico();
+            }
+            catch (ArgumentException)
+            {
+                return CrearErrorCopiaGenerico();
             }
         }
-
+        private static ErrorDto<CrCatalogoCopiaResultadoDto> CrearErrorCopiaGenerico()
+        {
+            return DbHelper.CreateErrorResponse<CrCatalogoCopiaResultadoDto>(
+                "No se pudo completar la copia de configuración. Verifique los datos e intente nuevamente.",
+                -1,
+                new CrCatalogoCopiaResultadoDto());
+        }
         private static ErrorDto<CrCatalogoCopiaResultadoDto> CrearErrorSqlCopia(SqlException ex)
         {
             return DbHelper.CreateErrorResponse<CrCatalogoCopiaResultadoDto>(
