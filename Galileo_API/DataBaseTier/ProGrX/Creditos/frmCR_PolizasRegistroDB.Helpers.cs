@@ -1,11 +1,18 @@
 ﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrPolizasRegistroDb
     {
+        private const string FrecuenciaMensual = "Mensual";
+        private const string MensajeDebeIndicarOperacion = "Debe indicar la operacion.";
+        private const string MensajeDebeIndicarOperacionPoliza = "Debe indicar la operacion y el numero de poliza.";
+        private const string MensajeOperacionBaseNoEncontrada = "- No se encontr&oacute; la operaci&oacute;n base.";
+        private const string MensajeNoExistenPolizasConfiguradas = "- No Existen Polizas Configuradas para usar...";
+        private const string MensajeCoberturaPolizaInvalida = "- La cobertura de la poliza no es v&aacute;lida verifique";
+
         private sealed class CrPolizasRegistroOperacionBaseData
         {
             public string cedula { get; set; } = string.Empty;
@@ -16,14 +23,37 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             public string codigo_retencion { get; set; } = string.Empty;
             public string codigo_cargo { get; set; } = string.Empty;
-            public int integra_plan_pagos { get; set; } = 0;
+            public int integra_plan_pagos { get; set; }
         }
 
         private sealed class CrPolizasRegistroFxVerificaData
         {
-            public bool valido { get; set; } = false;
+            public bool valido { get; set; }
             public string mensaje { get; set; } = string.Empty;
         }
+
+        private sealed class CrPolizasRegistroDetalleComplementoData
+        {
+            public List<DropDownListaGenericaModel> destinos { get; set; } = new();
+            public List<DropDownListaGenericaModel> garantias { get; set; } = new();
+            public int pri_deduc { get; set; }
+            public decimal proyectado { get; set; }
+            public decimal pendiente { get; set; }
+            public int poliza_pagos_num { get; set; }
+            public int poliza_cobertura_meses { get; set; }
+        }
+
+        private static ErrorDto<T> CrPolizasRegistro_OperacionRequerida<T>(T result)
+            => DbHelper.CreateErrorResponse(
+                MensajeDebeIndicarOperacion,
+                -2,
+                result);
+
+        private static ErrorDto<T> CrPolizasRegistro_OperacionPolizaRequerida<T>(T result)
+            => DbHelper.CreateErrorResponse(
+                MensajeDebeIndicarOperacionPoliza,
+                -2,
+                result);
 
         private static int CrPolizasRegistro_PriDeduc_Anio_Obtener(int prideduc)
         {
@@ -66,12 +96,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return frecuencia switch
             {
-                "M" => "Mensual",
+                "M" => FrecuenciaMensual,
                 "T" => "Trimestral",
                 "S" => "Semestral",
                 "A" => "Anual",
                 "I" => "Indefinida",
-                _ => "Mensual"
+                _ => FrecuenciaMensual
             };
         }
 
@@ -166,7 +196,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return (frecuencia ?? string.Empty).Trim() switch
             {
-                "Mensual" => "M",
+                FrecuenciaMensual => "M",
                 "Trimestral" => "T",
                 "Semestral" => "S",
                 "Anual" => "A",
@@ -179,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return (frecuencia ?? string.Empty).Trim() switch
             {
-                "Mensual" => 1,
+                FrecuenciaMensual => 1,
                 "Trimestral" => 4,
                 "Semestral" => 2,
                 "Anual" => 1,

@@ -42,10 +42,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion.",
-                    -2,
-                    0);
+                return CrPolizasRegistro_OperacionRequerida(0);
             }
 
             if (direccion != 1 && direccion != -1)
@@ -171,10 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion.",
-                    -2,
-                    new List<CrPolizasRegistroListadoItem>());
+                return CrPolizasRegistro_OperacionRequerida(new List<CrPolizasRegistroListadoItem>());
             }
 
             const string sql = @"
@@ -238,12 +232,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || num_poliza <= 0)
             {
+                return CrPolizasRegistro_OperacionPolizaRequerida(new CrPolizasRegistroFormData());
+            }
+
+            var detalleResp = CrPolizasRegistro_DetalleBase_Obtener(codEmpresa, operacion, num_poliza);
+            if (detalleResp.Code != 0)
+            {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion y el numero de poliza.",
-                    -2,
+                    detalleResp.Description ?? "No fue posible cargar el detalle de la poliza.",
+                    detalleResp.Code.GetValueOrDefault(-1),
                     new CrPolizasRegistroFormData());
             }
 
+            if (detalleResp.Result is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se encontr&oacute; detalle de la p&oacute;liza seleccionada.",
+                    0,
+                    new CrPolizasRegistroFormData());
+            }
+
+            var complementoResp = CrPolizasRegistro_DetalleComplemento_Obtener(codEmpresa, detalleResp.Result);
+            if (complementoResp.Code != 0 || complementoResp.Result is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    complementoResp.Description ?? "No fue posible cargar la informaci&oacute;n complementaria de la p&oacute;liza.",
+                    complementoResp.Code.GetValueOrDefault(-1),
+                    new CrPolizasRegistroFormData());
+            }
+
+            return DbHelper.CreateOkResponse(
+                CrPolizasRegistro_DetalleForm_Crear(
+                    detalleResp.Result,
+                    num_poliza,
+                    complementoResp.Result));
+        }
+
+        private ErrorDto<CrPolizasRegistroDetalleBase?> CrPolizasRegistro_DetalleBase_Obtener(
+            int codEmpresa,
+            int operacion,
+            int numPoliza)
+        {
             const string sql = @"
             select top 1
                 rtrim(Pol.cod_poliza) as cod_poliza,
@@ -293,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
               and Pol.id_solicitud = @Operacion
               and Pol.num_poliza = @NumPoliza;";
 
-            var resp = DbHelper.ExecuteSingleQuery<CrPolizasRegistroDetalleBase>(
+            return DbHelper.ExecuteSingleQuery<CrPolizasRegistroDetalleBase>(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -301,34 +330,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new
                 {
                     Operacion = operacion,
-                    NumPoliza = num_poliza
+                    NumPoliza = numPoliza
                 });
+        }
 
-            if (resp.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse(
-                    resp.Description ?? "No fue posible cargar el detalle de la poliza.",
-                    resp.Code.GetValueOrDefault(-1),
-                    new CrPolizasRegistroFormData());
-            }
-
-            if (resp.Result is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "No se encontr&oacute; detalle de la p&oacute;liza seleccionada.",
-                    0,
-                    new CrPolizasRegistroFormData());
-            }
-
-            var detalle = resp.Result;
-
+        private ErrorDto<CrPolizasRegistroDetalleComplementoData> CrPolizasRegistro_DetalleComplemento_Obtener(
+            int codEmpresa,
+            CrPolizasRegistroDetalleBase detalle)
+        {
             var destinosResp = CrPolizasRegistro_Destinos_Obtener(codEmpresa, detalle.codigo);
             if (destinosResp.Code != 0)
             {
                 return DbHelper.CreateErrorResponse(
                     destinosResp.Description ?? "No fue posible cargar los destinos de la poliza.",
                     destinosResp.Code.GetValueOrDefault(-1),
-                    new CrPolizasRegistroFormData());
+                    new CrPolizasRegistroDetalleComplementoData());
             }
 
             var garantiasResp = CrPolizasRegistro_Garantias_Obtener(codEmpresa, detalle.codigo);
@@ -337,7 +353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.CreateErrorResponse(
                     garantiasResp.Description ?? "No fue posible cargar las garantias de la poliza.",
                     garantiasResp.Code.GetValueOrDefault(-1),
-                    new CrPolizasRegistroFormData());
+                    new CrPolizasRegistroDetalleComplementoData());
             }
 
             int priDeduc = detalle.prideduc ?? 0;
@@ -354,33 +370,66 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ? detalle.monto_base
                 : proyectado - detalle.pagado;
 
-            int polizaPagosNum = 0;
+            int polizaPagosNum = CrPolizasRegistro_PolizaPagosNum_Obtener(detalle);
+            int polizaCoberturaMeses = CrPolizasRegistro_CoberturaMeses_Obtener(detalle);
 
-            if (detalle.pago_fecha.HasValue && detalle.cobertura_vence.HasValue)
+            return DbHelper.CreateOkResponse(new CrPolizasRegistroDetalleComplementoData
             {
-                int divisorFrecuencia = CrPolizasRegistro_FrecuenciaPagosDivisor_Obtener(
-                    MapearFrecuencia(detalle.pago_frecuencia));
+                destinos = destinosResp.Result ?? new(),
+                garantias = garantiasResp.Result ?? new(),
+                pri_deduc = priDeduc,
+                proyectado = proyectado,
+                pendiente = pendiente,
+                poliza_pagos_num = polizaPagosNum,
+                poliza_cobertura_meses = polizaCoberturaMeses
+            });
+        }
 
-                int mesesVigenciaPago = CrPolizasRegistro_DiferenciaMeses_Obtener(
-                    detalle.pago_fecha.Value,
-                    detalle.cobertura_vence.Value) + 1;
-
-                if (mesesVigenciaPago <= 0)
-                {
-                    mesesVigenciaPago = 1;
-                }
-
-                polizaPagosNum = mesesVigenciaPago / divisorFrecuencia;
-                if (polizaPagosNum <= 0)
-                {
-                    polizaPagosNum = 1;
-                }
+        private static int CrPolizasRegistro_PolizaPagosNum_Obtener(CrPolizasRegistroDetalleBase detalle)
+        {
+            if (!detalle.pago_fecha.HasValue || !detalle.cobertura_vence.HasValue)
+            {
+                return 0;
             }
 
-            return DbHelper.CreateOkResponse(new CrPolizasRegistroFormData
+            int divisorFrecuencia = CrPolizasRegistro_FrecuenciaPagosDivisor_Obtener(
+                MapearFrecuencia(detalle.pago_frecuencia));
+
+            int mesesVigenciaPago = CrPolizasRegistro_DiferenciaMeses_Obtener(
+                detalle.pago_fecha.Value,
+                detalle.cobertura_vence.Value) + 1;
+
+            if (mesesVigenciaPago <= 0)
+            {
+                mesesVigenciaPago = 1;
+            }
+
+            int polizaPagosNum = mesesVigenciaPago / divisorFrecuencia;
+            return polizaPagosNum <= 0 ? 1 : polizaPagosNum;
+        }
+
+        private static int CrPolizasRegistro_CoberturaMeses_Obtener(CrPolizasRegistroDetalleBase detalle)
+        {
+            if (!detalle.cobertura_inicio.HasValue || !detalle.cobertura_vence.HasValue)
+            {
+                return 0;
+            }
+
+            return ((detalle.cobertura_vence.Value.Year - detalle.cobertura_inicio.Value.Year) * 12)
+                + detalle.cobertura_vence.Value.Month
+                - detalle.cobertura_inicio.Value.Month
+                + 1;
+        }
+
+        private static CrPolizasRegistroFormData CrPolizasRegistro_DetalleForm_Crear(
+            CrPolizasRegistroDetalleBase detalle,
+            int numPoliza,
+            CrPolizasRegistroDetalleComplementoData complemento)
+        {
+            return new CrPolizasRegistroFormData
             {
                 poliza_linea = detalle.cod_poliza,
-                poliza_id = num_poliza,
+                poliza_id = numPoliza,
                 poliza_contrato = detalle.num_contrato,
                 poliza_estado = detalle.estado == "A" ? "Activa" : "Inactiva",
                 poliza_monto = detalle.monto,
@@ -393,17 +442,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 poliza_cobertura_corte = detalle.cobertura_vence,
                 poliza_pago_frecuencia = MapearFrecuencia(detalle.pago_frecuencia),
                 poliza_ctas_deduce = detalle.num_ctas_deduce,
-                poliza_pagos_num = polizaPagosNum,
-                poliza_cobertura_meses = detalle.cobertura_inicio.HasValue && detalle.cobertura_vence.HasValue
-                    ? ((detalle.cobertura_vence.Value.Year - detalle.cobertura_inicio.Value.Year) * 12)
-                        + detalle.cobertura_vence.Value.Month - detalle.cobertura_inicio.Value.Month + 1
-                    : 0,
-
+                poliza_pagos_num = complemento.poliza_pagos_num,
+                poliza_cobertura_meses = complemento.poliza_cobertura_meses,
                 recaudado_saldo = detalle.recaudado_saldo,
                 poliza_operacion = detalle.id_solicitud_poliza > 0
                     ? detalle.id_solicitud_poliza.ToString()
                     : string.Empty,
-
                 destino = detalle.cod_destino > 0 ? detalle.cod_destino.ToString() : string.Empty,
                 garantia = detalle.garantia_codigo,
                 documento = detalle.documento,
@@ -415,15 +459,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ? detalle.fechaforp.Value.ToString("dd/MM/yyyy")
                     : string.Empty,
                 plazo_transcurrido = detalle.plazo_transcurrido,
-                proyectado = proyectado,
+                proyectado = complemento.proyectado,
                 pagado = detalle.pagado,
-                pendiente = pendiente,
-                anio = CrPolizasRegistro_PriDeduc_Anio_Obtener(priDeduc),
-                mes = CrPolizasRegistro_PriDeduc_Mes_Obtener(priDeduc),
-
-                destinos = destinosResp.Result ?? new(),
-                garantias = garantiasResp.Result ?? new()
-            });
+                pendiente = complemento.pendiente,
+                anio = CrPolizasRegistro_PriDeduc_Anio_Obtener(complemento.pri_deduc),
+                mes = CrPolizasRegistro_PriDeduc_Mes_Obtener(complemento.pri_deduc),
+                destinos = complemento.destinos,
+                garantias = complemento.garantias
+            };
         }
 
         /// <summary>
@@ -438,10 +481,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion.",
-                    -2,
-                    new List<DropDownListaGenericaModel>());
+                return CrPolizasRegistro_OperacionRequerida(new List<DropDownListaGenericaModel>());
             }
 
             const string sql = @"
@@ -475,10 +515,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || num_poliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion y el numero de poliza.",
-                    -2,
-                    new List<CrPolizasRegistroPagoItem>());
+                return CrPolizasRegistro_OperacionPolizaRequerida(new List<CrPolizasRegistroPagoItem>());
             }
 
             const string sql = @"
@@ -514,10 +551,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || num_poliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion y el numero de poliza.",
-                    -2,
-                    new List<CrPolizasRegistroRecaudacionItem>());
+                return CrPolizasRegistro_OperacionPolizaRequerida(new List<CrPolizasRegistroRecaudacionItem>());
             }
 
             const string sql = @"
@@ -553,10 +587,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || num_poliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion y el numero de poliza.",
-                    -2,
-                    new List<CrPolizasRegistroAcreedorItem>());
+                return CrPolizasRegistro_OperacionPolizaRequerida(new List<CrPolizasRegistroAcreedorItem>());
             }
 
             const string sql = @"
@@ -661,10 +692,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion.",
-                    -2,
-                    new List<DropDownListaGenericaModel>());
+                return CrPolizasRegistro_OperacionRequerida(new List<DropDownListaGenericaModel>());
             }
 
             const string sql = @"
@@ -698,10 +726,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || numPoliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion y el numero de poliza.",
-                    -2,
-                    new List<CrPolizasRegistroBeneficiarioItem>());
+                return CrPolizasRegistro_OperacionPolizaRequerida(new List<CrPolizasRegistroBeneficiarioItem>());
             }
 
             const string sql = @"
