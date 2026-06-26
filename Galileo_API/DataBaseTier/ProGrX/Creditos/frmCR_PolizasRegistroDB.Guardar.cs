@@ -15,8 +15,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto<int> CrPolizasRegistro_PolizaIntegrada_Guardar(
-    int codEmpresa,
-    CrPolizasRegistroPolizaIntegradaGuardarRequest request)
+            int codEmpresa,
+            CrPolizasRegistroPolizaIntegradaGuardarRequest request)
         {
             if (request.operacion <= 0 || string.IsNullOrWhiteSpace(request.poliza_linea))
             {
@@ -214,7 +214,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 tx.Rollback();
                 return DbHelper.CreateErrorResponse(
-                    $"No fue posible guardar la p&oacute;liza integrada. {ex.Message}",
+                    ex.Message,
                     -1,
                     0);
             }
@@ -472,7 +472,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 tx.Rollback();
                 return DbHelper.CreateErrorResponse(
-                    $"No fue posible guardar la p&oacute;liza de retenci&oacute;n. {ex.Message}",
+                    ex.Message,
                     -1,
                     0);
             }
