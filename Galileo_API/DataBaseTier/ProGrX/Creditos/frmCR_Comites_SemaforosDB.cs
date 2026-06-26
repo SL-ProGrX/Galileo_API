@@ -60,11 +60,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     "Ocurrió un error al obtener la lista de comités.");
             }
-            catch (Exception)
-            {
-                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
-                    "Ocurrió un error inesperado al obtener la lista de comités.");
-            }
         }
         /// <summary>
         /// Obtiene la configuración del semáforo para un comité.
