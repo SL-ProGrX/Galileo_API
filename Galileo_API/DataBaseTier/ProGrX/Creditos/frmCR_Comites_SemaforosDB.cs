@@ -464,25 +464,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }).ToList();
         }
 
-        private static SpComitesSemaforoResult EjecutarSemaforoAdd(
-            IDbConnection conn,
-            CrComitesSemaforoGuardarRequest request)
+        private static SpComitesSemaforoResult EjecutarSemaforoAdd(IDbConnection conn,CrComitesSemaforoGuardarRequest request)
         {
             const string sql = @"
-                exec spCrd_Comites_Semaforo_Add
-                    @ComiteId,
-                    @UnidadTiempo,
-                    @AlertaRoja,
-                    @AlertaAmarilla,
-                    @Usuario;";
+        exec spCrd_Comites_Semaforo_Add
+            @ComiteId,
+            @UnidadTiempo,
+            @AlertaRoja,
+            @AlertaAmarilla,
+            @Usuario;";
+
+            var unidadTiempo = (request.unidad_tiempo ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
+
+            var usuario = (request.usuario ?? string.Empty).Trim();
 
             return conn.QueryFirstOrDefault<SpComitesSemaforoResult>(sql, new
             {
-                ComiteId = request.id_comite,
-                UnidadTiempo = request.unidad_tiempo.Trim().ToUpperInvariant(),
-                AlertaRoja = request.alerta_roja,
-                AlertaAmarilla = request.alerta_amarilla,
-                Usuario = request.usuario.Trim()
+                ComiteId = request.id_comite ?? 0,
+                UnidadTiempo = unidadTiempo,
+                AlertaRoja = request.alerta_roja ?? 0,
+                AlertaAmarilla = request.alerta_amarilla ?? 0,
+                Usuario = usuario
             }) ?? new SpComitesSemaforoResult();
         }
 

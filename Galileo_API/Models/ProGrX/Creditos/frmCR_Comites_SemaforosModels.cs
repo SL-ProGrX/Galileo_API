@@ -16,10 +16,10 @@
 
     public class CrComitesSemaforoGuardarRequest
     {
-        public int id_comite { get; set; }
-        public string unidad_tiempo { get; set; } = string.Empty;
-        public int alerta_roja { get; set; }
-        public int alerta_amarilla { get; set; }
+        public int? id_comite { get; set; }
+        public string? unidad_tiempo { get; set; } = string.Empty;
+        public int? alerta_roja { get; set; }
+        public int? alerta_amarilla { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -40,7 +40,7 @@
 
     public class CrComitesSemaforoEmailAgregarRequest
     {
-        public int id_comite { get; set; }
+        public int? id_comite { get; set; }
         public string email { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
