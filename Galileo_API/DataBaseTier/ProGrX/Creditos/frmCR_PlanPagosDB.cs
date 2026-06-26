@@ -737,7 +737,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return conn.QueryFirstOrDefault<DateTime>(sql);
         }
 
-        private class SifOficinaUsuarioReporteDto
+        public sealed class SifOficinaUsuarioReporteDto
         {
             public string descripcion { get; set; } = string.Empty;
         }
