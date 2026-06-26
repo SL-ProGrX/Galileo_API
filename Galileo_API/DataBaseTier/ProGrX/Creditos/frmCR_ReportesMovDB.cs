@@ -1,6 +1,7 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -364,6 +365,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 codEmpresa,
                 sqlGestores
             );
+        }
+
+        /// <summary>
+        /// Ejecuta el proceso de analisis cubo de movimientos de creditos.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto CrReportesMov_AnalisisCubo_Ejecutar(int codEmpresa, CrReportesMovAnalisisCuboRequest request)
+        {            
+            const string sqlAnalisisCubo = @"
+                exec spCrdMovAnalisisCubo
+                    @FechaInicio,
+                    @FechaCorte;";
+
+            var resp = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlAnalisisCubo,
+                new
+                {
+                    FechaInicio = request.Fecha_Inicio.Date,
+                    FechaCorte = request.Fecha_Corte.Date.AddDays(1).AddSeconds(-1)
+                }
+            );
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Proceso ejecutado satisfactoriamente..."
+            };
         }
     }
 }
