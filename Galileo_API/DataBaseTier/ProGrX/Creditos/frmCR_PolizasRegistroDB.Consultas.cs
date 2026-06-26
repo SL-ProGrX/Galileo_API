@@ -315,7 +315,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (resp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No se encontr&oacute; la p&oacute;liza seleccionada.",
+                    "No se encontr&oacute; detalle de la p&oacute;liza seleccionada.",
                     -2,
                     new CrPolizasRegistroFormData());
             }
