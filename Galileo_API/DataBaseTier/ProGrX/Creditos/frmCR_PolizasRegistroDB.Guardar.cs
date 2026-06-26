@@ -30,7 +30,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateErrorResponse(
                     verificaResp.Description ?? "No fue posible validar la p&oacute;liza integrada.",
-                    -2, 0);
+                    verificaResp.Code.GetValueOrDefault(-1),
+                    0);
             }
 
             if (verificaResp.Result == null || !verificaResp.Result.valido)
@@ -230,7 +231,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateErrorResponse(
                     verificaResp.Description ?? "No fue posible validar la p&oacute;liza de retenci&oacute;n.",
-                    -2, 0);
+                    verificaResp.Code.GetValueOrDefault(-1),
+                    0);
             }
 
             if (verificaResp.Result == null || !verificaResp.Result.valido)

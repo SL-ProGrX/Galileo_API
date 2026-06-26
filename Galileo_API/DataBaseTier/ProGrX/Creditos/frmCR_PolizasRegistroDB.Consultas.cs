@@ -108,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacion <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operacion.",
+                    "Debe indicar la operaci&oacute;n.",
                     -2,
                     new CrPolizasRegistroOperacionData());
             }
@@ -144,8 +144,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (resp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No se encontro la operacion o no aplica para polizas.",
-                    0,
+                    "No se encontr&oacute; la operaci&oacute;n o no aplica para p&oacute;lizas.",
+                    -2,
                     new CrPolizasRegistroOperacionData());
             }
 
@@ -315,8 +315,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (resp.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No se encontro la poliza seleccionada.",
-                    0,
+                    "No se encontr&oacute; la p&oacute;liza seleccionada.",
+                    -2,
                     new CrPolizasRegistroFormData());
             }
 
@@ -711,7 +711,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     FechaNac as fecha_nac,
                     rtrim(convert(varchar(20), isnull(parentesco, ''))) as parentesco,
                     isnull(porcentaje, 0) as porcentaje
-                from CRD_OPERACION_POLIZAS_BENEFIARIOS
+                from CRD_OPERACION_POLIZAS_BENEFICIARIOS
                 where id_solicitud = @Operacion
                   and num_poliza = @NumPoliza
                 order by id_beneficiario;";

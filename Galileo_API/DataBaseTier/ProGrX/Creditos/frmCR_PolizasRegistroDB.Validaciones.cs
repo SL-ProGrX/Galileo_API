@@ -181,7 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(
-                    $"No fue posible verificar la p&oacute;liza integrada. {ex.Message}",
+                    ex.Message,
                     -1,
                     new CrPolizasRegistroFxVerificaData
                     {
