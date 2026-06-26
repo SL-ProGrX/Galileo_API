@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Creditos;
+using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -88,5 +89,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpGet("CrReportesMov_Gestores_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrReportesMov_Gestores_Obtener(int codEmpresa)
             => _bl.CrReportesMov_Gestores_Obtener(codEmpresa);
+
+        [Authorize]
+        [HttpPost("CrReportesMov_AnalisisCubo_Ejecutar")]
+        public ErrorDto CrReportesMov_AnalisisCubo_Ejecutar(
+            int codEmpresa,
+            [FromBody] CrReportesMovAnalisisCuboRequest request)
+            => _bl.CrReportesMov_AnalisisCubo_Ejecutar(codEmpresa, request);
     }
 }
