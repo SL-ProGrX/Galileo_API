@@ -19,10 +19,10 @@
     {
         public string Usuario { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Entradas { get; set; }
-        public bool Salidas { get; set; }
-        public bool Requisiciones { get; set; }
-        public bool Traslados { get; set; }
+        public required bool Entradas { get; set; }
+        public required bool Salidas { get; set; }
+        public required bool Requisiciones { get; set; }
+        public required bool Traslados { get; set; }
         public string Autorizador { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
     }

@@ -4,6 +4,7 @@ using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -181,6 +182,9 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
                     using var tx = conn.BeginTransaction();
 
                     // Siguiente ID (misma lógica original) dentro de tx para evitar carreras.

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -233,6 +234,9 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
                     using var tx = conn.BeginTransaction();
 
                     const string nextSql = @"SELECT ISNULL(MAX(COD_PROVEEDOR), 10000) + 1 FROM CXP_PROVEEDORES;";

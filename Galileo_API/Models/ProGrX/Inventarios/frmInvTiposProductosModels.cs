@@ -2,14 +2,14 @@
 {
     public class TipoProductoDto
     {
-        public int Cod_Prodclas { get; set; }
+        public required int Cod_Prodclas { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Alter { get; set; } = string.Empty;
         public string Costeo { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Valuacion { get; set; } = string.Empty;
         public string Cta_Desc { get; set; } = string.Empty;
-        public int Cantidad_Sub { get; set; }
+        public required int Cantidad_Sub { get; set; }
     }
 
     public class TipoProductoDataLista
@@ -29,12 +29,12 @@
 
     public class TipoProductoSubDto
     {
-        public int Cod_Prodclas { get; set; }
+        public required int Cod_Prodclas { get; set; }
         public string Cod_Linea_Sub { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public required bool Activo { get; set; }
         public string Estado { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
         public string Cabys { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
