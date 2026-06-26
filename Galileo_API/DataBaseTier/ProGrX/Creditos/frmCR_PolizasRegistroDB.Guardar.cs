@@ -15,14 +15,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto<int> CrPolizasRegistro_PolizaIntegrada_Guardar(
-            int codEmpresa,
-            CrPolizasRegistroPolizaIntegradaGuardarRequest request)
+    int codEmpresa,
+    CrPolizasRegistroPolizaIntegradaGuardarRequest request)
         {
             if (request.operacion <= 0 || string.IsNullOrWhiteSpace(request.poliza_linea))
             {
                 return DbHelper.CreateErrorResponse(
                     "Debe indicar la operaci&oacute;n y la l&iacute;nea de p&oacute;liza.",
-                    -2, 0);
+                    -2,
+                    0);
             }
 
             var verificaResp = CrPolizasRegistro_FxVerifica(codEmpresa, request);
@@ -38,7 +39,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateErrorResponse(
                     verificaResp.Result?.mensaje ?? "No fue posible validar la p&oacute;liza integrada.",
-                    -2, 0);
+                    -2,
+                    0);
+            }
+
+            int? contrato = CrPolizasRegistro_ContratoNumero_Obtener(request.poliza_contrato);
+            if (!string.IsNullOrWhiteSpace(request.poliza_contrato) && !contrato.HasValue)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El No. de contrato no es v&aacute;lido.",
+                    -2,
+                    0);
             }
 
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -59,66 +70,66 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 if (request.poliza_id <= 0)
                 {
                     const string sqlInsert = @"
-                    insert into CRD_OPERACION_POLIZAS
-                    (
-                        id_solicitud_poliza,
-                        cod_poliza,
-                        id_solicitud,
-                        codigo,
-                        cuota,
-                        registro_fecha,
-                        registro_usuario,
-                        estado,
-                        num_poliza,
-                        monto,
-                        cobertura_inicio,
-                        cobertura_vence,
-                        pago_frecuencia,
-                        pago_fecha,
-                        pago_monto,
-                        pago_realizado,
-                        pago_saldo,
-                        pago_ultimo,
-                        recaudado_monto,
-                        recaudado_corte,
-                        recaudado_saldo,
-                        num_seq_inicio,
-                        num_ctas_deduce,
-                        num_seq_corte,
-                        num_contrato,
-                        deduce_plazo_credito,
-                        cuota_rst_plan
-                    )
-                    values
-                    (
-                        0,
-                        @PolizaLinea,
-                        @Operacion,
-                        @Codigo,
-                        @Cuota,
-                        Getdate(),
-                        @Usuario,
-                        @Estado,
-                        @NumPoliza,
-                        @Monto,
-                        @CoberturaInicio,
-                        @CoberturaCorte,
-                        @Frecuencia,
-                        @FechaPago,
-                        @PagoMonto,
-                        0,
-                        @Monto,
-                        '',
-                        0,
-                        null,
-                        0,
-                        @Plan,
-                        @CtasDeduce,
-                        @SeqCorte,
-                        @Contrato,
-                        @PlazoCredito,
-                        @CuotaRestoPlazo
-                    );";
+            insert into CRD_OPERACION_POLIZAS
+            (
+                id_solicitud_poliza,
+                cod_poliza,
+                id_solicitud,
+                codigo,
+                cuota,
+                registro_fecha,
+                registro_usuario,
+                estado,
+                num_poliza,
+                monto,
+                cobertura_inicio,
+                cobertura_vence,
+                pago_frecuencia,
+                pago_fecha,
+                pago_monto,
+                pago_realizado,
+                pago_saldo,
+                pago_ultimo,
+                recaudado_monto,
+                recaudado_corte,
+                recaudado_saldo,
+                num_seq_inicio,
+                num_ctas_deduce,
+                num_seq_corte,
+                num_contrato,
+                deduce_plazo_credito,
+                cuota_rst_plan
+            )
+            values
+            (
+                0,
+                @PolizaLinea,
+                @Operacion,
+                @Codigo,
+                @Cuota,
+                Getdate(),
+                @Usuario,
+                @Estado,
+                @NumPoliza,
+                @Monto,
+                @CoberturaInicio,
+                @CoberturaCorte,
+                @Frecuencia,
+                @FechaPago,
+                @PagoMonto,
+                0,
+                @Monto,
+                '',
+                0,
+                null,
+                0,
+                @Plan,
+                @CtasDeduce,
+                @SeqCorte,
+                @Contrato,
+                @PlazoCredito,
+                @CuotaRestoPlazo
+            );";
 
                     conn.Execute(sqlInsert, new
                     {
@@ -138,7 +149,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         Plan = request.poliza_plan,
                         CtasDeduce = request.poliza_ctas_deduce,
                         SeqCorte = seqCorte,
-                        Contrato = request.poliza_contrato.Trim(),
+                        Contrato = contrato,
                         PlazoCredito = request.poliza_plazo_credito ? 1 : 0,
                         CuotaRestoPlazo = request.poliza_cuota_resto_plazo
                     }, tx);
@@ -146,23 +157,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 else
                 {
                     const string sqlUpdate = @"
-                    update CRD_OPERACION_POLIZAS
-                       set estado = @Estado,
-                           cuota = @Cuota,
-                           monto = @Monto,
-                           cobertura_inicio = @CoberturaInicio,
-                           cobertura_vence = @CoberturaCorte,
-                           deduce_plazo_credito = @PlazoCredito,
-                           cuota_rst_plan = @CuotaRestoPlazo,
-                           num_seq_inicio = @Plan,
-                           num_ctas_deduce = @CtasDeduce,
-                           num_seq_corte = @SeqCorte,
-                           pago_frecuencia = @Frecuencia,
-                           pago_fecha = @FechaPago,
-                           pago_monto = @PagoMonto,
-                           num_contrato = @Contrato
-                     where id_solicitud = @Operacion
-                       and num_poliza = @NumPoliza;";
+            update CRD_OPERACION_POLIZAS
+               set estado = @Estado,
+                   cuota = @Cuota,
+                   monto = @Monto,
+                   cobertura_inicio = @CoberturaInicio,
+                   cobertura_vence = @CoberturaCorte,
+                   deduce_plazo_credito = @PlazoCredito,
+                   cuota_rst_plan = @CuotaRestoPlazo,
+                   num_seq_inicio = @Plan,
+                   num_ctas_deduce = @CtasDeduce,
+                   num_seq_corte = @SeqCorte,
+                   pago_frecuencia = @Frecuencia,
+                   pago_fecha = @FechaPago,
+                   pago_monto = @PagoMonto,
+                   num_contrato = @Contrato
+             where id_solicitud = @Operacion
+               and num_poliza = @NumPoliza;";
 
                     conn.Execute(sqlUpdate, new
                     {
@@ -179,7 +190,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         Frecuencia = frecuenciaId,
                         FechaPago = request.poliza_fecha_pago,
                         PagoMonto = request.poliza_pago_monto,
-                        Contrato = request.poliza_contrato.Trim(),
+                        Contrato = contrato,
                         Operacion = request.operacion,
                         NumPoliza = numPoliza
                     }, tx);

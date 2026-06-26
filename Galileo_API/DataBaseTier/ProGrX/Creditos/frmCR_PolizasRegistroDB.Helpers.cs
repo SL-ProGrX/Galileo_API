@@ -260,5 +260,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ? "A"
                 : "I";
         }
+
+        private static int? CrPolizasRegistro_ContratoNumero_Obtener(string contrato)
+        {
+            string valor = (contrato ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return null;
+            }
+
+            return int.TryParse(valor, out int contratoNumero)
+                ? contratoNumero
+                : null;
+        }
     }
 }
