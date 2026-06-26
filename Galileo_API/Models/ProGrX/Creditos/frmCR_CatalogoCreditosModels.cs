@@ -319,4 +319,10 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string descripcion { get; set; } = string.Empty;
         public required bool es_titulo { get; set; }
     }
+
+    public class CrCatalogoCreditoBusquedaData
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+    }
 }
