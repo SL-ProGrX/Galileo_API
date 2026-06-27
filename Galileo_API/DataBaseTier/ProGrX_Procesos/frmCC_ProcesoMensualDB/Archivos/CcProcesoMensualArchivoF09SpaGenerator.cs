@@ -85,18 +85,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CcProcesoMensualArchivoF09RegistroDbModel registro,
             CcProcesoMensualGeneraArchivoRequest request)
         {
-            // VB6 fuerza todas las líneas como inclusiones:
-            // i = 2
             const int movimientoSpa = 2;
-
-            var codigoDeduccion = ObtenerCodigoDeduccion(
-                registro.Tipo,
-                _configuracion);
-
-            if (string.IsNullOrWhiteSpace(codigoDeduccion))
-            {
-                return string.Empty;
-            }
 
             var montoActual = RedondearUnDecimal(registro.MontoActual);
             var montoAnterior = RedondearUnDecimal(registro.MontoAnterior);
@@ -104,16 +93,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var builder = new StringBuilder();
 
             builder.Append(movimientoSpa.ToString(CultureInfo.InvariantCulture));
-            builder.Append(codigoDeduccion.Trim());
+
+            var codigoDeduccion = ObtenerCodigoDeduccion(
+                registro.Tipo,
+                _configuracion);
+
+            if (!string.IsNullOrWhiteSpace(codigoDeduccion))
+            {
+                builder.Append(codigoDeduccion.Trim());
+            }
+
             builder.Append(
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.RellenarEspaciosDerecha(
                     LimpiarNombre(registro.Nombre),
                     LargoNombre));
+
             builder.Append(FormatearCedula(registro.Cedula));
+
             builder.Append(
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.RellenarCerosIzquierda(
                     FormatearMontoSpa(montoAnterior),
                     LargoMonto));
+
             builder.Append(
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.RellenarCerosIzquierda(
                     FormatearMontoSpa(montoActual),
@@ -161,14 +162,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             var montoEntero = Convert.ToInt64(monto * 100);
 
-            return montoEntero.ToString(
-                "000",
-                CultureInfo.InvariantCulture);
+            return montoEntero.ToString("00000000", CultureInfo.InvariantCulture); ;
         }
 
         private static string FormatearCedula(string? cedula)
         {
-            var valor = SoloDigitos(cedula);
+            var valor = (cedula ?? string.Empty).Trim();
 
             if (valor.Length > LargoCedula)
             {
@@ -184,10 +183,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     : valor.PadLeft(LargoCedula, '0');
         }
 
-        private static string SoloDigitos(string? valor)
-        {
-            return new string([.. (valor ?? string.Empty).Where(char.IsDigit)]);
-        }
+ 
 
         private static string LimpiarNombre(string? nombre)
         {

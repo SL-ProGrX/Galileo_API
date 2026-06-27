@@ -8,6 +8,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         private const int TipoAporte = 1;
         private const int TipoCredito = 3;
 
+        /// <summary>
+        /// Obtiene la colección de reglas de deducción según el tipo de carga recibido.
+        /// </summary>
+        /// <param name="tipoCarga">Código del tipo de carga a procesar.</param>
+        /// <returns>Colección de reglas aplicables para el tipo de carga indicado.</returns>
         public static IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> ObtenerReglas(
             string tipoCarga)
         {

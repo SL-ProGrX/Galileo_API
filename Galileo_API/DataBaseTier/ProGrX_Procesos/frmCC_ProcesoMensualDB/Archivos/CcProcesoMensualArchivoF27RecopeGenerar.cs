@@ -41,20 +41,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
               AND P.cod_institucion = @CodInstitucion
             ORDER BY P.tipo, P.movimiento, P.cedula";
 
-        protected override void PrepararConfiguracion(IDbConnection connection,
-            CcProcesoMensualArchivoConfiguracionModel configuracion,
-            CcProcesoMensualGeneraArchivoRequest request)
-        {
-            _fechaArchivo = ObtenerFechaArchivo(request.FechaProceso);
-        }
+     
 
         protected override string CrearLineaArchivo(
             CcProcesoMensualArchivoF27RegistroDbModel registro,
             CcProcesoMensualGeneraArchivoRequest request)
         {
             var cedula = FormatearCedula(registro.Cedula);
-            var fechaTexto = _fechaArchivo.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
-            var monto = registro.MontoActual.ToString(CultureInfo.InvariantCulture);
+            
+            var monto = registro.MontoActual.ToString("0");
+
+            DateTime vFecha = DateTime.ParseExact(
+                    request.FechaProceso + "14",
+                    "yyyyMMdd",
+                    CultureInfo.InvariantCulture
+                );
+
+            var fechaTexto = vFecha.ToString("dd.MM.yyyy");
+
 
             if (string.Equals(
                 registro.TipoDeduc?.Trim(),
@@ -93,23 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                     : texto;
         }
 
-        private static DateTime ObtenerFechaArchivo(decimal fechaProceso)
-        {
-            var fechaBase = Math.Truncate(fechaProceso)
-                .ToString(CultureInfo.InvariantCulture);
-
-            var anio = int.Parse(fechaBase[..4], CultureInfo.InvariantCulture);
-            var mes = int.Parse(fechaBase.AsSpan(4, 2), CultureInfo.InvariantCulture);
-
-            return new DateTime(
-                anio,
-                mes,
-                14,
-                0,
-                0,
-                0,
-                DateTimeKind.Unspecified);
-        }
+       
 
         public sealed class CcProcesoMensualArchivoF27RegistroDbModel
         {

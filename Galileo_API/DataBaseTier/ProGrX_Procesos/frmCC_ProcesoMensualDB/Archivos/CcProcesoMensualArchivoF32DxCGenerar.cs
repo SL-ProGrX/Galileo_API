@@ -3,7 +3,7 @@ using System.Globalization;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
 using Microsoft.Extensions.Options;
-
+using ClosedXML.Excel;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos
 {
@@ -73,7 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             var empleado = (registro.CedulaColilla ?? string.Empty).Trim();
             var concepto = registro.CodDeduccion;
-            var monto = registro.MontoActual.ToString(CultureInfo.InvariantCulture);
+            var monto = registro.MontoActual.ToString("0");
 
             if (string.Equals(
                 registro.CodDeduccion?.Trim(),
@@ -93,6 +93,63 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + concepto
                 + ";0;"
                 + monto;
+        }
+        protected override void GenerarArchivosAdicionales( IReadOnlyCollection<CcProcesoMensualArchivoF32RegistroDbModel> registros, CcProcesoMensualGeneraArchivoRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(_rutaArchivoExcel))
+            {
+                return;
+            }
+
+            GenerarArchivoExcel(registros, _rutaArchivoExcel);
+        }
+
+        private static readonly CultureInfo CulturaMonto = new("es-CR");
+        private static void GenerarArchivoExcel( IReadOnlyCollection<CcProcesoMensualArchivoF32RegistroDbModel> registros, string rutaArchivoExcel)
+        {
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Sheet 1");
+
+            worksheet.Cell(1, 1).Value = "empleado";
+            worksheet.Cell(1, 2).Value = "concepto";
+            worksheet.Cell(1, 3).Value = "cantidad";
+            worksheet.Cell(1, 4).Value = "Monto";
+
+            var fila = 2;
+
+            foreach (var registro in registros)
+            {
+                var empleado = (registro.CedulaColilla ?? string.Empty).Trim();
+                var concepto = (registro.CodDeduccion ?? string.Empty).Trim();
+                var monto = Math.Round(registro.MontoActual, 2) .ToString("0.00", CulturaMonto);
+
+                var montoTexto = Math.Round(registro.MontoActual, 2)
+          .ToString("0.00", CulturaMonto)
+          .Replace(".", ",");
+
+                worksheet.Cell(fila, 1).Value = empleado;
+                worksheet.Cell(fila, 2).Value = concepto;
+
+                if (string.Equals(
+                    concepto,
+                    CodigoDeduccionCantidad,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    worksheet.Cell(fila, 3).Value = montoTexto;
+                    worksheet.Cell(fila, 4).Value = "0,00";
+                }
+                else
+                {
+                    worksheet.Cell(fila, 3).Value = "0,00";
+                    worksheet.Cell(fila, 4).Value = montoTexto;
+                }
+
+                fila++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            workbook.SaveAs(rutaArchivoExcel);
         }
 
         protected override List<string> ObtenerArchivosGenerados(
@@ -116,7 +173,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             var fechaProcesoTexto = Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaProceso(fechaProceso);
             var fechaServidorTexto = fechaServidor.ToString("ddMMyyyy", CultureInfo.InvariantCulture);
 
-            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F32]";
+            return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-F32].xlsx";
         }
         public sealed class CcProcesoMensualArchivoF32RegistroDbModel
         {

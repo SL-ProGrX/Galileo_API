@@ -19,6 +19,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public const string PlanillaEnvioSpa = "09";
         public const string PlanillaEnvioIna = "13";
 
+        /// <summary>
+        /// Inicializa una nueva instancia para gestionar la generación y envío del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualEnvioDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -28,6 +32,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
+        /// <summary>
+        /// Ejecuta la generación de deducciones del proceso mensual para una institución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Parámetros de la generación.</param>
+        /// <returns>Resultado de la ejecución.</returns>
         public ErrorDto<bool> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa,  CcProcesoMensualGeneraDeduccionesRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -80,6 +90,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
         }
 
+        /// <summary>
+        /// Obtiene la configuración de generación de deducciones para la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Configuración de generación.</returns>
         private static CcProcesoMensualGeneraConfigDbModel ObtenerConfiguracionGeneracion(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -95,11 +111,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualGeneraConfigDbModel();
         }
 
+        /// <summary>
+        /// Indica si un código está habilitado para procesar.
+        /// </summary>
+        /// <param name="codigo">Código de configuración a evaluar.</param>
+        /// <returns>True si se debe procesar; de lo contrario, false.</returns>
         private static bool DebeProcesar(string codigo)
         {
             return !string.Equals(codigo?.Trim(), "NO", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Calcula la fecha histórica anterior según el número de períodos configurados.
+        /// </summary>
+        /// <param name="fechaProceso">Fecha de proceso actual.</param>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="historicoCobroEnvio">Cantidad de períodos históricos.</param>
+        /// <returns>Fecha anterior calculada.</returns>
         private decimal ObtenerFechaAnteriorHistorica(decimal fechaProceso, int CodEmpresa, int historicoCobroEnvio)
         {
             decimal fechaAnterior = fechaProceso;
@@ -112,6 +140,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             return fechaAnterior;
         }
 
+        /// <summary>
+        /// Ejecuta el flujo de procesamiento de créditos para envío.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
+        /// <param name="glngFechaCR">Fecha CR del sistema.</param>
+        /// <param name="fechaAnterior">Fecha histórica anterior.</param>
         private static void ProcesarCreditosEnvio(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request, decimal glngFechaCR, decimal fechaAnterior)
         {
             EliminarDetalleEnvioAnterior(connection, request.CodInstitucion, request.FechaProceso, fechaAnterior);
@@ -128,6 +163,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             InsertarDobleDeduccion(connection, request);
         }
 
+        /// <summary>
+        /// Elimina detalle de envío previo para evitar duplicados en la generación.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha del proceso actual.</param>
+        /// <param name="fechaAnterior">Fecha histórica de corte.</param>
         private static void EliminarDetalleEnvioAnterior(IDbConnection connection, int codInstitucion, decimal fechaProceso, decimal fechaAnterior)
         {
             const string query = @"
@@ -143,6 +185,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta el envío de créditos ordinarios y mora.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void EjecutarEnvioCreditos(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             ActivarCuotas(connection, request);
@@ -152,6 +199,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             EnviaMora(connection, request);
         }
 
+        /// <summary>
+        /// Activa cuotas para el proceso de envío de créditos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void ActivarCuotas(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"  EXEC spPrmCredito_Activa_Cuotas  @FechaProceso, @CodInstitucion";
@@ -163,6 +215,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Envía cuotas ordinarias de crédito para un paso específico.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
+        /// <param name="paso">Paso a ejecutar.</param>
         private static void EnviarCuotaOrdinaria(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request, int paso)
         {
             const string query = @"
@@ -176,6 +234,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta el envío de mora de créditos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void EnviaMora(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"
@@ -190,6 +253,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Inserta registros de doble deducción para socios marcados con ese indicador.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void InsertarDobleDeduccion(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"
@@ -235,12 +303,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta la codificación de envío de deducciones.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void CodificacionEnvio_Ejecutar(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             CodigosSeparacion_Ejecutar(connection, request);
             DeduccionCodificaEnvio_Ejecutar(connection, request);
         }
 
+        /// <summary>
+        /// Ejecuta la separación de códigos para el envío.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void CodigosSeparacion_Ejecutar(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @" EXEC spPrmProcCodigosSeparacion @CodInstitucion, @FechaProceso";
@@ -252,6 +330,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta la codificación de deducciones para el envío.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void DeduccionCodificaEnvio_Ejecutar(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"EXEC spPrmDeduccionCodifica_Envio @CodInstitucion, @FechaProceso,@Redondeo";
@@ -264,6 +347,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta cambio de deducciones de crédito si el indicador está habilitado.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void CreditoCambioDeducciones_Ejecutar(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request)
         {
             if (!request.AplicaCambioDeducciones)
@@ -280,6 +368,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta exclusiones de política general en créditos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void ExclusionPoliticaGeneral_Ejecutar(IDbConnection connection,CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"  EXEC spPrm_Credito_Excluye_Casos @CodInstitucion, @FechaProceso";
@@ -291,6 +384,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Obtiene configuración de planilla de envío para la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Configuración de planilla de envío.</returns>
         private static CcProcesoMensualPlanillaEnvioConfigDbModel ObtenerConfigPlanillaEnvio( IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -307,6 +406,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualPlanillaEnvioConfigDbModel();
         }
 
+        /// <summary>
+        /// Ejecuta comparación de planilla cuando el indicador lo requiere.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
+        /// <param name="config">Configuración de planilla.</param>
         private static void ComparacionSiAplica_Ejecutar( IDbConnection connection,CcProcesoMensualGeneraDeduccionesRequest request,CcProcesoMensualPlanillaEnvioConfigDbModel config)
         {
             if (config.ComparaIndicador != 1)
@@ -320,6 +425,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 request.FechaProceso);
         }
 
+        /// <summary>
+        /// Genera la planilla de comparación para la institución y período.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha del proceso.</param>
         private static void GeneraPlanillaComp_Ejecutar(IDbConnection connection, int codInstitucion,decimal fechaProceso)
         {
             const string query = @"EXEC spPrm_Planilla_Compra @CodInstitucion, @FechaProceso";
@@ -331,6 +442,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Ejecuta ajustes según el tipo de planilla de envío.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
+        /// <param name="config">Configuración de planilla.</param>
         private static void AjustesPorPlanilla_Ejecutar(IDbConnection connection, CcProcesoMensualGeneraDeduccionesRequest request, CcProcesoMensualPlanillaEnvioConfigDbModel config)
         {
             switch (config.PlanillaEnvio)
@@ -346,6 +463,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
         }
 
+        /// <summary>
+        /// Redondea montos de planilla para el proceso e institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private static void RedondearPlanilla( IDbConnection connection,CcProcesoMensualGeneraDeduccionesRequest request)
         {
             const string query = @"
@@ -362,6 +484,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Aplica redondeo y ajustes específicos para planilla SPA si corresponde.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros del proceso.</param>
+        /// <param name="config">Configuración de planilla.</param>
         private static void RedondearPlanillaSpaSiAplica(IDbConnection connection,CcProcesoMensualGeneraDeduccionesRequest request,CcProcesoMensualPlanillaEnvioConfigDbModel config)
         {
             if (config.ComparaIndicador != 0)
@@ -384,6 +512,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Actualiza el estado de generación en la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void ActualizarEstadoGeneracion( IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -394,6 +527,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
 
+        /// <summary>
+        /// Registra bitácora funcional y de seguridad para la generación de deducciones.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Parámetros del proceso.</param>
         private void RegistrarBitacoraGeneracion( IDbConnection connection,int codEmpresa,  CcProcesoMensualGeneraDeduccionesRequest request)
         {
             var documento = request.UsaPlanillaTransito
@@ -441,6 +580,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             public int ComparaIndicador { get; set; } = 0;
             public string ComparaValor { get; set; } = string.Empty;
         }
+
+        /// <summary>
+        /// Obtiene la fecha de corte asociada a una fecha de proceso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <returns>Fecha de corte calculada.</returns>
         public  DateTime ObtenerFechaCorteProceso( IDbConnection connection, decimal fechaProceso)
         {
             const string query = @" SELECT dbo.fxSIFCorteAFecha(@FechaProceso) AS Corte";
@@ -448,6 +594,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 query,
                 new { FechaProceso = fechaProceso });
         }
+
+        /// <summary>
+        /// Reinicia indicadores del proceso y actualiza fecha de corte en la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaCorte">Fecha de corte a establecer.</param>
         public  void ActualizarInstitucionCambioFechaProceso(  IDbConnection connection, int codInstitucion, DateTime fechaCorte)
         {
             const string query = @"
@@ -461,6 +614,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     FechaCorte = fechaCorte.Date
                 });
         }
+
+        /// <summary>
+        /// Obtiene el indicador de cambio de fecha de proceso de la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>True si el indicador está activo; de lo contrario, false.</returns>
         public  bool ObtenerIndicadorCambioFechaProceso(IDbConnection connection,int codInstitucion)
         {
             const string query = @"
@@ -471,6 +631,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             var cambia = connection.QueryFirstOrDefault<int>( query,  new { CodInstitucion = codInstitucion });
             return cambia == 1;
         }
+
+        /// <summary>
+        /// Actualiza fechas de cálculo en formalizaciones hasta la fecha de corte indicada.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="fechaCorte">Fecha de corte aplicada.</param>
         public  void ActualizarFechaFormalizaciones( IDbConnection connection,DateTime fechaCorte)
         {
             const string query = @"

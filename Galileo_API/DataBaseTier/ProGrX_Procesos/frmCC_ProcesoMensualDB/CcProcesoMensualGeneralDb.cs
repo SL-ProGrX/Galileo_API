@@ -9,10 +9,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     {
 
         private readonly MProGrxMain _mProGrx;
+
+        /// <summary>
+        /// Inicializa una nueva instancia para ejecutar procesos generales del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualGeneralDb(IConfiguration config)
         {       
             _mProGrx = new MProGrxMain(config);
         }
+
+        /// <summary>
+        /// Ejecuta los procesos adicionales configurados para una transacción y tipo de ejecución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="transaccion">Código de transacción.</param>
+        /// <param name="tipo">Tipo de ejecución (por ejemplo PRE o POS).</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <param name="gInstitucion">Código de la institución.</param>
+        /// <param name="proceso">Fecha de proceso; si es 0 se obtiene automáticamente.</param>
         public void CcProcesoMensual_ProcesosAdd_Ejecutar(IDbConnection connection, int codEmpresa, string transaccion, string tipo, string usuario, int gInstitucion, decimal proceso = 0)
         {
            
@@ -51,6 +67,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
 
         }
+
+        /// <summary>
+        /// Ejecuta un procedimiento adicional configurado para el proceso mensual.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="item">Configuración del proceso a ejecutar.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="proceso">Fecha de proceso.</param>
         private static void EjecutarProcesoAdd(IDbConnection connection,CcProcesoMensualProcesoGeneralDbModel item,int codInstitucion, decimal proceso)
         {
             var procedimiento = item.Procedimiento.Trim();
@@ -79,6 +103,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Proceso = proceso
                 });
         }
+
+        /// <summary>
+        /// Construye el comando EXEC para ejecutar un procedimiento con o sin parámetros.
+        /// </summary>
+        /// <param name="procedimiento">Nombre del procedimiento almacenado.</param>
+        /// <param name="parametrosPlanillas">Indicador de uso de parámetros de planilla.</param>
+        /// <param name="parametrosAdd">Parámetros adicionales configurados.</param>
+        /// <returns>Consulta SQL lista para ejecutar.</returns>
         private static string CrearQueryProcesoAdd( string procedimiento, int parametrosPlanillas, string? parametrosAdd)
         {
             if (parametrosPlanillas == 1)
@@ -93,6 +125,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 : $"EXEC {procedimiento} {parametrosAdd}";
         }
 
+        /// <summary>
+        /// Valida que el nombre del procedimiento tenga un formato permitido.
+        /// </summary>
+        /// <param name="procedimiento">Nombre del procedimiento a validar.</param>
+        /// <returns><c>true</c> si el nombre es válido; en caso contrario, <c>false</c>.</returns>
         private static bool EsNombreProcedimientoValido(string procedimiento)
         {
             return !string.IsNullOrWhiteSpace(procedimiento)
@@ -103,6 +140,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     || c == '.');
         }
 
+        /// <summary>
+        /// Valida que la cadena de parámetros adicionales contenga solo caracteres permitidos.
+        /// </summary>
+        /// <param name="parametros">Parámetros adicionales a validar.</param>
+        /// <returns><c>true</c> si los parámetros son válidos; en caso contrario, <c>false</c>.</returns>
         private static bool SonParametrosAdicionalesValidos(string parametros)
         {
             if (string.IsNullOrWhiteSpace(parametros))

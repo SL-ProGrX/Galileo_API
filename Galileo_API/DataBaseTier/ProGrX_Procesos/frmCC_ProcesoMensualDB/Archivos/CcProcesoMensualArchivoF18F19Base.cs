@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             return registro.Tipo?.Trim().ToUpperInvariant() switch
             {
-                TipoAhorro => _porcAhorro.ToString("######0.00", CultureInfo.InvariantCulture),
+                TipoAhorro => registro.MontoActual.ToString("######0.00", CultureInfo.InvariantCulture),
                 TipoExtraordinario => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 TipoCredito => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 _ => string.Empty

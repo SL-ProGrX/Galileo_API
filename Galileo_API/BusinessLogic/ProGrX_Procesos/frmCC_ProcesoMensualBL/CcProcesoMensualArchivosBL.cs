@@ -16,13 +16,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly IEnumerable<ICcProcesoMensualArchivoGenerator> _generadorArchivos;
         private readonly CcProcesoMensualEnvioDb _db;
         private readonly PortalDB _portalDb;
-    
+        private readonly IConfiguration _config;
+
         public CcProcesoMensualArchivosBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
             _generadorArchivos = generadores;
             _db = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
-           
+            _config = config;
         }
 
         public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, CcProcesoMensualGeneraDeduccionesRequest request)
@@ -43,7 +44,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             CcProcesoMensualGeneraArchivoRequest archivoRequest = new()
             {
                 CodInstitucion = request.CodInstitucion,
-                NombreInstitucion= request.NombreInstitucion,
+                EmpresaId = codEmpresa,
+                NombreInstitucion = request.NombreInstitucion,
                 FechaProceso = request.FechaProceso,
                 Usuario = request.Usuario
             };
@@ -70,7 +72,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                     Gestion = "E",
                     Usuario = request.Usuario,                     
                 } );
-             
+
+            var globalesResp = new MProGrxMain(_config).sbSifParametrosInicializa(request.EmpresaId, request.Usuario);
+            request.NombreEmpresa = globalesResp?.Result is null
+                    ? string.Empty
+                    : globalesResp.Result.GstrNombreEmpresa;
 
             var planillaEnvio = ObtenerPlanillaEnvio( connection,  request.CodInstitucion);
 
