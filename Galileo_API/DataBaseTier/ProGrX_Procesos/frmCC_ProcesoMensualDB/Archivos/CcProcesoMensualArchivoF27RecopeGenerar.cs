@@ -13,8 +13,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         public CcProcesoMensualArchivoF27RecopeGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions) : base(archivosOptions)
         { }
 
-        private const string TipoDeduccionMonto = "M"; 
-        private DateTime _fechaArchivo = DateTime.MinValue;
+        private const string TipoDeduccionMonto = "M";
+        readonly DateTime _fechaArchivo = DateTime.MinValue;
 
         public override IReadOnlyCollection<string> CodigosPlanillaEnvio { get; } = ["27"];
 

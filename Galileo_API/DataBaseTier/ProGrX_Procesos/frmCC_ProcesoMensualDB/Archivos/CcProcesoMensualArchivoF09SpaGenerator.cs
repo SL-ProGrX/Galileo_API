@@ -162,7 +162,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         {
             var montoEntero = Convert.ToInt64(monto * 100);
 
-            return montoEntero.ToString("00000000", CultureInfo.InvariantCulture); ;
+            return montoEntero.ToString("00000000", CultureInfo.InvariantCulture);
         }
 
         private static string FormatearCedula(string? cedula)

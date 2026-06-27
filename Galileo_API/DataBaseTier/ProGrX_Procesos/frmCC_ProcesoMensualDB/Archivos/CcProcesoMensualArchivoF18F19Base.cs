@@ -34,7 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             _porcAhorro = configuracion.PorcAhorro;
         }
 
-        protected string FormatearMontoPorTipo(TRegistro registro)
+        static protected string FormatearMontoPorTipo(TRegistro registro)
         {
             return registro.Tipo?.Trim().ToUpperInvariant() switch
             {

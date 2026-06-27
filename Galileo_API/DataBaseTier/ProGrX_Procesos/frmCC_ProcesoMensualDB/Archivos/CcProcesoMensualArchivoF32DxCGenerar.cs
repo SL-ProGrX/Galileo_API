@@ -121,8 +121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             {
                 var empleado = (registro.CedulaColilla ?? string.Empty).Trim();
                 var concepto = (registro.CodDeduccion ?? string.Empty).Trim();
-                var monto = Math.Round(registro.MontoActual, 2) .ToString("0.00", CulturaMonto);
-
+               
                 var montoTexto = Math.Round(registro.MontoActual, 2)
           .ToString("0.00", CulturaMonto)
           .Replace(".", ",");
