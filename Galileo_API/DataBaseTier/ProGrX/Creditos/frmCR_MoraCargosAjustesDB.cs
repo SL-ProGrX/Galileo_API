@@ -317,10 +317,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 using var tx = conn.BeginTransaction();
 
                 var lista = request.lista ?? new List<CrMoraCargosAjustesCuotasData>();
-                var lineas = lista.Select(item => item.linea).ToList();
+
                 if (lista.Count > 0)
                 {
-                    foreach (var item in lista)
+                    foreach (var linea in lista.Select(item => item.linea))
                     {
                         if (sysPlanPagos == 1)
                         {
@@ -339,7 +339,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                             conn.Execute(sqlPlan, new
                             {
-                                Linea = item.linea,
+                                Linea = linea,
                                 Operacion = request.operacion
                             }, tx);
                         }
@@ -352,7 +352,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                             conn.Execute(sqlMora, new
                             {
-                                Linea = item.linea
+                                Linea = linea
                             }, tx);
                         }
                     }
