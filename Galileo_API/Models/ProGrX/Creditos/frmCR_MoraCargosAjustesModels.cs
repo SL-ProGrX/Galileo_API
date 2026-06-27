@@ -42,27 +42,31 @@
         public int id_mora { get; set; } = 0;
     }
 
-    public class CrMoraCargosAjustesFechaRequest
+    public abstract class CrMoraCargosAjustesRequestBase
     {
         public int operacion { get; set; } = 0;
-        public DateTime fecha_documento { get; set; } = DateTime.Now;
         public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CrMoraCargosAjustesFechaRequest : CrMoraCargosAjustesRequestBase
+    {
+        public DateTime fecha_documento { get; set; } = DateTime.Now;
+    }
+
+    public class CrMoraCargosAjustesEliminarRequest<T> : CrMoraCargosAjustesRequestBase
+    {
+        public string notas { get; set; } = string.Empty;
+        public List<T> lista { get; set; } = new();
     }
 
     public class CrMoraCargosAjustesCuotasEliminarRequest
+        : CrMoraCargosAjustesEliminarRequest<CrMoraCargosAjustesCuotasData>
     {
-        public int operacion { get; set; } = 0;
-        public string usuario { get; set; } = string.Empty;
-        public string notas { get; set; } = string.Empty;
-        public List<CrMoraCargosAjustesCuotasData> lista { get; set; } = new();
     }
 
     public class CrMoraCargosAjustesCargosEliminarRequest
+        : CrMoraCargosAjustesEliminarRequest<CrMoraCargosAjustesCargosData>
     {
-        public int operacion { get; set; } = 0;
-        public string usuario { get; set; } = string.Empty;
-        public string notas { get; set; } = string.Empty;
-        public List<CrMoraCargosAjustesCargosData> lista { get; set; } = new();
     }
 
     internal sealed class CrMoraCargosAjustesOperacionBaseData
