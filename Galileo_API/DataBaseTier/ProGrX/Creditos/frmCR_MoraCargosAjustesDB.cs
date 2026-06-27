@@ -316,9 +316,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 using var tx = conn.BeginTransaction();
 
-                if (request.lista != null)
+                var lista = request.lista ?? new List<CrMoraCargosAjustesCuotasData>();
+                var lineas = lista.Select(item => item.linea).ToList();
+                if (lista.Count > 0)
                 {
-                    foreach (var item in request.lista)
+                    foreach (var item in lista)
                     {
                         if (sysPlanPagos == 1)
                         {
@@ -357,7 +359,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                     tx.Commit();
 
-                    foreach (var item in request.lista)
+                    foreach (var item in lista)
                     {
                         MCredito.SbBitacoraCredito(
                             _portalDb,
