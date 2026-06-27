@@ -34,7 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             _porcAhorro = configuracion.PorcAhorro;
         }
 
-        static protected string FormatearMontoPorTipo(TRegistro registro)
+        protected static string FormatearMontoPorTipo(TRegistro registro)
         {
             return registro.Tipo?.Trim().ToUpperInvariant() switch
             {
@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             };
         }
 
-        protected string FormatearMontoPorTipoSinPunto(TRegistro registro)
+        protected static string FormatearMontoPorTipoSinPunto(TRegistro registro)
         {
             return FormatearMontoPorTipo(registro)
                 .Replace(".", string.Empty, StringComparison.Ordinal);
