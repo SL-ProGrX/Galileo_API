@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Creditos;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -11,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
         private readonly MSecurityMainDb _securityMainDb;
-        private const int ModuloCredito = 3; 
+        private const int ModuloCredito = 3;
         private const string MensajeOperacionRequerida = "Debe indicar la operaci&oacute;n.";
 
         public FrmCrMoraCargosAjustesDb(IConfiguration config)
@@ -288,114 +289,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.usuario = CrMoraCargosAjustes_NormalizarTexto(request.usuario);
             request.notas = CrMoraCargosAjustes_NormalizarTexto(request.notas);
 
-            var validacion = CrMoraCargosAjustes_Eliminar_Validar(
-                request.operacion,
-                request.usuario,
-                request.notas,
-                request.lista?.Count ?? 0);
-
-            if (validacion is not null)
-            {
-                return validacion;
-            }
-
-            var operacionBaseResp = CrMoraCargosAjustes_OperacionBase_Obtener(codEmpresa, request.operacion);
-            if (operacionBaseResp.Code != 0 || operacionBaseResp.Result is null)
-            {
-                return DbHelper.ErrorResponse(
-                    operacionBaseResp.Description ?? "No se encontr&oacute; la operaci&oacute;n activa.",
-                    operacionBaseResp.Code.GetValueOrDefault(-1));
-            }
-
-            int sysPlanPagos = CrMoraCargosAjustes_SysPlanPagos_Obtener(codEmpresa);
-
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                conn.Open();
-
-                using var tx = conn.BeginTransaction();
-
-                var lista = request.lista ?? new List<CrMoraCargosAjustesCuotasData>();
-
-                if (lista.Count > 0)
+            return CrMoraCargosAjustes_Eliminar_Ejecutar(
+                new CrMoraCargosAjustesEliminarContext<CrMoraCargosAjustesCuotasData>
                 {
-                    foreach (var linea in lista.Select(item => item.linea))
-                    {
-                        if (sysPlanPagos == 1)
-                        {
-                            const string sqlPlan = @"
-                            update CRD_OPERACION_TRANSAC
-                               set mora_dias = 0,
-                                   intMor = 0
-                             where ID_SEQ = @Linea
-                               and id_solicitud = @Operacion;
-
-                            update CRD_OPERACION_PLAN_PAGOS
-                               set mora_dias = 0,
-                                   intMor = 0
-                             where ID_SEQ = @Linea
-                               and id_solicitud = @Operacion;";
-
-                            conn.Execute(sqlPlan, new
-                            {
-                                Linea = linea,
-                                Operacion = request.operacion
-                            }, tx);
-                        }
-                        else
-                        {
-                            const string sqlMora = @"
-                            update morosidad
-                               set estado = 'N'
-                             where id_moro = @Linea;";
-
-                            conn.Execute(sqlMora, new
-                            {
-                                Linea = linea
-                            }, tx);
-                        }
-                    }
-
-                    tx.Commit();
-
-                    foreach (var item in lista)
-                    {
-                        MCredito.SbBitacoraCredito(
-                            _portalDb,
-                            codEmpresa,
-                            new MCredito.CrBitacoraCreditoRequest
-                            {
-                                usuario = request.usuario,
-                                movimiento = "06",
-                                detalle = $"Id..:{item.linea}",
-                                tipo = "C",
-                                operacion = request.operacion,
-                                codigo = operacionBaseResp.Result.codigo,
-                                notas = $"Int.Mor..: {item.int_mor}   Dias..: {item.dias_mora}    Notas..: {request.notas}"
-                            });
-
-                        _securityMainDb.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = codEmpresa,
-                            Usuario = request.usuario.ToUpperInvariant(),
-                            DetalleMovimiento = $"Morosidad OP: {request.operacion} ID: {item.linea}",
-                            Movimiento = "Anula - WEB",
-                            Modulo = ModuloCredito
-                        });
-                    }
-                }
-
-                return new ErrorDto
-                {
-                    Code = 0,
-                    Description = "Reversiones realizadas Satisfactoriamente..."
-                };
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message, -1);
-            }
+                    CodEmpresa = codEmpresa,
+                    Operacion = request.operacion,
+                    Usuario = request.usuario,
+                    Notas = request.notas,
+                    Lista = request.lista,
+                    MensajeExito = "Reversiones realizadas Satisfactoriamente...",
+                    EjecutarEliminacion = CrMoraCargosAjustes_Cuota_Eliminar,
+                    RegistrarBitacora = CrMoraCargosAjustes_Cuota_Bitacora
+                });
         }
 
         /// <summary>
@@ -411,18 +316,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.usuario = CrMoraCargosAjustes_NormalizarTexto(request.usuario);
             request.notas = CrMoraCargosAjustes_NormalizarTexto(request.notas);
 
+            return CrMoraCargosAjustes_Eliminar_Ejecutar(
+                new CrMoraCargosAjustesEliminarContext<CrMoraCargosAjustesCargosData>
+                {
+                    CodEmpresa = codEmpresa,
+                    Operacion = request.operacion,
+                    Usuario = request.usuario,
+                    Notas = request.notas,
+                    Lista = request.lista,
+                    MensajeExito = "Reversi&oacute;n realizada Satisfactoriamente...",
+                    EjecutarEliminacion = CrMoraCargosAjustes_Cargo_Eliminar,
+                    RegistrarBitacora = CrMoraCargosAjustes_Cargo_Bitacora
+                });
+        }
+
+        private ErrorDto CrMoraCargosAjustes_Eliminar_Ejecutar<T>(
+            CrMoraCargosAjustesEliminarContext<T> context)
+        {
             var validacion = CrMoraCargosAjustes_Eliminar_Validar(
-                request.operacion,
-                request.usuario,
-                request.notas,
-                request.lista?.Count ?? 0);
+                context.Operacion,
+                context.Usuario,
+                context.Notas,
+                context.Lista?.Count ?? 0);
 
             if (validacion is not null)
             {
                 return validacion;
             }
 
-            var operacionBaseResp = CrMoraCargosAjustes_OperacionBase_Obtener(codEmpresa, request.operacion);
+            var operacionBaseResp = CrMoraCargosAjustes_OperacionBase_Obtener(
+                context.CodEmpresa,
+                context.Operacion);
+
             if (operacionBaseResp.Code != 0 || operacionBaseResp.Result is null)
             {
                 return DbHelper.ErrorResponse(
@@ -430,103 +355,189 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     operacionBaseResp.Code.GetValueOrDefault(-1));
             }
 
-            int sysPlanPagos = CrMoraCargosAjustes_SysPlanPagos_Obtener(codEmpresa);
+            int sysPlanPagos = CrMoraCargosAjustes_SysPlanPagos_Obtener(context.CodEmpresa);
 
             try
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                using var conn = DbHelper.OpenConnection(_portalDb, context.CodEmpresa);
                 conn.Open();
 
                 using var tx = conn.BeginTransaction();
 
-                if (request.lista != null)
+                foreach (var item in context.Lista!)
                 {
-                    foreach (var item in request.lista)
-                    {
-                        if (sysPlanPagos == 1)
-                        {
-                            const string sqlPlan = @"
-                            delete CRD_OPERACION_TRANSAC_CARGOS
-                             where Linea = @IdCargo
-                               and id_seq = @IdMora
-                               and id_solicitud = @Operacion;
+                    context.EjecutarEliminacion(conn, tx, item, sysPlanPagos, context.Operacion);
+                }
 
-                            update CRD_OPERACION_TRANSAC
-                               set Cargos = Cargos - @Monto
-                             where id_seq = @IdMora
-                               and id_solicitud = @Operacion;
+                tx.Commit();
 
-                            update CRD_OPERACION_PLAN_PAGOS
-                               set Cargos = Cargos - @Monto
-                             where id_seq = @IdMora
-                               and id_solicitud = @Operacion;";
-
-                            conn.Execute(sqlPlan, new
-                            {
-                                IdCargo = item.id_cargo,
-                                IdMora = item.id_mora,
-                                Monto = item.monto,
-                                Operacion = request.operacion
-                            }, tx);
-                        }
-                        else
-                        {
-                            const string sqlMora = @"
-                            delete morosidad_cargos
-                             where id_cargo = @IdCargo;
-
-                            update morosidad
-                               set Cargo = Cargo - @Monto
-                             where id_moro = @IdMora;";
-
-                            conn.Execute(sqlMora, new
-                            {
-                                IdCargo = item.id_cargo,
-                                IdMora = item.id_mora,
-                                Monto = item.monto
-                            }, tx);
-                        }
-                    }
-
-                    tx.Commit();
-
-                    foreach (var item in request.lista)
-                    {
-                        MCredito.SbBitacoraCredito(
-                            _portalDb,
-                            codEmpresa,
-                            new MCredito.CrBitacoraCreditoRequest
-                            {
-                                usuario = request.usuario,
-                                movimiento = "23",
-                                detalle = item.notas,
-                                tipo = "C",
-                                operacion = request.operacion,
-                                codigo = operacionBaseResp.Result.codigo,
-                                notas = $"Monto..: {item.monto}   Id..: {item.id_cargo}    Notas..: {request.notas}"
-                            });
-
-                        _securityMainDb.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = codEmpresa,
-                            Usuario = request.usuario.ToUpperInvariant(),
-                            DetalleMovimiento = $"Cargos OP: {request.operacion} Id: {item.id_cargo} Monto..: {item.monto}",
-                            Movimiento = "Elimina - WEB",
-                            Modulo = ModuloCredito
-                        });
-                    }
+                foreach (var item in context.Lista)
+                {
+                    context.RegistrarBitacora(item, operacionBaseResp.Result, context);
                 }
 
                 return new ErrorDto
                 {
                     Code = 0,
-                    Description = "Reversi&oacute;n realizada Satisfactoriamente..."
+                    Description = context.MensajeExito
                 };
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message, -1);
             }
+        }
+
+        private void CrMoraCargosAjustes_Cuota_Eliminar(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CrMoraCargosAjustesCuotasData item,
+            int sysPlanPagos,
+            int operacion)
+        {
+            if (sysPlanPagos == 1)
+            {
+                const string sqlPlan = @"
+                    update CRD_OPERACION_TRANSAC
+                       set mora_dias = 0,
+                           intMor = 0
+                     where ID_SEQ = @Linea
+                       and id_solicitud = @Operacion;
+
+                    update CRD_OPERACION_PLAN_PAGOS
+                       set mora_dias = 0,
+                           intMor = 0
+                     where ID_SEQ = @Linea
+                       and id_solicitud = @Operacion;";
+
+                conn.Execute(sqlPlan, new
+                {
+                    Linea = item.linea,
+                    Operacion = operacion
+                }, tx);
+
+                return;
+            }
+
+            const string sqlMora = @"
+                update morosidad
+                   set estado = 'N'
+                 where id_moro = @Linea;";
+
+            conn.Execute(sqlMora, new
+            {
+                Linea = item.linea
+            }, tx);
+        }
+
+        private void CrMoraCargosAjustes_Cargo_Eliminar(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CrMoraCargosAjustesCargosData item,
+            int sysPlanPagos,
+            int operacion)
+        {
+            if (sysPlanPagos == 1)
+            {
+                const string sqlPlan = @"
+                    delete CRD_OPERACION_TRANSAC_CARGOS
+                     where Linea = @IdCargo
+                       and id_seq = @IdMora
+                       and id_solicitud = @Operacion;
+
+                    update CRD_OPERACION_TRANSAC
+                       set Cargos = Cargos - @Monto
+                     where id_seq = @IdMora
+                       and id_solicitud = @Operacion;
+
+                    update CRD_OPERACION_PLAN_PAGOS
+                       set Cargos = Cargos - @Monto
+                     where id_seq = @IdMora
+                       and id_solicitud = @Operacion;";
+
+                conn.Execute(sqlPlan, new
+                {
+                    IdCargo = item.id_cargo,
+                    IdMora = item.id_mora,
+                    Monto = item.monto,
+                    Operacion = operacion
+                }, tx);
+
+                return;
+            }
+
+            const string sqlMora = @"
+                delete morosidad_cargos
+                 where id_cargo = @IdCargo;
+
+                update morosidad
+                   set Cargo = Cargo - @Monto
+                 where id_moro = @IdMora;";
+
+            conn.Execute(sqlMora, new
+            {
+                IdCargo = item.id_cargo,
+                IdMora = item.id_mora,
+                Monto = item.monto
+            }, tx);
+        }
+
+        private void CrMoraCargosAjustes_Cuota_Bitacora(
+            CrMoraCargosAjustesCuotasData item,
+            CrMoraCargosAjustesOperacionBaseData operacionBase,
+            CrMoraCargosAjustesEliminarContext<CrMoraCargosAjustesCuotasData> context)
+        {
+            MCredito.SbBitacoraCredito(
+                _portalDb,
+                context.CodEmpresa,
+                new MCredito.CrBitacoraCreditoRequest
+                {
+                    usuario = context.Usuario,
+                    movimiento = "06",
+                    detalle = $"Id..:{item.linea}",
+                    tipo = "C",
+                    operacion = context.Operacion,
+                    codigo = operacionBase.codigo,
+                    notas = $"Int.Mor..: {item.int_mor}   Dias..: {item.dias_mora}    Notas..: {context.Notas}"
+                });
+
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = context.CodEmpresa,
+                Usuario = context.Usuario.ToUpperInvariant(),
+                DetalleMovimiento = $"Morosidad OP: {context.Operacion} ID: {item.linea}",
+                Movimiento = "Anula - WEB",
+                Modulo = ModuloCredito
+            });
+        }
+
+        private void CrMoraCargosAjustes_Cargo_Bitacora(
+            CrMoraCargosAjustesCargosData item,
+            CrMoraCargosAjustesOperacionBaseData operacionBase,
+            CrMoraCargosAjustesEliminarContext<CrMoraCargosAjustesCargosData> context)
+        {
+            MCredito.SbBitacoraCredito(
+                _portalDb,
+                context.CodEmpresa,
+                new MCredito.CrBitacoraCreditoRequest
+                {
+                    usuario = context.Usuario,
+                    movimiento = "23",
+                    detalle = item.notas,
+                    tipo = "C",
+                    operacion = context.Operacion,
+                    codigo = operacionBase.codigo,
+                    notas = $"Monto..: {item.monto}   Id..: {item.id_cargo}    Notas..: {context.Notas}"
+                });
+
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = context.CodEmpresa,
+                Usuario = context.Usuario.ToUpperInvariant(),
+                DetalleMovimiento = $"Cargos OP: {context.Operacion} Id: {item.id_cargo} Monto..: {item.monto}",
+                Movimiento = "Elimina - WEB",
+                Modulo = ModuloCredito
+            });
         }
 
         private ErrorDto<CrMoraCargosAjustesOperacionBaseData?> CrMoraCargosAjustes_OperacionBase_Obtener(
@@ -594,6 +605,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static string CrMoraCargosAjustes_NormalizarTexto(string valor)
         {
             return (valor ?? string.Empty).Trim();
+        }
+
+        private sealed class CrMoraCargosAjustesEliminarContext<T>
+        {
+            public int CodEmpresa { get; set; } = 0;
+            public int Operacion { get; set; } = 0;
+            public string Usuario { get; set; } = string.Empty;
+            public string Notas { get; set; } = string.Empty;
+            public IList<T>? Lista { get; set; }
+            public string MensajeExito { get; set; } = string.Empty;
+            public Action<IDbConnection, IDbTransaction, T, int, int> EjecutarEliminacion { get; set; } = default!;
+            public Action<T, CrMoraCargosAjustesOperacionBaseData, CrMoraCargosAjustesEliminarContext<T>> RegistrarBitacora { get; set; } = default!;
         }
     }
 }
