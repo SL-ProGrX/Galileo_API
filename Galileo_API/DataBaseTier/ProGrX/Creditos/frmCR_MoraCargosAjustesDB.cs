@@ -11,7 +11,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
         private readonly MSecurityMainDb _securityMainDb;
-        private const int ModuloCredito = 3;
+        private const int ModuloCredito = 3; 
+        private const string MensajeOperacionRequerida = "Debe indicar la operaci&oacute;n.";
 
         public FrmCrMoraCargosAjustesDb(IConfiguration config)
         {
@@ -93,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacionId <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operaci&oacute;n.",
+                    MensajeOperacionRequerida,
                     -2,
                     new List<CrMoraCargosAjustesCuotasData>());
             }
@@ -153,7 +154,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacionId <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operaci&oacute;n.",
+                    MensajeOperacionRequerida,
                     -2,
                     new List<CrMoraCargosAjustesCargosData>());
             }
@@ -220,7 +221,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (request.operacion <= 0)
             {
-                return DbHelper.ErrorResponse("Debe indicar la operaci&oacute;n.", -2);
+                return DbHelper.ErrorResponse(MensajeOperacionRequerida, -2);
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
@@ -563,7 +564,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0)
             {
-                return DbHelper.ErrorResponse("Debe indicar la operaci&oacute;n.", -2);
+                return DbHelper.ErrorResponse(MensajeOperacionRequerida, -2);
             }
 
             if (string.IsNullOrWhiteSpace(usuario))
