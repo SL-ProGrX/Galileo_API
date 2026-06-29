@@ -25,6 +25,7 @@
             public bool AplicaCambioDeducciones { get; set; } = false;
             public int Redondeo { get; set; } = 0;
             public string NombreInstitucion { get; set; } = string.Empty;
+            public string NombreEmpresa{ get; set; } = string.Empty;
         }
 
         public class CcProcesoMensualArchivoGeneradoModel

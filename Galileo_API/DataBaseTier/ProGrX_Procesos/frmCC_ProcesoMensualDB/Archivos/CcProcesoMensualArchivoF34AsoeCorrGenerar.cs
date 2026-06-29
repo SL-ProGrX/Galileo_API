@@ -49,7 +49,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ";"
                 + registro.CodDeduccion
                 + ";"
-                + registro.MontoActual.ToString(CultureInfo.InvariantCulture)
+                + registro.MontoActual.ToString("0")
                 + ";"
                 + registro.Nombre;
         }
