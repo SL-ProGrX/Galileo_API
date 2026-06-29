@@ -1149,7 +1149,7 @@ namespace Galileo.DataBaseTier
             };
             decimal curMonto = 0;
             long lngCasos = 0;
-            string strDivisa = "", vLetra = "", vBancoNom = "";
+            string strDivisa = "", vLetra = "";
             try
             {
                 string query = "";
