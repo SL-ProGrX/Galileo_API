@@ -36,6 +36,21 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CrCatalogoCreditos_Adjuntos_Obtener(codEmpresa, codigo);
         }
 
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Oficinas_Obtener(int codEmpresa)
+        {
+            return _db.CrCatalogoCreditos_Oficinas_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Planes_Obtener(int codEmpresa)
+        {
+            return _db.CrCatalogoCreditos_Planes_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Divisas_Obtener(int codEmpresa)
+        {
+            return _db.CrCatalogoCreditos_Divisas_Obtener(codEmpresa);
+        }
+
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
         {
             return _db.CrCatalogoCreditos_Asignacion_Guardar(codEmpresa, request);
