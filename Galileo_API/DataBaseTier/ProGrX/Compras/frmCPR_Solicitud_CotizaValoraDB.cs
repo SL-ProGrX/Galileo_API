@@ -40,7 +40,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CprValoracionLista>(
                     "spCPR_SolicitudProveedores_Obtener",
-                    new { consulta, cpr_id },
+                    new { compra = consulta, cpr_id = cpr_id },
                     commandType: CommandType.StoredProcedure
                 ).ToList()
             );
@@ -131,7 +131,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CprSolicitudProvDto>(
                     "spCPR_SolicitudProvInvitados_Obtener",
-                    new { cpr_id },
+                    new { cpr_id = cpr_id },
                     commandType: CommandType.StoredProcedure
                 ).ToList()
             );
@@ -142,7 +142,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CprSolicitudPrvBs>(
                     "spCPR_SolicitudProvCotiLista_Obtener",
-                    new { cpr_id, cod_proveedor },
+                    new { cpr_id = cpr_id, cod_proveedor = cod_proveedor },
                     commandType: CommandType.StoredProcedure
                 ).ToList()
             );
@@ -281,7 +281,7 @@ namespace Galileo.DataBaseTier
         {
             conn.Execute(
                 "spCPR_SolicitudProv_Invitar",
-                new { proveedor_codigo = data.ProveedorCodigo, cpr_id = data.CprId, registro_usuario = data.Usuario },
+                new { cod_proveedor = data.ProveedorCodigo, cpr_id = data.CprId, usuario = data.Usuario },
                 transaction: tx,
                 commandType: CommandType.StoredProcedure
             );

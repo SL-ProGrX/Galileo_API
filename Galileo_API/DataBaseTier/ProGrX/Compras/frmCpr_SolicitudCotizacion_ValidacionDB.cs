@@ -19,7 +19,7 @@ namespace Galileo.DataBaseTier
             {
                 var list = conn.Query<CprSolicitudCotizacionPrvBs>(
                     "spCPR_ValidarCotizacion_Consultar",
-                    new { cpr_id, cod_unidad },
+                    new { cpr_id = cpr_id, cod_proveedor = cod_unidad },
                     commandType: System.Data.CommandType.StoredProcedure
                 ).ToList();
 

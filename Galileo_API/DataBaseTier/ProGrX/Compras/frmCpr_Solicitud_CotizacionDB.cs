@@ -94,7 +94,7 @@ namespace Galileo.DataBaseTier
             var xmlOutput = MProGrXAuxiliarDB.fxConvertModelToXml<CprSolicitudCotizacionPrvBs>(cotizacion);
 
             var spParams = new DynamicParameters();
-            spParams.Add("@datos", xmlOutput, DbType.String, ParameterDirection.Input);
+            spParams.Add("@detalle", xmlOutput, DbType.String, ParameterDirection.Input);
             spParams.Add("@ID_COTIZACION_OUTPUT", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             conn.Execute(
@@ -233,7 +233,7 @@ namespace Galileo.DataBaseTier
             {
                 conn.Execute(
                     "spCPR_SolicitudCotizacion_Eliminar",
-                    new { IdLinea = id_cotizacion_linea }, // usa el nombre real del parámetro si difiere
+                    new { id_cotizacion_linea = id_cotizacion_linea }, // usa el nombre real del parámetro si difiere
                     commandType: CommandType.StoredProcedure
                 );
 
@@ -252,7 +252,7 @@ namespace Galileo.DataBaseTier
             {
                 var list = conn.Query<CprSolicitudProvCotiza>(
                     "spCPR_SolicitudCotiLista_Obtener",
-                    new { CprId = cpr_id, CodProveedor = cod_proveedor }, // usa nombres reales del SP si difieren
+                    new { cpr_id = cpr_id, cod_proveedor = cod_proveedor }, // usa nombres reales del SP si difieren
                     commandType: CommandType.StoredProcedure
                 ).AsList();
 
