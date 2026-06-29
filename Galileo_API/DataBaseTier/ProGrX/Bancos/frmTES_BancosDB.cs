@@ -431,7 +431,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             };
         }
 
-        private static int UpdateBanco(SqlConnection conn, int idBanco, object sqlParams)
+        private static void UpdateBanco(SqlConnection conn, int idBanco, object sqlParams)
         {
             string SqlUpdateBanco = @"update Tes_Bancos set Descripcion = @nombre, Puente = @cuentaBancariaPuente
                         ,estado = @estado, Utiliza_Plan = @utilizaPlan, formato_transferencia = @formato
