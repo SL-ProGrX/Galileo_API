@@ -12,6 +12,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         private const string NombreInstitucionDefault = "SinInstitucion";
         private const string DireccionDerecha = "D";
         public static readonly Encoding Utf8SinBom = new UTF8Encoding(false);
+
+        /// <summary>
+        /// Crea un nombre de archivo estándar para los archivos generados en el proceso mensual.
+        /// </summary>
+        /// <param name="codInstitucion"></param>
+        /// <param name="fechaProceso"></param>
+        /// <param name="codigoInstDeduc"></param>
+        /// <param name="fechaServidor"></param>
+        /// <param name="codigoFormato"></param>
+        /// <param name="extension"></param>
+        /// <returns></returns>
         public static string CrearNombreArchivoEstandar(
             int codInstitucion,
             decimal fechaProceso,
@@ -30,6 +41,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return $"E-{codigoInstitucion}_{fechaProcesoTexto} [{fechaServidorTexto}-{codigoFormato}]{extension}";
         }
 
+        /// <summary>
+        /// Formatea la fecha de proceso en el formato "YYYY-MM" a partir de un valor decimal.
+        /// </summary>
+        /// <param name="fechaProceso"></param>
+        /// <returns></returns>
         public static string FormatearFechaProceso(decimal fechaProceso)
         {
             var fechaBase = ObtenerFechaProcesoTexto(fechaProceso);
@@ -39,6 +55,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 : fechaBase;
         }
 
+        /// <summary>
+        /// Obtiene el año de proceso a partir de un valor decimal que representa la fecha de proceso.
+        /// </summary>
+        /// <param name="fechaProceso"></param>
+        /// <returns></returns>
         public static string ObtenerAnioProceso(decimal fechaProceso)
         {
             var fechaBase = ObtenerFechaProcesoTexto(fechaProceso);
@@ -47,7 +68,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 ? fechaBase[..4]
                 : fechaBase;
         }
-
+        /// <summary>
+        /// Rellena una cadena con ceros a la izquierda hasta alcanzar un largo específico.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="largo"></param>
+        /// <returns></returns>
         public static string RellenarCerosIzquierda(string? valor, int largo)
         {
             return AjustarTexto(
@@ -56,7 +82,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 '0',
                 alinearDerecha: true);
         }
-
+        /// <summary>
+        /// Rellena una cadena con espacios a la derecha hasta alcanzar un largo específico.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="largo"></param>
+        /// <returns></returns>
         public static string RellenarEspaciosDerecha(string? valor, int largo)
         {
             return AjustarTexto(
@@ -65,8 +96,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 ' ',
                 alinearDerecha: false);
         }
-
-        public static string ObtenerRutaPlanilla(  CcProcesoMensualGeneraArchivoRequest request, string rutaBaseConfigurada)
+        /// <summary>
+        /// Obtiene la ruta completa para almacenar la planilla generada, basada en la fecha de proceso y el nombre de la institución.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="rutaBaseConfigurada"></param>
+        /// <returns></returns>
+        public static string ObtenerRutaPlanilla(CcProcesoMensualGeneraArchivoRequest request, string rutaBaseConfigurada)
         {
             ArgumentNullException.ThrowIfNull(request);
 
@@ -86,10 +122,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             return rutaFinal;
         }
-
-        public static void CrearDirectorioSiNoExiste(
-     string rutaBaseConfigurada,
-     string rutaDirectorio)
+        /// <summary>
+        /// Crea un directorio si no existe, asegurando que la ruta esté dentro de la ruta base configurada.
+        /// </summary>
+        /// <param name="rutaBaseConfigurada"></param>
+        /// <param name="rutaDirectorio"></param>
+        public static void CrearDirectorioSiNoExiste(string rutaBaseConfigurada, string rutaDirectorio)
         {
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
             var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
@@ -98,10 +136,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             Directory.CreateDirectory(rutaDirectorioSeguro);
         }
-
-        private static void ValidarRutaDentroDeBase(
-    string rutaBase,
-    string rutaFinal)
+        /// <summary>
+        /// Valida que la ruta final esté dentro de la ruta base configurada, lanzando una excepción si no es así.
+        /// </summary>
+        /// <param name="rutaBase"></param>
+        /// <param name="rutaFinal"></param>
+        /// <exception cref="InvalidOperationException"></exception>
+        private static void ValidarRutaDentroDeBase(string rutaBase, string rutaFinal)
         {
             var rutaBaseNormalizada = Path.GetFullPath(rutaBase);
 
@@ -117,19 +158,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 throw new InvalidOperationException("La ruta generada está fuera del directorio permitido.");
             }
         }
-
+        /// <summary>
+        /// Obtiene la fecha y hora actual del servidor de base de datos utilizando una consulta SQL.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
         public static DateTime ObtenerFechaServidor(IDbConnection connection)
         {
             const string query = "SELECT dbo.MyGetdate() AS Fecha";
 
             return connection.QueryFirstOrDefault<DateTime>(query);
         }
-
-        public static List<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistrosGeneral(
-            IDbConnection connection,
-            int codInstitucion,
-            decimal fechaProceso,
-            string tipo)
+        /// <summary>
+        /// Obtiene los registros de la planilla general desde la base de datos según los parámetros proporcionados.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="codInstitucion"></param>
+        /// <param name="fechaProceso"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        public static List<CcProcesoMensualArchivoRegistroDbModel> ObtenerRegistrosGeneral(IDbConnection connection, int codInstitucion, decimal fechaProceso, string tipo)
         {
             const string query = @"
                 SELECT
@@ -156,9 +204,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 })];
         }
 
-        public static CcProcesoMensualArchivoConfiguracionModel ObtenerConfiguracionGeneral(
-            IDbConnection connection,
-            int codInstitucion)
+        /// <summary>
+        /// Obtiene la configuración general de la institución desde la base de datos según el código de institución proporcionado.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="codInstitucion"></param>
+        /// <returns></returns>
+        public static CcProcesoMensualArchivoConfiguracionModel ObtenerConfiguracionGeneral(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
                 SELECT
@@ -181,12 +233,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoConfiguracionModel();
         }
 
+        /// <summary>
+        /// Guarda contenido de texto en un archivo validando que la ruta esté dentro de la base permitida.
+        /// </summary>
+        /// <param name="rutaBaseConfigurada"></param>
+        /// <param name="rutaDirectorio"></param>
+        /// <param name="rutaArchivo"></param>
+        /// <param name="contenido"></param>
+        /// <param name="encoding"></param>
         public static void GuardarArchivoTexto(
-    string rutaBaseConfigurada,
-    string rutaDirectorio,
-    string rutaArchivo,
-    string contenido,
-    Encoding encoding)
+            string rutaBaseConfigurada,
+            string rutaDirectorio,
+            string rutaArchivo,
+            string contenido,
+            Encoding encoding)
         {
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
             var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
@@ -210,7 +270,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 encoding);
         }
 
-        public static string CombinarArchivo(   string rutaBaseConfigurada,  string rutaDirectorio,  string nombreArchivo)
+        /// <summary>
+        /// Combina directorio y nombre de archivo validando que ambos sean seguros y estén dentro de la ruta base.
+        /// </summary>
+        /// <param name="rutaBaseConfigurada"></param>
+        /// <param name="rutaDirectorio"></param>
+        /// <param name="nombreArchivo"></param>
+        /// <returns></returns>
+        public static string CombinarArchivo(string rutaBaseConfigurada, string rutaDirectorio, string nombreArchivo)
         {
             if (string.IsNullOrWhiteSpace(rutaDirectorio))
             {
@@ -247,6 +314,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return rutaArchivo;
         }
 
+        /// <summary>
+        /// Limpia una cadena eliminando caracteres no permitidos para el proceso de generación.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <returns></returns>
         public static string DepurarCadena(string? valor)
         {
             var texto = valor?.Trim() ?? string.Empty;
@@ -254,11 +326,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return new string([.. texto.Where(EsCaracterPermitido)]);
         }
 
-        public static string FxStringRelleno(
-            string? cadena,
-            string direccion,
-            string charRelleno,
-            int cantidad)
+        /// <summary>
+        /// Rellena una cadena con el carácter indicado según dirección y tamaño requerido.
+        /// </summary>
+        /// <param name="cadena"></param>
+        /// <param name="direccion"></param>
+        /// <param name="charRelleno"></param>
+        /// <param name="cantidad"></param>
+        /// <returns></returns>
+        public static string FxStringRelleno(string? cadena, string direccion, string charRelleno, int cantidad)
         {
             var valor = TomarIzquierda(
                 cadena?.Trim(),
@@ -278,8 +354,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 alinearDerecha);
         }
 
-        public static CcProcesoMensualArchivoNombreModel SepararNombre(
-            string? nombreCompleto)
+        /// <summary>
+        /// Separa un nombre completo en cuatro partes: dos apellidos y dos nombres.
+        /// </summary>
+        /// <param name="nombreCompleto"></param>
+        /// <returns></returns>
+        public static CcProcesoMensualArchivoNombreModel SepararNombre(string? nombreCompleto)
         {
             var partes = new[]
             {
@@ -314,16 +394,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             };
         }
 
-        public static List<string> ObtenerMovimientosPorComparador(
-            CcProcesoMensualArchivoConfiguracionModel configuracion)
+        /// <summary>
+        /// Obtiene la lista de movimientos según el comparador de configuración.
+        /// </summary>
+        /// <param name="configuracion"></param>
+        /// <returns></returns>
+        public static List<string> ObtenerMovimientosPorComparador(CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             return configuracion.ComparaIndicador != 1
                 ? ["I", "E", "M", "C", "P"]
                 : ObtenerMovimientosPorIndicadores(configuracion);
         }
 
-        public static List<string> ObtenerMovimientosPorIndicadores(
-            CcProcesoMensualArchivoConfiguracionModel configuracion)
+        /// <summary>
+        /// Obtiene movimientos habilitados según los indicadores individuales de la configuración.
+        /// </summary>
+        /// <param name="configuracion"></param>
+        /// <returns></returns>
+        public static List<string> ObtenerMovimientosPorIndicadores(CcProcesoMensualArchivoConfiguracionModel configuracion)
         {
             var movimientos = new List<string>();
 
@@ -352,22 +440,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return movimientos;
         }
 
-        public static string ObtenerCodigoInstitucionArchivo(
-            int codInstitucion,
-            string? codigoInstDeduc)
+        /// <summary>
+        /// Obtiene el código de institución a usar en nombre de archivo.
+        /// </summary>
+        /// <param name="codInstitucion"></param>
+        /// <param name="codigoInstDeduc"></param>
+        /// <returns></returns>
+        public static string ObtenerCodigoInstitucionArchivo(int codInstitucion, string? codigoInstDeduc)
         {
             return string.IsNullOrWhiteSpace(codigoInstDeduc)
                 ? codInstitucion.ToString("00", CultureInfo.InvariantCulture)
                 : codigoInstDeduc.Trim();
         }
 
+        /// <summary>
+        /// Formatea una fecha en formato dd.MM.yyyy.
+        /// </summary>
+        /// <param name="fecha"></param>
+        /// <returns></returns>
         public static string FormatearFechaPunto(DateTime fecha)
         {
             return fecha.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
         }
 
-        public static string CrearContenidoCadenasNoVacias(
-            IEnumerable<string> cadenas)
+        /// <summary>
+        /// Construye un contenido de texto incluyendo solo cadenas no vacías al final.
+        /// </summary>
+        /// <param name="cadenas"></param>
+        /// <returns></returns>
+        public static string CrearContenidoCadenasNoVacias(IEnumerable<string> cadenas)
         {
             var builder = new StringBuilder();
 
@@ -379,9 +480,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return builder.ToString();
         }
 
-        public static string TomarIzquierda(
-            string? valor,
-            int cantidad)
+        /// <summary>
+        /// Retorna la parte izquierda de una cadena con la cantidad indicada.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="cantidad"></param>
+        /// <returns></returns>
+        public static string TomarIzquierda(string? valor, int cantidad)
         {
             return CortarTexto(
                 valor,
@@ -389,12 +494,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 desdeDerecha: false);
         }
 
+        /// <summary>
+        /// Convierte la fecha de proceso decimal en texto sin parte decimal.
+        /// </summary>
+        /// <param name="fechaProceso"></param>
+        /// <returns></returns>
         private static string ObtenerFechaProcesoTexto(decimal fechaProceso)
         {
             return Math.Truncate(fechaProceso)
                 .ToString(CultureInfo.InvariantCulture);
         }
 
+        /// <summary>
+        /// Limpia el nombre de directorio reemplazando caracteres inválidos.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <returns></returns>
         private static string LimpiarNombreDirectorio(string? valor)
         {
             var nombre = string.IsNullOrWhiteSpace(valor)
@@ -409,11 +524,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return nombre;
         }
 
-        private static string AjustarTexto(
-            string? valor,
-            int largo,
-            char relleno,
-            bool alinearDerecha)
+        /// <summary>
+        /// Ajusta una cadena al largo indicado, recortando y rellenando según alineación.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="largo"></param>
+        /// <param name="relleno"></param>
+        /// <param name="alinearDerecha"></param>
+        /// <returns></returns>
+        private static string AjustarTexto(string? valor, int largo, char relleno, bool alinearDerecha)
         {
             var texto = CortarTexto(
                 valor,
@@ -425,10 +544,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 : texto.PadRight(largo, relleno);
         }
 
-        private static string CortarTexto(
-            string? valor,
-            int largo,
-            bool desdeDerecha)
+        /// <summary>
+        /// Corta una cadena al largo indicado desde la izquierda o derecha.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <param name="largo"></param>
+        /// <param name="desdeDerecha"></param>
+        /// <returns></returns>
+        private static string CortarTexto(string? valor, int largo, bool desdeDerecha)
         {
             var texto = valor ?? string.Empty;
 
@@ -442,6 +565,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 : texto[..largo];
         }
 
+        /// <summary>
+        /// Obtiene el carácter de relleno a partir de una cadena.
+        /// </summary>
+        /// <param name="charRelleno"></param>
+        /// <returns></returns>
         private static char ObtenerCaracterRelleno(string? charRelleno)
         {
             return string.IsNullOrEmpty(charRelleno)
@@ -449,6 +577,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 : charRelleno[0];
         }
 
+        /// <summary>
+        /// Indica si un carácter es válido dentro del rango permitido por el proceso.
+        /// </summary>
+        /// <param name="caracter"></param>
+        /// <returns></returns>
         private static bool EsCaracterPermitido(char caracter)
         {
             var ascii = (int)caracter;
@@ -456,10 +589,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             return ascii == 32 || ascii is > 47 and < 123;
         }
 
-        private static void AgregarMovimientoSiAplica(
-            List<string> movimientos,
-            int indicador,
-            string movimiento)
+        /// <summary>
+        /// Agrega un movimiento a la lista cuando su indicador está habilitado.
+        /// </summary>
+        /// <param name="movimientos"></param>
+        /// <param name="indicador"></param>
+        /// <param name="movimiento"></param>
+        private static void AgregarMovimientoSiAplica(List<string> movimientos, int indicador, string movimiento)
         {
             if (indicador == 1)
             {

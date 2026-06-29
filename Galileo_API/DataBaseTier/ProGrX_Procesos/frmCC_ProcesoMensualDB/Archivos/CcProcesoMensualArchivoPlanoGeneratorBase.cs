@@ -37,14 +37,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,rutaDirectorio, nombreArchivo);
 
-            var registros = ObtenerRegistros(connection, request);
+            var registros = ObtenerRegistros(connection, request).ToList();
 
             var contenido = CrearContenidoArchivo(registros, request);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase, rutaDirectorio, rutaArchivo,contenido,EncodingArchivo);
 
+            GenerarArchivosAdicionales(registros, request);
+
             return CrearRespuesta( nombreArchivo,rutaArchivo, contenido);
         }
+
+        protected virtual void GenerarArchivosAdicionales(
+            IReadOnlyCollection<TRegistro> registros,
+            CcProcesoMensualGeneraArchivoRequest request)
+                {
+                }
 
         protected virtual string CrearNombreArchivo(IDbConnection connection,CcProcesoMensualGeneraArchivoRequest request)
         {
@@ -126,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 RutaArchivo = rutaArchivo,
                 ContentType = ContentType,
                 ArchivoBytes = [],
-                ArchivosGenerados = [rutaArchivo]
+                ArchivosGenerados = ObtenerArchivosGenerados(rutaArchivo)
             };
         }
 

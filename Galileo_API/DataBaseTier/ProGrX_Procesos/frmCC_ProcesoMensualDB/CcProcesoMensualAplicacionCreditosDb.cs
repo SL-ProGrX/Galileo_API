@@ -17,6 +17,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
         private readonly string movimientoBitacora = "Aplica - WEB";
+
+        /// <summary>
+        /// Inicializa una nueva instancia para gestionar la aplicación de créditos del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualAplicacionCreditosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -24,6 +29,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             _mGeneral = new CcProcesoMensualGeneralDb(config);
 
         }
+
+        /// <summary>
+        /// Aplica abonos de créditos para la institución y proceso especificados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="fechaSistema">Fecha del sistema para los asientos.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la aplicación de abonos.</returns>
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrAbonos_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, DateTime fechaSistema, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -112,6 +127,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
 
         }
+
+        /// <summary>
+        /// Marca y registra la generación del reporte de inconsistencias de créditos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdReporteInconsistencia_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -159,6 +183,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             }
         }
+
+        /// <summary>
+        /// Ejecuta el cálculo de intereses moratorios y actualiza su estado de proceso.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -207,6 +240,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             }
         }
+
+        /// <summary>
+        /// Recalcula el saldo mensual de créditos y registra su bitácora de ejecución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -255,6 +297,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             }
         }
+
+        /// <summary>
+        /// Actualiza el indicador de reporte de inconsistencias de créditos en la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa de base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void ActualizarEstadoCreditosDevoluciones(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -264,6 +312,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
+
+        /// <summary>
+        /// Actualiza el indicador de cálculo de mora de créditos en la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa de base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void ActualizarEstadoCreditosInteresesMoratorios(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -273,6 +327,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             connection.Execute(query, new { CodInstitucion = codInstitucion });
         }
+
+        /// <summary>
+        /// Ejecuta el procedimiento de recalculo de cuota en mora para créditos.
+        /// </summary>
+        /// <param name="connection">Conexión activa de base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
         private static void sbCrRecalculaCuotaEnMora(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             connection.Execute(
@@ -284,6 +345,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 },
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Obtiene el código corto de documento para la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa de base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Código de documento para bitácora y asientos.</returns>
         private string ObtenerCodigoDocumento(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"
@@ -298,6 +367,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return codDocumento?.Trim() ?? codInstitucion.ToString(CultureInfo.InvariantCulture);
         }
+
+        /// <summary>
+        /// Elimina créditos con abonos menores a uno para el proceso actual.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void EliminarCreditosConAbonoMenorUno(CreditoAplicacionContext context)
         {
             const string sql = @"delete prm_creditos where cod_institucion = @CodInstitucion  and fecha_proceso = @FechaProceso  and abono < 1  ";
@@ -311,6 +385,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 },
                 context.Transaction);
         }
+
+        /// <summary>
+        /// Ejecuta la aplicación masiva de abonos por pasos hasta completar el proceso.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void AplicarAbonosMasivo(CreditoAplicacionContext context)
         {
             const int ultimoPaso = 5;
@@ -319,22 +398,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             while (paso <= ultimoPaso)
             {
-                var resultado = context.Connection.QuerySingle<CreditoAplicaAbonosMasivoResult>(
-                    "spPrmCreditoAplicaAbonosMasivo",
-                    new
-                    {
-                        context.CodInstitucion,
-                        context.FechaProceso,
-                        context.Documento,
-                        Paso = paso
-                    },
-                    context.Transaction,
-                    commandTimeout: 5200,
-                    commandType: CommandType.StoredProcedure);
+                var resultado = context.Connection.QuerySingleOrDefault<CreditoAplicaAbonosMasivoResult>(
+                     "spPrmCreditoAplicaAbonosMasivo",
+                     new
+                     {
+                         Institucion = context.CodInstitucion,
+                         Proceso = context.FechaProceso,
+                         context.Documento,
+                         Paso = paso
+                     },
+                     context.Transaction,
+                     commandTimeout: 5200,
+                     commandType: CommandType.StoredProcedure);
+
+                            if (resultado is null)
+                            {
+                                throw new InvalidOperationException(
+                                    $"El procedimiento de abono masivo no retornó resultado para el paso {paso}.");
+                            }
 
                 paso = resultado.PasoSiguiente;
             }
         }
+
+        /// <summary>
+        /// Aplica abonos en lotes mientras existan créditos pendientes por procesar.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void AplicarAbonosPorLote(CreditoAplicacionContext context)
         {
             const int cantidadPorLote = 150;
@@ -361,6 +451,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     commandType: CommandType.StoredProcedure);
             }
         }
+
+        /// <summary>
+        /// Obtiene la cantidad de créditos pendientes de aplicación.
+        /// </summary>
+        /// <param name="connection">Conexión activa de base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <returns>Total de créditos pendientes.</returns>
         private static long ObtenerTotalCreditosPendientesAplicacion(IDbConnection connection, IDbTransaction transaction, int codInstitucion, decimal fechaProceso)
         {
             const string sql = @"
@@ -381,6 +480,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 },
                 transaction);
         }
+
+        /// <summary>
+        /// Genera mora para créditos sin abono aplicado en el proceso.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void GenerarMoraCreditosSinAbono(CreditoAplicacionContext context)
         {
             context.Connection.Execute(
@@ -394,6 +498,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Ejecuta revisión de deducciones por porcentaje.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void RevisarDeduccionesPorcentaje(CreditoAplicacionContext context)
         {
             context.Connection.Execute(
@@ -408,6 +517,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Genera el asiento contable de créditos según el paso indicado.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
+        /// <param name="paso">Paso del procedimiento de asiento.</param>
         private static void GenerarAsientoCredito(CreditoAplicacionContext context, int paso)
         {
             context.Connection.Execute(
@@ -426,6 +541,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Procesa sobrantes de créditos según el paso de ejecución.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
+        /// <param name="paso">Paso del procedimiento de sobrantes.</param>
         private static void ProcesarSobrantes(CreditoAplicacionContext context, int paso)
         {
             context.Connection.Execute(
@@ -442,6 +563,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Traslada retenciones de créditos hacia fondos.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void TrasladarRetencionesAFondos(CreditoAplicacionContext context)
         {
             context.Connection.Execute(
@@ -457,6 +583,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Ejecuta la revisión de deducciones asociadas a fondos.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void RevisarDeduccionesFondos(CreditoAplicacionContext context)
         {
             context.Connection.Execute(
@@ -471,6 +602,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 commandTimeout: 5200,
                 commandType: CommandType.StoredProcedure);
         }
+
+        /// <summary>
+        /// Marca la institución como crédito aplicado en el proceso mensual.
+        /// </summary>
+        /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void MarcarCreditoAplicado(CreditoAplicacionContext context)
         {
             const string sql = @"
