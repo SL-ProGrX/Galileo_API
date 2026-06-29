@@ -1200,7 +1200,8 @@ namespace Galileo.DataBaseTier
                 }
                 else
                 {
-
+                    // No additional processing for tipos distintos de "C":
+                    // se mantiene la respuesta con los valores por defecto inicializados.
                 }
             }
             catch (Exception ex)
