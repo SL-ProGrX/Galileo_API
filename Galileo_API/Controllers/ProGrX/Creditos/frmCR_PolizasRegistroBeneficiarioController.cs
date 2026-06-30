@@ -9,11 +9,11 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCRPolizasRegistroBeneficiariosController : ControllerBase
+    public class FrmCRPolizasRegistroBeneficiarioController : ControllerBase
     {
         private readonly FrmCRPolizasRegistroBeneficiariosBL _bl;
 
-        public FrmCRPolizasRegistroBeneficiariosController(IConfiguration config)
+        public FrmCRPolizasRegistroBeneficiarioController(IConfiguration config)
         {
             _bl = new FrmCRPolizasRegistroBeneficiariosBL(config);
         }

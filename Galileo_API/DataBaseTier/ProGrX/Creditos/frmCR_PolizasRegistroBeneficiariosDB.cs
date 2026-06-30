@@ -13,8 +13,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private const string MensajeOperacionPolizaRequerida = "Debe indicar la operaci&oacute;n y el n&uacute;mero de p&oacute;liza.";
         private const string MensajeBeneficiarioRequerido = "Debe indicar el beneficiario.";
-        private const string MensajeGuardarOk = "Informaci&oacute;n guardada satisfactoriamente.";
-        private const string MensajeEliminarOk = "Beneficiario eliminado satisfactoriamente.";
 
         public FrmCRPolizasRegistroBeneficiariosDB(IConfiguration config)
         {
@@ -505,7 +503,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     guardado = true,
                     id_beneficiario = request.id_beneficiario,
-                    mensaje = MensajeGuardarOk
+                    mensaje = "Informacion guardada satisfactoriamente."
                 });
             }
             catch (Exception ex)
@@ -574,7 +572,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return new ErrorDto
             {
                 Code = 0,
-                Description = MensajeEliminarOk
+                Description = "Beneficiario eliminado satisfactoriamente."
             };
         }
 
