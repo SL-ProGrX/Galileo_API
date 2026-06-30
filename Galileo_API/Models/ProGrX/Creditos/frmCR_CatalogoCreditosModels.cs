@@ -107,7 +107,7 @@ namespace Galileo_API.Models.ProGrX.Credito
     public class CrCatalogoCreditoGuardarRequest : CrCatalogoCreditoData
     {
         public string usuario { get; set; } = string.Empty;
-        public bool isNew { get; set; }
+        public required bool isNew { get; set; }
     }
 
     public class CrCatalogoCreditoPeLGuardarRequest
