@@ -910,5 +910,23 @@ VALUES (
         private static partial Regex MyRegex();
         [GeneratedRegex(@"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$", RegexOptions.IgnoreCase | RegexOptions.Singleline, "es-CR")]
         private static partial Regex MyRegex1();
+        public string fxXInstitucion(int CodEmpresa, int iInstitucion)
+        {
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"
+            select descripcion
+            from instituciones
+            where cod_institucion = @iInstitucion;";
+
+                return connection.QueryFirstOrDefault<string>(sql, new { iInstitucion }) ?? "";
+            }
+            catch (DataException)
+            {
+                return "";
+            }
+        }
     }
 }
