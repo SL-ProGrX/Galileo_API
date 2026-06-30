@@ -30,9 +30,9 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("CprValidacionCotizacionBs_Eliminar")]
-        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int cpr_id ,string codigo, string cod_producto)
+        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
         {
-            return _bl.CprValidacionCotizacionBs_Eliminar(CodEmpresa, cpr_id,codigo, cod_producto);
+            return _bl.CprValidacionCotizacionBs_Eliminar(CodEmpresa, id_cotizacion_linea);
         }
     }
 }
