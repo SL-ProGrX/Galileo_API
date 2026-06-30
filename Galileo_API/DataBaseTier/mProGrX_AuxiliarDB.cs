@@ -544,7 +544,24 @@ FROM {table}
                 return null;
             }
         }
+        public string fxXInstitucion(int CodEmpresa, int iInstitucion)
+        {
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
+                const string sql = @"
+            select descripcion
+            from instituciones
+            where cod_institucion = @iInstitucion;";
+
+                return connection.QueryFirstOrDefault<string>(sql, new { iInstitucion }) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
 
         #endregion
 
