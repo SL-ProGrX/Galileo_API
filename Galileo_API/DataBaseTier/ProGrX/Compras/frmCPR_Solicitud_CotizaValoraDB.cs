@@ -392,30 +392,17 @@ namespace Galileo.DataBaseTier
                 var body = ConstruirBodyCorreo(proveedor, info, recepcion);
 
                 var resp = new ErrorDto();
-                var emailRequest = new EmailRequest();
-                if (_sendEmail == "Y")
+
+                var emailRequest = new EmailRequest
                 {
-                    
-                    emailRequest = new EmailRequest
-                    {
-                        To = proveedor.email,
-                        From = eConfig.User,
-                        Subject = "Solicitud de Cotización",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-                }
-                else
-                {
-                    emailRequest = new EmailRequest
-                    {
-                        To = eConfig.User,
-                        From = eConfig.User,
-                        Subject = "Solicitud de Cotización - Prueba",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-                }
+                    To = _sendEmail == "Y" ? proveedor.email : eConfig.User,
+                    From = eConfig.User,
+                    Subject = _sendEmail == "Y"
+                        ? "Solicitud de Cotización"
+                        : "Solicitud de Cotización - Prueba",
+                    Body = body,
+                    Attachments = new List<IFormFile>()
+                };
 
                 await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
 

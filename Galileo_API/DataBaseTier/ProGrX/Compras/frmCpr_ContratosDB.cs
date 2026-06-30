@@ -468,6 +468,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     bool existe = conn.ExecuteScalar<int>(
