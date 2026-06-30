@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
@@ -264,12 +265,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros)
                               ?? new FiltrosLazyLoadData();
 
-                var filtroInterno = ParseFiltroInterno(filtros.filtro);
+                var idSolicitud = ParseFiltroInterno(filtros.filtro);
 
                 return new FiadoresFiltroResult
                 {
                     Filtros = filtros,
-                    IdSolicitud = filtroInterno.id_solicitud
+                    IdSolicitud = idSolicitud
                 };
             }
             catch (JsonException ex)
@@ -281,19 +282,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
-        private static FiadoresFiltroDto ParseFiltroInterno(string? filtro)
+        private static long ParseFiltroInterno(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
-                return new FiadoresFiltroDto();
+                return 0;
 
             try
             {
-                return JsonConvert.DeserializeObject<FiadoresFiltroDto>(filtro)
-                       ?? new FiadoresFiltroDto();
+                var json = JObject.Parse(filtro);
+                return json.Value<long?>("id_solicitud") ?? 0;
             }
             catch (JsonException)
             {
-                return new FiadoresFiltroDto();
+                return 0;
             }
         }
 
@@ -556,13 +557,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public long IdSolicitud { get; set; }
             public string Error { get; set; } = string.Empty;
         }
-
-        private sealed class FiadoresFiltroDto
-        {
-            public long id_solicitud { get; set; }
-            public string texto { get; set; } = string.Empty;
-        }
-
         private sealed class NombrePartes
         {
             public string Apellido1 { get; set; } = string.Empty;

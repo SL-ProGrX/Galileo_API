@@ -923,7 +923,7 @@ VALUES (
 
                 return connection.QueryFirstOrDefault<string>(sql, new { iInstitucion }) ?? "";
             }
-            catch
+            catch (DataException)
             {
                 return "";
             }

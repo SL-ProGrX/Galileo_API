@@ -83,7 +83,7 @@
 
     public class CrSolicitudesFiadoresGuardarRequest
     {
-        public long id_solicitud { get; set; }
+        public long? id_solicitud { get; set; }
         public string codigo { get; set; } = string.Empty;
         public string cedula_deudor { get; set; } = string.Empty;
 
@@ -94,13 +94,13 @@
         public string nombre { get; set; } = string.Empty;
 
         public string calidad { get; set; } = string.Empty;
-        public int cod_institucion { get; set; }
+        public int? cod_institucion { get; set; }
 
         public int interno { get; set; } = 1;
 
-        public decimal salario { get; set; }
-        public decimal devengado { get; set; }
-        public decimal liquidez { get; set; }
+        public decimal? salario { get; set; }
+        public decimal? devengado { get; set; }
+        public decimal? liquidez { get; set; }
 
         public string usuario { get; set; } = string.Empty;
         public string maquina { get; set; } = string.Empty;
@@ -109,7 +109,7 @@
 
     public class CrSolicitudesFiadoresEliminarRequest
     {
-        public long fia_consec { get; set; }
+        public long? fia_consec { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
