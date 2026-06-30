@@ -51,7 +51,7 @@ namespace Galileo.DataBaseTier
 
                         conn.Execute(
                             "spCPR_ValidarCotizacion_Guardar",
-                            new { datos = xml }, // si el SP usa otro nombre, cámbialo aquí
+                            new { detalle = xml }, // si el SP usa otro nombre, cámbialo aquí
                             transaction: tx,
                             commandType: System.Data.CommandType.StoredProcedure
                         );
@@ -72,23 +72,14 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
         }
 
-        public ErrorDto CprValidacionCotizacionBs_Eliminar(int codEmpresa, int cpr_id, string codigo, string cod_producto)
+        /// <summary>Desmarca como seleccionada la línea de cotización indicada.</summary>
+        public ErrorDto CprValidacionCotizacionBs_Eliminar(int codEmpresa, int id_cotizacion_linea)
         {
-            // SQL parametrizado => sin injection
             return DbHelper.ExecuteNonQuery(
                 _portalDb,
                 codEmpresa,
-                @"UPDATE CPR_SOLICITUD_PROV_COTIZA_LINEAS
-                  SET SELECCIONADO = 0
-                  WHERE CODIGO = @Codigo
-                    AND COD_PRODUCTO = @CodProducto
-                    AND id_cotizacion_linea = @IdLinea",
-                new
-                {
-                    Codigo = codigo,
-                    CodProducto = cod_producto,
-                    IdLinea = cpr_id
-                }
+                "UPDATE CPR_SOLICITUD_PROV_COTIZA_LINEAS SET SELECCIONADO = 0 WHERE ID_COTIZACION_LINEA = @IdLinea",
+                new { IdLinea = id_cotizacion_linea }
             );
         }
     }

@@ -339,8 +339,10 @@ namespace Galileo.Models.CPR
 
     public class CprSolicitudAdjudicaProductosDto
     {
+        public int? id_cotizacion_linea { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        public string? no_cotizacion { get; set; }
         public float monto { get; set; } = 0;
         public int cantidad { get; set; } = 0;
         public float desc_monto { get; set; } = 0;

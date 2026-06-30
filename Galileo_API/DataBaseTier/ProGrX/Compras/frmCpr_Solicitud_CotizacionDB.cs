@@ -127,16 +127,97 @@ namespace Galileo.DataBaseTier
             CprSolicitudDto solicitud,
             int idCotizacion)
         {
-            // Requeridos ya validados en TieneCamposMinimos
             var cprId = solicitud.cpr_id ?? cotizacion.cpr_id!.Value;
             var proveedorCodigo = cotizacion.proveedor_codigo!.Value;
             var noCotizacion = cotizacion.cotiza_numero!;
 
             MarcarCotizaVigente(conn, tx, cotizacion.cpr_id!.Value, proveedorCodigo, idCotizacion);
-            MarcarLineasSeleccionadas(conn, tx, idCotizacion);
-            EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo);
-            InsertarDetalleBs(conn, tx, cprId, proveedorCodigo, noCotizacion);
+            EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
+            InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);
+        }
+
+        private static void EliminarLineasBsPrevias(
+            IDbConnection conn,
+            IDbTransaction tx,
+            int cprId,
+            int proveedorCodigo,
+            string noCotizacion)
+        {
+            conn.Execute(
+                @"DELETE FROM CPR_SOLICITUD_PROV_BS
+          WHERE CPR_ID = @CprId
+            AND PROVEEDOR_CODIGO = @Proveedor
+            AND NO_COTIZACION = @NoCotizacion",
+                new
+                {
+                    CprId = cprId,
+                    Proveedor = proveedorCodigo,
+                    NoCotizacion = noCotizacion
+                },
+                transaction: tx
+            );
+        }
+
+        private static void InsertarDetalleBsPorLinea(
+    IDbConnection conn,
+    IDbTransaction tx,
+    int cprId,
+    int proveedorCodigo,
+    string noCotizacion,
+    int idCotizacion)
+        {
+            conn.Execute(
+                @"INSERT INTO CPR_SOLICITUD_PROV_BS
+          (
+              ID_COTIZACION_LINEA,
+              CPR_ID,
+              COD_PRODUCTO,
+              PROVEEDOR_CODIGO,
+              CODIGO,
+              MONTO,
+              CANTIDAD,
+              TOTAL,
+              IVA_PORC,
+              IVA_MONTO,
+              DESC_PORC,
+              DESC_MONTO,
+              REGISTRO_FECHA,
+              REGISTRO_USUARIO,
+              ESTADO,
+              NO_COTIZACION
+          )
+          SELECT
+              spcl.ID_COTIZACION_LINEA,
+              @CprId,
+              spcl.COD_PRODUCTO,
+              @Proveedor,
+              spcl.CODIGO,
+              spcl.MONTO,
+              spcl.CANTIDAD,
+              spcl.TOTAL,
+              spcl.IVA_PORC,
+              spcl.IVA_MONTO,
+              spcl.DESC_PORC,
+              spcl.DESC_MONTO,
+              GETDATE(),
+              cspc.REGISTRO_USUARIO,
+              'V',
+              @NoCotizacion
+          FROM CPR_SOLICITUD_PROV_COTIZA_LINEAS spcl
+          INNER JOIN CPR_SOLICITUD_PROV_COTIZA cspc
+              ON cspc.ID_COTIZACION = spcl.ID_COTIZACION
+          WHERE spcl.ID_COTIZACION = @IdCotizacion
+            AND ISNULL(spcl.SELECCIONADO, 0) = 1;",
+                new
+                {
+                    CprId = cprId,
+                    Proveedor = proveedorCodigo,
+                    NoCotizacion = noCotizacion,
+                    IdCotizacion = idCotizacion
+                },
+                transaction: tx
+            );
         }
 
         private static void MarcarCotizaVigente(IDbConnection conn, IDbTransaction tx, int cprId, int proveedorCodigo, int idCotizacion)
@@ -152,42 +233,40 @@ namespace Galileo.DataBaseTier
             );
         }
 
-        private static void MarcarLineasSeleccionadas(IDbConnection conn, IDbTransaction tx, int idCotizacion)
-        {
-            conn.Execute(
-                @"UPDATE CPR_SOLICITUD_PROV_COTIZA_LINEAS
-                  SET SELECCIONADO = 1
-                  WHERE ID_COTIZACION = @IdCotizacion",
-                new { IdCotizacion = idCotizacion },
-                transaction: tx
-            );
-        }
 
-        private static void EliminarLineasBsPrevias(IDbConnection conn, IDbTransaction tx, int cprId, int proveedorCodigo)
-        {
-            conn.Execute(
-                @"DELETE FROM CPR_SOLICITUD_PROV_BS
-                  WHERE CPR_ID = @CprId
-                    AND PROVEEDOR_CODIGO = @Proveedor",
-                new { CprId = cprId, Proveedor = proveedorCodigo },
-                transaction: tx
-            );
-        }
 
-        private static void InsertarDetalleBs(IDbConnection conn, IDbTransaction tx, int cprId, int proveedorCodigo, string noCotizacion)
+        private static void InsertarDetalleBs(
+            IDbConnection conn,
+            IDbTransaction tx,
+            int cprId,
+            int proveedorCodigo,
+            string noCotizacion,
+            int idCotizacion)
         {
             conn.Execute(
                 @"INSERT INTO CPR_SOLICITUD_PROV_BS
                   (
-                      CPR_ID, COD_PRODUCTO, PROVEEDOR_CODIGO, CODIGO, MONTO, CANTIDAD, TOTAL,
-                      IVA_PORC, IVA_MONTO, DESC_PORC, DESC_MONTO, registro_fecha, registro_usuario,
-                      ESTADO, NO_COTIZACION
+                      CPR_ID,
+                      COD_PRODUCTO,
+                      PROVEEDOR_CODIGO,
+                      CODIGO,
+                      MONTO,
+                      CANTIDAD,
+                      TOTAL,
+                      IVA_PORC,
+                      IVA_MONTO,
+                      DESC_PORC,
+                      DESC_MONTO,
+                      REGISTRO_FECHA,
+                      REGISTRO_USUARIO,
+                      ESTADO,
+                      NO_COTIZACION
                   )
                   SELECT
-                      csb.CPR_ID,
-                      csb.COD_PRODUCTO,
-                      @Proveedor AS PROVEEDOR_CODIGO,
-                      NULL AS CODIGO,
+                      @CprId,
+                      spcl.COD_PRODUCTO,
+                      @Proveedor,
+                      spcl.CODIGO,
                       spcl.MONTO,
                       spcl.CANTIDAD,
                       spcl.TOTAL,
@@ -195,20 +274,79 @@ namespace Galileo.DataBaseTier
                       spcl.IVA_MONTO,
                       spcl.DESC_PORC,
                       spcl.DESC_MONTO,
-                      GETDATE() AS registro_fecha,
-                      csb.registro_usuario,
-                      'V' AS ESTADO,
-                      @NoCotizacion AS NO_COTIZACION
-                  FROM CPR_SOLICITUD_BS csb
-                  LEFT JOIN CPR_SOLICITUD_PROV_COTIZA cspc
-                         ON csb.CPR_ID = cspc.CPR_ID
-                        AND cspc.PROVEEDOR_CODIGO = @Proveedor
-                  LEFT JOIN CPR_SOLICITUD_PROV_COTIZA_LINEAS spcl
-                         ON spcl.ID_COTIZACION = cspc.ID_COTIZACION
-                  WHERE csb.CPR_ID = @CprId",
-                new { CprId = cprId, Proveedor = proveedorCodigo, NoCotizacion = noCotizacion },
+                      GETDATE(),
+                      cspc.REGISTRO_USUARIO,
+                      'V',
+                      @NoCotizacion
+                  FROM CPR_SOLICITUD_PROV_COTIZA_LINEAS spcl
+                  INNER JOIN CPR_SOLICITUD_PROV_COTIZA cspc
+                      ON cspc.ID_COTIZACION = spcl.ID_COTIZACION
+                  WHERE spcl.ID_COTIZACION = @IdCotizacion
+                    AND ISNULL(spcl.SELECCIONADO, 0) = 1;",
+                new
+                {
+                    CprId = cprId,
+                    Proveedor = proveedorCodigo,
+                    NoCotizacion = noCotizacion,
+                    IdCotizacion = idCotizacion
+                },
                 transaction: tx
             );
+        }
+
+        /// <summary>Actualiza selección de una línea y sincroniza CPR_SOLICITUD_PROV_BS.</summary>
+        public ErrorDto CprSolicitudCotizacionLineaSel_Actualizar(int codEmpresa, int id_cotizacion_linea, int seleccionado)
+        {
+            var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+                using var tx = conn.BeginTransaction();
+                try
+                {
+                    conn.Execute(
+                        "UPDATE CPR_SOLICITUD_PROV_COTIZA_LINEAS SET SELECCIONADO = @Sel WHERE ID_COTIZACION_LINEA = @Id",
+                        new { Sel = seleccionado, Id = id_cotizacion_linea },
+                        transaction: tx
+                    );
+
+                    conn.Execute(
+                        "DELETE FROM CPR_SOLICITUD_PROV_BS WHERE ID_COTIZACION_LINEA = @Id",
+                        new { Id = id_cotizacion_linea },
+                        transaction: tx
+                    );
+
+                    if (seleccionado == 1)
+                    {
+                        conn.Execute(
+                            @"INSERT INTO CPR_SOLICITUD_PROV_BS
+                              (ID_COTIZACION_LINEA, CPR_ID, COD_PRODUCTO, PROVEEDOR_CODIGO, CODIGO,
+                               MONTO, CANTIDAD, TOTAL, IVA_PORC, IVA_MONTO, DESC_PORC, DESC_MONTO,
+                               REGISTRO_FECHA, REGISTRO_USUARIO, ESTADO, NO_COTIZACION)
+                              SELECT CL.ID_COTIZACION_LINEA, SPC.CPR_ID, CL.COD_PRODUCTO, SPC.PROVEEDOR_CODIGO,
+                                     CL.CODIGO, CL.MONTO, CL.CANTIDAD, CL.TOTAL,
+                                     CL.IVA_PORC, CL.IVA_MONTO, CL.DESC_PORC, CL.DESC_MONTO,
+                                     GETDATE(), SPC.REGISTRO_USUARIO, 'V', SPC.NO_COTIZACION
+                              FROM CPR_SOLICITUD_PROV_COTIZA_LINEAS CL
+                              INNER JOIN CPR_SOLICITUD_PROV_COTIZA SPC ON SPC.ID_COTIZACION = CL.ID_COTIZACION
+                              WHERE CL.ID_COTIZACION_LINEA = @Id",
+                            new { Id = id_cotizacion_linea },
+                            transaction: tx
+                        );
+                    }
+
+                    tx.Commit();
+                    return true;
+                }
+                catch
+                {
+                    tx.Rollback();
+                    throw;
+                }
+            });
+
+            return r.Code == 0
+                ? DbHelper.CreateOkResponse()
+                : DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
         }
 
         private static void ActualizarSolicitudProv(IDbConnection conn, IDbTransaction tx, int cprId, int proveedorCodigo, string? usuario)
@@ -228,12 +366,17 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto CprSolicitudCotizacionBs_Eliminar(int codEmpresa, int id_cotizacion_linea)
         {
-            // Llamada segura: StoredProcedure + parámetros (sin EXEC string)
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
+                // Eliminar registro relacionado en BS antes de borrar la línea de cotización
+                conn.Execute(
+                    "DELETE FROM CPR_SOLICITUD_PROV_BS WHERE ID_COTIZACION_LINEA = @id;",
+                    new { id = id_cotizacion_linea }
+                );
+
                 conn.Execute(
                     "spCPR_SolicitudCotizacion_Eliminar",
-                    new { id_cotizacion_linea = id_cotizacion_linea }, // usa el nombre real del parámetro si difiere
+                    new { id_cotizacion_linea },
                     commandType: CommandType.StoredProcedure
                 );
 
