@@ -14,12 +14,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
+
+        /// <summary>
+        /// Inicializa una nueva instancia para gestionar la carga de deducciones del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualCargaArchivosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
             _mGeneral = new CcProcesoMensualGeneralDb(config);
         }
+
+        /// <summary>
+        /// Ejecuta la carga genérica de deducciones, aplicando validaciones, inserción y bitácora.
+        /// </summary>
+        /// <param name="request">Solicitud con los datos de carga.</param>
+        /// <param name="reglas">Reglas de transformación y filtrado para la carga.</param>
+        /// <returns>Resultado de la operación de carga.</returns>
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CargarDeduccionesGenerico(CcProcesoMensualCargaDeduccionesRequest request, IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> reglas)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, request.CodEmpresa);
@@ -122,6 +134,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                     new CcProcesoMensualCargaDeduccionesResponse());
             }
         }
+
+        /// <summary>
+        /// Construye los registros a insertar tomando filas ya procesadas del archivo plano.
+        /// </summary>
+        /// <param name="request">Solicitud con las filas de entrada.</param>
+        /// <returns>Listado de registros listos para insertar.</returns>
         private static List<CcProcesoMensualPrmCargadoDbModel> CrearRegistrosPrmCargadoDesdeFilasProcesadas(CcProcesoMensualCargaDeduccionesRequest request)
         {
             var registros = new List<CcProcesoMensualPrmCargadoDbModel>();
@@ -154,6 +172,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
 
             return registros;
         }
+
+        /// <summary>
+        /// Obtiene la configuración de carga de la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a la base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Configuración de carga encontrada.</returns>
         private static CcProcesoMensualCargaConfigDbModel ObtenerConfiguracionCarga(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"
@@ -177,6 +203,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 new { CodInstitucion = codInstitucion },
                 transaction: transaction) ?? new CcProcesoMensualCargaConfigDbModel();
         }
+
+        /// <summary>
+        /// Genera registros de deducciones con base en reglas configuradas.
+        /// </summary>
+        /// <param name="request">Solicitud con filas de entrada.</param>
+        /// <param name="reglas">Reglas a evaluar para crear registros.</param>
+        /// <param name="configuracion">Configuración de la institución.</param>
+        /// <returns>Listado de registros listos para insertar.</returns>
         private static List<CcProcesoMensualPrmCargadoDbModel> CrearRegistrosPrmCargado(CcProcesoMensualCargaDeduccionesRequest request, IEnumerable<CcProcesoMensualReglaDeduccionConfig> reglas, CcProcesoMensualCargaConfigDbModel configuracion)
         {
             var registros = new List<CcProcesoMensualPrmCargadoDbModel>();
@@ -212,6 +246,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
 
             return registros;
         }
+
+        /// <summary>
+        /// Determina si una regla debe aplicarse a una fila según la configuración vigente.
+        /// </summary>
+        /// <param name="regla">Regla de deducción a validar.</param>
+        /// <param name="fila">Fila de datos a evaluar.</param>
+        /// <param name="configuracion">Configuración de carga de la institución.</param>
+        /// <returns><c>true</c> si la regla aplica; en caso contrario, <c>false</c>.</returns>
         private static bool DebeAplicarRegla(CcProcesoMensualReglaDeduccionConfig regla, CcProcesoMensualCargaDeduccionFilaRequest fila, CcProcesoMensualCargaConfigDbModel configuracion)
         {
             if (regla.RequiereAportesHabilitados && EsCodigoNo(configuracion.CodigoAportes))
@@ -231,6 +273,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
 
             return true;
         }
+
+        /// <summary>
+        /// Crea registros a partir de filas que contienen código de deducción explícito.
+        /// </summary>
+        /// <param name="request">Solicitud con filas de entrada.</param>
+        /// <param name="configuracion">Configuración de la institución.</param>
+        /// <param name="usarCodigoObreroPatronal">Indica si se valida contra códigos obrero/patronal.</param>
+        /// <param name="insertarSoloSiMontoMayorQueCero">Indica si solo se insertan montos positivos.</param>
+        /// <returns>Listado de registros listos para insertar.</returns>
         private static List<CcProcesoMensualPrmCargadoDbModel> CrearRegistrosPrmCargadoDetallePorFila(
            CcProcesoMensualCargaDeduccionesRequest request,
            CcProcesoMensualCargaConfigDbModel configuracion,
@@ -281,6 +332,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             return registros;
         }
 
+        /// <summary>
+        /// Indica si el valor de código corresponde al encabezado del archivo.
+        /// </summary>
+        /// <param name="codigo">Código a evaluar.</param>
+        /// <returns><c>true</c> si es encabezado; en caso contrario, <c>false</c>.</returns>
         private static bool EsEncabezadoCodigoDeduccion(string codigo)
         {
             return string.Equals(
@@ -289,6 +345,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Obtiene el tipo de registro según el código y la configuración de carga.
+        /// </summary>
+        /// <param name="codigo">Código de deducción.</param>
+        /// <param name="configuracion">Configuración de la institución.</param>
+        /// <param name="usarCodigoObreroPatronal">Indica si se debe validar con códigos obrero/patronal.</param>
+        /// <returns>Tipo de registro calculado.</returns>
         private static int ObtenerTipoDetallePorFila(string codigo, CcProcesoMensualCargaConfigDbModel configuracion, bool usarCodigoObreroPatronal)
         {
             if (usarCodigoObreroPatronal)
@@ -304,6 +367,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                     : 3;
         }
 
+        /// <summary>
+        /// Evalúa si el código corresponde a aporte obrero o patronal.
+        /// </summary>
+        /// <param name="codigo">Código a validar.</param>
+        /// <param name="configuracion">Configuración de la institución.</param>
+        /// <returns><c>true</c> si coincide con código obrero o patronal; en caso contrario, <c>false</c>.</returns>
         private static bool EsCodigoAporteOPatronal(string codigo, CcProcesoMensualCargaConfigDbModel configuracion)
         {
             return string.Equals(
@@ -316,10 +385,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                     StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Verifica que la fila contenga todas las columnas requeridas por una regla.
+        /// </summary>
+        /// <param name="fila">Fila de datos a validar.</param>
+        /// <param name="columnasOrigen">Columnas requeridas.</param>
+        /// <returns><c>true</c> si contiene todas las columnas; en caso contrario, <c>false</c>.</returns>
         private static bool TieneTodasLasColumnas(CcProcesoMensualCargaDeduccionFilaRequest fila, IEnumerable<string> columnasOrigen)
         {
             return columnasOrigen.All(fila.Montos.ContainsKey);
         }
+
+        /// <summary>
+        /// Suma los montos de las columnas existentes indicadas en una fila.
+        /// </summary>
+        /// <param name="fila">Fila que contiene los montos.</param>
+        /// <param name="columnasOrigen">Columnas a considerar para el cálculo.</param>
+        /// <returns>Monto total calculado.</returns>
         private static decimal ObtenerMonto(CcProcesoMensualCargaDeduccionFilaRequest fila, IEnumerable<string> columnasOrigen)
         { 
             return columnasOrigen
@@ -327,6 +409,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 .Sum(columna => fila.Montos[columna]);
               
         }
+
+        /// <summary>
+        /// Determina si un código está marcado como NO.
+        /// </summary>
+        /// <param name="codigo">Código a evaluar.</param>
+        /// <returns><c>true</c> si el código es NO; en caso contrario, <c>false</c>.</returns>
         private static bool EsCodigoNo(string? codigo)
         {
             return string.Equals(
@@ -335,6 +423,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Elimina la carga previa de una institución para el proceso y pago indicados.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Solicitud con los criterios de eliminación.</param>
         private static void EliminarCargaAnterior(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualCargaDeduccionesRequest request)
         {
             const string query = @"
@@ -354,6 +448,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 transaction: transaction);
         }
 
+        /// <summary>
+        /// Inserta en lote los registros de deducciones procesados.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="registros">Registros a insertar.</param>
         private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, List<CcProcesoMensualPrmCargadoDbModel> registros)
         {
             if (registros.Count == 0)
@@ -392,6 +492,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             }
         }
 
+        /// <summary>
+        /// Ejecuta la revisión de cédulas cargadas mediante procedimiento almacenado.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Solicitud con criterios de revisión.</param>
         private static void RevisarCedulasCargadas(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualCargaDeduccionesRequest request)
         {
             const string query = @"
@@ -411,6 +517,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 transaction: transaction);
         }
 
+        /// <summary>
+        /// Marca la institución como cargada en el proceso mensual.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void MarcarInstitucionCargaRealizada(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"
@@ -423,6 +535,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 new { CodInstitucion = codInstitucion },
                 transaction: transaction);
         }
+
+        /// <summary>
+        /// Obtiene la cantidad de personas no encontradas tras la carga.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha del proceso.</param>
+        /// <returns>Cantidad de personas no encontradas.</returns>
         public static int ObtenerPersonasNoEncontradas( IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             const string query = @"  EXEC spPrmCargadoPersonasNoEncontradas  @CodInstitucion, @FechaProceso";

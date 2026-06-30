@@ -3,7 +3,6 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
-using System.Globalization;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualEstadoModels;
 
@@ -14,11 +13,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
     {
         private readonly PortalDB _portalDb;
 
+        /// <summary>
+        /// Inicializa una nueva instancia para consultar el estado del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualEstadoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Obtiene la información inicial del módulo de proceso mensual para la institución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="gInstitucion">Código de la institución.</param>
+        /// <returns>Respuesta inicial con meses, aplicaciones y estado actual.</returns>
         public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(int codEmpresa, int gInstitucion)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -50,12 +59,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualInicialResponse());
             }
         }
+
+        /// <summary>
+        /// Obtiene el identificador de portal configurado para la empresa.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <returns>Identificador de portal.</returns>
         private static int ObtenerPortalId(IDbConnection connection)
         {
             const string query = @"SELECT Portal_Id FROM sif_Empresa";
 
             return connection.QueryFirstOrDefault<int>(query);
         }
+
+        /// <summary>
+        /// Obtiene el código de aportes configurado para una institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Código de aportes de la institución.</returns>
         private static string ObtenerCodigoAportes(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -67,6 +89,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 query,
                 new { CodInstitucion = codInstitucion }) ?? string.Empty;
         }
+
+        /// <summary>
+        /// Construye el catálogo de meses para selección en la interfaz.
+        /// </summary>
+        /// <returns>Lista de meses.</returns>
         private static List<DropDownListaGenericaModel> ObtenerMeses()
         {
             return
@@ -85,6 +112,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new() { item = 12, descripcion = "Diciembre" }
             ];
         }
+
+        /// <summary>
+        /// Obtiene las opciones de aplicación disponibles según el portal.
+        /// </summary>
+        /// <param name="portalId">Identificador del portal.</param>
+        /// <returns>Lista de aplicaciones habilitadas.</returns>
         private static List<DropDownListaGenericaModel> ObtenerAplicaciones(int portalId)
         {
             var aplicaciones = new List<DropDownListaGenericaModel>
@@ -100,6 +133,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return aplicaciones;
         }
+
+        /// <summary>
+        /// Obtiene el estado actual del proceso mensual para la institución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="gInstitucion">Código de la institución.</param>
+        /// <returns>Estado actual del proceso mensual.</returns>
         public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -130,6 +170,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualEstadoResponse());
             }
         }
+
+        /// <summary>
+        /// Crea la respuesta de estado a partir de los parámetros institucionales.
+        /// </summary>
+        /// <param name="parametros">Parámetros del proceso de la institución.</param>
+        /// <returns>Modelo de estado actual.</returns>
         private static CcProcesoMensualEstadoResponse CrearEstadoResponse(CcProcesoMensualInstitucionParametrosModel parametros)
         {
             return new CcProcesoMensualEstadoResponse
@@ -139,6 +185,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 Indicadores = CrearIndicadores(parametros) ?? new CcProcesoMensualIndicadoresModel(),
             };
         }
+
+        /// <summary>
+        /// Obtiene los parámetros de proceso mensual configurados para una institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Parámetros institucionales o null si no existen.</returns>
         private static CcProcesoMensualInstitucionParametrosModel? ObtenerParametrosInstitucion(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -160,6 +213,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 query,
                 new { CodInstitucion = codInstitucion });
         }
+
+        /// <summary>
+        /// Genera los indicadores de avance del proceso según los parámetros institucionales.
+        /// </summary>
+        /// <param name="parametros">Parámetros institucionales del proceso.</param>
+        /// <returns>Indicadores calculados del estado del proceso.</returns>
         private static CcProcesoMensualIndicadoresModel CrearIndicadores(CcProcesoMensualInstitucionParametrosModel parametros)
         {
             var indicadores = new CcProcesoMensualIndicadoresModel
@@ -182,6 +241,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return indicadores;
         }
+
+        /// <summary>
+        /// Asigna las opciones seleccionadas de navegación según los indicadores activos.
+        /// </summary>
+        /// <param name="indicadores">Modelo de indicadores a completar.</param>
+        /// <param name="parametros">Parámetros institucionales del proceso.</param>
         private static void AsignarOpcionesSeleccionadas(CcProcesoMensualIndicadoresModel indicadores, CcProcesoMensualInstitucionParametrosModel parametros)
         {
             if (parametros.Pr_Genera == 1)
@@ -219,6 +284,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 indicadores.OpcionCreditosSeleccionada = 3;
             }
         }
+
+        /// <summary>
+        /// Valida si se puede ejecutar un paso específico del proceso mensual.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso a validar.</param>
+        /// <param name="transaccion">Código de transacción a ejecutar.</param>
+        /// <returns>Resultado de validación del paso.</returns>
         public ErrorDto<CcProcesoMensualValidaPasoResponse> CcProcesoMensual_ValidaPaso(int codEmpresa, int codInstitucion, decimal fechaProceso, string transaccion = "08")
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -250,6 +324,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     });
             }
         }
+
+        /// <summary>
+        /// Ejecuta el flujo de validaciones de negocio para permitir o bloquear un paso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación del paso.</param>
+        /// <returns>Resultado consolidado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarPaso(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             var bloqueoAplicacion = ValidarBloqueoPorAplicacionFutura(connection, request);
@@ -289,6 +370,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Valida que no existan aplicaciones futuras que bloqueen la transacción actual.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>Resultado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarBloqueoPorAplicacionFutura(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             if (string.Compare(request.Transaccion, "09", StringComparison.Ordinal) < 0)
@@ -308,6 +396,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Valida bloqueos por aplicación de patrimonio para la transacción de ahorros.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>Resultado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarBloqueoPatrimonio(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             if (!EsTransaccion(request.Transaccion, "05"))
@@ -326,6 +421,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     "No se puede realizar el movimiento seleccionado ya que se ha aplicado esta planilla y/o otra futura en los auxiliares... verifique.!")
                 : CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Valida que el cuadre de abonos sea consistente antes de aplicar el proceso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>Resultado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarCuadreAbonos(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             if (!EsTransaccion(request.Transaccion, "08"))
@@ -351,6 +453,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     "La información detallada de los abonos no cuadra con la información cargada... verifique.!")
                 : CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Valida que el desglose previo de planilla se haya ejecutado.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>Resultado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarDesgloseRealizado(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             if (!EsTransaccionAplicacion(request.Transaccion))
@@ -369,6 +478,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     "No se ha realizado el proceso de detalle de Aportes/Creditos... verifique.!")
                 : CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Valida que la planilla del mes anterior esté aplicada.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>Resultado de validación.</returns>
         private static CcProcesoMensualValidaPasoResponse ValidarPlanillaMesAnterior(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             if (!EsTransaccion(request.Transaccion, "08"))
@@ -385,6 +501,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     "La Planilla del Mes anterior no ha sido aplicada... verifique.!")
                 : CrearResultadoValido();
         }
+
+        /// <summary>
+        /// Verifica si existe aplicación de planilla en el mes anterior según tipo de proceso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de validación.</param>
+        /// <returns>True si existe aplicación del mes anterior; de lo contrario, false.</returns>
         private static bool ExisteAplicacionMesAnterior(IDbConnection connection, CcProcesoMensualValidaPasoRequest request)
         {
             var procesoBase = Math.Truncate(request.FechaProceso);
@@ -430,6 +553,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     request.FechaProceso
                 }) > 0;
         }
+
+        /// <summary>
+        /// Verifica si existe bitácora para una transacción en un proceso exacto.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="transaccion">Código de transacción.</param>
+        /// <returns>True si existe registro en bitácora; de lo contrario, false.</returns>
         private static bool ExisteBitacoraEnProceso(IDbConnection connection, int codInstitucion, decimal fechaProceso, string transaccion)
         {
             const string query = @"
@@ -448,6 +580,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Transaccion = transaccion
                 }) > 0;
         }
+
+        /// <summary>
+        /// Verifica si existe bitácora de una transacción desde una fecha de proceso en adelante.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso mínima.</param>
+        /// <param name="transaccion">Código de transacción.</param>
+        /// <returns>True si existe registro en bitácora; de lo contrario, false.</returns>
         private static bool ExisteBitacoraDesdeProceso(IDbConnection connection, int codInstitucion, decimal fechaProceso, string transaccion)
         {
             const string query = @"
@@ -466,15 +607,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     FechaProceso = fechaProceso
                 }) > 0;
         }
+
+        /// <summary>
+        /// Evalúa si la transacción coincide con el valor esperado.
+        /// </summary>
+        /// <param name="transaccion">Transacción a evaluar.</param>
+        /// <param name="esperada">Valor esperado.</param>
+        /// <returns>True si coincide; de lo contrario, false.</returns>
         private static bool EsTransaccion(string transaccion, string esperada)
         {
             return string.Equals(transaccion?.Trim(), esperada, StringComparison.OrdinalIgnoreCase);
         }
+
+        /// <summary>
+        /// Indica si la transacción corresponde a una aplicación.
+        /// </summary>
+        /// <param name="transaccion">Transacción a evaluar.</param>
+        /// <returns>True si es transacción de aplicación; de lo contrario, false.</returns>
         private static bool EsTransaccionAplicacion(string transaccion)
         {
             return EsTransaccion(transaccion, "08")
                 || EsTransaccion(transaccion, "05");
         }
+
+        /// <summary>
+        /// Crea una respuesta de validación exitosa.
+        /// </summary>
+        /// <returns>Resultado válido sin mensaje de error.</returns>
         private static CcProcesoMensualValidaPasoResponse CrearResultadoValido()
         {
             return new CcProcesoMensualValidaPasoResponse
@@ -483,6 +642,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 Mensaje = string.Empty
             };
         }
+
+        /// <summary>
+        /// Crea una respuesta de validación inválida con el mensaje indicado.
+        /// </summary>
+        /// <param name="mensaje">Mensaje descriptivo del bloqueo.</param>
+        /// <returns>Resultado inválido con detalle de error.</returns>
         private static CcProcesoMensualValidaPasoResponse CrearResultadoInvalido(string mensaje)
         {
             return new CcProcesoMensualValidaPasoResponse
@@ -491,6 +656,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 Mensaje = mensaje
             };
         }
+
+        /// <summary>
+        /// Obtiene datos de configuración de carga para una institución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Configuración de carga institucional.</returns>
         public ErrorDto<CcProcesoMensualCargaConfigDbModel> DatosInstitucion_Obtener(int codEmpresa, int codInstitucion)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);

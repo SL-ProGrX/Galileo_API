@@ -59,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaPunto(registro.Inicio),
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.FormatearFechaPunto(registro.Corte),
                 registro.CodDeduccion,
-                registro.MontoActual.ToString(CultureInfo.InvariantCulture),
+                registro.MontoActual.ToString("0"),
                 string.Empty,
                 string.Empty,
                 registro.Cedula,
@@ -76,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 "31.12.9999",
                 registro.CodDeduccion,
                 string.Empty,
-                registro.PorcDeduc.ToString(CultureInfo.InvariantCulture),
+                registro.PorcDeduc.ToString("0"),
                 string.Empty,
                 registro.Cedula,
                 registro.Nombre);

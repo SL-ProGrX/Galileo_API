@@ -16,6 +16,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
         private readonly string movimientoBitacora = "Aplica - WEB";
+
+        /// <summary>
+        /// Inicializa una nueva instancia para gestionar la aplicación de ahorros del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualAplicacionAhorrosDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -25,6 +30,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
         }
 
+        /// <summary>
+        /// Ejecuta la aplicación de aportes para una institución y proceso mensual.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la ejecución de aplicación de aportes.</returns>
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return EjecutarAplicacionAhorro(
@@ -44,6 +57,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     }
                 });
         }
+
+        /// <summary>
+        /// Ejecuta la aplicación del proceso de inconsistencias de ahorros.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la ejecución de inconsistencias.</returns>
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return EjecutarAplicacionAhorro(
@@ -58,6 +80,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     EjecutarProceso = context => ActualizarEstadoInstitucion(context, TipoAplicacionAhorro.Inconsistencias)
                 });
         }
+
+        /// <summary>
+        /// Ejecuta la aplicación del proceso de devoluciones de ahorros.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <returns>Resultado de la ejecución de devoluciones.</returns>
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return EjecutarAplicacionAhorro(
@@ -73,6 +104,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 });
         }
 
+        /// <summary>
+        /// Ejecuta el flujo común de aplicación de ahorros según la configuración recibida.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <param name="config">Configuración específica del tipo de aplicación.</param>
+        /// <returns>Resultado del proceso de aplicación.</returns>
         private ErrorDto<CcProcesoMensualAhorros> EjecutarAplicacionAhorro(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario, AplicacionAhorroConfig config)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
@@ -117,6 +157,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualAhorros());
             }
         }
+
+        /// <summary>
+        /// Registra en bitácora de planilla la transacción ejecutada.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="transaccion">Código de transacción.</param>
         private static void RegistrarBitacoraPlanilla(AplicacionAhorroContext context, string transaccion)
         {
             MProcesoMensualDb.SbBitacoraPlanilla(
@@ -131,6 +177,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 });
         }
 
+        /// <summary>
+        /// Registra en bitácora de seguridad el movimiento ejecutado.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="detalleMovimiento">Detalle del movimiento a registrar.</param>
         private void RegistrarBitacora(AplicacionAhorroContext context, string detalleMovimiento)
         {
             _Security_MainDB.Bitacora(
@@ -143,6 +194,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Modulo = vModulo
                 });
         }
+
+        /// <summary>
+        /// Registra el estado del proceso mensual en PRE o POS.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="transaccion">Código de transacción.</param>
+        /// <param name="estado">Estado del proceso (PRE/POS).</param>
         private void EjecutarProcesoMensual(AplicacionAhorroContext context, string transaccion, string estado)
         {
             _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(
@@ -154,6 +212,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 context.CodInstitucion,
                 context.FechaProceso);
         }
+
+        /// <summary>
+        /// Ejecuta los pasos de aplicación de aportes.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
         private static void EjecutarAplicacionAportes(AplicacionAhorroContext context)
         {
             const string query = @"
@@ -167,6 +230,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             EjecutarPasoAplicacionAportes(context, query, 2);
         }
 
+        /// <summary>
+        /// Ejecuta un paso específico del procedimiento de aplicación de aportes.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="query">Consulta o procedimiento a ejecutar.</param>
+        /// <param name="paso">Número de paso a ejecutar.</param>
         private static void EjecutarPasoAplicacionAportes(AplicacionAhorroContext context, string query, int paso)
         {
             context.Connection.Execute(
@@ -180,6 +249,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 });
         }
 
+        /// <summary>
+        /// Procesa devoluciones de ahorros cuando la configuración institucional lo permite.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
         private static void ProcesarDevolucionesAhorros(AplicacionAhorroContext context)
         {
             var parametros = ObtenerParametrosAhorros(
@@ -226,6 +299,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 });
         }
 
+        /// <summary>
+        /// Obtiene parámetros de configuración de ahorros de la institución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Parámetros de ahorro o <c>null</c> si no existen.</returns>
         private static CcProcesoMensualAhorroParametrosDbModel? ObtenerParametrosAhorros(IDbConnection connection, int codInstitucion)
         {
             const string query = @"
@@ -243,6 +322,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new { CodInstitucion = codInstitucion });
         }
 
+        /// <summary>
+        /// Obtiene socios marcados para devolución en el proceso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
+        /// <returns>Lista de socios con devolución.</returns>
         private static List<CcProcesoMensualSocioDevolucionDbModel> ObtenerSociosDevolucion(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             const string query = @"
@@ -265,6 +351,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 })];
         }
 
+        /// <summary>
+        /// Ejecuta devoluciones para monto y aporte del socio cuando corresponda.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="parametros">Parámetros de ahorro institucional.</param>
+        /// <param name="socio">Datos del socio a procesar.</param>
+        /// <param name="documento">Número de documento asociado.</param>
         private static void EjecutarDevolucionSiAplica(AplicacionAhorroContext context, CcProcesoMensualAhorroParametrosDbModel parametros, CcProcesoMensualSocioDevolucionDbModel socio, string documento)
         {
             if (socio.Monto > 0)
@@ -305,6 +398,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     });
             }
         }
+
+        /// <summary>
+        /// Ejecuta el procedimiento de devolución de fondos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="request">Parámetros de la devolución.</param>
         private static void EjecutarDevolucionFondo(IDbConnection connection, CcProcesoMensualDevolucionFondoRequest request)
         {
             const string query = @"
@@ -335,6 +434,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Elimina registros temporales de socios procesados para devolución.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha de proceso.</param>
         private static void EliminarSociosTempDevolucion(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             const string query = @"
@@ -350,6 +455,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             });
         }
 
+        /// <summary>
+        /// Actualiza el indicador de estado de aplicación en la institución según tipo de proceso.
+        /// </summary>
+        /// <param name="context">Contexto de ejecución del proceso.</param>
+        /// <param name="tipoAplicacion">Tipo de aplicación de ahorro.</param>
         private static void ActualizarEstadoInstitucion(  AplicacionAhorroContext context,   TipoAplicacionAhorro tipoAplicacion)
         {
             var query = tipoAplicacion switch
@@ -382,6 +492,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 query,
                 new { context.CodInstitucion });
         }
+
+        /// <summary>
+        /// Obtiene los parámetros para el reporte de ahorros de una institución.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Resultado con los parámetros del reporte.</returns>
         public ErrorDto<CcProcesoMensualAhorroReporteModel> CcProcesoMensual_ParametrosAhorroReporte_Obtener(int codEmpresa, int codInstitucion)
         {
             try
@@ -417,6 +534,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
         }
 
+        /// <summary>
+        /// Obtiene los parámetros del reporte de ahorros directamente desde la base de datos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Modelo con porcentaje de aporte y ahorro.</returns>
         private static CcProcesoMensualAhorroReporteModel ObtenerParametrosAhorroReporte(IDbConnection connection, int codInstitucion)
         {
             const string query = @"

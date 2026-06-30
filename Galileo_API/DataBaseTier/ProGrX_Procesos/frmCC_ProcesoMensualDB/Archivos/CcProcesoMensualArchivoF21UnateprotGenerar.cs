@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         protected override string CodigoFormato => "F21";
         protected override string ExtensionArchivo => ".csv";
         protected override string ContentType => ContentTypeCsv;
-
+        protected string CodigoInstitucionArchivo { get; private set; } = string.Empty;
         protected override string QueryRegistros => @"
             SELECT
                 P.cedula AS Cedula,
@@ -53,8 +53,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             _movimientos = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(
                 configuracion);
 
+            CodigoInstitucionArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(request.CodInstitucion, configuracion.CodigoInstDeduc);
+
+
             return base.GenerarArchivo(connection, request);
         }
+
+        protected override string ObtenerCodigoInstDeduc()
+        {
+            return CodigoInstitucionArchivo;
+        }
+
 
         protected override object CrearParametrosRegistros(
             CcProcesoMensualGeneraArchivoRequest request)

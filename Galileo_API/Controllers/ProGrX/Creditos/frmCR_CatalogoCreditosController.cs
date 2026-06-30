@@ -48,6 +48,24 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_Adjuntos_Obtener(codEmpresa, codigo);
         }
 
+        [HttpGet("CrCatalogoCreditos_Oficinas_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Oficinas_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Oficinas_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Planes_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Planes_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Planes_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Divisas_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Divisas_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Divisas_Obtener(codEmpresa);
+        }
+
         [HttpPost("CrCatalogoCreditos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
         {
