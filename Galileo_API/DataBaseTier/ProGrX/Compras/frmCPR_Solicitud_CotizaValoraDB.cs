@@ -24,6 +24,8 @@ namespace Galileo.DataBaseTier
 
         private sealed record CorreoData(CprProveedorDto Proveedor, List<CprSolicitudBsDto> Productos, string Recepcion);
         private sealed record InvitarData(int CprId, int ProveedorCodigo, string Usuario);
+        private sealed record ProvPuntajeRow(int PROVEEDOR_CODIGO, decimal PUNTAJE);
+        private sealed record ProvPresenciaTablas(HashSet<int> ConValora, HashSet<int> ConCotiza, HashSet<int> ConBs);
 
         public FrmCprSolicitudCotizaValoraDB(IConfiguration config)
         {
@@ -40,7 +42,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CprValoracionLista>(
                     "spCPR_SolicitudProveedores_Obtener",
-                    new { consulta, cpr_id },
+                    new { compra = consulta, cpr_id = cpr_id },
                     commandType: CommandType.StoredProcedure
                 ).ToList()
             );
@@ -126,15 +128,76 @@ namespace Galileo.DataBaseTier
             );
         }
 
+        /// <summary>
+        /// Obtiene la lista de proveedores invitados para una solicitud CPR.
+        /// El estado y el puntaje se derivan dinámicamente de las tablas de proceso
+        /// para reflejar siempre la fase real: Registrada, Tránsito o Valorada.
+        /// </summary>
         public ErrorDto<List<CprSolicitudProvDto>> CprSolicitudProvInvitados_Obtener(int codEmpresa, int cpr_id)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-                conn.Query<CprSolicitudProvDto>(
+            {
+                var lista = conn.Query<CprSolicitudProvDto>(
                     "spCPR_SolicitudProvInvitados_Obtener",
                     new { cpr_id },
                     commandType: CommandType.StoredProcedure
-                ).ToList()
-            );
+                ).ToList();
+
+                var puntajes = conn.Query<ProvPuntajeRow>(
+                    @"SELECT PROVEEDOR_CODIGO,
+                             ISNULL(SUM(PUNTAJE), 0) AS PUNTAJE
+                      FROM   CPR_SOLICITUD_PROV_VALORA
+                      WHERE  CPR_ID = @cpr_id
+                      GROUP  BY PROVEEDOR_CODIGO",
+                    new { cpr_id }
+                ).ToDictionary(x => x.PROVEEDOR_CODIGO, x => x.PUNTAJE);
+
+                var presencia = ObtenerPresenciaTablas(conn, cpr_id);
+
+                foreach (var item in lista)
+                {
+                    item.valora_puntaje = puntajes.TryGetValue(item.proveedor_codigo, out var p)
+                        ? p.ToString("0.##")
+                        : "0";
+                    item.estado = ResolverEstado(item.estado, item.proveedor_codigo, presencia);
+                }
+
+                return lista;
+            });
+        }
+
+        /// <summary>Consulta en qué tablas de proceso tiene registros cada proveedor para el CPR.</summary>
+        private static ProvPresenciaTablas ObtenerPresenciaTablas(SqlConnection conn, int cpr_id)
+        {
+            var conValora = conn.Query<int>(
+                "SELECT DISTINCT PROVEEDOR_CODIGO FROM CPR_SOLICITUD_PROV_VALORA WHERE CPR_ID = @cpr_id",
+                new { cpr_id }
+            ).ToHashSet();
+
+            var conCotiza = conn.Query<int>(
+                "SELECT DISTINCT PROVEEDOR_CODIGO FROM CPR_SOLICITUD_PROV_COTIZA WHERE CPR_ID = @cpr_id",
+                new { cpr_id }
+            ).ToHashSet();
+
+            var conBs = conn.Query<int>(
+                "SELECT DISTINCT PROVEEDOR_CODIGO FROM CPR_SOLICITUD_PROV_BS WHERE CPR_ID = @cpr_id",
+                new { cpr_id }
+            ).ToHashSet();
+
+            return new ProvPresenciaTablas(conValora, conCotiza, conBs);
+        }
+
+        /// <summary>
+        /// Determina el estado real del proveedor según las tablas de proceso.
+        /// No sobreescribe estados finales (S, A, C, F).
+        /// </summary>
+        private static string? ResolverEstado(string? estadoActual, int proveedorCodigo, ProvPresenciaTablas presencia)
+        {
+            if (estadoActual is "S" or "A" or "C" or "F") return estadoActual;
+            if (presencia.ConValora.Contains(proveedorCodigo)) return "V";
+            if (presencia.ConCotiza.Contains(proveedorCodigo)) return "T";
+            if (presencia.ConBs.Contains(proveedorCodigo)) return "R";
+            return estadoActual;
         }
 
         public ErrorDto<List<CprSolicitudPrvBs>> CprSolicitudProvContizacionLista_Obtener(int codEmpresa, int cpr_id, string cod_proveedor)
@@ -142,7 +205,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CprSolicitudPrvBs>(
                     "spCPR_SolicitudProvCotiLista_Obtener",
-                    new { cpr_id, cod_proveedor },
+                    new { cpr_id = cpr_id, cod_proveedor = cod_proveedor },
                     commandType: CommandType.StoredProcedure
                 ).ToList()
             );
@@ -281,7 +344,7 @@ namespace Galileo.DataBaseTier
         {
             conn.Execute(
                 "spCPR_SolicitudProv_Invitar",
-                new { proveedor_codigo = data.ProveedorCodigo, cpr_id = data.CprId, registro_usuario = data.Usuario },
+                new { cod_proveedor = data.ProveedorCodigo, cpr_id = data.CprId, usuario = data.Usuario },
                 transaction: tx,
                 commandType: CommandType.StoredProcedure
             );
@@ -328,23 +391,23 @@ namespace Galileo.DataBaseTier
                 var eConfig = correoConfigResult.Result;
                 var body = ConstruirBodyCorreo(proveedor, info, recepcion);
 
-                if (_sendEmail == "Y")
+                var resp = new ErrorDto();
+
+                var emailRequest = new EmailRequest
                 {
-                    var resp = new ErrorDto();
-                    var emailRequest = new EmailRequest
-                    {
-                        To = proveedor.email,
-                        From = eConfig.User,
-                        Subject = "Solicitud de Cotización",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
+                    To = _sendEmail == "Y" ? proveedor.email : eConfig.User,
+                    From = eConfig.User,
+                    Subject = _sendEmail == "Y"
+                        ? "Solicitud de Cotización"
+                        : "Solicitud de Cotización - Prueba",
+                    Body = body,
+                    Attachments = new List<IFormFile>()
+                };
 
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
+                await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
 
-                    if (resp.Code != 0)
-                        return DbHelper.ErrorResponse(resp.Description ?? DefaultErrorMsg, resp.Code ?? -1);
-                }
+                if (resp.Code != 0)
+                    return DbHelper.ErrorResponse(resp.Description ?? DefaultErrorMsg, resp.Code ?? -1);
 
                 return DbHelper.CreateOkResponse();
             }
