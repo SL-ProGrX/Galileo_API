@@ -347,15 +347,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var sqlParams = BuildSqlParams(param, ctaContable, ctaComisionSINPE);
 
                 // 4) Insert/Update
-                var idBanco = 0;
-                if (vEdita)
-                {
-                    idBanco = UpdateBanco(conn, param.id_banco, sqlParams);
-                }
-                else
-                {
-                    idBanco = InsertBanco(conn, sqlParams);
-                }
+                var idBanco = vEdita
+                    ? UpdateBanco(conn, param.id_banco, sqlParams)
+                    : InsertBanco(conn, sqlParams);
 
 
                 // 4) Insert/Update
