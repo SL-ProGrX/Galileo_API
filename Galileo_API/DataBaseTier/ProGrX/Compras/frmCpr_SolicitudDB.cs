@@ -87,20 +87,8 @@ namespace Galileo.DataBaseTier
 
                 const string qCount = @"
                             SELECT COUNT(DISTINCT S.CPR_ID)
-                            FROM CPR_SOLICITUD S
-                            LEFT JOIN CPR_SOLICITUD_PROV P
-                            ON S.CPR_ID = P.CPR_ID
-                            LEFT JOIN CORE_UENS U
-                            ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
-                            WHERE P.ADJUDICA_ORDEN IS NOT NULL
-                            AND (@HasFiltro = 0 OR (
-                                    CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
-                                    ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
-                                    ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-                                    ISNULL(U.DESCRIPCION,'') LIKE @Like
-                            ))
-                            AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
-                            AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados);
+                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID 
+                                    AND P.ADJUDICA_ORDEN is not null;
                             ";
 
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
@@ -116,11 +104,11 @@ namespace Galileo.DataBaseTier
                                 S.ENCARGADO_USUARIO
                             FROM CPR_SOLICITUD S
                             LEFT JOIN CPR_SOLICITUD_PROV P
-                            ON S.CPR_ID = P.CPR_ID
+                            ON S.CPR_ID = P.CPR_ID and P.ADJUDICA_ORDEN IS NOT NULL
                             LEFT JOIN CORE_UENS U
                             ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
-                            WHERE P.ADJUDICA_ORDEN IS NOT NULL
-                            AND (@HasFiltro = 0 OR (
+                            WHERE
+                            (@HasFiltro = 0 OR (
                                     CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
                                     ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
                                     ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
@@ -1129,14 +1117,14 @@ WHERE CPR_ID = @Id;";
             }
         }
 
-        public ErrorDto<float> CprSolicitud_gastoMenorMonto(int codEmpresa)
+        public ErrorDto<decimal> CprSolicitud_gastoMenorMonto(int codEmpresa)
         {
-            var info = new ErrorDto<float>();
+            var info = new ErrorDto<decimal>();
             try
             {
                 info.Code = 0;
                 var val = _config.GetSection("Crp_Compras").GetSection("CrpCompraGM_Monto").Value?.ToString() ?? "0";
-                info.Result = float.Parse(val);
+                info.Result = decimal.Parse(val);
             }
             catch (Exception ex)
             {

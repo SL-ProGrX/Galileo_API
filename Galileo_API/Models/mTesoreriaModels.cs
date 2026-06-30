@@ -30,6 +30,10 @@
         public string fxPuesto { get; set; } = string.Empty;
         public string fxDepartamento { get; set; } = string.Empty;
         public string letras1 { get; set; } = string.Empty;
+        public string fecha { get; set; } = string.Empty;
+        public string empresa { get; set; } = string.Empty;
+        public string banco { get; set; } = string.Empty;
+        public string transferencia { get; set; } = string.Empty;
     }
 
     public class ProcesarComprobanteParametros

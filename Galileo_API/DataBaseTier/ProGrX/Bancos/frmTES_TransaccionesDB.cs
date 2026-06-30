@@ -180,8 +180,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     {
                         trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
                     }
-                    
+
                 }
+                else
+                {
+                    if (string.IsNullOrEmpty(trx.codigo!.Trim()))
+                    {
+                        trx.tipo_ced_destino = 1;
+                    }
+                    trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                }
+
 
                     trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",

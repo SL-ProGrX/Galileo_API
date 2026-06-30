@@ -96,11 +96,18 @@
     public class TesTransferenciaReversaFiltrosObtener
     {
         public string Documento { get; set; } = string.Empty;
-        public string Codigo { get; set; } = string.Empty;
-        public string Ndocumento { get; set; } = string.Empty;
-        public string Beneficiario { get; set; } = string.Empty; 
-        public string CtaAhorros { get; set; } = string.Empty;
+        public string? Codigo { get; set; } 
+        public string CodigoLike { get; set; } = string.Empty;
+        public string? Ndocumento { get; set; }
+        public string NdocumentoLike { get; set; } = string.Empty;
+        public string? Beneficiario { get; set; }
+        public string BeneficiarioLike { get; set; } = string.Empty;
+        public string? CtaAhorros { get; set; } 
+        public string CtaAhorrosLike { get; set; } = string.Empty;
         public string CodPlan { get; set; } = string.Empty;
+        public int? id_banco { get; set; }
+        public string? cod_referencia { get; set; } = string.Empty;
+        
     }
 
     public class SinpeReversaResultado
