@@ -20,8 +20,8 @@ namespace Galileo.DataBaseTier
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"select valor from AFI_COMISIONES_PARAMETROS where cod_parametro = @codigo";
-                    result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
-                
+                result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
+
             }
             catch (Exception ex)
             {
@@ -38,8 +38,8 @@ namespace Galileo.DataBaseTier
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"select nombre from socios where cedula = @cedula";
-                    result = connection.QueryFirstOrDefault<string>(query, new { cedula = strCedula }) ?? "";
-                
+                result = connection.QueryFirstOrDefault<string>(query, new { cedula = strCedula }) ?? "";
+
             }
             catch (Exception ex)
             {
@@ -47,10 +47,10 @@ namespace Galileo.DataBaseTier
             }
             return result;
         }
-    
+
         public bool fxgCongelamiento(int CodEmpresa, string vCedula, string vParametro)
         {
-            
+
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -72,7 +72,7 @@ namespace Galileo.DataBaseTier
                     default:
                         return false;
                 }
-                var existe = connection.QueryFirstOrDefault<int>(query, new {vCedula = vCedula });
+                var existe = connection.QueryFirstOrDefault<int>(query, new { vCedula = vCedula });
                 if (existe > 0)
                 {
                     return true;
@@ -90,7 +90,7 @@ namespace Galileo.DataBaseTier
 
         public string fxgAFIParametro(int CodEmpresa, string pCodigo)
         {
-            
+
             string result = "";
             try
             {
@@ -107,9 +107,9 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        public void sbgAFIBitacora(int CodEmpresa, string pMovimiento,  string pDetalle, string pCedula, string usuario)
+        public void sbgAFIBitacora(int CodEmpresa, string pMovimiento, string pDetalle, string pCedula, string usuario)
         {
-           
+
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
