@@ -36,6 +36,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.mov_sinpe_tipos = request.mov_sinpe_tipos <= 0 ? 3 : request.mov_sinpe_tipos;
         }
 
+        private static ErrorDto ValidarGuardarRequest(CrCatalogoCreditoGuardarRequest request)
+        {
+            var errores = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(request.codigo))
+                errores.Add("Codigo de Linea no es valido.");
+
+            if (string.IsNullOrWhiteSpace(request.descripcion))
+                errores.Add("Descripcion no valida.");
+
+            if (request.id_comite <= 0)
+                errores.Add("Comite de Evaluacion no es valido.");
+
+            if (string.IsNullOrWhiteSpace(request.cod_institucion))
+                errores.Add("Entidad Deductora no es valida.");
+
+            if (request.codigo.Length > 4)
+                errores.Add("Codigo Corriente [excede letras] Invalido.");
+
+            ValidarPorcentaje(
+                request.porc_anticipo_ext,
+                "El % de Anticipo Extraordinario, no es valido.",
+                errores);
+            ValidarPorcentaje(
+                request.porc_cargo_cancelacion,
+                "El % de Comision x Cancelacion (Anticipo), no es valido.",
+                errores);
+            ValidarPorcentaje(
+                request.refunde_porc,
+                "El % de Amortizacion para Permitir Refundiciones, no es valido.",
+                errores);
+            ValidarPorcentaje(
+                request.tasa_mora_add,
+                "Los Puntos Adicionales para Morosidad, no es valido.",
+                errores);
+            ValidarPorcentaje(
+                request.tbp_adicional,
+                "Los Puntos Adicionales Sobre TBP, no es valido.",
+                errores);
+
+            if (request.oficina_linea && string.IsNullOrWhiteSpace(request.oficina))
+                errores.Add("La Oficina Fija no fue especificada para esta linea.");
+
+            return errores.Count == 0
+                ? new ErrorDto { Code = 0, Description = "OK" }
+                : new ErrorDto
+                {
+                    Code = -1,
+                    Description = string.Join(Environment.NewLine, errores.Select(error => $" - {error}"))
+                };
+        }
+
+        private static void ValidarPorcentaje(decimal valor, string mensaje, List<string> errores)
+        {
+            if (valor < 0 || valor > 100)
+                errores.Add(mensaje);
+        }
+
 
         private static void NormalizarPeLRequest(CrCatalogoCreditoPeLGuardarRequest request)
         {
