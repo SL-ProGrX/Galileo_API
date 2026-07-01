@@ -649,5 +649,27 @@ FROM [cpr_compras]";
                 new { Boleta = codCompra, Usuario = usuario }
             );
         }
+
+        /// <summary>
+        /// Retorna el listado de compras directas registradas para la empresa,
+        /// ordenadas de más reciente a más antigua, para la búsqueda de apertura.
+        /// </summary>
+        public ErrorDto<List<CompraDirectaResumenData>> CprCompraDirecta_Lista_Obtener(int codEmpresa)
+        {
+            const string sql = @"
+        SELECT TOP 500
+            C.cod_compra,
+            C.cod_orden,
+            C.cod_proveedor,
+            C.cod_factura,
+            ISNULL(P.descripcion, '') AS proveedor,
+            CONVERT(VARCHAR(10), C.genera_fecha, 103) AS fecha,
+            C.total
+        FROM cpr_compras C
+        INNER JOIN cxp_proveedores P ON C.cod_proveedor = P.cod_proveedor
+        ORDER BY C.genera_fecha DESC";
+
+            return DbHelper.ExecuteListQuery<CompraDirectaResumenData>(_portalDb, codEmpresa, sql, null);
+        }
     }
 }

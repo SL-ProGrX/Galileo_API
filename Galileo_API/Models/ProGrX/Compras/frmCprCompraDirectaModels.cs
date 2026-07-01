@@ -71,4 +71,15 @@
         public int total { get; set; }
         public float cantidad { get; set; }
     }
+
+    public class CompraDirectaResumenData
+    {
+        public string cod_compra { get; set; } = string.Empty;
+        public string cod_orden { get; set; } = string.Empty;
+        public int cod_proveedor { get; set; } = 0;
+        public string cod_factura { get; set; } = string.Empty;
+        public string proveedor { get; set; } = string.Empty;
+        public string fecha { get; set; } = string.Empty;
+        public float total { get; set; } = 0;
+    }
 }

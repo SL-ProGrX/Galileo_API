@@ -256,6 +256,13 @@ namespace Galileo.DataBaseTier
                 return resp;
             }
 
+            if (r.Result == null)
+            {
+                resp.Code = -2;
+                resp.Description = "No se encontraron mas ordenes";
+                return resp;
+            }
+
             resp.Code = 0;
             resp.Description = r.Result;
             return resp;
