@@ -34,5 +34,11 @@ namespace Galileo.Controllers
         {
             return _bl.CprSolicitudContizacionLista_Obtener(CodEmpresa, cpr_id, cod_proveedor);
         }
+
+        [HttpPut("CprSolicitudCotizacionLineaSel_Actualizar")]
+        public ErrorDto CprSolicitudCotizacionLineaSel_Actualizar(int CodEmpresa, int id_cotizacion_linea, int seleccionado)
+        {
+            return _bl.CprSolicitudCotizacionLineaSel_Actualizar(CodEmpresa, id_cotizacion_linea, seleccionado);
+        }
     }
 }

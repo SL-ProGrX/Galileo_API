@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using System.Data;
 using System.Globalization;
 
 namespace Galileo_API.DataBaseTier
@@ -290,6 +291,213 @@ namespace Galileo_API.DataBaseTier
                 _ => "Apl.Deudas"
             };
         }
+        public decimal fxCuotaPolizaVida(int CodEmpresa, decimal monto, string codigo = "")
+        {
+            const string sql = @"
+        select dbo.fxCrd_CuotaPolizaVida_Calculo(@monto, @codigo) as Result;";
+
+            return DbHelper.ExecuteSingleQuery<decimal>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                0m,
+                new
+                {
+                    monto,
+                    codigo = (codigo ?? string.Empty).Trim()
+                }
+            ).Result;
+        }
+
+        public static decimal fxInteresesDiasPrimerCuota(DateTime fecha, decimal monto, decimal tasa)
+        {
+            var anio = fecha.Year;
+            var mes = fecha.Month;
+
+            if (mes == 12)
+            {
+                mes = 1;
+                anio++;
+            }
+            else
+            {
+                mes++;
+            }
+
+            var fechaCalculo = new DateTime(
+                anio,
+                mes,
+                1,
+                0,
+                0,
+                0,
+                DateTimeKind.Unspecified)
+                .AddDays(-1);
+
+            var dias = Math.Abs((fechaCalculo.Date - fecha.Date).Days) + 1;
+
+            return (tasa / 36000m) * monto * dias;
+        }
+
+        public decimal fxMontoEnGeneral(int CodEmpresa, long operacion)
+        {
+            const string sql = @"
+        select dbo.fxCrdSGTMontoDeducciones(@operacion) as Result;";
+
+            return DbHelper.ExecuteSingleQuery<decimal>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                0m,
+                new { operacion }
+            ).Result;
+        }
+
+        public bool fxCobraTasaFormaliza(
+            int CodEmpresa,
+            string codigo,
+            string codDestino)
+        {
+            const string sql = @"
+        select dbo.fxCrd_Calcula_Int_Formalizacion(@codigo, @codDestino) as Result;";
+
+            var result = DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                0,
+                new
+                {
+                    codigo = (codigo ?? string.Empty).Trim(),
+                    codDestino = (codDestino ?? string.Empty).Trim()
+                }
+            ).Result;
+
+            return result == 1;
+        }
+
+        public DateTime fxFechaCalculoFormaliza(
+     int CodEmpresa,
+     string linea = "",
+     decimal priDeduc = 0m,
+     int diaPago = 32)
+        {
+            const string sql = @"
+        select dbo.fxCrdFormalizaIntCorte(@linea, @priDeduc, @diaPago) as Result;";
+
+            return DbHelper.ExecuteSingleQuery<DateTime>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                DateTime.Today,
+                new
+                {
+                    linea = (linea ?? string.Empty).Trim(),
+                    priDeduc,
+                    diaPago
+                }
+            ).Result;
+        }
+
+        public decimal fxInteresesHastaFormalizar(int CodEmpresa,long operacion,string codigo,DateTime? fecha = null,decimal? monto = null,decimal priDeduc = 0m,int diaPago = 0)
+        {
+            const string sqlCredito = @"
+        select 
+            fechaforp,
+            int as tasa_int,
+            interesv,
+            montoapr,
+            fecha_inicio_calculo
+        from reg_creditos
+        where id_solicitud = @operacion;";
+
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            var credito = conn.QueryFirstOrDefault<CreditoFormalizaRow>(
+                sqlCredito,
+                new { operacion });
+
+            if (credito == null)
+                return 0m;
+
+            var fechaCalculo = fxFechaCalculoFormaliza(
+                CodEmpresa,
+                codigo,
+                priDeduc,
+                diaPago);
+
+            var fechaFormaliza = fecha ?? credito.fecha_inicio_calculo ?? credito.fechaforp;
+            var montoApr = monto ?? credito.montoapr;
+            var tasa = credito.interesv ?? credito.tasa_int;
+
+            if (fechaCalculo.Date < fechaFormaliza.Date)
+                return 0m;
+
+            if (fxCreditoExcedente(CodEmpresa, codigo))
+            {
+                const string sqlRefundido = @"
+            select isnull(sum(R.Saldo),0) as Monto
+            from reg_creditos R
+            inner join refundiciones X
+                    on R.id_solicitud = X.id_solicitud
+            where X.id_solicitudr = @operacion
+              and X.codigo = @codigo;";
+
+                var montoRefundido = conn.QueryFirstOrDefault<decimal>(
+                    sqlRefundido,
+                    new
+                    {
+                        operacion,
+                        codigo = (codigo ?? string.Empty).Trim()
+                    });
+
+                montoApr -= montoRefundido;
+
+                const string sqlUpdate = @"
+            update reg_creditos
+            set MontoCalculo = @montoApr
+            where id_solicitud = @operacion;";
+
+                conn.Execute(sqlUpdate, new { montoApr, operacion });
+            }
+
+            var dias = Math.Abs((fechaCalculo.Date - fechaFormaliza.Date).Days) + 1;
+            var interes = Math.Round((tasa / 36000m) * montoApr * dias, 2);
+
+            return interes < 0 ? 0m : interes;
+        }
+
+        public bool fxCreditoExcedente(int CodEmpresa, string codigo)
+        {
+            const string sql = @"
+        select rtrim(valor)
+        from EXC_PARAMETROS
+        where COD_PARAMETRO = '05';";
+
+            var codigoExcedente = DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                string.Empty
+            ).Result;
+
+            return string.Equals(
+                (codigoExcedente ?? string.Empty).Trim(),
+                (codigo ?? string.Empty).Trim(),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        public sealed class CreditoFormalizaRow
+        {
+            public DateTime fechaforp { get; set; }
+            public decimal tasa_int { get; set; }
+            public decimal? interesv { get; set; }
+            public decimal montoapr { get; set; }
+            public DateTime? fecha_inicio_calculo { get; set; }
+        }
 
     }
+
 }

@@ -34,18 +34,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             _porcAhorro = configuracion.PorcAhorro;
         }
 
-        protected string FormatearMontoPorTipo(TRegistro registro)
+        protected static string FormatearMontoPorTipo(TRegistro registro)
         {
             return registro.Tipo?.Trim().ToUpperInvariant() switch
             {
-                TipoAhorro => _porcAhorro.ToString("######0.00", CultureInfo.InvariantCulture),
+                TipoAhorro => registro.MontoActual.ToString("######0.00", CultureInfo.InvariantCulture),
                 TipoExtraordinario => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 TipoCredito => registro.MontoActual.ToString("############0.00", CultureInfo.InvariantCulture),
                 _ => string.Empty
             };
         }
 
-        protected string FormatearMontoPorTipoSinPunto(TRegistro registro)
+        protected static string FormatearMontoPorTipoSinPunto(TRegistro registro)
         {
             return FormatearMontoPorTipo(registro)
                 .Replace(".", string.Empty, StringComparison.Ordinal);

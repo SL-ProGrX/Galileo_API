@@ -13,6 +13,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         private readonly MCobroDb _mCobroDb;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
 
+        /// <summary>
+        /// Inicializa una nueva instancia para gestionar la recepción y desglose del proceso mensual.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
         public CcProcesoMensualRecepcionDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -21,6 +25,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         }
 
         #region sbCrDesgloce
+        /// <summary>
+        /// Ejecuta el desglose de créditos para una institución en el proceso indicado.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Parámetros de solicitud del desglose.</param>
         public void CrDesgloce(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualDesgloseRequest request)
         {
             var configuracion = ObtenerConfiguracionCreditoDesglose(connection, transaction, request.CodInstitucion);
@@ -73,6 +83,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 pendientes = total == 0 ? 0 : resultado.Pendientes;
             }
         }
+
+        /// <summary>
+        /// Obtiene la configuración necesaria para ejecutar el desglose de créditos.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <returns>Configuración del desglose de créditos.</returns>
         private static CcProcesoMensualCreditoDesgloseConfigDbModel ObtenerConfiguracionCreditoDesglose(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"
@@ -88,6 +106,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new { CodInstitucion = codInstitucion }, transaction)
                 ?? new CcProcesoMensualCreditoDesgloseConfigDbModel();
         }
+
+        /// <summary>
+        /// Elimina registros de créditos del proceso según institución y fechas de corte.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
+        /// <param name="fechaProceso">Fecha del proceso actual.</param>
+        /// <param name="fechaAnterior">Fecha límite histórica a considerar.</param>
         private static void EliminarCreditosProceso(IDbConnection connection, IDbTransaction transaction, int codInstitucion, decimal fechaProceso, decimal fechaAnterior)
         {
             const string query = @"
@@ -107,6 +134,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     FechaAnterior = fechaAnterior
                 }, transaction);
         }
+
+        /// <summary>
+        /// Ejecuta el procedimiento de desglose de créditos y retorna su resultado.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Parámetros requeridos para el procedimiento.</param>
+        /// <returns>Resultado del desglose de créditos.</returns>
         private static CcProcesoMensualCreditoDesgloseResultadoDbModel EjecutarCreditoDesglose(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualCreditoDesgloseDbRequest request)
         {
             const string query = @"
@@ -134,6 +169,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         #endregion 
 
         #region  sbDesglocePlanilla
+        /// <summary>
+        /// Ejecuta el proceso completo de desglose de planilla para una institución.
+        /// </summary>
+        /// <param name="request">Solicitud con parámetros del proceso mensual.</param>
+        /// <returns>Resultado del desglose de planilla.</returns>
         public ErrorDto<CcProcesoMensualDesglosePlanillaResponse> CcProcesoMensual_DesglosarPlanilla_Ejecutar(CcProcesoMensualDesgloseRequest request)
         {
             if (request is null)
@@ -191,6 +231,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     new CcProcesoMensualDesglosePlanillaResponse());
             }
         }
+
+        /// <summary>
+        /// Ejecuta el detalle de aportes para la institución y fecha de proceso indicada.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="fechaProceso">Fecha del proceso.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void DetallarAportes(IDbConnection connection, IDbTransaction transaction, decimal fechaProceso, int codInstitucion)
         {
             const string query = @"
@@ -206,6 +254,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     CodInstitucion = codInstitucion
                 }, transaction: transaction);
         }
+
+        /// <summary>
+        /// Marca la institución como desglosada en la tabla de instituciones.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="codInstitucion">Código de la institución.</param>
         private static void MarcarInstitucionComoDesglosada(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"

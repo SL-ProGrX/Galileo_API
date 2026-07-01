@@ -500,7 +500,7 @@ FROM {table}
             xmlOutput = xmlOutput.Replace("<?xml version=\"1.0\" encoding=\"utf-16\"?>", "");
             xmlOutput = xmlOutput.Replace(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"", "");
             xmlOutput = xmlOutput.Trim();
-            xmlOutput = xmlOutput.Replace(" xsi:nil=\"true\" ", "");
+            xmlOutput = Regex.Replace(xmlOutput, @"<\w+\s+xsi:nil=""true""\s*/>", string.Empty, RegexOptions.None, RegexTimeout);
             xmlOutput = xmlOutput.Replace("false", "0").Replace("true", "1");
 
             return xmlOutput;
@@ -910,5 +910,23 @@ VALUES (
         private static partial Regex MyRegex();
         [GeneratedRegex(@"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$", RegexOptions.IgnoreCase | RegexOptions.Singleline, "es-CR")]
         private static partial Regex MyRegex1();
+        public string fxXInstitucion(int CodEmpresa, int iInstitucion)
+        {
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"
+            select descripcion
+            from instituciones
+            where cod_institucion = @iInstitucion;";
+
+                return connection.QueryFirstOrDefault<string>(sql, new { iInstitucion }) ?? "";
+            }
+            catch (DataException)
+            {
+                return "";
+            }
+        }
     }
 }

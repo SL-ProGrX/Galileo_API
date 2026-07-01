@@ -107,6 +107,7 @@ namespace Galileo_API.Models.ProGrX.Credito
     public class CrCatalogoCreditoGuardarRequest : CrCatalogoCreditoData
     {
         public string usuario { get; set; } = string.Empty;
+        public required bool isNew { get; set; }
     }
 
     public class CrCatalogoCreditoPeLGuardarRequest
@@ -174,6 +175,35 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string descripcion { get; set; } = string.Empty;
         public required bool opcional { get; set; }
         public required bool asignado { get; set; }
+    }
+
+    public class CrCatalogoCreditoBloqueGarantiaData
+    {
+        public string garantia { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public required bool asignado { get; set; }
+    }
+
+    public class CrCatalogoCreditoBloqueEstadoPersonaData
+    {
+        public string cod_estado { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public required bool asignado { get; set; }
+    }
+
+    public class CrCatalogoCreditoBloqueUnoData
+    {
+        public List<CrCatalogoCreditoBloqueGarantiaData> garantias { get; set; } = [];
+        public List<CrCatalogoCreditoBloqueEstadoPersonaData> estadosPersona { get; set; } = [];
+    }
+
+    public class CrCatalogoCreditoBloqueUnoGuardarRequest
+    {
+        public string tipo { get; set; } = string.Empty;
+        public string codigo { get; set; } = string.Empty;
+        public string codigo_asignacion { get; set; } = string.Empty;
+        public required bool asignado { get; set; }
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class CrCatalogoCreditoAsignacionesData
@@ -318,5 +348,28 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string cuenta { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public required bool es_titulo { get; set; }
+    }
+
+    public class CrCatalogoCreditoPrioridadData
+    {
+        public string codigo { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public required bool linea_interna { get; set; }
+        public required bool libre { get; set; }
+        public required bool convenio { get; set; }
+        public required int prioridad { get; set; }
+    }
+
+    public class CrCatalogoCreditoPrioridadGuardarRequest
+    {
+        public string codigo { get; set; } = string.Empty;
+        public required int prioridad { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CrCatalogoCreditoBusquedaData
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
     }
 }

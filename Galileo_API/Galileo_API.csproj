@@ -7,6 +7,7 @@
       <UserSecretsId>74f74 bfc-15ce-496b-8e2a-8b80043c6e9e</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="Humanizer" Version="3.0.10" />
     <PackageReference Include="MailKit" Version="4.16.0" />

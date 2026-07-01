@@ -202,7 +202,9 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
+                    
 
                     if (ContratoExiste(conn, tx, contrato.cod_contrato?.Trim() ?? ""))
                         return DbHelper.ErrorResponse($"Ya existe el registro de un contrato con el código: {contrato.cod_contrato}", ErrorCode);
@@ -321,8 +323,9 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
-
+                    
                     var (sql, args) = BuildContratoUpdate(contrato);
                     conn.Execute(sql, args, tx);
 
@@ -465,6 +468,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     bool existe = conn.ExecuteScalar<int>(

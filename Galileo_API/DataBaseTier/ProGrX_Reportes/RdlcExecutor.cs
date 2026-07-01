@@ -227,7 +227,7 @@ namespace Galileo.DataBaseTier
 
         private static object? CoerceEmptyToNull(object? val)
         {
-            if (val is null)
+            if (val is null || val is DBNull)
                 return null;
 
             if (val is JValue jv)

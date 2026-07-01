@@ -177,11 +177,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return new TesTransferenciaReversaFiltrosObtener
             {
                 Documento = solicitud.documento!.Trim(),
-                Codigo = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo!),
-                Ndocumento = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento!),
-                Beneficiario = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario!),
-                CtaAhorros = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros!),
-                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan!) ?? "-sp-"
+                Codigo = solicitud.codigo! == "" ? null: solicitud.codigo!,
+                CodigoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo!),
+                Ndocumento = solicitud.ndocumento! == "" ? null : solicitud.ndocumento!,
+                NdocumentoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento!),
+                Beneficiario = solicitud.beneficiario! == "" ? null : solicitud.beneficiario!,
+                BeneficiarioLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario!),
+                CtaAhorros = solicitud.cta_ahorros! == "" ? null : solicitud.cta_ahorros!,
+                CtaAhorrosLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros!),
+                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan!) ?? "-sp-",
+                id_banco = solicitud.id_banco,
+
             };
         }
 

@@ -432,17 +432,26 @@ UPDATE CPR_SOLICITUD
         private static List<OrdenLineas> GetLineasAdjudicadas(SqlConnection conn, int cprId, string proveedor)
         {
             const string sqlLineas = @"
-        SELECT  [COD_PRODUCTO] AS COD_PRODUCTO,
-                '' AS DESCRIPCION,
-                [CANTIDAD] AS CANTIDAD,
-                [MONTO] AS PRECIO,
-                [DESC_PORC] AS DESCUENTO,
-                [IVA_PORC] AS IMP_VENTAS,
-                [TOTAL] AS TOTAL
-        FROM [dbo].[CPR_SOLICITUD_PROV_BS]
-        WHERE CPR_ID = @cpr_id
-        AND ADJUDICA_IND = 1
-        AND PROVEEDOR_CODIGO = @proveedor;";
+    SELECT
+        BS.COD_PRODUCTO AS COD_PRODUCTO,
+        ISNULL(P.DESCRIPCION, '') + CASE
+            WHEN ISNULL(CL.MODELO, '') = '' THEN ''
+            ELSE ' - ' + CL.MODELO
+        END AS DESCRIPCION,
+        BS.CANTIDAD AS CANTIDAD,
+        BS.MONTO AS PRECIO,
+        BS.DESC_PORC AS DESCUENTO,
+        BS.IVA_PORC AS IMP_VENTAS,
+        BS.TOTAL AS TOTAL
+    FROM dbo.CPR_SOLICITUD_PROV_BS BS
+    INNER JOIN dbo.CPR_SOLICITUD_PROV_COTIZA_LINEAS CL
+        ON CL.ID_COTIZACION_LINEA = BS.ID_COTIZACION_LINEA
+    LEFT JOIN dbo.PV_PRODUCTOS P
+        ON P.COD_PRODUCTO = BS.COD_PRODUCTO
+    WHERE BS.CPR_ID = @cpr_id
+      AND BS.ADJUDICA_IND = 1
+      AND BS.PROVEEDOR_CODIGO = @proveedor
+    ORDER BY BS.ID_COTIZACION_LINEA;";
 
             return conn.Query<OrdenLineas>(sqlLineas, new { cpr_id = cprId, proveedor }).ToList();
         }

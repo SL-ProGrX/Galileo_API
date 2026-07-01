@@ -1,3 +1,5 @@
+using System.Xml.Serialization;
+
 namespace Galileo.Models.CPR
 {
     public class CprSolicitudFiltro
@@ -15,6 +17,7 @@ namespace Galileo.Models.CPR
         public List<CprSolicitudDto>? solicitudes { get; set; } = new List<CprSolicitudDto>();
     }
 
+    [XmlRoot("CprSolicitudDto")]
     public class CprSolicitudDto
     {
         public int? cpr_id { get; set; }
@@ -36,7 +39,7 @@ namespace Galileo.Models.CPR
         public bool? i_plan_compras { get; set; } = false;
         public bool? i_presupuestado { get; set; } = false;
         public bool? i_contrato_requiere { get; set; } = false;
-        public float? monto { get; set; } = 0;
+        public decimal? monto { get; set; } = 0;
         public string? estado { get; set; }
         public string? val_id { get; set; }
         public string? recomendacion { get; set; }
@@ -55,7 +58,7 @@ namespace Galileo.Models.CPR
         public string? int_tipo_pago { get; set; } = string.Empty;
         public int? com_dir_cod_proveedor { get; set; }
         public string? com_dir_des_proveedor { get; set; }
-        public int? porc_multa { get; set; }
+        public decimal? porc_multa { get; set; }
         public bool? terminos_condiciones { get; set; } = false;
         public string? horario { get; set; }
         public Nullable<DateTime> recepcion_ofertas { get; set; }
@@ -336,8 +339,10 @@ namespace Galileo.Models.CPR
 
     public class CprSolicitudAdjudicaProductosDto
     {
+        public int? id_cotizacion_linea { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        public string? no_cotizacion { get; set; }
         public float monto { get; set; } = 0;
         public int cantidad { get; set; } = 0;
         public float desc_monto { get; set; } = 0;
