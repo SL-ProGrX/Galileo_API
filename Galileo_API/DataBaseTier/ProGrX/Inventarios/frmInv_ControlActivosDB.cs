@@ -371,7 +371,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<InvCntrActvivosCombos>(
                 CreatePortalDb(),
                 CodEmpresa,
-                @"select rtrim(COD_LOCALIZA) as item,
+                @"select ISNULL(NULLIF(RTRIM(COD_LOCALIZA), ''), '-1') AS item,
                          rtrim(descripcion) as descripcion
                   from ACTIVOS_LOCALIZACIONES
                   where Activa = 1
