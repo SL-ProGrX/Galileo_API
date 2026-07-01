@@ -119,6 +119,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return respuesta;
         }
 
+        /// <summary>
+        /// Valida si una linea permite cambiar las marcas de retencion o poliza.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="codigo">Codigo de linea de credito.</param>
+        /// <returns>Verdadero si permite aplicar el cambio.</returns>
+        public ErrorDto<bool> CrCatalogoCreditos_PermiteCambioRetencionPoliza(int codEmpresa, string codigo)
+        {
+            const string query = @"
+                SELECT ISNULL(COUNT(1), 0)
+                FROM reg_Creditos
+                WHERE estado = 'A'
+                  AND saldo > 0
+                  AND codigo = @Codigo;";
+
+            var respuesta = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                query,
+                0,
+                new { Codigo = codigo.Trim().ToUpperInvariant() });
+
+            if (respuesta.Code < 0)
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = respuesta.Code,
+                    Description = respuesta.Description,
+                    Result = false
+                };
+            }
+
+            return DbHelper.CreateOkResponse(respuesta.Result <= 1);
+        }
+
 
         /// <summary>
         /// Obtiene las cuentas contables asociadas a una linea de credito.
