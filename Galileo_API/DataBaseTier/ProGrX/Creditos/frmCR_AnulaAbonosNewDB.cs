@@ -103,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             const string sqlMovimientos = @"
             select
                 isnull(T.id_seq, 0) as id_seq,
-                convert(varchar(7), T.fecha_proceso, 126) as fecha_proceso,
+                isnull(T.fecha_proceso, 0) as fecha_proceso,
                 isnull(T.num_cuota, 0) as num_cuota,
                 isnull(T.cuota, 0) as cuota,
                 case when isnull(T.mora_dias, 0) > 0 then 'En Mora' else 'Al Dia' end as estado,
@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             request.usuario = CrAnulaAbonosNew_NormalizarTexto(request.usuario);
             request.accion = CrAnulaAbonosNew_NormalizarTexto(request.accion);
-            request.notas = CrAnulaAbonosNew_NormalizarTexto(request.notas);
+            request.notas = CrAnulaAbonosNew_NormalizarNotas(request.notas);
 
             var validacion = CrAnulaAbonosNew_Aplicar_Validar(request, resultado);
             if (validacion is not null)
@@ -261,6 +261,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var fechaServidor = conn.QueryFirstOrDefault<DateTime>("select Getdate();", transaction: tx);
                 var montoTotal = CrAnulaAbonosNew_Total_Calcular(request);
                 var ultimaCuotaCancelada = CrAnulaAbonosNew_Proceso_Obtener(request.ult_cta_cancelada);
+                var polizaOriginal = CrAnulaAbonosNew_PolizaOriginal_Obtener(
+                    conn,
+                    tx,
+                    request.operacion,
+                    request.id_seq_movimientos);
 
                 var contexto = new CrAnulaAbonosNewAplicarContext
                 {
@@ -274,7 +279,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     numero_documento = numeroDocumento,
                     fecha_servidor = fechaServidor,
                     monto_total = montoTotal,
-                    ultima_cuota_cancelada = ultimaCuotaCancelada
+                    ultima_cuota_cancelada = ultimaCuotaCancelada,
+                    poliza_original = polizaOriginal
                 };
 
                 CrAnulaAbonosNew_Documento_Insertar(contexto);
@@ -355,6 +361,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (string.IsNullOrWhiteSpace(request.usuario))
             {
                 return DbHelper.CreateErrorResponse("Debe indicar el usuario.", -2, resultado);
+            }
+
+            if (request.id_seq_movimientos is null || request.id_seq_movimientos.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe seleccionar al menos un movimiento.",
+                    -2,
+                    resultado);
             }
 
             if (CrAnulaAbonosNew_Total_Calcular(request) <= 0)
@@ -488,6 +502,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 tx) ?? string.Empty;
         }
 
+        private static decimal CrAnulaAbonosNew_PolizaOriginal_Obtener(
+            SqlConnection conn,
+            SqlTransaction tx,
+            int operacion,
+            List<int> movimientos)
+        {
+            if (movimientos is null || movimientos.Count == 0)
+            {
+                return 0;
+            }
+
+            const string sql = @"
+            select isnull(sum(isnull(mov_poliza, 0)), 0)
+            from CRD_OPERACION_TRANSAC
+            where id_solicitud = @Operacion
+              and id_seq in @Movimientos;";
+
+            return conn.QueryFirstOrDefault<decimal>(
+                sql,
+                new
+                {
+                    Operacion = operacion,
+                    Movimientos = movimientos
+                },
+                tx);
+        }
+
         private static void CrAnulaAbonosNew_Documento_Insertar(CrAnulaAbonosNewAplicarContext context)
         {
             var request = context.request;
@@ -566,11 +607,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 Linea1 = $"Saldo Actual      {cuentas.Saldo:N2}",
                 Linea2 = $"Interes Corriente {request.int_cor * -1:N2}",
                 Linea3 = $"Interes Moratorio {request.int_mor * -1:N2}",
-                Linea4 = $"Amortizacion      {request.amortizacion * -1:N2}",
+                Linea4 = $"Amortización      {request.amortizacion * -1:N2}",
                 Linea5 = $"Cargos            {request.cargos * -1:N2}",
-                Linea6 = $"Poliza            {request.poliza:N2}",
+                Linea6 = $"Póliza            {request.poliza:N2}",
                 Linea7 = $"Nuevo Saldo       {cuentas.Saldo + request.amortizacion:N2}",
-                Linea8 = $"Operacion /Linea  {request.operacion}_{operacion.codigo}_{operacion.opex_descripcion.ToUpperInvariant()}",
+                Linea8 = $"Operación /Linea  {request.operacion}_{operacion.codigo}_{operacion.opex_descripcion.ToUpperInvariant()}",
                 Linea9 = $"Proc.Retencion    {(operacion.retencion ? "SI" : "NO")}",
                 Linea10 = $"Usuario           {request.usuario}",
                 Linea11 = $"Fecha Ult. Cta    {CrAnulaAbonosNew_Proceso_Formatear(context.ultima_cuota_cancelada)}",
@@ -717,7 +758,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 IntMor = request.int_mor,
                 Amortizacion = request.amortizacion,
                 Cargos = request.cargos,
-                Poliza = request.poliza,
+                Poliza = context.poliza_original,
                 Fecha = context.fecha_servidor,
                 RecalculaCuota = request.recalcula_cuota,
                 UltimaCuotaCancelada = context.ultima_cuota_cancelada,
@@ -796,6 +837,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return (valor ?? string.Empty).Trim();
         }
 
+        private static string CrAnulaAbonosNew_NormalizarNotas(string valor)
+        {
+            return (valor ?? string.Empty)
+                .Replace("\r\n", " ")
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+        }
+
         private sealed class CrAnulaAbonosNewAplicarContext
         {
             public SqlConnection conn { get; set; } = null!;
@@ -804,17 +854,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public CrAnulaAbonosNewOperacionData operacion { get; set; } = null!;
             public CrAnulaAbonosNewOperacionCtasData cuentas { get; set; } = null!;
             public string oficina_titular { get; set; } = string.Empty;
-            public int enlace { get; set; }
+            public int enlace { get; set; } = 0;
             public string numero_documento { get; set; } = string.Empty;
-            public DateTime fecha_servidor { get; set; }
-            public decimal monto_total { get; set; }
-            public int ultima_cuota_cancelada { get; set; }
+            public DateTime? fecha_servidor { get; set; }
+            public decimal monto_total { get; set; } = 0;
+            public int ultima_cuota_cancelada { get; set; } = 0;
+            public decimal poliza_original { get; set; } = 0;
         }
 
         private sealed class CrAnulaAbonosNewCuentaDestinoData
         {
-            public bool es_valida { get; private set; }
-            public bool requiere_saldo_favor { get; private set; }
+            public bool es_valida { get; private set; } = false;
+            public bool requiere_saldo_favor { get; private set; } = false;
             public string cuenta { get; private set; } = string.Empty;
             public string forma_pago { get; private set; } = string.Empty;
             public string mensaje_error { get; private set; } = string.Empty;
