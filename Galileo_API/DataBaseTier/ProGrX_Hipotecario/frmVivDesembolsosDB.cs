@@ -475,6 +475,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 using var cn = new SqlConnection(
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
+                cn.Open();
                 using var tx = cn.BeginTransaction();
 
                 foreach (var item in detalles)

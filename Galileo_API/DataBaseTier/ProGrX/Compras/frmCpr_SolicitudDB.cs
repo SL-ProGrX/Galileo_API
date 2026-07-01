@@ -85,15 +85,18 @@ namespace Galileo.DataBaseTier
                 p.Add("Offset", offset);
                 p.Add("Fetch", fetch);
 
+                // Ordenamiento — campo validado contra lista blanca (no inyección SQL)
+                var orden = CprSolicitud_ResolverOrden(filtro.sort_field, filtro.sort_order);
+
                 const string qCount = @"
                             SELECT COUNT(DISTINCT S.CPR_ID)
-                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID 
+                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID
                                     AND P.ADJUDICA_ORDEN is not null;
                             ";
 
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
-                const string qList = @"
+                var qList = $@"
                             SELECT DISTINCT
                                 S.CPR_ID,
                                 P.ADJUDICA_ORDEN,
@@ -116,9 +119,8 @@ namespace Galileo.DataBaseTier
                             ))
                             AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
                             AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
-                            ORDER BY S.CPR_ID DESC
-                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-                            ";
+                            ORDER BY {orden}
+                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var solicitudes = conn.Query<CprSolicitudDto>(qList, p).ToList();
 
@@ -1254,6 +1256,30 @@ WHERE CPR_ID = @Id;";
 
             var f = filtro.Trim();
             return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        /// <summary>
+        /// Resuelve la cláusula ORDER BY para CprSolicitudLista_Obtener.
+        /// El campo se valida contra una lista blanca para evitar inyección SQL.
+        /// </summary>
+        private static string CprSolicitud_ResolverOrden(string? sortField, int? sortOrder)
+        {
+            var dir = sortOrder == 1 ? "ASC" : "DESC";
+
+            var colMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["cpr_id"]                 = "S.CPR_ID",
+                ["adjudica_orden"]         = "P.ADJUDICA_ORDEN",
+                ["estado"]                 = "S.ESTADO",
+                ["registro_usuario"]       = "S.REGISTRO_USUARIO",
+                ["encargado_usuario"]      = "S.ENCARGADO_USUARIO",
+                ["cod_unidad_solicitante"] = "U.DESCRIPCION",
+            };
+
+            if (!string.IsNullOrWhiteSpace(sortField) && colMap.TryGetValue(sortField, out var col))
+                return $"{col} {dir}";
+
+            return "S.CPR_ID DESC";
         }
 
         private static void EnsureOpen(IDbConnection conn)

@@ -951,6 +951,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 // VB: curIntC + curIntM + curAmortiza + curCargo (ojo: VB no sumó poliza al monto insert)
                 var montoTransaccion = afectacion.IntCor + afectacion.IntMor + afectacion.Principal + afectacion.Cargos;
 
+                conn.Open();
                 using var tx = await conn.BeginTransactionAsync();
 
                 const string sqlInsert = @"
