@@ -13,6 +13,7 @@
         public string nombre_autorizado { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
         public required int horas { get; set; }
+        public Nullable<DateTime> fecha_Vence_Id { get; set; }
 
     }
 }
