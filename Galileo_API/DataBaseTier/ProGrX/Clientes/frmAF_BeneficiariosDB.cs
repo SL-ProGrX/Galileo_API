@@ -45,7 +45,7 @@ namespace Galileo.DataBaseTier
                     new
                     {
                         Cedula = NormalizarTexto(cedula),
-                        LineaId = lineaId ?? 0
+                        Linea = lineaId ?? 0
                     },
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
