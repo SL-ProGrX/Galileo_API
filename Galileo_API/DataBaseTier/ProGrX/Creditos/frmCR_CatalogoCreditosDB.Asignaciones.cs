@@ -168,6 +168,73 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new { Codigo = codigo });
         }
 
+        /// <summary>
+        /// Obtiene las garantias y estados de persona asignados al bloque No.1.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
+        public ErrorDto<CrCatalogoCreditoBloqueUnoData> CrCatalogoCreditos_BloqueUno_Obtener(int codEmpresa, string codigo)
+        {
+            codigo = codigo.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return new ErrorDto<CrCatalogoCreditoBloqueUnoData>
+                {
+                    Code = -1,
+                    Description = "Debe consultar una linea de credito."
+                };
+            }
+
+            const string garantiasQuery = @"
+                SELECT
+                    G.Garantia AS garantia,
+                    ISNULL(G.Descripcion, '') AS descripcion,
+                    CONVERT(bit, CASE WHEN A.codigo IS NULL THEN 0 ELSE 1 END) AS asignado
+                FROM CRD_Garantia_Tipos G
+                LEFT JOIN Crd_Catalogo_Garantias A
+                    ON G.Garantia = A.Garantia
+                    AND A.codigo = @Codigo
+                ORDER BY asignado DESC, G.Garantia;";
+
+            const string estadosQuery = @"
+                SELECT
+                    E.cod_estado,
+                    ISNULL(E.Descripcion, '') AS descripcion,
+                    CONVERT(bit, CASE WHEN A.codigo IS NULL THEN 0 ELSE 1 END) AS asignado
+                FROM AFI_Estados_Persona E
+                LEFT JOIN Crd_Catalogo_Estados A
+                    ON E.cod_estado = A.cod_estado
+                    AND A.codigo = @Codigo
+                ORDER BY asignado DESC, E.cod_estado;";
+
+            var parametros = new { Codigo = codigo };
+            var garantias = DbHelper.ExecuteListQuery<CrCatalogoCreditoBloqueGarantiaData>(
+                _portalDb,
+                codEmpresa,
+                garantiasQuery,
+                parametros);
+            if (garantias.Code < 0) return ErrorBloqueUno(garantias.Description ?? "Error al obtener garantias.");
+
+            var estados = DbHelper.ExecuteListQuery<CrCatalogoCreditoBloqueEstadoPersonaData>(
+                _portalDb,
+                codEmpresa,
+                estadosQuery,
+                parametros);
+            if (estados.Code < 0) return ErrorBloqueUno(estados.Description ?? "Error al obtener estados de persona.");
+
+            return new ErrorDto<CrCatalogoCreditoBloqueUnoData>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new CrCatalogoCreditoBloqueUnoData
+                {
+                    garantias = garantias.Result ?? [],
+                    estadosPersona = estados.Result ?? []
+                }
+            };
+        }
+
 
         /// <summary>
         /// Guarda una asignacion de destinos, cargos, requisitos, recursos, cartera o refundibles.
@@ -200,6 +267,56 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Codigo = request.codigo,
                     CodigoAsignacion = request.codigo_asignacion,
                     Opcional = request.opcional ? 1 : 0,
+                    Usuario = request.usuario
+                });
+
+            if (respuesta.Code >= 0)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    request.asignado ? "Registra - WEB" : "Borrar - WEB",
+                    $"Catalogo Creditos > {request.tipo}: {request.codigo_asignacion} a la Linea: {request.codigo}");
+            }
+
+            return respuesta;
+        }
+
+        /// <summary>
+        /// Guarda una garantia o estado de persona del bloque No.1.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto CrCatalogoCreditos_BloqueUno_Guardar(int codEmpresa, CrCatalogoCreditoBloqueUnoGuardarRequest request)
+        {
+            NormalizarBloqueUnoRequest(request);
+
+            if (string.IsNullOrWhiteSpace(request.codigo) || string.IsNullOrWhiteSpace(request.codigo_asignacion))
+            {
+                return new ErrorDto { Code = -1, Description = "Debe indicar la linea y el codigo de asignacion." };
+            }
+
+            var query = request.tipo switch
+            {
+                "garantias" => SqlBloqueUnoGarantia(request.asignado),
+                "estadosPersona" => SqlBloqueUnoEstadoPersona(request.asignado),
+                _ => string.Empty
+            };
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new ErrorDto { Code = -1, Description = "Tipo de asignacion invalido." };
+            }
+
+            var respuesta = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    Codigo = request.codigo,
+                    CodigoAsignacion = request.codigo_asignacion,
                     Usuario = request.usuario
                 });
 
@@ -278,6 +395,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         ELSE
                             UPDATE CRD_CATALOGO_ADJUNTOS SET opcional = @Opcional WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;"
                 : @"DELETE CRD_CATALOGO_ADJUNTOS WHERE codigo = @Codigo AND COD_ADJUNTO = @CodigoAsignacion;";
+        }
+
+        private static ErrorDto<CrCatalogoCreditoBloqueUnoData> ErrorBloqueUno(string description)
+        {
+            return new ErrorDto<CrCatalogoCreditoBloqueUnoData>
+            {
+                Code = -1,
+                Description = description,
+                Result = new CrCatalogoCreditoBloqueUnoData()
+            };
+        }
+
+        private static string SqlBloqueUnoGarantia(bool asignado)
+        {
+            return asignado
+                ? @"IF NOT EXISTS (SELECT 1 FROM Crd_Catalogo_Garantias WHERE codigo = @Codigo AND Garantia = @CodigoAsignacion)
+                        INSERT Crd_Catalogo_Garantias(
+                            codigo, Garantia, utiliza_tasa_garantia, tasa_garantia, liquidez_minima,
+                            utiliza_tasa_piso, utiliza_tasa_techo, utiliza_maximos,
+                            tasa_piso, tasa_techo, max_monto, registro_usuario, registro_fecha, estado
+                        )
+                        VALUES(@Codigo, @CodigoAsignacion, 0, 0, 0, 0, 0, 0, 0, 0, 0, @Usuario, dbo.MyGetdate(), 1);"
+                : @"DELETE Crd_Catalogo_Garantias WHERE codigo = @Codigo AND Garantia = @CodigoAsignacion;";
+        }
+
+        private static string SqlBloqueUnoEstadoPersona(bool asignado)
+        {
+            return asignado
+                ? @"IF NOT EXISTS (SELECT 1 FROM Crd_Catalogo_Estados WHERE codigo = @Codigo AND cod_estado = @CodigoAsignacion)
+                        INSERT Crd_Catalogo_Estados(codigo, cod_estado, registro_usuario, registro_fecha)
+                        VALUES(@Codigo, @CodigoAsignacion, @Usuario, dbo.MyGetdate());"
+                : @"DELETE Crd_Catalogo_Estados WHERE codigo = @Codigo AND cod_estado = @CodigoAsignacion;";
+        }
+
+        private static void NormalizarBloqueUnoRequest(CrCatalogoCreditoBloqueUnoGuardarRequest request)
+        {
+            request.tipo = request.tipo.Trim();
+            request.codigo = request.codigo.Trim().ToUpperInvariant();
+            request.codigo_asignacion = request.codigo_asignacion.Trim().ToUpperInvariant();
+            request.usuario = request.usuario.Trim();
         }
     }
 }

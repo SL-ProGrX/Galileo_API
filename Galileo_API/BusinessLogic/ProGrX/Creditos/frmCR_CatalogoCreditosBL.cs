@@ -21,6 +21,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CrCatalogoCreditos_Consultar(codEmpresa, codigo);
         }
 
+        public ErrorDto<bool> CrCatalogoCreditos_PermiteCambioRetencionPoliza(int codEmpresa, string codigo)
+        {
+            return _db.CrCatalogoCreditos_PermiteCambioRetencionPoliza(codEmpresa, codigo);
+        }
+
         public ErrorDto<List<CrCatalogoCreditoCuentaData>> CrCatalogoCreditos_Cuentas_Obtener(int codEmpresa, string codigo)
         {
             return _db.CrCatalogoCreditos_Cuentas_Obtener(codEmpresa, codigo);
@@ -29,6 +34,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         public ErrorDto<CrCatalogoCreditoAsignacionesData> CrCatalogoCreditos_Asignaciones_Obtener(int codEmpresa, string codigo)
         {
             return _db.CrCatalogoCreditos_Asignaciones_Obtener(codEmpresa, codigo);
+        }
+
+        public ErrorDto<CrCatalogoCreditoBloqueUnoData> CrCatalogoCreditos_BloqueUno_Obtener(int codEmpresa, string codigo)
+        {
+            return _db.CrCatalogoCreditos_BloqueUno_Obtener(codEmpresa, codigo);
+        }
+
+        public ErrorDto<List<CrCatalogoCreditoPrioridadData>> CrCatalogoCreditos_Prioridad_Obtener(int codEmpresa)
+        {
+            return _db.CrCatalogoCreditos_Prioridad_Obtener(codEmpresa);
         }
 
         public ErrorDto<List<CrCatalogoCreditoAdjuntoData>> CrCatalogoCreditos_Adjuntos_Obtener(int codEmpresa, string codigo)
@@ -54,6 +69,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
         {
             return _db.CrCatalogoCreditos_Asignacion_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto CrCatalogoCreditos_BloqueUno_Guardar(int codEmpresa, CrCatalogoCreditoBloqueUnoGuardarRequest request)
+        {
+            return _db.CrCatalogoCreditos_BloqueUno_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto CrCatalogoCreditos_Prioridad_Guardar(int codEmpresa, CrCatalogoCreditoPrioridadGuardarRequest request)
+        {
+            return _db.CrCatalogoCreditos_Prioridad_Guardar(codEmpresa, request);
         }
 
         public ErrorDto<CrCatalogoCreditoRangosBaseData> CrCatalogoCreditos_RangosBase_Obtener(int codEmpresa, string codigo)
