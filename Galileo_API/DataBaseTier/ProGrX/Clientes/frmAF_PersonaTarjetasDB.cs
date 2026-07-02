@@ -37,9 +37,9 @@ namespace Galileo.DataBaseTier
                     SpPersonaTarjetasConsulta,
                     new
                     {
-                        Empresa = CodEmpresa,
+                        ClienteCod = CodEmpresa,
                         Cedula = NormalizarTexto(cedula),
-                        Filtro = string.Empty
+                        Token = string.Empty
                     },
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
         }
@@ -58,13 +58,13 @@ namespace Galileo.DataBaseTier
                 return DbHelper.ErrorResponse("Los datos de la tarjeta son requeridos.", -2);
             }
 
-            var movimiento = ObtenerMovimiento(tarjeta.TipoMov);
+            var movimiento = ObtenerMovimiento(tarjeta.tipoMov);
             if (string.IsNullOrWhiteSpace(movimiento))
             {
                 return DbHelper.ErrorResponse("El tipo de movimiento no es válido.", -2);
             }
 
-            if (DebeValidarTarjeta(tarjeta) && !MProGrxMain.FxTarjetaValida(tarjeta.Tarjeta))
+            if (DebeValidarTarjeta(tarjeta) && !MProGrxMain.FxTarjetaValida(tarjeta.tarjeta))
             {
                 return DbHelper.ErrorResponse("Tarjeta no es valida", -2);
             }
@@ -116,18 +116,21 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Crea parámetros seguros para registrar o eliminar una tarjeta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="tarjeta"></param>
+        /// <returns></returns>
         private static object CrearParametrosRegistro(int codEmpresa, PersonaTarjetaRegistroDto tarjeta)
         {
             return new
             {
-                Empresa = codEmpresa,
-                Cedula = NormalizarTexto(tarjeta.Cedula),
-                Tarjeta = NormalizarTexto(tarjeta.Tarjeta),
-                Vence = tarjeta.Vence,
-                Code = NormalizarTexto(tarjeta.Code),
-                TipoMov = NormalizarTexto(tarjeta.TipoMov).ToUpperInvariant(),
-                Usuario = NormalizarTexto(tarjeta.Usuario),
-                Filtro = string.Empty
+                ClienteCod = codEmpresa,
+                Cedula = NormalizarTexto(tarjeta.cedula),
+                Tarjeta = NormalizarTexto(tarjeta.tarjeta),
+                Vence = tarjeta.vence,
+                Code = NormalizarTexto(tarjeta.code),
+                TipoMov = NormalizarTexto(tarjeta.tipoMov).ToUpperInvariant(),
+                Usuario = NormalizarTexto(tarjeta.usuario),
+                Token = NormalizarTexto(tarjeta.dia_apl_ca)
             };
         }
 
@@ -151,8 +154,8 @@ namespace Galileo.DataBaseTier
         /// </summary>
         private static bool DebeValidarTarjeta(PersonaTarjetaRegistroDto tarjeta)
         {
-            return string.Equals(NormalizarTexto(tarjeta.TipoMov), "A", StringComparison.OrdinalIgnoreCase)
-                && tarjeta.ValidaTarjeta;
+            return string.Equals(NormalizarTexto(tarjeta.tipoMov), "A", StringComparison.OrdinalIgnoreCase)
+                && tarjeta.validaTarjeta;
         }
 
 
@@ -164,8 +167,8 @@ namespace Galileo.DataBaseTier
             Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
-                Usuario = NormalizarTexto(tarjeta.Usuario).ToUpperInvariant(),
-                DetalleMovimiento = $"Tarjeta: {NormalizarTexto(tarjeta.Tarjeta)} Id:{NormalizarTexto(tarjeta.Cedula)}",
+                Usuario = NormalizarTexto(tarjeta.usuario).ToUpperInvariant(),
+                DetalleMovimiento = $"Tarjeta: {NormalizarTexto(tarjeta.tarjeta)} Id:{NormalizarTexto(tarjeta.cedula)}",
                 Movimiento = movimiento,
                 Modulo = 9
             });
