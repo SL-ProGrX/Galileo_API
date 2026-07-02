@@ -42,6 +42,13 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string base_calculo { get; set; } = string.Empty;
         public string cobro_tipo_aplicacion { get; set; } = "V";
         public required bool fecha_corte_alterna { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string FECHACORTEALTERNA
+        {
+            set => fecha_corte_alterna = ParseBoolCatalogo(value);
+        }
+
         public DateTime? fechacorte { get; set; }
         public required bool tasa_destino { get; set; }
         public required bool tbp_utiliza { get; set; }
@@ -102,6 +109,15 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string df_etiqueta_plazo_tasa { get; set; } = "Plazo de xx meses con tasa del 00.00%";
         public string df_etiqueta_deposito { get; set; } = "DepÃ³sito en 24 hrs hÃ¡biles";
         public string df_color_caja { get; set; } = "#415CBF";
+
+        private static bool ParseBoolCatalogo(string? value)
+        {
+            var normalized = value?.Trim();
+            return string.Equals(normalized, "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "S", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "SI", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "TRUE", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     public class CrCatalogoCreditoGuardarRequest : CrCatalogoCreditoData
