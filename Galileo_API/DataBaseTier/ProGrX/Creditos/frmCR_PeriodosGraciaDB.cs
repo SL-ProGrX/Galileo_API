@@ -479,7 +479,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         private static short? BoolToSmallInt(bool? valor)
-            => valor.HasValue ? (short)(valor.Value ? 1 : 0) : null;
+        {
+            if (!valor.HasValue)
+            {
+                return null;
+            }
+
+            short resultado = valor.Value ? (short)1 : (short)0;
+            return resultado;
+        }
 
     }
 }
