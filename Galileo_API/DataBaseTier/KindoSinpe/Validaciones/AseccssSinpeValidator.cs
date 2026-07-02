@@ -535,9 +535,6 @@ namespace Galileo_API.DataBaseTier
                 BaseRequestBody contextBody = new BaseRequestBody();
                 contextBody.BaseRequest = context;
 
-                // Convertir el context a json
-                var json = System.Text.Json.JsonSerializer.Serialize(contextBody);
-
                 var elResultado = IsServiceAvailable(context, vUsuario);
                 if (!elResultado.Result!.ServiceAvailable)
                 {
