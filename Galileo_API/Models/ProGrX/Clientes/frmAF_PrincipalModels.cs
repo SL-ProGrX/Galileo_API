@@ -759,11 +759,11 @@
     {
         public string? Cedula { get; set; }
         public int Linea_Id { get; set; }
-        public int Provincia { get; set; }
+        public string? Provincia { get; set; }
         public string? ProvinciaDesc { get; set; }
-        public int Canton { get; set; }
+        public string? Canton { get; set; }
         public string? CantonDesc { get; set; }
-        public int Distrito { get; set; }
+        public string? Distrito { get; set; }
         public string? DistritoDesc { get; set; }
         public string? Direccion { get; set; }
         public string? Email_01 { get; set; }
