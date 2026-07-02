@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Creditos;
+using Galileo_API.Models.ProGrX.Creditos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -62,5 +63,17 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpGet("CrPeriodosGracia_Lineas_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrPeriodosGracia_Lineas_Obtener(int codEmpresa)
             => _bl.CrPeriodosGracia_Lineas_Obtener(codEmpresa);
+
+        [HttpPost("CrPeriodosGracia_Consulta_Obtener")]
+        public ErrorDto<List<dynamic>> CrPeriodosGracia_Consulta_Obtener(
+            int codEmpresa,
+            [FromBody] CrPeriodosGraciaConsultaRequest request)
+            => _bl.CrPeriodosGracia_Consulta_Obtener(codEmpresa, request);
+
+        [HttpPost("CrPeriodosGracia_Aplicar_Ejecutar")]
+        public ErrorDto CrPeriodosGracia_Aplicar_Ejecutar(
+            int codEmpresa,
+            [FromBody] CrPeriodosGraciaConsultaRequest request)
+            => _bl.CrPeriodosGracia_Aplicar_Ejecutar(codEmpresa, request);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Creditos;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 {
@@ -48,5 +49,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<List<DropDownListaGenericaModel>> CrPeriodosGracia_Lineas_Obtener(int codEmpresa)
             => _db.CrPeriodosGracia_Lineas_Obtener(codEmpresa);
+
+        public ErrorDto<List<dynamic>> CrPeriodosGracia_Consulta_Obtener(
+            int codEmpresa,
+            CrPeriodosGraciaConsultaRequest request)
+            => _db.CrPeriodosGracia_Consulta_Obtener(codEmpresa, request);
+
+        public ErrorDto CrPeriodosGracia_Aplicar_Ejecutar(
+            int codEmpresa,
+            CrPeriodosGraciaConsultaRequest request)
+            => _db.CrPeriodosGracia_Aplicar_Ejecutar(codEmpresa, request);
     }
 }
