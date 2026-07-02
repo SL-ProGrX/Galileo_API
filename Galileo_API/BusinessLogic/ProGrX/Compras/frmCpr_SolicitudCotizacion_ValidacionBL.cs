@@ -23,9 +23,10 @@ namespace Galileo.BusinessLogic
             return _db.CprValidarContizacionBs_Guardar(CodEmpresa, datos);
         }
 
-        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int cpr_id, string codigo, string cod_producto)
+        /// <summary>Desmarca como seleccionada la línea de cotización indicada.</summary>
+        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
         {
-            return _db.CprValidacionCotizacionBs_Eliminar(CodEmpresa, cpr_id, codigo, cod_producto);
+            return _db.CprValidacionCotizacionBs_Eliminar(CodEmpresa, id_cotizacion_linea);
         }
     }
 }

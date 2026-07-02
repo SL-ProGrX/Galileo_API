@@ -28,5 +28,11 @@ namespace Galileo.BusinessLogic
             return _db.CprSolicitudContizacionLista_Obtener(CodEmpresa, cpr_id, cod_proveedor);
         }
 
+        /// <summary>Actualiza el estado de selección de una línea de cotización.</summary>
+        public ErrorDto CprSolicitudCotizacionLineaSel_Actualizar(int CodEmpresa, int id_cotizacion_linea, int seleccionado)
+        {
+            return _db.CprSolicitudCotizacionLineaSel_Actualizar(CodEmpresa, id_cotizacion_linea, seleccionado);
+        }
+
     }
 }

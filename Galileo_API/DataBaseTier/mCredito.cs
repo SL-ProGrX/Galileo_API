@@ -382,6 +382,29 @@ namespace Galileo.DataBaseTier
             }, tx);
         }
 
+        public static int fxCrdIdComiteLinea(
+            PortalDB portalDb,
+            int codEmpresa,
+            string pLinea)
+        {
+            const string sql = @"
+                select isnull(Id_Comite, 0)
+                from Catalogo
+                where Codigo = @Linea;";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                portalDb,
+                codEmpresa,
+                sql,
+                0,
+                new
+                {
+                    Linea = (pLinea ?? string.Empty).Trim()
+                });
+
+            return resp.Result;
+        }
+
         public sealed class CrOperacionTagRegistrarRequest
         {
             public long operacion { get; set; }

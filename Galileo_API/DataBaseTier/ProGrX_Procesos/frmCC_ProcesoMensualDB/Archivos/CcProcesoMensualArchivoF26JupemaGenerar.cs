@@ -57,7 +57,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 + ","
                 + registro.CodDeduccion
                 + ",F,"
-                + valor.ToString(CultureInfo.InvariantCulture);
+                + valor.ToString("0");
         }
         public sealed class CcProcesoMensualArchivoF26RegistroDbModel
         {

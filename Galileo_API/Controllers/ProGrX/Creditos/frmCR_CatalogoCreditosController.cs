@@ -30,6 +30,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_Consultar(codEmpresa, codigo);
         }
 
+        [HttpGet("CrCatalogoCreditos_PermiteCambioRetencionPoliza")]
+        public ErrorDto<bool> CrCatalogoCreditos_PermiteCambioRetencionPoliza(int codEmpresa, string codigo)
+        {
+            return _bl.CrCatalogoCreditos_PermiteCambioRetencionPoliza(codEmpresa, codigo);
+        }
+
         [HttpGet("CrCatalogoCreditos_Cuentas_Obtener")]
         public ErrorDto<List<CrCatalogoCreditoCuentaData>> CrCatalogoCreditos_Cuentas_Obtener(int codEmpresa, string codigo)
         {
@@ -42,16 +48,58 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_Asignaciones_Obtener(codEmpresa, codigo);
         }
 
+        [HttpGet("CrCatalogoCreditos_BloqueUno_Obtener")]
+        public ErrorDto<CrCatalogoCreditoBloqueUnoData> CrCatalogoCreditos_BloqueUno_Obtener(int codEmpresa, string codigo)
+        {
+            return _bl.CrCatalogoCreditos_BloqueUno_Obtener(codEmpresa, codigo);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Prioridad_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoPrioridadData>> CrCatalogoCreditos_Prioridad_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Prioridad_Obtener(codEmpresa);
+        }
+
         [HttpGet("CrCatalogoCreditos_Adjuntos_Obtener")]
         public ErrorDto<List<CrCatalogoCreditoAdjuntoData>> CrCatalogoCreditos_Adjuntos_Obtener(int codEmpresa, string codigo)
         {
             return _bl.CrCatalogoCreditos_Adjuntos_Obtener(codEmpresa, codigo);
         }
 
+        [HttpGet("CrCatalogoCreditos_Oficinas_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Oficinas_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Oficinas_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Planes_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Planes_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Planes_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Divisas_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Divisas_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Divisas_Obtener(codEmpresa);
+        }
+
         [HttpPost("CrCatalogoCreditos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_Asignacion_Guardar(codEmpresa, request);
+        }
+
+        [HttpPost("CrCatalogoCreditos_BloqueUno_Guardar")]
+        public ErrorDto CrCatalogoCreditos_BloqueUno_Guardar(int codEmpresa, CrCatalogoCreditoBloqueUnoGuardarRequest request)
+        {
+            return _bl.CrCatalogoCreditos_BloqueUno_Guardar(codEmpresa, request);
+        }
+
+        [HttpPost("CrCatalogoCreditos_Prioridad_Guardar")]
+        public ErrorDto CrCatalogoCreditos_Prioridad_Guardar(int codEmpresa, CrCatalogoCreditoPrioridadGuardarRequest request)
+        {
+            return _bl.CrCatalogoCreditos_Prioridad_Guardar(codEmpresa, request);
         }
 
         [HttpGet("CrCatalogoCreditos_RangosBase_Obtener")]

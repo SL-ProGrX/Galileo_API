@@ -18,7 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             CodigoInstitucionArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerCodigoInstitucionArchivo(request.CodInstitucion, configuracion.CodigoInstDeduc);
 
             _movimientos = ObtenerMovimientos(configuracion);
-
+            PrepararConfiguracion(connection, configuracion, request);
             return base.GenerarArchivo(connection, request);
         }
         protected override string ObtenerCodigoInstDeduc()
@@ -44,6 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         }
         protected virtual void PrepararConfiguracion(IDbConnection connection, CcProcesoMensualArchivoConfiguracionModel configuracion, CcProcesoMensualGeneraArchivoRequest request)
         {
+
         }
        
 

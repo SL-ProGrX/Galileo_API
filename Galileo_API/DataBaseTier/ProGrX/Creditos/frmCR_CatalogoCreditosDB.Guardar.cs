@@ -17,17 +17,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             NormalizarRequest(request);
 
-            if (string.IsNullOrWhiteSpace(request.codigo) || string.IsNullOrWhiteSpace(request.descripcion))
-            {
-                return new ErrorDto { Code = -1, Description = "Codigo y descripcion son requeridos." };
-            }
-
-            if (request.codigo.Length > 4)
-            {
-                return new ErrorDto { Code = -1, Description = "Codigo corriente invalido." };
-            }
+            var validacion = ValidarGuardarRequest(request);
+            if (validacion.Code < 0)
+                return validacion;
 
             var existe = CrCatalogoCreditos_Existe(codEmpresa, request.codigo);
+            if (request.isNew && existe)
+            {
+                return new ErrorDto { Code = -1, Description = "El codigo corriente ya existe." };
+            }
+
             var respuesta = existe
                 ? CrCatalogoCreditos_Actualizar(codEmpresa, request)
                 : CrCatalogoCreditos_Insertar(codEmpresa, request);
@@ -155,13 +154,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     convenio, poliza, refunde, retencion, aceptarefun, primer_cuota,
                     pidecheque, retencion_muestra_saldo, cobertura, genera_mora,
                     movcajas, tramite, requisitos_tipo, id_comite, cod_institucion,
-                    divisaid, tramitedias, operaciones_activas, membresia_meses,
+                    tramitedias, operaciones_activas, membresia_meses,
                     refunde_porc, refunde_tipo, porc_cargo_cancelacion, anticipo_meses,
                     liq_tipoaumento, liq_valor, base_calculo, cobro_tipo_aplicacion,
                     FechaCorteAlterna, fechacorte, tasa_destino, tbp_utiliza,
                     tbp_adicional, tasa_mora_tipo, tasa_mora_add, TASA_FIJA_X_TBP,
                     TASA_FIJA_X_TBP_PUNTOS_ADD, PLAZO_TASA_FIJA, Oficina_Linea,
-                    Oficina, website, visible_ec,
+                    website, visible_ec,
                     forma_pago_pos, forma_pago_web, auto_gestion_lmax, giro_max_transac,
                     giro_automatico, giro_monto_base, giro_minimo, auto_gestion_tipo,
                     refunde_auto, refunde_aumenta_base, IND_NOTIFICA_CLI_FORMALIZA,
@@ -179,13 +178,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @convenio, @poliza, @refunde, @retencion, @aceptarefun, @primer_cuota,
                     @pidecheque, @retencion_muestra_saldo, @cobertura, @genera_mora,
                     @movcajas, @tramite, @requisitos_tipo, @id_comite, @cod_institucion,
-                    @divisaid, @tramitedias, @operaciones_activas, @membresia_meses,
+                    @tramitedias, @operaciones_activas, @membresia_meses,
                     @refunde_porc, @refunde_tipo, @porc_cargo_cancelacion, @anticipo_meses,
                     @liq_tipoaumento, @liq_valor, @base_calculo, @cobro_tipo_aplicacion,
                     @fecha_corte_alterna, @fechacorte, @tasa_destino, @tbp_utiliza,
                     @tbp_adicional, @tasa_mora_tipo, @tasa_mora_add, @tasa_fija_x_tbp,
                     @tasa_fija_x_tbp_puntos_add, @plazo_tasa_fija, @oficina_linea,
-                    NULLIF(@oficina, ''), @website, @visible_ec,
+                    @website, @visible_ec,
                     @forma_pago_pos, @forma_pago_web, @auto_gestion_lmax, @giro_max_transac,
                     @giro_automatico, @giro_monto_base, @giro_minimo, @auto_gestion_tipo,
                     @refunde_auto, @refunde_aumenta_base, @ind_notifica_cli_formaliza,
@@ -198,7 +197,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @revolutiva_plan_ahorro_utiliza, NULLIF(@revolutiva_plan_ahorro, '')
                 );";
 
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, request);
+            var respuesta = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, request);
+            if (respuesta.Code < 0)
+                return respuesta;
+
+            return CrCatalogoCreditos_ActualizarColumnasOpcionales(codEmpresa, request);
         }
 
 
@@ -263,7 +266,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     requisitos_tipo = @requisitos_tipo,
                     id_comite = @id_comite,
                     cod_institucion = @cod_institucion,
-                    divisaid = @divisaid,
                     tramitedias = @tramitedias,
                     operaciones_activas = @operaciones_activas,
                     membresia_meses = @membresia_meses,
@@ -286,7 +288,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TASA_FIJA_X_TBP_PUNTOS_ADD = @tasa_fija_x_tbp_puntos_add,
                     PLAZO_TASA_FIJA = @plazo_tasa_fija,
                     Oficina_Linea = @oficina_linea,
-                    Oficina = NULLIF(@oficina, ''),
                     website = @website,
                     visible_ec = @visible_ec,
                     forma_pago_pos = @forma_pago_pos,
@@ -323,6 +324,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Revolutiva_Plan_Ahorro_Utiliza = @revolutiva_plan_ahorro_utiliza,
                     Revolutiva_Plan_Ahorro = NULLIF(@revolutiva_plan_ahorro, '')
                 WHERE codigo = @codigo;";
+
+            var respuesta = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, request);
+            if (respuesta.Code < 0)
+                return respuesta;
+
+            return CrCatalogoCreditos_ActualizarColumnasOpcionales(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Actualiza columnas opcionales del catalogo cuando existen en la base de datos.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private ErrorDto CrCatalogoCreditos_ActualizarColumnasOpcionales(int codEmpresa, CrCatalogoCreditoGuardarRequest request)
+        {
+            const string query = @"
+                IF COL_LENGTH('catalogo', 'divisaid') IS NOT NULL
+                BEGIN
+                    EXEC sp_executesql
+                        N'UPDATE catalogo SET divisaid = @DivisaId WHERE codigo = @Codigo',
+                        N'@DivisaId varchar(20), @Codigo varchar(20)',
+                        @DivisaId = @divisaid,
+                        @Codigo = @codigo;
+                END;
+
+                IF COL_LENGTH('catalogo', 'Oficina') IS NOT NULL
+                BEGIN
+                    EXEC sp_executesql
+                        N'UPDATE catalogo SET Oficina = NULLIF(@Oficina, '''') WHERE codigo = @Codigo',
+                        N'@Oficina varchar(20), @Codigo varchar(20)',
+                        @Oficina = @oficina,
+                        @Codigo = @codigo;
+                END;";
 
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, request);
         }

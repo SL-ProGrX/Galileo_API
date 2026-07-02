@@ -1198,6 +1198,11 @@ namespace Galileo.DataBaseTier
                     resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
                     resp.Result.letras1 = vLetra;
                 }
+                else
+                {
+                    // No additional processing for tipos distintos de "C":
+                    // se mantiene la respuesta con los valores por defecto inicializados.
+                }
             }
             catch (Exception ex)
             {

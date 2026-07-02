@@ -31,6 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request)
         {
+
             var configuracion = ObtenerConfiguracion(
                 connection,
                 request.CodInstitucion,
@@ -221,7 +222,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 registro.Cedula.Trim(),
                 Helpers.CcProcesoMensualArchivoRutaHelperDb.TomarIzquierda(nombreEmpresa, 30),
                 "1",
-                registro.MontoActual.ToString(CultureInfo.InvariantCulture),
+                registro.MontoActual.ToString("0.0"),
                 "0",
                 configuracion.FechaInicio.ToString("yyyyMMdd", CultureInfo.InvariantCulture),
                 configuracion.FechaCorte.ToString("yyyyMMdd", CultureInfo.InvariantCulture),

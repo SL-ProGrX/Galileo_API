@@ -544,14 +544,14 @@ namespace Galileo.DataBaseTier
                 const string sp = "spSys_UENS_Roles_Registro";
                 connection.Execute(sp, new
                 {
-                    uen = core.uen,
-                    core_usuario = core.core_usuario,
-                    rol_solicita,
-                    rol_consulta,
-                    rol_autoriza,
-                    rol_encargado,
-                    rol_lider,
-                    usuario = core.usuario
+                    UEN = core.uen,
+                    CoreUser = core.core_usuario,
+                    R_Solicita = rol_solicita,
+                    R_Consulta = rol_consulta,
+                    R_Autoriza = rol_autoriza,
+                    R_Encargado = rol_encargado,
+                    R_Lider = rol_lider,
+                    Usuario = core.usuario
                 }, commandType: CommandType.StoredProcedure);
                 resp.Description = "Rol Actualizado Satisfactoriamente!";
             }
