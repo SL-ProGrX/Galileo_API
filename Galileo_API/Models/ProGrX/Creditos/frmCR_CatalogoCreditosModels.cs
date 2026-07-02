@@ -46,6 +46,7 @@ namespace Galileo_API.Models.ProGrX.Credito
         [System.Text.Json.Serialization.JsonIgnore]
         public string FECHACORTEALTERNA
         {
+            get => fecha_corte_alterna ? "1" : "0";
             set => fecha_corte_alterna = ParseBoolCatalogo(value);
         }
 
