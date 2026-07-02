@@ -10,6 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         private readonly IConfiguration _config;
 
         private const string PlanTodos = "T";
+        private const int CantidadLineasDefault = 1000;
         private const string SpAcreditaMovCbrPendiente = "spFnd_AcreditaMovCbrPendiente";
 
         private const string SqlPlanesLista = @"
@@ -18,7 +19,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     FROM dbo.fnd_planes;";
 
         private const string SqlMovimientosCobro = @"
-                    SELECT P.codigo AS Codigo,
+                    SELECT TOP (@CantidadLineas)
+                           P.codigo AS Codigo,
                            P.id_solicitud AS Id_Solicitud,
                            P.Principal,
                            P.fecha AS Fecha,
@@ -45,11 +47,21 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                         ON P.codigo = C.codigo
                     WHERE P.tcon IN ('1','PRM','PLA')
                       AND P.fecha BETWEEN @FechaInicio AND @FechaFin
-                      AND dbo.fxFnd_MovimientoExiste(Cnt.cod_operadora, Cnt.cod_Plan, Cnt.cod_Contrato, P.Tcon, P.Ncon) = 0
+                      AND NOT EXISTS
+                      (
+                          SELECT 1
+                          FROM dbo.fnd_contratos_Detalle Det
+                          WHERE Det.cod_operadora = Cnt.cod_operadora
+                            AND Det.cod_plan = Cnt.cod_plan
+                            AND Det.cod_contrato = Cnt.cod_contrato
+                            AND Det.tcon = P.tcon
+                            AND Det.ncon = P.ncon
+                      )
                       AND (@FiltraPlan = 0 OR Cnt.cod_plan = @CodPlan);";
 
         private const string SqlMovimientosCobroSinContrato = @"
-                    SELECT P.codigo AS Codigo,
+                    SELECT TOP (@CantidadLineas)
+                           P.codigo AS Codigo,
                            P.id_solicitud AS Id_Solicitud,
                            P.Principal,
                            R.opex AS Opex,
@@ -249,13 +261,17 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 && !string.Equals(codPlan, PlanTodos, StringComparison.OrdinalIgnoreCase);
             var fechaInicio = request.FechaInicio?.Date ?? DateTime.Today;
             var fechaFin = (request.FechaFin ?? request.FechaInicio ?? fechaInicio).Date.AddDays(1).AddSeconds(-1);
+            var cantidadLineas = request.CantidadLineas > 0
+                ? request.CantidadLineas
+                : CantidadLineasDefault;
 
             return new
             {
                 FechaInicio = fechaInicio,
                 FechaFin = fechaFin,
                 CodPlan = codPlan,
-                FiltraPlan = filtraPlan ? 1 : 0
+                FiltraPlan = filtraPlan ? 1 : 0,
+                CantidadLineas = cantidadLineas
             };
         }
 
