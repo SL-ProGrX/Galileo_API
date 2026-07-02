@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX.Creditos;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -313,5 +314,180 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 sqlLineas
             );
         }
+
+        /// <summary>
+        /// Ejecuta consulta masiva de periodo de gracia.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<List<dynamic>> CrPeriodosGracia_Consulta_Obtener(
+            int codEmpresa,
+            CrPeriodosGraciaConsultaRequest request)
+        {
+            const string sqlConsulta = @"
+                exec spCrd_Masivo_Periodo_Gracia_Consulta
+                    @Linea = @Linea,
+                    @Garantia = @Garantia,
+                    @Destino = @Destino,
+                    @Recurso = @Recurso,
+                    @Institucion = @Institucion,
+                    @Deductora = @Deductora,
+                    @Divisa = @Divisa,
+                    @EstadoPersona = @EstadoPersona,
+                    @EstadoLaboral = @EstadoLaboral,
+                    @FormalizaInicio = @FormalizaInicio,
+                    @FormalizaCorte = @FormalizaCorte,
+                    @FechaInicio = @FechaInicio,
+                    @FechaCorte = @FechaCorte,
+                    @PlazoRng = @PlazoRng,
+                    @PlazoInicio = @PlazoInicio,
+                    @PlazoCorte = @PlazoCorte,
+                    @TasaRng = @TasaRng,
+                    @TasaInicio = @TasaInicio,
+                    @TasaCorte = @TasaCorte,
+                    @CobroTipo = @CobroTipo,
+                    @OperacionTipo = @OperacionTipo,
+                    @PriDeducApl = @PriDeducApl,
+                    @PriDeducFiltro = @PriDeducFiltro,
+                    @PriDeducValor = @PriDeducValor,
+                    @UltDeducApl = @UltDeducApl,
+                    @UltDeducFiltro = @UltDeducFiltro,
+                    @UltDeducValor = @UltDeducValor,
+                    @Tipo = @Tipo,
+                    @PlazoAdj = @PlazoAdj,
+                    @Apl_Retroactivo = @Apl_Retroactivo,
+                    @Apl_IntCor = @Apl_IntCor,
+                    @Apl_Cargos = @Apl_Cargos,
+                    @Apl_Poliza = @Apl_Poliza,
+                    @Usuario = @Usuario,
+                    @Detalle = @Detalle;";
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
+                connection.Query<dynamic>(
+                    sqlConsulta,
+                    CrearParametrosMasivo(request)
+                ).ToList()
+            );
+        }
+
+        /// <summary>
+        /// Ejecuta la aplicacion masiva de periodo de gracia.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto CrPeriodosGracia_Aplicar_Ejecutar(
+            int codEmpresa,
+            CrPeriodosGraciaConsultaRequest request)
+        {
+            const string sqlAplicar = @"
+                exec spCrd_Masivo_Periodo_Gracia
+                    @Linea = @Linea,
+                    @Garantia = @Garantia,
+                    @Destino = @Destino,
+                    @Recurso = @Recurso,
+                    @Institucion = @Institucion,
+                    @Deductora = @Deductora,
+                    @Divisa = @Divisa,
+                    @EstadoPersona = @EstadoPersona,
+                    @EstadoLaboral = @EstadoLaboral,
+                    @FormalizaInicio = @FormalizaInicio,
+                    @FormalizaCorte = @FormalizaCorte,
+                    @FechaInicio = @FechaInicio,
+                    @FechaCorte = @FechaCorte,
+                    @PlazoRng = @PlazoRng,
+                    @PlazoInicio = @PlazoInicio,
+                    @PlazoCorte = @PlazoCorte,
+                    @TasaRng = @TasaRng,
+                    @TasaInicio = @TasaInicio,
+                    @TasaCorte = @TasaCorte,
+                    @CobroTipo = @CobroTipo,
+                    @OperacionTipo = @OperacionTipo,
+                    @PriDeducApl = @PriDeducApl,
+                    @PriDeducFiltro = @PriDeducFiltro,
+                    @PriDeducValor = @PriDeducValor,
+                    @UltDeducApl = @UltDeducApl,
+                    @UltDeducFiltro = @UltDeducFiltro,
+                    @UltDeducValor = @UltDeducValor,
+                    @Tipo = @Tipo,
+                    @PlazoAdj = @PlazoAdj,
+                    @Apl_Retroactivo = @Apl_Retroactivo,
+                    @Apl_IntCor = @Apl_IntCor,
+                    @Apl_Cargos = @Apl_Cargos,
+                    @Apl_Poliza = @Apl_Poliza,
+                    @Usuario = @Usuario,
+                    @Detalle = @Detalle;";
+
+            var resp = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                sqlAplicar,
+                CrearParametrosMasivo(request)
+            );
+
+            if (resp.Code < 0)
+                return resp;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Proceso aplicado satisfactoriamente..."
+            };
+        }
+
+        private static object CrearParametrosMasivo(CrPeriodosGraciaConsultaRequest request)
+        {
+            return new
+            {
+                request.Linea,
+                request.Garantia,
+                request.Destino,
+                request.Recurso,
+                request.Institucion,
+                request.Deductora,
+                request.Divisa,
+                request.EstadoPersona,
+                request.EstadoLaboral,
+                FormalizaInicio = request.FormalizaInicio?.Date,
+                FormalizaCorte = request.FormalizaCorte?.Date,
+                FechaInicio = request.AplInicio?.Date,
+                FechaCorte = request.AplCorte?.Date,
+                PlazoRng = BoolToSmallInt(request.PlazoRng),
+                request.PlazoInicio,
+                request.PlazoCorte,
+                TasaRng = BoolToSmallInt(request.TasaRng),
+                request.TasaInicio,
+                request.TasaCorte,
+                request.CobroTipo,
+                request.OperacionTipo,
+                PriDeducApl = BoolToSmallInt(request.PriDeducApl),
+                request.PriDeducFiltro,
+                PriDeducValor = request.PriDeduc,
+                UltDeducApl = BoolToSmallInt(request.UltDeducApl),
+                request.UltDeducFiltro,
+                UltDeducValor = request.UltDeduc,
+                Tipo = request.TipoAplicacion,
+                PlazoAdj = BoolToSmallInt(request.AplAjustaPlazo),
+                Apl_Retroactivo = BoolToSmallInt(request.AplRetroactivo),
+                Apl_IntCor = BoolToSmallInt(request.AplIntereses),
+                Apl_Cargos = BoolToSmallInt(request.AplCargos),
+                Apl_Poliza = BoolToSmallInt(request.AplPolizas),
+                request.Usuario,
+                Detalle = request.Nota
+            };
+        }
+
+        private static short? BoolToSmallInt(bool? valor)
+        {
+            if (!valor.HasValue)
+            {
+                return null;
+            }
+
+            short resultado = valor.Value ? (short)1 : (short)0;
+            return resultado;
+        }
+
     }
 }
