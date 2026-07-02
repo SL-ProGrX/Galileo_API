@@ -86,7 +86,7 @@ namespace Galileo.DataBaseTier
                 p.Add("Fetch", fetch);
 
                 // Ordenamiento — campo validado contra lista blanca (no inyección SQL)
-                var orden = CprSolicitud_ResolverOrden(filtro.sort_field, filtro.sort_order);
+                //var orden = CprSolicitud_ResolverOrden(filtro.sort_field, filtro.sort_order);
 
                 const string qCount = @"
                             SELECT COUNT(DISTINCT S.CPR_ID)
