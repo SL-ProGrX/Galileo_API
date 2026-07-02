@@ -6,6 +6,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrTasasPtsBonificacionDb
     {
+        private const string MovimientoRegistraWeb = "Registra - WEB";
+        private const string MovimientoModificaWeb = "Modifica - WEB";
+        private const string MovimientoEliminaWeb = "Elimina - WEB";
+
+        private sealed class BitacoraLineaInfo
+        {
+            public string usuario { get; set; } = string.Empty;
+            public string cod_tasa_bono { get; set; } = string.Empty;
+            public int linea { get; set; }
+            public string movimiento { get; set; } = string.Empty;
+            public string detalle_base { get; set; } = string.Empty;
+        }
+
         private ErrorDto InsertarPlan(int codEmpresa, CrTasasPtsBonificacionDefinicionGuardarRequest request)
         {
             const string sql = @"
@@ -46,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return resp;
             }
 
-            RegistrarBitacora(codEmpresa, request.usuario, "Registra - WEB", $"Tasa: Plan de Bonificacion : {request.definicion.cod_tasa_bono}");
+            RegistrarBitacora(codEmpresa, request.usuario, MovimientoRegistraWeb, $"Tasa: Plan de Bonificacion : {request.definicion.cod_tasa_bono}");
             return new ErrorDto { Code = 0, Description = GuardadoExitoso };
         }
 
@@ -76,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return resp;
             }
 
-            RegistrarBitacora(codEmpresa, request.usuario, "Modifica - WEB", $"Tasa: Plan de Bonificacion : {request.codigo_original}");
+            RegistrarBitacora(codEmpresa, request.usuario, MovimientoModificaWeb, $"Tasa: Plan de Bonificacion : {request.codigo_original}");
             return new ErrorDto { Code = 0, Description = GuardadoExitoso };
         }
 
@@ -118,11 +131,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.membresia.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                nuevaLinea,
-                "Registra - WEB",
-                "Tasas Bonificacion");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, nuevaLinea, MovimientoRegistraWeb, "Tasas Bonificacion"));
         }
 
         private ErrorDto ActualizarMembresia(int codEmpresa, CrTasasPtsBonificacionMembresiaGuardarRequest request)
@@ -149,11 +158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.membresia.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                request.membresia.linea,
-                "Modifica - WEB",
-                "Tasas Bonificacion");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, request.membresia.linea, MovimientoModificaWeb, "Tasas Bonificacion"));
         }
 
         private ErrorDto InsertarDestino(int codEmpresa, CrTasasPtsBonificacionDestinoGuardarRequest request)
@@ -197,11 +202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.destino.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                nuevaLinea,
-                "Registra - WEB",
-                "Tasas Bonificacion, Destinos");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, nuevaLinea, MovimientoRegistraWeb, "Tasas Bonificacion, Destinos"));
         }
 
         private ErrorDto ActualizarDestino(int codEmpresa, CrTasasPtsBonificacionDestinoGuardarRequest request)
@@ -230,11 +231,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.destino.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                request.destino.linea,
-                "Modifica - WEB",
-                "Tasas Bonificacion, Destinos");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, request.destino.linea, MovimientoModificaWeb, "Tasas Bonificacion, Destinos"));
         }
 
         private ErrorDto InsertarLiquidez(int codEmpresa, CrTasasPtsBonificacionLiquidezGuardarRequest request)
@@ -275,11 +272,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.liquidez.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                nuevaLinea,
-                "Registra - WEB",
-                "Tasas Bonificacion, Liquidez");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, nuevaLinea, MovimientoRegistraWeb, "Tasas Bonificacion, Liquidez"));
         }
 
         private ErrorDto ActualizarLiquidez(int codEmpresa, CrTasasPtsBonificacionLiquidezGuardarRequest request)
@@ -306,11 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     TasaBono = request.liquidez.tasa_bono,
                     Usuario = request.usuario
                 },
-                request.usuario,
-                request.cod_tasa_bono,
-                request.liquidez.linea,
-                "Modifica - WEB",
-                "Tasas Bonificacion, Liquidez");
+                CrearBitacoraLinea(request.usuario, request.cod_tasa_bono, request.liquidez.linea, MovimientoModificaWeb, "Tasas Bonificacion, Liquidez"));
         }
 
         private ErrorDto InsertarAsignacion(int codEmpresa, CrTasasPtsBonificacionAsignacionGuardarRequest request)
@@ -355,11 +344,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             int codEmpresa,
             string sql,
             object parametros,
-            string usuario,
-            string codTasaBono,
-            int linea,
-            string movimiento,
-            string detalleBase)
+            BitacoraLineaInfo bitacora)
         {
             var resp = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, parametros);
             if (resp.Code < 0)
@@ -367,8 +352,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return resp;
             }
 
-            RegistrarBitacora(codEmpresa, usuario, movimiento, $"{detalleBase}: P:{codTasaBono}..L: {linea}");
+            RegistrarBitacora(
+                codEmpresa,
+                bitacora.usuario,
+                bitacora.movimiento,
+                $"{bitacora.detalle_base}: P:{bitacora.cod_tasa_bono}..L: {bitacora.linea}");
+
             return new ErrorDto { Code = 0, Description = GuardadoExitoso };
+        }
+
+        private static BitacoraLineaInfo CrearBitacoraLinea(
+            string usuario,
+            string codTasaBono,
+            int linea,
+            string movimiento,
+            string detalleBase)
+        {
+            return new BitacoraLineaInfo
+            {
+                usuario = usuario,
+                cod_tasa_bono = codTasaBono,
+                linea = linea,
+                movimiento = movimiento,
+                detalle_base = detalleBase
+            };
         }
 
         private ErrorDto EliminarLinea(
@@ -405,7 +412,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return resp;
             }
 
-            RegistrarBitacora(codEmpresa, request.usuario, "Elimina - WEB", $"{detalleBase}: P:{request.cod_tasa_bono}..L: {request.linea}");
+            RegistrarBitacora(codEmpresa, request.usuario, MovimientoEliminaWeb, $"{detalleBase}: P:{request.cod_tasa_bono}..L: {request.linea}");
             return new ErrorDto { Code = 0, Description = EliminadoExitoso };
         }
 
