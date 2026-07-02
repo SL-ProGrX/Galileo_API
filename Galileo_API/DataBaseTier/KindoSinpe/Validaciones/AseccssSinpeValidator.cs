@@ -13,6 +13,7 @@ using Sinpe_TFT;
 using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing.Printing;
 using System.Text.Json;
 
 namespace Galileo_API.DataBaseTier
@@ -533,6 +534,9 @@ namespace Galileo_API.DataBaseTier
 
                 BaseRequestBody contextBody = new BaseRequestBody();
                 contextBody.BaseRequest = context;
+
+                // Convertir el context a json
+                var json = System.Text.Json.JsonSerializer.Serialize(contextBody);
 
                 var elResultado = IsServiceAvailable(context, vUsuario);
                 if (!elResultado.Result!.ServiceAvailable)
