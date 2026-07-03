@@ -386,6 +386,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var connProveedor = OpenPortalProveedorConn(CodEmpresa, codCliente);
 
                 var cfg = LoadCorteCfg(connLocal, codCliente);
+                var cedulaEmisor = ObtenerCedulaEmisor(connLocal, codCliente);
+                if (string.IsNullOrWhiteSpace(cedulaEmisor))
+                {
+                    return DbHelper.ErrorResponse(
+                        $"No se pudo obtener la cédula del emisor para el cliente {codCliente}."
+                    );
+                }
 
                 SyncConsecutivo(connLocal, connProveedor, codCliente);
 
@@ -1023,7 +1030,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse("Ok");
+                return DbHelper.OkResponse(
+    "Configuración de Facturación Electrónica guardada correctamente."
+);
             }
             catch (SqlException ex)
             {
@@ -1122,7 +1131,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse("Ok");
+                return DbHelper.OkResponse(
+    "Configuración de Facturación Electrónica eliminada correctamente."
+);
             }
             catch (SqlException ex)
             {
@@ -1302,7 +1313,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add(P_USUARIO, usuario, DbType.String);
 
                 conn.Execute("spSYS_FE_PARAMETROS_Exclusion", p, commandType: CommandType.StoredProcedure);
-
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -1312,7 +1322,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse("Ok");
+                var mensaje = movimiento == "A"
+                    ? "Exclusión registrada correctamente."
+                    : "Exclusión eliminada correctamente.";
+
+                return DbHelper.OkResponse(mensaje);
             }
             catch (SqlException ex)
             {
@@ -1356,7 +1370,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse("Ok");
+                return DbHelper.OkResponse(
+    "Reactivación ejecutada correctamente."
+);
             }
             catch (SqlException ex)
             {
@@ -2173,7 +2189,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 (row.secret ?? string.Empty).Trim()
             );
         }
-        private static bool TryParseProcesarCorteInputs(FeProcesarCorteDto dto,out string codCliente,out string usuario,out DateTime fechaCorte,out DateTime fechaFactura,out string err)
+        private static bool TryParseProcesarCorteInputs(
+    FeProcesarCorteDto dto,
+    out string codCliente,
+    out string usuario,
+    out DateTime fechaCorte,
+    out DateTime fechaFactura,
+    out string err)
         {
             codCliente = (dto.cod_cliente ?? "").Trim();
             usuario = (dto.usuario ?? "").Trim().ToUpperInvariant();
@@ -2193,17 +2215,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return false;
             }
 
-            if (!DateTime.TryParseExact((dto.fecha_corte ?? "").Trim(), FE_DATE_FMT,
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out fechaCorte))
+            if (!DateTime.TryParseExact(
+                    (dto.fecha_corte ?? "").Trim(),
+                    FE_DATE_FMT,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out fechaCorte))
             {
                 err = "fecha_corte inválida. Formato esperado: YYYY-MM-DD.";
                 return false;
             }
 
-            if (!DateTime.TryParseExact((dto.fecha_factura ?? "").Trim(), FE_DATE_FMT,
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out fechaFactura))
+            if (!DateTime.TryParseExact(
+                    (dto.fecha_factura ?? "").Trim(),
+                    FE_DATE_FMT,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out fechaFactura))
             {
                 err = "fecha_factura inválida. Formato esperado: YYYY-MM-DD.";
+                return false;
+            }
+
+            var hoy = DateTime.Today;
+
+            if (fechaFactura.Date > hoy)
+            {
+                err = "La fecha de facturación no puede ser mayor a la fecha actual.";
+                return false;
+            }
+
+            if (fechaFactura.Date < hoy.AddDays(-3))
+            {
+                err = "La fecha de facturación no puede tener más de tres días de antigüedad.";
                 return false;
             }
 
@@ -2355,14 +2399,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
         private static string ObtenerCedulaEmisor(SqlConnection connLocal, string codCliente)
         {
-            const string sqlCol = "select col_length('dbo.SYS_FE_PARAMETROS','CEDULA_EMISOR');";
-            var col = connLocal.QueryFirstOrDefault<int?>(sqlCol);
+            const string sql = @"
+        select top 1 rtrim(isnull(CEDULA,''))
+        from SYS_FE_PARAMETROS
+        where COD_CLIENTE = @cod_cliente;";
 
-            if (!col.HasValue || col.Value <= 0)
-                return "";
-
-            const string sqlCed = "select rtrim(isnull(CEDULA_EMISOR,'')) from SYS_FE_PARAMETROS where COD_CLIENTE = @c;";
-            return (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
+            return (connLocal.QueryFirstOrDefault<string>(
+                sql,
+                new { cod_cliente = codCliente }
+            ) ?? "").Trim();
         }
         private static ErrorDto ProcesarFacturas(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> factRows,string codCliente,string usuario,DateTime fechaFactura,CorteCfg cfg)
         {
