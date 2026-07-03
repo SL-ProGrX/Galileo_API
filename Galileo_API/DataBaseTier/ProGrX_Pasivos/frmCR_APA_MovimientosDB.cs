@@ -246,7 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
             {
                 reporte = _mRecibos
                     .sbImprimeRecibo(codEmpresa, tipoDocumento, codTransaccion, usuario)?
-                    .Result ?? reporte;
+                     .Result ?? reporte;
             }
 
             return DbHelper.CreateOkResponse(
