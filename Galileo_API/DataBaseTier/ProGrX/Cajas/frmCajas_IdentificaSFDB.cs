@@ -40,6 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             ErrorDto? validation = ValidateIdentificacion(cedula, nombre, casos);
             if (validation != null) return validation;
 
+            conn.Open();
             try
             {
                 ExecuteIdentificacion(conn, cedula, nombre, usuario, pagadorId, origenRecursosId, casos!);

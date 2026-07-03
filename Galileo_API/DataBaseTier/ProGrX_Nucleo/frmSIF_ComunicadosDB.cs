@@ -242,7 +242,7 @@ WHERE COD_COMUNICADO = @cod_comunicado;";
                     cod_comunicado = request.cod_comunicado
                 };
 
-                info.Code = connection.Execute(query, p);
+                connection.Execute(query, p);
                 info.Description = "Ok";
             }
             catch (Exception ex)

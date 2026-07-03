@@ -608,6 +608,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
+                conn.Open();
                 using var transaction = conn.BeginTransaction();
                 try
                 {
