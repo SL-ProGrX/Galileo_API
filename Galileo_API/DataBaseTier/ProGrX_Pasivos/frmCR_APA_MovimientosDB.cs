@@ -191,31 +191,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 _portalDb,
                 codEmpresa,
                 @"exec spAPA_Movimiento
-                @Acreedor,
-                @Operacion,
-                @Tipo,
-                @Amortiza,
-                @Intereses,
-                @Comision,
-                @Cargos,
-                @Notas,
-                @Cuenta,
-                @DocRef,
-                @Usuario",
+                    @Acreedor,
+                    @Operacion,
+                    @Usuario,
+                    @Tipo,
+                    @Principal,
+                    @Interes,
+                    @Comision,
+                    @Cargos,
+                    @Notas,
+                    @Cuenta,
+                    @DocRef",
                 null,
                 new
                 {
                     Acreedor = request.cod_acreedor.Trim(),
                     Operacion = request.operacion,
+                    Usuario = request.usuario,
                     Tipo = request.tipo,
-                    Amortiza = request.amortiza,
-                    Intereses = request.intereses,
+                    Principal = request.amortiza,
+                    Interes = request.intereses,
                     Comision = request.comision,
                     Cargos = request.cargos,
                     Notas = request.notas.Trim(),
                     Cuenta = cuentaFormato,
-                    DocRef = request.doc_ref.Trim(),
-                    Usuario = request.usuario
+                    DocRef = request.doc_ref.Trim()
                 });
 
             if (spResponse.Result is null)
