@@ -187,8 +187,12 @@ namespace Galileo.DataBaseTier
                 if (ds == null || string.IsNullOrWhiteSpace(ds.CommandText))
                     continue;
 
-                var paramDictStr = request.paramDict?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty)
-                                   ?? new Dictionary<string, string>();
+                // DESPUÉS:
+                var paramDictStr = request.paramDict?.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.ToString() ?? string.Empty,
+                    StringComparer.OrdinalIgnoreCase)
+                    ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 if (!_exec.TryExecDataSet(request.connection, ds, paramDictStr, request.jParams, true, out var rows, out var err))
                 {

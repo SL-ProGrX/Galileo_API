@@ -166,33 +166,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
                 var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
-                /** El SP ya trae el tipo_ced_origen, pero lo recalculamos para asegurarnos que esté correcto y evitar inconsistencias
-                 trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
-                **/
 
                 if (trx.tipo_ced_destino == null)
                 {
-                    if (string.IsNullOrEmpty(trx.codigo!.Trim()))
-                    {
-                        trx.tipo_ced_destino = 1;
-                    }
-                    else
-                    {
-                        trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
-                    }
-
+                    trx.tipo_ced_destino = string.IsNullOrEmpty(trx.codigo?.Trim())
+                        ? 1
+                        : fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                }
+                else if (string.IsNullOrEmpty(trx.codigo?.Trim()))
+                {
+                    trx.tipo_ced_destino = 1;
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(trx.codigo!.Trim()))
+                    var tipoCalculado = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+
+                    // Solo se recalcula si no coincide y el valor actual es <= 1 (default/no confiable).
+                    // Si coincide, o si ya es > 1 (asignado explícitamente), se conserva.
+                    if (trx.tipo_ced_destino != tipoCalculado && trx.tipo_ced_destino <= 1)
                     {
-                        trx.tipo_ced_destino = 1;
+                        trx.tipo_ced_destino = tipoCalculado;
                     }
-                    trx.tipo_ced_destino = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
                 }
 
 
-                    trx.detalle = string.Join(" ",
+                trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
                         trx.detalle2 ?? "",
                         trx.detalle3 ?? "",

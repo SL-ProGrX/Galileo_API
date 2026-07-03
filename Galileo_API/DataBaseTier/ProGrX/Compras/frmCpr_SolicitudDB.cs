@@ -87,38 +87,56 @@ namespace Galileo.DataBaseTier
 
                 const string qCount = @"
                             SELECT COUNT(DISTINCT S.CPR_ID)
-                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID 
+                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID
                                     AND P.ADJUDICA_ORDEN is not null;
                             ";
 
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
                 const string qList = @"
-                            SELECT DISTINCT
-                                S.CPR_ID,
-                                P.ADJUDICA_ORDEN,
-                                S.DOCUMENTO,
-                                U.DESCRIPCION AS COD_UNIDAD_SOLICITANTE,
-                                S.ESTADO,
-                                S.REGISTRO_USUARIO,
-                                S.ENCARGADO_USUARIO
-                            FROM CPR_SOLICITUD S
-                            LEFT JOIN CPR_SOLICITUD_PROV P
-                            ON S.CPR_ID = P.CPR_ID and P.ADJUDICA_ORDEN IS NOT NULL
-                            LEFT JOIN CORE_UENS U
-                            ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
-                            WHERE
-                            (@HasFiltro = 0 OR (
-                                    CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
-                                    ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
-                                    ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-                                    ISNULL(U.DESCRIPCION,'') LIKE @Like
-                            ))
-                            AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
-                            AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
-                            ORDER BY S.CPR_ID DESC
-                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-                            ";
+    SELECT DISTINCT
+        S.CPR_ID,
+        P.ADJUDICA_ORDEN,
+        S.DOCUMENTO,
+        U.DESCRIPCION AS COD_UNIDAD_SOLICITANTE,
+        S.ESTADO,
+        S.REGISTRO_USUARIO,
+        S.ENCARGADO_USUARIO
+    FROM CPR_SOLICITUD S
+    LEFT JOIN CPR_SOLICITUD_PROV P
+        ON S.CPR_ID = P.CPR_ID AND P.ADJUDICA_ORDEN IS NOT NULL
+    LEFT JOIN CORE_UENS U
+        ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
+    WHERE
+        (@HasFiltro = 0 OR (
+            CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
+            ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
+            ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
+            ISNULL(U.DESCRIPCION,'') LIKE @Like
+        ))
+        AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
+        AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
+    ORDER BY
+        CASE WHEN @SortField = 'cpr_id' AND @SortOrder = 1 THEN S.CPR_ID END ASC,
+        CASE WHEN @SortField = 'cpr_id' AND @SortOrder <> 1 THEN S.CPR_ID END DESC,
+
+        CASE WHEN @SortField = 'adjudica_orden' AND @SortOrder = 1 THEN P.ADJUDICA_ORDEN END ASC,
+        CASE WHEN @SortField = 'adjudica_orden' AND @SortOrder <> 1 THEN P.ADJUDICA_ORDEN END DESC,
+
+        CASE WHEN @SortField = 'estado' AND @SortOrder = 1 THEN S.ESTADO END ASC,
+        CASE WHEN @SortField = 'estado' AND @SortOrder <> 1 THEN S.ESTADO END DESC,
+
+        CASE WHEN @SortField = 'registro_usuario' AND @SortOrder = 1 THEN S.REGISTRO_USUARIO END ASC,
+        CASE WHEN @SortField = 'registro_usuario' AND @SortOrder <> 1 THEN S.REGISTRO_USUARIO END DESC,
+
+        CASE WHEN @SortField = 'encargado_usuario' AND @SortOrder = 1 THEN S.ENCARGADO_USUARIO END ASC,
+        CASE WHEN @SortField = 'encargado_usuario' AND @SortOrder <> 1 THEN S.ENCARGADO_USUARIO END DESC,
+
+        CASE WHEN @SortField = 'cod_unidad_solicitante' AND @SortOrder = 1 THEN U.DESCRIPCION END ASC,
+        CASE WHEN @SortField = 'cod_unidad_solicitante' AND @SortOrder <> 1 THEN U.DESCRIPCION END DESC,
+
+        S.CPR_ID DESC
+    OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var solicitudes = conn.Query<CprSolicitudDto>(qList, p).ToList();
 
