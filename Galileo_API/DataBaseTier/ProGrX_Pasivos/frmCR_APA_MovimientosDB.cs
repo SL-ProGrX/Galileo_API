@@ -177,35 +177,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto?> CR_APA_Movimientos_Aplicar(
+        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto> CR_APA_Movimientos_Aplicar(
             int codEmpresa,
             FrmCrApaMovimientosAplicarRequest request)
         {
-
             string cuentaFormato = _mCntLinkDb.fxgCntCuentaFormato(codEmpresa, false, request.cuenta, 0);
             if (string.IsNullOrWhiteSpace(cuentaFormato))
             {
-                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto?>(
+                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto>(
                     "Cuenta indicada no es v&aacute;lida.",
-                    -2,
-                    null);
+                    -2);
             }
 
             var spResponse = DbHelper.ExecuteSingleQuery<FrmCrApaMovimientosAplicarSpDto?>(
                 _portalDb,
                 codEmpresa,
                 @"exec spAPA_Movimiento
-                    @Acreedor,
-                    @Operacion,
-                    @Tipo,
-                    @Amortiza,
-                    @Intereses,
-                    @Comision,
-                    @Cargos,
-                    @Notas,
-                    @Cuenta,
-                    @DocRef,
-                    @Usuario",
+                @Acreedor,
+                @Operacion,
+                @Tipo,
+                @Amortiza,
+                @Intereses,
+                @Comision,
+                @Cargos,
+                @Notas,
+                @Cuenta,
+                @DocRef,
+                @Usuario",
                 null,
                 new
                 {
@@ -224,18 +222,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 
             if (spResponse.Result is null)
             {
-                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto?>(
+                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto>(
                     MsgErrorAplicar,
-                    -1,
-                    null);
+                    -1);
             }
 
             if (spResponse.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto?>(
+                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosAplicarResultadoDto>(
                     string.IsNullOrWhiteSpace(spResponse.Description) ? MsgErrorAplicar : spResponse.Description,
-                    spResponse.Code ?? -1,
-                    null);
+                    spResponse.Code ?? -1);
             }
 
             string tipoDocumento = spResponse.Result.tipo_documento ?? string.Empty;
@@ -258,9 +254,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 {
                     cod_transaccion = codTransaccion,
                     tipo_documento = tipoDocumento,
-                    mensaje = $"Movimiento Realizado Satisfactoriamente!",
+                    mensaje = "Movimiento Realizado Satisfactoriamente!",
                     reporte_resultado = reporte
-                } ?? null);
+                });
         }
 
         /// <summary>

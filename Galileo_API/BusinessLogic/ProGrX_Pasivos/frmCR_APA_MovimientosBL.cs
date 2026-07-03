@@ -53,7 +53,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Pasivos
             return _db.CR_APA_Movimientos_Operacion_Navegar(codEmpresa, dto);
         }
 
-        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto?> CR_APA_Movimientos_Aplicar(
+        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto> CR_APA_Movimientos_Aplicar(
             int codEmpresa,
             FrmCrApaMovimientosAplicarRequest request)
         {

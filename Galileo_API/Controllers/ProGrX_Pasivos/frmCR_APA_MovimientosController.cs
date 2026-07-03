@@ -60,7 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [HttpPost("CR_APA_Movimientos_Aplicar")]
-        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto?> CR_APA_Movimientos_Aplicar(
+        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto> CR_APA_Movimientos_Aplicar(
             int codEmpresa,
             FrmCrApaMovimientosAplicarRequest request)
         {
