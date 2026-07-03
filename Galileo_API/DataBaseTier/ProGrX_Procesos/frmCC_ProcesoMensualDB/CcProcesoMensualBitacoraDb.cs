@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="codInstitucion">Código de la institución.</param>
         /// <param name="proceso">Período del proceso.</param>
         /// <returns>Listado de registros de bitácora.</returns>
-        public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(int codEmpresa, int codInstitucion, int proceso)
+        public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(int codEmpresa, int codInstitucion, decimal proceso)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {

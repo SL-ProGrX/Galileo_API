@@ -42,7 +42,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         {
             return _dbEstado.CcProcesoMensual_Inicial_Obtener(codEmpresa, gInstitucion);
         }
-        public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(int codEmpresa, int gInstitucion, int proceso)
+        public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(int codEmpresa, int gInstitucion, decimal proceso)
         {
             return _dbBitacora.CcProcesoMensual_Bitacora_Obtener(codEmpresa, gInstitucion, proceso);
         }
@@ -53,17 +53,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CcProcesoMensual_CargarDeducciones(CcProcesoMensualCargaDeduccionesRequest request)
         {
             var reglas = CcProcesoMensualCargaDeduccionesConfig.ObtenerReglas(request.TipoCarga);
-
-
-            if (request.TipoCarga != "30"
-                && request.TipoCarga != "02"
-                && reglas.Count == 0)
-            {
-                return DbHelper.CreateErrorResponse<CcProcesoMensualCargaDeduccionesResponse>(
-                    "El tipo de carga no tiene reglas configuradas.",
-                    -1,
-                    new CcProcesoMensualCargaDeduccionesResponse());
-            }
 
             return _dbCargaArchivos.CargarDeduccionesGenerico(request, reglas);
         }
