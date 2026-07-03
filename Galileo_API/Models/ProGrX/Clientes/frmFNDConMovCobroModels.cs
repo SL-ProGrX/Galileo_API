@@ -6,6 +6,7 @@
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
         public string CodPlan { get; set; } = "T"; // "T" para todos, o el código específico
+        public int CantidadLineas { get; set; } = 1000;
     }
 
     public class FndConMovCobroResult

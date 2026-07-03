@@ -14,11 +14,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         id_seq,
                         cod_institucion,
                         proceso,
+                        cod_plan,
                         gestion,
                         transaccion,
+                        documento,
                         usuario,
                         fecha,
-                        observacion
+                        casos,
+                        monto
                     FROM dbo.fnd_prm_bitacora
                     WHERE cod_institucion = @CodInstitucion
                       AND proceso = @Proceso
