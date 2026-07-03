@@ -28,16 +28,22 @@
 
     public class FrmCrApaMovimientosDetalleDto
     {
-        public string fecha { get; set; } = string.Empty;
-        public string tipo_movimiento { get; set; } = string.Empty;
-        public string documento { get; set; } = string.Empty;
-        public decimal amortiza { get; set; } = 0;
-        public decimal intereses { get; set; } = 0;
+        public int linea { get; set; } = 0;
+        public int n_cuota { get; set; } = 0;
+        public string tipo_pago { get; set; } = string.Empty;
+        public decimal tasa { get; set; } = 0;
+        public decimal cuota { get; set; } = 0;
+        public decimal abono { get; set; } = 0;
         public decimal comision { get; set; } = 0;
         public decimal cargos { get; set; } = 0;
-        public decimal total { get; set; } = 0;
-        public string usuario { get; set; } = string.Empty;
-        public string notas { get; set; } = string.Empty;
+        public decimal intereses { get; set; } = 0;
+        public decimal amortizacion { get; set; } = 0;
+        public decimal saldo { get; set; } = 0;
+        public DateTime? fecha_pago { get; set; }
+        public DateTime? fecha_desglose { get; set; }
+        public string tipo_desembolso { get; set; } = string.Empty;
+        public string documento { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
     }
 
     public class FrmCrApaMovimientosCuentaDto
