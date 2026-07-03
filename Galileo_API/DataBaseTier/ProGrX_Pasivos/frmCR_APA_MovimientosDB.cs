@@ -135,7 +135,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 select top 1
                     operacion
                 from CRD_APA_OPERACIONES
-                where codigo = @Acreedor
+                where cod_acreedor = @Acreedor
                   and operacion < @Operacion
                   and (@SoloConSaldo = 0 or saldo > 0)
                 order by operacion desc;"
@@ -143,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 select top 1
                     operacion
                 from CRD_APA_OPERACIONES
-                where codigo = @Acreedor
+                where cod_acreedor = @Acreedor
                   and operacion > @Operacion
                   and (@SoloConSaldo = 0 or saldo > 0)
                 order by operacion asc;";
