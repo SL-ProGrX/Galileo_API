@@ -81,7 +81,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                                                         Gestion = "R",
                                                         Usuario = usuario,
                                                         Documento = $"{fechaProceso}.{codDocumento}.CRD"
-                                                    });
+                                                    }, transaction);
 
                 ProcesarSobrantes(context, paso: 1);
                 ProcesarSobrantes(context, paso: 2);
@@ -209,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     Modulo = vModulo
                 });
                 ActualizarEstadoCreditosInteresesMoratorios(connection, codInstitucion);
-                sbCrRecalculaCuotaEnMora(connection, codInstitucion, fechaProceso);
+                SbCrRecalculaCuotaEnMora(connection, codInstitucion, fechaProceso);
 
                 MProcesoMensualDb.SbBitacoraPlanilla(connection,
                                                     new CcProcesoMensualBitacoraPlanillaDto
@@ -334,14 +334,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="connection">Conexión activa de base de datos.</param>
         /// <param name="codInstitucion">Código de la institución.</param>
         /// <param name="fechaProceso">Fecha de proceso.</param>
-        private static void sbCrRecalculaCuotaEnMora(IDbConnection connection, int codInstitucion, decimal fechaProceso)
+        private static void SbCrRecalculaCuotaEnMora(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
             connection.Execute(
                 "spPrmCrdMoraIntCalcula",
                 new
                 {
-                    codInstitucion,
-                    fechaProceso
+                    Institucion=codInstitucion,
+                    Proceso=fechaProceso
                 },
                 commandType: CommandType.StoredProcedure);
         }
@@ -353,7 +353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="codInstitucion">Código de la institución.</param>
         /// <returns>Código de documento para bitácora y asientos.</returns>
-        private string ObtenerCodigoDocumento(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
+        private static string ObtenerCodigoDocumento(IDbConnection connection, IDbTransaction transaction, int codInstitucion)
         {
             const string query = @"
               select isnull(desc_Corta, convert(varchar(10), cod_institucion)) as CodDoc
@@ -395,9 +395,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             const int ultimoPaso = 5;
 
             var paso = 1;
+        
 
             while (paso <= ultimoPaso)
             {
+                var pasoActual = paso;
+
                 var resultado = context.Connection.QuerySingleOrDefault<CreditoAplicaAbonosMasivoResult>(
                      "spPrmCreditoAplicaAbonosMasivo",
                      new
@@ -411,13 +414,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                      commandTimeout: 5200,
                      commandType: CommandType.StoredProcedure);
 
-                            if (resultado is null)
-                            {
-                                throw new InvalidOperationException(
-                                    $"El procedimiento de abono masivo no retornó resultado para el paso {paso}.");
-                            }
-
-                paso = resultado.PasoSiguiente;
+                if (resultado is null)
+                {
+                    paso = pasoActual + 1;
+                    continue;
+                }
+                 
+                paso = resultado.PasoSiguiente > pasoActual
+                    ? resultado.PasoSiguiente
+                    : pasoActual + 1;
             }
         }
 
@@ -441,10 +446,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     "spPrmCreditoAplicaAbonos",
                     new
                     {
-                        context.CodInstitucion,
-                        context.FechaProceso,
+                        Institucion= context.CodInstitucion,
+                        Proceso=context.FechaProceso,
                         context.Documento,
-                        Cantidad = cantidadPorLote
+                        Top = cantidadPorLote
                     },
                     context.Transaction,
                     commandTimeout: 5200,
@@ -491,8 +496,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 "spPrmCreditoMoraGenera",
                 new
                 {
-                    context.CodInstitucion,
-                    context.FechaProceso
+                    Institucion= context.CodInstitucion,
+                    Proceso=context.FechaProceso
                 },
                 context.Transaction,
                 commandTimeout: 5200,
@@ -505,12 +510,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="context">Contexto de aplicación de créditos.</param>
         private static void RevisarDeduccionesPorcentaje(CreditoAplicacionContext context)
         {
-            context.Connection.Execute(
+           context.Connection.Execute(
                 "spPrm_Deducciones_Porc_Revision",
                 new
                 {
-                    context.CodInstitucion,
-                    context.FechaProceso,
+                    Institucion=context.CodInstitucion,
+                    Proceso=context.FechaProceso,
                     context.Usuario
                 },
                 context.Transaction,
@@ -531,11 +536,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 {
                     Tipo = "1",
                     context.Documento,
-                    Fecha = context.FechaSistema.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
+                    Fecha = context.FechaSistema,
                     context.Usuario,
-                    context.CodInstitucion,
-                    context.FechaProceso,
-                    paso
+                    Institucion= context.CodInstitucion,
+                    Proceso=context.FechaProceso,
+                    Paso= paso
                 },
                context.Transaction,
                 commandTimeout: 5200,
@@ -553,11 +558,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 "spPrm_Sobrantes_Main",
                 new
                 {
-                    context.FechaProceso,
-                    context.CodInstitucion,
-                    context.Documento,
+                    Proceso= context.FechaProceso,
+                    Institucion=context.CodInstitucion,
+                    Comprobante=context.Documento,
                     context.Usuario,
-                    paso
+                    Paso=paso
                 },
                 context.Transaction,
                 commandTimeout: 5200,
@@ -574,9 +579,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 "spPrmFndTrasladoRetAFondo",
                 new
                 {
-                    context.FechaProceso,
-                    context.CodInstitucion,
-                    context.Documento,
+                    Proceso=context.FechaProceso,
+                    Institucion=context.CodInstitucion,
+                    Comprobante= context.Documento,
                     context.Usuario
                 },
                 context.Transaction,
@@ -594,8 +599,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 "spPrm_Deducciones_Fondos_Revision",
                 new
                 {
-                    context.CodInstitucion,
-                    context.FechaProceso,
+                    Institucion= context.CodInstitucion,
+                    Proceso= context.FechaProceso,
                     context.Usuario
                 },
                 context.Transaction,
@@ -617,7 +622,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             context.Connection.Execute(
                 sql,
-                new { CodInstitucion = context.CodInstitucion },
+                new { context.CodInstitucion },
                 context.Transaction);
         }
 
