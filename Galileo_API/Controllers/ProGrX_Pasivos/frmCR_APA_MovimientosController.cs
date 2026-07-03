@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [HttpGet("CR_APA_Movimientos_Acreedor_Obtener")]
-        public ErrorDto<FrmCrApaMovimientosAcreedorDto> CR_APA_Movimientos_Acreedor_Obtener(
+        public ErrorDto<FrmCrApaMovimientosAcreedorDto?> CR_APA_Movimientos_Acreedor_Obtener(
             int codEmpresa,
             string cod_acreedor)
         {
@@ -28,7 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [HttpGet("CR_APA_Movimientos_Operacion_Obtener")]
-        public ErrorDto<FrmCrApaMovimientosOperacionDto> CR_APA_Movimientos_Operacion_Obtener(
+        public ErrorDto<FrmCrApaMovimientosOperacionDto?> CR_APA_Movimientos_Operacion_Obtener(
             int codEmpresa,
             string cod_acreedor,
             string operacion)
@@ -46,13 +46,13 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [HttpGet("CR_APA_Movimientos_Cuenta_Obtener")]
-        public ErrorDto<FrmCrApaMovimientosCuentaDto> CR_APA_Movimientos_Cuenta_Obtener(int codEmpresa)
+        public ErrorDto<FrmCrApaMovimientosCuentaDto?> CR_APA_Movimientos_Cuenta_Obtener(int codEmpresa, string usuario)
         {
-            return _bl.CR_APA_Movimientos_Cuenta_Obtener(codEmpresa);
+            return _bl.CR_APA_Movimientos_Cuenta_Obtener(codEmpresa, usuario);
         }
 
         [HttpGet("CR_APA_Movimientos_Operacion_Navegar")]
-        public ErrorDto<FrmCrApaMovimientosNavegarDto> CR_APA_Movimientos_Operacion_Navegar(
+        public ErrorDto<FrmCrApaMovimientosNavegarDto?> CR_APA_Movimientos_Operacion_Navegar(
             int codEmpresa,
             string request)
         {
@@ -60,7 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [HttpPost("CR_APA_Movimientos_Aplicar")]
-        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto> CR_APA_Movimientos_Aplicar(
+        public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto?> CR_APA_Movimientos_Aplicar(
             int codEmpresa,
             FrmCrApaMovimientosAplicarRequest request)
         {

@@ -75,20 +75,24 @@
         public string doc_ref { get; set; } = string.Empty;
     }
 
-    public class FrmCrApaMovimientosAplicarResultadoDto
+    public class FrmCrApaMovimientosAplicarResultadoDto : FrmCrApaMovimientosAplicarSpDto
     {
-        public string cod_transaccion { get; set; } = string.Empty;
-        public string tipo_documento { get; set; } = string.Empty;
         public string mensaje { get; set; } = string.Empty;
-        public string? reporte_resultado { get; set; }
+        public object? reporte_resultado { get; set; }
     }
 
     public class FrmCrApaMovimientosOperacionBusquedaDto
     {
         public string operacion { get; set; } = string.Empty;
         public string cod_acreedor { get; set; } = string.Empty;
-        public decimal monto { get; set; }
-        public decimal saldo { get; set; }
-        public DateTime? fecha_formaliza { get; set; }
+        public decimal monto { get; set; } = 0;
+        public decimal saldo { get; set; } = 0;
+        public DateTime? formaliza { get; set; }
+    }
+
+    public class FrmCrApaMovimientosAplicarSpDto
+    {
+        public string cod_transaccion { get; set; } = string.Empty;
+        public string tipo_documento { get; set; } = string.Empty;
     }
 }
