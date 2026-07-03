@@ -98,11 +98,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
             int codEmpresa, string usuario)
         {
             var globales = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario).Result;
-            if (globales != null) { 
-                return DbHelper.ExecuteSingleQuery<FrmCrApaMovimientosCuentaDto?>(
-                        _portalDb,
-                        codEmpresa,
-                        @"select top 1
+            return globales != null
+                ? DbHelper.ExecuteSingleQuery<FrmCrApaMovimientosCuentaDto?>(
+                    _portalDb,
+                    codEmpresa,
+                    @"select top 1
                             D.cod_cuenta, 
                             isnull(C.COD_CUENTA_MASK,C.COD_CUENTA) AS 'cuenta_mask', 
                             C.descripcion
@@ -110,14 +110,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                             left join CntX_Cuentas C on C.cod_Contabilidad = @CodConta
                             and D.cod_cuenta = C.cod_Cuenta
                         where D.TIPO_DOCUMENTO = 'APA';",
-                        null,
-                        new { CodConta = globales.GEnlace });
-            } else {
-                return DbHelper.CreateErrorResponse<FrmCrApaMovimientosCuentaDto?>(
+                    null,
+                    new { CodConta = globales.GEnlace })
+                : DbHelper.CreateErrorResponse<FrmCrApaMovimientosCuentaDto?>(
                     "Error al obtener al cargar la cuenta de SIF_DOCUMENTOS",
                     -2,
                     null);
-            }
         }
 
         /// <summary>
