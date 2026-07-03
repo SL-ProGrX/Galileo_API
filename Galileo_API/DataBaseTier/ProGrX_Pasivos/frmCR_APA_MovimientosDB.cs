@@ -298,7 +298,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 select 
                     OPERACION,COD_ACREEDOR, MONTO, SALDO, FECHA_FORMALIZA AS 'FORMALIZA'
                 from CRD_APA_OPERACIONES
-            if (row is IDictionary<string, object> dict)
                 where COD_ACREEDOR = @Acreedor
                 order by operacion;",
                 new
