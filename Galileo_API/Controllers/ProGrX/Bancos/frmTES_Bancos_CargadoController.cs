@@ -40,9 +40,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpGet("Tes_BancosCargadoCentroCostos_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
-            return _bl.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa);
+            return _bl.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa, contabilidad, unidad);
         }
 
         [HttpGet("Tes_AutoRegistroLista_Obtener")]
@@ -76,3 +76,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
     }
 }
+
+
+
+

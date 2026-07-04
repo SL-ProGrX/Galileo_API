@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -101,20 +101,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                var query = $@"select COD_CENTRO_COSTO as 'item', DESCRIPCION from vCNTX_CENTRO_COSTO_LOCAL";
-                var request = conn.Query<DropDownListaGenericaModel>(query).ToList();
+                var unidadFiltro = unidad?.Trim();
+                if (string.IsNullOrWhiteSpace(unidadFiltro))
+                {
+                    return DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
+                }
+
+                const string query = @"
+                    SELECT DISTINCT
+                        RTRIM(C.COD_CENTRO_COSTO) AS item,
+                        RTRIM(C.DESCRIPCION) AS descripcion
+                    FROM CNTX_CENTRO_COSTOS C
+                    INNER JOIN CNTX_UNIDADES_CC U
+                        ON C.COD_CENTRO_COSTO = U.COD_CENTRO_COSTO
+                       AND C.COD_CONTABILIDAD = U.COD_CONTABILIDAD
+                       AND U.COD_UNIDAD = @unidad
+                    WHERE C.COD_CONTABILIDAD = @contabilidad
+                    ORDER BY item;";
+
+                var request = conn.Query<DropDownListaGenericaModel>(
+                    query,
+                    new { contabilidad, unidad = unidadFiltro }
+                ).ToList();
 
                 return DbHelper.CreateOkResponse(request);
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
-            } 
+            }
         }
 
 
@@ -385,3 +405,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
     }
 }
+
+
+
+

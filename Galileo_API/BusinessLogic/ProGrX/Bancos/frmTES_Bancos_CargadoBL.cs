@@ -1,4 +1,4 @@
-using Galileo.Models;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
@@ -30,9 +30,9 @@ namespace Galileo_API.BusinessLogic
             return _Db.Tes_BancosCargadoCentroUnidades_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
-            return _Db.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa);
+            return _Db.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa, contabilidad, unidad);
         }
 
         public ErrorDto<TesAutoRegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, string filtros)
@@ -64,3 +64,6 @@ namespace Galileo_API.BusinessLogic
 
     }
 }
+
+
+
