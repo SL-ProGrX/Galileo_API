@@ -719,6 +719,17 @@
         public DateTime FechaServidor { get; set; }
     }
 
+    public class AfTelefonoGuardarRequest
+    {
+        public int telefono { get; set; } = 0;
+        public string cedula { get; set; } = string.Empty;
+        public int tipo { get; set; } = 0;
+        public string numero { get; set; } = string.Empty;
+        public string ext { get; set; } = string.Empty;
+        public string contacto { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
     public class AfCuentaBancariaDto
     {
         public string? Banco { get; set; }
