@@ -12,9 +12,9 @@ namespace Galileo_API.Models.ProGrX.Credito
 
     public class CrPrendasExtrasData
     {
-        public long id_extra { get; set; }
+        public required long id_extra { get; set; } = 0;
         public string descripcion { get; set; } = string.Empty;
-        public decimal monto_extras { get; set; }
+        public required decimal monto_extras { get; set; } = 0;
     }
 
     public class CrPrendasExtrasConsultaData
@@ -26,7 +26,7 @@ namespace Galileo_API.Models.ProGrX.Credito
 
     public class CrPrendasExtrasGuardarRequest
     {
-        public long prenda_id { get; set; }
+        public required long prenda_id { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
         public List<CrPrendasExtrasData> extras { get; set; } = new();
     }
