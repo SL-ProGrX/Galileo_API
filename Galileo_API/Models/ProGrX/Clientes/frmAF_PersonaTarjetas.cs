@@ -3,20 +3,22 @@
     public class PersonaTarjetaDto
     {
         public string tarjeta_Numero { get; set; } = string.Empty;
-        public string Tarjeta_Mask { get; set; } = string.Empty;
-        public DateTime Tarjeta_Vence { get; set; }
-        public string Tarjeta_Code { get; set; } = string.Empty;
-        public string Tarjeta_Tipo { get; set; } = string.Empty;
+        public string tarjeta_Mask { get; set; } = string.Empty;
+        public DateTime? tarjeta_Vence { get; set; }
+        public string tarjeta_Code { get; set; } = string.Empty;
+        public string tarjeta_Tipo { get; set; } = string.Empty;
+        public string dia_apl_ca { get; set; } = string.Empty;
     }
 
     public class PersonaTarjetaRegistroDto
     {
-        public string Cedula { get; set; } = string.Empty;
-        public string Tarjeta { get; set; } = string.Empty;
-        public DateTime? Vence { get; set; }
-        public string Code { get; set; } = string.Empty;
-        public string TipoMov { get; set; } = string.Empty;
-        public string Usuario { get; set; } = string.Empty;
-        public required bool ValidaTarjeta { get; set; }
+        public string cedula { get; set; } = string.Empty;
+        public string tarjeta { get; set; } = string.Empty;
+        public DateTime? vence { get; set; }
+        public string code { get; set; } = string.Empty;
+        public string tipoMov { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public bool validaTarjeta { get; set; } = false;
+        public string dia_apl_ca { get; set; } = "1";
     }
 }

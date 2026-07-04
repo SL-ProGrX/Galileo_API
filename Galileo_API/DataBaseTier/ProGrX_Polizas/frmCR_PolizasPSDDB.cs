@@ -39,18 +39,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 using var cn = new SqlConnection(
                     _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                response.Result = cn.Query<PolizaPsdDto>(
+                response.Result = cn.Query<dynamic>(
                     "spPoliza_PSD",
                     new
                     {
                         Poliza = "",              
                         Corte = fechaCorte,
                         Usuario = usuario,         
-                        Movimiento = tipo,  
-                        Cedula = ""       
+                        Movimiento = tipo
                     },
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
+                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandTimeout: 600
+                )
+                .Select(MapPolizaPsdRow)
+                .ToList();
             }
             catch (Exception ex)
             {
@@ -59,6 +61,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             return response;
+        }
+
+        private static PolizaPsdDto MapPolizaPsdRow(dynamic row)
+        {
+            var values = ((IDictionary<string, object?>)row).Values.ToArray();
+
+            return new PolizaPsdDto
+            {
+                corte = ToNullableDateTime(ValueAt(values, 0)),
+                identificacion = ToStringValue(ValueAt(values, 1)),
+                nombre = ToStringValue(ValueAt(values, 2)),
+                monto = ToNullableDecimal(ValueAt(values, 3)),
+                fechaNacimiento = ToNullableDateTime(ValueAt(values, 4)),
+                genero = ToStringValue(ValueAt(values, 5)),
+                nacionalidad = ToStringValue(ValueAt(values, 6)),
+                movimiento = ToStringValue(ValueAt(values, 7)),
+            };
+        }
+
+        private static object? ValueAt(object?[] values, int index)
+        {
+            return values.Length > index ? values[index] : null;
+        }
+
+        private static string ToStringValue(object? value)
+        {
+            return value is null or DBNull ? string.Empty : Convert.ToString(value) ?? string.Empty;
+        }
+
+        private static decimal? ToNullableDecimal(object? value)
+        {
+            if (value is null or DBNull)
+            {
+                return null;
+            }
+
+            return Convert.ToDecimal(value);
+        }
+
+        private static DateTime? ToNullableDateTime(object? value)
+        {
+            if (value is null or DBNull)
+            {
+                return null;
+            }
+
+            return Convert.ToDateTime(value);
         }
 
         /// <summary>
