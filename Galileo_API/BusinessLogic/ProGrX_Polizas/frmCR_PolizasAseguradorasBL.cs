@@ -70,7 +70,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         {
             return DbfrmCR_PolizasAseguradorasDb.ObtenerBancos(codEmpresa, usuario);
         }
-
+        public ErrorDto<List<DropDownListaGenericaModel>> BuscarRetenciones(int codEmpresa, string? codigo = null)
+        {
+            return DbfrmCR_PolizasAseguradorasDb.BuscarRetenciones(codEmpresa, codigo);
+        }
 
 
 

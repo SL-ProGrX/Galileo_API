@@ -12,7 +12,7 @@
         public string Cod_Parentesco { get; set; } = string.Empty;
         public string Parentesco { get; set; } = string.Empty;
         public required decimal Porcentaje { get; set; }
-        public required bool Aplica_Seguros { get; set; }
+        public bool Aplica_Seguros { get; set; } = false;
         public string Notas { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
         public string Apto_Postal { get; set; } = string.Empty;
@@ -22,8 +22,8 @@
         public string Sexo { get; set; } = string.Empty;
         public string Registro_Usuario { get; set; } = string.Empty;
         public DateTime? Registro_Fecha { get; set; }
-        public required bool Albacea_Check { get; set; }
-        public required bool Albacea_Ind { get; set; }
+        public bool Albacea_Check { get; set; } = false;
+        public bool Albacea_Ind { get; set; } = false;
         public string Albacea_Cedula { get; set; } = string.Empty;
         public string Albacea_Nombre { get; set; } = string.Empty;
         public string Albacea_Movil{ get; set; } = string.Empty;
