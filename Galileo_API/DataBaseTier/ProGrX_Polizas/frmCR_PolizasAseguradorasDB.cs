@@ -52,15 +52,63 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 P.nombre_contacto,
                 P.activo,
                 P.codigo_retencion,
+                RTRIM(ISNULL(COALESCE(Retencion.descripcion, CatalogoRetencion.descripcion), '')) AS retencion_desc,
                 P.formato_tramas,
-                P.cod_cuenta,
-                P.cod_cuenta_comision,
+                P.cod_banco,
+                RTRIM(ISNULL(BancoDef.descripcion, '')) AS cod_banco_desc,
+                RTRIM(ISNULL(CuentaPagar.Cod_Cuenta_Mask, P.cod_cuenta)) AS cod_cuenta,
+                RTRIM(ISNULL(CuentaPagar.Descripcion, '')) AS cuenta_desc,
+                RTRIM(ISNULL(CuentaComision.Cod_Cuenta_Mask, P.cod_cuenta_comision)) AS cod_cuenta_comision,
+                RTRIM(ISNULL(CuentaComision.Descripcion, '')) AS cuenta_comision_desc,
                 Prov.descripcion AS proveedor_desc
             FROM CRD_POLIZAS_ASEGURADORAS P
             LEFT JOIN CxP_Proveedores Prov ON P.cod_proveedor = Prov.cod_proveedor
+            LEFT JOIN Tes_Bancos BancoDef ON P.cod_banco = BancoDef.id_banco
+            OUTER APPLY (
+                SELECT TOP 1 F.descripcion
+                FROM FND_PLANES F
+                WHERE LTRIM(RTRIM(F.cod_plan)) = LTRIM(RTRIM(P.codigo_retencion))
+            ) Retencion
+            OUTER APPLY (
+                SELECT TOP 1 C.descripcion
+                FROM catalogo C
+                WHERE C.poliza = 'S'
+                  AND LTRIM(RTRIM(C.codigo)) = LTRIM(RTRIM(P.codigo_retencion))
+            ) CatalogoRetencion
+            OUTER APPLY (
+                SELECT TOP 1 C.Cod_Cuenta_Mask, C.Descripcion
+                FROM vCNTX_CUENTAS_LOCAL C
+                WHERE C.Cod_Cuenta = P.cod_cuenta
+                   OR REPLACE(REPLACE(REPLACE(C.Cod_Cuenta_Mask, '-', ''), '.', ''), ' ', '') = REPLACE(REPLACE(REPLACE(P.cod_cuenta, '-', ''), '.', ''), ' ', '')
+            ) CuentaPagar
+            OUTER APPLY (
+                SELECT TOP 1 C.Cod_Cuenta_Mask, C.Descripcion
+                FROM vCNTX_CUENTAS_LOCAL C
+                WHERE C.Cod_Cuenta = P.cod_cuenta_comision
+                   OR REPLACE(REPLACE(REPLACE(C.Cod_Cuenta_Mask, '-', ''), '.', ''), ' ', '') = REPLACE(REPLACE(REPLACE(P.cod_cuenta_comision, '-', ''), '.', ''), ' ', '')
+            ) CuentaComision
             WHERE P.cod_aseguradora = @codigo",
                     new { codigo }
                 );
+                if (response.Result != null &&
+                    !string.IsNullOrWhiteSpace(response.Result.codigo_retencion) &&
+                    string.IsNullOrWhiteSpace(response.Result.retencion_desc))
+                {
+                    response.Result.retencion_desc = cn.QueryFirstOrDefault<string>(
+                        @"SELECT TOP 1 descripcion
+                          FROM (
+                              SELECT 1 AS orden, RTRIM(descripcion) AS descripcion
+                              FROM FND_PLANES
+                              WHERE LTRIM(RTRIM(cod_plan)) = LTRIM(RTRIM(@codigoRetencion))
+                              UNION ALL
+                              SELECT 2 AS orden, RTRIM(descripcion) AS descripcion
+                              FROM catalogo
+                              WHERE LTRIM(RTRIM(codigo)) = LTRIM(RTRIM(@codigoRetencion))
+                          ) D
+                          ORDER BY orden",
+                        new { codigoRetencion = response.Result.codigo_retencion }
+                    ) ?? string.Empty;
+                }
             }
             catch (Exception ex)
             {
@@ -97,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             nombre_contacto, activo,
             codigo_retencion, formato_tramas,
             cod_cuenta, cod_cuenta_comision,
-            cod_proveedor, registro_fecha, registro_usuario
+            cod_proveedor, cod_banco, registro_fecha, registro_usuario
         )
         VALUES
         (
@@ -108,34 +156,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             @nombre_contacto, @activo,
             @codigo_retencion, @formato_tramas,
             @cod_cuenta, @cod_cuenta_comision,
-            @cod_proveedor, GETDATE(), @usuario
+            @cod_proveedor, @cod_banco, GETDATE(), @usuario
         )";
 
-                cn.Execute(sql, new
-                {
-                    m.cod_aseguradora,
-                    m.nombre,
-                    m.cedula_juridica,
-                    m.telefono_01,
-                    m.telefono_02,
-                    m.tel_fax,
-                    m.sitio_web,
-                    m.email_01,
-                    m.email_02,
-                    m.apto_postal,
-                    m.direccion,
-                    m.provincia,
-                    m.canton,
-                    m.distrito,
-                    m.nombre_contacto,
-                    m.activo,
-                    m.codigo_retencion,
-                    m.formato_tramas,
-                    m.cod_cuenta,
-                    m.cod_cuenta_comision,
-                    m.cod_proveedor,
-                    usuario = "API"
-                });
+                cn.Execute(sql, CrearParametrosAseguradora(m, incluirUsuario: true));
 
                 response.Result = 1;
             }
@@ -184,10 +208,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             formato_tramas = @formato_tramas,
             cod_cuenta = @cod_cuenta,
             cod_cuenta_comision = @cod_cuenta_comision,
-            cod_proveedor = @cod_proveedor
+            cod_proveedor = @cod_proveedor,
+            cod_banco = @cod_banco
         WHERE cod_aseguradora = @cod_aseguradora";
 
-                cn.Execute(sql, m);
+                cn.Execute(sql, CrearParametrosAseguradora(m));
                 response.Result = 1;
             }
             catch (Exception ex)
@@ -197,6 +222,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             return response;
+        }
+
+        private static DynamicParameters CrearParametrosAseguradora(
+            PolizaAseguradoraDto m,
+            bool incluirUsuario = false)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("cod_aseguradora", m.cod_aseguradora);
+            parametros.Add("nombre", m.nombre);
+            parametros.Add("cedula_juridica", m.cedula_juridica);
+            parametros.Add("telefono_01", m.telefono_01);
+            parametros.Add("telefono_02", m.telefono_02);
+            parametros.Add("tel_fax", m.tel_fax);
+            parametros.Add("sitio_web", m.sitio_web);
+            parametros.Add("email_01", m.email_01);
+            parametros.Add("email_02", m.email_02);
+            parametros.Add("apto_postal", m.apto_postal);
+            parametros.Add("direccion", m.direccion);
+            parametros.Add("provincia", m.provincia);
+            parametros.Add("canton", m.canton);
+            parametros.Add("distrito", m.distrito);
+            parametros.Add("nombre_contacto", m.nombre_contacto);
+            parametros.Add("activo", m.activo);
+            parametros.Add("codigo_retencion", m.codigo_retencion);
+            parametros.Add("formato_tramas", m.formato_tramas);
+            parametros.Add("cod_cuenta", NormalizarCuenta(m.cod_cuenta));
+            parametros.Add("cod_cuenta_comision", NormalizarCuenta(m.cod_cuenta_comision));
+            parametros.Add("cod_proveedor", m.cod_proveedor);
+            parametros.Add("cod_banco", m.cod_banco);
+
+            if (incluirUsuario)
+            {
+                parametros.Add("usuario", "API");
+            }
+
+            return parametros;
+        }
+        private static string? NormalizarCuenta(string? cuenta)
+        {
+            return cuenta?
+                .Replace("-", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(" ", string.Empty)
+                .Trim();
         }
 
         /// <summary>
@@ -310,6 +379,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 response.Result = cn.Query<CuentaBancariaDto>(
                     @"SELECT 
                 C.CUENTA_INTERNA AS cuenta,
+                RTRIM(C.cod_banco) AS cod_banco,
                 RTRIM(B.Descripcion) AS banco,
                 CASE WHEN C.tipo = 'A' THEN 'Ahorros' ELSE 'Corriente' END AS tipo,
                 C.cod_divisa AS divisa,
@@ -320,7 +390,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 C.registro_usuario
               FROM SYS_CUENTAS_BANCARIAS C
               INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-              WHERE C.identificacion = @cedula AND C.modulo = 'Pol'",
+              WHERE STUFF(
+                        REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
+                        1,
+                        PATINDEX(
+                            '%[^0]%',
+                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
+                        ) - 1,
+                        ''
+                    )
+                    =
+                    STUFF(
+                        REPLACE(REPLACE(LTRIM(RTRIM(@cedula)), '-', ''), ' ', ''),
+                        1,
+                        PATINDEX(
+                            '%[^0]%',
+                            REPLACE(REPLACE(LTRIM(RTRIM(@cedula)), '-', ''), ' ', '')
+                        ) - 1,
+                        ''
+                    )
+                AND C.modulo = 'Pol'",
                     new { cedula }
                 ).ToList();
             }
@@ -512,6 +601,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return response;
         }
 
+        /// <summary>
+        /// Consulta catálogo de retenciones para pólizas.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> BuscarRetenciones(int codEmpresa, string? codigo = null)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+                    SELECT
+                        RTRIM(cod_plan) AS item,
+                        RTRIM(descripcion) AS descripcion
+                    FROM FND_PLANES
+                    WHERE (@codigo IS NULL OR RTRIM(cod_plan) = @codigo)
+                    ORDER BY cod_plan";
+
+                response.Result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    new { codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim() }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = new List<DropDownListaGenericaModel>();
+            }
+
+            return response;
+        }
 
     }
 
