@@ -159,32 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             @cod_proveedor, @cod_banco, GETDATE(), @usuario
         )";
 
-                cn.Execute(sql, new
-                {
-                    m.cod_aseguradora,
-                    m.nombre,
-                    m.cedula_juridica,
-                    m.telefono_01,
-                    m.telefono_02,
-                    m.tel_fax,
-                    m.sitio_web,
-                    m.email_01,
-                    m.email_02,
-                    m.apto_postal,
-                    m.direccion,
-                    m.provincia,
-                    m.canton,
-                    m.distrito,
-                    m.nombre_contacto,
-                    m.activo,
-                    m.codigo_retencion,
-                    m.formato_tramas,
-                    cod_cuenta = NormalizarCuenta(m.cod_cuenta),
-                    cod_cuenta_comision = NormalizarCuenta(m.cod_cuenta_comision),
-                    m.cod_proveedor,
-                    m.cod_banco,
-                    usuario = "API"
-                });
+                cn.Execute(sql, CrearParametrosAseguradora(m, incluirUsuario: true));
 
                 response.Result = 1;
             }
@@ -237,31 +212,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             cod_banco = @cod_banco
         WHERE cod_aseguradora = @cod_aseguradora";
 
-                cn.Execute(sql, new
-                {
-                    m.cod_aseguradora,
-                    m.nombre,
-                    m.cedula_juridica,
-                    m.telefono_01,
-                    m.telefono_02,
-                    m.tel_fax,
-                    m.sitio_web,
-                    m.email_01,
-                    m.email_02,
-                    m.apto_postal,
-                    m.direccion,
-                    m.provincia,
-                    m.canton,
-                    m.distrito,
-                    m.nombre_contacto,
-                    m.activo,
-                    m.codigo_retencion,
-                    m.formato_tramas,
-                    cod_cuenta = NormalizarCuenta(m.cod_cuenta),
-                    cod_cuenta_comision = NormalizarCuenta(m.cod_cuenta_comision),
-                    m.cod_proveedor,
-                    m.cod_banco
-                });
+                cn.Execute(sql, CrearParametrosAseguradora(m));
                 response.Result = 1;
             }
             catch (Exception ex)
@@ -273,6 +224,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return response;
         }
 
+        private static DynamicParameters CrearParametrosAseguradora(
+            PolizaAseguradoraDto m,
+            bool incluirUsuario = false)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("cod_aseguradora", m.cod_aseguradora);
+            parametros.Add("nombre", m.nombre);
+            parametros.Add("cedula_juridica", m.cedula_juridica);
+            parametros.Add("telefono_01", m.telefono_01);
+            parametros.Add("telefono_02", m.telefono_02);
+            parametros.Add("tel_fax", m.tel_fax);
+            parametros.Add("sitio_web", m.sitio_web);
+            parametros.Add("email_01", m.email_01);
+            parametros.Add("email_02", m.email_02);
+            parametros.Add("apto_postal", m.apto_postal);
+            parametros.Add("direccion", m.direccion);
+            parametros.Add("provincia", m.provincia);
+            parametros.Add("canton", m.canton);
+            parametros.Add("distrito", m.distrito);
+            parametros.Add("nombre_contacto", m.nombre_contacto);
+            parametros.Add("activo", m.activo);
+            parametros.Add("codigo_retencion", m.codigo_retencion);
+            parametros.Add("formato_tramas", m.formato_tramas);
+            parametros.Add("cod_cuenta", NormalizarCuenta(m.cod_cuenta));
+            parametros.Add("cod_cuenta_comision", NormalizarCuenta(m.cod_cuenta_comision));
+            parametros.Add("cod_proveedor", m.cod_proveedor);
+            parametros.Add("cod_banco", m.cod_banco);
+
+            if (incluirUsuario)
+            {
+                parametros.Add("usuario", "API");
+            }
+
+            return parametros;
+        }
         private static string? NormalizarCuenta(string? cuenta)
         {
             return cuenta?
