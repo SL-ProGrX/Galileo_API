@@ -554,7 +554,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="spName">Nombre del stored procedure a ejecutar.</param>
         /// <param name="parametrosFactory">Función que construye los parámetros del SP por cada línea.</param>
         /// <param name="verboExito">Participio del verbo para el mensaje de éxito (ej. "excluida(s)").</param>
-        private ErrorDto ProcesarLineasEnLote(
+        private static ErrorDto ProcesarLineasEnLote(
             IDbConnection conn,
             List<long> lineasId,
             string spName,
