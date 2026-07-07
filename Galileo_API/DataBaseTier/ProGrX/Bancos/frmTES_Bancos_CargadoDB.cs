@@ -1,9 +1,11 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
 using System.Data;
@@ -14,11 +16,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesBancosCargadoDB
     {
         private readonly PortalDB _portalDB;
-
+        private readonly MTesoreria _mTesoreria;
+        private readonly MSecurityMainDb _Security_MainDB;
+        private readonly int _vModulo = 9;
 
         public FrmTesBancosCargadoDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
+            _mTesoreria      = new MTesoreria(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -401,7 +407,222 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-            
+
+        }
+
+        /// <summary>
+        /// Obtiene los movimientos del banco filtrados para el tab Detalle de Movimientos,
+        /// incluyendo filtros por concepto, cuenta, unidad y centro de costos via TES_TRANSACCIONES.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa</param>
+        /// <param name="filtro">Filtros del detalle de movimientos</param>
+        /// <returns>Lista de movimientos que cumplen los criterios</returns>
+        public ErrorDto<List<TeslistaRegistroBancosDto>> TES_ListaDetalleMovimientos_Obtener(int CodEmpresa, TesFiltrosDetalleMovimientoDto filtro)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.FechaInicio, "yyyy-MM-dd 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.FechaCorte,  "yyyy-MM-dd 23:59:59") ?? "";
+
+                var parameters = new
+                {
+                    BancoId        = filtro.BancoId,
+                    Documento      = filtro.Documento,
+                    Tipo           = filtro.Tipo,
+                    FechaTipo      = filtro.FechaTipo,
+                    FInicio        = fechaIni,
+                    FCorte         = fechaFin,
+                    MntInicio      = filtro.MontoInicio,
+                    MntCorte       = filtro.MontoCorte,
+                    Estado         = filtro.Estado,
+                    Descripcion    = filtro.Descripcion,
+                    CodConcepto    = filtro.CodConcepto,
+                    CodCuenta      = filtro.CodCuenta,
+                    CodUnidad      = filtro.CodUnidad,
+                    CodCentroCosto = filtro.CodCentroCosto
+                };
+
+                var result = conn.Query<TeslistaRegistroBancosDto>(
+                    "spTes_BancosCargado_Mov_Consulta",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<TeslistaRegistroBancosDto>>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Reclasifica el COD_CONCEPTO en TES_TRANSACCIONES para una lista de solicitudes bancarias.
+        /// Valida que el asiento no haya sido generado y registra la justificación en la bitácora de tesorería.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="data">Modelo con la lista de nsolicitudes, el nuevo concepto, usuario y justificación.</param>
+        public ErrorDto TES_BancosCargado_ReclasificaConcepto(int CodEmpresa, TesBancosCargadoReclasificaConceptoModel data)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                var exitosas = 0;
+                var errores  = new List<string>();
+
+                foreach (var nsolicitud in data.Solicitudes)
+                {
+                    var error = ProcesarReclasificacionConcepto(conn, CodEmpresa, nsolicitud, data.CodConcepto, data.Usuario, data.Nota);
+                    if (error != null) errores.Add(error);
+                    else              exitosas++;
+                }
+
+                if (exitosas == 0)
+                    return DbHelper.ErrorResponse(string.Join(" | ", errores));
+
+                var msg = exitosas == data.Solicitudes.Count
+                    ? $"Concepto reclasificado correctamente en {exitosas} solicitud(es)."
+                    : $"{exitosas} de {data.Solicitudes.Count} reclasificada(s). Omitidas: {string.Join(", ", errores)}";
+
+                return DbHelper.OkResponse(msg);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Excluye líneas del Tab Detalle Movimientos, revirtiendo Saldo a Favor y Depósito Trámite si aplican.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="data">Modelo con lista de líneas y usuario.</param>
+        public ErrorDto TES_BancosCargado_DetalleExcluir(int CodEmpresa, TesBancosCargadoDetalleExcluirModel data)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                return ProcesarLineasEnLote(
+                    conn, data.LineasId,
+                    "spTes_BancosCargado_Mov_DetalleExcluir",
+                    id => new { LineaId = id, Usuario = data.Usuario },
+                    "excluida(s)");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Registra la transacción y asientos para líneas ya procesadas del Tab Detalle Movimientos,
+        /// usando los parámetros de contabilización provistos sin lógica de auto-registro.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="data">Modelo con lista de líneas e información de contabilización.</param>
+        public ErrorDto TES_BancosCargado_DetalleRegistrar(int CodEmpresa, TesBancosCargadoDetalleRegistrarModel data)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                return ProcesarLineasEnLote(
+                    conn, data.LineasId,
+                    "spTes_BancosCargado_Mov_DetalleRegistro",
+                    id => new
+                    {
+                        LineaId  = id,
+                        Usuario  = data.Usuario,
+                        Concepto = data.Concepto,
+                        Unidad   = data.Unidad,
+                        Centro   = data.Centro,
+                        Cuenta   = data.Cuenta,
+                    },
+                    "registrada(s)");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Ejecuta un SP por cada línea de la lista y consolida el resultado en un único ErrorDto.
+        /// </summary>
+        /// <param name="conn">Conexión ya abierta.</param>
+        /// <param name="lineasId">Lista de identificadores de línea a procesar.</param>
+        /// <param name="spName">Nombre del stored procedure a ejecutar.</param>
+        /// <param name="parametrosFactory">Función que construye los parámetros del SP por cada línea.</param>
+        /// <param name="verboExito">Participio del verbo para el mensaje de éxito (ej. "excluida(s)").</param>
+        private static ErrorDto ProcesarLineasEnLote(
+            IDbConnection conn,
+            List<long> lineasId,
+            string spName,
+            Func<long, object> parametrosFactory,
+            string verboExito)
+        {
+            var errores  = new List<string>();
+            var exitosas = 0;
+
+            foreach (var lineaId in lineasId)
+            {
+                var result = conn.QueryFirstOrDefault<dynamic>(
+                    spName, parametrosFactory(lineaId),
+                    commandType: CommandType.StoredProcedure);
+
+                if (result?.Ok == 1) exitosas++;
+                else errores.Add($"Línea {lineaId}: {result?.Mensaje ?? "error desconocido"}");
+            }
+
+            if (exitosas == 0)
+                return DbHelper.ErrorResponse(string.Join(" | ", errores));
+
+            var msg = exitosas == lineasId.Count
+                ? $"{exitosas} línea(s) {verboExito} correctamente."
+                : $"{exitosas} de {lineasId.Count} procesada(s). Omitidas: {string.Join(", ", errores)}";
+
+            return DbHelper.OkResponse(msg);
+        }
+
+        /// <summary>
+        /// Procesa la reclasificación de concepto para una solicitud individual.
+        /// Retorna null si fue exitoso, o el mensaje de error si no.
+        /// </summary>
+        private string? ProcesarReclasificacionConcepto(
+            System.Data.IDbConnection conn, int CodEmpresa,
+            int nsolicitud, string codConcepto, string? usuario, string? nota)
+        {
+            if (nsolicitud <= 0)
+                return $"Solicitud {nsolicitud}: sin vínculo a transacción.";
+
+            var estadoAsiento = conn.QueryFirstOrDefault<string>(
+                "SELECT estado_asiento FROM Tes_Transacciones WHERE NSOLICITUD = @nsolicitud",
+                new { nsolicitud });
+
+            if (estadoAsiento == "G")
+                return $"Solicitud {nsolicitud}: asiento ya generado, no se puede reclasificar.";
+
+            var conceptoAnterior = conn.QueryFirstOrDefault<string>(
+                "SELECT ISNULL(COD_CONCEPTO, '') FROM Tes_Transacciones WHERE NSOLICITUD = @nsolicitud",
+                new { nsolicitud }) ?? string.Empty;
+
+            conn.Execute(
+                "UPDATE Tes_Transacciones SET COD_CONCEPTO = @codConcepto WHERE NSOLICITUD = @nsolicitud",
+                new { codConcepto, nsolicitud });
+
+            var detalle = $"Cambio COD_CONCEPTO de {conceptoAnterior} a {codConcepto}. {nota}".Trim();
+            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, nsolicitud, "09", detalle, usuario!);
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId        = CodEmpresa,
+                Usuario          = usuario!,
+                DetalleMovimiento = $"Solicitud {nsolicitud}: COD_CONCEPTO reclasificado de {conceptoAnterior} a {codConcepto}",
+                Movimiento       = "RECLASIFICACION - WEB",
+                Modulo           = _vModulo
+            });
+
+            return null;
         }
     }
 }

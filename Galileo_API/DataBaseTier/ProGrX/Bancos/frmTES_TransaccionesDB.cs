@@ -1632,7 +1632,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (t.detalle.Length == 0)
                 errores.Add(" - El Detalle no es válido ...\n");
 
-            if (t.estado != "P")
+            if (t.estado != "P" && t.estado != "S")
                 errores.Add("- No se puede modificar este Documento porque se encuentra Emitido o Anulado ...\n");
         }
 
