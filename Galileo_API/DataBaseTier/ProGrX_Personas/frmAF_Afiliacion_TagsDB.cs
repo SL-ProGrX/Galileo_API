@@ -210,11 +210,10 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             return DbHelper.ExecuteListQuery<AfiAfiliacionControlDto>(
                 CreatePortalDb(),
                 codEmpresa,
-                $"EXEC {SpAfiliacionesControlConsulta} @Estado, @Filtro",
+                $"EXEC {SpAfiliacionesControlConsulta} @Estado",
                 new
                 {
                     Estado = estado,
-                    Filtro = filtro
                 });
         }
 
