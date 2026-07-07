@@ -503,28 +503,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                var errores  = new List<string>();
-                var exitosas = 0;
-
-                foreach (var lineaId in data.LineasId)
-                {
-                    var result = conn.QueryFirstOrDefault<dynamic>(
-                        "spTes_BancosCargado_Mov_DetalleExcluir",
-                        new { LineaId = lineaId, Usuario = data.Usuario },
-                        commandType: CommandType.StoredProcedure);
-
-                    if (result?.Ok == 1) exitosas++;
-                    else errores.Add($"Línea {lineaId}: {result?.Mensaje ?? "error desconocido"}");
-                }
-
-                if (exitosas == 0)
-                    return DbHelper.ErrorResponse(string.Join(" | ", errores));
-
-                var msg = exitosas == data.LineasId.Count
-                    ? $"{exitosas} línea(s) excluida(s) correctamente."
-                    : $"{exitosas} de {data.LineasId.Count} procesada(s). Omitidas: {string.Join(", ", errores)}";
-
-                return DbHelper.OkResponse(msg);
+                return ProcesarLineasEnLote(
+                    conn, data.LineasId,
+                    "spTes_BancosCargado_Mov_DetalleExcluir",
+                    id => new { LineaId = id, Usuario = data.Usuario },
+                    "excluida(s)");
             }
             catch (Exception ex)
             {
@@ -543,41 +526,62 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                var errores  = new List<string>();
-                var exitosas = 0;
-
-                foreach (var lineaId in data.LineasId)
-                {
-                    var result = conn.QueryFirstOrDefault<dynamic>(
-                        "spTes_BancosCargado_Mov_DetalleRegistro",
-                        new
-                        {
-                            LineaId  = lineaId,
-                            Usuario  = data.Usuario,
-                            Concepto = data.Concepto,
-                            Unidad   = data.Unidad,
-                            Centro   = data.Centro,
-                            Cuenta   = data.Cuenta,
-                        },
-                        commandType: CommandType.StoredProcedure);
-
-                    if (result?.Ok == 1) exitosas++;
-                    else errores.Add($"Línea {lineaId}: {result?.Mensaje ?? "error desconocido"}");
-                }
-
-                if (exitosas == 0)
-                    return DbHelper.ErrorResponse(string.Join(" | ", errores));
-
-                var msg = exitosas == data.LineasId.Count
-                    ? $"{exitosas} línea(s) registrada(s) correctamente."
-                    : $"{exitosas} de {data.LineasId.Count} procesada(s). Omitidas: {string.Join(", ", errores)}";
-
-                return DbHelper.OkResponse(msg);
+                return ProcesarLineasEnLote(
+                    conn, data.LineasId,
+                    "spTes_BancosCargado_Mov_DetalleRegistro",
+                    id => new
+                    {
+                        LineaId  = id,
+                        Usuario  = data.Usuario,
+                        Concepto = data.Concepto,
+                        Unidad   = data.Unidad,
+                        Centro   = data.Centro,
+                        Cuenta   = data.Cuenta,
+                    },
+                    "registrada(s)");
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Ejecuta un SP por cada línea de la lista y consolida el resultado en un único ErrorDto.
+        /// </summary>
+        /// <param name="conn">Conexión ya abierta.</param>
+        /// <param name="lineasId">Lista de identificadores de línea a procesar.</param>
+        /// <param name="spName">Nombre del stored procedure a ejecutar.</param>
+        /// <param name="parametrosFactory">Función que construye los parámetros del SP por cada línea.</param>
+        /// <param name="verboExito">Participio del verbo para el mensaje de éxito (ej. "excluida(s)").</param>
+        private ErrorDto ProcesarLineasEnLote(
+            IDbConnection conn,
+            List<long> lineasId,
+            string spName,
+            Func<long, object> parametrosFactory,
+            string verboExito)
+        {
+            var errores  = new List<string>();
+            var exitosas = 0;
+
+            foreach (var lineaId in lineasId)
+            {
+                var result = conn.QueryFirstOrDefault<dynamic>(
+                    spName, parametrosFactory(lineaId),
+                    commandType: CommandType.StoredProcedure);
+
+                if (result?.Ok == 1) exitosas++;
+                else errores.Add($"Línea {lineaId}: {result?.Mensaje ?? "error desconocido"}");
+            }
+
+            if (exitosas == 0)
+                return DbHelper.ErrorResponse(string.Join(" | ", errores));
+
+            var msg = exitosas == lineasId.Count
+                ? $"{exitosas} línea(s) {verboExito} correctamente."
+                : $"{exitosas} de {lineasId.Count} procesada(s). Omitidas: {string.Join(", ", errores)}";
+
+            return DbHelper.OkResponse(msg);
         }
 
         /// <summary>
