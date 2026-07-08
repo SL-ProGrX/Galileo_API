@@ -170,7 +170,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(connectionString);
-                var rows = connection.Execute(updateQuery, new
+                connection.Execute(updateQuery, new
                 {
                     AutorizadorId = request.autorizador_id,
                     AutUsuario = request.aut_usuario,
@@ -179,7 +179,6 @@ namespace Galileo.DataBaseTier
                     request.estado
                 });
 
-                response.Code = rows;
                 response.Description = "Actualización correcta";
             }
             catch (Exception ex)

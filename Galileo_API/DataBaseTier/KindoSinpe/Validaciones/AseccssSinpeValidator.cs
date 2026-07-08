@@ -13,6 +13,7 @@ using Sinpe_TFT;
 using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing.Printing;
 using System.Text.Json;
 
 namespace Galileo_API.DataBaseTier

@@ -41,7 +41,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns>Lista de afiliaciones pendientes de recepción.</returns>
         public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Recepcion(int CodEmpresa, string estado, string filtro)
         {
-            return ConsultarAfiliacionesControl(CodEmpresa, estado, filtro);
+            return ConsultarAfiliacionesControl(CodEmpresa, estado);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns>Lista de afiliaciones recibidas.</returns>
         public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Recibidas(int CodEmpresa, string estado, string filtro)
         {
-            return ConsultarAfiliacionesControl(CodEmpresa, estado, filtro);
+            return ConsultarAfiliacionesControl(CodEmpresa, estado);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <returns>Lista de afiliaciones pendientes de revisión.</returns>
         public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Pendientes(int CodEmpresa, string estado, string filtro)
         {
-            return ConsultarAfiliacionesControl(CodEmpresa, estado, filtro);
+            return ConsultarAfiliacionesControl(CodEmpresa, estado);
         }
 
         /// <summary>
@@ -205,16 +205,15 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             return ConsultarBoletasAfiliacion(CodEmpresa, SqlBoletasAfiliacionesList);
         }
 
-        private ErrorDto<List<AfiAfiliacionControlDto>> ConsultarAfiliacionesControl(int codEmpresa, string estado, string filtro)
+        private ErrorDto<List<AfiAfiliacionControlDto>> ConsultarAfiliacionesControl(int codEmpresa, string estado)
         {
             return DbHelper.ExecuteListQuery<AfiAfiliacionControlDto>(
                 CreatePortalDb(),
                 codEmpresa,
-                $"EXEC {SpAfiliacionesControlConsulta} @Estado, @Filtro",
+                $"EXEC {SpAfiliacionesControlConsulta} @Estado",
                 new
                 {
                     Estado = estado,
-                    Filtro = filtro
                 });
         }
 

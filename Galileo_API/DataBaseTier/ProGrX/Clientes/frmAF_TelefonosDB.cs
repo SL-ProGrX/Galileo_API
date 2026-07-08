@@ -99,51 +99,67 @@ namespace Galileo.DataBaseTier
 
 
         /// <summary>
-        /// Inserta un nuevo teléfono.
+        /// Inserta un nuevo telefono.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="cedula">Cédula asociada.</param>
-        /// <param name="tipoId">Tipo de teléfono.</param>
-        /// <param name="numero">Número telefónico.</param>
-        /// <param name="ext">Extensión.</param>
-        /// <param name="contacto">Nombre del contacto.</param>
-        /// <param name="usuario">Usuario que registra.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AF_Telefono_Insertar(int CodEmpresa, string cedula, int tipoId, string numero, string? ext, string? contacto, string usuario)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto AF_Telefono_Insertar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse("Debe indicar los datos del teléfono.", -2);
+            }
+
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
                 SqlTelefonoInsert,
-                CrearParametrosTelefono(cedula, tipoId, numero, ext, contacto, usuario));
+                CrearParametrosTelefono(
+                    request.cedula,
+                    request.tipo,
+                    request.numero,
+                    request.ext,
+                    request.contacto,
+                    request.usuario));
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Guardado correctamente")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar teléfono.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al insertar teléfono.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
-        /// Actualiza un teléfono existente.
+        /// Actualiza un telefono existente.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="telefonoId">Identificador del teléfono.</param>
-        /// <param name="tipoId">Tipo de teléfono.</param>
-        /// <param name="numero">Número telefónico.</param>
-        /// <param name="ext">Extensión.</param>
-        /// <param name="contacto">Nombre del contacto.</param>
-        /// <param name="usuario">Usuario que actualiza.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, int telefonoId, int tipoId, string numero, string? ext, string? contacto, string usuario)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse("Debe indicar los datos del teléfono.", -2);
+            }
+
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
                 SqlTelefonoUpdate,
-                CrearParametrosTelefonoActualizacion(telefonoId, tipoId, numero, ext, contacto, usuario));
+                CrearParametrosTelefonoActualizacion(
+                    request.telefono,
+                    request.tipo,
+                    request.numero,
+                    request.ext,
+                    request.contacto,
+                    request.usuario));
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Actualizado correctamente")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar teléfono.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al actualizar teléfono.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>

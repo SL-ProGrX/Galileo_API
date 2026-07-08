@@ -16,7 +16,7 @@ namespace Galileo.DataBaseTier
     public sealed class ReportParameterBuilder : IReportParameterBuilder
     {
         public (List<ReportParameter> reportParams, Dictionary<string, string> ctx, JObject? jsonParams)
-            Build(FrmReporteGlobal data, SqlConnection connection, string connString)
+    Build(FrmReporteGlobal data, SqlConnection connection, string connString)
         {
             var reportParams = new List<ReportParameter>();
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -30,36 +30,26 @@ namespace Galileo.DataBaseTier
             foreach (var prop in jParams.Properties())
             {
                 if (prop.Name.Equals(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase) ||
-                    prop.Name.Equals(ParamKeys.Empresa, StringComparison.OrdinalIgnoreCase))
+                    prop.Name.Equals(ParamKeys.Empresa, StringComparison.OrdinalIgnoreCase) ||
+                    prop.Name.Equals(ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 var val = prop.Value?.ToString() ?? string.Empty;
                 if (string.IsNullOrEmpty(val))
-                {
                     val = null;
-                }
+
                 reportParams.Add(new ReportParameter(prop.Name, val));
                 dict[prop.Name] = val!;
             }
 
-            if (data.parametros.Contains( ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))
+            if (data.parametros.Contains(ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))
             {
-                //SI @filtros es " " lo cambio a null
-                if(string.IsNullOrWhiteSpace(connString))
-                {
-                    connString = string.Empty;
-                }
-
-                reportParams.Add(new ReportParameter(ParamKeys.Filtros, connString));
-                dict[ParamKeys.Filtros] = connString!;
+                var filtrosValue = jParams.GetValue(ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase)
+                                   ?.ToString() ?? string.Empty;
+                reportParams.Add(new ReportParameter(ParamKeys.Filtros, filtrosValue));
+                dict[ParamKeys.Filtros] = filtrosValue;
             }
 
-            if (data.parametros.Contains(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase))
-            {
-                var logo = connection.QueryFirstOrDefault<string>("SELECT LOGO_WEB_SITE FROM SIF_EMPRESA") ?? string.Empty;
-                reportParams.Add(new ReportParameter(ParamKeys.UrlLogo, logo));
-                dict[ParamKeys.UrlLogo] = logo;
-            }
 
             if (data.parametros.Contains(ParamKeys.UrlLogo, StringComparison.OrdinalIgnoreCase))
             {

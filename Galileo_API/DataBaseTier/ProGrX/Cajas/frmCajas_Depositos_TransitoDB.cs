@@ -88,7 +88,7 @@ namespace Galileo.DataBaseTier
                         fInicio = fechaInicio,
                         fCorte = fechaCorte,
                         filtros.banco,
-                        filtros.numero,
+                        numero = filtros.numero ?? "",
                         filtros.MntInicio,
                         filtros.MntCorte
                     });

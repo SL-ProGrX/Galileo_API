@@ -26,8 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         [HttpGet("CcProcesoMensual_Inicial_Obtener")]
         public ErrorDto<CcProcesoMensualInicialResponse> CcProcesoMensual_Inicial_Obtener(
             int codEmpresa,
-            int gInstitucion,
-            string usuario)
+            int gInstitucion)
         {
             return _bl.CcProcesoMensual_Inicial_Obtener(
                 codEmpresa,
@@ -38,7 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         public ErrorDto<List<CcProcesoMensualBitacoraDbModel>> CcProcesoMensual_Bitacora_Obtener(
             int codEmpresa,
             int gInstitucion,
-            int proceso)
+            decimal proceso)
         {
             return _bl.CcProcesoMensual_Bitacora_Obtener(
                 codEmpresa,

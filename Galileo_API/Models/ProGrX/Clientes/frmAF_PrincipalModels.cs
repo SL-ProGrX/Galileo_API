@@ -719,6 +719,17 @@
         public DateTime FechaServidor { get; set; }
     }
 
+    public class AfTelefonoGuardarRequest
+    {
+        public int telefono { get; set; } = 0;
+        public string cedula { get; set; } = string.Empty;
+        public int tipo { get; set; } = 0;
+        public string numero { get; set; } = string.Empty;
+        public string ext { get; set; } = string.Empty;
+        public string contacto { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
+
     public class AfCuentaBancariaDto
     {
         public string? Banco { get; set; }
@@ -748,11 +759,11 @@
     {
         public string? Cedula { get; set; }
         public int Linea_Id { get; set; }
-        public int Provincia { get; set; }
+        public string? Provincia { get; set; }
         public string? ProvinciaDesc { get; set; }
-        public int Canton { get; set; }
+        public string? Canton { get; set; }
         public string? CantonDesc { get; set; }
-        public int Distrito { get; set; }
+        public string? Distrito { get; set; }
         public string? DistritoDesc { get; set; }
         public string? Direccion { get; set; }
         public string? Email_01 { get; set; }

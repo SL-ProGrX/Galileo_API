@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX_Polizas
+namespace Galileo_API.Models.ProGrX_Polizas
 {
 
     public class PolizaAseguradoraDto
@@ -37,11 +37,14 @@
 
         public string? proveedor_desc { get; set; }
         public int? cod_proveedor { get; set; }
+        public int? cod_banco { get; set; }
+        public string? cod_banco_desc { get; set; }
     }
 
     public class CuentaBancariaDto
     {
         public string cuenta { get; set; } = "";
+        public string cod_banco { get; set; } = "";
         public string banco { get; set; } = "";
         public string tipo { get; set; } = "";
         public string divisa { get; set; } = "";

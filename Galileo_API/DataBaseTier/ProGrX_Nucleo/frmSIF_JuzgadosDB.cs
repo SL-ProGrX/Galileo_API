@@ -193,7 +193,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(connectionString);
-                var rows = connection.Execute(query, new
+                connection.Execute(query, new
                 {
                     CodJuzgado = request.cod_juzgado,
                     request.nombre,
@@ -212,7 +212,6 @@ namespace Galileo.DataBaseTier
                     Activo = request.activo ? 1 : 0
                 });
 
-                result.Code = rows;
                 result.Description = "Ok";
             }
             catch (Exception ex)

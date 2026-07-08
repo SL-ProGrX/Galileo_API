@@ -327,6 +327,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+                conn.Open();
+
                 var tesoreriaRemesa = request.tesoreria_remesa.GetValueOrDefault();
 
                 if (!RemesaEstaAbierta(conn, tesoreriaRemesa))

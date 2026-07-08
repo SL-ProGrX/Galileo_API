@@ -77,7 +77,7 @@
         public required bool mov_sinpe { get; set; }
         public string resumen_cont_tasa { get; set; } = "";
         public required int num_contratos_activos { get; set; }
-        public DateTime? ulttasa { get; set; }
+        public decimal? ulttasa { get; set; }
         public required int contratos_activos_vb6 { get; set; }
         public DateTime? ultima_tasa_vb6 { get; set; }
         public int? contador_tasas_vb6 { get; set; }

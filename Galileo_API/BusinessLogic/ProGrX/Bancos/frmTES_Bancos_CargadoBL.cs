@@ -1,4 +1,4 @@
-using Galileo.Models;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
@@ -30,9 +30,9 @@ namespace Galileo_API.BusinessLogic
             return _Db.Tes_BancosCargadoCentroUnidades_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
-            return _Db.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa);
+            return _Db.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa, contabilidad, unidad);
         }
 
         public ErrorDto<TesAutoRegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, string filtros)
@@ -62,5 +62,41 @@ namespace Galileo_API.BusinessLogic
             return _Db.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }
 
+        /// <summary>
+        /// Obtiene los movimientos del banco para el tab Detalle de Movimientos.
+        /// </summary>
+        public ErrorDto<List<TeslistaRegistroBancosDto>> TES_ListaDetalleMovimientos_Obtener(int CodEmpresa, string filtros)
+        {
+            var filtro = JsonConvert.DeserializeObject<TesFiltrosDetalleMovimientoDto>(filtros) ?? new TesFiltrosDetalleMovimientoDto();
+            return _Db.TES_ListaDetalleMovimientos_Obtener(CodEmpresa, filtro);
+        }
+
+        /// <summary>
+        /// Excluye líneas del Tab Detalle Movimientos, revirtiendo Saldo a Favor y Depósito Trámite si aplican.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_DetalleExcluir(int CodEmpresa, TesBancosCargadoDetalleExcluirModel data)
+        {
+            return _Db.TES_BancosCargado_DetalleExcluir(CodEmpresa, data);
+        }
+
+        /// <summary>
+        /// Registra la transacción y asientos para líneas del Tab Detalle Movimientos.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_DetalleRegistrar(int CodEmpresa, TesBancosCargadoDetalleRegistrarModel data)
+        {
+            return _Db.TES_BancosCargado_DetalleRegistrar(CodEmpresa, data);
+        }
+
+        /// <summary>
+        /// Reclasifica el COD_CONCEPTO en TES_TRANSACCIONES para una lista de solicitudes bancarias.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_ReclasificaConcepto(int CodEmpresa, TesBancosCargadoReclasificaConceptoModel data)
+        {
+            return _Db.TES_BancosCargado_ReclasificaConcepto(CodEmpresa, data);
+        }
+
     }
 }
+
+
+
