@@ -72,7 +72,7 @@
         public string Unidad { get; set; } = string.Empty;
         public string Centro { get; set; } = string.Empty;
         public string Cuenta { get; set; } = string.Empty;
-        public short DP_Tramite_Apl { get; set; }
+        public short DP_Tramite_Apl { get; set; } = 0;
     }
 
     public class TesBancosCargadoReclasificaConceptoModel
