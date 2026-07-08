@@ -28,8 +28,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query<AfNatAutorizadores>(
-                    "spAFI_Renuncia_NAT_Autorizadores_Obtener",
-                    new { SoloAutorizados = EstadoAutorizado },
+                    "spAFI_Renuncia_NAT_Autorizadores",
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0

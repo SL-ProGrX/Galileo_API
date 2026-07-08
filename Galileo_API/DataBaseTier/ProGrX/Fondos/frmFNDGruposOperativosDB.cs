@@ -64,7 +64,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SqlInsertGrupoOperativo = @"
                     INSERT INTO dbo.FND_CONFIGURACION_GRUPOS
                     (
-                        GRUPO_CODIGO,
                         DESCRIPCION,
                         TIPO_GRUPO,
                         ESTADO,
@@ -73,7 +72,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     )
                     VALUES
                     (
-                        @Grupo_Codigo,
                         @Descripcion,
                         @Tipo_Grupo,
                         @Estado,
