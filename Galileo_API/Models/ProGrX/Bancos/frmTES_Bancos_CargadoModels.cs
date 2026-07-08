@@ -81,7 +81,7 @@
         public string CodConcepto      { get; set; } = string.Empty;
         public string? Usuario         { get; set; }
         public string? Nota            { get; set; }
-        public bool ReemplazarAsientos { get; set; }
+        public bool ReemplazarAsientos { get; set; } = false;
     }
 
     public class TesBancosCargadoDetalleExcluirModel
