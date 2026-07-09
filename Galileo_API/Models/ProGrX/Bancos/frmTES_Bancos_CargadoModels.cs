@@ -72,15 +72,16 @@
         public string Unidad { get; set; } = string.Empty;
         public string Centro { get; set; } = string.Empty;
         public string Cuenta { get; set; } = string.Empty;
-        public short DP_Tramite_Apl { get; set; }
+        public short DP_Tramite_Apl { get; set; } = 0;
     }
 
     public class TesBancosCargadoReclasificaConceptoModel
     {
-        public List<int> Solicitudes  { get; set; } = new();
-        public string CodConcepto     { get; set; } = string.Empty;
-        public string? Usuario        { get; set; }
-        public string? Nota           { get; set; }
+        public List<int> Solicitudes   { get; set; } = new();
+        public string CodConcepto      { get; set; } = string.Empty;
+        public string? Usuario         { get; set; }
+        public string? Nota            { get; set; }
+        public bool ReemplazarAsientos { get; set; } = false;
     }
 
     public class TesBancosCargadoDetalleExcluirModel

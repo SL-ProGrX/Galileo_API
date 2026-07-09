@@ -473,7 +473,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 foreach (var nsolicitud in data.Solicitudes)
                 {
-                    var error = ProcesarReclasificacionConcepto(conn, CodEmpresa, nsolicitud, data.CodConcepto, data.Usuario, data.Nota);
+                    var error = ProcesarReclasificacionConcepto(conn, CodEmpresa, nsolicitud, data.CodConcepto, data.Usuario, data.Nota, data.ReemplazarAsientos);
                     if (error != null) errores.Add(error);
                     else              exitosas++;
                 }
@@ -590,7 +590,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         private string? ProcesarReclasificacionConcepto(
             System.Data.IDbConnection conn, int CodEmpresa,
-            int nsolicitud, string codConcepto, string? usuario, string? nota)
+            int nsolicitud, string codConcepto, string? usuario, string? nota,
+            bool reemplazarAsientos)
         {
             if (nsolicitud <= 0)
                 return $"Solicitud {nsolicitud}: sin vínculo a transacción.";
@@ -620,6 +621,86 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 DetalleMovimiento = $"Solicitud {nsolicitud}: COD_CONCEPTO reclasificado de {conceptoAnterior} a {codConcepto}",
                 Movimiento       = "RECLASIFICACION - WEB",
                 Modulo           = _vModulo
+            });
+
+            if (reemplazarAsientos)
+            {
+                var errorAsiento = RegenerarAsientoConcepto(conn, CodEmpresa, nsolicitud, codConcepto);
+                if (errorAsiento != null) return errorAsiento;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Regenera el asiento básico (banco + concepto) para una solicitud.
+        /// Reutiliza el monto y tipo de cambio almacenados en el asiento existente.
+        /// Retorna null si fue exitoso, o el mensaje de error si no.
+        /// </summary>
+        private string? RegenerarAsientoConcepto(
+            IDbConnection conn, int CodEmpresa, int nsolicitud, string codConcepto)
+        {
+            var txn = conn.QueryFirstOrDefault<dynamic>(
+                @"SELECT T.id_banco, T.tipo, T.cod_unidad,
+                         A.monto AS montoAsiento, A.tipo_cambio AS tipoCambio, A.cod_divisa AS codDivisa
+                  FROM Tes_Transacciones T
+                  LEFT JOIN Tes_Trans_Asiento A ON T.nsolicitud = A.nsolicitud AND A.linea = 1
+                  WHERE T.nsolicitud = @nsolicitud",
+                new { nsolicitud });
+
+            if (txn == null)
+                return $"Solicitud {nsolicitud}: no se encontró la transacción para regenerar asiento.";
+
+            var cuentaBanco = conn.QueryFirstOrDefault<dynamic>(
+                @"SELECT TOP 1 B.CtaConta AS CodCuenta, C.cod_contabilidad AS Contabilidad
+                  FROM Tes_Bancos B
+                  INNER JOIN CntX_Cuentas C ON B.CtaConta = C.cod_cuenta
+                  WHERE B.id_banco = @id_banco",
+                new { id_banco = (int)txn.id_banco });
+
+            if (cuentaBanco == null)
+                return $"Solicitud {nsolicitud}: no se encontró cuenta contable del banco.";
+
+            var cuentaConcepto = conn.QueryFirstOrDefault<string>(
+                @"SELECT TOP 1 C.cod_cuenta
+                  FROM Tes_Conceptos TC
+                  INNER JOIN CntX_Cuentas C ON TC.cod_cuenta = C.cod_cuenta
+                  WHERE TC.cod_concepto = @codConcepto
+                    AND C.cod_contabilidad = @contabilidad",
+                new { codConcepto = codConcepto, contabilidad = cuentaBanco.Contabilidad });
+
+            if (string.IsNullOrEmpty(cuentaConcepto))
+                return $"Solicitud {nsolicitud}: no se encontró cuenta para el concepto '{codConcepto}'.";
+
+            bool esAsientoA      = _mTesoreria.fxTesTiposDocAsiento(CodEmpresa, (string)(txn.tipo ?? string.Empty)) == "A";
+            string debeHaberBanco    = esAsientoA ? "H" : "D";
+            string debeHaberConcepto = esAsientoA ? "D" : "H";
+
+            decimal montoAsiento = (decimal)(txn.montoAsiento ?? 0m);
+            decimal tipoCambio   = (decimal)(txn.tipoCambio   ?? 0m);
+            string  codDivisa    = (string)(txn.codDivisa     ?? "DOL");
+            string  codUnidad    = (string)(txn.cod_unidad    ?? string.Empty);
+
+            conn.Execute("DELETE Tes_Trans_Asiento WHERE nsolicitud = @nsolicitud", new { nsolicitud });
+
+            const string insertSql = @"
+                INSERT Tes_Trans_Asiento(nSolicitud, Linea, Cuenta_Contable, cod_unidad, cod_cc, cod_divisa, tipo_cambio, DebeHaber, Monto)
+                VALUES (@nSolicitud, @linea, @Cuenta_Contable, @cod_unidad, '', @cod_divisa, @tipo_cambio, @DebeHaber, @Monto)";
+
+            conn.Execute(insertSql, new
+            {
+                nSolicitud = nsolicitud, linea = 1,
+                Cuenta_Contable = (string)cuentaBanco.CodCuenta,
+                cod_unidad = codUnidad, cod_divisa = codDivisa,
+                tipo_cambio = tipoCambio, DebeHaber = debeHaberBanco, Monto = montoAsiento
+            });
+
+            conn.Execute(insertSql, new
+            {
+                nSolicitud = nsolicitud, linea = 2,
+                Cuenta_Contable = cuentaConcepto,
+                cod_unidad = codUnidad, cod_divisa = codDivisa,
+                tipo_cambio = tipoCambio, DebeHaber = debeHaberConcepto, Monto = montoAsiento
             });
 
             return null;
