@@ -5,6 +5,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
 using System.Collections.Generic;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
@@ -109,7 +110,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 return DbHelper.OkResponse(successMessage);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                var errorMessage = esInsert
+                   ? "No se pudo crear la región."
+                   : "No se pudo actualizar la región.";
+                return DbHelper.ErrorResponse(errorMessage + ": " + ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 var errorMessage = esInsert
                    ? "No se pudo crear la región."
