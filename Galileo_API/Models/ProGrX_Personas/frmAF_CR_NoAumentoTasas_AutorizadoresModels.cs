@@ -1,4 +1,4 @@
-﻿namespace Galileo.Models.ProGrX_Personas
+﻿namespace Galileo_API.Models.ProGrX_Personas
 {
     public class AfNatAutorizadores
     {
