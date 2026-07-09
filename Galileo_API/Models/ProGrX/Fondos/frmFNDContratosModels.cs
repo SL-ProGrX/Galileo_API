@@ -292,7 +292,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? plazo_desc { get; set; }
         public int? plazo_dias { get; set; }
         public int? plazo_meses { get; set; }
-        public string? frecuencia_cupon_id { get; set; }
+        public int? frecuencia_cupon_id { get; set; }
         public string? frecuencia_cupon_desc { get; set; }
         public bool aplicaBeneficiarios { get; set; }
         public decimal intereses { get; set; }
@@ -300,7 +300,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public bool isNew { get; set; }
         public string?  mTipoDeduc { get; set; }
         public decimal? mPorcRef { get; set; }
-        public string? mSubCuentasMax { get; set; }
+        public int? mSubCuentasMax { get; set; }
         public decimal? vMontoMin { get; set; }
         public decimal? vPlazoMin { get; set; }
         public decimal? vInversionMin { get; set; }
@@ -486,6 +486,19 @@ namespace Galileo.Models.ProGrX.Fondos
         public decimal vInversion { get; set; }
         public string? vDescPlazo { get; set; }
         public bool vDedPlanilla { get; set; }
+    }
+
+    /// <summary>
+    /// Request para guardar (insertar o actualizar) un contrato FND.
+    /// Agrupa los cambios anteriores y los datos actuales del contrato.
+    /// </summary>
+    public class FndContratosGuardarRequest
+    {
+        [JsonPropertyName("cambios")]
+        public required FndCambios Cambios { get; set; }
+
+        [JsonPropertyName("contrato")]
+        public required ContratosModels Contrato { get; set; }
     }
 
     public class FndSociosListaData
