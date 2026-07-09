@@ -31,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfNatAutorizadores>())
+                ? DbHelper.CreateOkResponse(result.Result ?? [])
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener autorizadores NAT.", result.Code.GetValueOrDefault(-1), new List<AfNatAutorizadores>());
         }
 
