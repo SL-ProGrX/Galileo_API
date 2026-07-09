@@ -19,7 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Metodo para obtener nombre de la empresa
+        /// Método para obtener el nombre de la empresa
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
