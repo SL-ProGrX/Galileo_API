@@ -1,9 +1,11 @@
 ﻿using Dapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
 using System.Collections.Generic;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
@@ -63,51 +65,66 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             // Determina si es insert (como VB6: cuando no hay cod_region)
             var esInsert = !dto.cod_region.HasValue || dto.cod_region.Value <= 0;
 
-            int codRegion;
-
-            if (esInsert)
+            try
             {
-                // VB6: select isnull(max(COD_REGION),0)+1 ... where COD_POLIZA = '...'
-                codRegion = conn.ExecuteScalar<int>(@"
+               
+                int codRegion;
+
+                if (esInsert)
+                {
+                    // VB6: select isnull(max(COD_REGION),0)+1 ... where COD_POLIZA = '...'
+                    codRegion = conn.ExecuteScalar<int>(@"
                         SELECT ISNULL(MAX(COD_REGION), 0) + 1
                         FROM CRD_POLIZAS_REGION
                         WHERE COD_POLIZA = @cod_poliza;",
-                    new { cod_poliza = codPoliza }
-                );
-            }
-            else
-            {
-                codRegion = dto.cod_region!.Value;
+                        new { cod_poliza = codPoliza }
+                    );
+                }
+                else
+                {
+                    codRegion = dto.cod_region!.Value;
 
-                // Para update: confirmar que existe (VB6 asumía que sí porque venía del grid)
-                var existe = conn.ExecuteScalar<int>(@"
+                    // Para update: confirmar que existe (VB6 asumía que sí porque venía del grid)
+                    var existe = conn.ExecuteScalar<int>(@"
                         SELECT COUNT(1)
                         FROM CRD_POLIZAS_REGION
                         WHERE COD_POLIZA = @cod_poliza
                           AND COD_REGION = @cod_region;",
-                    new { cod_poliza = codPoliza, cod_region = codRegion }
-                ) > 0;
+                        new { cod_poliza = codPoliza, cod_region = codRegion }
+                    ) > 0;
 
-                if (!existe)
-                    return DbHelper.ErrorResponse("No se encontró la región para actualizar.");
+                    if (!existe)
+                        return DbHelper.ErrorResponse("No se encontró la región para actualizar.");
+                }
+
+                var sql = esInsert ? InsertSql : UpdateSql;
+                var parametros = BuildParams(dto, codPoliza, codRegion, usuario);
+
+                conn.Execute(sql, parametros);
+
+                var successMessage = esInsert
+                    ? "Región creada correctamente."
+                    : "Región actualizada correctamente.";
+
+               
+
+                return DbHelper.OkResponse(successMessage);
             }
-
-            var sql = esInsert ? InsertSql : UpdateSql;
-            var parametros = BuildParams(dto, codPoliza, codRegion, usuario);
-
-            var rows = conn.Execute(sql, parametros);
-
-            var successMessage = esInsert
-                ? "Región creada correctamente."
-                : "Región actualizada correctamente.";
-
-            var errorMessage = esInsert
-                ? "No se pudo crear la región."
-                : "No se pudo actualizar la región.";
-
-            return rows > 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(errorMessage);
+            catch (DbException ex)
+            {
+                var errorMessage = esInsert
+                   ? "No se pudo crear la región."
+                   : "No se pudo actualizar la región.";
+                return DbHelper.ErrorResponse(errorMessage + ": " + ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                var errorMessage = esInsert
+                   ? "No se pudo crear la región."
+                   : "No se pudo actualizar la región.";
+                return DbHelper.ErrorResponse(errorMessage + ": " + ex.Message);
+            }
+            
         }
 
         private static ErrorDto? Validate(CrdPolizasRegionGuardarDto dto, string codPoliza)
