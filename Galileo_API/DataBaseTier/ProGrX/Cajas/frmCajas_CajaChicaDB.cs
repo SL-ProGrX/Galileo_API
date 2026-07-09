@@ -211,6 +211,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             return DbHelper.WithConn(_portalDB, req.codempresa, conn =>
             {
+                conn.Open();
                 using var tx = conn.BeginTransaction();
 
                 var srv = ObtenerServiciosDatos(conn, tx, req);

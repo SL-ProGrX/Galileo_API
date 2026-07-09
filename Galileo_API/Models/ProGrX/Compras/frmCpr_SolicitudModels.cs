@@ -9,6 +9,10 @@ namespace Galileo.Models.CPR
         public string? filtro { get; set; }
         public List<string>? solicitante { get; set; }
         public List<string>? encargado { get; set; }
+        /// <summary>Campo de ordenamiento. Se valida contra una lista blanca antes de usarse en SQL.</summary>
+        public string? sort_field { get; set; }
+        /// <summary>Dirección: 1 = ASC, -1 = DESC. Default DESC.</summary>
+        public int? sort_order { get; set; }
     }
 
     public class CprSolicitudLista

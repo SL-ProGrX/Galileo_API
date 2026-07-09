@@ -34,16 +34,16 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpPost("AF_Telefono_Insertar")]
-        public ErrorDto AF_Telefono_Insertar(int CodEmpresa, string cedula, int tipoId, string numero, string ext, string contacto, string usuario)
+        public ErrorDto AF_Telefono_Insertar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
-            return _bl.AF_Telefono_Insertar(CodEmpresa, cedula, tipoId, numero, ext, contacto, usuario);
+            return _bl.AF_Telefono_Insertar(CodEmpresa, request);
         }
 
         [Authorize]
         [HttpPost("AF_Telefono_Actualizar")]
-        public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, int telefonoId, int tipoId, string numero, string ext, string contacto, string usuario)
+        public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
-            return _bl.AF_Telefono_Actualizar(CodEmpresa, telefonoId, tipoId, numero, ext, contacto, usuario);
+            return _bl.AF_Telefono_Actualizar(CodEmpresa, request);
         }
 
         [Authorize]

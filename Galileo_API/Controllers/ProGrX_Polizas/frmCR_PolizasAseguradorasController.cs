@@ -90,7 +90,12 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         {
             return BL_CR_PolizasAseguradoras.ObtenerBancos(codEmpresa, usuario);
         }
-
+        [Authorize]
+        [HttpGet("BuscarRetenciones")]
+        public ErrorDto<List<DropDownListaGenericaModel>> BuscarRetenciones(int codEmpresa, string? codigo = null)
+        {
+            return BL_CR_PolizasAseguradoras.BuscarRetenciones(codEmpresa, codigo);
+        }
 
     }
 }

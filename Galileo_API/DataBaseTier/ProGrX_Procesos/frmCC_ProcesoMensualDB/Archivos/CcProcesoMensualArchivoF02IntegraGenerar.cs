@@ -49,7 +49,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             var archivosGenerados = new List<string>
             {
-                GenerarArchivo(rutaBase,
+                GenerarArchivo(
                     contexto.RutaDirectorio,
                     CrearNombreArchivo(PrefijoEnvio, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionTxt),
                     CrearContenidoEnvio(
@@ -57,27 +57,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                             connection,
                             request,
                             Helpers.CcProcesoMensualArchivoRutaHelperDb.ObtenerMovimientosPorIndicadores(configuracion)),
-                        configuracion.PorcAhorro)),
+                        configuracion.PorcAhorro),rutaBase),
 
-                GenerarArchivo(rutaBase,
-                    contexto.RutaDirectorio,
-                    CrearNombreArchivo(PrefijoMatricula, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
-                    CrearContenidoCadenas(
-                        ObtenerCadenasDesdeSp(
-                            connection,
-                            SpIntegra.IntegraNew,
-                            request.CodInstitucion,
-                            request.FechaProceso))),
-
-                GenerarArchivo(rutaBase,
+                GenerarArchivo(
                     contexto.RutaDirectorio,
                     CrearNombreArchivo(PrefijoIntegra, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
                     CrearContenidoCadenas(
                         ObtenerCadenasDesdeSp(
                             connection,
+                            SpIntegra.IntegraNew,
+                            request.CodInstitucion,
+                            request.FechaProceso)),rutaBase),
+
+                GenerarArchivo(                   
+                contexto.RutaDirectorio,
+                CrearNombreArchivo(PrefijoMatricula, configuracion.CodigoInstDeduc, contexto.FechaServidor, ExtensionCsv),
+                    CrearContenidoCadenas(
+                        ObtenerCadenasDesdeSp(
+                            connection,
                             SpIntegra.IntegraNewMatricula,
                             request.CodInstitucion,
-                            request.FechaProceso)))
+                            request.FechaProceso)),rutaBase)
             };
 
             return CrearRespuesta(archivosGenerados);
@@ -95,7 +95,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private static string GenerarArchivo(
             string rutaDirectorio,
             string nombreArchivo,
-            string contenido, string rutaBase )
+            string contenido, 
+            string rutaBase )
         {
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,
                 rutaDirectorio,
@@ -135,9 +136,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 query,
                 new
                 {
-                    FechaProceso = request.FechaProceso,
+                   request.FechaProceso,
                     Movimientos = movimientos,
-                    CodInstitucion = request.CodInstitucion
+                   request.CodInstitucion
                 })];
         }
 

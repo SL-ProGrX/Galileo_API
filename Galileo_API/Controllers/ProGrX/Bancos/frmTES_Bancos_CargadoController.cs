@@ -40,9 +40,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpGet("Tes_BancosCargadoCentroCostos_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
-            return _bl.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa);
+            return _bl.Tes_BancosCargadoCentroCostos_Obtener(CodEmpresa, contabilidad, unidad);
         }
 
         [HttpGet("Tes_AutoRegistroLista_Obtener")]
@@ -74,5 +74,33 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         {
             return _bl.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }
+
+        [HttpGet("TES_ListaDetalleMovimientos_Obtener")]
+        public ErrorDto<List<TeslistaRegistroBancosDto>> TES_ListaDetalleMovimientos_Obtener(int CodEmpresa, string filtros)
+        {
+            return _bl.TES_ListaDetalleMovimientos_Obtener(CodEmpresa, filtros);
+        }
+
+        [HttpPost("TES_BancosCargado_DetalleExcluir")]
+        public ErrorDto TES_BancosCargado_DetalleExcluir(int CodEmpresa, [FromBody] TesBancosCargadoDetalleExcluirModel data)
+        {
+            return _bl.TES_BancosCargado_DetalleExcluir(CodEmpresa, data);
+        }
+
+        [HttpPost("TES_BancosCargado_DetalleRegistrar")]
+        public ErrorDto TES_BancosCargado_DetalleRegistrar(int CodEmpresa, [FromBody] TesBancosCargadoDetalleRegistrarModel data)
+        {
+            return _bl.TES_BancosCargado_DetalleRegistrar(CodEmpresa, data);
+        }
+
+        [HttpPost("TES_BancosCargado_ReclasificaConcepto")]
+        public ErrorDto TES_BancosCargado_ReclasificaConcepto(int CodEmpresa, [FromBody] TesBancosCargadoReclasificaConceptoModel data)
+        {
+            return _bl.TES_BancosCargado_ReclasificaConcepto(CodEmpresa, data);
+        }
     }
 }
+
+
+
+

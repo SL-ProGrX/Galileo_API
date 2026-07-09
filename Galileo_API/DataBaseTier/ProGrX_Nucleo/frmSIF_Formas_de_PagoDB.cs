@@ -33,21 +33,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             p.Add("@cod_forma_pago", NormalizeUpper(forma_pago.cod_forma_pago), DbType.String);
             p.Add("@descripcion", forma_pago.descripcion, DbType.String);
-            p.Add("@activa", forma_pago.activa, DbType.String);
-            p.Add("@efectivo", forma_pago.efectivo, DbType.String);
-            p.Add("@aplica_saldos_favor", forma_pago.aplica_saldos_favor, DbType.String);
+            p.Add("@activa", forma_pago.activa, DbType.Int32);
+            p.Add("@efectivo", forma_pago.efectivo, DbType.Int32);
+            p.Add("@aplica_saldos_favor", forma_pago.aplica_saldos_favor, DbType.Int32);
             p.Add("@cod_cuenta", forma_pago.cod_cuenta, DbType.String);
             p.Add("@tipo", forma_pago.tipo, DbType.String);
-            p.Add("@aplica_para_deposito", forma_pago.aplica_para_deposito, DbType.String);
+            p.Add("@aplica_para_deposito", forma_pago.aplica_para_deposito, DbType.Int32);
             p.Add("@maximo_apl", forma_pago.maximo_apl, DbType.Decimal);
             p.Add("@maximo_monto", forma_pago.maximo_monto, DbType.Decimal);
-            p.Add("@or_aplica", forma_pago.or_aplica, DbType.String);
-            p.Add("@or_diario_apl", forma_pago.or_diario_apl, DbType.Decimal);
+            p.Add("@or_aplica", forma_pago.or_aplica, DbType.Int32);
+            p.Add("@or_diario_apl", forma_pago.or_diario_apl, DbType.Int32);
             p.Add("@or_diario_monto", forma_pago.or_diario_monto, DbType.Decimal);
-            p.Add("@or_mensual_apl", forma_pago.or_mensual_apl, DbType.Decimal);
+            p.Add("@or_mensual_apl", forma_pago.or_mensual_apl, DbType.Int32);
             p.Add("@or_mensual_monto", forma_pago.or_mensual_monto, DbType.Decimal);
             p.Add("@codigo_fe", forma_pago.codigo_fe, DbType.String);
-            p.Add("@recibo_digital", forma_pago.recibo_digital, DbType.String);
+            p.Add("@recibo_digital", forma_pago.recibo_digital, DbType.Int32);
             p.Add("@registro_usuario", forma_pago.registro_usuario, DbType.String);
 
             return p;

@@ -45,7 +45,7 @@ namespace Galileo.DataBaseTier
                     new
                     {
                         Cedula = NormalizarTexto(cedula),
-                        LineaId = lineaId ?? 0
+                        Linea = lineaId ?? 0
                     },
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
@@ -85,7 +85,8 @@ namespace Galileo.DataBaseTier
                     0);
             }
 
-            var lineaId = ObtenerLineaIdBeneficiario(result.Result);
+            int? lineaId = ObtenerLineaIdBeneficiario((object?)result.Result);
+
             return lineaId.HasValue
                 ? DbHelper.CreateOkResponse(lineaId.Value, "Guardado correctamente")
                 : DbHelper.CreateErrorResponse("No se obtuvo respuesta del SP", -1, 0);
@@ -131,29 +132,29 @@ namespace Galileo.DataBaseTier
             return new
             {
                 Cedula = NormalizarTexto(dto.Cedula),
-                dto.Linea_Id,
-                Cedula_Beneficiario = NormalizarTexto(dto.Cedula_Beneficiario),
+                Linea = dto.Linea_Id,
+                Id = NormalizarTexto(dto.Cedula_Beneficiario),
                 Nombre = NormalizarTexto(dto.Nombre),
-                dto.Fecha_Nac,
-                Tipo_Relacion = NormalizarTexto(dto.Tipo_Relacion),
-                Cod_Parentesco = NormalizarTexto(dto.Cod_Parentesco),
+                FechaNac = dto.Fecha_Nac,
+                TipoRelacion = NormalizarTexto(dto.Tipo_Relacion),
+                Parentesco = NormalizarTexto(dto.Cod_Parentesco),
                 dto.Porcentaje,
-                AplicaSeguros = dto.Aplica_Seguros ? 1 : 0,
+                Seguros = dto.Aplica_Seguros ? 1 : 0,
                 Notas = NormalizarTexto(dto.Notas),
                 Direccion = NormalizarTexto(dto.Direccion),
-                Apto_Postal = NormalizarTexto(dto.Apto_Postal),
+                AptoPostal = NormalizarTexto(dto.Apto_Postal),
                 Telefono1 = NormalizarTexto(dto.Telefono1),
                 Telefono2 = NormalizarTexto(dto.Telefono2),
                 Email = NormalizarTexto(dto.Email),
                 TipoMov = NormalizarTexto(dto.TipoMov),
-                Registro_Usuario = NormalizarTexto(dto.Registro_Usuario),
+                Usuario = NormalizarTexto(dto.Registro_Usuario),
                 Albacea = dto.Albacea_Check ? 1 : 0,
                 Albacea_Cedula = NormalizarTexto(dto.Albacea_Cedula),
                 Albacea_Nombre = NormalizarTexto(dto.Albacea_Nombre),
                 Albacea_Movil = NormalizarTexto(dto.Albacea_Movil),
                 Albacea_TelTra = NormalizarTexto(dto.Albacea_TelTra),
-                Albacea_TelTra_Ext = NormalizarTexto(dto.Albacea_TelTra_Ext),
-                Tipo_Id_R = dto.Tipo_Id_R
+                Albacea_TelTraExt = NormalizarTexto(dto.Albacea_TelTra_Ext),
+                TipoId = dto.Tipo_Id_R
             };
         }
 
@@ -163,14 +164,34 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="result">Resultado dinámico del procedimiento almacenado.</param>
         /// <returns>Identificador de línea si está disponible.</returns>
-        private static int? ObtenerLineaIdBeneficiario(dynamic? result)
+        private static int? ObtenerLineaIdBeneficiario(object? result)
         {
             if (result is null)
             {
                 return null;
             }
 
-            return Convert.ToInt32(result.LineaId);
+            if (result is IDictionary<string, object> dict &&
+                dict.TryGetValue("LineaId", out var lineaIdValue) &&
+                lineaIdValue is not null &&
+                lineaIdValue != DBNull.Value)
+            {
+                return Convert.ToInt32(lineaIdValue);
+            }
+
+            var property = result.GetType().GetProperty("LineaId");
+            if (property is null)
+            {
+                return null;
+            }
+
+            var value = property.GetValue(result, null);
+            if (value is null || value == DBNull.Value)
+            {
+                return null;
+            }
+
+            return Convert.ToInt32(value);
         }
 
 

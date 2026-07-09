@@ -38,9 +38,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return key switch
             {
+                "cod_motivo" => "cod_motivo",
                 "descripcion" => "descripcion",
-                "activo"      => "activo",
-                _             => "cod_motivo"
+                "activo" => "activo",
+                _ => "cod_motivo"
             };
         }
 
@@ -71,18 +72,16 @@ SELECT
 FROM ACTIVOS_TRASLADOS_MOTIVOS
 " + SqlWhereFiltro + @"
 ORDER BY
-    -- orden ascendente
-    CASE 
-        WHEN @sortOrder = 'ASC' AND @sortField = 'cod_motivo'  THEN cod_motivo
-        WHEN @sortOrder = 'ASC' AND @sortField = 'descripcion' THEN descripcion
-        WHEN @sortOrder = 'ASC' AND @sortField = 'activo'      THEN activo
-    END ASC,
-    -- orden descendente
-    CASE 
-        WHEN @sortOrder = 'DESC' AND @sortField = 'cod_motivo'  THEN cod_motivo
-        WHEN @sortOrder = 'DESC' AND @sortField = 'descripcion' THEN descripcion
-        WHEN @sortOrder = 'DESC' AND @sortField = 'activo'      THEN activo
-    END DESC
+    CASE WHEN @sortOrder = 'ASC'  AND @sortField = 'cod_motivo'  THEN cod_motivo END ASC,
+    CASE WHEN @sortOrder = 'DESC' AND @sortField = 'cod_motivo'  THEN cod_motivo END DESC,
+
+    CASE WHEN @sortOrder = 'ASC'  AND @sortField = 'descripcion' THEN descripcion END ASC,
+    CASE WHEN @sortOrder = 'DESC' AND @sortField = 'descripcion' THEN descripcion END DESC,
+
+    CASE WHEN @sortOrder = 'ASC'  AND @sortField = 'activo'      THEN activo END ASC,
+    CASE WHEN @sortOrder = 'DESC' AND @sortField = 'activo'      THEN activo END DESC,
+
+    cod_motivo ASC
 OFFSET @offset ROWS
 FETCH NEXT @fetch ROWS ONLY;";
 

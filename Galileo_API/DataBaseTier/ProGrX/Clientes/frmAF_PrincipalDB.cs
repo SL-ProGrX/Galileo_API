@@ -564,17 +564,29 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<AfConsultasGeneralesDto> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
+        public ErrorDto<AfConsultasGeneralesDto> AF_Persona_Consulta_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
         {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar la cedula.",
+                    -1,
+                    new AfConsultasGeneralesDto());
+            }
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                connection.Open();
                 using var multi = connection.QueryMultiple(
                     "spAF_Persona_Consultas",
-                    param: new { Cedula = cedula, Usuario = usuario },
+                    new
+                    {
+                        Cedula = cedula.Trim(),
+                        Usuario = (usuario ?? string.Empty).Trim()
+                    },
                     commandType: CommandType.StoredProcedure);
-
-                Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
                 return new AfConsultasGeneralesDto
                 {
@@ -600,7 +612,10 @@ namespace Galileo.DataBaseTier
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? new AfConsultasGeneralesDto())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar información general de la persona.", result.Code.GetValueOrDefault(-1), new AfConsultasGeneralesDto());
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al consultar información general de la persona.",
+                    result.Code.GetValueOrDefault(-1),
+                    new AfConsultasGeneralesDto());
         }
 
         /// <summary>

@@ -128,8 +128,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             return new ErrorDto
             {
-                Code = personaCreadaId,
-                Description = "Ok"
+                Code = 0,
+                Description = personaCreadaId.ToString()
             };
         }
 

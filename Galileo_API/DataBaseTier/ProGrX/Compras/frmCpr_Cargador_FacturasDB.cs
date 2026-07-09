@@ -298,6 +298,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
+                conn.Open();
                 using var tx = conn.BeginTransaction();
 
                 // Verifica si la factura ya existe

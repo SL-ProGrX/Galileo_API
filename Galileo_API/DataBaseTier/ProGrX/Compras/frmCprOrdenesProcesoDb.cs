@@ -182,6 +182,8 @@ namespace Galileo.DataBaseTier
             return DbHelper.CreateOkResponse();
         }
 
+        /**
+         * respaldo de metodo
         private static string? ObtenerCodUnidad(SqlConnection conn, SqlTransaction tx, string codOrden)
         {
             return conn.QueryFirstOrDefault<string>(
@@ -192,6 +194,7 @@ namespace Galileo.DataBaseTier
                 transaction: tx
             );
         }
+        **/
 
         private static decimal ObtenerMontoOrden(SqlConnection conn, SqlTransaction tx, string codOrden)
         {

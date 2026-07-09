@@ -204,7 +204,7 @@ namespace Galileo.DataBaseTier
                 {
                     conn.Open();
                     using var tx = conn.BeginTransaction();
-                    
+
 
                     if (ContratoExiste(conn, tx, contrato.cod_contrato?.Trim() ?? ""))
                         return DbHelper.ErrorResponse($"Ya existe el registro de un contrato con el código: {contrato.cod_contrato}", ErrorCode);
@@ -325,7 +325,7 @@ namespace Galileo.DataBaseTier
                 {
                     conn.Open();
                     using var tx = conn.BeginTransaction();
-                    
+
                     var (sql, args) = BuildContratoUpdate(contrato);
                     conn.Execute(sql, args, tx);
 
@@ -417,6 +417,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     conn.Execute("DELETE FROM CPR_CONTRATOS WHERE COD_CONTRATO = @cod_contrato;", new { cod_contrato }, tx);
@@ -538,6 +539,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     var info = conn.QueryFirstOrDefault<(string? cod, string? madre)>(
@@ -599,6 +601,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     bool existe = conn.ExecuteScalar<int>(
@@ -676,6 +679,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     var info = conn.QueryFirstOrDefault<(string? cod, string? est)>(
@@ -738,6 +742,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     bool existe = conn.ExecuteScalar<int>(
@@ -788,6 +793,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     var info = conn.QueryFirstOrDefault<(string? cod, string? prod)>(
@@ -849,6 +855,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     if (prorroga.id_prorroga == 0)
@@ -913,6 +920,7 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    conn.Open();
                     using var tx = conn.BeginTransaction();
 
                     var codContrato = conn.QueryFirstOrDefault<string>(

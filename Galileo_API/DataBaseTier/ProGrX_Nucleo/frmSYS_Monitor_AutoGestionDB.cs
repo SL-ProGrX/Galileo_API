@@ -693,7 +693,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
         private static List<MonitorAutoGestionListaData> ExecuteLista(SqlConnection cn, string sql, DynamicParameters p)
         {
-            return cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
+            return cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 0).ToList();
         }
         private static void FillParams(DynamicParameters p, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
         {
