@@ -1,8 +1,8 @@
-﻿using Galileo.DataBaseTier.ProGrX_Personas;
+﻿using Galileo_API.DataBaseTier.ProGrX_Personas;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Personas;
+using Galileo_API.Models.ProGrX_Personas;
 
-namespace Galileo.BusinessLogic.ProGrX_Personas
+namespace Galileo_API.BusinessLogic.ProGrX_Personas
 {
     public class FrmAFCrNoAumentoTasasAutorizadoresBL
     {
@@ -13,9 +13,9 @@ namespace Galileo.BusinessLogic.ProGrX_Personas
             _db = new FrmAFCrNoAumentoTasasAutorizadoresDB(config);
         }
 
-        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
+        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa)
         {
-            return _db.AF_NAT_Autorizadores_Obtener(CodEmpresa, EstadoAutorizado);
+            return _db.AF_NAT_Autorizadores_Obtener(CodEmpresa);
         }
 
         public ErrorDto AF_NAT_Autorizadores_Asignar(int CodEmpresa, string A_Usuario, string Mov, string usuario)
