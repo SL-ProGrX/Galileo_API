@@ -1089,12 +1089,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new
                     {
                         request.id_comite,
-                        acta = (request.acta ?? string.Empty).Trim(),
+                        acta = request.acta.Trim(),
                         fecha = request.fecha.Date,
-                        notas = (request.notas ?? string.Empty).Trim(),
+                        notas = request.notas.Trim(),
                         estado = EstadoActaSql(request.estado),
-                        usuario = (request.usuario ?? string.Empty).Trim(),
-                        sesion = (request.sesion ?? string.Empty).Trim()
+                        usuario = request.usuario.Trim(),
+                        sesion = request.sesion.Trim()
                     });
 
                 return DbHelper.OkResponse("Acta guardada correctamente.");
@@ -1210,7 +1210,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                     return new CrComitesAprobacionesActaAsistencia
                     {
-                        seleccionado = Convert.ToInt32(asistencia ?? 0) == 1,
+                        seleccionado = Convert.ToInt32(asistencia) == 1,
                         cedula = Convert.ToString(cedula ?? string.Empty)?.Trim() ?? string.Empty,
                         nombre = Convert.ToString(nombre ?? string.Empty)?.Trim() ?? string.Empty
                     };
