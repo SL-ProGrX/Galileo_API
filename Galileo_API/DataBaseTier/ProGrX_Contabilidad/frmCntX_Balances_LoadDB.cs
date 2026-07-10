@@ -58,25 +58,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new CntXBalancesLoadPantallaDto());
             }
 
-            var periodoResp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadPeriodoDto?>(
-                _portalDb,
-                codEmpresa,
-                @"select cast(dbo.fxCntX_PeriodoDesc(@Anio, @Mes) as varchar(100)) as periodo_desc;",
-                null,
-                new
-                {
-                    Anio = anio,
-                    Mes = mes
-                });
-
-            if (periodoResp.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse(
-                    periodoResp.Description ?? "No fue posible obtener el período.",
-                    periodoResp.Code ?? -1,
-                    new CntXBalancesLoadPantallaDto());
-            }
-
             var contaResp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadContabilidadInfoDto?>(
                 _portalDb,
                 codEmpresa,
@@ -106,7 +87,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 contabilidad = contabilidad,
                 anio = anio,
                 mes = mes,
-                periodo_desc = periodoResp.Result?.periodo_desc ?? string.Empty,
+                periodo_desc = FxCntXPeriodoDesc(mes, anio),
                 consolida_ind = contaResp.Result?.consolida_ind ?? 0,
                 consolida_conta = contaResp.Result?.consolida_conta ?? 0,
                 consolida_unidad = contaResp.Result?.consolida_unidad ?? string.Empty,
@@ -439,7 +420,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 RegistrarBitacora(
                     codEmpresa,
                     request.usuario,
-                    $"Importación del Balance de la Contabilidad Id: [{request.contabilidad}] {ObtenerPeriodoDesc(codEmpresa, request.anio, request.mes)} Unidad: {request.unidad}");
+                    $"Importación del Balance de la Contabilidad Id: [{request.contabilidad}] {FxCntXPeriodoDesc(request.mes, request.anio)} Unidad: {request.unidad}");
             }
 
             return resp;
@@ -484,7 +465,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 RegistrarBitacora(
                     codEmpresa,
                     request.usuario,
-                    $"Inicialización del Balance de la Contabilidad Id: [{request.contabilidad}] {ObtenerPeriodoDesc(codEmpresa, request.anio, request.mes)}, Unidad: {request.unidad}");
+                    $"Inicialización del Balance de la Contabilidad Id: [{request.contabilidad}] {FxCntXPeriodoDesc(request.mes, request.anio)}, Unidad: {request.unidad}");
             }
 
             return resp;
@@ -527,7 +508,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 RegistrarBitacora(
                     codEmpresa,
                     request.usuario,
-                    $"Importación del Balance de la Contabilidad Base de: {request.contabilidad} {ObtenerPeriodoDesc(codEmpresa, request.anio, request.mes)}");
+                    $"Importación del Balance de la Contabilidad Base de: {request.contabilidad} {FxCntXPeriodoDesc(request.mes, request.anio)}");
             }
 
             return resp;
@@ -545,20 +526,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-        private string ObtenerPeriodoDesc(int codEmpresa, int anio, int mes)
+        private static string FxCntXPeriodoDesc(int mes, int anio)
         {
-            var periodoResp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadPeriodoDto?>(
-                _portalDb,
-                codEmpresa,
-                @"select cast(dbo.fxCntX_PeriodoDesc(@Anio, @Mes) as varchar(100)) as periodo_desc;",
-                null,
-                new
-                {
-                    Anio = anio,
-                    Mes = mes
-                });
+            if (mes <= 0 || mes > 12 || anio <= 0)
+            {
+                return string.Empty;
+            }
 
-            return periodoResp.Result?.periodo_desc ?? string.Empty;
+            string[] meses =
+            {
+                "",
+                "Enero",
+                "Febrero",
+                "Marzo",
+                "Abril",
+                "Mayo",
+                "Junio",
+                "Julio",
+                "Agosto",
+                "Septiembre",
+                "Octubre",
+                "Noviembre",
+                "Diciembre"
+            };
+
+            return $"{meses[mes]} {anio}";
         }
 
         private static CntXBalancesLoadResultadoDto MapResultado(dynamic row)
