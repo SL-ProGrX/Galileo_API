@@ -533,7 +533,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (row is IDictionary<string, object> dict)
             {
-                return dict.ToDictionary(item => item.Key, item => (object?)item.Value);
+                var result = new Dictionary<string, object?>();
+
+                foreach (var item in dict)
+                {
+                    result[item.Key] = item.Value;
+                }
+
+                return result;
             }
 
             return new Dictionary<string, object?>();
