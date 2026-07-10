@@ -82,6 +82,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new CntXBalancesLoadPantallaDto());
             }
 
+            if ((contaResp.Result?.consolida_ind ?? 0) != 1)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Esta Contabilidad no es Consolidadora!",
+                    -2,
+                    new CntXBalancesLoadPantallaDto());
+            }
+
             return DbHelper.CreateOkResponse(new CntXBalancesLoadPantallaDto
             {
                 contabilidad = contabilidad,
