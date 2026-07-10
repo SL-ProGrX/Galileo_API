@@ -1,11 +1,11 @@
-﻿namespace Galileo.Models.ProGrX_Personas
+﻿namespace Galileo_API.Models.ProGrX_Personas
 {
     public class AfNatAutorizadores
     {
-        public string? usuario { get; set; }
-        public DateTime registro_fecha { get; set; }
-        public string? registro_usuario { get; set; }
-        public string? descripcion { get; set; }
-        public int autorizado { get; set; }
+        public string? Usuario { get; set; }
+        public DateTime Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public string? Descripcion { get; set; }
+        public int Autorizado { get; set; }
     }
 }
