@@ -770,13 +770,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             try
             {
                 if (operacion <= 0)
-                    return "- Número de Operacion no es válido...";
+                    return "- Número de Operación no es válido...";
 
                 return string.Empty;
             }
             catch (Exception ex)
             {
-                return "- Error al validar N° Operacion: " + ex.Message;
+                return "- Error al validar N° operación: " + ex.Message;
             }
         }
 

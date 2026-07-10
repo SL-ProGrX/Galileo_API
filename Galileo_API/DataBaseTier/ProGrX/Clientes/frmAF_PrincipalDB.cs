@@ -117,9 +117,29 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cedula = cedula });
 
+            if (result.Code == 0 && result.Result is not null && string.IsNullOrWhiteSpace(result.Result.prideduc))
+            {
+                result.Result.prideduc = ObtenerFechaProcesoCredito(CodEmpresa);
+            }
+
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(result.Result ?? new AfPersonaDto())
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener persona.", result.Code.GetValueOrDefault(-1), new AfPersonaDto());
+        }
+
+        private string ObtenerFechaProcesoCredito(int CodEmpresa)
+        {
+            const string query = @"
+                SELECT FORMAT(dbo.MyGetdate(), 'yyyyMM')
+                FROM CntX_Contabilidades
+                WHERE cod_contabilidad = @CodEmpresa";
+
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<string>(query, new { CodEmpresa }));
+
+            return result.Code == 0 && !string.IsNullOrWhiteSpace(result.Result)
+                ? result.Result
+                : DateTime.Now.ToString("yyyyMM");
         }
 
         #endregion
@@ -616,6 +636,40 @@ namespace Galileo.DataBaseTier
                     result.Description ?? "Error al consultar información general de la persona.",
                     result.Code.GetValueOrDefault(-1),
                     new AfConsultasGeneralesDto());
+        }
+
+        /// <summary>
+        /// Obtiene las relaciones de una persona.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
+        public ErrorDto<List<AfPersonaRelacionDto>> AF_Persona_Relacion_List(int CodEmpresa, string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar la cedula.",
+                    -1,
+                    new List<AfPersonaRelacionDto>());
+            }
+
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<AfPersonaRelacionDto>(
+                    "dbo.spAFI_Persona_Relacion_List",
+                    new
+                    {
+                        IdCedPrincipal = cedula.Trim(),
+                        Activo = 1
+                    },
+                    commandType: CommandType.StoredProcedure).ToList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfPersonaRelacionDto>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al consultar las relaciones de la persona.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<AfPersonaRelacionDto>());
         }
 
         /// <summary>
