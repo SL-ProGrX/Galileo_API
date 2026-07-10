@@ -909,7 +909,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         parametrosBase);
                 }
 
-                foreach (var causa in request.causas.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().Select(x => x.Trim()))
+                var causasNormalizadas = request.causas
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct();
+
+                foreach (var causa in causasNormalizadas)
                 {
                     var parametros = new
                     {
