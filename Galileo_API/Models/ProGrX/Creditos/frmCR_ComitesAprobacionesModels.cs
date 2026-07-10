@@ -37,11 +37,11 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrComitesAprobacionesSolicitudRequest
     {
-        public int id_comite { get; set; }
+        public required int id_comite { get; set; }
         public string tipo_caso { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public required DateTime fecha_inicio { get; set; }
+        public required DateTime fecha_corte { get; set; }
     }
 
     public class CrComitesAprobacionesDetalle
@@ -193,7 +193,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrComitesAprobacionesResolucionRequest
     {
-        public int id_comite { get; set; }
+        public required int id_comite { get; set; }
         public string acta { get; set; } = string.Empty;
         public string usuario_registra { get; set; } = string.Empty;
         public string tipo_caso { get; set; } = string.Empty;
@@ -226,10 +226,10 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrComitesAprobacionesActaGuardarRequest
     {
-        public int id_comite { get; set; }
+        public required int id_comite { get; set; }
         public string acta { get; set; } = string.Empty;
         public string sesion { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
+        public required DateTime fecha { get; set; }
         public string notas { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;

@@ -756,21 +756,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
-                var joinGestion = EsSolicitud(tipo_caso)
-                    ? "left join OPERACION_GESTION G on C.COD_CAUSAS = G.COD_CAUSAS and C.TIPO = G.TIPO and G.ID_SOLICITUD = @operacion"
-                    : "left join CRD_PREA_GESTION G on C.COD_CAUSAS = G.COD_CAUSAS and C.TIPO = G.TIPO and G.COD_PREANALISIS = @operacion";
-
-                var sql = $@"
+                const string sqlSolicitud = @"
                     select C.COD_CAUSAS as cod_causas,
                            C.DESCRIPCION as descripcion,
                            C.TIPO as tipo,
                            cast(case when G.COD_CAUSAS is null then 0 else 1 end as bit) as seleccionada
                     from OPERACION_CAUSAS C
-                    {joinGestion}
+                    left join OPERACION_GESTION G
+                      on C.COD_CAUSAS = G.COD_CAUSAS
+                     and C.TIPO = G.TIPO
+                     and G.ID_SOLICITUD = @operacion
                     where C.ESTADO = 1
                       and C.TIPO = @tipo
                     order by C.COD_CAUSAS;";
 
+                const string sqlPreanalisis = @"
+                    select C.COD_CAUSAS as cod_causas,
+                           C.DESCRIPCION as descripcion,
+                           C.TIPO as tipo,
+                           cast(case when G.COD_CAUSAS is null then 0 else 1 end as bit) as seleccionada
+                    from OPERACION_CAUSAS C
+                    left join CRD_PREA_GESTION G
+                      on C.COD_CAUSAS = G.COD_CAUSAS
+                     and C.TIPO = G.TIPO
+                     and G.COD_PREANALISIS = @operacion
+                    where C.ESTADO = 1
+                      and C.TIPO = @tipo
+                    order by C.COD_CAUSAS;";
+
+                var sql = EsSolicitud(tipo_caso) ? sqlSolicitud : sqlPreanalisis;
                 var lista = conn.Query<CrComitesAprobacionesCausa>(
                     sql,
                     new { operacion = operacion.Trim(), tipo = tipo.Trim() }).ToList();
@@ -879,27 +893,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
-                var tabla = EsSolicitud(request.tipo_caso) ? "OPERACION_GESTION" : "CRD_PREA_GESTION";
-                var campoOperacion = EsSolicitud(request.tipo_caso) ? "ID_SOLICITUD" : "COD_PREANALISIS";
+                var parametrosBase = new { tipo = request.tipo.Trim(), operacion = request.operacion.Trim() };
+                var esSolicitud = EsSolicitud(request.tipo_caso);
 
-                conn.Execute(
-                    $"delete from {tabla} where TIPO = @tipo and {campoOperacion} = @operacion",
-                    new { tipo = request.tipo.Trim(), operacion = request.operacion.Trim() });
+                if (esSolicitud)
+                {
+                    conn.Execute(
+                        "delete from OPERACION_GESTION where TIPO = @tipo and ID_SOLICITUD = @operacion",
+                        parametrosBase);
+                }
+                else
+                {
+                    conn.Execute(
+                        "delete from CRD_PREA_GESTION where TIPO = @tipo and COD_PREANALISIS = @operacion",
+                        parametrosBase);
+                }
 
                 foreach (var causa in request.causas.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
                 {
-                    conn.Execute(
-                        $@"
-                        insert into {tabla}
-                        (COD_CAUSAS, TIPO, {campoOperacion}, CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                        values (@causa, @tipo, @operacion, '', dbo.Mygetdate(), @usuario);",
-                        new
-                        {
-                            causa = causa.Trim(),
-                            tipo = request.tipo.Trim(),
-                            operacion = request.operacion.Trim(),
-                            usuario = request.usuario.Trim()
-                        });
+                    var parametros = new
+                    {
+                        causa = causa.Trim(),
+                        tipo = request.tipo.Trim(),
+                        operacion = request.operacion.Trim(),
+                        usuario = request.usuario.Trim()
+                    };
+
+                    if (esSolicitud)
+                    {
+                        conn.Execute(
+                            @"
+                            insert into OPERACION_GESTION
+                            (COD_CAUSAS, TIPO, ID_SOLICITUD, CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
+                            values (@causa, @tipo, @operacion, '', dbo.Mygetdate(), @usuario);",
+                            parametros);
+                    }
+                    else
+                    {
+                        conn.Execute(
+                            @"
+                            insert into CRD_PREA_GESTION
+                            (COD_CAUSAS, TIPO, COD_PREANALISIS, CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
+                            values (@causa, @tipo, @operacion, '', dbo.Mygetdate(), @usuario);",
+                            parametros);
+                    }
                 }
 
                 return DbHelper.OkResponse("Causas guardadas correctamente.");
@@ -1100,9 +1137,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var pass = Convert.ToInt32(ValorCampo(campos, "Pass", "PASS") ?? 0);
                 var mensaje = Convert.ToString(ValorCampo(campos, "Mensaje", "MENSAJE") ?? string.Empty)?.Trim() ?? string.Empty;
 
-                return pass == 1
-                    ? DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Acta cerrada satisfactoriamente." : mensaje)
-                    : DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible cerrar el acta." : mensaje);
+                if (pass == 1)
+                {
+                    var mensajeOk = string.IsNullOrWhiteSpace(mensaje) ? "Acta cerrada satisfactoriamente." : mensaje;
+                    return DbHelper.OkResponse(mensajeOk);
+                }
+
+                var mensajeError = string.IsNullOrWhiteSpace(mensaje) ? "No fue posible cerrar el acta." : mensaje;
+                return DbHelper.ErrorResponse(mensajeError);
             }
             catch (SqlException ex)
             {
@@ -1162,21 +1204,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 .Select(row =>
                 {
                     var campos = (IDictionary<string, object>)row;
-                    var asistencia = campos.TryGetValue("ASISTENCIA", out var asistenciaValor)
-                        ? asistenciaValor
-                        : campos.TryGetValue("Asistencia", out var asistenciaAlt)
-                            ? asistenciaAlt
-                            : 0;
-                    var cedula = campos.TryGetValue("Cedula", out var cedulaValor)
-                        ? cedulaValor
-                        : campos.TryGetValue("CEDULA", out var cedulaAlt)
-                            ? cedulaAlt
-                            : string.Empty;
-                    var nombre = campos.TryGetValue("Nombre", out var nombreValor)
-                        ? nombreValor
-                        : campos.TryGetValue("NOMBRE", out var nombreAlt)
-                            ? nombreAlt
-                            : string.Empty;
+                    var asistencia = ValorCampo(campos, "ASISTENCIA", "Asistencia") ?? 0;
+                    var cedula = ValorCampo(campos, "Cedula", "CEDULA") ?? string.Empty;
+                    var nombre = ValorCampo(campos, "Nombre", "NOMBRE") ?? string.Empty;
 
                     return new CrComitesAprobacionesActaAsistencia
                     {
