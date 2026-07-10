@@ -22,5 +22,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         {
             return _db.CrAutorizacionTranferencias_Solicitudes_Obtener(CodEmpresa, FechaDtpFInicio, CodigoEtiqueta);
         }
+
+        public ErrorDto<string?> CrAutorizacionTranferencias_Parametro_Obtener(int CodEmpresa, string CodParametro)
+        {
+            return _db.CrAutorizacionTranferencias_Parametro_Obtener(CodEmpresa, CodParametro);
+        }
+
+        public ErrorDto CrAutorizacionTranferencias_OperacionTag_Registrar(int CodEmpresa, CrAutorizacionTranferenciasOperacionTagRegistrarRequest request)
+        {
+            return _db.CrAutorizacionTranferencias_OperacionTag_Registrar(CodEmpresa, request);
+        }
     }
 }

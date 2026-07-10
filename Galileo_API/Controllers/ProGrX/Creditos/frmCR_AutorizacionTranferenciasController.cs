@@ -34,5 +34,19 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         {
             return _bl.CrAutorizacionTranferencias_Solicitudes_Obtener(CodEmpresa, FechaDtpFInicio, CodigoEtiqueta);
         }
+
+        [Authorize]
+        [HttpGet("CrAutorizacionTranferencias_Parametro_Obtener")]
+        public ErrorDto<string?> CrAutorizacionTranferencias_Parametro_Obtener(int CodEmpresa, string CodParametro)
+        {
+            return _bl.CrAutorizacionTranferencias_Parametro_Obtener(CodEmpresa, CodParametro);
+        }
+
+        [Authorize]
+        [HttpPost("CrAutorizacionTranferencias_OperacionTag_Registrar")]
+        public ErrorDto CrAutorizacionTranferencias_OperacionTag_Registrar(int CodEmpresa, CrAutorizacionTranferenciasOperacionTagRegistrarRequest request)
+        {
+            return _bl.CrAutorizacionTranferencias_OperacionTag_Registrar(CodEmpresa, request);
+        }
     }
 }
