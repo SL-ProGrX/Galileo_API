@@ -556,10 +556,10 @@ namespace Galileo.DataBaseTier
 
                 connection.Execute(sp, new
                 {
-                    UEN = cod_unidad,
-                    core_usuario = request.core_usuario,
-                    registro_usuario = request.registro_usuario,
-                    mov
+                    uen = cod_unidad,
+                    CoreUser = request.core_usuario,
+                    RegUser = request.registro_usuario,
+                    Mov = mov
                 }, commandType: CommandType.StoredProcedure);
 
                 return 1;

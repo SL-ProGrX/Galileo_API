@@ -53,6 +53,26 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _Db.Fnd_Contratos_Email_Enviar(CodEmpresa, operadora, codigo, contrato, usuario);
         }
 
+        /// <summary>
+        /// Guarda (inserta o actualiza) un contrato FND según el estado isNew del modelo.
+        /// Retorna el código de contrato resultante en caso de éxito.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que registra el cambio.</param>
+        /// <param name="vCambios">Valores anteriores del contrato para registrar cambios.</param>
+        /// <param name="contrato">Datos actuales del contrato a guardar.</param>
+        /// <returns>Resultado de la operación con el código de contrato resultante.</returns>
+        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, FndCambios vCambios, ContratosModels contrato)
+        {
+            var result = _Db.Fnd_Contratos_Guardar(CodEmpresa, usuario, vCambios, contrato);
+            if (result.Code != 0)
+            {
+                return new ErrorDto<long> { Code = result.Code, Description = result.Description };
+            }
+
+            return new ErrorDto<long> { Code = 0, Result = contrato.cod_contrato };
+        }
+
         public ErrorDto Fnd_Contratos_Borrar(int CodEmpresa, int operadora, string codigo, int contrato, string usuario)
         {
             return _Db.Fnd_Contratos_Borrar(CodEmpresa, operadora, codigo, contrato, usuario);
