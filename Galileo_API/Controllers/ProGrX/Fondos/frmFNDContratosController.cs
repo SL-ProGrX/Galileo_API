@@ -111,6 +111,13 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Fnd_Contratos_spFnd_Inversion_Plazos_Dias(CodEmpresa, plazo_inversion, cboPlazo);
         }
 
+        [Authorize]
+        [HttpPost("Fnd_Contratos_Guardar")]
+        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, FndContratosGuardarRequest request)
+        {
+            return _BL.Fnd_Contratos_Guardar(CodEmpresa, usuario, request.Cambios, request.Contrato);
+        }
+
         #endregion
 
         #region complementario
