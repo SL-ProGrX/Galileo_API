@@ -164,6 +164,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Consulta el detalle de un histórico seleccionado.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="historicoId"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Historico_Consultar(
             int codEmpresa,
             int historicoId)
@@ -208,6 +211,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Carga el archivo de balance ya leído desde el frontend, ejecuta mapeo y devuelve resultados.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Archivo_Cargar(
             int codEmpresa,
             CntXBalancesLoadArchivoCargarRequestDto request)
@@ -239,6 +245,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             try
             {
                 using var conn = _portalDb.CreateConnection(codEmpresa);
+
+                conn.Execute(
+                @"
+                delete from CNTX_LOAD_BALANCES
+                where USUARIO = @Usuario;",
+                new
+                {
+                    Usuario = request.usuario.Trim()
+                });
 
                 int correlativo = 0;
 
@@ -291,7 +306,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                             SaldoFinal = item.saldo_final,
                             Tc = item.tc,
                             Usuario = request.usuario.Trim(),
-                            Linea = item.linea > 0 ? item.linea : correlativo,
+                            Linea = correlativo,
                             CtaExcluye = ctaExcluye
                         });
                 }
@@ -349,6 +364,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Valida e importa el balance consolidado para la unidad indicada.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Importar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
@@ -429,6 +447,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Inicializa el balance de una unidad para el período indicado.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Inicializar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
@@ -474,6 +495,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Importa el balance directamente desde la contabilidad base para el período.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_ImportarContaBase(
             int codEmpresa,
             CntXBalancesLoadImportaContaBaseRequestDto request)
