@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             int codEmpresa,
             CntXBalancesLoadHistoricoListarRequestDto request)
         {
-            if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
+            if (ContabilidadUnidadInvalidas(request.contabilidad, request.unidad))
             {
                 return CrearErrorContabilidadUnidad(new List<DropDownListaGenericaModel>());
             }
@@ -133,14 +133,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }).AsList();
 
                 var result = rows
-                .Select(RowToDictionary)
-                .Select(data => new DropDownListaGenericaModel
-                {
-                    item = GetString(data, "item", "IdX", "IDX", "historico_id", "id", "codigo"),
-                    descripcion = GetString(data, "descripcion", "ItmX", "ITMX", "detalle", "texto", "nombre")
-                })
-                .Where(item => !string.IsNullOrWhiteSpace(Convert.ToString(item.item)))
-                .ToList();
+                    .Select(RowToDictionary)
+                    .Select(data => new DropDownListaGenericaModel
+                    {
+                        item = GetString(data, "item", "IdX", "IDX", "historico_id", "id", "codigo"),
+                        descripcion = GetString(data, "descripcion", "ItmX", "ITMX", "detalle", "texto", "nombre")
+                    })
+                    .Where(item => !string.IsNullOrWhiteSpace(Convert.ToString(item.item)))
+                    .ToList();
 
                 return DbHelper.CreateOkResponse(result);
             }
@@ -156,7 +156,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             if (historicoId <= 0)
             {
-                return CrearError(MsgHistoricoInvalido, -2, new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(
+                    MsgHistoricoInvalido,
+                    -2,
+                    new List<CntXBalancesLoadResultadoDto>());
             }
 
             try
@@ -185,19 +188,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             int codEmpresa,
             CntXBalancesLoadArchivoCargarRequestDto request)
         {
-            if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
+            if (ContabilidadUnidadInvalidas(request.contabilidad, request.unidad))
             {
                 return CrearErrorContabilidadUnidad(new List<CntXBalancesLoadResultadoDto>());
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
             {
-                return CrearError(MsgUsuarioRequerido, -2, new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(
+                    MsgUsuarioRequerido,
+                    -2,
+                    new List<CntXBalancesLoadResultadoDto>());
             }
 
             if (request.lineas is null || request.lineas.Count == 0)
             {
-                return CrearError(MsgLineasRequeridas, -2, new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(
+                    MsgLineasRequeridas,
+                    -2,
+                    new List<CntXBalancesLoadResultadoDto>());
             }
 
             try
@@ -316,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
         {
-            if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
+            if (ContabilidadUnidadInvalidas(request.contabilidad, request.unidad))
             {
                 return CrearErrorContabilidadUnidad<CntXBalancesLoadProcesoResultDto?>(null);
             }
@@ -331,14 +340,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     @Mes,
                     @Usuario",
                 null,
-                new
-                {
-                    Consolidadora = request.contabilidad,
-                    Unidad = request.unidad.Trim(),
-                    Anio = request.anio,
-                    Mes = request.mes,
-                    Usuario = request.usuario.Trim()
-                });
+                CrearParametrosProceso(request));
 
             if (validaResp.Code != 0)
             {
@@ -356,8 +358,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     null);
             }
 
-            var resp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
-                _portalDb,
+            var resp = EjecutarProceso(
                 codEmpresa,
                 @"exec spCntX_Consolida_Balance_Importa
                     @Consolidadora,
@@ -365,21 +366,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     @Anio,
                     @Mes,
                     @Usuario",
-                null,
-                new
-                {
-                    Consolidadora = request.contabilidad,
-                    Unidad = request.unidad.Trim(),
-                    Anio = request.anio,
-                    Mes = request.mes,
-                    Usuario = request.usuario.Trim()
-                });
+                request);
 
             if (resp.Code == 0 && resp.Result?.pass == 1)
             {
-                RegistrarBitacora(
+                RegistrarBitacoraProceso(
                     codEmpresa,
-                    request.usuario,
+                    request,
                     $"Importación del Balance de la Contabilidad Id: [{request.contabilidad}] {FxCntXPeriodoDesc(request.mes, request.anio)} Unidad: {request.unidad}");
             }
 
@@ -390,13 +383,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
         {
-            if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
+            if (ContabilidadUnidadInvalidas(request.contabilidad, request.unidad))
             {
                 return CrearErrorContabilidadUnidad<CntXBalancesLoadProcesoResultDto?>(null);
             }
 
-            var resp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
-                _portalDb,
+            var resp = EjecutarProceso(
                 codEmpresa,
                 @"exec spCntX_Consolida_Balance_Inicializa
                     @Consolidadora,
@@ -404,21 +396,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     @Anio,
                     @Mes,
                     @Usuario",
-                null,
-                new
-                {
-                    Consolidadora = request.contabilidad,
-                    Unidad = request.unidad.Trim(),
-                    Anio = request.anio,
-                    Mes = request.mes,
-                    Usuario = request.usuario.Trim()
-                });
+                request);
 
             if (resp.Code == 0 && resp.Result?.pass == 1)
             {
-                RegistrarBitacora(
+                RegistrarBitacoraProceso(
                     codEmpresa,
-                    request.usuario,
+                    request,
                     $"Inicialización del Balance de la Contabilidad Id: [{request.contabilidad}] {FxCntXPeriodoDesc(request.mes, request.anio)}, Unidad: {request.unidad}");
             }
 
@@ -437,22 +421,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     null);
             }
 
-            var resp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
-                _portalDb,
+            var resp = EjecutarImportaContaBase(
                 codEmpresa,
                 @"exec spCntX_Consolida_Importa_Conta_Base
                     @Consolidadora,
                     @Usuario,
                     @Anio,
                     @Mes",
-                null,
-                new
-                {
-                    Consolidadora = request.contabilidad,
-                    Usuario = request.usuario.Trim(),
-                    Anio = request.anio,
-                    Mes = request.mes
-                });
+                request);
 
             if (resp.Code == 0 && resp.Result?.pass == 1)
             {
@@ -502,6 +478,68 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
 
             return $"{meses[mes]} {anio}";
+        }
+
+        private static object CrearParametrosProceso(CntXBalancesLoadProcesoRequestDto request)
+        {
+            return new
+            {
+                Consolidadora = request.contabilidad,
+                Unidad = request.unidad.Trim(),
+                Anio = request.anio,
+                Mes = request.mes,
+                Usuario = request.usuario.Trim()
+            };
+        }
+
+        private static object CrearParametrosImportaContaBase(CntXBalancesLoadImportaContaBaseRequestDto request)
+        {
+            return new
+            {
+                Consolidadora = request.contabilidad,
+                Usuario = request.usuario.Trim(),
+                Anio = request.anio,
+                Mes = request.mes
+            };
+        }
+
+        private ErrorDto<CntXBalancesLoadProcesoResultDto?> EjecutarProceso(
+            int codEmpresa,
+            string sql,
+            CntXBalancesLoadProcesoRequestDto request)
+        {
+            return DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                CrearParametrosProceso(request));
+        }
+
+        private ErrorDto<CntXBalancesLoadProcesoResultDto?> EjecutarImportaContaBase(
+            int codEmpresa,
+            string sql,
+            CntXBalancesLoadImportaContaBaseRequestDto request)
+        {
+            return DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                CrearParametrosImportaContaBase(request));
+        }
+
+        private void RegistrarBitacoraProceso(
+            int codEmpresa,
+            CntXBalancesLoadProcesoRequestDto request,
+            string detalle)
+        {
+            RegistrarBitacora(codEmpresa, request.usuario, detalle);
+        }
+
+        private static bool ContabilidadUnidadInvalidas(int contabilidad, string unidad)
+        {
+            return contabilidad <= 0 || string.IsNullOrWhiteSpace(unidad);
         }
 
         private static CntXBalancesLoadResultadoDto MapResultado(dynamic row)
