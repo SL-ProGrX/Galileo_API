@@ -176,6 +176,13 @@ namespace Galileo.Controllers
             return _bl.AF_Persona_Consulta_Obtener(CodEmpresa, cedula, usuario);
         }
 
+        [Authorize]
+        [HttpGet("AF_Persona_Relacion_List")]
+        public ErrorDto<List<AfPersonaRelacionDto>> AF_Persona_Relacion_List(int CodEmpresa, string cedula)
+        {
+            return _bl.AF_Persona_Relacion_List(CodEmpresa, cedula);
+        }
+
         [HttpPost("AF_Persona_Indicadores_Registra")]
         public ErrorDto AF_Persona_Indicadores_Registra(int CodEmpresa, string request)
         {
