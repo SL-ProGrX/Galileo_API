@@ -909,11 +909,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         parametrosBase);
                 }
 
-                foreach (var causa in request.causas.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
+                foreach (var causa in request.causas.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().Select(x => x.Trim()))
                 {
                     var parametros = new
                     {
-                        causa = causa.Trim(),
+                        causa,
                         tipo = request.tipo.Trim(),
                         operacion = request.operacion.Trim(),
                         usuario = request.usuario.Trim()
