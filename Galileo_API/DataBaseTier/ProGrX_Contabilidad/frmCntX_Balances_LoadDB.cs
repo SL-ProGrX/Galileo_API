@@ -10,6 +10,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXBalancesLoadDB
     {
+        private const string MsgContabilidadUnidadRequeridas = "Debe indicar la contabilidad y la unidad.";
+        private const string MsgUsuarioRequerido = "Debe indicar el usuario.";
+        private const string MsgLineasRequeridas = "Debe enviar líneas para procesar.";
+        private const string MsgHistoricoInvalido = "Debe indicar un histórico válido.";
+        private const string MsgContabilidadInvalida = "Debe indicar una contabilidad válida.";
+        private const string MsgContabilidadNoConsolidadora = "Esta Contabilidad no es Consolidadora!";
+        private const string MsgErrorUnidades = "No fue posible cargar las unidades.";
+        private const string MsgErrorConsolidacion = "No fue posible obtener la información de consolidación.";
+        private const string MsgErrorValidacionImportacion = "No fue posible validar la importación.";
+
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurityMainDb;
         private readonly int vModulo = 20;
@@ -20,14 +30,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = new MSecurityMainDb(config);
         }
 
-        /// <summary>
-        /// Obtiene la informacion base de la pantalla: periodo, parametros de consolidacion y unidades activas.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <param name="anio"></param>
-        /// <param name="mes"></param>
-        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadPantallaDto> CntX_Balances_Load_Pantalla_Obtener(
             int codEmpresa,
             int contabilidad,
@@ -52,8 +54,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (unidadesResp.Code != 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    unidadesResp.Description ?? "No fue posible cargar las unidades.",
+                return CrearError(
+                    unidadesResp.Description ?? MsgErrorUnidades,
                     unidadesResp.Code ?? -1,
                     new CntXBalancesLoadPantallaDto());
             }
@@ -76,16 +78,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (contaResp.Code != 0)
             {
-                return DbHelper.CreateErrorResponse(
-                    contaResp.Description ?? "No fue posible obtener la información de consolidación.",
+                return CrearError(
+                    contaResp.Description ?? MsgErrorConsolidacion,
                     contaResp.Code ?? -1,
                     new CntXBalancesLoadPantallaDto());
             }
 
             if ((contaResp.Result?.consolida_ind ?? 0) != 1)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Esta Contabilidad no es Consolidadora!",
+                return CrearError(
+                    MsgContabilidadNoConsolidadora,
                     -2,
                     new CntXBalancesLoadPantallaDto());
             }
@@ -103,22 +105,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
-        /// <summary>
-        /// Lista los historicos disponibles para una unidad y periodo.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntX_Balances_Load_Historico_Listar(
             int codEmpresa,
             CntXBalancesLoadHistoricoListarRequestDto request)
         {
             if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
             {
-                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
-                    "Debe indicar la contabilidad y la unidad.",
-                    -2,
-                    new List<DropDownListaGenericaModel>());
+                return CrearErrorContabilidadUnidad(new List<DropDownListaGenericaModel>());
             }
 
             try
@@ -139,115 +132,72 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         Mes = request.mes
                     }).AsList();
 
-                var result = new List<DropDownListaGenericaModel>();
-
-                foreach (var row in rows)
+                var result = rows
+                .Select(RowToDictionary)
+                .Select(data => new DropDownListaGenericaModel
                 {
-                    var data = RowToDictionary(row);
-
-                    var item = GetString(data, "item", "IdX", "IDX", "historico_id", "id", "codigo");
-                    var descripcion = GetString(data, "descripcion", "ItmX", "ITMX", "detalle", "texto", "nombre");
-
-                    if (!string.IsNullOrWhiteSpace(item))
-                    {
-                        result.Add(new DropDownListaGenericaModel
-                        {
-                            item = item,
-                            descripcion = descripcion
-                        });
-                    }
-                }
+                    item = GetString(data, "item", "IdX", "IDX", "historico_id", "id", "codigo"),
+                    descripcion = GetString(data, "descripcion", "ItmX", "ITMX", "detalle", "texto", "nombre")
+                })
+                .Where(item => !string.IsNullOrWhiteSpace(Convert.ToString(item.item)))
+                .ToList();
 
                 return DbHelper.CreateOkResponse(result);
             }
             catch (DbException ex)
             {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new List<DropDownListaGenericaModel>());
+                return CrearErrorDb(ex, new List<DropDownListaGenericaModel>());
             }
         }
 
-        /// <summary>
-        /// Consulta el detalle de un histórico seleccionado.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="historicoId"></param>
-        /// <returns></returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Historico_Consultar(
             int codEmpresa,
             int historicoId)
         {
             if (historicoId <= 0)
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    "Debe indicar un histórico válido.",
-                    -2,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(MsgHistoricoInvalido, -2, new List<CntXBalancesLoadResultadoDto>());
             }
 
             try
             {
                 using var conn = _portalDb.CreateConnection(codEmpresa);
 
-                var rows = conn.Query(
+                var result = conn.Query(
                     @"exec spCntX_Balance_Cargado_Historico_Consulta @HistoricoId",
                     new
                     {
                         HistoricoId = historicoId
-                    }).AsList();
-
-                var result = new List<CntXBalancesLoadResultadoDto>();
-
-                foreach (var row in rows)
-                {
-                    result.Add(MapResultado(row));
-                }
+                    })
+                    .AsList()
+                    .Select(MapResultado)
+                    .ToList();
 
                 return DbHelper.CreateOkResponse(result);
             }
             catch (DbException ex)
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    ex.Message,
-                    -1,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearErrorDb(ex, new List<CntXBalancesLoadResultadoDto>());
             }
         }
 
-        /// <summary>
-        /// Carga el archivo de balance ya leído desde el frontend, ejecuta mapeo y devuelve resultados.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Archivo_Cargar(
             int codEmpresa,
             CntXBalancesLoadArchivoCargarRequestDto request)
         {
             if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    "Debe indicar la contabilidad y la unidad.",
-                    -2,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearErrorContabilidadUnidad(new List<CntXBalancesLoadResultadoDto>());
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    "Debe indicar el usuario.",
-                    -2,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(MsgUsuarioRequerido, -2, new List<CntXBalancesLoadResultadoDto>());
             }
 
             if (request.lineas is null || request.lineas.Count == 0)
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    "Debe enviar líneas para procesar.",
-                    -2,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearError(MsgLineasRequeridas, -2, new List<CntXBalancesLoadResultadoDto>());
             }
 
             try
@@ -255,13 +205,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 using var conn = _portalDb.CreateConnection(codEmpresa);
 
                 conn.Execute(
-                @"
-                delete from CNTX_LOAD_BALANCES
-                where USUARIO = @Usuario;",
-                new
-                {
-                    Usuario = request.usuario.Trim()
-                });
+                    @"
+                    delete from CNTX_LOAD_BALANCES
+                    where USUARIO = @Usuario;",
+                    new
+                    {
+                        Usuario = request.usuario.Trim()
+                    });
 
                 int correlativo = 0;
 
@@ -335,7 +285,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         Usuario = request.usuario.Trim()
                     });
 
-                var rows = conn.Query(
+                var result = conn.Query(
                     @"exec spCntX_Consolida_Balance_Importa_Resultados
                         @Consolidadora,
                         @Unidad,
@@ -349,42 +299,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         Anio = request.anio,
                         Mes = request.mes,
                         Usuario = request.usuario.Trim()
-                    }).AsList();
-
-                var result = new List<CntXBalancesLoadResultadoDto>();
-
-                foreach (var row in rows)
-                {
-                    result.Add(MapResultado(row));
-                }
+                    })
+                    .AsList()
+                    .Select(MapResultado)
+                    .ToList();
 
                 return DbHelper.CreateOkResponse(result);
             }
             catch (DbException ex)
             {
-                return DbHelper.CreateErrorResponse<List<CntXBalancesLoadResultadoDto>>(
-                    ex.Message,
-                    -1,
-                    new List<CntXBalancesLoadResultadoDto>());
+                return CrearErrorDb(ex, new List<CntXBalancesLoadResultadoDto>());
             }
         }
 
-        /// <summary>
-        /// Valida e importa el balance consolidado para la unidad indicada.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Importar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
         {
             if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
             {
-                return DbHelper.CreateErrorResponse<CntXBalancesLoadProcesoResultDto?>(
-                    "Debe indicar la contabilidad y la unidad.",
-                    -2,
-                    null);
+                return CrearErrorContabilidadUnidad<CntXBalancesLoadProcesoResultDto?>(null);
             }
 
             var validaResp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadValidaDto?>(
@@ -408,15 +342,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (validaResp.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<CntXBalancesLoadProcesoResultDto?>(
-                    validaResp.Description ?? "No fue posible validar la importación.",
+                return CrearError<CntXBalancesLoadProcesoResultDto?>(
+                    validaResp.Description ?? MsgErrorValidacionImportacion,
                     validaResp.Code ?? -1,
                     null);
             }
 
             if ((validaResp.Result?.casos_erroneos ?? 0) > 0)
             {
-                return DbHelper.CreateErrorResponse<CntXBalancesLoadProcesoResultDto?>(
+                return CrearError<CntXBalancesLoadProcesoResultDto?>(
                     $"Existen {validaResp.Result!.casos_erroneos} líneas erróneas, verifíquelas primero antes de importarlas.",
                     -2,
                     null);
@@ -452,22 +386,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return resp;
         }
 
-        /// <summary>
-        /// Inicializa el balance de una unidad para el período indicado.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Inicializar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
         {
             if (request.contabilidad <= 0 || string.IsNullOrWhiteSpace(request.unidad))
             {
-                return DbHelper.CreateErrorResponse<CntXBalancesLoadProcesoResultDto?>(
-                    "Debe indicar la contabilidad y la unidad.",
-                    -2,
-                    null);
+                return CrearErrorContabilidadUnidad<CntXBalancesLoadProcesoResultDto?>(null);
             }
 
             var resp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadProcesoResultDto?>(
@@ -500,20 +425,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return resp;
         }
 
-        /// <summary>
-        /// Importa el balance directamente desde la contabilidad base para el período.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_ImportarContaBase(
             int codEmpresa,
             CntXBalancesLoadImportaContaBaseRequestDto request)
         {
             if (request.contabilidad <= 0)
             {
-                return DbHelper.CreateErrorResponse<CntXBalancesLoadProcesoResultDto?>(
-                    "Debe indicar una contabilidad válida.",
+                return CrearError<CntXBalancesLoadProcesoResultDto?>(
+                    MsgContabilidadInvalida,
                     -2,
                     null);
             }
@@ -614,12 +533,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (row is IDictionary<string, object> dict)
             {
-                var result = new Dictionary<string, object?>();
-                foreach (var item in dict)
-                {
-                    result[item.Key] = item.Value;
-                }
-                return result;
+                return dict.ToDictionary(item => item.Key, item => (object?)item.Value);
             }
 
             return new Dictionary<string, object?>();
@@ -627,39 +541,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         private static string GetString(IDictionary<string, object?> data, params string[] keys)
         {
-            foreach (var key in keys)
-            {
-                foreach (var item in data)
-                {
-                    if (string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return item.Value?.ToString()?.Trim() ?? string.Empty;
-                    }
-                }
-            }
-
-            return string.Empty;
+            var value = GetValue(data, keys);
+            return value?.ToString()?.Trim() ?? string.Empty;
         }
 
         private static decimal GetDecimal(IDictionary<string, object?> data, params string[] keys)
         {
-            foreach (var key in keys)
-            {
-                foreach (var item in data)
-                {
-                    if (string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (item.Value is null || item.Value == DBNull.Value)
-                        {
-                            return 0;
-                        }
+            var value = GetValue(data, keys);
 
-                        return Convert.ToDecimal(item.Value);
-                    }
-                }
+            if (value is null || value == DBNull.Value)
+            {
+                return 0;
             }
 
-            return 0;
+            return Convert.ToDecimal(value);
         }
+
+        private static object? GetValue(IDictionary<string, object?> data, params string[] keys)
+        {
+            return data
+                .Where(item => keys.Any(key => string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase)))
+                .Select(item => item.Value)
+                .FirstOrDefault();
+        }
+
+        private static ErrorDto<T> CrearError<T>(string description, int code, T result)
+            => DbHelper.CreateErrorResponse(description, code, result);
+
+        private static ErrorDto<T> CrearErrorContabilidadUnidad<T>(T result)
+            => CrearError(MsgContabilidadUnidadRequeridas, -2, result);
+
+        private static ErrorDto<T> CrearErrorDb<T>(DbException ex, T result)
+            => CrearError(ex.Message, -1, result);
     }
 }
