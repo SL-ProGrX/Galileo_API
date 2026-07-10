@@ -113,7 +113,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpPost("Fnd_Contratos_Guardar")]
-        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, FndContratosGuardarRequest request)
+        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, [FromBody] FndContratosGuardarRequest request)
         {
             return _BL.Fnd_Contratos_Guardar(CodEmpresa, usuario, request.Cambios, request.Contrato);
         }

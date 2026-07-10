@@ -43,7 +43,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ComprasDirectas_Lista_Obtener")]
-        public ErrorDto<List<CompraDirectaResumenData?>> ComprasDirectas_Lista_Obtener(int CodEmpresa)
+        public ErrorDto<List<CompraDirectaResumenData>> ComprasDirectas_Lista_Obtener(int CodEmpresa)
         {
             return _bl.CprCompraDirecta_Lista_Obtener(CodEmpresa);
         }

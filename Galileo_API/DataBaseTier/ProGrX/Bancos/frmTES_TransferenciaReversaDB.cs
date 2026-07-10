@@ -156,16 +156,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 id_banco = solicitud.id_banco,
 
                 Codigo = filtros.Codigo,
-                CodigoLike = TES_TransferenciaReversa_CrearLike(filtros.Codigo),
+                CodigoLike = TES_TransferenciaReversa_CrearLike(filtros.Codigo!),
 
                 Ndocumento = filtros.Ndocumento,
-                NdocumentoLike = TES_TransferenciaReversa_CrearLike(filtros.Ndocumento),
+                NdocumentoLike = TES_TransferenciaReversa_CrearLike(filtros.Ndocumento!),
 
                 Beneficiario = filtros.Beneficiario,
-                BeneficiarioLike = TES_TransferenciaReversa_CrearLike(filtros.Beneficiario),
+                BeneficiarioLike = TES_TransferenciaReversa_CrearLike(filtros.Beneficiario!),
 
                 CtaAhorros = filtros.CtaAhorros,
-                CtaAhorrosLike = TES_TransferenciaReversa_CrearLike(filtros.CtaAhorros),
+                CtaAhorrosLike = TES_TransferenciaReversa_CrearLike(filtros.CtaAhorros!),
 
                 CodPlan = filtros.CodPlan
             };
