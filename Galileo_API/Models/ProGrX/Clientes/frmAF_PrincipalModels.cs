@@ -127,6 +127,7 @@
         public string? UP { get; set; }
         public string? UT { get; set; }
         public string? CT { get; set; }
+        public int? I_Beneficiario { get; set; }
         public int? I_Beneficiarios { get; set; }
         public int? I_Trabajo_Propio { get; set; }
         public string? Tipo_Patron { get; set; }
