@@ -354,63 +354,32 @@ namespace Galileo.DataBaseTier
                 Description = "OK",
                 Result = new()
             };
+
+            string tipoEjecutivo = (tipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (tipoEjecutivo.Length > 1)
+            {
+                tipoEjecutivo = tipoEjecutivo.Substring(0, 1);
+            }
+
+            if (tipoEjecutivo != "P" && tipoEjecutivo != "C" && tipoEjecutivo != "E")
+            {
+                response.Code = -2;
+                response.Description = "Debe indicar un tipo de b&uacute;squeda v&aacute;lido.";
+                return response;
+            }
+
             try
             {
                 using var connection = new SqlConnection(conn);
                 const string query = @"exec spAFIComisionesConsulta @TipoEjecutivo";
 
-                response.Result = connection.Query<AfComisionPromotorData>(query, new
-                {
-                    TipoEjecutivo = tipo
-                }).ToList();
+                response.Result = connection.Query<AfComisionPromotorData>(
+                    query,
+                    new { TipoEjecutivo = tipoEjecutivo }).ToList();
 
                 if (response.Result.Count == 0)
                 {
-                    //datos prueba si es nulo
-                    if (tipo == "P")
-                    {
-                        response.Result = new List<AfComisionPromotorData>
-                        {
-                            new AfComisionPromotorData
-                            {
-                                id_promotor = 1,
-                                nombre = "Juan Perez",
-                                tipo = "A",
-                                casos = 10,
-                                monto = 150000
-                            },
-                            new AfComisionPromotorData
-                            {
-                                id_promotor = 2,
-                                nombre = "Maria Gomez",
-                                tipo = "P",
-                                casos = 8,
-                                monto = 120000
-                            }
-                        };
-                    }
-                    else if (tipo == "C")
-                    {
-                        response.Result = new List<AfComisionPromotorData>
-                        {
-                            new AfComisionPromotorData
-                            {
-                                id_promotor = 1,
-                                nombre = "Juan Perez 2",
-                                tipo = "R",
-                                casos = 10,
-                                monto = 150000
-                            },
-                            new AfComisionPromotorData
-                            {
-                                id_promotor = 2,
-                                nombre = "Maria Gomez 2",
-                                tipo = "C",
-                                casos = 8,
-                                monto = 120000
-                            }
-                        };
-                    }
+                    response.Description = "No se encontraron registros.";
                 }
             }
             catch (Exception ex)
