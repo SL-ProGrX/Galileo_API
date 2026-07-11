@@ -748,12 +748,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return;
             }
 
-            if (contrato.plazo_id == "D" && contrato.plazo < valida.Result.plazo_minimo)
+            if (contrato.plazo_tipo == "D" && contrato.plazo < valida.Result.plazo_minimo)
             {
                 mensajes.Add($" - El Plazo no cumple con el plazo mínimo permitido ({valida.Result.plazo_minimo})...\n");
             }
 
-            if (contrato.plazo_id == "M" && contrato.plazo * 30 < valida.Result.plazo_minimo)
+            if (contrato.plazo_tipo == "M" && contrato.plazo * 30 < valida.Result.plazo_minimo)
             {
                 mensajes.Add($" - El Plazo no cumple con el plazo mínimo permitido ({valida.Result.plazo_minimo})...\n");
             }
@@ -871,7 +871,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             if (cambios.vDedPlanilla != contrato.ind_deduccion)
             {
                 var anterior = cambios.vDedPlanilla ? "SI" : "NO";
-                var nuevo = contrato.ind_deduccion ? "SI" : "NO";
+                var nuevo = contrato.ind_deduccion.HasValue && contrato.ind_deduccion.Value ? "SI" : "NO";
                 sbGuardaCambios(codEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 06, $"Anterior {anterior} - Nueva {nuevo} ");
             }
         }
@@ -969,7 +969,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 usuario = usuarioSeguro,
                 albacea_cedula = NormalizarTexto(contrato.albacea_cedula),
                 albacea_nombre = NormalizarTexto(contrato.albacea_nombre),
-                plazo_tipo = NormalizarTexto(contrato.plazo_id),
+                plazo_tipo = NormalizarTexto(contrato.plazo_tipo),
                 inversion = contrato.inversion,
                 tasa_referencia = contrato.tasa_referencia,
                 tasa_tipo = NormalizarTexto(contrato.tasa_tipo),

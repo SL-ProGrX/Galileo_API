@@ -498,9 +498,9 @@ namespace Galileo.DataBaseTier
                 connection.Execute(sp, new
                 {
                     uen = core.uen,
-                    core_usuario = core.core_usuario,
-                    usuario = core.usuario,
-                    movItem
+                    CoreUser = core.core_usuario,
+                    RegUser = core.usuario,
+                    Mov = movItem
                 }, commandType: CommandType.StoredProcedure);
                 resp.Description = "UENs actualizados satisfactoriamente!";
             }
