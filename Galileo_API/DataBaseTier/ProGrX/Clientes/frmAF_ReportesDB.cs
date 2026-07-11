@@ -583,6 +583,7 @@ namespace Galileo.DataBaseTier
                             cod_grupo AS item,
                             descripcion AS descripcion
                         FROM afi_reportes_grp
+                        WHERE activo = 1
                         ORDER BY cod_grupo;
                     ";
 
@@ -635,6 +636,53 @@ namespace Galileo.DataBaseTier
 
                     response.Description = "Grupo actualizado correctamente.";
                 }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Elimina un grupo de configuración y sus miembros asociados
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_grupo"></param>
+        /// <returns></returns>
+        public ErrorDto AF_Grupos_Eliminar(int CodEmpresa, string cod_grupo)
+        {
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto { Code = 0 };
+
+            try
+            {
+                using var connection = new SqlConnection(conn);
+                connection.Open();
+                using var transaction = connection.BeginTransaction();
+
+                connection.Execute(
+                    "DELETE FROM afi_grpusers WHERE cod_grupo = @cod_grupo;",
+                    new { cod_grupo },
+                    transaction);
+
+                var rows = connection.Execute(
+                    "DELETE FROM AFI_Grupos WHERE cod_grupo = @cod_grupo;",
+                    new { cod_grupo },
+                    transaction);
+
+                if (rows == 0)
+                {
+                    transaction.Rollback();
+                    response.Code = -1;
+                    response.Description = "No se encontró el grupo a eliminar.";
+                    return response;
+                }
+
+                transaction.Commit();
+                response.Description = "Grupo eliminado correctamente.";
             }
             catch (Exception ex)
             {
@@ -782,6 +830,58 @@ namespace Galileo.DataBaseTier
                         grupo);
 
                 }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Elimina un grupo de seguridad y sus relaciones asociadas
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codgrupo"></param>
+        /// <returns></returns>
+        public ErrorDto AF_Reportes_Grupo_Eliminar(int CodEmpresa, int codgrupo)
+        {
+            string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto { Code = 0 };
+
+            try
+            {
+                using var connection = new SqlConnection(connStr);
+                connection.Open();
+                using var transaction = connection.BeginTransaction();
+
+                connection.Execute(
+                    "DELETE FROM afi_reportes_grp_usr WHERE cod_grupo = @codgrupo;",
+                    new { codgrupo },
+                    transaction);
+
+                connection.Execute(
+                    "DELETE FROM afi_reportes_GRP_AUT WHERE cod_grupo = @codgrupo;",
+                    new { codgrupo },
+                    transaction);
+
+                var rows = connection.Execute(
+                    "DELETE FROM afi_reportes_grp WHERE cod_grupo = @codgrupo;",
+                    new { codgrupo },
+                    transaction);
+
+                if (rows == 0)
+                {
+                    transaction.Rollback();
+                    response.Code = -1;
+                    response.Description = "No se encontró el grupo a eliminar.";
+                    return response;
+                }
+
+                transaction.Commit();
+                response.Description = "Grupo eliminado correctamente.";
             }
             catch (Exception ex)
             {

@@ -95,6 +95,11 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return DbfrmAF_Reportes.AF_Grupos_Guardar(CodEmpresa, grupo);
         }
 
+        public ErrorDto AF_Grupos_Eliminar(int CodEmpresa, string cod_grupo)
+        {
+            return DbfrmAF_Reportes.AF_Grupos_Eliminar(CodEmpresa, cod_grupo);
+        }
+
         public ErrorDto AF_Miembros_Guardar(int CodEmpresa, string cod_grupo, AfGrupoMiembroDto miembro)
         {
             return DbfrmAF_Reportes.AF_Miembros_Guardar(CodEmpresa, cod_grupo, miembro);
@@ -107,6 +112,11 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         public ErrorDto AF_Reportes_Grupo_Guardar(int CodEmpresa, AfSeguridadGrupoDto grupo)
         {
             return DbfrmAF_Reportes.AF_Reportes_Grupo_Guardar(CodEmpresa, grupo);
+        }
+
+        public ErrorDto AF_Reportes_Grupo_Eliminar(int CodEmpresa, int codgrupo)
+        {
+            return DbfrmAF_Reportes.AF_Reportes_Grupo_Eliminar(CodEmpresa, codgrupo);
         }
 
         public ErrorDto AF_Reportes_Grupo_Miembros_Guardar(int CodEmpresa, string cod_grupo, AfSeguridadMiembroDto miembroseguridad)
