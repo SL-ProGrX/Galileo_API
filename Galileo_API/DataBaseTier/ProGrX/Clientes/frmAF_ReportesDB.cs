@@ -684,7 +684,17 @@ namespace Galileo.DataBaseTier
                 transaction.Commit();
                 response.Description = "Grupo eliminado correctamente.";
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (DataException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
@@ -883,7 +893,17 @@ namespace Galileo.DataBaseTier
                 transaction.Commit();
                 response.Description = "Grupo eliminado correctamente.";
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (DataException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
