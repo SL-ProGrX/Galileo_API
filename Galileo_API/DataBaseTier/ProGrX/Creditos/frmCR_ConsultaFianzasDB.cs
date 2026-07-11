@@ -26,6 +26,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Obtiene el listado de fianzas o traslados con su resumen.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrConsultaFianzasConsultaData> CrConsultaFianzas_Consulta_Obtener(
             int codEmpresa,
             CrConsultaFianzasConsultaRequest request)
@@ -109,6 +115,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
+        /// <summary>
+        /// Obtiene el detalle del deudor y la mora de la operación seleccionada.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CrConsultaFianzasDetalleData> CrConsultaFianzas_Detalle_Obtener(
             int codEmpresa,
             CrConsultaFianzasDetalleRequest request)
