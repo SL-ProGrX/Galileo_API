@@ -41,7 +41,7 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_CongelarCausaLista_Obtener(CodEmpresa);
         }
 
-        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
+        public ErrorDto<int> AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
         {
             return _db.AF_BloqueosCongelamientos_Guardar(CodEmpresa, usuario, congelar);
         }

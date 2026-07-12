@@ -53,7 +53,7 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpPost("AF_BloqueosCongelamientos_Guardar")]
-        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
+        public ErrorDto<int> AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
         {
             return _bl.AF_BloqueosCongelamientos_Guardar(CodEmpresa, usuario, congelar);
         }

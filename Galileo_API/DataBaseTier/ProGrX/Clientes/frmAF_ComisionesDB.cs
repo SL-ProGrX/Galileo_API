@@ -26,46 +26,48 @@ namespace Galileo.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> AF_ComisionesRemesa_Obtener(int CodEmpresa, bool exporta, FiltrosLazyLoadData filtros)
         {
             const string queryExporta = @"
-                SELECT COD_COMISION, FECHA, USUARIO, ESTADO
-                FROM afi_comisiones
+                SELECT C.COD_COMISION, C.FECHA, C.USUARIO, C.ESTADO,
+                       ISNULL((SELECT SUM(monto) FROM afi_comision_pago WHERE cod_comision = C.COD_COMISION), 0) AS total
+                FROM afi_comisiones C
                 WHERE (
                     @Filtro IS NULL
-                    OR CAST(COD_COMISION AS VARCHAR(50)) LIKE @Filtro
-                    OR USUARIO LIKE @Filtro
-                    OR ESTADO LIKE @Filtro
-                    OR CONVERT(VARCHAR(25), FECHA, 120) LIKE @Filtro
+                    OR CAST(C.COD_COMISION AS VARCHAR(50)) LIKE @Filtro
+                    OR C.USUARIO LIKE @Filtro
+                    OR C.ESTADO LIKE @Filtro
+                    OR CONVERT(VARCHAR(25), C.FECHA, 120) LIKE @Filtro
                 )
                 ORDER BY
-                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN COD_COMISION END ASC,
-                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN COD_COMISION END DESC,
-                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN FECHA END ASC,
-                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN FECHA END DESC,
-                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN USUARIO END ASC,
-                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN USUARIO END DESC,
-                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN ESTADO END ASC,
-                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN ESTADO END DESC,
-                    COD_COMISION ASC;";
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN C.COD_COMISION END ASC,
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN C.COD_COMISION END DESC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN C.FECHA END ASC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN C.FECHA END DESC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN C.USUARIO END ASC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN C.USUARIO END DESC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN C.ESTADO END ASC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN C.ESTADO END DESC,
+                    C.COD_COMISION ASC;";
 
             const string queryPaginado = @"
-                SELECT COD_COMISION, FECHA, USUARIO, ESTADO
-                FROM afi_comisiones
+                SELECT C.COD_COMISION, C.FECHA, C.USUARIO, C.ESTADO,
+                       ISNULL((SELECT SUM(monto) FROM afi_comision_pago WHERE cod_comision = C.COD_COMISION), 0) AS total
+                FROM afi_comisiones C
                 WHERE (
                     @Filtro IS NULL
-                    OR CAST(COD_COMISION AS VARCHAR(50)) LIKE @Filtro
-                    OR USUARIO LIKE @Filtro
-                    OR ESTADO LIKE @Filtro
-                    OR CONVERT(VARCHAR(25), FECHA, 120) LIKE @Filtro
+                    OR CAST(C.COD_COMISION AS VARCHAR(50)) LIKE @Filtro
+                    OR C.USUARIO LIKE @Filtro
+                    OR C.ESTADO LIKE @Filtro
+                    OR CONVERT(VARCHAR(25), C.FECHA, 120) LIKE @Filtro
                 )
                 ORDER BY
-                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN COD_COMISION END ASC,
-                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN COD_COMISION END DESC,
-                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN FECHA END ASC,
-                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN FECHA END DESC,
-                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN USUARIO END ASC,
-                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN USUARIO END DESC,
-                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN ESTADO END ASC,
-                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN ESTADO END DESC,
-                    COD_COMISION ASC
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'ASC' THEN C.COD_COMISION END ASC,
+                    CASE WHEN @SortField = 'Cod_Comision' AND @SortDirection = 'DESC' THEN C.COD_COMISION END DESC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'ASC' THEN C.FECHA END ASC,
+                    CASE WHEN @SortField = 'FECHA' AND @SortDirection = 'DESC' THEN C.FECHA END DESC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'ASC' THEN C.USUARIO END ASC,
+                    CASE WHEN @SortField = 'USUARIO' AND @SortDirection = 'DESC' THEN C.USUARIO END DESC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'ASC' THEN C.ESTADO END ASC,
+                    CASE WHEN @SortField = 'ESTADO' AND @SortDirection = 'DESC' THEN C.ESTADO END DESC,
+                    C.COD_COMISION ASC
                 OFFSET @OffsetRows ROWS
                 FETCH NEXT @FetchRows ROWS ONLY;";
 
