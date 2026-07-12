@@ -6,7 +6,7 @@
         public DateTime? fecha { get; set; }
         public string? usuario { get; set; }
         public string? estado { get; set; }
-        public decimal total { get; set; }
+        public decimal total { get; set; } = 0;
     }
 
     public class AfComisionPromotorData
