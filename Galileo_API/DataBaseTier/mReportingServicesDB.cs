@@ -127,7 +127,12 @@ namespace Galileo.DataBaseTier
 
                 var (reportParams, paramDict, jParams) = _params.Build(data, connection, connString);
                 if (reportParams.Count > 0)
+                {
+                    var definidos = string.Join(",", report.GetParameters().Select(p => p.Name));
+                    var intentados = string.Join(",", reportParams.Select(p => p.Name));
+                    _logger?.LogError("DEBUG PARAMS -> Definidos en RDL: [{Definidos}] | Intentando setear: [{Intentados}]", definidos, intentados);
                     report.SetParameters(reportParams);
+                }
 
                 var jsonDataSets = new Dictionary<string, object>();
                 var subErrors = new List<string>();
@@ -173,7 +178,9 @@ namespace Galileo.DataBaseTier
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error generando reporte RDLC");
-                return ReportRenderer.Error(ex.Message);
+                var detalle = ex.InnerException?.Message ?? "(sin InnerException)";
+                var stack = ex.InnerException?.StackTrace ?? ex.StackTrace ?? "";
+                return ReportRenderer.Error($"{ex.Message} || INNER: {detalle} || STACK: {stack}");
             }
         }
 
