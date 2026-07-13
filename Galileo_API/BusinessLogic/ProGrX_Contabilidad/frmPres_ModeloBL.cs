@@ -117,5 +117,10 @@ namespace Galileo.BusinessLogic
         {
             return _db.Pres_Modelo_Indicadores_Guardar(CodEmpresa, request);
         }
+
+        public ErrorDto Pres_Modelo_Copiar(PresModeloCopiar request)
+        {
+            return _db.Pres_Modelo_Copiar(request);
+        }
     }
 }

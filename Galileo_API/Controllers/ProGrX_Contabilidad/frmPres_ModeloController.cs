@@ -164,5 +164,12 @@ namespace Galileo.Controllers
         {
             return _bl.Pres_Modelo_Indicadores_Guardar(CodEmpresa, request);
         }
+
+        [HttpPost("Pres_Modelo_Copiar")]
+        [Authorize]
+        public ErrorDto Pres_Modelo_Copiar(PresModeloCopiar request)
+        {
+            return _bl.Pres_Modelo_Copiar(request);
+        }
     }
 }

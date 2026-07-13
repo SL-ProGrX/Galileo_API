@@ -181,12 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var tipoCalculado = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
 
-                    // Solo se recalcula si no coincide y el valor actual es <= 1 (default/no confiable).
-                    // Si coincide, o si ya es > 1 (asignado explícitamente), se conserva.
-                    if (trx.tipo_ced_destino != tipoCalculado && trx.tipo_ced_destino <= 1)
-                    {
-                        trx.tipo_ced_destino = tipoCalculado;
-                    }
+                    trx.tipo_ced_destino = tipoCalculado;
                 }
 
 

@@ -694,5 +694,37 @@ namespace Galileo.DataBaseTier
 
             return resp;
         }
+
+        /// <summary>
+        /// Modelo Copiar un modelo a otro nuevo
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto Pres_Modelo_Copiar(PresModeloCopiar request)
+        {
+            using var connection = CreateConnection(request.cod_Empresa);
+            try
+            {
+                
+                var query = $@"spPres_W_Modelo_Usuarios_Copiar";
+
+                var parametros = new
+                {
+                    cod_modelo_original = request.cod_Modelo_Origen,
+                    cod_modelo_destino = request.cod_Modelo_Destino,
+                    descripcion = request.descripcion,
+                    usuario = request.usuario
+                };
+
+                connection.Execute(query, parametros, commandType: CommandType.StoredProcedure, commandTimeout: 600);
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
     }
 }

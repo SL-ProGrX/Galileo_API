@@ -104,5 +104,13 @@ namespace Galileo.Models.PRES
         public List<PresModeloIndicadorGuardar> Indicadores { get; set; } = new();
     }
 
+    public class PresModeloCopiar
+    {
+        public int cod_Empresa { get; set; } = 0;
+        public string cod_Modelo_Origen { get; set; } = string.Empty;
+        public string cod_Modelo_Destino { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+    }
 
 }
