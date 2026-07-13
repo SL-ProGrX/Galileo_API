@@ -85,6 +85,14 @@ namespace Galileo.DataBaseTier
                 p.Add("Offset", offset);
                 p.Add("Fetch", fetch);
 
+                var sortOrder = filtro.sort_order == 1 ? 1 : -1;
+
+                var sortField = filtro.sort_field?
+                .Trim()
+                .ToLowerInvariant() ?? string.Empty;
+                p.Add("SortField", sortField);
+                p.Add("SortOrder", sortOrder);
+
                 const string qCount = @"
                             SELECT COUNT(DISTINCT S.CPR_ID)
                              from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID
@@ -94,7 +102,7 @@ namespace Galileo.DataBaseTier
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
                 const string qList = @"
-    SELECT DISTINCT
+    SELECT 
         S.CPR_ID,
         P.ADJUDICA_ORDEN,
         S.DOCUMENTO,
