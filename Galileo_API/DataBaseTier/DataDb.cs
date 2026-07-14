@@ -789,23 +789,25 @@ namespace Galileo.DataBaseTier
 
                 info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var allowedSort = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                var sortField = (filtrosModel.sortField ?? string.Empty)
+                    .Trim()
+                    .ToLowerInvariant() switch
                 {
-                    { "cod_compra",   "E.cod_compra" },
-                    { "cod_orden",    "E.cod_orden" },
-                    { "cod_factura",  "E.cod_factura" },
-                    { "no_solicitud", "s.CPR_ID" },
-                    { "proveedor",    "P.descripcion" },
+                    "cod_orden" => "cod_orden",
+                    "cod_factura" => "cod_factura",
+                    "no_solicitud" => "no_solicitud",
+                    "proveedor" => "proveedor",
+                    _ => "cod_compra"
                 };
-                var sortCol = allowedSort.TryGetValue(filtrosModel.sortField ?? string.Empty, out var col)
-                    ? col
-                    : "E.cod_compra";
-                var sortDir = filtrosModel.sortOrder == -1 ? "DESC" : "ASC";
+                var sortOrder = filtrosModel.sortOrder == -1 ? -1 : 1;
 
-                var dataSql = $@"
-                    SELECT E.cod_compra,
-                           E.cod_orden,
-                           E.cod_factura,
+                parameters.Add("@SortField", sortField, DbType.String);
+                parameters.Add("@SortOrder", sortOrder, DbType.Int32);
+
+                const string dataSql = @"
+                     SELECT E.cod_compra,
+                            E.cod_orden,
+                            E.cod_factura,
                            P.descripcion AS Proveedor,
                            P.cod_proveedor,
                            RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10) AS no_solicitud
@@ -825,8 +827,29 @@ namespace Galileo.DataBaseTier
                             @CodProveedor IS NULL
                          OR P.cod_proveedor = @CodProveedor
                       )
-                    ORDER BY {sortCol} {sortDir}
-                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+                     ORDER BY
+                         CASE WHEN @SortField = 'cod_compra' AND @SortOrder = 1
+                              THEN E.cod_compra END ASC,
+                         CASE WHEN @SortField = 'cod_compra' AND @SortOrder = -1
+                              THEN E.cod_compra END DESC,
+                         CASE WHEN @SortField = 'cod_orden' AND @SortOrder = 1
+                              THEN E.cod_orden END ASC,
+                         CASE WHEN @SortField = 'cod_orden' AND @SortOrder = -1
+                              THEN E.cod_orden END DESC,
+                         CASE WHEN @SortField = 'cod_factura' AND @SortOrder = 1
+                              THEN E.cod_factura END ASC,
+                         CASE WHEN @SortField = 'cod_factura' AND @SortOrder = -1
+                              THEN E.cod_factura END DESC,
+                         CASE WHEN @SortField = 'no_solicitud' AND @SortOrder = 1
+                              THEN s.CPR_ID END ASC,
+                         CASE WHEN @SortField = 'no_solicitud' AND @SortOrder = -1
+                              THEN s.CPR_ID END DESC,
+                         CASE WHEN @SortField = 'proveedor' AND @SortOrder = 1
+                              THEN P.descripcion END ASC,
+                         CASE WHEN @SortField = 'proveedor' AND @SortOrder = -1
+                              THEN P.descripcion END DESC,
+                         E.cod_compra ASC
+                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Facturas = connection.Query<FacturasProveedorData>(dataSql, parameters).ToList();
             }
