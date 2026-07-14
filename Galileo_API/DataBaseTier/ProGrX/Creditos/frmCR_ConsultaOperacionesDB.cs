@@ -14,6 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const string MsgDetalleError = "No fue posible obtener el detalle de la operaci&oacute;n.";
         private const string MsgBusquedaOperacionError = "No fue posible obtener la lista de operaciones.";
         private const string MsgBusquedaSociosError = "No fue posible obtener la lista de socios.";
+        private const string MsgDocumentoNoEncontrado = " **** NO SE ENCONTRO DOCUMENTO ***";
 
         private readonly PortalDB _portalDb;
         private readonly MCntLinkDB _mCntLinkDb;
@@ -438,7 +439,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (string.IsNullOrWhiteSpace(tipoDoc) || string.IsNullOrWhiteSpace(numDoc))
             {
-                sb.AppendLine(" **** NO SE ENCONTRO DOCUMENTO ***");
+                sb.AppendLine(MsgDocumentoNoEncontrado);
                 return;
             }
 
@@ -496,7 +497,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (trans.nsolicitud <= 0)
             {
-                sb.AppendLine(" **** NO SE ENCONTRO DOCUMENTO ***");
+                sb.AppendLine(MsgDocumentoNoEncontrado);
                 return;
             }
 
@@ -538,7 +539,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (!int.TryParse(numDoc, out int idDocumento))
             {
-                sb.AppendLine(" **** NO SE ENCONTRO DOCUMENTO ***");
+                sb.AppendLine(MsgDocumentoNoEncontrado);
                 return;
             }
 
@@ -581,7 +582,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (!int.TryParse(numDoc, out int operacion))
             {
-                sb.AppendLine(" **** NO SE ENCONTRO DOCUMENTO ***");
+                sb.AppendLine(MsgDocumentoNoEncontrado);
                 return;
             }
 
