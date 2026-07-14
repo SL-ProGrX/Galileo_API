@@ -45,8 +45,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (request.IgnorarFechas)
             {
                 return (
-                    new DateTime(2000, 1, 1),
-                    new DateTime(2100, 1, 1)
+                    new DateTime(2000, 1, 1, DateTimeKind.Unspecified),
+                    new DateTime(2100, 1, 1, DateTimeKind.Unspecified)
                 );
             }
 
