@@ -57,19 +57,19 @@ namespace Galileo.DataBaseTier
                 {
                     case "A":
                     {
-                        if (!TryParseIsoToDateTime(filtros.fechaInico, out var inicio))
+                            string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaInico!), "yyyy-MM-dd" + " 00:00:00") ?? "";
+                            string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaCorte!), "yyyy-MM-dd" + " 23:59:59") ?? "";
+
+                       if (string.IsNullOrEmpty(fechaIni))
                             return DbHelper.CreateErrorResponse<List<CprSolicitudAutoriza>>("fechaInico inválida o vacía.");
 
-                        if (!TryParseIsoToDateTime(filtros.fechaCorte, out var corte))
+                        if (string.IsNullOrEmpty(fechaFin))
                             return DbHelper.CreateErrorResponse<List<CprSolicitudAutoriza>>("fechaCorte inválida o vacía.");
 
-                        // Rango inclusivo de día completo
-                        var desde = inicio.Date; // 00:00:00
-                        var hasta = corte.Date.AddDays(1).AddTicks(-1); // 23:59:59.9999999
-
+                 
                         sql.AppendLine("  AND REGISTRO_FECHA BETWEEN @Desde AND @Hasta");
-                        p.Add("@Desde", desde);
-                        p.Add("@Hasta", hasta);
+                        p.Add("@Desde", fechaIni);
+                        p.Add("@Hasta", fechaFin);
                         break;
                     }
                     case "N":
@@ -175,4 +175,6 @@ namespace Galileo.DataBaseTier
             return false;
         }
     }
+
+
 }

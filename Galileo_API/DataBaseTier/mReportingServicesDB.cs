@@ -97,6 +97,7 @@ namespace Galileo.DataBaseTier
                 return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
 
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
+            var finalPath = string.Empty;
             try
             {
                 using var connection = new SqlConnection(connString);
@@ -112,11 +113,11 @@ namespace Galileo.DataBaseTier
                 var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
 
                 var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-                var finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
+                finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
 
                 // CxSuppress: PathTraversal
                 if (!System.IO.File.Exists(finalPath))
-                    return ReportRenderer.Error("No se encontró el reporte principal.", 404);
+                    return ReportRenderer.Error($"No se encontró el reporte principal. Ruta resuelta: [{finalPath}] | Base: [{basePath}]", 404);
 
                 using var patched = _patcher.PatchReportCode(finalPath, data.codeSection);
                 report.LoadReportDefinition(patched);
@@ -125,13 +126,18 @@ namespace Galileo.DataBaseTier
                 var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames);
                 var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath);
 
-                var (reportParams, paramDict, jParams) = _params.Build(data, connection, connString);
-                if (reportParams.Count > 0)
+                var (reportParams, paramDict, jParams) = _params.Build(
+                    data,
+                    connection,
+                    connString);
+
+                var parametrosDefinidos = ReporteRDLC_ParametrosDefinidos_Obtener(
+                    report,
+                    reportParams);
+
+                if (parametrosDefinidos.Count > 0)
                 {
-                    var definidos = string.Join(",", report.GetParameters().Select(p => p.Name));
-                    var intentados = string.Join(",", reportParams.Select(p => p.Name));
-                    _logger?.LogError("DEBUG PARAMS -> Definidos en RDL: [{Definidos}] | Intentando setear: [{Intentados}]", definidos, intentados);
-                    report.SetParameters(reportParams);
+                    report.SetParameters(parametrosDefinidos);
                 }
 
                 var jsonDataSets = new Dictionary<string, object>();
@@ -177,10 +183,10 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error generando reporte RDLC");
+                _logger?.LogError(ex, "Error generando reporte RDLC. Ruta resuelta: {FinalPath}", finalPath);
                 var detalle = ex.InnerException?.Message ?? "(sin InnerException)";
                 var stack = ex.InnerException?.StackTrace ?? ex.StackTrace ?? "";
-                return ReportRenderer.Error($"{ex.Message} || INNER: {detalle} || STACK: {stack}");
+                return ReportRenderer.Error($"{ex.Message} || INNER: {detalle} || RUTA: [{finalPath}] || STACK: {stack}");
             }
         }
 
@@ -438,6 +444,48 @@ namespace Galileo.DataBaseTier
 
             if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new SecurityException($"{paramName} contiene caracteres inválidos.");
+        }
+
+        /// <summary>
+        /// Obtiene únicamente los parámetros recibidos que están definidos en el RDLC,
+        /// normalizando el nombre según la nomenclatura exacta del reporte.
+        /// </summary>
+        private List<ReportParameter> ReporteRDLC_ParametrosDefinidos_Obtener(
+            LocalReport report,
+            IEnumerable<ReportParameter> reportParams)
+        {
+            var parametrosRecibidos = reportParams.ToList();
+
+            var parametrosRdlc = report.GetParameters()
+                .ToDictionary(
+                    parametro => parametro.Name,
+                    StringComparer.OrdinalIgnoreCase);
+
+            var parametrosOmitidos = parametrosRecibidos
+                .Where(parametro => !parametrosRdlc.ContainsKey(parametro.Name))
+                .Select(parametro => parametro.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (parametrosOmitidos.Length > 0)
+            {
+                _logger?.LogWarning(
+                    "Parámetros omitidos por no estar definidos en el RDLC: [{Parametros}]",
+                    string.Join(",", parametrosOmitidos));
+            }
+
+            return parametrosRecibidos
+                .Where(parametro => parametrosRdlc.ContainsKey(parametro.Name))
+                .Select(parametro =>
+                {
+                    var nombreRdlc = parametrosRdlc[parametro.Name].Name;
+
+                    return new ReportParameter(
+                        nombreRdlc,
+                        parametro.Values.Cast<string>().ToArray(),
+                        parametro.Visible);
+                })
+                .ToList();
         }
     }
 }
