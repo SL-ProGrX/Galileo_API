@@ -13,7 +13,7 @@
         {
             public string CodCausa { get; set; } = string.Empty;
             public string Descripcion { get; set; } = string.Empty;
-            public bool Seleccionado { get; set; } = 0;
+            public bool Seleccionado { get; set; } = false;
         }
         public class CrSeguimientoCausasActualizarRequest
         {
