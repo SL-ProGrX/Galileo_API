@@ -539,7 +539,8 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
 
                 AddLikeFilter(parameters, FiltroParam, parametros.filtro);
-                AddLikeFilterCleaningNull(parameters, _proveedorParam, parametros.proveedor);
+                var proveedorExacto = parametros.proveedor?.Replace("null", string.Empty).Trim();
+                parameters.Add(_proveedorParam, string.IsNullOrWhiteSpace(proveedorExacto) ? (string?)null : proveedorExacto, DbType.String);
                 AddLikeFilterCleaningNull(parameters, _familiaParam, parametros.familia);
 
                 parametros.subfamilia = parametros.subfamilia?.Replace("null", string.Empty).Trim();
@@ -552,10 +553,11 @@ namespace Galileo.DataBaseTier
                 const string dataSql = @"
                     SELECT * FROM (  
                         SELECT 
-                            RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
-                            O.cod_orden, 
+                            RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud,
+                            O.cod_orden,
                             O.genera_user,
-                            O.nota, 
+                            O.nota,
+                            O.COD_PROVEEDOR AS cod_proveedor_raw,
                             O.COD_PROVEEDOR + '-' + cp.DESCRIPCION AS proveedor,
                             STUFF((
                                 SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
@@ -595,9 +597,9 @@ namespace Galileo.DataBaseTier
                                     AND O.Proceso IN ('A', 'X')
                                 )
                             )
-                        GROUP BY 
+                        GROUP BY
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
-                    ) T 
+                    ) T
                     WHERE (
                             @Filtro IS NULL
                          OR cod_orden     LIKE @Filtro
@@ -609,7 +611,7 @@ namespace Galileo.DataBaseTier
                     )
                       AND (
                             @Proveedor IS NULL
-                         OR proveedor LIKE @Proveedor
+                         OR cod_proveedor_raw = @Proveedor
                       )
                       AND (
                             @Familia IS NULL
@@ -787,22 +789,35 @@ namespace Galileo.DataBaseTier
 
                 info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                const string dataSql = @"
+                var allowedSort = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "cod_compra",   "E.cod_compra" },
+                    { "cod_orden",    "E.cod_orden" },
+                    { "cod_factura",  "E.cod_factura" },
+                    { "no_solicitud", "s.CPR_ID" },
+                    { "proveedor",    "P.descripcion" },
+                };
+                var sortCol = allowedSort.TryGetValue(filtrosModel.sortField ?? string.Empty, out var col)
+                    ? col
+                    : "E.cod_compra";
+                var sortDir = filtrosModel.sortOrder == -1 ? "DESC" : "ASC";
+
+                var dataSql = $@"
                     SELECT E.cod_compra,
                            E.cod_orden,
-                           E.cod_factura, 
-                           P.descripcion AS Proveedor, 
-                           P.cod_proveedor, 
+                           E.cod_factura,
+                           P.descripcion AS Proveedor,
+                           P.cod_proveedor,
                            RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10) AS no_solicitud
-                    FROM cpr_Compras E 
+                    FROM cpr_Compras E
                     INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
-                    LEFT JOIN CPR_SOLICITUD_PROV s 
-                        ON s.ADJUDICA_ORDEN  = E.COD_ORDEN 
+                    LEFT JOIN CPR_SOLICITUD_PROV s
+                        ON s.ADJUDICA_ORDEN  = E.COD_ORDEN
                        AND s.PROVEEDOR_CODIGO = E.cod_proveedor
                     WHERE (
                             @Filtro IS NULL
-                         OR E.cod_compra LIKE @Filtro
-                         OR E.cod_orden  LIKE @Filtro
+                         OR E.cod_compra  LIKE @Filtro
+                         OR E.cod_orden   LIKE @Filtro
                          OR E.cod_factura LIKE @Filtro
                          OR P.descripcion LIKE @Filtro
                       )
@@ -810,7 +825,7 @@ namespace Galileo.DataBaseTier
                             @CodProveedor IS NULL
                          OR P.cod_proveedor = @CodProveedor
                       )
-                    ORDER BY E.cod_compra
+                    ORDER BY {sortCol} {sortDir}
                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Facturas = connection.Query<FacturasProveedorData>(dataSql, parameters).ToList();
