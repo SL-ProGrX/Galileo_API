@@ -623,12 +623,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static string NormalizarTipoCargo(string? tipo)
         {
             string valor = (tipo ?? string.Empty).Trim().ToUpperInvariant();
-            if (valor == "P" || valor.StartsWith("P"))
-            {
-                return "P";
-            }
-
-            return "M";
+            return valor.StartsWith('P') ? "P" : "M";
         }
 
         private static bool EsEditable(string? estadoSolicitud)
