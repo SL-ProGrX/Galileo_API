@@ -44,20 +44,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             if (request.IgnorarFechas)
             {
-                var inicioAll = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                var corteAll = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                return (inicioAll, corteAll);
+                return (
+                    new DateTime(2000, 1, 1),
+                    new DateTime(2100, 1, 1)
+                );
             }
 
-            var inicio = DateTime.SpecifyKind(
-                (request.FechaInicio ?? DateTime.Today).Date,
-                DateTimeKind.Utc);
+            var inicio = (request.FechaInicio ?? DateTime.Today).Date;
 
-            var corte = DateTime.SpecifyKind(
-                (request.FechaCorte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1),
-                DateTimeKind.Utc);
+            var corteExclusivo = (request.FechaCorte ?? DateTime.Today)
+                .Date
+                .AddDays(1);
 
-            return (inicio, corte);
+            return (inicio, corteExclusivo);
         }
 
         /// <summary>
