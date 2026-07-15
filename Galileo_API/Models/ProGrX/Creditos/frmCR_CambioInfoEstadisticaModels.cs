@@ -35,14 +35,14 @@
         {
             public string ProcessId { get; set; } = string.Empty;
 
-            public int CantidadRegistros { get; set; }
+            public int CantidadRegistros { get; set; } = 0;
 
             public List<CrCambioInfoEstadisticaCargaResultadoData> Registros { get; set; } = [];
         }
 
         public class CrCambioInfoEstadisticaCargaResultadoData
         {
-            public int Id_Solicitud { get; set; }
+            public int Id_Solicitud { get; set; } = 0;
 
             public string Codigo { get; set; } = string.Empty;
 
