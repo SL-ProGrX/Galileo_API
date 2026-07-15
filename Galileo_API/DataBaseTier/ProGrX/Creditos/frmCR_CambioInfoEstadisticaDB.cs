@@ -10,8 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public class FrmCRCambioInfoEstadisticaDB
     {
-        private readonly PortalDB _portalDb;
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb; 
         private const string TipoProcesoCredito = "C";
         private readonly MSecurityMainDb _Security_MainDB;
         private const int ModuloBitacora = 3;
@@ -19,8 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const string TipoDestino = "Destino o Plan de Inversión";
         private const string TipoRecursoPresupuestario = "Recurso Presupuestario";
         public FrmCRCambioInfoEstadisticaDB(IConfiguration config)
-        {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+        { 
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
         }
