@@ -124,9 +124,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new
                     {
                         Tipo = TipoProcesoCredito,
-                        request.ProcessId,
+                        ProcesoId= request.ProcessId,
                         request.Usuario,
-                        Codigo = request.CodigoDato
+                        Valor = request.CodigoDato
                     },
                     commandType: CommandType.StoredProcedure);
 
