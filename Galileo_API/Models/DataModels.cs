@@ -136,6 +136,8 @@
         public string? filtro { get; set; }
         public int pagina { get; set; } = 0;
         public int paginacion { get; set; } = 30;
+        public string? sortField { get; set; }
+        public int? sortOrder { get; set; } = 1;
     }
 
     public class FacturasProveedorData
