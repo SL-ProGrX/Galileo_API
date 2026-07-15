@@ -101,9 +101,8 @@ namespace Galileo.DataBaseTier
                 jsonParams != null &&
                 jsonParams.TryGetValue("filtros", out var filtrosToken))
             {
-                var f = filtrosToken?.ToString();
-                if (!string.IsNullOrWhiteSpace(f))
-                    sqlText = sqlText.Replace("@filtros", f, StringComparison.Ordinal);
+                var f = filtrosToken?.ToString() ?? string.Empty;
+                sqlText = sqlText.Replace("@filtros", string.IsNullOrWhiteSpace(f) ? string.Empty : f, StringComparison.Ordinal);
             }
 
             return sqlText;
