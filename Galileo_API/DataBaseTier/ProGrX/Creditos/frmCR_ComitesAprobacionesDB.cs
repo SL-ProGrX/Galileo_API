@@ -8,7 +8,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrComitesAprobacionesDB
+    public partial class FrmCrComitesAprobacionesDB
     {
         private readonly PortalDB _portalDB;
 
@@ -168,7 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene las actas registradas para el comité.
+        /// Obtiene las actas registradas para el comite.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="id_comite"></param>
@@ -235,6 +235,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
+        public ErrorDto<List<CrComitesAprobacionesSocio>> CR_ComitesAprobaciones_Socios_Dropdown_Obtener(int CodEmpresa, string filtro)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                const string sql = @"
+                    select top 200
+                        rtrim(isnull(Cedula,'')) as cedula,
+                        rtrim(isnull(CedulaR,'')) as cedulaR,
+                        rtrim(isnull(Nombre,'')) as nombre
+                    from Socios
+                    where @filtro = ''
+                       or Cedula like '%' + @filtro + '%'
+                       or CedulaR like '%' + @filtro + '%'
+                       or Nombre like '%' + @filtro + '%'
+                    order by Nombre;";
+
+                return DbHelper.CreateOkResponse(
+                    conn.Query<CrComitesAprobacionesSocio>(sql, new { filtro = (filtro ?? string.Empty).Trim() }).ToList());
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesSocio>>(ex.Message, -1, new List<CrComitesAprobacionesSocio>());
+            }
+        }
+
         /// <summary>
         /// Obtiene las solicitudes o estudios de credito pendientes de resolucion.
         /// </summary>
@@ -268,7 +295,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         request.id_comite,
                         FechaInicio = request.fecha_inicio.Date,
                         FechaCorte = fechaCorte,
-                    }).ToList();
+                    },
+                    commandTimeout: 15).ToList();
 
                 return DbHelper.CreateOkResponse(new CrComitesAprobacionesSolicitudesLista
                 {
@@ -410,6 +438,58 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CrComitesAprobacionesPatrimonio>(ex.Message, -1, new CrComitesAprobacionesPatrimonio());
+            }
+        }
+
+        /// <summary>
+        /// Obtiene la clasificacion del asociado para el caso seleccionado.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="tipo_caso"></param>
+        /// <param name="operacion"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CrComitesAprobacionesClasificacion>> CR_ComitesAprobaciones_Clasificacion_Obtener(int CodEmpresa, string tipo_caso, string operacion, string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(operacion))
+            {
+                return DbHelper.CreateOkResponse(new List<CrComitesAprobacionesClasificacion>());
+            }
+
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                var estudioCredito = ObtenerCodPreanalisis(conn, tipo_caso, operacion);
+                if (string.IsNullOrWhiteSpace(estudioCredito) || estudioCredito == "0")
+                {
+                    return DbHelper.CreateOkResponse(new List<CrComitesAprobacionesClasificacion>());
+                }
+
+                const string sqlLiquidez = @"
+                    select (isnull(LIQUIDEZ_CFIANZAS,0) / isnull(nullif(DEVENGADO_MES,0),1)) * 100
+                    from CRD_PREA_PREANALISIS
+                    where TIPO_PREANALISIS = 'E'
+                      and COD_PREANALISIS = @estudioCredito;";
+
+                var liquidez = conn.QueryFirstOrDefault<decimal>(
+                    sqlLiquidez,
+                    new { estudioCredito });
+
+                var lista = conn.Query<CrComitesAprobacionesClasificacion>(
+                    "exec spCRDPreaClasificacionNew @cedula, @liquidez, @estudioCredito",
+                    new
+                    {
+                        cedula = cedula.Trim(),
+                        liquidez,
+                        estudioCredito
+                    }).ToList();
+
+                return DbHelper.CreateOkResponse(lista);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesClasificacion>>(ex.Message, -1, new List<CrComitesAprobacionesClasificacion>());
             }
         }
 
@@ -742,1025 +822,5 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
-        /// <summary>
-        /// Obtiene causas y marca las registradas para el caso.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipo_caso"></param>
-        /// <param name="operacion"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrComitesAprobacionesCausa>> CR_ComitesAprobaciones_Causas_Obtener(int CodEmpresa, string tipo_caso, string operacion, string tipo)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                const string sqlSolicitud = @"
-                    select C.COD_CAUSAS as cod_causas,
-                           C.DESCRIPCION as descripcion,
-                           C.TIPO as tipo,
-                           cast(case when G.COD_CAUSAS is null then 0 else 1 end as bit) as seleccionada
-                    from OPERACION_CAUSAS C
-                    left join OPERACION_GESTION G
-                      on C.COD_CAUSAS = G.COD_CAUSAS
-                     and C.TIPO = G.TIPO
-                     and G.ID_SOLICITUD = @operacion
-                    where C.ESTADO = 1
-                      and C.TIPO = @tipo
-                    order by C.COD_CAUSAS;";
-
-                const string sqlPreanalisis = @"
-                    select C.COD_CAUSAS as cod_causas,
-                           C.DESCRIPCION as descripcion,
-                           C.TIPO as tipo,
-                           cast(case when G.COD_CAUSAS is null then 0 else 1 end as bit) as seleccionada
-                    from OPERACION_CAUSAS C
-                    left join CRD_PREA_GESTION G
-                      on C.COD_CAUSAS = G.COD_CAUSAS
-                     and C.TIPO = G.TIPO
-                     and G.COD_PREANALISIS = @operacion
-                    where C.ESTADO = 1
-                      and C.TIPO = @tipo
-                    order by C.COD_CAUSAS;";
-
-                var sql = EsSolicitud(tipo_caso) ? sqlSolicitud : sqlPreanalisis;
-                var lista = conn.Query<CrComitesAprobacionesCausa>(
-                    sql,
-                    new { operacion = operacion.Trim(), tipo = tipo.Trim() }).ToList();
-
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesCausa>>(ex.Message, -1, new List<CrComitesAprobacionesCausa>());
-            }
-        }
-
-        /// <summary>
-        /// Registra la resolucion del comite.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto CR_ComitesAprobaciones_Resolucion_Guardar(int CodEmpresa, CrComitesAprobacionesResolucionRequest request)
-        {
-            var validacion = ValidarResolucion(request);
-            if (validacion.Code != 0)
-            {
-                return validacion;
-            }
-
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var estado = NormalizarEstado(request.estado, out var estadoComite, out var editable);
-                conn.Execute(
-                    @"
-                    exec spCrd_Comites_Resolucion_Add
-                        @Comite,
-                        @Acta,
-                        @Usuario,
-                        @Tipo,
-                        @Operacion,
-                        @Observacion,
-                        @Estado,
-                        @EstadoComite,
-                        @Editable,
-                        @AcuerdoJD,
-                        @Usuario2,
-                        @Usuario3;",
-                    new
-                    {
-                        Comite = request.id_comite,
-                        Acta = request.acta.Trim(),
-                        Usuario = PrimerUsuario(request),
-                        Tipo = request.tipo_caso.Trim(),
-                        Operacion = request.operacion.Trim(),
-                        Observacion = Truncar(request.observacion, 1000),
-                        Estado = estado,
-                        EstadoComite = estadoComite,
-                        Editable = editable,
-                        AcuerdoJD = request.acuerdo_jd.Trim(),
-                        Usuario2 = UsuarioEnIndice(request, 1),
-                        Usuario3 = UsuarioEnIndice(request, 2)
-                    });
-
-                foreach (var usuario in request.usuarios.Where(x => !string.IsNullOrWhiteSpace(x)))
-                {
-                    conn.Execute(
-                        @"
-                        exec spCrd_Comites_Resolucion_Autorizadores_Add
-                            @Comite,
-                            @Acta,
-                            @UsuarioRegistra,
-                            @Tipo,
-                            @Operacion,
-                            @Observacion,
-                            @Estado,
-                            @UsuarioAutoriza;",
-                        new
-                        {
-                            Comite = request.id_comite,
-                            Acta = request.acta.Trim(),
-                            UsuarioRegistra = request.usuario_registra.Trim(),
-                            Tipo = request.tipo_caso.Trim(),
-                            Operacion = request.operacion.Trim(),
-                            Observacion = Truncar(request.observacion, 1000),
-                            Estado = estado,
-                            UsuarioAutoriza = usuario.Trim()
-                        });
-                }
-
-                return DbHelper.OkResponse("Resolucion registrada correctamente.");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Registra las causas seleccionadas para el caso.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto CR_ComitesAprobaciones_Causas_Guardar(int CodEmpresa, CrComitesAprobacionesCausasGuardarRequest request)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var parametrosBase = new { tipo = request.tipo.Trim(), operacion = request.operacion.Trim() };
-                var esSolicitud = EsSolicitud(request.tipo_caso);
-
-                if (esSolicitud)
-                {
-                    conn.Execute(
-                        "delete from OPERACION_GESTION where TIPO = @tipo and ID_SOLICITUD = @operacion",
-                        parametrosBase);
-                }
-                else
-                {
-                    conn.Execute(
-                        "delete from CRD_PREA_GESTION where TIPO = @tipo and COD_PREANALISIS = @operacion",
-                        parametrosBase);
-                }
-
-                var causasNormalizadas = request.causas
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Select(x => x.Trim())
-                    .Distinct();
-
-                foreach (var causa in causasNormalizadas)
-                {
-                    var parametros = new
-                    {
-                        causa,
-                        tipo = request.tipo.Trim(),
-                        operacion = request.operacion.Trim(),
-                        usuario = request.usuario.Trim()
-                    };
-
-                    if (esSolicitud)
-                    {
-                        conn.Execute(
-                            @"
-                            insert into OPERACION_GESTION
-                            (COD_CAUSAS, TIPO, ID_SOLICITUD, CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                            values (@causa, @tipo, @operacion, '', dbo.Mygetdate(), @usuario);",
-                            parametros);
-                    }
-                    else
-                    {
-                        conn.Execute(
-                            @"
-                            insert into CRD_PREA_GESTION
-                            (COD_CAUSAS, TIPO, COD_PREANALISIS, CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                            values (@causa, @tipo, @operacion, '', dbo.Mygetdate(), @usuario);",
-                            parametros);
-                    }
-                }
-
-                return DbHelper.OkResponse("Causas guardadas correctamente.");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Obtiene el acta abierta o seleccionada del comité y sus asistentes.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="acta"></param>
-        /// <returns></returns>
-        public ErrorDto<CrComitesAprobacionesActaActual> CR_ComitesAprobaciones_ActaActual_Obtener(int CodEmpresa, int id_comite, string acta)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var actaSeleccionada = (acta ?? string.Empty).Trim();
-
-            try
-            {
-                const string sqlActa = @"
-                    declare @acta_consulta varchar(30) = @acta;
-
-                    if @acta_consulta = ''
-                    begin
-                        select @acta_consulta = cast(dbo.fxCrd_Comites_Acta_Abierta(@id_comite) as varchar(30));
-                    end;
-
-                    if @acta_consulta <> '' and not exists (
-                        select 1
-                        from CRD_COMITES_ACTAS
-                        where ID_COMITE = @id_comite
-                          and cast(ACTA as varchar(30)) = @acta_consulta
-                    )
-                    begin
-                        select top 1 @acta_consulta = cast(ACTA as varchar(30))
-                        from CRD_COMITES_ACTAS
-                        where ID_COMITE = @id_comite
-                          and SESION_ID = @acta_consulta
-                        order by cast(ACTA as int) desc;
-                    end;
-
-                    select top 1
-                        @id_comite as id_comite,
-                        isnull(cast(CA.ACTA as int),0) as id_acta,
-                        rtrim(isnull(CA.SESION_ID,'')) as acta,
-                        CA.FECHA as fecha,
-                        case CA.ESTADO
-                            when 'A' then 'Abierta'
-                            when 'C' then 'Cerrada'
-                            else rtrim(isnull(CA.ESTADO,''))
-                        end as estado,
-                        rtrim(isnull(CA.NOTAS,'')) as notas
-                    from CRD_COMITES_ACTAS CA
-                    where CA.ID_COMITE = @id_comite
-                      and cast(CA.ACTA as varchar(30)) = @acta_consulta
-                    order by isnull(cast(CA.ACTA as int),0) desc;";
-
-                var actual = conn.QueryFirstOrDefault<CrComitesAprobacionesActaActual>(
-                    sqlActa,
-                    new { id_comite, acta = actaSeleccionada })
-                    ?? new CrComitesAprobacionesActaActual { id_comite = id_comite, acta = actaSeleccionada };
-
-                actual.asistencia = actual.id_acta > 0
-                    ? ConsultarAsistenciaActa(conn, id_comite, actual.id_acta.ToString())
-                    : new List<CrComitesAprobacionesActaAsistencia>();
-
-                return DbHelper.CreateOkResponse(actual);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrComitesAprobacionesActaActual>(ex.Message, -1, new CrComitesAprobacionesActaActual());
-            }
-        }
-
-        /// <summary>
-        /// Crea una nueva acta de comite usando el procedimiento original.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<CrComitesAprobacionesActaActual> CR_ComitesAprobaciones_ActaNueva_Crear(int CodEmpresa, int id_comite, string usuario)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var nueva = conn.QueryFirstOrDefault(
-                    "exec spCrd_Comites_Acta_Nueva @id_comite, @usuario;",
-                    new { id_comite, usuario = (usuario ?? string.Empty).Trim() });
-
-                if (nueva == null)
-                {
-                    return DbHelper.CreateErrorResponse<CrComitesAprobacionesActaActual>("No fue posible generar el acta.", -1, new CrComitesAprobacionesActaActual());
-                }
-
-                var campos = (IDictionary<string, object>)nueva;
-                var actaValor = ValorCampo(campos, "acta", "ACTA");
-                var sesion = ValorCampo(campos, "Sesion", "SESION", "sesion");
-                var fecha = ValorCampo(campos, "fecha", "Fecha", "FECHA");
-
-                var actual = new CrComitesAprobacionesActaActual
-                {
-                    id_comite = id_comite,
-                    id_acta = Convert.ToInt32(actaValor ?? 0),
-                    acta = Convert.ToString(sesion ?? string.Empty)?.Trim() ?? string.Empty,
-                    fecha = fecha == null || fecha == DBNull.Value ? null : Convert.ToDateTime(fecha),
-                    estado = "Abierta",
-                    notas = string.Empty,
-                    asistencia = new List<CrComitesAprobacionesActaAsistencia>()
-                };
-
-                return DbHelper.CreateOkResponse(actual);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<CrComitesAprobacionesActaActual>(ex.Message, -1, new CrComitesAprobacionesActaActual());
-            }
-        }
-
-        /// <summary>
-        /// Guarda la informacion del acta usando el procedimiento original.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto CR_ComitesAprobaciones_Acta_Guardar(int CodEmpresa, CrComitesAprobacionesActaGuardarRequest request)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                const string sql = @"
-                    exec spCrd_Comites_Acta
-                        @id_comite,
-                        @acta,
-                        @fecha,
-                        @notas,
-                        @estado,
-                        @usuario,
-                        @sesion;";
-
-                conn.Execute(
-                    sql,
-                    new
-                    {
-                        request.id_comite,
-                        acta = request.acta.Trim(),
-                        fecha = request.fecha.Date,
-                        notas = request.notas.Trim(),
-                        estado = EstadoActaSql(request.estado),
-                        usuario = request.usuario.Trim(),
-                        sesion = request.sesion.Trim()
-                    });
-
-                return DbHelper.OkResponse("Acta guardada correctamente.");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Cierra el acta usando el procedimiento original.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="acta"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto CR_ComitesAprobaciones_Acta_Cerrar(int CodEmpresa, int id_comite, string acta, string usuario)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var cierre = conn.QueryFirstOrDefault(
-                    "exec spCrd_Comites_Acta_Cierra @id_comite, @acta, @usuario;",
-                    new
-                    {
-                        id_comite,
-                        acta = (acta ?? string.Empty).Trim(),
-                        usuario = (usuario ?? string.Empty).Trim()
-                    });
-
-                if (cierre == null)
-                {
-                    return DbHelper.ErrorResponse("No fue posible cerrar el acta.");
-                }
-
-                var campos = (IDictionary<string, object>)cierre;
-                var pass = Convert.ToInt32(ValorCampo(campos, "Pass", "PASS") ?? 0);
-                var mensaje = Convert.ToString(ValorCampo(campos, "Mensaje", "MENSAJE") ?? string.Empty)?.Trim() ?? string.Empty;
-
-                if (pass == 1)
-                {
-                    var mensajeOk = string.IsNullOrWhiteSpace(mensaje) ? "Acta cerrada satisfactoriamente." : mensaje;
-                    return DbHelper.OkResponse(mensajeOk);
-                }
-
-                var mensajeError = string.IsNullOrWhiteSpace(mensaje) ? "No fue posible cerrar el acta." : mensaje;
-                return DbHelper.ErrorResponse(mensajeError);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Obtiene la asistencia registrada para el acta seleccionada.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="acta"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrComitesAprobacionesActaAsistencia>> CR_ComitesAprobaciones_ActaAsistencia_Obtener(int CodEmpresa, int id_comite, string acta)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var actaSeleccionada = (acta ?? string.Empty).Trim();
-
-            try
-            {
-                return DbHelper.CreateOkResponse(ConsultarAsistenciaActa(conn, id_comite, actaSeleccionada));
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesActaAsistencia>>(ex.Message, -1, new List<CrComitesAprobacionesActaAsistencia>());
-            }
-        }
-
-        private static List<CrComitesAprobacionesActaAsistencia> ConsultarAsistenciaActa(SqlConnection conn, int id_comite, string acta)
-        {
-            const string sqlAsistencia = @"
-                    declare @acta_consulta varchar(30) = @acta;
-
-                    if @acta_consulta = ''
-                    begin
-                        select @acta_consulta = cast(dbo.fxCrd_Comites_Acta_Abierta(@id_comite) as varchar(30));
-                    end;
-
-                    if @acta_consulta <> '' and not exists (
-                        select 1
-                        from CRD_COMITES_ACTAS
-                        where ID_COMITE = @id_comite
-                          and cast(ACTA as varchar(30)) = @acta_consulta
-                    )
-                    begin
-                        select top 1 @acta_consulta = cast(ACTA as varchar(30))
-                        from CRD_COMITES_ACTAS
-                        where ID_COMITE = @id_comite
-                          and SESION_ID = @acta_consulta
-                        order by cast(ACTA as int) desc;
-                    end;
-
-                    exec spCrd_Comites_Acta_Asistencia_Consulta @id_comite, @acta_consulta;";
-
-            return conn.Query(sqlAsistencia, new { id_comite, acta = (acta ?? string.Empty).Trim() }, commandTimeout: 8)
-                .Select(row =>
-                {
-                    var campos = (IDictionary<string, object>)row;
-                    var asistencia = ValorCampo(campos, "ASISTENCIA", "Asistencia") ?? 0;
-                    var cedula = ValorCampo(campos, "Cedula", "CEDULA") ?? string.Empty;
-                    var nombre = ValorCampo(campos, "Nombre", "NOMBRE") ?? string.Empty;
-
-                    return new CrComitesAprobacionesActaAsistencia
-                    {
-                        seleccionado = Convert.ToInt32(asistencia) == 1,
-                        cedula = Convert.ToString(cedula ?? string.Empty)?.Trim() ?? string.Empty,
-                        nombre = Convert.ToString(nombre ?? string.Empty)?.Trim() ?? string.Empty
-                    };
-                })
-                .ToList();
-        }
-
-        /// <summary>
-        /// Obtiene el histórico de actas de comité.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="fecha_inicio"></param>
-        /// <param name="fecha_corte"></param>
-        /// <param name="identificacion"></param>
-        /// <returns></returns>
-        private static object? ValorCampo(IDictionary<string, object> campos, params string[] nombres)
-        {
-            foreach (var nombre in nombres)
-            {
-                if (campos.TryGetValue(nombre, out var valor))
-                {
-                    return valor;
-                }
-            }
-
-            return null;
-        }
-
-        private static string EstadoActaSql(string estado)
-        {
-            var valor = (estado ?? string.Empty).Trim();
-            if (valor.Equals("Abierta", StringComparison.OrdinalIgnoreCase))
-            {
-                return "A";
-            }
-
-            if (valor.Equals("Cerrada", StringComparison.OrdinalIgnoreCase))
-            {
-                return "C";
-            }
-
-            return string.IsNullOrWhiteSpace(valor) ? "A" : valor.Substring(0, 1).ToUpperInvariant();
-        }
-
-        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                const string sql = @"
-                    select distinct
-                        @id_comite as id_comite,
-                        isnull(cast(A.ACTA as int),0) as id_acta,
-                        rtrim(isnull(A.SESION_ID,'')) as sesion,
-                        isnull(CA.FECHA, A.FECHA) as fecha,
-                        case CA.ESTADO
-                            when 'A' then 'Abierta'
-                            when 'C' then 'Cerrada'
-                            else rtrim(isnull(CA.ESTADO,''))
-                        end as estado,
-                        rtrim(isnull(C.DESCRIPCION,'')) as comite
-                    from vCrd_Comites_Actas A
-                    left join CRD_COMITES_ACTAS CA
-                        on CA.ACTA = A.ACTA
-                       and isnull(CA.SESION_ID,'') = isnull(A.SESION_ID,'')
-                    inner join COMITES C on C.ID_COMITE = A.ID_COMITE
-                    where A.ID_COMITE = @id_comite
-                      and (
-                        @identificacion = ''
-                        or A.SESION_ID like '%' + @identificacion + '%'
-                        or exists (
-                            select 1
-                            from REG_CREDITOS R
-                            where R.ID_COMITE = A.ID_COMITE
-                              and R.ACTA = A.ACTA
-                              and R.CEDULA like '%' + @identificacion + '%'
-                        )
-                      )
-                    order by isnull(cast(A.ACTA as int),0) desc;";
-
-                var lista = conn.Query<CrComitesAprobacionesActaHistorico>(
-                    sql,
-                    new
-                    {
-                        id_comite,
-                        FechaInicio = fecha_inicio.Date,
-                        FechaCorte = fecha_corte.Date.AddDays(1).AddTicks(-1),
-                        identificacion = identificacion.Trim()
-                    }).ToList();
-
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesActaHistorico>>(ex.Message, -1, new List<CrComitesAprobacionesActaHistorico>());
-            }
-        }
-
-        /// <summary>
-        /// Obtiene resoluciones incluidas en el acta seleccionada.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="acta"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrComitesAprobacionesActaResolucion>> CR_ComitesAprobaciones_ActaResoluciones_Obtener(int CodEmpresa, int id_comite, string acta)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                const string sql = @"
-                    declare @acta_consulta varchar(30) = @acta;
-
-                    if @acta_consulta = ''
-                    begin
-                        select @acta_consulta = cast(dbo.fxCrd_Comites_Acta_Abierta(@id_comite) as varchar(30));
-                    end;
-
-                    if @acta_consulta <> '' and not exists (
-                        select 1
-                        from vCrd_Comites_Actas_Resoluciones
-                        where ID_COMITE = @id_comite
-                          and cast(ACTA as varchar(30)) = @acta_consulta
-                    )
-                    begin
-                        select top 1 @acta_consulta = cast(ACTA as varchar(30))
-                        from vCrd_Comites_Actas_Resoluciones
-                        where ID_COMITE = @id_comite
-                          and SESION_ID = @acta_consulta;
-                    end;
-
-                    select
-                        ID_COMITE as id_comite,
-                        isnull(cast(ACTA as int),0) as id_acta,
-                        rtrim(isnull(SESION_ID,'')) as sesion,
-                        rtrim(isnull(Cedula,'')) as cedula,
-                        rtrim(isnull(Nombre,'')) as nombre,
-                        rtrim(isnull(Cod_Linea,'')) as linea,
-                        rtrim(isnull(Garantia,'')) as garantia,
-                        rtrim(isnull(Estado,'')) as estado,
-                        cast(isnull(Expediente,0) as varchar(30)) as operacion
-                    from vCrd_Comites_Actas_Resoluciones
-                    where ID_COMITE = @id_comite
-                      and cast(ACTA as varchar(30)) = @acta_consulta
-                    order by Nombre, Cedula;";
-
-                var lista = conn.Query<CrComitesAprobacionesActaResolucion>(
-                    sql,
-                    new { id_comite, acta = acta.Trim() }).ToList();
-
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<CrComitesAprobacionesActaResolucion>>(ex.Message, -1, new List<CrComitesAprobacionesActaResolucion>());
-            }
-        }
-
-        private static string QuerySolicitudes(CrComitesAprobacionesSolicitudRequest request)
-        {
-            var estado = EstadoSql("R.ESTADOSOL", request.estado);
-            var linea = @"
-                and (
-                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = @id_comite),0) = 0
-                    or R.CODIGO in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = @id_comite)
-                )";
-
-            return $@"
-                select
-                    dbo.fxSemaforo(R.ID_SOLICITUD,R.ID_COMITE,'S') as semaforo,
-                    cast(R.ID_SOLICITUD as varchar(30)) as expediente,
-                    R.USERREC as usuario,
-                    rtrim(isnull(R.CEDULA,'')) as cedula,
-                    rtrim(isnull(S.NOMBRE,'')) as nombre,
-                    rtrim(isnull(R.CODIGO,'')) as codigo,
-                    isnull(R.MONTOSOL,0) as monto,
-                    isnull(R.CUOTA,0) as cuota,
-                    isnull(R.PLAZO,0) as plazo,
-                    isnull(R.INT,0) as tasa,
-                    case R.ESTADOSOL when 'R' then 'Recibido' when 'P' then 'Pendiente' else R.ESTADOSOL end as estado,
-                    R.FECHASOL as fecha,
-                    rtrim(isnull(R.GARANTIA,'')) as garantia,
-                    rtrim(isnull(Gt.DESCRIPCION,'')) as garantia_desc
-                from REG_CREDITOS R
-                inner join SOCIOS S on S.CEDULA = R.CEDULA
-                inner join CRD_COMITES_RNG_GARANTIA G on G.COD_GARANTIA = R.GARANTIA and G.ID_COMITE = R.ID_COMITE
-                inner join CRD_GARANTIA_TIPOS Gt on R.GARANTIA = Gt.GARANTIA
-                where R.ID_COMITE = @id_comite
-                  and R.MONTOSOL between G.RNG_INICIO and G.RNG_CORTE
-                  and R.FECHASOL between @FechaInicio and @FechaCorte
-                  {estado}
-                  and dbo.fxCRDTagAprobacion(R.ID_SOLICITUD) = 0
-                  {linea}
-                order by R.FECHASOL;";
-        }
-
-        private static string QueryEstudios(CrComitesAprobacionesSolicitudRequest request)
-        {
-            var estado = EstadoSql("P.ESTADO", request.estado);
-            return $@"
-                select
-                    dbo.fxSemaforo(P.COD_PREANALISIS,P.ID_COMITE,'P') as semaforo,
-                    cast(P.COD_PREANALISIS as varchar(30)) as expediente,
-                    P.USUARIO as usuario,
-                    rtrim(isnull(P.CEDULA,'')) as cedula,
-                    rtrim(isnull(S.NOMBRE,'')) as nombre,
-                    rtrim(isnull(P.COD_LINEA,'')) as codigo,
-                    isnull(P.MONTO,0) as monto,
-                    isnull(P.CUOTA,0) as cuota,
-                    isnull(P.PLAZO,0) as plazo,
-                    isnull(P.TASA,0) as tasa,
-                    case P.ESTADO when 'R' then 'Recibido' when 'P' then 'Pendiente' else P.ESTADO end as estado,
-                    P.FECHA_CREACION as fecha,
-                    rtrim(isnull(P.GARANTIA,'')) as garantia,
-                    rtrim(isnull(Gt.DESCRIPCION,'')) as garantia_desc
-                from CRD_PREA_PREANALISIS P
-                inner join SOCIOS S on S.CEDULA = P.CEDULA
-                inner join CRD_COMITES_RNG_GARANTIA G on G.COD_GARANTIA = P.GARANTIA and G.ID_COMITE = P.ID_COMITE
-                inner join CRD_GARANTIA_TIPOS Gt on P.GARANTIA = Gt.GARANTIA
-                where P.TIPO_PREANALISIS = 'E'
-                  and P.ID_COMITE = @id_comite
-                  and P.MONTO between G.RNG_INICIO and G.RNG_CORTE
-                  and P.FECHA_CREACION between @FechaInicio and @FechaCorte
-                  {estado}
-                  and (
-                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = @id_comite),0) = 0
-                    or P.COD_LINEA in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = @id_comite)
-                  )
-                order by P.FECHA_CREACION;";
-        }
-
-        private static string EstadoSql(string campo, string estado)
-        {
-            return estado switch
-            {
-                "Recibida" => $"and {campo} = 'R'",
-                "Pendiente" => $"and {campo} = 'P'",
-                _ => $"and {campo} in ('P','R')"
-            };
-        }
-
-        private static ErrorDto ValidarFiltrosSolicitud(CrComitesAprobacionesSolicitudRequest request)
-        {
-            if (request == null || request.id_comite <= 0)
-            {
-                return DbHelper.ErrorResponse("Debe indicar un comite valido.", -2);
-            }
-
-            if (!EsSolicitud(request.tipo_caso) && !request.tipo_caso.Trim().Equals("E", StringComparison.OrdinalIgnoreCase))
-            {
-                return DbHelper.ErrorResponse("Debe indicar un tipo de caso valido.", -2);
-            }
-
-            return DbHelper.OkResponse(string.Empty);
-        }
-
-        private static void CR_ComitesAprobaciones_Deudas_CargarResumen(
-            IDbConnection conn,
-            string cedula,
-            CrComitesAprobacionesDeudasResponse response)
-        {
-            const string sqlResumen = @"
-                select
-                    isnull(sum(R.SALDO), 0) as total_saldo,
-                    isnull(sum(R.CUOTA), 0) as total_cuota
-                from REG_CREDITOS R
-                where R.SALDO > 0
-                  and R.ESTADO = 'A'
-                  and R.CEDULA = @cedula;";
-
-            var resumen = conn.QueryFirstOrDefault(sqlResumen, new { cedula });
-            if (resumen == null)
-            {
-                return;
-            }
-
-            response.total_saldo = resumen.total_saldo ?? 0;
-            response.total_cuota = resumen.total_cuota ?? 0;
-        }
-
-        private static void CR_ComitesAprobaciones_Deudas_CargarDeducciones(
-            IDbConnection conn,
-            string tipoCaso,
-            string operacion,
-            CrComitesAprobacionesDeudasResponse response)
-        {
-            var codPreanalisis = ObtenerCodPreanalisis(conn, tipoCaso, operacion);
-            if (string.IsNullOrWhiteSpace(codPreanalisis) || codPreanalisis == "0")
-            {
-                return;
-            }
-
-            const string sqlDeducciones = @"
-                select isnull(sum(CUOTA_MENSUAL), 0)
-                from CRD_PREA_DETALLE_DEDUC
-                where COD_PREANALISIS = @cod_preanalisis;";
-
-            response.deducciones = conn.QueryFirstOrDefault<decimal>(
-                sqlDeducciones,
-                new { cod_preanalisis = codPreanalisis });
-        }
-
-        private static string ObtenerCodPreanalisis(IDbConnection conn, string tipoCaso, string operacion)
-        {
-            if (!EsSolicitud(tipoCaso))
-            {
-                return operacion?.Trim() ?? string.Empty;
-            }
-
-            const string sql = @"
-                select isnull(COD_PREANALISIS, 0)
-                from CRD_PREA_PREANALISIS
-                where TIPO_PREANALISIS = 'E'
-                  and ID_SOLICITUD = @id_solicitud;";
-
-            return conn.QueryFirstOrDefault<string>(
-                sql,
-                new { id_solicitud = operacion?.Trim() ?? string.Empty }) ?? string.Empty;
-        }
-
-        private static string ObtenerIdSolicitudCaso(IDbConnection conn, string tipoCaso, string operacion)
-        {
-            var operacionNormalizada = operacion?.Trim() ?? string.Empty;
-            if (EsSolicitud(tipoCaso))
-            {
-                return operacionNormalizada;
-            }
-
-            const string sql = @"
-                select top 1 isnull(ID_SOLICITUD, 0)
-                from CRD_PREA_PREANALISIS
-                where TIPO_PREANALISIS = 'E'
-                  and (
-                    cast(COD_PREANALISIS as varchar(50)) = @operacion
-                    or cast(COD_PREANALISIS_REF as varchar(50)) = @operacion
-                  );";
-
-            return conn.QueryFirstOrDefault<string>(
-                sql,
-                new { operacion = operacionNormalizada }) ?? string.Empty;
-        }
-
-        private static List<CrComitesAprobacionesDeuda> CR_ComitesAprobaciones_Deudas_CargarLista(IDbConnection conn, string cedula)
-        {
-            const string sqlLista = "exec spSIFEstadoCreditos @cedula";
-            return conn.Query(sqlLista, new { cedula })
-                .Select(CR_ComitesAprobaciones_Deudas_MapearRow)
-                .ToList();
-        }
-
-        private static CrComitesAprobacionesDeuda CR_ComitesAprobaciones_Deudas_MapearRow(dynamic row)
-        {
-            var datos = (IDictionary<string, object>)row;
-            return new CrComitesAprobacionesDeuda
-            {
-                semaforo = CR_ComitesAprobaciones_Deudas_ResolverSemaforo(datos),
-                operacion = Texto(datos, "id_solicitud"),
-                linea = Texto(datos, "codigo"),
-                plazo = Decimal(datos, "plazo"),
-                monto = Decimal(datos, "MontoApr"),
-                saldo = Decimal(datos, "Saldo"),
-                cuota = Decimal(datos, "Cuota"),
-                monto_atrasado = Decimal(datos, "MoraPrincipal") + Decimal(datos, "MoraInt"),
-                primer_deduc = CR_ComitesAprobaciones_Deudas_FormatearPrimerMovimiento(datos),
-                ultimo_movimiento = Texto(datos, "UltMovimien"),
-                termina = Texto(datos, "Termina"),
-                garantia = Texto(datos, "Garantia"),
-                estado = Texto(datos, "Estado"),
-                proceso = Texto(datos, "ProcesoCod"),
-                operacion_referencia = Texto(datos, "Referencia"),
-                tasa_original = Decimal(datos, "TasaOriginal"),
-                tasa_actual = Decimal(datos, "Tasa"),
-            };
-        }
-
-        private static string CR_ComitesAprobaciones_Deudas_ResolverSemaforo(IDictionary<string, object> datos)
-        {
-            var moraCuota = Decimal(datos, "MoraCuota");
-            var procesoCod = Texto(datos, "ProcesoCod");
-            var estado = Texto(datos, "Estado");
-            var referencia = Texto(datos, "Referencia");
-            var indicadorCbr = Decimal(datos, "IndicadorCbr");
-
-            if (moraCuota > 0 && procesoCod != "J")
-            {
-                return "rojo";
-            }
-
-            if (procesoCod == "J")
-            {
-                return "judicial";
-            }
-
-            if (!string.IsNullOrWhiteSpace(referencia) && moraCuota == 0)
-            {
-                return "amarillo";
-            }
-
-            if (indicadorCbr > 0)
-            {
-                return "reversado";
-            }
-
-            if (estado.StartsWith('C'))
-            {
-                return "cancelado";
-            }
-
-            return "verde";
-        }
-
-        private static string CR_ComitesAprobaciones_Deudas_FormatearPrimerMovimiento(IDictionary<string, object> datos)
-        {
-            var primerDeduc = Decimal(datos, "prideduc");
-            return primerDeduc <= 0 ? string.Empty : primerDeduc.ToString("0000-00");
-        }
-
-        private static ErrorDto ValidarResolucion(CrComitesAprobacionesResolucionRequest request)
-        {
-            if (request == null || request.id_comite <= 0 || string.IsNullOrWhiteSpace(request.acta) || string.IsNullOrWhiteSpace(request.operacion))
-            {
-                return DbHelper.ErrorResponse("Debe indicar comite, acta y caso.", -2);
-            }
-
-            if (!request.usuarios.Any(x => !string.IsNullOrWhiteSpace(x)))
-            {
-                return DbHelper.ErrorResponse("Debe indicar al menos un usuario autorizador.", -2);
-            }
-
-            return DbHelper.OkResponse(string.Empty);
-        }
-
-        private static bool EsSolicitud(string tipoCaso)
-        {
-            return tipoCaso.Trim().Equals("S", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string NormalizarEstado(string estado, out string estadoComite, out int editable)
-        {
-            editable = 0;
-            estadoComite = "APRO";
-
-            switch (estado.Trim().ToUpperInvariant())
-            {
-                case "P":
-                    estadoComite = "PEND";
-                    editable = 1;
-                    return "P";
-                case "D":
-                    estadoComite = "DESC";
-                    return "D";
-                case "V":
-                    estadoComite = "PENVB";
-                    editable = 1;
-                    return "P";
-                case "VL":
-                    estadoComite = "PNVBL";
-                    editable = 1;
-                    return "P";
-                default:
-                    return "A";
-            }
-        }
-
-        private static string PrimerUsuario(CrComitesAprobacionesResolucionRequest request)
-        {
-            return UsuarioEnIndice(request, 0);
-        }
-
-        private static string UsuarioEnIndice(CrComitesAprobacionesResolucionRequest request, int index)
-        {
-            return request.usuarios.Count > index ? request.usuarios[index].Trim() : string.Empty;
-        }
-
-        private static string Truncar(string valor, int max)
-        {
-            var texto = valor?.Trim() ?? string.Empty;
-            return texto.Length <= max ? texto : texto[..max];
-        }
-
-        private static CrComitesAprobacionesDetalle MapDetalle(dynamic? row)
-        {
-            if (row == null)
-            {
-                return new CrComitesAprobacionesDetalle();
-            }
-
-            var datos = (IDictionary<string, object>)row;
-            return new CrComitesAprobacionesDetalle
-            {
-                caso_id = Texto(datos, "Caso_Id"),
-                cedula = Texto(datos, "Cedula"),
-                nombre = Texto(datos, "Nombre"),
-                membresia = Texto(datos, "Membresia"),
-                codigo = Texto(datos, "Codigo"),
-                estado_laboral_desc = Texto(datos, "EstadoLaboral_Desc"),
-                estado_persona_desc = Texto(datos, "EstadoPersona_Desc"),
-                monto = Decimal(datos, "Monto"),
-                cuota = Decimal(datos, "Cuota"),
-                monto_girado = Decimal(datos, "monto_girado"),
-                desembolso_monto = Decimal(datos, "Desembolso_Monto"),
-                desembolso_cuota = Decimal(datos, "DESEMBOLSO_CUOTA"),
-                refunde_monto = Decimal(datos, "REFUNDE_MONTO"),
-                refunde_cuota = Decimal(datos, "REFUNDE_CUOTA"),
-                lugar_trabajo = Texto(datos, "LUGAR_TRABAJO"),
-                ca = Decimal(datos, "CA"),
-                cod_categoria_asociado = Texto(datos, "COD_CATEGORIA_ASOCIADO")
-            };
-        }
-
-        private static string Texto(IDictionary<string, object> datos, string campo)
-        {
-            return TryGetCampo(datos, campo, out var valor) ? Convert.ToString(valor)?.Trim() ?? string.Empty : string.Empty;
-        }
-
-        private static decimal Decimal(IDictionary<string, object> datos, string campo)
-        {
-            if (!TryGetCampo(datos, campo, out var valor) || valor == null || valor == DBNull.Value)
-            {
-                return 0;
-            }
-
-            return Convert.ToDecimal(valor);
-        }
-
-        private static bool TryGetCampo(IDictionary<string, object> datos, string campo, out object? valor)
-        {
-            if (datos.TryGetValue(campo, out var directo))
-            {
-                valor = directo;
-                return true;
-            }
-
-            var llave = datos.Keys.FirstOrDefault(x => x.Equals(campo, StringComparison.OrdinalIgnoreCase));
-            if (llave != null)
-            {
-                valor = datos[llave];
-                return true;
-            }
-
-            valor = null;
-            return false;
-        }
     }
 }

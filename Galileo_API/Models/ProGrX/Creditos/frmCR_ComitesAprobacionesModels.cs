@@ -73,6 +73,13 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string registro_usuario { get; set; } = string.Empty;
     }
 
+    public class CrComitesAprobacionesClasificacion
+    {
+        public string codigo { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string razon { get; set; } = string.Empty;
+    }
+
     public class CrComitesAprobacionesFiador
     {
         public string cedula { get; set; } = string.Empty;
@@ -201,6 +208,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string observacion { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string acuerdo_jd { get; set; } = string.Empty;
+        public required bool confirmar_traslado_salario { get; set; }
         public List<string> usuarios { get; set; } = new();
     }
 
@@ -242,6 +250,15 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string nombre { get; set; } = string.Empty;
     }
 
+    public class CrComitesAprobacionesActaAsistenciaGuardarRequest
+    {
+        public required int id_comite { get; set; }
+        public string acta { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public required bool asistencia { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
     public class CrComitesAprobacionesActaHistorico
     {
         public int id_comite { get; set; }
@@ -250,6 +267,17 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public DateTime? fecha { get; set; }
         public string estado { get; set; } = string.Empty;
         public string comite { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public DateTime? cierre_fecha { get; set; }
+        public string cierre_usuario { get; set; } = string.Empty;
+    }
+
+    public class CrComitesAprobacionesSocio
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string cedulaR { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
     }
 
     public class CrComitesAprobacionesActaResolucion
