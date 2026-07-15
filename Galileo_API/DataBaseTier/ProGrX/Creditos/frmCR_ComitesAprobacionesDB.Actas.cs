@@ -332,15 +332,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private static object? ValorCampo(IDictionary<string, object> campos, params string[] nombres)
         {
-            foreach (var nombre in nombres)
-            {
-                if (campos.TryGetValue(nombre, out var valor))
-                {
-                    return valor;
-                }
-            }
-
-            return null;
+            return nombres
+                .Select(nombre => campos.TryGetValue(nombre, out var valor)
+                    ? (encontrado: true, valor)
+                    : (encontrado: false, valor: null))
+                .Where(item => item.encontrado)
+                .Select(item => item.valor)
+                .FirstOrDefault();
         }
 
         private static DateTime? FechaCampo(IDictionary<string, object> campos, params string[] nombres)

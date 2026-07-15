@@ -187,7 +187,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
-                var parametrosBase = new { tipo = request.tipo.Trim(), operacion = request.operacion.Trim() };
+                var tipo = request.tipo.Trim();
+                var operacion = request.operacion.Trim();
+                var usuario = request.usuario.Trim();
+                var parametrosBase = new { tipo, operacion };
                 var esSolicitud = EsSolicitud(request.tipo_caso);
 
                 if (esSolicitud)
@@ -208,16 +211,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     .Select(x => x.Trim())
                     .Distinct();
 
-                foreach (var causa in causasNormalizadas)
-                {
-                    var parametros = new
+                var parametrosPorCausa = causasNormalizadas
+                    .Select(causa => new
                     {
                         causa,
-                        tipo = request.tipo.Trim(),
-                        operacion = request.operacion.Trim(),
-                        usuario = request.usuario.Trim()
-                    };
+                        tipo,
+                        operacion,
+                        usuario
+                    });
 
+                foreach (var parametros in parametrosPorCausa)
+                {
                     if (esSolicitud)
                     {
                         conn.Execute(
