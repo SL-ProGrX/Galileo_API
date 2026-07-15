@@ -129,6 +129,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto CR_ComitesAprobaciones_Acta_Guardar(int CodEmpresa, CrComitesAprobacionesActaGuardarRequest request)
         {
+
             return _db.CR_ComitesAprobaciones_Acta_Guardar(CodEmpresa, request);
         }
 
