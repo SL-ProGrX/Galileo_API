@@ -310,59 +310,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         AND D.num_asiento = A.num_asiento
                     WHERE C.cod_contabilidad = @codContabilidad");
 
-                if (!string.IsNullOrWhiteSpace(filtros.referencia))
-                    sql.Append(" AND A.referencia LIKE '%' + @referencia + '%' ");
-                if (!string.IsNullOrWhiteSpace(filtros.tipo))
-                    sql.Append(" AND D.tipo_asiento = @tipo ");
-                if (!string.IsNullOrWhiteSpace(filtros.num_asiento))
-                    sql.Append(" AND D.num_asiento LIKE '%' + @numAsiento + '%' ");
-                if (!string.IsNullOrWhiteSpace(filtros.unidad))
-                    sql.Append(" AND D.cod_unidad = @unidad ");
-                if (!string.IsNullOrWhiteSpace(filtros.cc))
-                    sql.Append(" AND D.cod_centro_costo = @centroCosto ");
-                if (!string.IsNullOrWhiteSpace(filtros.divisa))
-                    sql.Append(" AND D.cod_divisa = @divisa ");
-                if (!string.IsNullOrWhiteSpace(filtros.num_documento))
-                    sql.Append(" AND D.documento LIKE '%' + @documento + '%' ");
-                if (!string.IsNullOrWhiteSpace(filtros.detalle))
-                    sql.Append(" AND D.detalle LIKE '%' + @detalle + '%' ");
-                if (filtros.todas != true && filtros.fecha_desde.HasValue && filtros.fecha_hasta.HasValue)
-                    sql.Append(" AND A.fecha_asiento >= @fechaDesde AND A.fecha_asiento < DATEADD(day, 1, CAST(@fechaHasta AS date)) ");
-
                 var cuentaInicio = NormalizarCuenta(filtros.cuenta_inicio);
                 var cuentaCorte = NormalizarCuenta(filtros.cuenta_corte);
-                if (cuentaInicio != null && cuentaCorte != null)
-                    sql.Append(" AND D.cod_cuenta BETWEEN @cuentaInicio AND @cuentaCorte ");
-                else if (cuentaInicio != null)
-                    sql.Append(" AND D.cod_cuenta = @cuentaInicio ");
-                else if (cuentaCorte != null)
-                    sql.Append(" AND D.cod_cuenta = @cuentaCorte ");
-
-                switch (filtros.mov_tipo?.ToUpperInvariant())
-                {
-                    case "DB":
-                        sql.Append(" AND D.monto_debito BETWEEN @movDesde AND @movHasta ");
-                        break;
-                    case "CR":
-                        sql.Append(" AND D.monto_credito BETWEEN @movDesde AND @movHasta ");
-                        break;
-                    case "TD":
-                        sql.Append(" AND (D.monto_debito + D.monto_credito) BETWEEN @movDesde AND @movHasta ");
-                        break;
-                }
-
-                switch (filtros.estado_asiento?.ToUpperInvariant())
-                {
-                    case "APLICADOS":
-                        sql.Append(" AND A.fecha_aplicado IS NOT NULL ");
-                        break;
-                    case "PENDIENTES":
-                        sql.Append(" AND A.fecha_aplicado IS NULL ");
-                        break;
-                    case "DESBALANCEADOS":
-                        sql.Append(" AND A.balanceado = 'N' ");
-                        break;
-                }
+                AgregarFiltrosConsultaAnalitica(sql, filtros, cuentaInicio, cuentaCorte);
 
                 sql.Append(" ORDER BY A.fecha_asiento DESC, A.tipo_asiento, A.num_asiento, D.num_linea ");
 
@@ -395,6 +345,87 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
 
             return response;
+        }
+
+        private static void AgregarFiltrosConsultaAnalitica(
+            StringBuilder sql,
+            CntxExploradorFiltrosDto filtros,
+            string? cuentaInicio,
+            string? cuentaCorte)
+        {
+            AgregarFiltrosBasicos(sql, filtros);
+            AgregarFiltroCuentas(sql, cuentaInicio, cuentaCorte);
+            AgregarFiltroMovimiento(sql, filtros.mov_tipo);
+            AgregarFiltroEstado(sql, filtros.estado_asiento);
+        }
+
+        private static void AgregarFiltrosBasicos(
+            StringBuilder sql,
+            CntxExploradorFiltrosDto filtros)
+        {
+            if (!string.IsNullOrWhiteSpace(filtros.referencia))
+                sql.Append(" AND A.referencia LIKE '%' + @referencia + '%' ");
+            if (!string.IsNullOrWhiteSpace(filtros.tipo))
+                sql.Append(" AND D.tipo_asiento = @tipo ");
+            if (!string.IsNullOrWhiteSpace(filtros.num_asiento))
+                sql.Append(" AND D.num_asiento LIKE '%' + @numAsiento + '%' ");
+            if (!string.IsNullOrWhiteSpace(filtros.unidad))
+                sql.Append(" AND D.cod_unidad = @unidad ");
+            if (!string.IsNullOrWhiteSpace(filtros.cc))
+                sql.Append(" AND D.cod_centro_costo = @centroCosto ");
+            if (!string.IsNullOrWhiteSpace(filtros.divisa))
+                sql.Append(" AND D.cod_divisa = @divisa ");
+            if (!string.IsNullOrWhiteSpace(filtros.num_documento))
+                sql.Append(" AND D.documento LIKE '%' + @documento + '%' ");
+            if (!string.IsNullOrWhiteSpace(filtros.detalle))
+                sql.Append(" AND D.detalle LIKE '%' + @detalle + '%' ");
+            if (filtros.todas != true && filtros.fecha_desde.HasValue && filtros.fecha_hasta.HasValue)
+                sql.Append(" AND A.fecha_asiento >= @fechaDesde AND A.fecha_asiento < DATEADD(day, 1, CAST(@fechaHasta AS date)) ");
+        }
+
+        private static void AgregarFiltroCuentas(
+            StringBuilder sql,
+            string? cuentaInicio,
+            string? cuentaCorte)
+        {
+            if (cuentaInicio != null && cuentaCorte != null)
+                sql.Append(" AND D.cod_cuenta BETWEEN @cuentaInicio AND @cuentaCorte ");
+            else if (cuentaInicio != null)
+                sql.Append(" AND D.cod_cuenta = @cuentaInicio ");
+            else if (cuentaCorte != null)
+                sql.Append(" AND D.cod_cuenta = @cuentaCorte ");
+        }
+
+        private static void AgregarFiltroMovimiento(StringBuilder sql, string? tipoMovimiento)
+        {
+            switch (tipoMovimiento?.ToUpperInvariant())
+            {
+                case "DB":
+                    sql.Append(" AND D.monto_debito BETWEEN @movDesde AND @movHasta ");
+                    break;
+                case "CR":
+                    sql.Append(" AND D.monto_credito BETWEEN @movDesde AND @movHasta ");
+                    break;
+                case "TD":
+                    sql.Append(" AND (D.monto_debito + D.monto_credito) BETWEEN @movDesde AND @movHasta ");
+                    break;
+            }
+        }
+
+        private static void AgregarFiltroEstado(StringBuilder sql, string? estadoAsiento)
+        {
+            switch (estadoAsiento?.ToUpperInvariant())
+            {
+                case "APLICADOS":
+                    sql.Append(" AND A.fecha_aplicado IS NOT NULL ");
+                    break;
+                case "PENDIENTES":
+                    sql.Append(" AND A.fecha_aplicado IS NULL ");
+                    break;
+                case "DESBALANCEADOS":
+                    sql.Append(" AND A.balanceado = 'N' ");
+                    break;
+            }
         }
 
         /// <summary>

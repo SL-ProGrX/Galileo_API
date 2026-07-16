@@ -146,11 +146,11 @@
         public class CntxMovimientoNodoRequest
         {
             public int? cod_empresa { get; set; }
-            public int cod_contabilidad { get; set; }
+            public required int cod_contabilidad { get; set; }
             public string? tipo_nodo { get; set; }
             public string? codigo { get; set; }
-            public int anio { get; set; }
-            public int mes { get; set; }
+            public required int anio { get; set; }
+            public required int mes { get; set; }
         }
 
         public class CntxMovimientoCuentaDto
@@ -321,11 +321,11 @@
         public class CntxMayorizarRequest
         {
             public int? cod_empresa { get; set; }
-            public int cod_contabilidad { get; set; }
+            public required int cod_contabilidad { get; set; }
             public string? tipo_asiento { get; set; } = "";
             public string? num_asiento { get; set; } = "";
-            public int anio { get; set; }
-            public int mes { get; set; }
+            public required int anio { get; set; }
+            public required int mes { get; set; }
             public string? usuario { get; set; } = "";
             public byte[]? ts { get; set; }
         }
@@ -333,11 +333,11 @@
         public class CntxBorrarAsientoRequest
         {
             public int? cod_empresa { get; set; }
-            public int cod_contabilidad { get; set; }
+            public required int cod_contabilidad { get; set; }
             public string? tipo_asiento { get; set; } = "";
             public string? num_asiento { get; set; } = "";
-            public int anio { get; set; }
-            public int mes { get; set; }
+            public required int anio { get; set; }
+            public required int mes { get; set; }
             public string? usuario { get; set; } = "";
             public byte[]? ts { get; set; }
         }

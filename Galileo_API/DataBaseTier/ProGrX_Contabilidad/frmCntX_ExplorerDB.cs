@@ -15,15 +15,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityDb;
 
-        private sealed class AsientoBorrarInfo
-        {
-            public byte[]? ts { get; set; }
-            public DateTime? fecha_aplicado { get; set; }
-            public string? modulo { get; set; }
-            public DateTime? fecha_autoriza { get; set; }
-            public int anio { get; set; }
-            public int mes { get; set; }
-        }
+        private sealed record AsientoBorrarInfo(
+            byte[]? ts,
+            DateTime? fecha_aplicado,
+            string? modulo,
+            DateTime? fecha_autoriza,
+            int anio,
+            int mes);
 
         private static string? NormalizarCuenta(string? cuenta)
         {
