@@ -203,17 +203,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 });
 
             RegistrarBitacora(
-                    codEmpresa,
-                    (request.usuario ?? string.Empty).Trim(),
-                    "Aplica - WEB",
-                    $"Renumeracion de Operación.: {request.operacion} -> {request.operacion_nueva}"
-                );
+                codEmpresa,
+                (request.usuario ?? string.Empty).Trim(),
+                "Aplica - WEB",
+                $"Renumeracion de Operación.: {request.operacion} -> {request.operacion_nueva}");
 
-            return response.Code != 0
-                ? CrearErrorResultado(
-                    string.IsNullOrWhiteSpace(response.Description) ? MsgErrorAplicar : response.Description,
-                    response.Code ?? -1)
-                : DbHelper.CreateOkResponse(new FrmCrApaOperacionRenumeraResultadoDto
+            if (response.Code != 0)
+            {
+                string mensajeError = string.IsNullOrWhiteSpace(response.Description)
+                    ? MsgErrorAplicar
+                    : response.Description;
+
+                return CrearErrorResultado(
+                    mensajeError,
+                    response.Code ?? -1);
+            }
+
+            return DbHelper.CreateOkResponse(
+                new FrmCrApaOperacionRenumeraResultadoDto
                 {
                     mensaje = MsgOkAplicar
                 });
