@@ -5,20 +5,20 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Sanciones de Beneficios Integrales (frmAF_Beneficios_Integral_San).
+    /// Lógica de negocio del proceso Sanciones de Beneficios Integrales (FrmAfBeneficiosIntegralSan).
     /// </summary>
-    public class frmAF_Beneficios_Integral_SanBL
+    public class FrmAfBeneficiosIntegralSanBL
     {
-        private readonly frmAF_Beneficios_Integral_SanDB _db;
+        private readonly FrmAfBeneficiosIntegralSanDB _db;
 
-        public frmAF_Beneficios_Integral_SanBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralSanBL(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_SanDB(config);
+            _db = new FrmAfBeneficiosIntegralSanDB(config);
         }
 
         /// <summary>Lista de tipos de sanción activos.</summary>

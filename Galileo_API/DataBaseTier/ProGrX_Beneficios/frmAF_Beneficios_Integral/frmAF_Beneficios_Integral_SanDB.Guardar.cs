@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_SanDB
+    public partial class FrmAfBeneficiosIntegralSanDB
     {
         /// <summary>
         /// Guarda la sanción del socio: inserta cuando sancion_id es 0, actualiza en caso contrario.

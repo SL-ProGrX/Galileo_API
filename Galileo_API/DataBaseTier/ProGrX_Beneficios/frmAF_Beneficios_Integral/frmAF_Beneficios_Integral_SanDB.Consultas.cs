@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_SanDB
+    public partial class FrmAfBeneficiosIntegralSanDB
     {
         private const string SqlSancionMotivoLista = @"
             SELECT [TIPO_SANCION] AS item,

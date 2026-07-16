@@ -5,20 +5,20 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Reconocimientos de Beneficios Integrales (frmAF_Beneficios_Integral_Rec).
+    /// Lógica de negocio del proceso Reconocimientos de Beneficios Integrales (FrmAfBeneficiosIntegralRec).
     /// </summary>
-    public class frmAF_Beneficios_Integral_RecBL
+    public class FrmAfBeneficiosIntegralRecBL
     {
-        private readonly frmAF_Beneficios_Integral_RecDB _db;
+        private readonly FrmAfBeneficiosIntegralRecDB _db;
 
-        public frmAF_Beneficios_Integral_RecBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralRecBL(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_RecDB(config);
+            _db = new FrmAfBeneficiosIntegralRecDB(config);
         }
 
         /// <summary>Datos del reconocimiento asociado a un beneficio.</summary>

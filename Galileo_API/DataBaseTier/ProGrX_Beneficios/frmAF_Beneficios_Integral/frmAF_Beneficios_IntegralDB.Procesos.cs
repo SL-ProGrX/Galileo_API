@@ -8,13 +8,13 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_IntegralDB
+    public partial class FrmAfBeneficiosIntegralDB
     {
         /// <summary>Datos internos de la fecha de corte de pago automático.</summary>
         private sealed class FechaCortePago
         {
-            public DateTime fecha_corte { get; set; }
-            public int? monto { get; set; }
+            public DateTime? fecha_corte { get; set; }
+            public int? monto { get; set; } = 0;
         }
 
         private const string SqlDatosBeneficiarioDeposito = @"
@@ -171,7 +171,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 "UPDATE [dbo].[AFI_BENE_REGISTRO_ESTADOS] SET [NOTAS] = @notas WHERE CONSEC = @consec AND [COD_BENEFICIO] = @codBeneficio",
                 new { notas, consec = b.consec, codBeneficio = b.cod_beneficio });
 
-            RegistrarBitacora(CodEmpresa, b.cod_beneficio, b.consec, "Inserta",
+            RegistrarBitacora(CodEmpresa, b.cod_beneficio!, b.consec, "Inserta",
                 $"Autoriza Solicitud de Deposito - Nota: [{b.notas}]", b.usuario);
         }
 

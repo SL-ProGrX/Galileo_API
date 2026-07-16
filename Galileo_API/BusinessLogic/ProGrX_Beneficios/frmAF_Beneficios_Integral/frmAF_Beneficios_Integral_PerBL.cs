@@ -5,20 +5,20 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Personas de Beneficios Integrales (frmAF_Beneficios_Integral_Per).
+    /// Lógica de negocio del proceso Personas de Beneficios Integrales (FrmAfBeneficiosIntegralPer).
     /// </summary>
-    public class frmAF_Beneficios_Integral_PerBL
+    public class FrmAfBeneficiosIntegralPerBL
     {
-        private readonly frmAF_Beneficios_Integral_PerDB _db;
+        private readonly FrmAfBeneficiosIntegralPerDB _db;
 
-        public frmAF_Beneficios_Integral_PerBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralPerBL (IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_PerDB(config);
+            _db = new FrmAfBeneficiosIntegralPerDB(config);
         }
 
         /// <summary>Lista de estados civiles.</summary>

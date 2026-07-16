@@ -8,22 +8,22 @@ using Galileo.Models.ERROR;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints del proceso Orden de Pago de Beneficios Integrales (frmAF_Beneficios_Integral_OrP).
+    /// Endpoints del proceso Orden de Pago de Beneficios Integrales (FrmAfBeneficiosIntegralOrP).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_OrPController : ControllerBase
+    public class FrmAfBeneficiosIntegralOrPController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_OrPBL _bl;
+        private readonly FrmAfBeneficiosIntegralOrPBL _bl;
 
-        public frmAF_Beneficios_Integral_OrPController(IConfiguration config)
+        public FrmAfBeneficiosIntegralOrPController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_OrPBL(config);
+            _bl = new FrmAfBeneficiosIntegralOrPBL(config);
         }
 
         /// <summary>Tipos de identificación.</summary>

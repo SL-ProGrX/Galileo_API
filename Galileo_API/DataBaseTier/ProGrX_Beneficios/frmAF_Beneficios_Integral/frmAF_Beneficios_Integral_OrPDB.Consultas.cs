@@ -5,7 +5,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_OrPDB
+    public partial class FrmAfBeneficiosIntegralOrPDB
     {
         /// <summary>Resultado interno de la validación de existencia de orden de pago.</summary>
         private sealed record ValidaExisteResultado(int Codigo, string Mensaje);

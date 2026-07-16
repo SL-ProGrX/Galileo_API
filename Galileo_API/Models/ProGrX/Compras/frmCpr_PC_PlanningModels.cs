@@ -92,6 +92,8 @@ namespace Galileo.Models.CPR
         public string? filtro { get; set; } = string.Empty;
         public int? pagina { get; set; } = 0;
         public int? paginacion { get; set; } = 30;
+        public string? sortField { get; set; } = string.Empty;
+        public int? sortOrder { get; set; } = -1;
     }
 
     public class CprBitacoraLista

@@ -666,11 +666,12 @@ where F.Cod_Operadora = @CodOperadora
             if (request.contratos.Count == 0)
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanLiquidarResult>("Debe seleccionar al menos un contrato.");
 
+            SqlConnection? conn = null;
             SqlTransaction? tx = null;
 
             try
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
                 tx = conn.BeginTransaction();
 
@@ -692,7 +693,7 @@ where F.Cod_Operadora = @CodOperadora
                 string docRef = $"{request.cod_plan.Trim()}.{correlativo.consecutivo:000}_{correlativo.fecha:yyyy.MM.dd}";
                 string procesoCodigo = ObtenerCodigoProceso(request.proceso);
                 string tipoLiquidacion = ObtenerCodigoTipo(request.tipo);
-                string bancoTipo = MFndFuncionesDb.fxTipoDocumento(request.tipoDocumento);
+                string bancoTipo = ObtenerCodigoTipoDocumentoBancario(request.tipoDocumento);
                 string tipoDoc = "FLIQ";
                 string concepto = "FND006";
                 string notas = LimitarTexto(request.notas, 1000);
@@ -742,9 +743,7 @@ where F.Cod_Operadora = @CodOperadora
                     concepto = concepto
                 });
 
-                tx.Commit();
-
-                return DbHelper.CreateOkResponse(new FndLiquidacionPlanLiquidarResult
+                var resultado = new FndLiquidacionPlanLiquidarResult
                 {
                     documentoReferencia = docRef,
                     fecha = correlativo.fecha,
@@ -752,12 +751,29 @@ where F.Cod_Operadora = @CodOperadora
                     totalAportes = request.contratos.Sum(x => x.aportes),
                     totalRendimientos = request.contratos.Sum(x => x.rendimiento),
                     totalGeneral = request.contratos.Sum(x => x.aportes + x.rendimiento)
-                });
+                };
+
+                tx.Commit();
+
+                return DbHelper.CreateOkResponse(resultado);
             }
             catch (Exception ex)
             {
-                tx?.Rollback();
+                RollbackSeguro(tx);
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanLiquidarResult>($"Error al liquidar el plan: {ex.Message}");
+            }
+            finally
+            {
+                tx?.Dispose();
+                conn?.Dispose();
+            }
+        }
+
+        private static void RollbackSeguro(SqlTransaction? tx)
+        {
+            if (tx?.Connection?.State == ConnectionState.Open)
+            {
+                tx.Rollback();
             }
         }
 
@@ -780,6 +796,22 @@ where F.Cod_Operadora = @CodOperadora
 
         private static string ObtenerCodigoTipo(string? tipo) =>
             !string.IsNullOrWhiteSpace(tipo) && tipo.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) ? "R" : "L";
+
+        private static string ObtenerCodigoTipoDocumentoBancario(string? tipoDocumento)
+        {
+            string valor = tipoDocumento?.Trim() ?? string.Empty;
+            string codigo = valor.Length == 2
+                ? valor.ToUpperInvariant()
+                : MFndFuncionesDb.fxTipoDocumento(valor);
+
+            if (codigo.Length != 2)
+            {
+                throw new InvalidOperationException(
+                    "El tipo de documento bancario debe ser un código de dos caracteres.");
+            }
+
+            return codigo;
+        }
 
         private static int ParseBanco(string? banco) =>
             int.TryParse(banco, out var value) ? value : 0;
@@ -837,29 +869,29 @@ where F.Cod_Operadora = @CodOperadora
         private static void EjecutarLiquidacionComplementaria(SqlConnection conn, SqlTransaction tx, object parameters)
         {
             const string sql = @"
-        exec spFndRetLiq_Masivo_Complemento
-            @Operadora,
-            @Plan,
-            @Contrato,
-            @Tipo,
-            @TipoDoc,
-            @Concepto,
-            @DocRef,
-            @AporteLiq,
-            @RendiLiq,
-            @Multa,
-            @Notas,
-            @Usuario,
-            @OficinaTitular,
-            @ProcesoCodigo,
-            @RetencionCodigo,
-            @CuentaLiquidacion,
-            @Banco,
-            @BancoTipo,
-            @CuentaAhorros,
-            @Origen,
-            @TipoLiquidacion,
-            @FechaVence";
+                    exec spFndRetLiq_Masivo_Complemento
+                        @Operadora,
+                        @Plan,
+                        @Contrato,
+                        @Tipo,
+                        @TipoDoc,
+                        @Concepto,
+                        @DocRef,
+                        @AporteLiq,
+                        @RendiLiq,
+                        @Multa,
+                        @Notas,
+                        @Usuario,
+                        @OficinaTitular,
+                        @ProcesoCodigo,
+                        @RetencionCodigo,
+                        @CuentaLiquidacion,
+                        @Banco,
+                        @BancoTipo,
+                        @CuentaAhorros,
+                        @Origen,
+                        @TipoLiquidacion,
+                        @FechaVence";
 
             conn.Execute(sql, parameters, tx);
         }

@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_OrPDB
+    public partial class FrmAfBeneficiosIntegralOrPDB
     {
         /// <summary>
         /// Inserta una proyección de pago y deja traza en bitácora.

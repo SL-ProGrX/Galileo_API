@@ -62,14 +62,14 @@ namespace Galileo.Models.AF
     {
         public string cedula { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int iBeneficiario { get; set; }
+        public int iBeneficiario { get; set; } = 0;
         public string solicita { get; set; } = string.Empty;
         public float monto { get; set; }
-        public bool bConsulta { get; set; }
-        public bool bNuevo { get; set; }
-        public bool bAsignado { get; set; }
+        public bool bConsulta { get; set; } = false;
+        public bool bNuevo { get; set; } = false;
+        public bool bAsignado { get; set; } = false;
         public int iGrupo { get; set; } = 0;
-        public float cMontoRealGrupo { get; set; }
+        public float cMontoRealGrupo { get; set; } = 0;
     }
 
     public class FxMontosResult

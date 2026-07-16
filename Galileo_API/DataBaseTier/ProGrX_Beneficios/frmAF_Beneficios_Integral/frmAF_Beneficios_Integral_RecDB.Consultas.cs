@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_RecDB
+    public partial class FrmAfBeneficiosIntegralRecDB
     {
         /// <summary>
         /// Obtiene los datos del reconocimiento asociado a un beneficio.

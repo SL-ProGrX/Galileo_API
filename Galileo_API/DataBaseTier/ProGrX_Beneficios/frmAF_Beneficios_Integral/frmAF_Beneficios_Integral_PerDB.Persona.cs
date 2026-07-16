@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_PerDB
+    public partial class FrmAfBeneficiosIntegralPerDB
     {
         /// <summary>
         /// Obtiene los datos de la persona (socio) para el formulario. Retorna null si la cédula es inválida.
@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             return new ErrorDto
             {
                 Code = result.Code,
-                Description = result.Code == 0 ? result.Description : result.Description
+                Description = result.Code! == 0 ? result.Description : result.Description
             };
         }
 

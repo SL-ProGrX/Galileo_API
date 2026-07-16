@@ -5,20 +5,20 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Crece de Beneficios Integrales (frmAF_Beneficios_Integral_Cre).
+    /// Lógica de negocio del proceso Crece de Beneficios Integrales (FrmAfBeneficiosIntegralCre).
     /// </summary>
-    public class frmAF_Beneficios_Integral_CreBL
+    public class FrmAfBeneficiosIntegralCreBL
     {
-        private readonly frmAF_Beneficios_Integral_CreDB _db;
+        private readonly FrmAfBeneficiosIntegralCreDB _db;
 
-        public frmAF_Beneficios_Integral_CreBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralCreBL(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_CreDB(config);
+            _db = new FrmAfBeneficiosIntegralCreDB(config);
         }
 
         /// <summary>Registro Crece del beneficio.</summary>

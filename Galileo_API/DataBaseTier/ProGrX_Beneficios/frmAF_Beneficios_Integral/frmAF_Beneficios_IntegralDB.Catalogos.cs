@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_IntegralDB
+    public partial class FrmAfBeneficiosIntegralDB
     {
         /// <summary>
         /// Obtiene catálogos de tablas SYS/BENE (SP spAFI_Bene_Catalogos_Consulta).

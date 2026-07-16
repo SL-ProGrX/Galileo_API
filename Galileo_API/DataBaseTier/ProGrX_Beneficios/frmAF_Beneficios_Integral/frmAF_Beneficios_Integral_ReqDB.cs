@@ -1,10 +1,10 @@
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     /// <summary>
-    /// Acceso a datos del proceso Requisitos de Beneficios Integrales (frmAF_Beneficios_Integral_Req).
+    /// Acceso a datos del proceso Requisitos de Beneficios Integrales (FrmAfBeneficiosIntegralReq).
     /// Constructor y dependencias compartidas. Consultas y persistencia en los parciales asociados.
     /// </summary>
-    public partial class frmAF_Beneficios_Integral_ReqDB
+    public partial class FrmAfBeneficiosIntegralReqDB
     {
         private readonly IConfiguration _config;
         private readonly MBeneficiosDB _mBeneficiosDB;
@@ -13,7 +13,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos y la dependencia de bitácora con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public frmAF_Beneficios_Integral_ReqDB(IConfiguration config)
+        public FrmAfBeneficiosIntegralReqDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mBeneficiosDB = new MBeneficiosDB(_config);

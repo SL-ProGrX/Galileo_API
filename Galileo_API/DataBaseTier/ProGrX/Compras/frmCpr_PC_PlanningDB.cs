@@ -113,6 +113,39 @@ namespace Galileo.DataBaseTier
             return new PagedArgs(corte, q, offset, fetch);
         }
 
+        private static int Cpr_PC_Planning_ResumenSortColumn_Resolver(string? sortField)
+        {
+            return sortField?.Trim().ToLowerInvariant() switch
+            {
+                "cod_producto" => 1,
+                "descripcion" => 2,
+                "cantidad" => 3,
+                "monto" => 4,
+                "total" => 5,
+                "corte" => 6,
+                _ => 6
+            };
+        }
+
+        private static int Cpr_PC_Planning_ContableSortColumn_Resolver(string? sortField)
+        {
+            return sortField?.Trim().ToLowerInvariant() switch
+            {
+                "cuenta" => 1,
+                "descripcion" => 2,
+                "unidad" => 3,
+                "centro_costo" => 4,
+                "total" => 5,
+                "corte" => 6,
+                _ => 6
+            };
+        }
+
+        private static int Cpr_PC_Planning_SortOrder_Resolver(int? sortOrder)
+        {
+            return sortOrder == 1 ? 1 : -1;
+        }
+
         private static ErrorDto<TLista> ToPagedListResponse<TRow, TDto, TLista>(
             ErrorDto<List<TRow>> r,
             Func<TRow, int> totalRowsSelector,
@@ -496,6 +529,9 @@ namespace Galileo.DataBaseTier
 
         private ErrorDto<CprResumenPlanLista> ObtenerResumenPlanCore(int codEmpresa, CprPlanFiltros filtros, PagedArgs args, int? prodClas)
         {
+            var sortColumn = Cpr_PC_Planning_ResumenSortColumn_Resolver(filtros.sortField);
+            var sortOrder = Cpr_PC_Planning_SortOrder_Resolver(filtros.sortOrder);
+
             const string sql = @"
                         SELECT D.COD_PRODUCTO,
                                P.DESCRIPCION,
@@ -511,7 +547,21 @@ namespace Galileo.DataBaseTier
                            AND (@Corte IS NULL OR S.CORTE = @Corte)
                            AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
                            AND (@ProdClas IS NULL OR P.COD_PRODCLAS = @ProdClas)
-                         ORDER BY S.CORTE DESC
+                         ORDER BY
+                               CASE WHEN @SortColumn = 1 AND @SortOrder = 1 THEN D.COD_PRODUCTO END ASC,
+                               CASE WHEN @SortColumn = 1 AND @SortOrder = -1 THEN D.COD_PRODUCTO END DESC,
+                               CASE WHEN @SortColumn = 2 AND @SortOrder = 1 THEN P.DESCRIPCION END ASC,
+                               CASE WHEN @SortColumn = 2 AND @SortOrder = -1 THEN P.DESCRIPCION END DESC,
+                               CASE WHEN @SortColumn = 3 AND @SortOrder = 1 THEN S.CANTIDAD END ASC,
+                               CASE WHEN @SortColumn = 3 AND @SortOrder = -1 THEN S.CANTIDAD END DESC,
+                               CASE WHEN @SortColumn = 4 AND @SortOrder = 1 THEN S.MONTO END ASC,
+                               CASE WHEN @SortColumn = 4 AND @SortOrder = -1 THEN S.MONTO END DESC,
+                               CASE WHEN @SortColumn = 5 AND @SortOrder = 1 THEN S.MONTO * S.CANTIDAD END ASC,
+                               CASE WHEN @SortColumn = 5 AND @SortOrder = -1 THEN S.MONTO * S.CANTIDAD END DESC,
+                               CASE WHEN @SortColumn = 6 AND @SortOrder = 1 THEN S.CORTE END ASC,
+                               CASE WHEN @SortColumn = 6 AND @SortOrder = -1 THEN S.CORTE END DESC,
+                               S.CORTE DESC,
+                               D.COD_PRODUCTO ASC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
             var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, codEmpresa, sql, new
@@ -520,6 +570,8 @@ namespace Galileo.DataBaseTier
                 Corte = args.Corte,
                 Q = args.Q,
                 ProdClas = prodClas,
+                SortColumn = sortColumn,
+                SortOrder = sortOrder,
                 Offset = args.Offset,
                 Fetch = args.Fetch
             });
@@ -544,27 +596,53 @@ namespace Galileo.DataBaseTier
         {
             var filtros = ParsePlanFiltros(parametros);
             var args = BuildPagedArgs(filtros, includeCorte: true);
+            var sortColumn = Cpr_PC_Planning_ContableSortColumn_Resolver(filtros.sortField);
+            var sortOrder = Cpr_PC_Planning_SortOrder_Resolver(filtros.sortOrder);
 
             const string sql = @"
-                        SELECT DISTINCT
-                               Z.COD_CUENTA_MASK AS CUENTA,
-                               Z.DESCRIPCION,
-                               U.CNTX_UNIDAD AS UNIDAD,
-                               U.CNTX_CENTRO_COSTO AS CENTRO_COSTO,
-                               (S.MONTO * S.CANTIDAD) AS TOTAL,
-                               S.CORTE,
+                        WITH PlanContable AS
+                        (
+                            SELECT DISTINCT
+                                   Z.COD_CUENTA_MASK AS CUENTA,
+                                   Z.DESCRIPCION,
+                                   U.CNTX_UNIDAD AS UNIDAD,
+                                   U.CNTX_CENTRO_COSTO AS CENTRO_COSTO,
+                                   (S.MONTO * S.CANTIDAD) AS TOTAL,
+                                   S.CORTE
+                              FROM CPR_PLAN_DT D
+                              INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
+                              INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                              INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
+                              INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                              INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
+                              INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
+                             WHERE D.ID_PC = @IdPc
+                               AND (@Corte IS NULL OR S.CORTE = @Corte)
+                               AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
+                        )
+                        SELECT CUENTA,
+                               DESCRIPCION,
+                               UNIDAD,
+                               CENTRO_COSTO,
+                               TOTAL,
+                               CORTE,
                                COUNT(*) OVER() AS TotalRows
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
-                          INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
-                         WHERE D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                           AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
-                         ORDER BY S.CORTE DESC
+                          FROM PlanContable
+                         ORDER BY
+                               CASE WHEN @SortColumn = 1 AND @SortOrder = 1 THEN CUENTA END ASC,
+                               CASE WHEN @SortColumn = 1 AND @SortOrder = -1 THEN CUENTA END DESC,
+                               CASE WHEN @SortColumn = 2 AND @SortOrder = 1 THEN DESCRIPCION END ASC,
+                               CASE WHEN @SortColumn = 2 AND @SortOrder = -1 THEN DESCRIPCION END DESC,
+                               CASE WHEN @SortColumn = 3 AND @SortOrder = 1 THEN UNIDAD END ASC,
+                               CASE WHEN @SortColumn = 3 AND @SortOrder = -1 THEN UNIDAD END DESC,
+                               CASE WHEN @SortColumn = 4 AND @SortOrder = 1 THEN CENTRO_COSTO END ASC,
+                               CASE WHEN @SortColumn = 4 AND @SortOrder = -1 THEN CENTRO_COSTO END DESC,
+                               CASE WHEN @SortColumn = 5 AND @SortOrder = 1 THEN TOTAL END ASC,
+                               CASE WHEN @SortColumn = 5 AND @SortOrder = -1 THEN TOTAL END DESC,
+                               CASE WHEN @SortColumn = 6 AND @SortOrder = 1 THEN CORTE END ASC,
+                               CASE WHEN @SortColumn = 6 AND @SortOrder = -1 THEN CORTE END DESC,
+                               CORTE DESC,
+                               CUENTA ASC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
             var r = DbHelper.ExecuteListQuery<PlanContableRow>(_portalDB, CodEmpresa, sql, new
@@ -572,6 +650,8 @@ namespace Galileo.DataBaseTier
                 IdPc = filtros.planCompras,
                 Corte = args.Corte,
                 Q = args.Q,
+                SortColumn = sortColumn,
+                SortOrder = sortOrder,
                 Offset = args.Offset,
                 Fetch = args.Fetch
             });

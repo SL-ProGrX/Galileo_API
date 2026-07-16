@@ -7,22 +7,22 @@ using Galileo.Models.ERROR;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints del proceso Personas de Beneficios Integrales (frmAF_Beneficios_Integral_Per).
+    /// Endpoints del proceso Personas de Beneficios Integrales (FrmAfBeneficiosIntegralPer).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_PerController : ControllerBase
+    public class FrmAfBeneficiosIntegralPerController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_PerBL _bl;
+        private readonly FrmAfBeneficiosIntegralPerBL _bl;
 
-        public frmAF_Beneficios_Integral_PerController(IConfiguration config)
+        public FrmAfBeneficiosIntegralPerController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_PerBL(config);
+            _bl = new FrmAfBeneficiosIntegralPerBL(config);
         }
 
         /// <summary>Lista de estados civiles.</summary>

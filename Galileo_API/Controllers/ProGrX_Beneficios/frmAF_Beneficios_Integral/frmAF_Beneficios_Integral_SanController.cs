@@ -7,22 +7,22 @@ using Galileo.Models.ERROR;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints de Sanciones de Beneficios Integrales (frmAF_Beneficios_Integral_San).
+    /// Endpoints de Sanciones de Beneficios Integrales (FrmAfBeneficiosIntegralSan).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_SanController : ControllerBase
+    public class FrmAfBeneficiosIntegralSanController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_SanBL _bl;
+        private readonly FrmAfBeneficiosIntegralSanBL _bl;
 
-        public frmAF_Beneficios_Integral_SanController(IConfiguration config)
+        public FrmAfBeneficiosIntegralSanController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_SanBL(config);
+            _bl = new FrmAfBeneficiosIntegralSanBL(config);
         }
 
         /// <summary>Lista de tipos de sanción activos.</summary>

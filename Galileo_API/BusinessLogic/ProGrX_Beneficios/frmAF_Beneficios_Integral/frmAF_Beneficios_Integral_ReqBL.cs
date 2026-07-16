@@ -6,20 +6,20 @@ using Galileo.Models.GA;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Requisitos de Beneficios Integrales (frmAF_Beneficios_Integral_Req).
+    /// Lógica de negocio del proceso Requisitos de Beneficios Integrales (FrmAfBeneficiosIntegralReq).
     /// </summary>
-    public class frmAF_Beneficios_Integral_ReqBL
+    public class FrmAfBeneficiosIntegralReqBL
     {
-        private readonly frmAF_Beneficios_Integral_ReqDB _db;
+        private readonly FrmAfBeneficiosIntegralReqDB _db;
 
-        public frmAF_Beneficios_Integral_ReqBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralReqBL(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_ReqDB(config);
+            _db = new FrmAfBeneficiosIntegralReqDB(config);
         }
 
         /// <summary>Lista de requisitos del beneficio.</summary>

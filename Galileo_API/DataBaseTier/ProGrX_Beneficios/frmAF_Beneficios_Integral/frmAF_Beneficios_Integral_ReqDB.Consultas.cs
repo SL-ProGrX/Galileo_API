@@ -5,7 +5,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_ReqDB
+    public partial class FrmAfBeneficiosIntegralReqDB
     {
         /// <summary>
         /// Obtiene la lista de requisitos del beneficio para el formulario de registro.

@@ -1,10 +1,10 @@
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     /// <summary>
-    /// Acceso a datos del proceso Personas de Beneficios Integrales (frmAF_Beneficios_Integral_Per).
+    /// Acceso a datos del proceso Personas de Beneficios Integrales (FrmAfBeneficiosIntegralPer).
     /// Constructor y helpers compartidos. Catálogos, persona y teléfonos en los parciales asociados.
     /// </summary>
-    public partial class frmAF_Beneficios_Integral_PerDB
+    public partial class FrmAfBeneficiosIntegralPerDB
     {
         private readonly IConfiguration _config;
 
@@ -12,7 +12,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public frmAF_Beneficios_Integral_PerDB(IConfiguration config)
+        public FrmAfBeneficiosIntegralPerDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }

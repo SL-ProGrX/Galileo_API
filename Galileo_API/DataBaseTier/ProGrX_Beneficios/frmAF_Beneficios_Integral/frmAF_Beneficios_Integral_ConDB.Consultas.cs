@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_ConDB
+    public partial class FrmAfBeneficiosIntegralConDB
     {
         /// <summary>
         /// Resultado del armado del filtro de texto libre para la consulta general y su rama de becas.

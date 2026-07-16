@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_CreDB
+    public partial class FrmAfBeneficiosIntegralCreDB
     {
         // ==================== Crece ====================
 

@@ -8,7 +8,7 @@ using Galileo.Models.GA;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_ReqDB
+    public partial class FrmAfBeneficiosIntegralReqDB
     {
         /// <summary>
         /// Registra un requisito del beneficio (los documentos se gestionan en GA) y deja traza en bitácora.

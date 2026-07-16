@@ -7,22 +7,22 @@ using Galileo.Models.ERROR;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints del proceso Crece de Beneficios Integrales (frmAF_Beneficios_Integral_Cre).
+    /// Endpoints del proceso Crece de Beneficios Integrales (FrmAfBeneficiosIntegralCre).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_CreController : ControllerBase
+    public class FrmAfBeneficiosIntegralCreController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_CreBL _bl;
+        private readonly FrmAfBeneficiosIntegralCreBL _bl;
 
-        public frmAF_Beneficios_Integral_CreController(IConfiguration config)
+        public FrmAfBeneficiosIntegralCreController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_CreBL(config);
+            _bl = new FrmAfBeneficiosIntegralCreBL(config);
         }
 
         /// <summary>Registro Crece del beneficio.</summary>

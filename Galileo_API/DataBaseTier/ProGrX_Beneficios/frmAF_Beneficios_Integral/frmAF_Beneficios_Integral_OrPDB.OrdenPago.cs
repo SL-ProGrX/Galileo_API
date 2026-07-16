@@ -5,7 +5,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_OrPDB
+    public partial class FrmAfBeneficiosIntegralOrPDB
     {
         /// <summary>
         /// Agrega una orden de pago tras aplicar las validaciones de socio, beneficio y justificación.

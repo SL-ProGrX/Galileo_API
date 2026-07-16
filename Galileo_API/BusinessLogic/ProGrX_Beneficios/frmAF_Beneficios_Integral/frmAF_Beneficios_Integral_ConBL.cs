@@ -5,24 +5,24 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Consultas de Beneficios Integrales (frmAF_Beneficios_Integral_Con).
+    /// Lógica de negocio del proceso Consultas de Beneficios Integrales (FrmAfBeneficiosIntegralCon).
     /// </summary>
-    public class frmAF_Beneficios_Integral_ConBL
+    public class FrmAfBeneficiosIntegralConBL
     {
-        private readonly frmAF_Beneficios_Integral_ConDB _db;
+        private readonly FrmAfBeneficiosIntegralConDB _db;
 
         /// <summary>
         /// Inicializa la lógica de negocio con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public frmAF_Beneficios_Integral_ConBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralConBL (IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_ConDB(config);
+            _db = new FrmAfBeneficiosIntegralConDB(config);
         }
 
         /// <summary>

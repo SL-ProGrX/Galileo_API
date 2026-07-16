@@ -6,20 +6,20 @@ using Galileo.Models.ERROR;
 namespace Galileo.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
-    /// Lógica de negocio del proceso Orden de Pago de Beneficios Integrales (frmAF_Beneficios_Integral_OrP).
+    /// Lógica de negocio del proceso Orden de Pago de Beneficios Integrales (FrmAfBeneficiosIntegralOrP).
     /// </summary>
-    public class frmAF_Beneficios_Integral_OrPBL
+    public class FrmAfBeneficiosIntegralOrPBL
     {
-        private readonly frmAF_Beneficios_Integral_OrPDB _db;
+        private readonly FrmAfBeneficiosIntegralOrPDB _db;
 
-        public frmAF_Beneficios_Integral_OrPBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralOrPBL(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new frmAF_Beneficios_Integral_OrPDB(config);
+            _db = new FrmAfBeneficiosIntegralOrPDB(config);
         }
 
         /// <summary>Tipos de identificación.</summary>

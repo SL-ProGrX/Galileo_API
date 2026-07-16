@@ -8,22 +8,22 @@ using Galileo.Models.GA;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints del proceso Requisitos de Beneficios Integrales (frmAF_Beneficios_Integral_Req).
+    /// Endpoints del proceso Requisitos de Beneficios Integrales (FrmAfBeneficiosIntegralReq).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_ReqController : ControllerBase
+    public class FrmAfBeneficiosIntegralReqController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_ReqBL _bl;
+        private readonly FrmAfBeneficiosIntegralReqBL _bl;
 
-        public frmAF_Beneficios_Integral_ReqController(IConfiguration config)
+        public FrmAfBeneficiosIntegralReqController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_ReqBL(config);
+            _bl = new FrmAfBeneficiosIntegralReqBL(config);
         }
 
         /// <summary>Lista de requisitos del beneficio.</summary>

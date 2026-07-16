@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_PerDB
+    public partial class FrmAfBeneficiosIntegralPerDB
     {
         /// <summary>
         /// Guarda el teléfono del socio: inserta (id_telefono 0) o actualiza.

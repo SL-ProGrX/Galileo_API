@@ -7,22 +7,22 @@ using Galileo.Models.ERROR;
 namespace Galileo.Controllers.ProGrX_Beneficios
 {
     /// <summary>
-    /// Endpoints de Reconocimientos de Beneficios Integrales (frmAF_Beneficios_Integral_Rec).
+    /// Endpoints de Reconocimientos de Beneficios Integrales (FrmAfBeneficiosIntegralRec).
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class frmAF_Beneficios_Integral_RecController : ControllerBase
+    public class FrmAfBeneficiosIntegralRecController : ControllerBase
     {
-        private readonly frmAF_Beneficios_Integral_RecBL _bl;
+        private readonly FrmAfBeneficiosIntegralRecBL _bl;
 
-        public frmAF_Beneficios_Integral_RecController(IConfiguration config)
+        public FrmAfBeneficiosIntegralRecController(IConfiguration config)
         {
             if (config == null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new frmAF_Beneficios_Integral_RecBL(config);
+            _bl = new FrmAfBeneficiosIntegralRecBL(config);
         }
 
         /// <summary>Datos del reconocimiento asociado a un beneficio.</summary>

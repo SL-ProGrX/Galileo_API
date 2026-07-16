@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_CreDB
+    public partial class FrmAfBeneficiosIntegralCreDB
     {
         /// <summary>
         /// Obtiene el registro Crece de un beneficio por consecutivo y código de beneficio.

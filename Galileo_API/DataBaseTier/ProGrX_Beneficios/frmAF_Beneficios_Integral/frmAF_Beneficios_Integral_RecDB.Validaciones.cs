@@ -3,7 +3,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_RecDB
+    public partial class FrmAfBeneficiosIntegralRecDB
     {
         /// <summary>
         /// Valida si el estudiante ya está registrado en otro reconocimiento del año.

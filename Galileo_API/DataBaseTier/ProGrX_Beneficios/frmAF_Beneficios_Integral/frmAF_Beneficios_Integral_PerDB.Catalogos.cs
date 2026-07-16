@@ -5,7 +5,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class frmAF_Beneficios_Integral_PerDB
+    public partial class FrmAfBeneficiosIntegralPerDB
     {
         private const string SqlEstadoCivil =
             "SELECT Estado_Civil AS item, Descripcion AS descripcion FROM SYS_ESTADO_CIVIL WHERE Activo = 1 ORDER BY Descripcion ASC";

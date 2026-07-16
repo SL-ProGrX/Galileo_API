@@ -3,11 +3,11 @@ using Galileo.Models.ERROR;
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     /// <summary>
-    /// Acceso a datos del proceso Consultas de Beneficios Integrales (frmAF_Beneficios_Integral_Con).
+    /// Acceso a datos del proceso Consultas de Beneficios Integrales (FrmAfBeneficiosIntegralCon).
     /// Este parcial contiene el constructor y los helpers compartidos.
-    /// Las consultas viven en el parcial frmAF_Beneficios_Integral_ConDB.Consultas.cs.
+    /// Las consultas viven en el parcial FrmAfBeneficiosIntegralConDB.Consultas.cs.
     /// </summary>
-    public partial class frmAF_Beneficios_Integral_ConDB
+    public partial class FrmAfBeneficiosIntegralConDB
     {
         private readonly IConfiguration _config;
 
@@ -15,7 +15,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public frmAF_Beneficios_Integral_ConDB(IConfiguration config)
+        public FrmAfBeneficiosIntegralConDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }

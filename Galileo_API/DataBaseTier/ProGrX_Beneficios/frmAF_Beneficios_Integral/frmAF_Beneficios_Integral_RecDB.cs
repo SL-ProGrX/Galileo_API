@@ -3,10 +3,10 @@ using Galileo.Models.AF;
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     /// <summary>
-    /// Acceso a datos del proceso Reconocimientos de Beneficios Integrales (frmAF_Beneficios_Integral_Rec).
+    /// Acceso a datos del proceso Reconocimientos de Beneficios Integrales (FrmAfBeneficiosIntegralRec).
     /// Constructor y helpers compartidos. Consultas, persistencia y validaciones en los parciales asociados.
     /// </summary>
-    public partial class frmAF_Beneficios_Integral_RecDB
+    public partial class FrmAfBeneficiosIntegralRecDB
     {
         private readonly IConfiguration _config;
 
@@ -14,7 +14,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public frmAF_Beneficios_Integral_RecDB(IConfiguration config)
+        public FrmAfBeneficiosIntegralRecDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
