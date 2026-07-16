@@ -142,12 +142,33 @@ namespace Galileo.DataBaseTier
                 var fetch = filtro.paginacion.GetValueOrDefault(int.MaxValue);
                 if (fetch <= 0) fetch = int.MaxValue;
 
+                var sortField = (filtro.sortField ?? string.Empty)
+                    .Trim()
+                    .ToLowerInvariant() switch
+                {
+                    "cod_documento" => "cod_documento",
+                    "nombre_prov" => "nombre_prov",
+                    "estado" => "estado",
+                    "monto_total" => "monto_total",
+                    _ => "id"
+                };
+                var sortOrder = filtro.sortOrder == 1 ? 1 : -1;
+
                 const string sql = @"SELECT *, COUNT(*) OVER() AS TotalRows
         FROM CPR_FACTURAS_XML
         WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
         AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
         AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q))
-        ORDER BY id DESC
+        ORDER BY
+            CASE WHEN @SortField = 'cod_documento' AND @SortOrder = 1 THEN cod_documento END ASC,
+            CASE WHEN @SortField = 'cod_documento' AND @SortOrder = -1 THEN cod_documento END DESC,
+            CASE WHEN @SortField = 'nombre_prov' AND @SortOrder = 1 THEN nombre_prov END ASC,
+            CASE WHEN @SortField = 'nombre_prov' AND @SortOrder = -1 THEN nombre_prov END DESC,
+            CASE WHEN @SortField = 'estado' AND @SortOrder = 1 THEN estado END ASC,
+            CASE WHEN @SortField = 'estado' AND @SortOrder = -1 THEN estado END DESC,
+            CASE WHEN @SortField = 'monto_total' AND @SortOrder = 1 THEN monto_total END ASC,
+            CASE WHEN @SortField = 'monto_total' AND @SortOrder = -1 THEN monto_total END DESC,
+            id DESC
         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var listResp = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -170,7 +191,9 @@ namespace Galileo.DataBaseTier
                             CedJur = cedJurLimpia,
                             Q = q,
                             Offset = offset,
-                            Fetch = fetch
+                            Fetch = fetch,
+                            SortField = sortField,
+                            SortOrder = sortOrder
                         },
                         splitOn: "TotalRows"
                     ).ToList();

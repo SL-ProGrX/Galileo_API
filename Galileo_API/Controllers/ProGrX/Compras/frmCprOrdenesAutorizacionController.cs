@@ -19,9 +19,13 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("OrdenCompra_Autorizacion_Obtener")]
-        public ErrorDto<OrdenCompraDto> OrdenCompra_Autorizacion_Obtener(int CodEmpresa, int pagina, int paginacion, string? filtro, OrdenCompraRequestDto ordenCompraRequestDto)
+        public ErrorDto<OrdenCompraDto> OrdenCompra_Autorizacion_Obtener(
+            int CodEmpresa,
+            OrdenCompraRequestDto ordenCompraRequestDto)
         {
-            return _bl.OrdenesCompra_Autorizacion_Obtener(CodEmpresa, pagina, paginacion, filtro, ordenCompraRequestDto);
+            return _bl.OrdenesCompra_Autorizacion_Obtener(
+                CodEmpresa,
+                ordenCompraRequestDto);
         }
 
         [HttpPost("OrdenCompra_Autorizar")]

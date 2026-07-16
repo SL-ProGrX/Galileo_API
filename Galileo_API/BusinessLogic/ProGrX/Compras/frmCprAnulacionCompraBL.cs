@@ -13,9 +13,13 @@ namespace Galileo.BusinessLogic
             _db = new FrmCprAnulacionCompraDB(config);
         }
 
-        public ErrorDto<List<CompraDto>> Compras_Obtener(int CodEmpresa, string filtro)
+        public ErrorDto<List<CompraDto>> Compras_Obtener(
+            int CodEmpresa,
+            string filtro,
+            string? sortField,
+            int? sortOrder)
         {
-            return _db.Compras_Obtener(CodEmpresa, filtro);
+            return _db.Compras_Obtener(CodEmpresa, filtro, sortField, sortOrder);
         }
 
         public ErrorDto<CompraAnulacionDatosDto> Compra_Datos_Obtener(int CodEmpresa, string Cod_Compra)

@@ -13,9 +13,13 @@ namespace Galileo.BusinessLogic
             _db = new FrmCprOrdenesAutorizacionDB(config);
         }
 
-        public ErrorDto<OrdenCompraDto> OrdenesCompra_Autorizacion_Obtener(int CodEmpresa, int pagina, int paginacion, string? filtro, OrdenCompraRequestDto ordenCompraRequestDto)
+        public ErrorDto<OrdenCompraDto> OrdenesCompra_Autorizacion_Obtener(
+            int CodEmpresa,
+            OrdenCompraRequestDto ordenCompraRequestDto)
         {
-            return _db.OrdenesCompra_Autorizacion_Obtener(CodEmpresa, pagina, paginacion, filtro, ordenCompraRequestDto);
+            return _db.OrdenesCompra_Autorizacion_Obtener(
+                CodEmpresa,
+                ordenCompraRequestDto);
         }
 
         public ErrorDto OrdenCompra_Autorizar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
