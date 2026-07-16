@@ -92,11 +92,11 @@
         public string CtaPuente { get; set; } = string.Empty;
         public string CtaPagoAnticipado { get; set; } = string.Empty;
         public string CtaIva { get; set; } = string.Empty;
-        public int IIva { get; set; }
+        public int? IIva { get; set; }
         public string CtaIntCobAdelantado { get; set; } = string.Empty;
         public string CtaPaEfectos { get; set; } = string.Empty;
         public string CtaPaCartera { get; set; } = string.Empty;
-        public int IPaSuspenso { get; set; }
+        public int? IPaSuspenso { get; set; }
         public string CtaPsDeudora { get; set; } = string.Empty;
         public string CtaPsAcreedora { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
