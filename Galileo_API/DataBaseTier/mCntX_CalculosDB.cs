@@ -1,14 +1,35 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using Galileo_API.Models;
 
 namespace Galileo_API.DataBaseTier
 {
     public class MCntXCalculosDb
     {
         private readonly PortalDB _portalDB;
+        private readonly MSecurityMainDb _mSecurityMain;
+        private const int vModulo = 20;
+
+        private sealed class CntXBalanceCuadradoData
+        {
+            public decimal debitos { get; set; } = 0;
+            public decimal creditos { get; set; } = 0;
+            }
+
+        private sealed class CntXCalculosAsientoBorraData
+        {
+            public DateTime? fecha_aplicado { get; set; }
+            public DateTime? fecha_asiento { get; set; }
+            public string modulo { get; set; } = string.Empty;
+            public DateTime? fecha_autoriza { get; set; }
+        }
 
         public MCntXCalculosDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mSecurityMain = new MSecurityMainDb(config);
         }
 
         public bool FxCntX_UnidadVerifica(int codEmpresa, int codConta, string pUnidad)
@@ -32,7 +53,9 @@ namespace Galileo_API.DataBaseTier
         public bool FxCntX_CentroCostoVerifica(int codEmpresa, int codConta, string pCentroCosto, string pUnidad = "")
         {
             if (string.IsNullOrWhiteSpace(pCentroCosto))
+            {
                 return true;
+            }
 
             string sql = @"select isnull(count(*),0)
                    from CntX_Centro_Costos
@@ -56,9 +79,7 @@ namespace Galileo_API.DataBaseTier
                 Unidad = pUnidad
             };
 
-            int existe = DbHelper
-                .ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros)
-                .Result;
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros).Result;
 
             return existe > 0;
         }
@@ -76,30 +97,49 @@ namespace Galileo_API.DataBaseTier
                 Divisa = pDivisa
             };
 
-            int existe = DbHelper
-                .ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros)
-                .Result;
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros).Result;
 
             return existe > 0;
         }
 
-        public bool FxCntX_PeriodoVerifica(int CodEmpresa, int codConta, int pAnion, int pMes)
+        public bool FxCntX_PeriodoVerifica(int codEmpresa, int codConta, int pAnion, int pMes)
         {
-            string sql = @"select isnull(count(*),0) as existe from CntX_Periodos where anio = @Anio
-                and mes = @Mes and cod_contabilidad = @CodConta
-                and estado = 'P'";
-            var parametros = new { Anio = pAnion, Mes = pMes, CodConta = codConta };
-            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, sql, 0, parametros).Result;
+            string sql = @"select isnull(count(*),0) as existe
+                           from CntX_Periodos
+                           where anio = @Anio
+                             and mes = @Mes
+                             and cod_contabilidad = @CodConta
+                             and estado = 'P'";
+
+            var parametros = new
+            {
+                Anio = pAnion,
+                Mes = pMes,
+                CodConta = codConta
+            };
+
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros).Result;
             return existe > 0;
         }
 
-        public byte[]? FxCntX_AsientoConcurrencia(int CodEmpresa, int codConta, string numAsiento, string tipoAsiento)
+        public byte[]? FxCntX_AsientoConcurrencia(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
         {
-            string sql = @"select ts from Cntx_Asientos where cod_contabilidad = @codConta 
-                and num_asiento = @numAsiento and Tipo_Asiento = @tipoAsiento";
-            var parametros = new { codConta, numAsiento, tipoAsiento };
-            return DbHelper.ExecuteSingleQuery<byte[]?>(_portalDB, CodEmpresa, sql, null, parametros).Result;
+            string sql = @"select ts
+                           from Cntx_Asientos
+                           where cod_contabilidad = @CodConta
+                             and num_asiento = @NumAsiento
+                             and tipo_asiento = @TipoAsiento";
+
+            var parametros = new
+            {
+                CodConta = codConta,
+                NumAsiento = numAsiento,
+                TipoAsiento = tipoAsiento
+            };
+
+            return DbHelper.ExecuteSingleQuery<byte[]?>(_portalDB, codEmpresa, sql, null, parametros).Result;
         }
+
         public static string FxCntX_PeriodoDesc(int pAnio, int pMes)
         {
             return pMes switch
@@ -121,7 +161,7 @@ namespace Galileo_API.DataBaseTier
             };
         }
 
-        public bool FxCntX_MesFiscal(int CodEmpresa, int codConta, int pAnio, int pMes)
+        public bool FxCntX_MesFiscal(int codEmpresa, int codConta, int pAnio, int pMes)
         {
             string sql = @"select isnull(count(*),0) as Existe
                            from CntX_Asientos
@@ -138,8 +178,459 @@ namespace Galileo_API.DataBaseTier
                 CodConta = codConta
             };
 
-            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, sql, 0, parametros).Result;
+            int existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, sql, 0, parametros).Result;
             return existe > 0;
+        }
+
+        public bool FxCntX_BalanceCuadrado(int codEmpresa, int codConta, int pAnio, int pMes, string pUnidad = "")
+        {
+            string sql = @"
+                select
+                    isnull(sum(abs(M.total_debitos)), 0) as debitos,
+                    isnull(sum(abs(M.total_creditos)), 0) as creditos
+                from CntX_Mov_Cuentas_Detallado M
+                inner join CntX_Cuentas C
+                    on M.cod_contabilidad = C.cod_contabilidad
+                   and M.cod_cuenta = C.cod_cuenta
+                   and C.cuenta_madre = ''
+                where M.cod_contabilidad = @CodConta
+                  and M.anio = @Anio
+                  and M.mes = @Mes
+                  and (@Unidad = '' or M.cod_unidad = @Unidad);";
+
+            var data = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<CntXBalanceCuadradoData>(
+                    sql,
+                    new
+                    {
+                        CodConta = codConta,
+                        Anio = pAnio,
+                        Mes = pMes,
+                        Unidad = pUnidad ?? string.Empty
+                    }) ?? new CntXBalanceCuadradoData());
+
+            if (data.Code != 0)
+            {
+                return true;
+            }
+
+            return (data.Result?.debitos ?? 0) - (data.Result?.creditos ?? 0) == 0;
+        }
+
+        public ErrorDto SbCntX_RestructuraMovimientosRSM(int codEmpresa, CntXCalculosRestructuraRequest request)
+        {
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                "exec spCntX_BalanceRestructura @CodConta, @Anio, @Mes, @RevisionTotal",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Anio = request.anio,
+                    Mes = request.mes,
+                    RevisionTotal = request.revision_total
+                });
+        }
+
+        public ErrorDto<CntXCalculosUtilidadDto> SbCntX_Utilidad(int codEmpresa, int codConta, int pAnio, int pMes)
+        {
+            var result = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<CntXCalculosUtilidadDto>(
+                    "exec spCntX_EstadoUtilidad @CodConta, @Anio, @Mes",
+                    new
+                    {
+                        CodConta = codConta,
+                        Anio = pAnio,
+                        Mes = pMes
+                    }) ?? new CntXCalculosUtilidadDto());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new CntXCalculosUtilidadDto())
+                : DbHelper.CreateErrorResponse<CntXCalculosUtilidadDto>(
+                    result.Description ?? "No fue posible obtener la utilidad del periodo.",
+                    result.Code ?? -1,
+                    new CntXCalculosUtilidadDto());
+        }
+
+        private bool FxExisteMovimiento(int codEmpresa, int codConta, int pAnio, int pMes, string pCuenta, string pUnidad, string pCentroCosto = "")
+        {
+            string sql = @"
+                select isnull(count(*), 0)
+                from CntX_Mov_Cuentas_Detallado
+                where cod_contabilidad = @CodConta
+                  and anio = @Anio
+                  and mes = @Mes
+                  and cod_cuenta = @Cuenta
+                  and cod_unidad = @Unidad
+                  and cod_centro_costo = @CentroCosto;";
+
+            int existe = DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                0,
+                new
+                {
+                    CodConta = codConta,
+                    Anio = pAnio,
+                    Mes = pMes,
+                    Cuenta = pCuenta,
+                    Unidad = pUnidad,
+                    CentroCosto = pCentroCosto ?? string.Empty
+                }).Result;
+
+            return existe > 0;
+        }
+
+        private ErrorDto SbCntX_Asiento_GuardaMovimiento(
+            int codEmpresa,
+            int codConta,
+            int pAnio,
+            int pMes,
+            string pCuenta,
+            decimal pDebito,
+            decimal pCredito,
+            string pUnidad,
+            string pCentroCosto = "",
+            string pDivisa = "COL",
+            decimal pTipoCambio = 1)
+        {
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                @"exec spCntX_AsientoGuardaMov
+                    @CodConta,
+                    @Anio,
+                    @Mes,
+                    @Cuenta,
+                    @Debito,
+                    @Credito,
+                    @Unidad,
+                    @CentroCosto,
+                    @Divisa,
+                    @TipoCambio",
+                new
+                {
+                    CodConta = codConta,
+                    Anio = pAnio,
+                    Mes = pMes,
+                    Cuenta = pCuenta,
+                    Debito = pDebito,
+                    Credito = pCredito,
+                    Unidad = pUnidad,
+                    CentroCosto = pCentroCosto ?? string.Empty,
+                    Divisa = pDivisa,
+                    TipoCambio = pTipoCambio
+                });
+        }
+
+        public ErrorDto SbCntX_Asiento_Mayorizar(int codEmpresa, CntXCalculosAsientoProcesoRequest request)
+        {
+            string sqlValida = @"
+                select count(*)
+                from Cntx_Asientos Asi
+                left join Cntx_Asientos_Detalle Ad
+                    on Asi.Cod_Contabilidad = Ad.Cod_Contabilidad
+                   and Asi.Tipo_Asiento = Ad.Tipo_Asiento
+                   and Asi.Num_Asiento = Ad.Num_Asiento
+                where Asi.cod_contabilidad = @CodConta
+                  and Asi.tipo_asiento = @TipoAsiento
+                  and Asi.num_asiento = @NumAsiento
+                  and Asi.fecha_aplicado is null
+                  and Asi.balanceado = 'S'
+                group by Asi.Tipo_Asiento, Asi.Num_Asiento
+                having sum(Ad.Monto_Debito) - sum(Ad.Monto_Credito) = 0;";
+
+            var existe = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+                conn.QueryFirstOrDefault<int?>(
+                    sqlValida,
+                    new
+                    {
+                        CodConta = request.cod_contabilidad,
+                        TipoAsiento = request.tipo_asiento,
+                        NumAsiento = request.num_asiento
+                    }) ?? 0);
+
+            if (existe.Code != 0)
+            {
+                return DbHelper.ErrorResponse(existe.Description ?? "No fue posible validar el asiento.");
+            }
+
+            if (existe.Result <= 0)
+            {
+                return DbHelper.ErrorResponse("No se encontr&oacute; un asiento pendiente y balanceado para mayorizar.", -2);
+            }
+
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                "exec spCntX_AsientoMayoriza @CodConta, @Usuario, @TipoAsiento, @NumAsiento",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Usuario = request.usuario,
+                    TipoAsiento = request.tipo_asiento,
+                    NumAsiento = request.num_asiento
+                });
+
+            if (result.Code == 0)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Aplica",
+                    $"Mayoriza Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
+            }
+
+            return result;
+        }
+
+        public ErrorDto SbCntX_Asiento_Reversion(int codEmpresa, CntXCalculosAsientoProcesoRequest request)
+        {
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                "exec spCntX_AsientoReversa @CodConta, @Usuario, @TipoAsiento, @NumAsiento",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Usuario = request.usuario,
+                    TipoAsiento = request.tipo_asiento,
+                    NumAsiento = request.num_asiento
+                });
+
+            if (result.Code == 0)
+            {
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Aplica",
+                    $"Reversa Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
+            }
+
+            return result;
+        }
+
+        public ErrorDto SbCntX_AsientoBorra(int codEmpresa, CntXCalculosAsientoBorraRequest request)
+        {
+            string sqlPeriodo = @"
+                select isnull(count(*), 0)
+                from CntX_Periodos
+                where cod_contabilidad = @CodConta
+                  and anio = @Anio
+                  and mes = @Mes
+                  and estado = 'P';";
+
+            int periodoAbierto = DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codEmpresa,
+                sqlPeriodo,
+                0,
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Anio = request.anio,
+                    Mes = request.mes
+                }).Result;
+
+            if (periodoAbierto == 0)
+            {
+                return DbHelper.ErrorResponse("El asiento no puede ser borrado porque el periodo ya fue cerrado.", -2);
+            }
+
+            string sqlAsiento = @"
+                select top 1
+                    fecha_aplicado,
+                    fecha_asiento,
+                    isnull(modulo, '') as modulo,
+                    fecha_autoriza
+                from Cntx_Asientos
+                where cod_contabilidad = @CodConta
+                  and tipo_asiento = @TipoAsiento
+                  and num_asiento = @NumAsiento;";
+
+            var asiento = DbHelper.ExecuteSingleQuery<CntXCalculosAsientoBorraData?>(
+                _portalDB,
+                codEmpresa,
+                sqlAsiento,
+                null,
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    TipoAsiento = request.tipo_asiento,
+                    NumAsiento = request.num_asiento
+                }).Result;
+
+            if (asiento is null)
+            {
+                return DbHelper.ErrorResponse("No se encontr&oacute; el asiento indicado.", -2);
+            }
+
+            if (!string.Equals(asiento.modulo?.Trim(), "20", StringComparison.OrdinalIgnoreCase) &&
+                asiento.fecha_autoriza is null)
+            {
+                return DbHelper.ErrorResponse("No se pueden borrar asientos for&aacute;neos, solo se pueden modificar.", -2);
+            }
+
+            if (asiento.fecha_aplicado.HasValue)
+            {
+                var reversa = SbCntX_Asiento_Reversion(codEmpresa, new CntXCalculosAsientoProcesoRequest
+                {
+                    cod_contabilidad = request.cod_contabilidad,
+                    usuario = request.usuario,
+                    tipo_asiento = request.tipo_asiento,
+                    num_asiento = request.num_asiento
+                });
+
+                if (reversa.Code != 0)
+                {
+                    return reversa;
+                }
+            }
+
+            var deleteDetalle = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                @"delete Cntx_Asientos_Detalle
+                  where cod_contabilidad = @CodConta
+                    and tipo_asiento = @TipoAsiento
+                    and num_asiento = @NumAsiento",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    TipoAsiento = request.tipo_asiento,
+                    NumAsiento = request.num_asiento
+                });
+
+            if (deleteDetalle.Code != 0)
+            {
+                return deleteDetalle;
+            }
+
+            var deleteAsiento = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                @"delete Cntx_Asientos
+                  where cod_contabilidad = @CodConta
+                    and tipo_asiento = @TipoAsiento
+                    and num_asiento = @NumAsiento",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    TipoAsiento = request.tipo_asiento,
+                    NumAsiento = request.num_asiento
+                });
+
+            if (deleteAsiento.Code != 0)
+            {
+                return deleteAsiento;
+            }
+
+            RegistrarBitacora(
+                codEmpresa,
+                request.usuario,
+                "Elimina",
+                $"Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
+
+            return deleteAsiento;
+        }
+
+        private string FxCuentaFinalRng(int codEmpresa, int codConta, string vCuentaI, string vCuentaC)
+        {
+            string sql = "select dbo.fxCntX_CuentaFinalRango(@CodConta, @CuentaInicio, @CuentaCorte) as Cuenta;";
+
+            return DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                string.Empty,
+                new
+                {
+                    CodConta = codConta,
+                    CuentaInicio = vCuentaI,
+                    CuentaCorte = vCuentaC
+                }).Result ?? string.Empty;
+        }
+
+        public ErrorDto SbCntX_MovimientoCuentas(int codEmpresa, CntXCalculosMovimientoCuentasRequest request)
+        {
+            string cuentaCorte = FxCuentaFinalRng(
+                codEmpresa,
+                request.cod_contabilidad,
+                request.cuenta_inicio ?? string.Empty,
+                request.cuenta_corte ?? string.Empty);
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                @"exec spCntX_Analitico_Rsm
+                    @CodConta,
+                    @Usuario,
+                    @FechaInicio,
+                    @FechaCorte,
+                    @CuentaInicio,
+                    @CuentaCorte,
+                    @MovimientoEnCero,
+                    @Unidad,
+                    @CentroCosto,
+                    @DivisaOrigen,
+                    @Pendientes",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Usuario = request.usuario,
+                    FechaInicio = request.fecha_desde.Date,
+                    FechaCorte = request.fecha_hasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                    CuentaInicio = request.cuenta_inicio ?? string.Empty,
+                    CuentaCorte = cuentaCorte,
+                    MovimientoEnCero = request.mov_en_cero,
+                    Unidad = request.unidad ?? "0x0",
+                    CentroCosto = request.centro_costo ?? "0x0",
+                    DivisaOrigen = request.divisa_origen,
+                    Pendientes = request.pendientes
+                });
+        }
+
+        public ErrorDto SbCntX_PeriodoCierre(int codEmpresa, CntXCalculosPeriodoProcesoRequest request)
+        {
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                "exec spCntX_Periodo_Cierre @CodConta, @Anio, @Mes, @Usuario",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Anio = request.anio,
+                    Mes = request.mes,
+                    Usuario = request.usuario
+                });
+        }
+
+        public ErrorDto SbCntX_CierreFiscal(int codEmpresa, CntXCalculosPeriodoProcesoRequest request)
+        {
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                "exec spCntX_Cierre_Fiscal_Asientos @CodConta, @Anio, @Mes, @Usuario",
+                new
+                {
+                    CodConta = request.cod_contabilidad,
+                    Anio = request.anio,
+                    Mes = request.mes,
+                    Usuario = request.usuario
+                });
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            _mSecurityMain.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle + " - WEB",
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
     }
 }
