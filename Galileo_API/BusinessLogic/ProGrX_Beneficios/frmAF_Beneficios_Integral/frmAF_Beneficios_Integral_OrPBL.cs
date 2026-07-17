@@ -8,11 +8,11 @@ namespace Galileo.BusinessLogic.ProGrX_Beneficios
     /// <summary>
     /// Lógica de negocio del proceso Orden de Pago de Beneficios Integrales (FrmAfBeneficiosIntegralOrP).
     /// </summary>
-    public class FrmAfBeneficiosIntegralOrPBL
+    public class FrmAfBeneficiosIntegralOrPbl
     {
         private readonly FrmAfBeneficiosIntegralOrPDB _db;
 
-        public FrmAfBeneficiosIntegralOrPBL(IConfiguration config)
+        public FrmAfBeneficiosIntegralOrPbl(IConfiguration config)
         {
             if (config == null)
             {

@@ -14,7 +14,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
     [ApiController]
     public class FrmAfBeneficiosIntegralOrPController : ControllerBase
     {
-        private readonly FrmAfBeneficiosIntegralOrPBL _bl;
+        private readonly FrmAfBeneficiosIntegralOrPbl _bl;
 
         public FrmAfBeneficiosIntegralOrPController(IConfiguration config)
         {
@@ -23,7 +23,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new FrmAfBeneficiosIntegralOrPBL(config);
+            _bl = new FrmAfBeneficiosIntegralOrPbl(config);
         }
 
         /// <summary>Tipos de identificación.</summary>

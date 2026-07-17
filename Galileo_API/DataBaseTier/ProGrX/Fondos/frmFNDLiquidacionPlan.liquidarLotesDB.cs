@@ -627,9 +627,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private sealed class FndLiquidacionPlanProcesoDetalle
         {
-            public long cod_contrato { get; init; }
-            public decimal aportes { get; init; }
-            public decimal rendimiento { get; init; }
+            public long cod_contrato { get; init; } = 0;
+            public decimal aportes { get; init; } = 0;
+            public decimal rendimiento { get; init; } = 0;
             public string bancofinal { get; init; } = string.Empty;
             public string cuentafinal { get; init; } = string.Empty;
         }
