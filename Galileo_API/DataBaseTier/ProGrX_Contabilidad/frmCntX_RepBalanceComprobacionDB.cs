@@ -11,10 +11,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public class FrmCntXRepBalanceComprobacionDb
     {
         private readonly PortalDB _portalDB;
+        private readonly MCntXPreliminaresDb _mCntXPreliminaresDb;
 
         public FrmCntXRepBalanceComprobacionDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mCntXPreliminaresDb = new MCntXPreliminaresDb(config);
+        }
+
+        /// <summary>
+        /// Genera los movimientos temporales requeridos por el balance preliminar.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="anio"></param>
+        /// <param name="mes"></param>
+        /// <param name="usuario"></param>
+        /// <param name="unidad"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> CntX_Preliminar_Montar(
+            int codEmpresa,
+            int codContabilidad,
+            int anio,
+            int mes,
+            string usuario,
+            string unidad = "0x0")
+        {
+            return _mCntXPreliminaresDb.sbCntX_Preliminar_Montar(
+                codEmpresa,
+                codContabilidad,
+                anio,
+                mes,
+                "A",
+                usuario,
+                unidad);
         }
 
         /// <summary>
