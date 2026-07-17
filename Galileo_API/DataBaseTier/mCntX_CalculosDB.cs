@@ -21,7 +21,6 @@ namespace Galileo_API.DataBaseTier
         private sealed class CntXCalculosAsientoBorraData
         {
             public DateTime? fecha_aplicado { get; set; }
-            public DateTime? fecha_asiento { get; set; }
             public string modulo { get; set; } = string.Empty;
             public DateTime? fecha_autoriza { get; set; }
         }
@@ -298,16 +297,7 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto SbCntX_Asiento_GuardaMovimiento(
             int codEmpresa,
-            int codConta,
-            int pAnio,
-            int pMes,
-            string pCuenta,
-            decimal pDebito,
-            decimal pCredito,
-            string pUnidad,
-            string pCentroCosto = "",
-            string pDivisa = "COL",
-            decimal pTipoCambio = 1)
+            CntXAsientoMovimientoData movimiento)
         {
             return DbHelper.ExecuteNonQuery(
                 _portalDB,
@@ -325,16 +315,16 @@ namespace Galileo_API.DataBaseTier
                     @TipoCambio",
                 new
                 {
-                    Contabilidad = codConta,
-                    Anio = pAnio,
-                    Mes = pMes,
-                    Cuenta = pCuenta,
-                    Debito = pDebito,
-                    Credito = pCredito,
-                    Unidad = pUnidad,
-                    CentroCosto = pCentroCosto ?? string.Empty,
-                    Divisa = pDivisa,
-                    TipoCambio = pTipoCambio
+                    Contabilidad = movimiento.cod_contabilidad,
+                    Anio = movimiento.anio,
+                    Mes = movimiento.mes,
+                    Cuenta = movimiento.cuenta,
+                    Debito = movimiento.debito,
+                    Credito = movimiento.credito,
+                    Unidad = movimiento.unidad,
+                    CentroCosto = movimiento.centro_costo ?? string.Empty,
+                    Divisa = movimiento.divisa,
+                    TipoCambio = movimiento.tipo_cambio
                 });
         }
 
@@ -410,76 +400,106 @@ namespace Galileo_API.DataBaseTier
             return result;
         }
 
-        public ErrorDto SbCntX_AsientoBorra(int codEmpresa, CntXCalculosAsientoBorraRequest request)
+        public ErrorDto SbCntX_AsientoBorra(
+            int codEmpresa,
+            CntXCalculosAsientoBorraRequest request)
         {
-            string sqlPeriodo = @"
-                select isnull(count(*), 0)
-                from CntX_Periodos
-                where cod_contabilidad = @CodConta
-                  and anio = @Anio
-                  and mes = @Mes
-                  and estado = 'P';";
+            const string sqlPeriodo = @"
+            select isnull(count(*), 0)
+            from CntX_Periodos
+            where cod_contabilidad = @CodConta
+              and anio = @Anio
+              and mes = @Mes
+              and estado = 'P';";
 
-            int periodoAbierto = DbHelper.ExecuteSingleQuery<int>(
+            var consultaPeriodo = DbHelper.WithConn(
                 _portalDB,
                 codEmpresa,
-                sqlPeriodo,
-                0,
-                new
-                {
-                    CodConta = request.cod_contabilidad,
-                    Anio = request.anio,
-                    Mes = request.mes
-                }).Result;
+                conn => conn.QueryFirstOrDefault<int?>(
+                    sqlPeriodo,
+                    new
+                    {
+                        CodConta = request.cod_contabilidad,
+                        Anio = request.anio,
+                        Mes = request.mes
+                    }));
 
-            if (periodoAbierto == 0)
+            if (consultaPeriodo.Code != 0)
             {
-                return DbHelper.ErrorResponse("El asiento no puede ser borrado porque el periodo ya fue cerrado.", -2);
+                return DbHelper.ErrorResponse(
+                    consultaPeriodo.Description ??
+                    "No fue posible consultar el estado del periodo.",
+                    consultaPeriodo.Code ?? -1);
             }
 
-            string sqlAsiento = @"
-                select top 1
-                    fecha_aplicado,
-                    fecha_asiento,
-                    isnull(modulo, '') as modulo,
-                    fecha_autoriza
-                from Cntx_Asientos
-                where cod_contabilidad = @CodConta
-                  and tipo_asiento = @TipoAsiento
-                  and num_asiento = @NumAsiento;";
+            if ((consultaPeriodo.Result ?? 0) == 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "El asiento no puede ser borrado porque el periodo ya fue cerrado.",
+                    -2);
+            }
 
-            var asiento = DbHelper.ExecuteSingleQuery<CntXCalculosAsientoBorraData?>(
+            const string sqlAsiento = @"
+            select top 1
+                fecha_aplicado,
+                isnull(modulo, '') as modulo,
+                fecha_autoriza
+            from Cntx_Asientos
+            where cod_contabilidad = @CodConta
+              and tipo_asiento = @TipoAsiento
+              and num_asiento = @NumAsiento;";
+
+            var consultaAsiento = DbHelper.WithConn(
                 _portalDB,
                 codEmpresa,
-                sqlAsiento,
-                null,
-                new
-                {
-                    CodConta = request.cod_contabilidad,
-                    TipoAsiento = request.tipo_asiento,
-                    NumAsiento = request.num_asiento
-                }).Result;
+                conn => conn.QueryFirstOrDefault<CntXCalculosAsientoBorraData>(
+                    sqlAsiento,
+                    new
+                    {
+                        CodConta = request.cod_contabilidad,
+                        TipoAsiento = request.tipo_asiento,
+                        NumAsiento = request.num_asiento
+                    }));
+
+            if (consultaAsiento.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    consultaAsiento.Description ??
+                    "No fue posible consultar el asiento.",
+                    consultaAsiento.Code ?? -1);
+            }
+
+            CntXCalculosAsientoBorraData? asiento = consultaAsiento.Result;
 
             if (asiento is null)
             {
-                return DbHelper.ErrorResponse("No se encontr&oacute; el asiento indicado.", -2);
+                return DbHelper.ErrorResponse(
+                    "No se encontr&oacute; el asiento indicado.",
+                    -2);
             }
 
-            if (!string.Equals(asiento.modulo?.Trim(), "20", StringComparison.OrdinalIgnoreCase) &&
+            if (!string.Equals(
+                    asiento.modulo.Trim(),
+                    "20",
+                    StringComparison.OrdinalIgnoreCase) &&
                 asiento.fecha_autoriza is null)
             {
-                return DbHelper.ErrorResponse("No se pueden borrar asientos for&aacute;neos, solo se pueden modificar.", -2);
+                return DbHelper.ErrorResponse(
+                    "No se pueden borrar asientos for&aacute;neos, solo se pueden modificar.",
+                    -2);
             }
 
             if (asiento.fecha_aplicado.HasValue)
             {
-                var reversa = SbCntX_Asiento_Reversion(codEmpresa, new CntXCalculosAsientoProcesoRequest
-                {
-                    cod_contabilidad = request.cod_contabilidad,
-                    usuario = request.usuario,
-                    tipo_asiento = request.tipo_asiento,
-                    num_asiento = request.num_asiento
-                });
+                var reversa = SbCntX_Asiento_Reversion(
+                    codEmpresa,
+                    new CntXCalculosAsientoProcesoRequest
+                    {
+                        cod_contabilidad = request.cod_contabilidad,
+                        usuario = request.usuario,
+                        tipo_asiento = request.tipo_asiento,
+                        num_asiento = request.num_asiento
+                    });
 
                 if (reversa.Code != 0)
                 {
@@ -487,19 +507,21 @@ namespace Galileo_API.DataBaseTier
                 }
             }
 
+            var parametros = new
+            {
+                CodConta = request.cod_contabilidad,
+                TipoAsiento = request.tipo_asiento,
+                NumAsiento = request.num_asiento
+            };
+
             var deleteDetalle = DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
                 @"delete Cntx_Asientos_Detalle
-                  where cod_contabilidad = @CodConta
-                    and tipo_asiento = @TipoAsiento
-                    and num_asiento = @NumAsiento",
-                new
-                {
-                    CodConta = request.cod_contabilidad,
-                    TipoAsiento = request.tipo_asiento,
-                    NumAsiento = request.num_asiento
-                });
+              where cod_contabilidad = @CodConta
+                and tipo_asiento = @TipoAsiento
+                and num_asiento = @NumAsiento",
+                parametros);
 
             if (deleteDetalle.Code != 0)
             {
@@ -510,15 +532,10 @@ namespace Galileo_API.DataBaseTier
                 _portalDB,
                 codEmpresa,
                 @"delete Cntx_Asientos
-                  where cod_contabilidad = @CodConta
-                    and tipo_asiento = @TipoAsiento
-                    and num_asiento = @NumAsiento",
-                new
-                {
-                    CodConta = request.cod_contabilidad,
-                    TipoAsiento = request.tipo_asiento,
-                    NumAsiento = request.num_asiento
-                });
+              where cod_contabilidad = @CodConta
+                and tipo_asiento = @TipoAsiento
+                and num_asiento = @NumAsiento",
+                parametros);
 
             if (deleteAsiento.Code != 0)
             {
@@ -529,7 +546,8 @@ namespace Galileo_API.DataBaseTier
                 codEmpresa,
                 request.usuario,
                 "Elimina - WEB",
-                $"Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
+                $"Asiento : {request.tipo_asiento}-{request.num_asiento} " +
+                $"Conta.{request.cod_contabilidad}");
 
             return deleteAsiento;
         }

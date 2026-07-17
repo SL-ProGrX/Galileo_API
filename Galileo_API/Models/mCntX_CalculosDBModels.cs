@@ -54,4 +54,18 @@
         public int anio { get; set; } = 0;
         public int mes { get; set; } = 0;
     }
+
+    public sealed class CntXAsientoMovimientoData
+    {
+        public int cod_contabilidad { get; set; } = 0;
+        public int anio { get; set; } = 0;
+        public int mes { get; set; } = 0;
+        public string cuenta { get; set; } = string.Empty;
+        public decimal debito { get; set; } = 0;
+        public decimal credito { get; set; } = 0;
+        public string unidad { get; set; } = string.Empty;
+        public string centro_costo { get; set; } = string.Empty;
+        public string divisa { get; set; } = "COL";
+        public decimal tipo_cambio { get; set; } = 1;
+    }
 }
