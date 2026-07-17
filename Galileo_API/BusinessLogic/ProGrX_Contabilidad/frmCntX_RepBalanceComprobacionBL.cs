@@ -19,5 +19,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntX_Unidades_Listar(codEmpresa);
         }
 
+        public ErrorDto<bool> CntX_Preliminar_Montar(
+            int codEmpresa,
+            CntXPreliminarMontarRequest request)
+        {
+            return _db.CntX_Preliminar_Montar(
+                codEmpresa,
+                request);
+        }
+
     }
 }
