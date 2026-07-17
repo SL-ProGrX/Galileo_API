@@ -122,7 +122,7 @@ namespace Galileo_API.DataBaseTier
             return existe > 0;
         }
 
-        public string FxCntX_AsientoConcurrencia(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
+        public byte[]? FxCntX_AsientoConcurrencia(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
         {
             string sql = @"select ts
                    from Cntx_Asientos
@@ -137,13 +137,17 @@ namespace Galileo_API.DataBaseTier
                 TipoAsiento = tipoAsiento
             };
 
-            byte[]? ts = DbHelper.ExecuteSingleQuery<byte[]?>(
+            return DbHelper.ExecuteSingleQuery<byte[]?>(
                 _portalDB,
                 codEmpresa,
                 sql,
                 null,
                 parametros).Result;
+        }
 
+        public string FxCntX_AsientoConcurrenciaHex(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
+        {
+            byte[]? ts = FxCntX_AsientoConcurrencia(codEmpresa, codConta, numAsiento, tipoAsiento);
             return FxTsToHex(ts);
         }
 
