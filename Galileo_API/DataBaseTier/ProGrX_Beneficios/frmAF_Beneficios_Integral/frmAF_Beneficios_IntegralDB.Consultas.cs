@@ -37,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         public ErrorDto<object> BeneIntegralRepExpediente_Obtener(int CodEmpresa, string cedula, int id_beneficio, string categoria)
         {
             var response = new ErrorDto<object>();
-            var ds = new DataSet();
+            using var ds = new DataSet();
             var tablesAsJson = new Dictionary<string, object>();
 
             try
