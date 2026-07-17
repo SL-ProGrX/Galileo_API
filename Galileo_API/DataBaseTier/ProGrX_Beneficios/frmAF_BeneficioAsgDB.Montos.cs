@@ -37,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var montoPagado = ObtenerMontoPagado(connection, datos);
 
                 var mensaje = string.Empty;
-                if (montoPagado >= datos.monto && datos.bConsulta == false && !fxValida(CodCliente, ref mensaje).Result && datos.bNuevo == false)
+                if (montoPagado >= datos.monto && !datos.bConsulta && !fxValida(CodCliente, ref mensaje).Result && !datos.bNuevo)
                 {
                     return new FxMontosResult { Code = 1, Description = "Ya le fue asignado el monto de la ayuda" };
                 }
@@ -47,7 +47,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     return new FxMontosResult { Code = 2, Description = "- No cumple con la membresía para este beneficio" };
                 }
 
-                if (datos.bNuevo == false)
+                if (!datos.bNuevo)
                 {
                     fxValida(CodCliente, ref mensaje);
                     info.Code = 3;

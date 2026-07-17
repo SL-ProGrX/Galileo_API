@@ -6,7 +6,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
-    public class FrmFndTraspasoTesoreriaDb
+    public partial class FrmFndTraspasoTesoreriaDb
     {
         private readonly IConfiguration _config;
 
@@ -23,11 +23,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                       AND (@AplicaRevision = 0 OR L.Analista_Revision = 'S')";
 
         private const string SqlFiltroAvanzadoLiquidacion = @"
-                      AND (@AplicarFiltros = 0 OR @BancoId IS NULL OR L.cod_banco = @BancoId)
-                      AND (@AplicarFiltros = 0 OR @Oficina = '' OR L.cod_oficina = @Oficina)
-                      AND (@AplicarFiltros = 0 OR @Usuario = '' OR L.usuario LIKE @Usuario)
-                      AND (@AplicarFiltros = 0 OR @Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
-                      AND (@AplicarFiltros = 0 OR @TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta)";
+                      AND (@BancoId IS NULL OR L.cod_banco = @BancoId)
+                      AND (@Oficina = '' OR L.cod_oficina = @Oficina)
+                      AND (@Usuario = '' OR L.usuario LIKE @Usuario)
+                      AND (@Sistema = '' OR ISNULL(L.cod_app, @AppProductName) LIKE @Sistema)
+                      AND (@TokenConsulta = '' OR ISNULL(L.ID_Token, '') LIKE @TokenConsulta)";
 
         private const string SqlBancos = @"
                     SELECT
@@ -736,7 +736,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 FechaHasta = param.FechaHasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
                 AplicaRevision = NormalizarTexto(param.SifParam) == "S" ? 1 : 0,
                 EstadoPendiente = ObtenerEstadoPendiente(param.Estado),
-                AplicarFiltros = param.Filtros ? 1 : 0,
                 param.BancoId,
                 Oficina = NormalizarTexto(param.Oficina),
                 Usuario = CrearLikeInicio(param.Usuario),

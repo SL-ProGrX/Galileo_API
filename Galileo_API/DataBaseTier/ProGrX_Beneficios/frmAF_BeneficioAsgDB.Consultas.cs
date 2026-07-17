@@ -15,8 +15,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
+                var filtroLike = string.IsNullOrWhiteSpace(filtro)
+                    ? null
+                    : $"%{filtro.Trim()}%";
+                var aplicarPaginacion = pagina.HasValue
+                    && paginacion.HasValue
+                    && paginacion.Value > 0;
+
                 var p = new DynamicParameters();
-                p.Add("@cedula", cedula);
+                p.Add("@cedula", cedula, DbType.String);
+                p.Add("@filtroLike", filtroLike, DbType.String);
+                p.Add("@offset", aplicarPaginacion ? pagina!.Value : 0, DbType.Int32);
+                p.Add("@fetch", aplicarPaginacion ? paginacion!.Value : int.MaxValue, DbType.Int32);
 
                 var datos = new AfiBeneOtorgaAsgDataList
                 {
@@ -24,24 +34,15 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         "SELECT COUNT(*) FROM afi_bene_otorga WHERE cedula = @cedula", p)
                 };
 
-                var where = string.Empty;
-                if (filtro != null)
-                {
-                    p.Add("@filtroLike", $"%{filtro}%");
-                    where = " AND (B.Descripcion LIKE @filtroLike OR O.cod_beneficio LIKE @filtroLike OR O.consec LIKE @filtroLike) ";
-                }
-
-                var paginado = string.Empty;
-                if (pagina != null)
-                {
-                    p.Add("@offset", pagina);
-                    p.Add("@fetch", paginacion ?? 0);
-                    paginado = " ORDER BY O.cod_beneficio OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-                }
-
-                var sql = $@"SELECT O.*, B.Descripcion FROM afi_bene_otorga O
-                             INNER JOIN afi_beneficios B ON O.cod_beneficio = B.cod_beneficio
-                             WHERE O.cedula = @cedula {where} {paginado}";
+                const string sql = @"SELECT O.*, B.Descripcion FROM afi_bene_otorga O
+                                     INNER JOIN afi_beneficios B ON O.cod_beneficio = B.cod_beneficio
+                                     WHERE O.cedula = @cedula
+                                       AND (@filtroLike IS NULL
+                                            OR B.Descripcion LIKE @filtroLike
+                                            OR O.cod_beneficio LIKE @filtroLike
+                                            OR O.consec LIKE @filtroLike)
+                                     ORDER BY O.cod_beneficio
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 
                 datos.beneficios = connection.Query<AfiBeneOtorgaData>(sql, p).ToList();
                 return datos;

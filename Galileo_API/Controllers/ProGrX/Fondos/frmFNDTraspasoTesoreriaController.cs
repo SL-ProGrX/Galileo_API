@@ -136,5 +136,13 @@ namespace Galileo.Controllers.ProGrX.Fondos
         {
             return _bl.TraspasoTesoreria_LiquidacionDetalle(param);
         }
+
+        [Authorize]
+        [HttpPost("FND_TraspasoTesoreria_ProcesarLote")]
+        public ErrorDto<FndTraspasoTesoreriaProcesarLoteResult> FND_TraspasoTesoreria_ProcesarLote(
+            [FromBody] FndTraspasoTesoreriaProcesarLoteRequest request)
+        {
+            return _bl.FND_TraspasoTesoreria_ProcesarLote(request);
+        }
     }
 }
