@@ -21,19 +21,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 
         public ErrorDto<bool> CntX_Preliminar_Montar(
             int codEmpresa,
-            int codContabilidad,
-            int anio,
-            int mes,
-            string usuario,
-            string unidad = "0x0")
+            CntXPreliminarMontarRequest request)
         {
             return _db.CntX_Preliminar_Montar(
                 codEmpresa,
-                codContabilidad,
-                anio,
-                mes,
-                usuario,
-                unidad);
+                request);
         }
 
     }

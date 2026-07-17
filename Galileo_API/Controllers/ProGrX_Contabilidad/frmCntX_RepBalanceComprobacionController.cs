@@ -30,19 +30,11 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         [HttpPost("CntX_Preliminar_Montar")]
         public ErrorDto<bool> CntX_Preliminar_Montar(
             int codEmpresa,
-            int codContabilidad,
-            int anio,
-            int mes,
-            string usuario,
-            string unidad = "0x0")
+            [FromBody] CntXPreliminarMontarRequest request)
         {
             return _bl.CntX_Preliminar_Montar(
                 codEmpresa,
-                codContabilidad,
-                anio,
-                mes,
-                usuario,
-                unidad);
+                request);
         }
 
 

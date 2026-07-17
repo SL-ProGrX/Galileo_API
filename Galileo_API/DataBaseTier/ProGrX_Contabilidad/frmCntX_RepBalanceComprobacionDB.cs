@@ -23,28 +23,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Genera los movimientos temporales requeridos por el balance preliminar.
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="anio"></param>
-        /// <param name="mes"></param>
-        /// <param name="usuario"></param>
-        /// <param name="unidad"></param>
+        /// <param name="request">Parametros del proceso preliminar.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntX_Preliminar_Montar(
             int codEmpresa,
-            int codContabilidad,
-            int anio,
-            int mes,
-            string usuario,
-            string unidad = "0x0")
+            CntXPreliminarMontarRequest request)
         {
             return _mCntXPreliminaresDb.sbCntX_Preliminar_Montar(
                 codEmpresa,
-                codContabilidad,
-                anio,
-                mes,
-                "A",
-                usuario,
-                unidad);
+                request);
         }
 
         /// <summary>

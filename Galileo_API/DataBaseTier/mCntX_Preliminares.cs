@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX_Contabilidad;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier
@@ -18,23 +19,11 @@ namespace Galileo_API.DataBaseTier
         /// Genera los saldos preliminares de la contabilidad para el periodo indicado.
         /// </summary>
         /// <param name="codEmpresa">Codigo de la empresa cuya conexion se utilizara.</param>
-        /// <param name="codContabilidad">Codigo de la contabilidad.</param>
-        /// <param name="anio">Anio del periodo contable.</param>
-        /// <param name="mes">Mes del periodo contable.</param>
-        /// <param name="preliminar">Tipo de preliminar que se debe procesar.</param>
-        /// <param name="usuario">Usuario que solicita el proceso.</param>
-        /// <param name="unidad">Unidad contable; por omision procesa todas.</param>
-        /// <param name="centroCosto">Centro de costo; por omision procesa todos.</param>
+        /// <param name="request">Parametros requeridos para generar el preliminar.</param>
         /// <returns>Resultado de la ejecucion del proceso preliminar.</returns>
         public ErrorDto<bool> sbCntX_Preliminar_Montar(
             int codEmpresa,
-            int codContabilidad,
-            int anio,
-            int mes,
-            string preliminar,
-            string usuario,
-            string unidad = "0x0",
-            string centroCosto = "0x0")
+            CntXPreliminarMontarRequest request)
         {
             const string procedimiento = "spCntX_Preliminar_Procesa";
 
@@ -44,13 +33,13 @@ namespace Galileo_API.DataBaseTier
                     procedimiento,
                     new
                     {
-                        Contabilidad = codContabilidad,
-                        Anio = anio,
-                        Mes = mes,
-                        Preliminar = preliminar,
-                        Usuario = usuario,
-                        Unidad = unidad,
-                        CentroCosto = centroCosto
+                        Contabilidad = request.codContabilidad,
+                        Anio = request.anio,
+                        Mes = request.mes,
+                        Preliminar = "A",
+                        Usuario = request.usuario,
+                        Unidad = request.unidad,
+                        CentroCosto = "0x0"
                     },
                     commandType: CommandType.StoredProcedure);
 
