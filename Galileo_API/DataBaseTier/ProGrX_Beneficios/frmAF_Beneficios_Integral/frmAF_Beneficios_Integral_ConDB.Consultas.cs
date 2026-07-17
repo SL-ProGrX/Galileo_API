@@ -250,7 +250,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return string.Empty;
             }
 
-            p.Add("@offset", filtro.pagina ?? 0);
+            p.Add("@offset", filtro.pagina);
             p.Add("@fetch", filtro.paginacion ?? 0);
             return " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
         }
