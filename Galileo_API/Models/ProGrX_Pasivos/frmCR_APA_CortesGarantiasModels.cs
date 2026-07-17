@@ -116,23 +116,24 @@ namespace Galileo_API.Models.ProGrX_Pasivos
     {
         public string cod_acreedor { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
-        public DateTime fecha_corte { get; set; }
+        public required DateTime fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
-        public bool editar { get; set; }
+        public required bool editar { get; set; }
     }
 
     public class FrmCrApaCortesGarantiasClaveRequest
     {
         public string cod_acreedor { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime fecha_corte { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
     public class FrmCrApaCortesGarantiasExcluirRequest : FrmCrApaCortesGarantiasClaveRequest
     {
-        public int tipo { get; set; }
+        public required int tipo { get; set; }
         public List<int> solicitudes { get; set; } = [];
     }
 

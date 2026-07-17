@@ -113,8 +113,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                     FechaCorte = request.fecha_corte,
                     Categoria = NuloSiVacio(filtros.categoria),
                     Garantias = NuloSiVacio(filtros.garantias),
-                    FechaDesde = request.filtrar ? filtros.fecha_desde.Date : new DateTime(1900, 1, 1),
-                    FechaHasta = request.filtrar ? filtros.fecha_hasta.Date.AddDays(1).AddTicks(-1) : new DateTime(2100, 1, 1)
+                    FechaDesde = request.filtrar
+                        ? filtros.fecha_desde.Date
+                        : new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                    FechaHasta = request.filtrar
+                        ? filtros.fecha_hasta.Date.AddDays(1).AddTicks(-1)
+                        : new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Unspecified)
                 });
 
             NormalizarIdentificadores(response);
