@@ -283,8 +283,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return formFiles;
             }
 
-            var stream = new MemoryStream(byteArray);
-            var formFile = new FormFile(stream, 0, byteArray.Length, "file", fileName)
+            // The stream must remain open for the returned FormFile to be readable.
+            // Its lifecycle is tied to the IFormFile consumer, which is responsible for disposal.
+            var fileContentStream = new MemoryStream(byteArray);
+            var formFile = new FormFile(fileContentStream, 0, byteArray.Length, "file", fileName)
             {
                 Headers = new HeaderDictionary(),
                 ContentType = "application/octet-stream"
