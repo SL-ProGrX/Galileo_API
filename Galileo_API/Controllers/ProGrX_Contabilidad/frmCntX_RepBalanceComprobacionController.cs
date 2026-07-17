@@ -26,6 +26,17 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntX_Unidades_Listar(codEmpresa);
         }
 
+        [Authorize]
+        [HttpPost("CntX_Preliminar_Montar")]
+        public ErrorDto<bool> CntX_Preliminar_Montar(
+            int codEmpresa,
+            [FromBody] CntXPreliminarMontarRequest request)
+        {
+            return _bl.CntX_Preliminar_Montar(
+                codEmpresa,
+                request);
+        }
+
 
     }
 }

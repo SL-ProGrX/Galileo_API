@@ -12,6 +12,7 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly MProGrXAuxiliarDB mAuxiliarDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
+        private readonly MCntLinkDB mCntLink;
         private readonly string sendEmail;
         private readonly string Notificaciones;
 
@@ -26,6 +27,7 @@ namespace Galileo.DataBaseTier
             _config = config ?? throw new ArgumentNullException(nameof(config));
             mAuxiliarDB = new MProGrXAuxiliarDB(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
+            mCntLink = new MCntLinkDB(_config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? string.Empty;
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value ?? string.Empty;
         }
@@ -36,9 +38,173 @@ namespace Galileo.DataBaseTier
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
+        /// <summary>
+        /// Crea una lista vacía de suspensiones.
+        /// </summary>
+        /// <returns>Lista vacía inicializada.</returns>
+        private static SuspensionLista CrearSuspensionListaVacia() => new()
+        {
+            Total = 0,
+            Suspensiones = new List<Suspension>()
+        };
+
+        /// <summary>
+        /// Crea una lista vacía de fusiones.
+        /// </summary>
+        /// <returns>Lista vacía inicializada.</returns>
+        private static ProveedorFusionLista CrearFusionListaVacia() => new()
+        {
+            Total = 0,
+            Fusiones = new List<ProveedorFusion>()
+        };
+
+        /// <summary>
+        /// Crea el HTML de la notificación de vencimiento.
+        /// </summary>
+        /// <param name="descripcion">Nombre del proveedor.</param>
+        /// <param name="dias">Días antes del vencimiento.</param>
+        /// <returns>HTML del correo.</returns>
+        private static string CrearHtmlNotificacionVencimiento(string descripcion, int dias)
+        {
+            return @$"<html lang=""es"">
+                            <head>
+                                <meta charset=""UTF-8"">
+                                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                                <title>Solicitud de Cotización</title>
+                                <style>
+                                    body {{ font-family: Arial, sans-serif; }}
+                                    .container {{ width: 600px; margin: 0 auto; border: 1px solid #eaeaea; padding: 20px; }}
+                                    .header {{ background-color: #e8f3ff; padding: 10px; }}
+                                    .header img {{ width: auto; height: 50px; }}
+                                    .content {{ margin-top: 20px; }}
+                                    .content h2 {{ font-size: 16px; color: #0072ce; }}
+                                    .table {{ width: 100%; margin-top: 20px; border-collapse: collapse; }}
+                                    .table th, .table td {{ padding: 10px; border: 1px solid #dcdcdc; text-align: left; }}
+                                    .table th {{ background-color: #0072ce; color: white; }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class=""container"">
+                                    <div class=""header"">
+                                        <img src=""https://www.aseccssenlinea.com/Content/Login/ASECCSSLogo.png"" alt=""Logo"">
+                                    </div>
+                                    <div class=""content"">
+                                        <h2><strong>Notificación de vencimiento de registro</strong></h2>
+                                        <p>Estimado Proveedor <strong>{descripcion}</strong></p>
+                                        <p>Mediante la presente se le comunica el vencimiento de su registro en {dias} día(s).</p>
+                                    </div>
+                                </div>
+                            </body>
+                        </html>";
+        }
+
         #endregion
 
         #region Consultas básicas
+
+        /// <summary>
+        /// Obtiene proveedores con filtros, búsqueda, ordenamiento y paginación.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="filtro">Filtros de búsqueda, ordenamiento y paginación.</param>
+        /// <param name="parametros">Filtros de estado, autogestión y ferias.</param>
+        /// <returns>Listado paginado de proveedores.</returns>
+        public ErrorDto<TablasListaGenericaModel> Proveedores_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtro,
+            CxPProveedorFiltros parametros)
+        {
+            const string codProveedorField = "COD_PROVEEDOR";
+
+            string? search = filtro.filtro?.Trim();
+            string sortField = string.IsNullOrWhiteSpace(filtro.sortField)
+                ? codProveedorField
+                : filtro.sortField;
+
+            int sortOrder = filtro.sortOrder == 0 ? 1 : filtro.sortOrder;
+            int pagina = filtro.pagina;
+            int paginacion = filtro.paginacion;
+
+            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, conn =>
+            {
+                var parameters = new DynamicParameters();
+
+                parameters.Add("@Offset", pagina);
+                parameters.Add("@PageSize", paginacion);
+                parameters.Add("@Search", string.IsNullOrWhiteSpace(search) ? null : search);
+                parameters.Add("@SearchPattern", string.IsNullOrWhiteSpace(search) ? null : $"%{search}%");
+                parameters.Add("@Estado", parametros.estado);
+                parameters.Add("@AutoGestion", parametros.autoGestion);
+                parameters.Add("@Ventas", parametros.ventas);
+
+                const string defaultSortField = codProveedorField;
+
+                var sortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [codProveedorField] = codProveedorField,
+                    ["DESCRIPCION"] = "DESCRIPCION"
+                };
+
+                if (!sortMap.TryGetValue(sortField, out string? safeSortField))
+                {
+                    safeSortField = defaultSortField;
+                }
+
+                string safeSortDir = sortOrder == -1 ? "DESC" : "ASC";
+                parameters.Add("@SortField", safeSortField);
+                parameters.Add("@SortDir", safeSortDir);
+
+                const string qTotal = @"
+                    SELECT COUNT(*)
+                    FROM CXP_PROVEEDORES
+                    WHERE (@Estado = 'T' OR ESTADO = @Estado)
+                      AND (
+                            (@AutoGestion = 0 AND @Ventas = 0)
+                            OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                            OR (@Ventas = 1 AND WEB_FERIAS = 1)
+                          )
+                      AND (
+                            @Search IS NULL
+                            OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
+                            OR DESCRIPCION LIKE @SearchPattern
+                          );";
+
+                int total = conn.QuerySingle<int>(qTotal, parameters);
+
+                const string sql = @"
+                    SELECT
+                        COD_PROVEEDOR,
+                        RTRIM(DESCRIPCION) AS DESCRIPCION,
+                        CEDJUR
+                    FROM CXP_PROVEEDORES
+                    WHERE (@Estado = 'T' OR ESTADO = @Estado)
+                      AND (
+                            (@AutoGestion = 0 AND @Ventas = 0)
+                            OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                            OR (@Ventas = 1 AND WEB_FERIAS = 1)
+                          )
+                      AND (
+                            @Search IS NULL
+                            OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
+                            OR DESCRIPCION LIKE @SearchPattern
+                          )
+                    ORDER BY
+                        CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'ASC' THEN COD_PROVEEDOR END ASC,
+                        CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'DESC' THEN COD_PROVEEDOR END DESC,
+                        CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'ASC' THEN DESCRIPCION END ASC,
+                        CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'DESC' THEN DESCRIPCION END DESC
+                    OFFSET @Offset ROWS
+                    FETCH NEXT @PageSize ROWS ONLY;";
+
+                var lista = conn.Query<ProveedorDto>(sql, parameters).ToList();
+
+                return new TablasListaGenericaModel
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
+        }
 
         /// <summary>
         /// Obtiene el detalle completo de un proveedor.
@@ -61,6 +227,11 @@ namespace Galileo.DataBaseTier
                 null,
                 new { Cod_Proveedor });
 
+            if (result.Code == 0 && result.Result is not null)
+            {
+                result.Result.Cod_Cuenta_Mask = mCntLink.fxgCntCuentaFormato(CodEmpresa, true, result.Result.Cod_Cuenta);
+            }
+
             if (result.Code != 0)
             {
                 return new ErrorDto<ProveedorDto>
@@ -71,14 +242,17 @@ namespace Galileo.DataBaseTier
                 };
             }
 
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : new ErrorDto<ProveedorDto>
+            if (result.Result is null)
+            {
+                return new ErrorDto<ProveedorDto>
                 {
                     Code = -2,
                     Description = "No se encontró el proveedor.",
                     Result = null
                 };
+            }
+
+            return DbHelper.CreateOkResponse(result.Result);
         }
 
         /// <summary>
@@ -167,28 +341,28 @@ namespace Galileo.DataBaseTier
                 var ventas = filtro?.ventas == true;
                 var usarDesc = tipo == "desc";
 
-                var query = @"SELECT TOP 1 cod_proveedor
-                      FROM cxp_proveedores
-                      WHERE (
-                            (@UsarFiltro = 0 AND ESTADO = 'A')
-                            OR
-                            (@UsarFiltro = 1 AND ESTADO IN ('A','T','S','I'))
-                          )
-                        AND (
-                            @UsarFiltro = 0
-                            OR (@AutoGestion = 0 AND @Ventas = 0)
-                            OR (@AutoGestion = 1 AND @Ventas = 0 AND WEB_AUTO_GESTION = 1)
-                            OR (@AutoGestion = 0 AND @Ventas = 1 AND WEB_FERIAS = 1)
-                            OR (@AutoGestion = 1 AND @Ventas = 1 AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1))
-                        )
-                        AND (
-                            (@UsarDesc = 1 AND (@Cod_Proveedor <= 0 OR cod_proveedor < @Cod_Proveedor))
-                            OR
-                            (@UsarDesc = 0 AND cod_proveedor > @Cod_Proveedor)
-                        )
-                      ORDER BY
-                        CASE WHEN @UsarDesc = 1 THEN cod_proveedor END DESC,
-                        CASE WHEN @UsarDesc = 0 THEN cod_proveedor END ASC";
+                const string query = @"SELECT TOP 1 cod_proveedor
+                                       FROM cxp_proveedores
+                                       WHERE (
+                                                (@UsarFiltro = 0 AND ESTADO = 'A')
+                                                OR
+                                                (@UsarFiltro = 1 AND ESTADO IN ('A','T','S','I'))
+                                             )
+                                         AND (
+                                                @UsarFiltro = 0
+                                                OR (@AutoGestion = 0 AND @Ventas = 0)
+                                                OR (@AutoGestion = 1 AND @Ventas = 0 AND WEB_AUTO_GESTION = 1)
+                                                OR (@AutoGestion = 0 AND @Ventas = 1 AND WEB_FERIAS = 1)
+                                                OR (@AutoGestion = 1 AND @Ventas = 1 AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1))
+                                             )
+                                         AND (
+                                                (@UsarDesc = 1 AND (@Cod_Proveedor <= 0 OR cod_proveedor < @Cod_Proveedor))
+                                                OR
+                                                (@UsarDesc = 0 AND cod_proveedor > @Cod_Proveedor)
+                                             )
+                                       ORDER BY
+                                         CASE WHEN @UsarDesc = 1 THEN cod_proveedor END DESC,
+                                         CASE WHEN @UsarDesc = 0 THEN cod_proveedor END ASC";
 
                 var encontrado = connection.QueryFirstOrDefault<int>(
                     query,
@@ -234,7 +408,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Divisa de la cuenta.</returns>
         public ErrorDto<CuentaDivisa> ObtenerDivisaCuenta(int CodEmpresa, string Cuenta)
         {
-            var result = DbHelper.ExecuteSingleQuery<CuentaDivisa>(
+            var result = DbHelper.ExecuteSingleQuery<CuentaDivisa?>(
                 CreatePortalDb(),
                 CodEmpresa,
                 "SELECT cod_divisa FROM Cntx_Cuentas WHERE cod_contabilidad = 1 AND cod_cuenta = @Cuenta",
@@ -596,11 +770,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new SuspensionLista
-                {
-                    Total = 0,
-                    Suspensiones = new List<Suspension>()
-                };
+                var respuesta = CrearSuspensionListaVacia();
 
                 var parametros = new DynamicParameters();
                 parametros.Add("Cod_Proveedor", Cod_Proveedor);
@@ -630,8 +800,11 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new SuspensionLista { Total = 0, Suspensiones = new List<Suspension>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener suspensiones.", result.Code.GetValueOrDefault(-1), new SuspensionLista { Total = 0, Suspensiones = new List<Suspension>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearSuspensionListaVacia())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al obtener suspensiones.",
+                    result.Code.GetValueOrDefault(-1),
+                    CrearSuspensionListaVacia());
         }
 
         /// <summary>
@@ -674,7 +847,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle de la fusión del proveedor.</returns>
         public ErrorDto<ProveedorFusion> ProveedorFusion_ObtenerDetalle(int CodEmpresa, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<ProveedorFusion>(
+            var result = DbHelper.ExecuteSingleQuery<ProveedorFusion?>(
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT P.cod_proveedor, P.descripcion
@@ -718,11 +891,7 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var respuesta = new ProveedorFusionLista
-                {
-                    Total = 0,
-                    Fusiones = new List<ProveedorFusion>()
-                };
+                var respuesta = CrearFusionListaVacia();
 
                 var parametros = new DynamicParameters();
                 parametros.Add("Cod_Proveedor", Cod_Proveedor);
@@ -760,8 +929,11 @@ namespace Galileo.DataBaseTier
             });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new ProveedorFusionLista { Total = 0, Fusiones = new List<ProveedorFusion>() })
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener fusiones del proveedor.", result.Code.GetValueOrDefault(-1), new ProveedorFusionLista { Total = 0, Fusiones = new List<ProveedorFusion>() });
+                ? DbHelper.CreateOkResponse(result.Result ?? CrearFusionListaVacia())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al obtener fusiones del proveedor.",
+                    result.Code.GetValueOrDefault(-1),
+                    CrearFusionListaVacia());
         }
 
         #endregion
@@ -867,6 +1039,39 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? "Error al agregar usuario del proveedor.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Renueva la clave de AutoGestión del usuario de un proveedor.
+        /// </summary>
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string email, string usuarioSesion)
+        {
+            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+            const string sp = @"
+                exec spuProGrX_MOBILE_Proveedor_WebKey_Renueva
+                    @Proveedor,
+                    @Usuario,
+                    @Email,
+                    @RegistroUsuario,
+                    @Token";
+
+            try
+            {
+                connection.Execute(sp, new
+                {
+                    Proveedor = CodProveedor,
+                    Usuario = usuario.Trim(),
+                    Email = email?.Trim() ?? string.Empty,
+                    RegistroUsuario = usuarioSesion,
+                    Token = string.Empty
+                });
+
+                return DbHelper.OkResponse("Clave de AutoGestion Renovada satisfactoriamente (Enviada por E-mail)");
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse("Error al renovar la clave de AutoGestion. Por favor, intente nuevamente o contacte al soporte.");
+            }
+        }
+
         #endregion
 
         #region Bitácora y notificaciones
@@ -949,38 +1154,7 @@ namespace Galileo.DataBaseTier
             {
                 try
                 {
-                    string body = @$"<html lang=""es"">
-                            <head>
-                                <meta charset=""UTF-8"">
-                                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-                                <title>Solicitud de Cotización</title>
-                                <style>
-                                    body {{ font-family: Arial, sans-serif; }}
-                                    .container {{ width: 600px; margin: 0 auto; border: 1px solid #eaeaea; padding: 20px; }}
-                                    .header {{ background-color: #e8f3ff; padding: 10px; }}
-                                    .header img {{ width: auto; height: 50px; }}
-                                    .content {{ margin-top: 20px; }}
-                                    .content h2 {{ font-size: 16px; color: #0072ce; }}
-                                    .table {{ width: 100%; margin-top: 20px; border-collapse: collapse; }}
-                                    .table th, .table td {{ padding: 10px; border: 1px solid #dcdcdc; text-align: left; }}
-                                    .table th {{ background-color: #0072ce; color: white; }}
-                                </style>
-                            </head>
-                            <body>
-                                <div class=""container"">
-                                    <div class=""header"">
-                                        <img src=""https://www.aseccssenlinea.com/Content/Login/ASECCSSLogo.png"" alt=""Logo"">
-                                    </div>
-                                    <div class=""content"">
-                                        <h2><strong>Notificación de vencimiento de registro</strong></h2>
-                                        <p>Estimado Proveedor <strong>{proveedor.Descripcion}</strong></p>
-                                        <p>Mediante la presente se le comunica el vencimiento de su registro en {dias} día(s).</p>
-                                    </div>
-                                </div>
-                            </body>
-                        </html>";
-
-                    var emailDestino = proveedor.Email ?? string.Empty;
+                    string emailDestino = proveedor.Email ?? string.Empty;
                     if (sendEmail == "Y" && !string.IsNullOrWhiteSpace(emailDestino))
                     {
                         var emailRequest = new EmailRequest
@@ -988,7 +1162,7 @@ namespace Galileo.DataBaseTier
                             To = emailDestino,
                             From = eConfig.User,
                             Subject = "Notificación de vencimiento de registro",
-                            Body = body
+                            Body = CrearHtmlNotificacionVencimiento(proveedor.Descripcion ?? string.Empty, dias)
                         };
 
                         await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
@@ -1005,8 +1179,6 @@ namespace Galileo.DataBaseTier
         }
 
         #endregion
-
-        #region NO SÉ
 
         /// <summary>
         /// Obtiene el estado actual del proveedor.
@@ -1027,20 +1199,5 @@ namespace Galileo.DataBaseTier
                 ? new ErrorDto { Code = 0, Description = result.Result ?? string.Empty }
                 : DbHelper.ErrorResponse(result.Description ?? "Error al obtener estado del proveedor.", result.Code.GetValueOrDefault(-1));
         }
-
-        /// <summary>
-        /// Obtiene los proveedores activos.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa.</param>
-        /// <returns>Listado de proveedores activos.</returns>
-        public ErrorDto<List<ProveedorDto>> ObtenerProveedores(int CodCliente)
-        {
-            return DbHelper.ExecuteListQuery<ProveedorDto>(
-                CreatePortalDb(),
-                CodCliente,
-                "SELECT COD_PROVEEDOR, DESCRIPCION FROM CXP_PROVEEDORES WHERE ESTADO = 'A' ORDER BY COD_PROVEEDOR");
-        }
-
-        #endregion
     }
 }

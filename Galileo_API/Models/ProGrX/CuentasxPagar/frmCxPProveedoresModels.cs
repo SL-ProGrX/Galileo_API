@@ -1,5 +1,12 @@
 ﻿namespace Galileo.Models.CxP
 {
+    public class CxPProveedorFiltros
+    {
+        public string estado { get; set; } = "T";
+        public bool autoGestion { get; set; }
+        public bool ventas { get; set; }
+    }
+
     public class ProveedorDto
     {
         public required int Cod_Proveedor { get; set; }
@@ -27,6 +34,7 @@
         public  DateTime? Ultima_Compra { get; set; }
         public string Ultima_Factura { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
+        public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string Tipo_Pago { get; set; } = string.Empty;
         public required int Cod_Banco { get; set; }
         public string Cuenta_Ahorros { get; set; } = string.Empty;
