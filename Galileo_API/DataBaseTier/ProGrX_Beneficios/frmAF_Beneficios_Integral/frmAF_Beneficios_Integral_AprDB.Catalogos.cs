@@ -62,13 +62,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var codParametro = _config.GetSection("AFI_Beneficios").GetSection(claveConfig).Value ?? string.Empty;
             const string sql = "SELECT VALOR FROM [SIF_PARAMETROS] WHERE COD_PARAMETRO = @codParametro";
 
-            var result = DbHelper.ExecuteSingleQuery<float>(CreatePortalDb(), CodCliente, sql, 0, new { codParametro });
+            var rawResult = DbHelper.ExecuteSingleQuery<float>(CreatePortalDb(), CodCliente, sql, 0, new { codParametro });
+            var result = rawResult ?? new ErrorDto<float> { Code = -1, Description = "Sin respuesta de la consulta.", Result = 0f };
 
             return new ErrorDto<float>
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result?.Result ?? 0f
+                Result = result.Result
             };
         }
 
