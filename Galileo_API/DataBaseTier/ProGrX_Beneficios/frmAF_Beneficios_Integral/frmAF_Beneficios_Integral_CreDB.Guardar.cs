@@ -215,7 +215,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var montoNuevo = connection.QueryFirstOrDefault<float>(
                 "SELECT SUM(MONTO_PRIMERA_TARJETA + MONTO_SEGUNDA_TARJETA) FROM AFI_BENE_SOCIO_CRECE WHERE CONSEC = @consec AND COD_BENEFICIO = @codBeneficio", llaves);
 
-            if (monto == montoNuevo)
+            const float epsilon = 0.0001f;
+            if (Math.Abs(monto - montoNuevo) <= epsilon)
             {
                 return;
             }
