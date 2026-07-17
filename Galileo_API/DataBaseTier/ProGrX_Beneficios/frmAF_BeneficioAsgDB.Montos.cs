@@ -37,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var montoPagado = ObtenerMontoPagado(connection, datos);
 
                 var mensaje = string.Empty;
-                if (montoPagado >= datos.monto && datos.bConsulta == false && !fxValida(CodCliente, ref mensaje).Result && datos.bNuevo == false)
+                if (montoPagado >= datos.monto && !datos.bConsulta && !fxValida(CodCliente, ref mensaje).Result && datos.bNuevo == false)
                 {
                     return new FxMontosResult { Code = 1, Description = "Ya le fue asignado el monto de la ayuda" };
                 }
