@@ -2,7 +2,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Pasivos;
-using System.Reflection;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 {
