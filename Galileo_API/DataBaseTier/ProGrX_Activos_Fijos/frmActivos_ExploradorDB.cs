@@ -10,6 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosExploradorDB
     {
+        private const string Todos = "TODOS";
         private readonly PortalDB _portalDB;
 
         public FrmActivosExploradorDB(IConfiguration config)
@@ -240,14 +241,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="codEmpresa"></param>
         /// <param name="f"></param>
         /// <returns></returns>
-        public ErrorDto<List<ActivoExploradorDto>> Listar( int codEmpresa,ActivosExploradorFiltrosDto f)
+        public ErrorDto<List<ActivoExploradorDto>> Listar(int codEmpresa, ActivosExploradorFiltrosDto f)
         {
-            return EjecutarLista<ActivoExploradorDto>(codEmpresa,
-                cn =>
-                {
-                    var fuente = f.tipoVisualizacion switch
-                    {
-                        "A" => @"
+            return EjecutarLista<ActivoExploradorDto>(codEmpresa, cn =>
+            {
+                var sql = CrearConsultaActivos(f.tipoVisualizacion);
+                var parametros = CrearParametrosActivos(f);
+
+                AgregarFiltrosTexto(sql, parametros, f);
+                AgregarFiltrosFecha(sql, parametros, f);
+                AgregarFiltrosCatalogo(sql, parametros, f);
+                AgregarFiltroEstado(sql, parametros, f);
+                AgregarFiltroPlaca(sql, parametros, f);
+                sql.Append(" ORDER BY Num_Placa");
+
+                return cn.Query<ActivoExploradorDto>(sql.ToString(), parametros).ToList();
+            });
+        }
+
+        private static StringBuilder CrearConsultaActivos(string? tipoVisualizacion)
+        {
+            var fuente = tipoVisualizacion switch
+            {
+                "A" => @"
                             SELECT A.Num_Placa, A.Placa_Alterna, A.Nombre,
                                    A.Fecha_Adquisicion, A.Fecha_Instalacion,
                                    A.Tipo_Activo, A.TipoActivo AS Tipo_Activo_Desc,
@@ -264,9 +280,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                                    ISNULL(A.Depreciacion_Ac,0) AS depreciacion_acumulada,
                                    ISNULL(A.Valor_Libros,0) AS valor_libros,
                                    A.Depreciacion_Periodo AS corte
-                            FROM dbo.vActivos_depreciacion_actual A
-                            WHERE A.Estado <> 'R'",
-                        "C" => @"
+                             FROM dbo.vActivos_depreciacion_actual A
+                             WHERE A.Estado <> 'R'",
+                "C" => @"
                             SELECT A.Num_Placa, A.Placa_Alterna, A.Nombre,
                                    P.Fecha_Adquisicion, P.Fecha_Instalacion,
                                    A.Tipo_Activo, A.TipoActivo AS Tipo_Activo_Desc,
@@ -284,10 +300,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                                    ISNULL(A.Depreciacion_Ac_Consolidado,0) AS depreciacion_acumulada,
                                    ISNULL(A.Valor_Libros_Consolidado,0) AS valor_libros,
                                    DATEFROMPARTS(A.Anio,A.Mes,1) AS corte
-                            FROM dbo.vActivos_AuxiliarConsolidado A
-                            INNER JOIN dbo.Activos_Principal P ON A.Num_Placa = P.Num_Placa
-                            WHERE A.Anio = YEAR(@fechaPeriodo) AND A.Mes = MONTH(@fechaPeriodo)",
-                        _ => @"
+                             FROM dbo.vActivos_AuxiliarConsolidado A
+                             INNER JOIN dbo.Activos_Principal P ON A.Num_Placa = P.Num_Placa
+                             WHERE A.Anio = YEAR(@fechaPeriodo) AND A.Mes = MONTH(@fechaPeriodo)",
+                _ => @"
                             SELECT Num_Placa, Placa_Alterna, Nombre,
                                    Fecha_Adquisicion, Fecha_Instalacion,
                                    Tipo_Activo, Tipo_Activo_Desc,
@@ -302,146 +318,196 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                                    CAST(NULL AS decimal(18,2)) AS depreciacion_mes,
                                    CAST(NULL AS decimal(18,2)) AS depreciacion_acumulada,
                                    ISNULL(Valor_Libros_Periodo,0) AS valor_libros,
-                                   CAST(NULL AS datetime) AS corte
-                            FROM dbo.vActivos_General"
-                    };
+                                    CAST(NULL AS datetime) AS corte
+                             FROM dbo.vActivos_General"
+            };
 
-                    var sql = new StringBuilder($@"
+            return new StringBuilder($@"
                         SELECT TOP (@lineas) X.*
                         FROM ({fuente}) X
                         WHERE 1 = 1");
+        }
 
-                    var param = new DynamicParameters();
-                    param.Add("lineas", Math.Clamp(f.lineas ?? 1000, 1, 100000));
-                    param.Add("fechaPeriodo", f.fecha_periodo ?? DateTime.Today);
+        private static DynamicParameters CrearParametrosActivos(ActivosExploradorFiltrosDto f)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("lineas", Math.Clamp(f.lineas ?? 1000, 1, 100000));
+            parametros.Add("fechaPeriodo", f.fecha_periodo ?? DateTime.Today);
+            return parametros;
+        }
 
-                    if (!string.IsNullOrWhiteSpace(f.nombre))
-                    {
-                        sql.Append(" AND Nombre LIKE @nombre");
-                        param.Add("nombre", $"%{f.nombre}%");
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.descripcion))
-                    {
-                        sql.Append(" AND Descripcion LIKE @descripcion");
-                        param.Add("descripcion", $"%{f.descripcion}%");
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.modelo))
-                    {
-                        sql.Append(" AND Modelo LIKE @modelo");
-                        param.Add("modelo", $"%{f.modelo}%");
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.serie))
-                    {
-                        sql.Append(" AND Num_Serie LIKE @serie");
-                        param.Add("serie", $"%{f.serie}%");
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.marca))
-                    {
-                        sql.Append(" AND Marca LIKE @marca");
-                        param.Add("marca", $"%{f.marca}%");
-                    }
-                    if (f.fecha_adq_activa && f.fecha_adq_desde.HasValue)
-                    {
-                        sql.Append(" AND Fecha_Adquisicion >= @fechaAdqDesde");
-                        param.Add("fechaAdqDesde", f.fecha_adq_desde.Value.Date);
-                    }
-                    if (f.fecha_adq_activa && f.fecha_adq_hasta.HasValue)
-                    {
-                        sql.Append(" AND Fecha_Adquisicion < @fechaAdqHasta");
-                        param.Add("fechaAdqHasta", f.fecha_adq_hasta.Value.Date.AddDays(1));
-                    }
-                    if (f.fecha_inst_activa && f.fecha_inst_desde.HasValue)
-                    {
-                        sql.Append(" AND Fecha_Instalacion >= @fechaInstDesde");
-                        param.Add("fechaInstDesde", f.fecha_inst_desde.Value.Date);
-                    }
-                    if (f.fecha_inst_activa && f.fecha_inst_hasta.HasValue)
-                    {
-                        sql.Append(" AND Fecha_Instalacion < @fechaInstHasta");
-                        param.Add("fechaInstHasta", f.fecha_inst_hasta.Value.Date.AddDays(1));
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.tipo_activo)
-                        && !f.tipo_activo.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sql.Append(" AND Tipo_Activo = @tipoActivo");
-                        param.Add("tipoActivo", f.tipo_activo);
-                    }
-                    if (!string.IsNullOrWhiteSpace(f.departamento)
-                        && !f.departamento.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sql.Append(" AND cod_Departamento = @departamento");
-                        param.Add("departamento", f.departamento);
-                    }
+        private static void AgregarFiltrosTexto(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            ActivosExploradorFiltrosDto f)
+        {
+            AgregarFiltroLike(sql, parametros, "Nombre", "nombre", f.nombre);
+            AgregarFiltroLike(sql, parametros, "Descripcion", "descripcion", f.descripcion);
+            AgregarFiltroLike(sql, parametros, "Modelo", "modelo", f.modelo);
+            AgregarFiltroLike(sql, parametros, "Num_Serie", "serie", f.serie);
+            AgregarFiltroLike(sql, parametros, "Marca", "marca", f.marca);
+            AgregarFiltroIgual(sql, parametros, "Identificacion", "responsable", f.responsable_codigo);
+            AgregarFiltroIgual(sql, parametros, "cod_Proveedor", "proveedor", f.proveedor_codigo);
+        }
 
-                    if (!string.IsNullOrWhiteSpace(f.seccion)
-                        && !f.seccion.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sql.Append(" AND cod_Seccion = @seccion");
-                        param.Add("seccion", f.seccion);
-                    }
+        private static void AgregarFiltrosFecha(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            ActivosExploradorFiltrosDto f)
+        {
+            AgregarRangoFecha(
+                sql, parametros, "Fecha_Adquisicion",
+                "fechaAdqDesde", "fechaAdqHasta",
+                f.fecha_adq_activa, f.fecha_adq_desde, f.fecha_adq_hasta);
+            AgregarRangoFecha(
+                sql, parametros, "Fecha_Instalacion",
+                "fechaInstDesde", "fechaInstHasta",
+                f.fecha_inst_activa, f.fecha_inst_desde, f.fecha_inst_hasta);
+        }
 
-                    var ubicacion = !string.IsNullOrWhiteSpace(f.localiza) ? f.localiza : f.ubicacion;
-                    if (!string.IsNullOrWhiteSpace(ubicacion)
-                        && !ubicacion.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sql.Append(" AND cod_Localiza = @ubicacion");
-                        param.Add("ubicacion", ubicacion);
-                    }
+        private static void AgregarFiltrosCatalogo(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            ActivosExploradorFiltrosDto f)
+        {
+            AgregarFiltroCatalogo(sql, parametros, "Tipo_Activo", "tipoActivo", f.tipo_activo);
+            AgregarFiltroCatalogo(sql, parametros, "cod_Departamento", "departamento", f.departamento);
+            AgregarFiltroCatalogo(sql, parametros, "cod_Seccion", "seccion", f.seccion);
 
-                    if (!string.IsNullOrWhiteSpace(f.responsable_codigo))
-                    {
-                        sql.Append(" AND Identificacion = @responsable");
-                        param.Add("responsable", f.responsable_codigo);
-                    }
+            var ubicacion = !string.IsNullOrWhiteSpace(f.localiza) ? f.localiza : f.ubicacion;
+            AgregarFiltroCatalogo(sql, parametros, "cod_Localiza", "ubicacion", ubicacion);
+        }
 
-                    if (!string.IsNullOrWhiteSpace(f.proveedor_codigo))
-                    {
-                        sql.Append(" AND cod_Proveedor = @proveedor");
-                        param.Add("proveedor", f.proveedor_codigo);
-                    }
-
-                    if (string.IsNullOrWhiteSpace(f.estado)
-                        || f.estado.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!string.Equals(f.tipoVisualizacion, "C", StringComparison.OrdinalIgnoreCase))
-                            sql.Append(" AND Estado = 'A'");
-                    }
-                    else
-                    {
-                        if (f.estado.Equals("D", StringComparison.OrdinalIgnoreCase))
-                            sql.Append(" AND Estado = 'A' AND ISNULL(valor_libros,0) = 0");
-                        else
-                        {
-                            sql.Append(" AND Estado = @estado");
-                            param.Add("estado", f.estado);
-                        }
-                    }
-
-                    var placaTipo = f.placa_tipo ?? f.tipoPlaca;
-                    var placaInicio = f.placa_inicio ?? f.placaDesde;
-                    var placaFin = f.placa_fin ?? f.placaHasta;
-                    if (!string.IsNullOrWhiteSpace(placaInicio))
-                    {
-                        var campoPlaca = placaTipo.Equals("Alterna", StringComparison.OrdinalIgnoreCase)
-                            ? "Placa_Alterna"
-                            : "Num_Placa";
-                        sql.Append($" AND {campoPlaca} >= @placaInicio");
-                        param.Add("placaInicio", placaInicio);
-                        if (!string.IsNullOrWhiteSpace(placaFin))
-                        {
-                            sql.Append($" AND {campoPlaca} <= @placaFin");
-                            param.Add("placaFin", placaFin);
-                        }
-                    }
-
-                    sql.Append(" ORDER BY Num_Placa");
-
-                    return cn.Query<ActivoExploradorDto>(
-                        sql.ToString(),
-                        param
-                    ).ToList();
+        private static void AgregarFiltroEstado(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            ActivosExploradorFiltrosDto f)
+        {
+            if (EsTodos(f.estado))
+            {
+                if (!string.Equals(f.tipoVisualizacion, "C", StringComparison.OrdinalIgnoreCase))
+                {
+                    sql.Append(" AND Estado = 'A'");
                 }
-            );
+
+                return;
+            }
+
+            if (f.estado!.Equals("D", StringComparison.OrdinalIgnoreCase))
+            {
+                sql.Append(" AND Estado = 'A' AND ISNULL(valor_libros,0) = 0");
+                return;
+            }
+
+            sql.Append(" AND Estado = @estado");
+            parametros.Add("estado", f.estado);
+        }
+
+        private static void AgregarFiltroPlaca(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            ActivosExploradorFiltrosDto f)
+        {
+            var placaInicio = f.placa_inicio ?? f.placaDesde;
+            if (string.IsNullOrWhiteSpace(placaInicio))
+            {
+                return;
+            }
+
+            var placaTipo = f.placa_tipo ?? f.tipoPlaca;
+            var campoPlaca = placaTipo.Equals("Alterna", StringComparison.OrdinalIgnoreCase)
+                ? "Placa_Alterna"
+                : "Num_Placa";
+            sql.Append($" AND {campoPlaca} >= @placaInicio");
+            parametros.Add("placaInicio", placaInicio);
+
+            var placaFin = f.placa_fin ?? f.placaHasta;
+            if (!string.IsNullOrWhiteSpace(placaFin))
+            {
+                sql.Append($" AND {campoPlaca} <= @placaFin");
+                parametros.Add("placaFin", placaFin);
+            }
+        }
+
+        private static void AgregarFiltroLike(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            string campo,
+            string parametro,
+            string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return;
+            }
+
+            sql.Append($" AND {campo} LIKE @{parametro}");
+            parametros.Add(parametro, $"%{valor}%");
+        }
+
+        private static void AgregarFiltroIgual(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            string campo,
+            string parametro,
+            string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return;
+            }
+
+            sql.Append($" AND {campo} = @{parametro}");
+            parametros.Add(parametro, valor);
+        }
+
+        private static void AgregarFiltroCatalogo(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            string campo,
+            string parametro,
+            string? valor)
+        {
+            if (EsTodos(valor))
+            {
+                return;
+            }
+
+            AgregarFiltroIgual(sql, parametros, campo, parametro, valor);
+        }
+
+        private static void AgregarRangoFecha(
+            StringBuilder sql,
+            DynamicParameters parametros,
+            string campo,
+            string parametroDesde,
+            string parametroHasta,
+            bool? activo,
+            DateTime? fechaDesde,
+            DateTime? fechaHasta)
+        {
+            if (activo != true)
+            {
+                return;
+            }
+
+            if (fechaDesde.HasValue)
+            {
+                sql.Append($" AND {campo} >= @{parametroDesde}");
+                parametros.Add(parametroDesde, fechaDesde.Value.Date);
+            }
+
+            if (fechaHasta.HasValue)
+            {
+                sql.Append($" AND {campo} < @{parametroHasta}");
+                parametros.Add(parametroHasta, fechaHasta.Value.Date.AddDays(1));
+            }
+        }
+
+        private static bool EsTodos(string? valor)
+        {
+            return string.IsNullOrWhiteSpace(valor)
+                || valor.Equals(Todos, StringComparison.OrdinalIgnoreCase);
         }
 
 

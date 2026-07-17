@@ -38,10 +38,10 @@
 
         public DateTime? fecha_adq_desde { get; set; }
         public DateTime? fecha_adq_hasta { get; set; }
-        public bool fecha_adq_activa { get; set; }
+        public bool? fecha_adq_activa { get; set; }
         public DateTime? fecha_inst_desde { get; set; }
         public DateTime? fecha_inst_hasta { get; set; }
-        public bool fecha_inst_activa { get; set; }
+        public bool? fecha_inst_activa { get; set; }
 
         public string? tipoVisualizacion { get; set; } = "L"; // L | A | C
     }
