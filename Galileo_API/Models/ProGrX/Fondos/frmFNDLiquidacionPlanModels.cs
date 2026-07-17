@@ -147,7 +147,12 @@ namespace Galileo.Models.ProGrX.Fondos
         public int codContabilidad { get; set; } = 0;
     }
 
-    public sealed class FndLiquidacionPlanLiquidarResult
+    public sealed class FndLiquidacionPlanProcesoIniciarRequest : FndLiquidacionPlanLiquidarRequest
+    {
+        public Guid procesoId { get; set; }
+    }
+
+    public class FndLiquidacionPlanLiquidarResult
     {
         public string documentoReferencia { get; set; } = string.Empty;
         public DateTime fecha { get; set; }
@@ -155,6 +160,20 @@ namespace Galileo.Models.ProGrX.Fondos
         public decimal totalAportes { get; set; }
         public decimal totalRendimientos { get; set; }
         public decimal totalGeneral { get; set; }
+    }
+
+    public sealed class FndLiquidacionPlanProcesoContinuarRequest
+    {
+        public Guid procesoId { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class FndLiquidacionPlanProcesoResult : FndLiquidacionPlanLiquidarResult
+    {
+        public Guid procesoId { get; set; }
+        public int contratosPendientes { get; set; }
+        public decimal porcentaje { get; set; }
+        public bool procesoFinalizado { get; set; }
     }
 
     internal sealed class FndLiquidacionPlanDocumentoRefData

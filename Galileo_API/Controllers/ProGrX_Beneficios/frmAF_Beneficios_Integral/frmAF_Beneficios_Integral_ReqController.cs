@@ -10,7 +10,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
     /// <summary>
     /// Endpoints del proceso Requisitos de Beneficios Integrales (FrmAfBeneficiosIntegralReq).
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("api/frmAF_Beneficios_Integral_Req")]
     [ApiController]
     public class FrmAfBeneficiosIntegralReqController : ControllerBase
     {

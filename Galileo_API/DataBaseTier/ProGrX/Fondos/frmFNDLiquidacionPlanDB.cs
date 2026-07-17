@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
-    public class FrmFndLiquidacionPlanDB
+    public partial class FrmFndLiquidacionPlanDB
     {
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain mProGrx;
