@@ -158,7 +158,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     }
                 }
 
-                if (_datosBase.bConsulta == false)
+                if (!_datosBase.bConsulta)
                 {
                     var cantidad = connection.QueryFirstOrDefault<int>(
                         "SELECT ISNULL(COUNT(*), 0) AS cantidad FROM afi_bene_otorga WHERE cod_beneficio = @codBeneficio AND cedula = @cedula",
