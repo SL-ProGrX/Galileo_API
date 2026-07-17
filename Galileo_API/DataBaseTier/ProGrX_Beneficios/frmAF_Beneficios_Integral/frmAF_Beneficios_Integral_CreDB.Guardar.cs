@@ -86,7 +86,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto BeneSocioCrece_Actualizar(int CodCliente, AfiBeneSocioCreceDto beneficio)
         {
-            if (beneficio.monto_segunda_tarjeta != 0 && !beneficio.entrega_primera_tarjeta)
+            if (Math.Abs((double)beneficio.monto_segunda_tarjeta) > 0.000001d && !beneficio.entrega_primera_tarjeta)
             {
                 return new ErrorDto
                 {
