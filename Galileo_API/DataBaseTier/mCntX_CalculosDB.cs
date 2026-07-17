@@ -20,9 +20,21 @@ namespace Galileo_API.DataBaseTier
 
         private sealed class CntXCalculosAsientoBorraData
         {
-            public DateTime? fecha_aplicado { get; set; }
-            public string modulo { get; set; } = string.Empty;
-            public DateTime? fecha_autoriza { get; set; }
+            public CntXCalculosAsientoBorraData(
+                DateTime? fecha_aplicado,
+                string? modulo,
+                DateTime? fecha_autoriza)
+            {
+                this.fecha_aplicado = fecha_aplicado;
+                this.modulo = modulo ?? string.Empty;
+                this.fecha_autoriza = fecha_autoriza;
+            }
+
+            public DateTime? fecha_aplicado { get; }
+
+            public string modulo { get; } = string.Empty;
+
+            public DateTime? fecha_autoriza { get; }
         }
 
         public MCntXCalculosDb(IConfiguration config)
