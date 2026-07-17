@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 
@@ -12,8 +13,30 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly MProGrXAuxiliarDB mAuxiliarDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
+        private readonly MCntLinkDB mCntLink;
         private readonly string sendEmail;
         private readonly string Notificaciones;
+
+
+
+        private SqlConnection OpenConnection(int codEmpresa)
+        {
+            var cs = new PortalDB(_config!).ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(cs);
+        }
+        private ErrorDto<T> WithConn<T>(int codEmpresa, Func<SqlConnection, T> action)
+        {
+            try
+            {
+                using var conn = OpenConnection(codEmpresa);
+                var result = action(conn);
+                return new ErrorDto<T> { Code = 0, Description = "Ok", Result = result };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default };
+            }
+        }
 
         #region Constructor y helpers
 
@@ -26,6 +49,7 @@ namespace Galileo.DataBaseTier
             _config = config ?? throw new ArgumentNullException(nameof(config));
             mAuxiliarDB = new MProGrXAuxiliarDB(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
+            mCntLink = new MCntLinkDB(_config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? string.Empty;
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value ?? string.Empty;
         }
@@ -39,6 +63,114 @@ namespace Galileo.DataBaseTier
         #endregion
 
         #region Consultas básicas
+
+        /// <summary>
+        /// Obtiene proveedores con filtros, búsqueda, ordenamiento y paginación.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="filtro">Filtros de búsqueda, ordenamiento y paginación.</param>
+        /// <param name="parametros">Filtros de estado, autogestión y ferias.</param>
+        /// <returns>Listado paginado de proveedores.</returns>
+        public ErrorDto<TablasListaGenericaModel> Proveedores_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtro,
+            CxPProveedorFiltros parametros)
+        {
+            const string codProveedorField = "COD_PROVEEDOR";
+
+            string? search = filtro.filtro?.Trim();
+            string sortField = string.IsNullOrWhiteSpace(filtro.sortField)
+                ? codProveedorField
+                : filtro.sortField;
+
+            int sortOrder = filtro.sortOrder == 0 ? 1 : filtro.sortOrder;
+            int pagina = filtro.pagina;
+            int paginacion = filtro.paginacion;
+
+            return WithConn(CodEmpresa, conn =>
+            {
+                var parameters = new DynamicParameters();
+
+                parameters.Add("@Offset", pagina);
+                parameters.Add("@PageSize", paginacion);
+                parameters.Add("@Search", string.IsNullOrWhiteSpace(search) ? null : search);
+                parameters.Add("@SearchPattern", string.IsNullOrWhiteSpace(search) ? null : $"%{search}%");
+                parameters.Add("@Estado", parametros.estado);
+                parameters.Add("@AutoGestion", parametros.autoGestion);
+                parameters.Add("@Ventas", parametros.ventas);
+
+                const string defaultSortField = codProveedorField;
+
+                var sortMap = new Dictionary<string, string>(
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    [codProveedorField] = codProveedorField,
+                    ["DESCRIPCION"] = "DESCRIPCION"
+                };
+
+                if (!sortMap.TryGetValue(sortField, out string? safeSortField))
+                    safeSortField = defaultSortField;
+
+                string safeSortDir = sortOrder == -1 ? "DESC" : "ASC";
+                parameters.Add("@SortField", safeSortField);
+                parameters.Add("@SortDir", safeSortDir);
+
+                string qTotal = @"
+            SELECT COUNT(*)
+            FROM CXP_PROVEEDORES
+                        WHERE (@Estado = 'T' OR ESTADO = @Estado)
+                            AND (
+                                        (@AutoGestion = 0 AND @Ventas = 0)
+                                        OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                                        OR (@Ventas = 1 AND WEB_FERIAS = 1)
+                                    )
+                            AND (
+                                        @Search IS NULL
+                                        OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
+                                        OR DESCRIPCION LIKE @SearchPattern
+                                    );
+        ";
+
+                int total = conn.QuerySingle<int>(qTotal, parameters);
+
+                string sql = @"
+            SELECT
+                COD_PROVEEDOR,
+                RTRIM(DESCRIPCION) AS DESCRIPCION,
+                CEDJUR
+            FROM CXP_PROVEEDORES
+                        WHERE (@Estado = 'T' OR ESTADO = @Estado)
+                            AND (
+                                        (@AutoGestion = 0 AND @Ventas = 0)
+                                        OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                                        OR (@Ventas = 1 AND WEB_FERIAS = 1)
+                                    )
+                            AND (
+                                        @Search IS NULL
+                                        OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
+                                        OR DESCRIPCION LIKE @SearchPattern
+                                    )
+            ORDER BY
+                CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'ASC' THEN COD_PROVEEDOR END ASC,
+                CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'DESC' THEN COD_PROVEEDOR END DESC,
+                CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'ASC' THEN DESCRIPCION END ASC,
+                CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'DESC' THEN DESCRIPCION END DESC
+            OFFSET @Offset ROWS
+            FETCH NEXT @PageSize ROWS ONLY;
+        ";
+
+                var lista = conn
+                    .Query<ProveedorDto>(sql, parameters)
+                    .ToList();
+
+                return new TablasListaGenericaModel
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
+        }
+
 
         /// <summary>
         /// Obtiene el detalle completo de un proveedor.
@@ -69,6 +201,11 @@ namespace Galileo.DataBaseTier
                     Description = result.Description ?? "Error al obtener detalle del proveedor.",
                     Result = null
                 };
+            }
+
+            if (result.Result is not null)
+            {
+                result.Result.Cod_Cuenta_Mask = mCntLink.fxgCntCuentaFormato(CodEmpresa, true, result.Result.Cod_Cuenta);
             }
 
             return result.Result is not null
@@ -867,6 +1004,39 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? "Error al agregar usuario del proveedor.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Renueva la clave de AutoGestión del usuario de un proveedor.
+        /// </summary>
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string email, string usuarioSesion)
+        {
+            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+            const string sp = @"
+                exec spuProGrX_MOBILE_Proveedor_WebKey_Renueva
+                    @Proveedor,
+                    @Usuario,
+                    @Email,
+                    @RegistroUsuario,
+                    @Token";
+
+            try
+            {
+                connection.Execute(sp, new
+                {
+                    Proveedor = CodProveedor,
+                    Usuario = usuario.Trim(),
+                    Email = email?.Trim() ?? string.Empty,
+                    RegistroUsuario = usuarioSesion,
+                    Token = string.Empty
+                });
+
+                return DbHelper.OkResponse("Clave de AutoGestion Renovada satisfactoriamente (Enviada por E-mail)");
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse("Error al renovar la clave de AutoGestion. Por favor, intente nuevamente o contacte al soporte.");
+            }
+        }
+
         #endregion
 
         #region Bitácora y notificaciones
@@ -1006,7 +1176,6 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region NO SÉ
 
         /// <summary>
         /// Obtiene el estado actual del proveedor.
@@ -1028,19 +1197,6 @@ namespace Galileo.DataBaseTier
                 : DbHelper.ErrorResponse(result.Description ?? "Error al obtener estado del proveedor.", result.Code.GetValueOrDefault(-1));
         }
 
-        /// <summary>
-        /// Obtiene los proveedores activos.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa.</param>
-        /// <returns>Listado de proveedores activos.</returns>
-        public ErrorDto<List<ProveedorDto>> ObtenerProveedores(int CodCliente)
-        {
-            return DbHelper.ExecuteListQuery<ProveedorDto>(
-                CreatePortalDb(),
-                CodCliente,
-                "SELECT COD_PROVEEDOR, DESCRIPCION FROM CXP_PROVEEDORES WHERE ESTADO = 'A' ORDER BY COD_PROVEEDOR");
-        }
 
-        #endregion
     }
 }
