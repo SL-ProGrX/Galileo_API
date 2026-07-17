@@ -357,11 +357,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         {
             AgregarRangoFecha(
                 sql, parametros, "Fecha_Adquisicion",
-                "fechaAdqDesde", "fechaAdqHasta",
+                "fechaAdq",
                 f.fecha_adq_activa, f.fecha_adq_desde, f.fecha_adq_hasta);
             AgregarRangoFecha(
                 sql, parametros, "Fecha_Instalacion",
-                "fechaInstDesde", "fechaInstHasta",
+                "fechaInst",
                 f.fecha_inst_activa, f.fecha_inst_desde, f.fecha_inst_hasta);
         }
 
@@ -480,8 +480,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             StringBuilder sql,
             DynamicParameters parametros,
             string campo,
-            string parametroDesde,
-            string parametroHasta,
+            string prefijoParametro,
             bool? activo,
             DateTime? fechaDesde,
             DateTime? fechaHasta)
@@ -493,12 +492,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
 
             if (fechaDesde.HasValue)
             {
+                var parametroDesde = $"{prefijoParametro}Desde";
                 sql.Append($" AND {campo} >= @{parametroDesde}");
                 parametros.Add(parametroDesde, fechaDesde.Value.Date);
             }
 
             if (fechaHasta.HasValue)
             {
+                var parametroHasta = $"{prefijoParametro}Hasta";
                 sql.Append($" AND {campo} < @{parametroHasta}");
                 parametros.Add(parametroHasta, fechaHasta.Value.Date.AddDays(1));
             }
