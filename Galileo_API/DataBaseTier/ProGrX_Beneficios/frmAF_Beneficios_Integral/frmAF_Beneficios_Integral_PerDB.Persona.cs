@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using System.Text;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -137,7 +138,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var validaciones = connection.Query<ValidacionRow>(sqlValidaciones).ToList();
-                var mensajes = string.Empty;
+                var mensajes = new StringBuilder();
 
                 foreach (var validacion in validaciones)
                 {
@@ -152,11 +153,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                     if (valor == validacion.resultado_val)
                     {
-                        mensajes += validacion.msj_val + "...\n";
+                        mensajes.Append(validacion.msj_val).Append("...\n");
                     }
                 }
 
-                return mensajes;
+                return mensajes.ToString();
             });
 
             if (result.Code != 0)
