@@ -93,7 +93,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             if (datos.iGrupo > 0)
             {
-                if (datos.cMontoRealGrupo >= montoBene && datos.bAsignado == false)
+                if (datos.cMontoRealGrupo >= montoBene && !datos.bAsignado)
                 {
                     info.monto = montoBene;
                     info.Description += mensaje;
