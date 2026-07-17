@@ -47,7 +47,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     return new FxMontosResult { Code = 2, Description = "- No cumple con la membresía para este beneficio" };
                 }
 
-                if (datos.bNuevo == false)
+                if (!datos.bNuevo)
                 {
                     fxValida(CodCliente, ref mensaje);
                     info.Code = 3;
