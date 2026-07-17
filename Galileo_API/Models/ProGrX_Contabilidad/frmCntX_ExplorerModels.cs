@@ -30,6 +30,8 @@
 
             public int? lineas { get; set; } = 1000;
 
+            public string? estado_asiento { get; set; }
+
 
             public string? cod_cuenta { get; set; }
             public string? cod_tipo_asiento { get; set; }
@@ -45,6 +47,9 @@
             public string? num_asiento { get; set; }
             public string? tipo_asiento { get; set; }
             public DateTime? fecha_asiento { get; set; }
+            public int anio { get; set; }
+            public int mes { get; set; }
+            public byte[]? ts { get; set; }
             public string? descripcion { get; set; }
 
             public decimal debe { get; set; }
@@ -102,6 +107,84 @@
         {
             public string? num_asiento { get; set; } = string.Empty;
             public DateTime? fecha_asiento { get; set; }
+            public int anio { get; set; }
+            public int mes { get; set; }
+            public byte[]? ts { get; set; }
+            public string? descripcion { get; set; } = string.Empty;
+            public decimal debe { get; set; }
+            public decimal haber { get; set; }
+            public string? aplicado { get; set; }
+            public string? balanceado { get; set; }
+        }
+
+        public class CntxConsultaAnaliticaDto
+        {
+            public string? num_asiento { get; set; }
+            public string? tipo_asiento { get; set; }
+            public DateTime? fecha_asiento { get; set; }
+            public string? descripcion { get; set; }
+            public decimal monto_debito { get; set; }
+            public decimal monto_credito { get; set; }
+            public string? aplicado { get; set; }
+            public string? balanceado { get; set; }
+            public string? cod_cuenta_mask { get; set; }
+            public string? cuenta_descripcion { get; set; }
+            public string? cod_unidad { get; set; }
+            public string? cod_centro_costo { get; set; }
+            public string? cod_divisa { get; set; }
+            public decimal? tipo_cambio { get; set; }
+            public decimal? importe { get; set; }
+            public string? documento { get; set; }
+            public string? detalle { get; set; }
+            public string? referencia { get; set; }
+            public string? user_crea { get; set; }
+            public string? user_modifica { get; set; }
+            public string? user_autoriza { get; set; }
+            public string? user_aplica { get; set; }
+        }
+
+        public class CntxMovimientoNodoRequest
+        {
+            public int? cod_empresa { get; set; }
+            public required int cod_contabilidad { get; set; }
+            public string? tipo_nodo { get; set; }
+            public string? codigo { get; set; }
+            public required int anio { get; set; }
+            public required int mes { get; set; }
+        }
+
+        public class CntxMovimientoCuentaDto
+        {
+            public string? cod_cuenta { get; set; }
+            public string? cuenta { get; set; }
+            public string? descripcion { get; set; }
+            public decimal saldo_inicial { get; set; }
+            public decimal total_debitos { get; set; }
+            public decimal total_creditos { get; set; }
+            public decimal movimiento_mes { get; set; }
+            public decimal saldo_actual { get; set; }
+            public bool acepta_movimientos { get; set; }
+        }
+
+        public class CntxMovimientoDetalleDto
+        {
+            public string? num_asiento { get; set; }
+            public string? tipo_asiento { get; set; }
+            public string? detalle { get; set; }
+            public decimal monto_debito { get; set; }
+            public decimal monto_credito { get; set; }
+            public string? cod_unidad { get; set; }
+            public string? cod_centro_costo { get; set; }
+            public string? cod_divisa { get; set; }
+            public decimal? tipo_cambio { get; set; }
+            public decimal? importe { get; set; }
+        }
+
+        public class CntxMovimientoNodoDto
+        {
+            public string tipo_vista { get; set; } = "RESUMEN_CUENTAS";
+            public List<CntxMovimientoCuentaDto> cuentas { get; set; } = new();
+            public List<CntxMovimientoDetalleDto> detalles { get; set; } = new();
         }
 
         public class CntxTipoCuentaDto
@@ -168,6 +251,20 @@
         public decimal? total_creditos { get; set; }
     }
 
+    public class AreaTrabajoDto
+    {
+        public int cod_area { get; set; }
+        public string? descripcion { get; set; } = string.Empty;
+        public bool es_padre { get; set; }
+    }
+
+    public class AreaCuentaDto
+    {
+        public string? cuenta { get; set; } = string.Empty;
+        public string? descripcion { get; set; } = string.Empty;
+        public string? acepta_movimientos { get; set; } = string.Empty;
+    }
+
     public class CntxDiferidoPlantillaDto
     {
         public int? Item { get; set; }
@@ -221,13 +318,29 @@
         public decimal? divisa_local { get; set; }
     }
 
-    public class CntxMayorizarRequest
-    {
-        public int? cod_empresa { get; set; }
-        public string? tipo_asiento { get; set; } = "";
-        public string? num_asiento { get; set; } = "";
-        public DateTime? fecha_asiento { get; set; }
-    }
+        public class CntxMayorizarRequest
+        {
+            public int? cod_empresa { get; set; }
+            public required int cod_contabilidad { get; set; }
+            public string? tipo_asiento { get; set; } = "";
+            public string? num_asiento { get; set; } = "";
+            public required int anio { get; set; }
+            public required int mes { get; set; }
+            public string? usuario { get; set; } = "";
+            public byte[]? ts { get; set; }
+        }
+
+        public class CntxBorrarAsientoRequest
+        {
+            public int? cod_empresa { get; set; }
+            public required int cod_contabilidad { get; set; }
+            public string? tipo_asiento { get; set; } = "";
+            public string? num_asiento { get; set; } = "";
+            public required int anio { get; set; }
+            public required int mes { get; set; }
+            public string? usuario { get; set; } = "";
+            public byte[]? ts { get; set; }
+        }
 
 
 }
