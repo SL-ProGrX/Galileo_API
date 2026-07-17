@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier
         {
             public decimal debitos { get; set; } = 0;
             public decimal creditos { get; set; } = 0;
-            }
+        }
 
         private sealed class CntXCalculosAsientoBorraData
         {
@@ -122,13 +122,13 @@ namespace Galileo_API.DataBaseTier
             return existe > 0;
         }
 
-        public byte[]? FxCntX_AsientoConcurrencia(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
+        public string FxCntX_AsientoConcurrencia(int codEmpresa, int codConta, string numAsiento, string tipoAsiento)
         {
             string sql = @"select ts
-                           from Cntx_Asientos
-                           where cod_contabilidad = @CodConta
-                             and num_asiento = @NumAsiento
-                             and tipo_asiento = @TipoAsiento";
+                   from Cntx_Asientos
+                   where cod_contabilidad = @CodConta
+                     and num_asiento = @NumAsiento
+                     and tipo_asiento = @TipoAsiento";
 
             var parametros = new
             {
@@ -137,7 +137,14 @@ namespace Galileo_API.DataBaseTier
                 TipoAsiento = tipoAsiento
             };
 
-            return DbHelper.ExecuteSingleQuery<byte[]?>(_portalDB, codEmpresa, sql, null, parametros).Result;
+            byte[]? ts = DbHelper.ExecuteSingleQuery<byte[]?>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                null,
+                parametros).Result;
+
+            return FxTsToHex(ts);
         }
 
         public static string FxCntX_PeriodoDesc(int pAnio, int pMes)
@@ -185,18 +192,18 @@ namespace Galileo_API.DataBaseTier
         public bool FxCntX_BalanceCuadrado(int codEmpresa, int codConta, int pAnio, int pMes, string pUnidad = "")
         {
             string sql = @"
-                select
-                    isnull(sum(abs(M.total_debitos)), 0) as debitos,
-                    isnull(sum(abs(M.total_creditos)), 0) as creditos
-                from CntX_Mov_Cuentas_Detallado M
-                inner join CntX_Cuentas C
-                    on M.cod_contabilidad = C.cod_contabilidad
-                   and M.cod_cuenta = C.cod_cuenta
-                   and C.cuenta_madre = ''
-                where M.cod_contabilidad = @CodConta
-                  and M.anio = @Anio
-                  and M.mes = @Mes
-                  and (@Unidad = '' or M.cod_unidad = @Unidad);";
+            select
+                isnull(sum(abs(M.total_debitos)), 0) as debitos,
+                isnull(sum(abs(M.total_creditos)), 0) as creditos
+            from CntX_Mov_Cuentas_Detallado M
+            inner join CntX_Cuentas C
+                on M.cod_contabilidad = C.cod_contabilidad
+               and M.cod_cuenta = C.cod_cuenta
+               and C.cuenta_madre = ''
+            where M.cod_contabilidad = @CodConta
+              and M.anio = @Anio
+              and M.mes = @Mes
+              and (@Unidad = '' or M.cod_unidad = @Unidad);";
 
             var data = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
                 conn.QueryFirstOrDefault<CntXBalanceCuadradoData>(
@@ -211,10 +218,13 @@ namespace Galileo_API.DataBaseTier
 
             if (data.Code != 0)
             {
-                return true;
+                throw new InvalidOperationException(data.Description ?? "No fue posible validar si el balance est&aacute; cuadrado.");
             }
 
-            return (data.Result?.debitos ?? 0) - (data.Result?.creditos ?? 0) == 0;
+            decimal debitos = data.Result?.debitos ?? 0;
+            decimal creditos = data.Result?.creditos ?? 0;
+
+            return debitos - creditos == 0;
         }
 
         public ErrorDto SbCntX_RestructuraMovimientosRSM(int codEmpresa, CntXCalculosRestructuraRequest request)
@@ -222,10 +232,10 @@ namespace Galileo_API.DataBaseTier
             return DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
-                "exec spCntX_BalanceRestructura @CodConta, @Anio, @Mes, @RevisionTotal",
+                "exec spCntX_BalanceRestructura @Contabilidad, @Anio, @Mes, @RevisionTotal",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Anio = request.anio,
                     Mes = request.mes,
                     RevisionTotal = request.revision_total
@@ -236,10 +246,10 @@ namespace Galileo_API.DataBaseTier
         {
             var result = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
                 conn.QueryFirstOrDefault<CntXCalculosUtilidadDto>(
-                    "exec spCntX_EstadoUtilidad @CodConta, @Anio, @Mes",
+                    "exec spCntX_EstadoUtilidad @Contabilidad, @Anio, @Mes",
                     new
                     {
-                        CodConta = codConta,
+                        Contabilidad = codConta,
                         Anio = pAnio,
                         Mes = pMes
                     }) ?? new CntXCalculosUtilidadDto());
@@ -299,7 +309,7 @@ namespace Galileo_API.DataBaseTier
                 _portalDB,
                 codEmpresa,
                 @"exec spCntX_AsientoGuardaMov
-                    @CodConta,
+                    @Contabilidad,
                     @Anio,
                     @Mes,
                     @Cuenta,
@@ -311,7 +321,7 @@ namespace Galileo_API.DataBaseTier
                     @TipoCambio",
                 new
                 {
-                    CodConta = codConta,
+                    Contabilidad = codConta,
                     Anio = pAnio,
                     Mes = pMes,
                     Cuenta = pCuenta,
@@ -327,7 +337,7 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto SbCntX_Asiento_Mayorizar(int codEmpresa, CntXCalculosAsientoProcesoRequest request)
         {
             string sqlValida = @"
-                select count(*)
+                select top 1 count(*)
                 from Cntx_Asientos Asi
                 left join Cntx_Asientos_Detalle Ad
                     on Asi.Cod_Contabilidad = Ad.Cod_Contabilidad
@@ -338,7 +348,10 @@ namespace Galileo_API.DataBaseTier
                   and Asi.num_asiento = @NumAsiento
                   and Asi.fecha_aplicado is null
                   and Asi.balanceado = 'S'
-                group by Asi.Tipo_Asiento, Asi.Num_Asiento
+                group by Asi.Tipo_Asiento,
+                     Asi.Num_Asiento,
+                     Asi.Fecha_Asiento,
+                     Asi.TS
                 having sum(Ad.Monto_Debito) - sum(Ad.Monto_Credito) = 0;";
 
             var existe = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -364,23 +377,14 @@ namespace Galileo_API.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
-                "exec spCntX_AsientoMayoriza @CodConta, @Usuario, @TipoAsiento, @NumAsiento",
+                "exec spCntX_AsientoMayoriza @Contabilidad, @Usuario, @Tipo, @Numero",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Usuario = request.usuario,
-                    TipoAsiento = request.tipo_asiento,
-                    NumAsiento = request.num_asiento
+                    Tipo = request.tipo_asiento,
+                    Numero = request.num_asiento
                 });
-
-            if (result.Code == 0)
-            {
-                RegistrarBitacora(
-                    codEmpresa,
-                    request.usuario,
-                    "Aplica",
-                    $"Mayoriza Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
-            }
 
             return result;
         }
@@ -390,23 +394,14 @@ namespace Galileo_API.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
-                "exec spCntX_AsientoReversa @CodConta, @Usuario, @TipoAsiento, @NumAsiento",
+                "exec spCntX_AsientoReversa @Contabilidad, @Usuario, @Tipo, @Numero",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Usuario = request.usuario,
-                    TipoAsiento = request.tipo_asiento,
-                    NumAsiento = request.num_asiento
+                    Tipo = request.tipo_asiento,
+                    Numero = request.num_asiento
                 });
-
-            if (result.Code == 0)
-            {
-                RegistrarBitacora(
-                    codEmpresa,
-                    request.usuario,
-                    "Aplica",
-                    $"Reversa Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
-            }
 
             return result;
         }
@@ -529,7 +524,7 @@ namespace Galileo_API.DataBaseTier
             RegistrarBitacora(
                 codEmpresa,
                 request.usuario,
-                "Elimina",
+                "Elimina - WEB",
                 $"Asiento : {request.tipo_asiento}-{request.num_asiento} Conta.{request.cod_contabilidad}");
 
             return deleteAsiento;
@@ -564,7 +559,7 @@ namespace Galileo_API.DataBaseTier
                 _portalDB,
                 codEmpresa,
                 @"exec spCntX_Analitico_Rsm
-                    @CodConta,
+                    @Contabilidad,
                     @Usuario,
                     @FechaInicio,
                     @FechaCorte,
@@ -577,7 +572,7 @@ namespace Galileo_API.DataBaseTier
                     @Pendientes",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Usuario = request.usuario,
                     FechaInicio = request.fecha_desde.Date,
                     FechaCorte = request.fecha_hasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
@@ -596,10 +591,10 @@ namespace Galileo_API.DataBaseTier
             return DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
-                "exec spCntX_Periodo_Cierre @CodConta, @Anio, @Mes, @Usuario",
+                "exec spCntX_Periodo_Cierre @Contabilidad, @Anio, @Mes, @Usuario",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Anio = request.anio,
                     Mes = request.mes,
                     Usuario = request.usuario
@@ -611,10 +606,10 @@ namespace Galileo_API.DataBaseTier
             return DbHelper.ExecuteNonQuery(
                 _portalDB,
                 codEmpresa,
-                "exec spCntX_Cierre_Fiscal_Asientos @CodConta, @Anio, @Mes, @Usuario",
+                "exec spCntX_Cierre_Fiscal_Asientos @Contabilidad, @Anio, @Mes, @Usuario",
                 new
                 {
-                    CodConta = request.cod_contabilidad,
+                    Contabilidad = request.cod_contabilidad,
                     Anio = request.anio,
                     Mes = request.mes,
                     Usuario = request.usuario
@@ -627,10 +622,17 @@ namespace Galileo_API.DataBaseTier
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
-                DetalleMovimiento = detalle + " - WEB",
+                DetalleMovimiento = detalle,
                 Movimiento = movimiento,
                 Modulo = vModulo
             });
+        }
+
+        private static string FxTsToHex(byte[]? ts)
+        {
+            return ts is null || ts.Length == 0
+                ? string.Empty
+                : "0x" + Convert.ToHexString(ts);
         }
     }
 }
