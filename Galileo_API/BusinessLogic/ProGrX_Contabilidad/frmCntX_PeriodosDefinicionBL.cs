@@ -13,15 +13,15 @@ namespace Galileo_API.BusinessTier.ProGrX_Contabilidad
             _db = new FrmCntXPeriodosDefinicionDb(config);
         }
 
-        public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa)
+        public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa, int codContabilidad)
         {
-            return _db.Inicial(codEmpresa);
+            return _db.Inicial(codEmpresa, codContabilidad);
         }
 
-        public ErrorDto Crear(int codEmpresa, PeriodosDefinicionDto dto)
+        public ErrorDto Crear(int codEmpresa, int codContabilidad, PeriodosDefinicionDto dto)
         {
 
-            return _db.Crear(codEmpresa, dto);
+            return _db.Crear(codEmpresa, codContabilidad, dto);
         }
     }
 }

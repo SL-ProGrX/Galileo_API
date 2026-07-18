@@ -1,8 +1,6 @@
-﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -20,92 +18,110 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDB = portalDB;
         }
 
-         /// <summary>
-         /// Lista tipo de Asientos
-         /// </summary>
-         /// <param name="codEmpresa"></param>
-         /// <param name="codContabilidad"></param>
-         /// <returns></returns>
-        public ErrorDto<List<CntxTipoAsientoDto>> CntX_TiposAsientos_Listar(int codEmpresa,int codContabilidad)
+        /// <summary>
+        /// Lista los tipos de asiento configurados para una contabilidad.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa cuya conexión se utilizará.</param>
+        /// <param name="codContabilidad">Código de la contabilidad que filtra los tipos de asiento.</param>
+        /// <returns>Respuesta con los tipos de asiento disponibles.</returns>
+        public ErrorDto<List<CntxTipoAsientoDto>> CntX_TiposAsientos_Listar(
+            int codEmpresa,
+            int codContabilidad)
         {
-            var response = new ErrorDto<List<CntxTipoAsientoDto>>();
+            const string sql = """
+                SELECT
+                    RTRIM(Tipo_Asiento) AS item,
+                    RTRIM(descripcion) AS descripcion
+                FROM CntX_Tipos_Asientos
+                WHERE cod_contabilidad = @codContabilidad
+                """;
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = @"
-                    SELECT 
-                        RTRIM(Tipo_Asiento) AS item,
-                        RTRIM(descripcion) AS descripcion
-                    FROM CntX_Tipos_Asientos
-                    WHERE cod_contabilidad = @codContabilidad
-                ";
-
-                response.Result = cn.Query<CntxTipoAsientoDto>(
-                    sql,
-                    new { codContabilidad }
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<CntxTipoAsientoDto>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                new { codContabilidad });
         }
 
-
         /// <summary>
-        /// Procesa la mayorizacion
+        /// Ejecuta la mayorización o reversión en lote con el filtro seleccionado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> Procesar(int codEmpresa,int codContabilidad,CntxMayorizacionProcesarDto request)
+        /// <param name="codEmpresa">Código de la empresa cuya conexión se utilizará.</param>
+        /// <param name="codContabilidad">Código de la contabilidad que se procesará.</param>
+        /// <param name="request">Período, operación, filtro, fechas, tipo de asiento y usuario.</param>
+        /// <returns>Respuesta que indica si el proceso terminó correctamente.</returns>
+        public ErrorDto<bool> Procesar(
+            int codEmpresa,
+            int codContabilidad,
+            CntxMayorizacionProcesarDto request)
         {
-            var response = new ErrorDto<bool>();
-
-            try
+            var (sql, parameters) = request.tipo_filtro switch
             {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
+                "PERIODO" => (
+                    "EXEC spCntX_AsientosAplicacionLote_Todo @codContabilidad, @anio, @mes, @tipoAplicacion, @usuario",
+                    (object)new
+                    {
+                        codContabilidad,
+                        request.anio,
+                        request.mes,
+                        tipoAplicacion = request.tipo_aplicacion,
+                        request.usuario
+                    }),
+                "FECHAS" => (
+                    "EXEC spCntX_AsientosAplicacionLote_Fechas @codContabilidad, @anio, @mes, @tipoAplicacion, @usuario, @fechaInicio, @fechaFin",
+                    new
+                    {
+                        codContabilidad,
+                        request.anio,
+                        request.mes,
+                        tipoAplicacion = request.tipo_aplicacion,
+                        request.usuario,
+                        fechaInicio = request.fecha_inicio,
+                        fechaFin = request.fecha_fin
+                    }),
+                "TIPO" => (
+                    "EXEC spCntX_AsientosAplicacionLote_TipoAsiento @codContabilidad, @anio, @mes, @tipoAplicacion, @usuario, @tipoAsiento",
+                    new
+                    {
+                        codContabilidad,
+                        request.anio,
+                        request.mes,
+                        tipoAplicacion = request.tipo_aplicacion,
+                        request.usuario,
+                        tipoAsiento = request.tipo_asiento
+                    }),
+                "TIPO_FECHAS" => (
+                    "EXEC spCntX_AsientosAplicacionLote_TipoAsientoFechas @codContabilidad, @anio, @mes, @tipoAplicacion, @usuario, @tipoAsiento, @fechaInicio, @fechaFin",
+                    new
+                    {
+                        codContabilidad,
+                        request.anio,
+                        request.mes,
+                        tipoAplicacion = request.tipo_aplicacion,
+                        request.usuario,
+                        tipoAsiento = request.tipo_asiento,
+                        fechaInicio = request.fecha_inicio,
+                        fechaFin = request.fecha_fin
+                    }),
+                _ => (string.Empty, new { })
+            };
 
-                string sp = request.tipo_filtro switch
-                {
-                    "PERIODO" => "spCntX_AsientosAplicacionLote_Todo",
-                    "FECHAS" => "spCntX_AsientosAplicacionLote_Fechas",
-                    "TIPO" => "spCntX_AsientosAplicacionLote_TipoAsiento",
-                    "TIPO_FECHAS" => "spCntX_AsientosAplicacionLote_TipoAsientoFechas",
-                    _ => throw new ArgumentException("Tipo filtro inválido", nameof(request))
-                };
-
-                var param = new
-                {
-                    codContabilidad,
-                    request.anio,
-                    request.mes,
-                    tipo = request.tipo_aplicacion,
-                    usuario = request.usuario,
-                    tipoAsiento = request.tipo_asiento,
-                    fechaInicio = request.fecha_inicio,
-                    fechaFin = request.fecha_fin
-                };
-
-                cn.Execute(sp, param, commandType: System.Data.CommandType.StoredProcedure);
-
-                response.Result = true;
-            }
-            catch (Exception ex)
+            if (string.IsNullOrWhiteSpace(sql))
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "El tipo de filtro seleccionado no es válido.");
             }
 
-            return response;
+            var response = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                sql,
+                parameters);
+
+            return response.Code == 0
+                ? DbHelper.CreateOkResponse(true)
+                : DbHelper.CreateErrorResponse<bool>(
+                    response.Description ?? "No fue posible completar el proceso.");
         }
     }
 }
