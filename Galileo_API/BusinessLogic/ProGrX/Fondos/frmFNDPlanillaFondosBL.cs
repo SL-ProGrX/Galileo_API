@@ -47,7 +47,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
 
         public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, CargarDeduccionesRequest Request)
         {
-            //CargarDeduccionesRequest request = JsonConvert.DeserializeObject<CargarDeduccionesRequest>(Request) ?? new CargarDeduccionesRequest();
+            
             return DbFndPlanillaFondos.FND_PlanillaFondos_Deducciones_Cargar(CodEmpresa, Request);
         }
 
