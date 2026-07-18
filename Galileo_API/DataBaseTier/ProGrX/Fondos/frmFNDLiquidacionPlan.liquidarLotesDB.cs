@@ -139,7 +139,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 conn.Open();
                 tx = conn.BeginTransaction();
 
-                var contexto = ObtenerProcesoParaActualizar(conn, tx, request.procesoId, request.usuario);
+                var contexto = ObtenerProcesoPorId(conn, tx, request.procesoId, request.usuario);
                 if (contexto == null)
                     throw new InvalidOperationException("No se encontró el proceso de liquidación.");
 
@@ -349,25 +349,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 });
 
             conn.Execute(sql, contratos, tx);
-        }
-
-        private static FndLiquidacionPlanProcesoContexto? ObtenerProcesoParaActualizar(
-            SqlConnection conn,
-            SqlTransaction tx,
-            Guid procesoId,
-            string usuario)
-        {
-            const string sql = @"
-                select *
-                from dbo.FND_LIQUIDACION_PROCESO with (UPDLOCK, HOLDLOCK)
-                where PROCESO_ID = @procesoId
-                  and USUARIO = @usuario";
-
-            return conn.QuerySingleOrDefault<FndLiquidacionPlanProcesoContexto>(sql, new
-            {
-                procesoId,
-                usuario = usuario.Trim()
-            }, tx);
         }
 
         private static List<FndLiquidacionPlanProcesoDetalle> ObtenerSiguienteLote(
