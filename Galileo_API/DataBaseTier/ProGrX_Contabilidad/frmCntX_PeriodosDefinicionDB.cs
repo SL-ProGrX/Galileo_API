@@ -69,8 +69,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             DateTime fin;
             try
             {
-                inicio = new DateTime(dto.desdeAnio.Value, dto.desdeMes.Value, 1);
-                fin = new DateTime(dto.hastaAnio.Value, dto.hastaMes.Value, 1);
+                inicio = new DateTime(
+                    dto.desdeAnio.Value,
+                    dto.desdeMes.Value,
+                    1,
+                    0,
+                    0,
+                    0,
+                    DateTimeKind.Unspecified);
+                fin = new DateTime(
+                    dto.hastaAnio.Value,
+                    dto.hastaMes.Value,
+                    1,
+                    0,
+                    0,
+                    0,
+                    DateTimeKind.Unspecified);
             }
             catch (ArgumentOutOfRangeException)
             {
