@@ -105,14 +105,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 int idGenerado;
                 using (var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente))
                 {
-                    var estado = connection.QueryFirstOrDefault<string>(
+                    var estado = await connection.QueryFirstOrDefaultAsync<string>(
                         @"SELECT TOP 1 E.COD_ESTADO FROM AFI_BENE_ESTADOS E
                           WHERE E.P_INICIA = 1 AND E.PROCESO = 'T' AND E.COD_ESTADO IN (
                               SELECT G.COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS G WHERE G.COD_GRUPO IN (
                                   SELECT B.COD_GRUPO FROM AFI_GRUPO_BENEFICIO B WHERE COD_BENEFICIO = @codBeneficio))
                           ORDER BY E.COD_ESTADO DESC", new { codBeneficio });
 
-                    connection.Execute(SqlInsertOtorga, new
+                    await connection.ExecuteAsync(SqlInsertOtorga, new
                     {
                         consec = vBeneConsec,
                         codBeneficio,
@@ -140,7 +140,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         aplicaPagoMasivo = beneficio.aplica_pago_masivo ? 1 : 0
                     });
 
-                    idGenerado = connection.QueryFirstOrDefault<int>("SELECT IDENT_CURRENT('afi_bene_otorga') AS id");
+                    idGenerado = await connection.QueryFirstOrDefaultAsync<int>("SELECT IDENT_CURRENT('afi_bene_otorga') AS id");
                     beneficio.id_beneficio = idGenerado;
 
                     if (tipoItem != "M" && beneficio.productos != null)
