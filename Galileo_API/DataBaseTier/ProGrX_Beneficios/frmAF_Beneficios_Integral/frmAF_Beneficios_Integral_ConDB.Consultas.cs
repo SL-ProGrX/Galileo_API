@@ -8,11 +8,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     public partial class FrmAfBeneficiosIntegralConDB
     {
         /// <summary>
-        /// Resultado del armado del filtro de texto libre para la consulta general y su rama de becas.
-        /// </summary>
-        private sealed record FiltroTextoResultado(string Principal, string BecaTexto, string WhereBeca);
-
-        /// <summary>
         /// Obtiene la lista de beneficios registrados en la consulta general aplicando los filtros recibidos.
         /// </summary>
         /// <param name="Jfiltro">Filtros de la consulta serializados en JSON (BeneConsultaFiltros).</param>
@@ -23,27 +18,17 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var result = DbHelper.WithConn(CreatePortalDb(), filtro.codCliente, connection =>
             {
-                var p = new DynamicParameters();
+                var p = ConstruirParametrosConsulta(filtro);
 
-                var categoriaClause = ConstruirCategoriaFiltro(filtro, p);
-                var where = ConstruirWhereConsulta(filtro, categoriaClause, p, out var whereBeca);
-                var texto = ConstruirFiltroTexto(filtro, whereBeca, p);
-                var paginacion = ConstruirPaginacion(filtro, p);
-
-                var datos = new BeneConsultaDatosLista();
-
-                var countSql = $"SELECT COUNT(*) FROM ( {InnerConteo(categoriaClause)} ) T {where} ";
-                datos.total = connection.Query<int>(countSql, p).FirstOrDefault();
-
-                var listaSql = $@"SELECT * FROM ( {InnerDetalle(categoriaClause)} ) T {where} {texto.Principal}
-                                  ORDER BY Registra_fecha DESC, Beneficio_Desc, Consec DESC {paginacion}";
-                datos.lista = connection.Query<BeneConsultaDatos>(listaSql, p).ToList();
+                var datos = new BeneConsultaDatosLista
+                {
+                    total = connection.Query<int>(SqlConsultaCount, p).FirstOrDefault(),
+                    lista = connection.Query<BeneConsultaDatos>(SqlConsultaLista, p).ToList()
+                };
 
                 if (NormalizarTexto(filtro.categoria) == "B_BECA")
                 {
-                    var becaSql = $@"{SqlBecas} {texto.WhereBeca} {texto.BecaTexto}
-                                     ORDER BY B.COD_EXPEDIENTE DESC {paginacion}";
-                    datos.lista.AddRange(connection.Query<BeneConsultaDatos>(becaSql, p).ToList());
+                    datos.lista.AddRange(connection.Query<BeneConsultaDatos>(SqlConsultaBecas, p).ToList());
                 }
 
                 return datos;
@@ -114,59 +99,61 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             };
         }
 
-        // ==================== Helpers privados de armado de filtros ====================
+        // ==================== Armado de parámetros (sin concatenar SQL) ====================
 
         /// <summary>
-        /// Construye la cláusula de categoría reutilizada dentro de las subconsultas de grupos.
+        /// Construye los parámetros de la consulta general. Los filtros no aplicados se envían como NULL,
+        /// de modo que el SQL constante los descarta con la condición (@param IS NULL OR ...).
         /// </summary>
-        private static string ConstruirCategoriaFiltro(BeneConsultaFiltros filtro, DynamicParameters p)
+        private static DynamicParameters ConstruirParametrosConsulta(BeneConsultaFiltros filtro)
         {
-            var cat = NormalizarTexto(filtro.categoria);
-            if (cat == "T" || cat.Length == 0)
-            {
-                return string.Empty;
-            }
+            var p = new DynamicParameters();
 
-            p.Add("@categoriaLike", $"%{cat}%");
-            return " WHERE COD_CATEGORIA LIKE @categoriaLike ";
+            var cat = NormalizarTexto(filtro.categoria);
+            p.Add("@categoriaLike", (cat == "T" || cat.Length == 0) ? null : $"%{cat}%");
+
+            AgregarParametrosFecha(filtro, p);
+
+            var estado = NormalizarTexto(filtro.estado);
+            p.Add("@estadoLike", estado == "T" ? null : $"%{estado}%");
+            p.Add("@cedulaLike", EsCedulaVacia(filtro.cedula) ? null : $"%{filtro.cedula!.Trim()}%");
+            p.Add("@expLike", filtro.noExpediente != null ? $"%{filtro.noExpediente}%" : null);
+            p.Add("@usuarioLike", filtro.usuario != null ? $"%{filtro.usuario.Trim().ToUpper()}%" : null);
+            p.Add("@filtroLike", string.IsNullOrEmpty(filtro.filtro) ? null : $"%{filtro.filtro}%");
+
+            AgregarParametrosPaginacion(filtro, p);
+            return p;
         }
 
         /// <summary>
-        /// Construye el WHERE principal de la consulta (categoría, fechas, estado, cédula, expediente, usuario).
+        /// Agrega los parámetros del rango de fechas. Solo se activa cuando todasFechas es false y hay tipo de fecha.
         /// </summary>
-        private static string ConstruirWhereConsulta(
-            BeneConsultaFiltros filtro, string categoriaClause, DynamicParameters p, out string whereBeca)
+        private static void AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
         {
-            whereBeca = string.Empty;
-            var where = $" WHERE COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS {categoriaClause}) ";
+            var aplicaFecha = filtro.todasFechas == false && filtro.tipoFecha != null;
+            p.Add("@todasFechas", aplicaFecha ? 0 : 1);
+            p.Add("@tipoFecha", aplicaFecha ? filtro.tipoFecha : null);
 
-            AgregarFiltroFechas(filtro, p, ref where, ref whereBeca);
-
-            if (NormalizarTexto(filtro.estado) != "T")
+            if (!aplicaFecha)
             {
-                p.Add("@estadoLike", $"%{NormalizarTexto(filtro.estado)}%");
-                where += " AND Estado LIKE @estadoLike ";
+                p.Add("@fechaIni", null);
+                p.Add("@fechaFin", null);
+                return;
             }
 
-            if (!EsCedulaVacia(filtro.cedula))
-            {
-                p.Add("@cedulaLike", $"%{filtro.cedula!.Trim()}%");
-                where += " AND cedula LIKE @cedulaLike ";
-            }
+            var fechaIni = DateTimeOffset.Parse(filtro.fechaInicio!).ToString("yyyy-MM-dd");
+            var fechaFin = DateTimeOffset.Parse(filtro.fechaCorte!).ToString("yyyy-MM-dd");
+            p.Add("@fechaIni", $"{fechaIni} 00:00:00");
+            p.Add("@fechaFin", $"{fechaFin} 23:59:59");
+        }
 
-            if (filtro.noExpediente != null)
-            {
-                p.Add("@expLike", $"%{filtro.noExpediente}%");
-                where += " AND Expediente LIKE @expLike ";
-            }
-
-            if (filtro.usuario != null)
-            {
-                p.Add("@usuarioLike", $"%{filtro.usuario.Trim().ToUpper()}%");
-                where += " AND UPPER(registra_user) LIKE @usuarioLike ";
-            }
-
-            return where;
+        /// <summary>
+        /// Agrega los parámetros de paginación. Sin página se recorre todo el conjunto (offset 0, fetch máximo).
+        /// </summary>
+        private static void AgregarParametrosPaginacion(BeneConsultaFiltros filtro, DynamicParameters p)
+        {
+            p.Add("@offset", filtro.pagina ?? 0);
+            p.Add("@fetch", filtro.pagina == null ? int.MaxValue : (filtro.paginacion ?? 0));
         }
 
         /// <summary>
@@ -175,92 +162,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private static bool EsCedulaVacia(string? cedula)
             => cedula is null || cedula == " " || cedula == "0" || cedula == string.Empty;
 
-        /// <summary>
-        /// Agrega el filtro de rango de fechas al WHERE principal y al WHERE de becas según el tipo de fecha.
-        /// </summary>
-        private static void AgregarFiltroFechas(
-            BeneConsultaFiltros filtro, DynamicParameters p, ref string where, ref string whereBeca)
-        {
-            if (filtro.todasFechas != false || filtro.tipoFecha == null)
-            {
-                return;
-            }
+        // ==================== Cuerpos SQL constantes (sin datos de usuario) ====================
 
-            var fechaIni = DateTimeOffset.Parse(filtro.fechaInicio!).ToString("yyyy-MM-dd");
-            var fechaFin = DateTimeOffset.Parse(filtro.fechaCorte!).ToString("yyyy-MM-dd");
-            p.Add("@fechaIni", $"{fechaIni} 00:00:00");
-            p.Add("@fechaFin", $"{fechaFin} 23:59:59");
-
-            switch (filtro.tipoFecha)
-            {
-                case "R":
-                    where += " AND Registra_Fecha BETWEEN @fechaIni AND @fechaFin ";
-                    whereBeca += " WHERE B.REGISTRA_FECHA BETWEEN @fechaIni AND @fechaFin ";
-                    break;
-                case "A":
-                    where += " AND Autoriza_Fecha BETWEEN @fechaIni AND @fechaFin ";
-                    whereBeca += " WHERE B.APRUEBA_FECHA BETWEEN @fechaIni AND @fechaFin ";
-                    break;
-                case "P":
-                    where += " AND Pago_Fecha BETWEEN @fechaIni AND @fechaFin ";
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Construye el filtro de texto libre para la consulta general y su equivalente para becas.
-        /// </summary>
-        private static FiltroTextoResultado ConstruirFiltroTexto(
-            BeneConsultaFiltros filtro, string whereBeca, DynamicParameters p)
-        {
-            if (string.IsNullOrEmpty(filtro.filtro))
-            {
-                return new FiltroTextoResultado(string.Empty, string.Empty, whereBeca);
-            }
-
-            p.Add("@filtroLike", $"%{filtro.filtro}%");
-
-            var principal = @" AND ( Expediente LIKE @filtroLike
-                                  OR cedula LIKE @filtroLike
-                                  OR Beneficio_Desc LIKE @filtroLike
-                                  OR NOMBRE_BENEFICIARIO LIKE @filtroLike
-                                  OR registra_user LIKE @filtroLike
-                                  OR SEPELIO_IDENTIFICACION LIKE @filtroLike
-                                  OR PROVINCIA LIKE @filtroLike
-                                  OR Grupo LIKE @filtroLike ) ";
-
-            var whereBecaFinal = string.IsNullOrEmpty(whereBeca) ? " WHERE " : whereBeca + " AND ";
-
-            var becaTexto = @" ( B.COD_EXPEDIENTE LIKE @filtroLike
-                             OR B.CEDULA_ASO LIKE @filtroLike
-                             OR B.NOMBRE_ASO LIKE @filtroLike
-                             OR B.ASO_EMAIL LIKE @filtroLike
-                             OR B.PROM_SAL_GESTIONAR LIKE @filtroLike ) ";
-
-            return new FiltroTextoResultado(principal, becaTexto, whereBecaFinal);
-        }
-
-        /// <summary>
-        /// Construye la cláusula de paginación (OFFSET/FETCH) cuando el filtro trae página.
-        /// </summary>
-        private static string ConstruirPaginacion(BeneConsultaFiltros filtro, DynamicParameters p)
-        {
-            if (filtro.pagina == null)
-            {
-                return string.Empty;
-            }
-
-            p.Add("@offset", filtro.pagina);
-            p.Add("@fetch", filtro.paginacion ?? 0);
-            return " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-        }
-
-        // ==================== Cuerpos SQL (sin datos de usuario) ====================
-
-        /// <summary>
-        /// Subconsulta interna usada para el conteo total de la consulta general.
-        /// </summary>
-        private static string InnerConteo(string categoriaClause) => $@"
+        /// <summary>Subconsulta interna usada para el conteo total de la consulta general.</summary>
+        private const string InnerConteoSql = @"
             SELECT CONCAT(RIGHT(CONCAT('00000', H.ID_BENEFICIO), 5),
                           TRIM(H.COD_BENEFICIO),
                           RIGHT(CONCAT('00000', H.CONSEC), 5)) AS Expediente,
@@ -271,12 +176,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                    ON E.COD_ESTADO = H.ESTADO
                   AND E.COD_ESTADO IN (
                         SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
-                              SELECT COD_GRUPO FROM AFI_BENE_GRUPOS {categoriaClause}))";
+                              SELECT COD_GRUPO FROM AFI_BENE_GRUPOS
+                               WHERE (@categoriaLike IS NULL OR COD_CATEGORIA LIKE @categoriaLike)))";
 
-        /// <summary>
-        /// Subconsulta interna con el detalle completo de la consulta general.
-        /// </summary>
-        private static string InnerDetalle(string categoriaClause) => $@"
+        /// <summary>Subconsulta interna con el detalle completo de la consulta general.</summary>
+        private const string InnerDetalleSql = @"
             SELECT
                 CONCAT(RIGHT(CONCAT('00000', H.ID_BENEFICIO), 5),
                        TRIM(H.COD_BENEFICIO),
@@ -316,9 +220,31 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             LEFT JOIN SOCIOS S ON S.CEDULA = H.CEDULA
             LEFT JOIN AFI_BENE_OTORGA_INT I ON I.ID_BENEFICIO = H.ID_BENEFICIO";
 
-        /// <summary>
-        /// Consulta de becas socioeconómicas que se anexa cuando la categoría es B_BECA.
-        /// </summary>
+        /// <summary>WHERE principal de la consulta general con todos los filtros condicionales.</summary>
+        private const string WhereConsulta = @"
+            WHERE COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS
+                                     WHERE (@categoriaLike IS NULL OR COD_CATEGORIA LIKE @categoriaLike))
+              AND ( @todasFechas = 1 OR @tipoFecha IS NULL
+                    OR (@tipoFecha = 'R' AND Registra_Fecha BETWEEN @fechaIni AND @fechaFin)
+                    OR (@tipoFecha = 'A' AND Autoriza_Fecha BETWEEN @fechaIni AND @fechaFin)
+                    OR (@tipoFecha = 'P' AND Pago_Fecha BETWEEN @fechaIni AND @fechaFin) )
+              AND (@estadoLike IS NULL OR Estado LIKE @estadoLike)
+              AND (@cedulaLike IS NULL OR cedula LIKE @cedulaLike)
+              AND (@expLike IS NULL OR Expediente LIKE @expLike)
+              AND (@usuarioLike IS NULL OR UPPER(registra_user) LIKE @usuarioLike) ";
+
+        /// <summary>Filtro de texto libre de la consulta general (solo aplica al detalle, no al conteo).</summary>
+        private const string FiltroTextoPrincipal = @"
+              AND (@filtroLike IS NULL OR ( Expediente LIKE @filtroLike
+                                        OR cedula LIKE @filtroLike
+                                        OR Beneficio_Desc LIKE @filtroLike
+                                        OR NOMBRE_BENEFICIARIO LIKE @filtroLike
+                                        OR registra_user LIKE @filtroLike
+                                        OR SEPELIO_IDENTIFICACION LIKE @filtroLike
+                                        OR PROVINCIA LIKE @filtroLike
+                                        OR Grupo LIKE @filtroLike )) ";
+
+        /// <summary>Consulta de becas socioeconómicas que se anexa cuando la categoría es B_BECA.</summary>
         private const string SqlBecas = @"
             SELECT
                 CONCAT(B.PERIODO_LECTIVO, 'BECA', B.COD_EXPEDIENTE) AS expediente,
@@ -338,5 +264,28 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 'SIF' AS int_desk
             FROM BECAS_V2_EXPEDIENTES B
             LEFT JOIN BECAS_V2_ESTADOS_EXPEDIENTES E ON E.COD_ESTADO = B.COD_ESTADO ";
+
+        /// <summary>WHERE de la rama de becas con fecha y texto condicionales.</summary>
+        private const string WhereBecas = @"
+            WHERE ( @todasFechas = 1 OR @tipoFecha IS NULL OR @tipoFecha = 'P'
+                    OR (@tipoFecha = 'R' AND B.REGISTRA_FECHA BETWEEN @fechaIni AND @fechaFin)
+                    OR (@tipoFecha = 'A' AND B.APRUEBA_FECHA BETWEEN @fechaIni AND @fechaFin) )
+              AND ( @filtroLike IS NULL OR ( B.COD_EXPEDIENTE LIKE @filtroLike
+                                          OR B.CEDULA_ASO LIKE @filtroLike
+                                          OR B.NOMBRE_ASO LIKE @filtroLike
+                                          OR B.ASO_EMAIL LIKE @filtroLike
+                                          OR B.PROM_SAL_GESTIONAR LIKE @filtroLike ) ) ";
+
+        // ==================== Comandos SQL finales (concatenación de constantes) ====================
+
+        private const string SqlConsultaCount =
+            "SELECT COUNT(*) FROM ( " + InnerConteoSql + " ) T " + WhereConsulta;
+
+        private const string SqlConsultaLista =
+            "SELECT * FROM ( " + InnerDetalleSql + " ) T " + WhereConsulta + FiltroTextoPrincipal
+            + " ORDER BY Registra_fecha DESC, Beneficio_Desc, Consec DESC OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+
+        private const string SqlConsultaBecas =
+            SqlBecas + WhereBecas + " ORDER BY B.COD_EXPEDIENTE DESC OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
     }
 }

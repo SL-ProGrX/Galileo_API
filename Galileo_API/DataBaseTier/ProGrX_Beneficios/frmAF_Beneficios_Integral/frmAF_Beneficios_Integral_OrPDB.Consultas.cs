@@ -17,16 +17,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             var filtro = JsonConvert.DeserializeObject<AfiBeneOtorgaFiltros>(Filtros) ?? new AfiBeneOtorgaFiltros();
 
-            var where = " WHERE O.CEDULA = @cedula";
-            if (filtro.categoria != null) where += " AND B.COD_CATEGORIA = @categoria";
-            if (filtro.consec != null) where += " AND O.CONSEC = @consec";
-            if (filtro.cod_beneficio != null) where += " AND O.COD_BENEFICIO = @codBeneficio";
-
-            var sql = $@"
+            const string sql = @"
                 SELECT O.*, B.Descripcion, B.PAGOS_MULTIPLES
                 FROM afi_bene_otorga O
                 INNER JOIN afi_beneficios B ON O.cod_beneficio = B.cod_beneficio
-                {where}";
+                WHERE O.CEDULA = @cedula
+                  AND (@categoria IS NULL OR B.COD_CATEGORIA = @categoria)
+                  AND (@consec IS NULL OR O.CONSEC = @consec)
+                  AND (@codBeneficio IS NULL OR O.COD_BENEFICIO = @codBeneficio)";
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
                 connection.QueryFirstOrDefault<AfiBeneOtorgaData>(sql, new

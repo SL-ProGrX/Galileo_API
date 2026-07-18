@@ -159,23 +159,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         public ErrorDto<List<AfiBeneSocioFinanzas>> SituacionFinSocio_Obtener(int CodCliente, string? cedula, string tipo)
         {
-            var p = new DynamicParameters();
-            p.Add("@tipo", tipo);
-            var where = string.Empty;
-            if (cedula != null)
-            {
-                p.Add("@cedula", cedula.Trim());
-                where = " TRIM(CEDULA) = @cedula AND ";
-            }
-
-            var sql = $@"
+            const string sql = @"
                 SELECT ID_SITUACIONFINANCIERA AS id, ID_CONCEPTO, CEDULA, TIPO, CONCEPTO, MONTO, OBSERVACIONES, ACTIVO,
                        ACREEDOR, DEUDOR, CUOTA, SALDO, MOROSIDAD
                 FROM AFI_BENE_SOCIO_FINANZAS
-                WHERE {where} TIPO = @tipo AND ACTIVO = 1";
+                WHERE TIPO = @tipo AND ACTIVO = 1 AND (@cedula IS NULL OR TRIM(CEDULA) = @cedula)";
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-                connection.Query<AfiBeneSocioFinanzas>(sql, p).ToList());
+                connection.Query<AfiBeneSocioFinanzas>(sql, new { tipo, cedula = cedula?.Trim() }).ToList());
 
             return new ErrorDto<List<AfiBeneSocioFinanzas>>
             {

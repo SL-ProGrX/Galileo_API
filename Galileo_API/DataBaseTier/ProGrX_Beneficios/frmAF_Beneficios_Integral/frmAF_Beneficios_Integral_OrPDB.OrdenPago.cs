@@ -1,4 +1,3 @@
-using System.Text;
 using Dapper;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
@@ -151,18 +150,17 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto ActualizarOrdenPago(int CodCliente, AfiBeneIntegralOrP beneficio)
         {
-            var extra = new StringBuilder();
-            if (!string.IsNullOrEmpty(beneficio.cod_producto)) extra.Append(", cod_producto = @codProducto");
-            if (!string.IsNullOrEmpty(beneficio.cta_bancaria)) extra.Append(", cta_bancaria = @ctaBancaria");
-            if (beneficio.cod_banco != null) extra.Append(", cod_banco = @codBanco");
-
             const string sqlEstado = @"SELECT estado FROM afi_bene_pago
                                         WHERE cedula = @cedula AND consec = @consec AND cod_beneficio = @codBeneficio";
 
-            var sqlUpdate = $@"
+            // Las columnas opcionales solo se actualizan si vienen con valor (CASE mantiene el valor actual si no).
+            const string sqlUpdate = @"
                 UPDATE afi_bene_pago
                    SET tipo = @tipo, monto = @monto, tipo_emision = @tipoEmision,
-                       t_identificacion = @tIdentificacion, t_beneficiario = @tBeneficiario, t_email = @tEmail {extra}
+                       t_identificacion = @tIdentificacion, t_beneficiario = @tBeneficiario, t_email = @tEmail,
+                       cod_producto = CASE WHEN @codProducto IS NULL OR @codProducto = '' THEN cod_producto ELSE @codProducto END,
+                       cta_bancaria = CASE WHEN @ctaBancaria IS NULL OR @ctaBancaria = '' THEN cta_bancaria ELSE @ctaBancaria END,
+                       cod_banco    = CASE WHEN @codBanco IS NULL THEN cod_banco ELSE @codBanco END
                  WHERE cedula = @cedula AND consec = @consec AND cod_beneficio = @codBeneficio";
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>

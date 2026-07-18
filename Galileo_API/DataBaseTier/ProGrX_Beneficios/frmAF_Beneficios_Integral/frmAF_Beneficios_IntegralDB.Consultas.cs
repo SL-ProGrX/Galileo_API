@@ -80,41 +80,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString) ?? new AfiBeneFiltros();
 
-            var p = new DynamicParameters();
-            p.Add("@catLike", $"%{Categoria}%");
-            var where = ConstruirWhereMasiva(filtros, p);
-            var paginacion = ConstruirPaginacion(filtros, p, 30);
-
-            var countSql = $@"
-                SELECT COUNT(O.ID_BENEFICIO)
-                FROM vBeneficios_W_Integral O
-                LEFT JOIN AFI_BENE_ESTADOS E ON E.COD_ESTADO = O.ESTADO AND E.COD_ESTADO IN (
-                    SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
-                        SELECT COD_GRUPO FROM AFI_BENE_GRUPOS WHERE COD_CATEGORIA LIKE @catLike))
-                WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA LIKE @catLike)
-                  AND E.P_FINALIZA = 1 AND E.PROCESO = 'T' AND E.ACTIVO = '1' {where}";
-
-            var listaSql = $@"
-                SELECT
-                    CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
-                    O.REGISTRA_FECHA, O.AUTORIZA_FECHA, O.ID_BENEFICIO, O.CONSEC, O.COD_BENEFICIO, O.Beneficio_Desc,
-                    O.MONTO, O.MONTO_APLICADO, O.ESTADO, ISNULL(E.DESCRIPCION, 'SIN DEFINIR') AS estado_desc,
-                    O.cedula, O.NOMBRE_BENEFICIARIO, O.registra_user, Categoria_Desc, Estado_Persona, O.TIPO,
-                    CASE WHEN O.TIPO = 'M' THEN 'Monetario' WHEN O.TIPO = 'P' THEN 'Producto' ELSE 'Ambos' END AS TipoDesc
-                FROM vBeneficios_W_Integral O
-                LEFT JOIN AFI_BENE_ESTADOS E ON E.COD_ESTADO = O.ESTADO AND E.COD_ESTADO IN (
-                    SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
-                        SELECT COD_GRUPO FROM AFI_BENE_GRUPOS WHERE COD_CATEGORIA LIKE @catLike))
-                WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA LIKE @catLike)
-                  AND E.P_FINALIZA = 1 AND E.PROCESO = 'T' AND E.ACTIVO = '1' {where}
-                ORDER BY O.REGISTRA_FECHA DESC {paginacion}";
+            var p = ConstruirParametrosMasiva(Categoria, filtros);
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 var datos = new BeneConsultaDatosLista
                 {
-                    total = connection.QueryFirstOrDefault<int>(countSql, p),
-                    lista = connection.Query<BeneConsultaDatos>(listaSql, p).ToList()
+                    total = connection.QueryFirstOrDefault<int>(SqlMasivaCount, p),
+                    lista = connection.Query<BeneConsultaDatos>(SqlMasivaLista, p).ToList()
                 };
 
                 MarcarValidaciones(CodEmpresa, datos.lista);
@@ -130,52 +103,66 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
+        /// Arma los parámetros de la consulta de aprobación masiva (filtros condicionales por parámetro).
+        /// </summary>
+        private static DynamicParameters ConstruirParametrosMasiva(string categoria, AfiBeneFiltros filtros)
+        {
+            string? filtroLike = string.IsNullOrEmpty(filtros.filtro) ? null : $"%{filtros.filtro}%";
+            string? codGrupo = (filtros.cod_grupo != null && filtros.cod_grupo != "TODOS") ? filtros.cod_grupo : null;
+            var tienePagina = filtros.pagina != null;
+
+            var p = new DynamicParameters();
+            p.Add("@catLike", $"%{categoria}%");
+            p.Add("@filtroLike", filtroLike);
+            p.Add("@codGrupo", codGrupo);
+            p.Add("@offset", filtros.pagina ?? 0);
+            p.Add("@fetch", tienePagina ? (filtros.paginacion ?? 30) : int.MaxValue);
+            return p;
+        }
+
+        // Comando SQL constante y parametrizado (evita SQL dinámico / S2077). Los filtros se aplican
+        // como condiciones "@param IS NULL OR ..." para no interpolar texto en el comando.
+        private const string SqlMasivaBase = @"
+            FROM vBeneficios_W_Integral O
+            LEFT JOIN AFI_BENE_ESTADOS E ON E.COD_ESTADO = O.ESTADO AND E.COD_ESTADO IN (
+                SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
+                    SELECT COD_GRUPO FROM AFI_BENE_GRUPOS WHERE COD_CATEGORIA LIKE @catLike))
+            WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA LIKE @catLike)
+              AND E.P_FINALIZA = 1 AND E.PROCESO = 'T' AND E.ACTIVO = '1'
+              AND (@filtroLike IS NULL OR (Expediente LIKE @filtroLike OR O.cedula LIKE @filtroLike OR O.NOMBRE_BENEFICIARIO LIKE @filtroLike))
+              AND (@codGrupo IS NULL OR O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_GRUPO = @codGrupo))";
+
+        private const string SqlMasivaCount = "SELECT COUNT(O.ID_BENEFICIO) " + SqlMasivaBase;
+
+        private const string SqlMasivaLista =
+            @"SELECT
+                CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
+                O.REGISTRA_FECHA, O.AUTORIZA_FECHA, O.ID_BENEFICIO, O.CONSEC, O.COD_BENEFICIO, O.Beneficio_Desc,
+                O.MONTO, O.MONTO_APLICADO, O.ESTADO, ISNULL(E.DESCRIPCION, 'SIN DEFINIR') AS estado_desc,
+                O.cedula, O.NOMBRE_BENEFICIARIO, O.registra_user, Categoria_Desc, Estado_Persona, O.TIPO,
+                CASE WHEN O.TIPO = 'M' THEN 'Monetario' WHEN O.TIPO = 'P' THEN 'Producto' ELSE 'Ambos' END AS TipoDesc "
+            + SqlMasivaBase
+            + @" ORDER BY O.REGISTRA_FECHA DESC OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+
+        /// <summary>
         /// Obtiene la lista de beneficios para control mensual (saldo pendiente por pagar).
         /// </summary>
         public ErrorDto<BeneConsultaDatosLista> BeneficiosControMensual_Obtener(int CodEmpresa, string Categoria, string filtroString)
         {
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString) ?? new AfiBeneFiltros();
 
+            var tienePagina = filtros.pagina != null;
+
             var p = new DynamicParameters();
             p.Add("@categoria", Categoria);
-            var where = string.Empty;
-            if (!string.IsNullOrEmpty(filtros.filtro))
-            {
-                p.Add("@filtroLike", $"%{filtros.filtro}%");
-                where = " AND (Expediente LIKE @filtroLike OR O.cedula LIKE @filtroLike OR O.NOMBRE_BENEFICIARIO LIKE @filtroLike) ";
-            }
-            var paginacion = ConstruirPaginacion(filtros, p, 30);
-
-            const string estadoJoin = @"
-                LEFT JOIN AFI_BENE_ESTADOS E ON E.COD_ESTADO = O.ESTADO AND E.COD_ESTADO IN (
-                    SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
-                        SELECT COD_GRUPO FROM AFI_BENE_GRUPOS WHERE COD_CATEGORIA = @categoria))
-                LEFT JOIN AFI_BENE_OTORGA OB ON O.ID_BENEFICIO = OB.ID_BENEFICIO AND OB.aplica_pago_masivo = 1";
-
-            const string estadoWhere = @"
-                WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA = @categoria)
-                  AND E.P_FINALIZA = 1 AND E.PROCESO = 'A' AND OB.ID_BENEFICIO IS NOT NULL
-                  AND O.MONTO_APLICADO <> (SELECT COALESCE(SUM(P.MONTO), 0) FROM AFI_BENE_PAGO P
-                                            WHERE P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC)";
-
-            var countSql = $"SELECT COUNT(*) FROM vBeneficios_W_Integral O {estadoJoin} {estadoWhere}";
-
-            var listaSql = $@"
-                SELECT
-                    CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
-                    O.REGISTRA_FECHA, O.AUTORIZA_FECHA, O.ID_BENEFICIO, O.CONSEC, O.COD_BENEFICIO, O.Beneficio_Desc, O.MONTO,
-                    O.MONTO_APLICADO - COALESCE((SELECT SUM(P.MONTO) FROM AFI_BENE_PAGO P
-                        WHERE P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC), 0) AS MONTO_APLICADO,
-                    O.ESTADO, COALESCE(E.DESCRIPCION, 'SIN DEFINIR') AS estado_desc, O.CEDULA, O.NOMBRE_BENEFICIARIO,
-                    O.REGISTRA_USER, O.Categoria_Desc, O.Estado_Persona, O.TIPO,
-                    CASE WHEN O.TIPO = 'M' THEN 'Monetario' WHEN O.TIPO = 'P' THEN 'Producto' ELSE 'Ambos' END AS TipoDesc
-                FROM vBeneficios_W_Integral O {estadoJoin} {estadoWhere} {where}
-                ORDER BY O.REGISTRA_FECHA DESC {paginacion}";
+            p.Add("@filtroLike", string.IsNullOrEmpty(filtros.filtro) ? null : $"%{filtros.filtro}%");
+            p.Add("@offset", filtros.pagina ?? 0);
+            p.Add("@fetch", tienePagina ? (filtros.paginacion ?? 30) : int.MaxValue);
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection => new BeneConsultaDatosLista
             {
-                total = connection.QueryFirstOrDefault<int>(countSql, p),
-                lista = connection.Query<BeneConsultaDatos>(listaSql, p).ToList()
+                total = connection.QueryFirstOrDefault<int>(SqlControMensualCount, p),
+                lista = connection.Query<BeneConsultaDatos>(SqlControMensualLista, p).ToList()
             });
 
             return new ErrorDto<BeneConsultaDatosLista>
@@ -185,6 +172,33 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 Result = result.Result ?? new BeneConsultaDatosLista()
             };
         }
+
+        // Comando SQL constante y parametrizado (evita SQL dinámico / S2077).
+        private const string SqlControMensualBase = @"
+            FROM vBeneficios_W_Integral O
+            LEFT JOIN AFI_BENE_ESTADOS E ON E.COD_ESTADO = O.ESTADO AND E.COD_ESTADO IN (
+                SELECT COD_ESTADO FROM AFI_BENE_GRUPO_ESTADOS WHERE COD_GRUPO IN (
+                    SELECT COD_GRUPO FROM AFI_BENE_GRUPOS WHERE COD_CATEGORIA = @categoria))
+            LEFT JOIN AFI_BENE_OTORGA OB ON O.ID_BENEFICIO = OB.ID_BENEFICIO AND OB.aplica_pago_masivo = 1
+            WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA = @categoria)
+              AND E.P_FINALIZA = 1 AND E.PROCESO = 'A' AND OB.ID_BENEFICIO IS NOT NULL
+              AND O.MONTO_APLICADO <> (SELECT COALESCE(SUM(P.MONTO), 0) FROM AFI_BENE_PAGO P
+                                        WHERE P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC)";
+
+        private const string SqlControMensualCount = "SELECT COUNT(*) " + SqlControMensualBase;
+
+        private const string SqlControMensualLista =
+            @"SELECT
+                CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
+                O.REGISTRA_FECHA, O.AUTORIZA_FECHA, O.ID_BENEFICIO, O.CONSEC, O.COD_BENEFICIO, O.Beneficio_Desc, O.MONTO,
+                O.MONTO_APLICADO - COALESCE((SELECT SUM(P.MONTO) FROM AFI_BENE_PAGO P
+                    WHERE P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC), 0) AS MONTO_APLICADO,
+                O.ESTADO, COALESCE(E.DESCRIPCION, 'SIN DEFINIR') AS estado_desc, O.CEDULA, O.NOMBRE_BENEFICIARIO,
+                O.REGISTRA_USER, O.Categoria_Desc, O.Estado_Persona, O.TIPO,
+                CASE WHEN O.TIPO = 'M' THEN 'Monetario' WHEN O.TIPO = 'P' THEN 'Producto' ELSE 'Ambos' END AS TipoDesc "
+            + SqlControMensualBase
+            + @" AND (@filtroLike IS NULL OR (Expediente LIKE @filtroLike OR O.cedula LIKE @filtroLike OR O.NOMBRE_BENEFICIARIO LIKE @filtroLike))
+                 ORDER BY O.REGISTRA_FECHA DESC OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 
         /// <summary>
         /// Reporte de control mensual: pagos registrados por categoría y periodo/mes.
@@ -193,39 +207,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString) ?? new AfiBeneFiltros();
 
+            string? codGrupo = (filtros.cod_grupo != null && filtros.cod_grupo != "TODOS") ? filtros.cod_grupo : null;
+
             var p = new DynamicParameters();
             p.Add("@catLike", $"%{Categoria}%");
-            var where = string.Empty;
-            if (filtros.cod_grupo != null && filtros.cod_grupo != "TODOS")
-            {
-                p.Add("@codGrupo", filtros.cod_grupo);
-                where += " AND O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_GRUPO = @codGrupo) ";
-            }
-            if (filtros.periodo != null)
-            {
-                p.Add("@periodo", filtros.periodo);
-                where += " AND YEAR(P.REGISTRO_FECHA) = @periodo ";
-            }
-            if (filtros.mes != null)
-            {
-                p.Add("@mes", filtros.mes);
-                where += " AND MONTH(P.REGISTRO_FECHA) = @mes ";
-            }
-
-            var sql = $@"
-                SELECT
-                    CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
-                    P.cedula, O.Nombre_beneficiario, O.Beneficio_Desc, P.monto, O.Categoria_Desc,
-                    P.REGISTRO_USUARIO AS registra_user, P.REGISTRO_FECHA AS registra_fecha, P.ESTADO, P.ID_PAGO, P.COD_REMESA
-                FROM AFI_BENE_PAGO P
-                LEFT JOIN vBeneficios_W_Integral O ON P.CEDULA = O.CEDULA AND P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC
-                WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA LIKE @catLike) {where}
-                ORDER BY P.REGISTRO_FECHA ASC";
+            p.Add("@codGrupo", codGrupo);
+            p.Add("@periodo", filtros.periodo);
+            p.Add("@mes", filtros.mes);
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection => new BeneConsultaDatosLista
             {
                 total = 0,
-                lista = connection.Query<BeneConsultaDatos>(sql, p).ToList()
+                lista = connection.Query<BeneConsultaDatos>(SqlControMensualReporte, p).ToList()
             });
 
             return new ErrorDto<BeneConsultaDatosLista>
@@ -236,42 +229,19 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             };
         }
 
-        /// <summary>
-        /// Construye el WHERE dinámico para aprobación masiva (filtro de texto y grupo).
-        /// </summary>
-        private static string ConstruirWhereMasiva(AfiBeneFiltros filtros, DynamicParameters p)
-        {
-            var where = string.Empty;
-
-            if (!string.IsNullOrEmpty(filtros.filtro))
-            {
-                p.Add("@filtroLike", $"%{filtros.filtro}%");
-                where += " AND (Expediente LIKE @filtroLike OR O.cedula LIKE @filtroLike OR O.NOMBRE_BENEFICIARIO LIKE @filtroLike) ";
-            }
-
-            if (filtros.cod_grupo != null && filtros.cod_grupo != "TODOS")
-            {
-                p.Add("@codGrupo", filtros.cod_grupo);
-                where += " AND O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_GRUPO = @codGrupo) ";
-            }
-
-            return where;
-        }
-
-        /// <summary>
-        /// Construye la cláusula OFFSET/FETCH cuando el filtro trae página.
-        /// </summary>
-        private static string ConstruirPaginacion(AfiBeneFiltros filtros, DynamicParameters p, int fetchPorDefecto)
-        {
-            if (filtros.pagina == null)
-            {
-                return string.Empty;
-            }
-
-            p.Add("@offset", filtros.pagina.Value);
-            p.Add("@fetch", filtros.paginacion ?? fetchPorDefecto);
-            return " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-        }
+        // Comando SQL constante y parametrizado (evita SQL dinámico / S2077).
+        private const string SqlControMensualReporte = @"
+            SELECT
+                CONCAT(RIGHT(CONCAT('00000', O.ID_BENEFICIO), 5), TRIM(O.COD_BENEFICIO), RIGHT(CONCAT('00000', O.CONSEC), 5)) AS Expediente,
+                P.cedula, O.Nombre_beneficiario, O.Beneficio_Desc, P.monto, O.Categoria_Desc,
+                P.REGISTRO_USUARIO AS registra_user, P.REGISTRO_FECHA AS registra_fecha, P.ESTADO, P.ID_PAGO, P.COD_REMESA
+            FROM AFI_BENE_PAGO P
+            LEFT JOIN vBeneficios_W_Integral O ON P.CEDULA = O.CEDULA AND P.COD_BENEFICIO = O.COD_BENEFICIO AND P.CONSEC = O.CONSEC
+            WHERE O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_CATEGORIA LIKE @catLike)
+              AND (@codGrupo IS NULL OR O.COD_BENEFICIO IN (SELECT COD_BENEFICIO FROM AFI_BENEFICIOS WHERE COD_GRUPO = @codGrupo))
+              AND (@periodo IS NULL OR YEAR(P.REGISTRO_FECHA) = @periodo)
+              AND (@mes IS NULL OR MONTH(P.REGISTRO_FECHA) = @mes)
+            ORDER BY P.REGISTRO_FECHA ASC";
 
         /// <summary>
         /// Marca en cada registro el mensaje de validación de persona/beneficio (si aplica).
