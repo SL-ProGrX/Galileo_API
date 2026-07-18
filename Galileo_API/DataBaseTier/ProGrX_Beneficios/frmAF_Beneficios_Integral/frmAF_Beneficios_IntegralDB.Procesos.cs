@@ -222,14 +222,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                 using (var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente))
                 {
-                    var codCategoria = connection.QueryFirstOrDefault<string>(
+                    var codCategoria = await connection.QueryFirstOrDefaultAsync<string>(
                         "SELECT C.COD_SMTP FROM AFI_BENE_CATEGORIAS C WHERE C.COD_CATEGORIA = @codCategoria",
                         new { codCategoria = parametros.cod_beneficio });
 
                     var eConfigResult = _envioCorreoDB.CorreoConfig(CodCliente, codCategoria ?? string.Empty);
                     eConfig = (eConfigResult != null && eConfigResult.Code == 0) ? eConfigResult.Result : null;
 
-                    emailCobros = connection.QueryFirstOrDefault<string>(
+                    emailCobros = await connection.QueryFirstOrDefaultAsync<string>(
                         "SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = @codParametro",
                         new { codParametro = _notificacionCobros });
                 }
