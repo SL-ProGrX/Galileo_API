@@ -164,7 +164,7 @@
         public string? activo_desc { get; set; }
         public string? portal_desc { get; set; }
         public string? ferias_desc { get; set; }
-        public bool isNew { get; set; }
+        public bool isNew { get; set; } = false;
     }
 
     public class ProveedorEventosListaDatos
