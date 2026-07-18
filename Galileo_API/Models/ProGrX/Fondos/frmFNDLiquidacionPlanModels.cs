@@ -149,37 +149,37 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public sealed class FndLiquidacionPlanProcesoIniciarRequest : FndLiquidacionPlanLiquidarRequest
     {
-        public Guid procesoId { get; set; }
+        public Guid procesoId { get; set; } = Guid.Empty;
     }
 
     public class FndLiquidacionPlanLiquidarResult
     {
         public string documentoReferencia { get; set; } = string.Empty;
         public DateTime fecha { get; set; }
-        public int contratosProcesados { get; set; }
-        public decimal totalAportes { get; set; }
-        public decimal totalRendimientos { get; set; }
-        public decimal totalGeneral { get; set; }
+        public int contratosProcesados { get; set; } = 0;
+        public decimal totalAportes { get; set; } = 0;
+        public decimal totalRendimientos { get; set; } = 0;
+        public decimal totalGeneral { get; set; } = 0;
     }
 
     public sealed class FndLiquidacionPlanProcesoContinuarRequest
     {
-        public Guid procesoId { get; set; }
+        public Guid procesoId { get; set; } = Guid.Empty;
         public string usuario { get; set; } = string.Empty;
     }
 
     public sealed class FndLiquidacionPlanProcesoResult : FndLiquidacionPlanLiquidarResult
     {
-        public Guid procesoId { get; set; }
-        public int contratosPendientes { get; set; }
-        public decimal porcentaje { get; set; }
-        public bool procesoFinalizado { get; set; }
+        public Guid procesoId { get; set; } = Guid.Empty;
+        public int contratosPendientes { get; set; } = 0;
+        public decimal porcentaje { get; set; } = 0;
+        public bool procesoFinalizado { get; set; } = false;
     }
 
     internal sealed class FndLiquidacionPlanDocumentoRefData
     {
         public DateTime fecha { get; set; }
-        public int consecutivo { get; set; }
+        public int consecutivo { get; set; } = 0;
     }
 
     public class FndLiquidacionPlanInfoData

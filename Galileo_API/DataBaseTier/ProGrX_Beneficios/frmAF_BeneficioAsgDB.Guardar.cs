@@ -380,9 +380,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return new ErrorDto { Code = -1, Description = result.Description };
             }
 
+            var mensajeError = esNuevo ? "Error al insertar el registro" : "Error al actualizar el registro";
+
             return result.Result > 0
                 ? new ErrorDto { Code = 0, Description = "Informacion Guardada Satisfactoriamente" }
-                : new ErrorDto { Code = -1, Description = esNuevo ? "Error al insertar el registro" : "Error al actualizar el registro" };
+                : new ErrorDto { Code = -1, Description = mensajeError };
         }
 
         /// <summary>
