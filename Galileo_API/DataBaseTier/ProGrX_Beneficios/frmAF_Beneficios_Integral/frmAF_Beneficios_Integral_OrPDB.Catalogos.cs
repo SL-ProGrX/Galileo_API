@@ -5,7 +5,7 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
-    public partial class FrmAfBeneficiosIntegralOrPDB
+    public partial class FrmAfBeneficiosIntegralOrPDb
     {
         /// <summary>
         /// Obtiene los tipos de identificación (delegado al auxiliar compartido).

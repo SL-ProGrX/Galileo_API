@@ -7,7 +7,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     /// Acceso a datos del proceso Orden de Pago de Beneficios Integrales (FrmAfBeneficiosIntegralOrP).
     /// Constructor y dependencias compartidas. Catálogos, consultas, orden de pago y proyección en parciales.
     /// </summary>
-    public partial class FrmAfBeneficiosIntegralOrPDB
+    public partial class FrmAfBeneficiosIntegralOrPDb
     {
         private readonly IConfiguration _config;
         private readonly MBeneficiosDB _mBeneficiosDB;
@@ -17,7 +17,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos y las dependencias (bitácora, validaciones, auxiliares).
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmAfBeneficiosIntegralOrPDB(IConfiguration config)
+        public FrmAfBeneficiosIntegralOrPDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mBeneficiosDB = new MBeneficiosDB(_config);

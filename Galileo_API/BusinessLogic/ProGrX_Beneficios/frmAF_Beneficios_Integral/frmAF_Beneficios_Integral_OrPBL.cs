@@ -10,7 +10,7 @@ namespace Galileo.BusinessLogic.ProGrX_Beneficios
     /// </summary>
     public class FrmAfBeneficiosIntegralOrPbl
     {
-        private readonly FrmAfBeneficiosIntegralOrPDB _db;
+        private readonly FrmAfBeneficiosIntegralOrPDb _db;
 
         public FrmAfBeneficiosIntegralOrPbl(IConfiguration config)
         {
@@ -19,7 +19,7 @@ namespace Galileo.BusinessLogic.ProGrX_Beneficios
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new FrmAfBeneficiosIntegralOrPDB(config);
+            _db = new FrmAfBeneficiosIntegralOrPDb(config);
         }
 
         /// <summary>Tipos de identificación.</summary>
