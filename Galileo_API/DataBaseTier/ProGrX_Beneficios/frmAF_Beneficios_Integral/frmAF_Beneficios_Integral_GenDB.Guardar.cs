@@ -10,6 +10,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     public partial class FrmAfBeneficiosIntegralGenDB
     {
+        private const string InsertaVal = "Inserta";
+        private const string ActualizaVal = "Actualiza";
+
         /// <summary>
         /// Guardado central del beneficio: aplica validaciones y decide inserción o actualización.
         /// </summary>
@@ -147,7 +150,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 }
 
                 var tipoDesc = tipoItem == "P" ? "Producto" : tipoItem == "M" ? "Monetario" : "Mixto";
-                RegistrarBitacora(CodCliente, codBeneficio, vBeneConsec, "Inserta",
+                RegistrarBitacora(CodCliente, codBeneficio, vBeneConsec, InsertaVal,
                     $"Inserta Datos Generales - Beneficio {tipoDesc}: [{idGenerado} {codBeneficio} {vBeneConsec}]", beneficio.registra_user ?? string.Empty);
 
                 if (beneficio.cod_motivo != null)
@@ -335,7 +338,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                           VALUES (@codBeneficio, @consec, @montoNuevo, 0, @notas, GETDATE(), @usuario)",
                         new { codBeneficio, consec = beneficio.consec, montoNuevo = beneficio.monto_aplicado, notas = beneficio.observaciones_monto, usuario = beneficio.registra_user });
 
-                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Inserta",
+                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, InsertaVal,
                         $"Inserta Monto {beneficio.monto_aplicado}", beneficio.registra_user ?? string.Empty);
                 }
 
@@ -441,7 +444,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                           VALUES (@codBeneficio, @consec, @estado, @notas, GETDATE(), @usuario)",
                         new { codBeneficio, consec = beneficio.consec, estado = estadoItem, notas = beneficio.estadoObservaciones, usuario = beneficio.registra_user });
 
-                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Inserta",
+                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, InsertaVal,
                         $"Inserta Estado {estadoActual}", beneficio.registra_user ?? string.Empty);
                 }
 
@@ -540,7 +543,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                           VALUES (@codBeneficio, @consec, @motivo, GETDATE(), @usuario)",
                         new { codBeneficio, consec = beneficio.consec, motivo = motivoItem, usuario = beneficio.registra_user });
 
-                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Inserta",
+                    RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, InsertaVal,
                         $"Inserta Motivo {beneficio.cod_motivo?.descripcion}", beneficio.registra_user ?? string.Empty);
                 }
 

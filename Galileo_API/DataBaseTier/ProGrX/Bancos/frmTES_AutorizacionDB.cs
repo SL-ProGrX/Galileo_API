@@ -7,6 +7,7 @@ using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -333,19 +334,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (solicitudes.Count == 0) return;
 
             var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
+            var solicitudesXml = new XElement(
+                "solicitudes",
+                solicitudes.Select(id => new XElement("id", id)))
+                .ToString(SaveOptions.DisableFormatting);
 
             conn.Execute(
                 FrmTesAutorizacionSql.SQL_AUTORIZACION_LOTE,
                 new
                 {
-                    solicitudesJson = System.Text.Json.JsonSerializer.Serialize(solicitudes),
+                    solicitudesXml,
                     tipoAutorizacion = p.tipo_autorizacion,
                     usuario = p.usuario,
                     estadoSinpe = estadoSinpeDb,
                     tipoGiroSinpe = tipoGiroSinpeDb,
                     usuarioEspecial = p.autorizacionEspecialUsuario
                 },
-                commandTimeout: 120);
+                commandTimeout: 0);
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)

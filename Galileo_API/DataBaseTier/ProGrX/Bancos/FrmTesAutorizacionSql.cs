@@ -28,51 +28,66 @@ WHERE NOMBRE = @usuario";
 
         public const string SQL_AUTORIZACION_LOTE = @"
             DECLARE @nsolicitud INT;
-            DECLARE solicitudes_cursor CURSOR LOCAL FAST_FORWARD FOR
-                SELECT TRY_CONVERT(INT, [value])
-                FROM OPENJSON(@solicitudesJson)
-                WHERE TRY_CONVERT(INT, [value]) IS NOT NULL;
+            DECLARE @solicitudesXmlData XML;
 
-            OPEN solicitudes_cursor;
-            FETCH NEXT FROM solicitudes_cursor INTO @nsolicitud;
+SET @solicitudesXmlData = CONVERT(XML, @solicitudesXml);
 
-            WHILE @@FETCH_STATUS = 0
-            BEGIN
-                BEGIN TRY
-                    IF @tipoAutorizacion = 0
-                    BEGIN
-                        UPDATE Tes_Transacciones
-                        SET Autoriza = 'S',
-                            Fecha_Autorizacion = dbo.MyGetdate(),
-                            User_Autoriza = @usuario,
-                            ESTADO_SINPE = @estadoSinpe,
-                            TIPO_GIROSINPE = @tipoGiroSinpe,
-                            USUARIO_AUTORIZA_ESPECIAL = @usuarioEspecial
-                        WHERE Nsolicitud = @nsolicitud;
+DECLARE solicitudes_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT Solicitud.Nodo.value('(text())[1]', 'INT')
+    FROM @solicitudesXmlData.nodes('/solicitudes/id') AS Solicitud(Nodo);
 
-                        EXEC spTesBitacora @nsolicitud, '02', '', @usuario;
-                    END
-                    ELSE
-                    BEGIN
-                        UPDATE Tes_Transacciones
-                        SET FIRMAS_AUTORIZA_FECHA = dbo.MyGetdate(),
-                            FIRMAS_AUTORIZA_USUARIO = @usuario
-                        WHERE Nsolicitud = @nsolicitud;
+OPEN solicitudes_cursor;
 
-                        EXEC spTesBitacora @nsolicitud, '04', '', @usuario;
-                    END;
-                END TRY
-                BEGIN CATCH
-                    -- Se conserva el comportamiento actual: una solicitud con error
-                    -- no detiene el resto del lote.
-                    PRINT CONCAT('Solicitud no autorizada: ', @nsolicitud);
-                END CATCH;
+FETCH NEXT FROM solicitudes_cursor INTO @nsolicitud;
 
-                FETCH NEXT FROM solicitudes_cursor INTO @nsolicitud;
-            END;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        IF @tipoAutorizacion = 0
+        BEGIN
+            UPDATE Tes_Transacciones
+            SET Autoriza = 'S',
+                Fecha_Autorizacion = dbo.MyGetdate(),
+                User_Autoriza = @usuario,
+                ESTADO_SINPE = @estadoSinpe,
+                TIPO_GIROSINPE = @tipoGiroSinpe,
+                USUARIO_AUTORIZA_ESPECIAL = @usuarioEspecial
+            WHERE Nsolicitud = @nsolicitud;
 
-            CLOSE solicitudes_cursor;
-            DEALLOCATE solicitudes_cursor;";
+            EXEC spTesBitacora
+                @nsolicitud,
+                '02',
+                '',
+                @usuario;
+        END
+        ELSE
+        BEGIN
+            UPDATE Tes_Transacciones
+            SET FIRMAS_AUTORIZA_FECHA = dbo.MyGetdate(),
+                FIRMAS_AUTORIZA_USUARIO = @usuario
+            WHERE Nsolicitud = @nsolicitud;
+
+            EXEC spTesBitacora
+                @nsolicitud,
+                '04',
+                '',
+                @usuario;
+        END;
+    END TRY
+    BEGIN CATCH
+        PRINT CONCAT(
+            'Solicitud no autorizada: ',
+            @nsolicitud,
+            '. Error: ',
+            ERROR_MESSAGE()
+        );
+    END CATCH;
+
+    FETCH NEXT FROM solicitudes_cursor INTO @nsolicitud;
+END;
+
+CLOSE solicitudes_cursor;
+DEALLOCATE solicitudes_cursor;";
 
         public const string SP_TRANSACCIONES_PENDIENTES = @"
                 SELECT
