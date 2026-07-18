@@ -134,7 +134,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             return new ErrorDto
             {
                 Code = result.Code,
-                Description = result.Code == 0 ? result.Description : result.Description
+                Description = result.Description
             };
         }
     }
