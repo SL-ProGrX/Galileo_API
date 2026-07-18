@@ -138,7 +138,7 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.CxPProveedoresUsuario_Agregar(CodEmpresa, datos);
         }
 
-        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string email, string usuarioSesion)
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string? email, string usuarioSesion)
         {
             return _db.ProveedorUsuario_RenovarClaveWeb(CodEmpresa, CodProveedor, usuario, email, usuarioSesion);
         }
