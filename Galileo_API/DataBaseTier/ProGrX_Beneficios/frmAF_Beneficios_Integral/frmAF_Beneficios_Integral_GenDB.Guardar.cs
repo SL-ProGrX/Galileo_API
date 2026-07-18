@@ -273,7 +273,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 switch (fuente)
                 {
                     case "DB":
-                        RegistrarBitacora(CodCliente, beneficio.cod_beneficio?.item ?? string.Empty, beneficio.consec, "Actualiza",
+                        RegistrarBitacora(CodCliente, beneficio.cod_beneficio?.item ?? string.Empty, beneficio.consec, ActualizaVal,
                             $"Actualiza Datos Generales - Beneficio {tipoDesc}: [{beneficio.id_beneficio} {beneficio.cod_beneficio?.item} {beneficio.consec}]",
                             beneficio.registra_user ?? string.Empty);
                         break;
@@ -327,7 +327,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                     if (montoAnterior != beneficio.monto_aplicado)
                     {
-                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Actualiza",
+                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, ActualizaVal,
                             $"Actualiza Monto de {montoAnterior} a {beneficio.monto_aplicado} ", beneficio.registra_user ?? string.Empty);
                     }
                 }
@@ -433,7 +433,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                     if (codEstadoAnterior != estadoItem)
                     {
-                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Actualiza",
+                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, ActualizaVal,
                             $"Actualiza Estado de {estadoAnterior} a {estadoActual}", beneficio.registra_user ?? string.Empty);
                     }
                 }
@@ -532,7 +532,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                     if (motivoAnterior != motivoItem)
                     {
-                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, "Actualiza",
+                        RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, ActualizaVal,
                             $"Actualiza Motivo de {motivoAnterior}a {motivoItem}", beneficio.registra_user ?? string.Empty);
                     }
                 }
