@@ -51,7 +51,7 @@ namespace Galileo.DataBaseTier.ProGrX.CuentasXPagar
                 "spCxP_Eventos_Ventas",
                 new
                 {
-                    id_venta = info.id_venta,
+                    EventoId = info.id_venta,
                     inicio = info.inicio,
                     corte = info.corte,
                     proveedorId = info.proveedorId,
