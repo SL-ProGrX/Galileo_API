@@ -7,6 +7,7 @@ using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -281,18 +282,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     TesAutorizaParametros p,
     IEnumerable<int> solicitudes)
         {
-            var bloqueadasPorMismoUsuario = new List<int>();
+            var solicitudesUnicas = solicitudes.Distinct().ToList();
+            var bloqueaAutoAutorizacion =
+                _mTesoreria.fxTesParametro(p.codEmpresa, "12") == "S";
+            var bloqueadasPorMismoUsuario = ObtenerSolicitudesBloqueadas(
+                conn,
+                bloqueaAutoAutorizacion,
+                solicitudesUnicas,
+                p.usuario!);
+            var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
+            var solicitudesAutorizables = solicitudesUnicas
+                .Where(id => !bloqueadas.Contains(id))
+                .ToList();
 
-            foreach (var id in solicitudes)
-            {
-                if (BloqueaPorMismoUsuario(conn, p.codEmpresa, id, p.usuario!))
-                {
-                    bloqueadasPorMismoUsuario.Add(id);
-                    continue;
-                }
-
-                EjecutarAutorizacion(conn, id, p);
-            }
+            EjecutarAutorizacionLote(conn, solicitudesAutorizables, p);
 
             var codigo = bloqueadasPorMismoUsuario.Any() ? -1 : 0;
             var msg = bloqueadasPorMismoUsuario.Any()
@@ -302,47 +305,52 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return (codigo, msg);
         }
 
-        private bool BloqueaPorMismoUsuario(SqlConnection conn, int codEmpresa, int nsolicitud, string usuario)
+        private static List<int> ObtenerSolicitudesBloqueadas(
+            SqlConnection conn,
+            bool bloqueaAutoAutorizacion,
+            IReadOnlyCollection<int> solicitudes,
+            string usuario)
         {
-            // Si el parámetro 12 está en "S", no se permite auto-autorización
-            if (_mTesoreria.fxTesParametro(codEmpresa, "12") != "S")
-                return false;
-            var SQL_USER_SOLICITA = "SELECT USER_SOLICITA FROM TES_TRANSACCIONES WHERE NSOLICITUD = @nsolicitud";
-            var userSolicita = conn.QueryFirstOrDefault<string>(
-                SQL_USER_SOLICITA, new { nsolicitud });
+            if (!bloqueaAutoAutorizacion || solicitudes.Count == 0)
+                return [];
 
-            if (string.IsNullOrWhiteSpace(userSolicita))
-                return false;
+            const string sql = @"
+                SELECT NSOLICITUD
+                FROM TES_TRANSACCIONES
+                WHERE NSOLICITUD IN @Solicitudes
+                  AND USER_SOLICITA = @Usuario;";
 
-            return string.Equals(userSolicita, usuario, StringComparison.OrdinalIgnoreCase);
+            return conn.Query<int>(
+                sql,
+                new { Solicitudes = solicitudes, Usuario = usuario })
+                .ToList();
         }
 
-        private static void EjecutarAutorizacion(SqlConnection conn, int nsolicitud, TesAutorizaParametros p)
+        private static void EjecutarAutorizacionLote(
+            SqlConnection conn,
+            IReadOnlyCollection<int> solicitudes,
+            TesAutorizaParametros p)
         {
-            var (updateSql, bitacoraSql) = ConstruirQueries(p.tipo_autorizacion);
+            if (solicitudes.Count == 0) return;
+
             var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
+            var solicitudesXml = new XElement(
+                "solicitudes",
+                solicitudes.Select(id => new XElement("id", id)))
+                .ToString(SaveOptions.DisableFormatting);
 
-            // Nota: Para Firmas, los parámetros SINPE no se usan por la query,
-            // pero pasar un objeto único simplifica la firma.
-            var parametros = new
-            {
-                usuario = p.usuario,
-                nsolicitud,
-                estado_sinpe = estadoSinpeDb,
-                tipo_giro_sinpe = tipoGiroSinpeDb,
-                usuarioEspecial = p.autorizacionEspecialUsuario
-            };
-
-            conn.Execute(updateSql, parametros);
-            conn.Execute(bitacoraSql, new { usuario = p.usuario, nsolicitud });
-        }
-
-        private static (string update, string bitacora) ConstruirQueries(int tipoAutorizacion)
-        {
-            // 0 = Emisión; distinto de 0 = Firmas
-            return tipoAutorizacion == 0
-                ? (FrmTesAutorizacionSql.SQL_UPDATE_EMISION, FrmTesAutorizacionSql.SQL_BITACORA_EMISION)
-                : (FrmTesAutorizacionSql.SQL_UPDATE_FIRMAS, FrmTesAutorizacionSql.SQL_BITACORA_FIRMAS);
+            conn.Execute(
+                FrmTesAutorizacionSql.SQL_AUTORIZACION_LOTE,
+                new
+                {
+                    solicitudesXml,
+                    tipoAutorizacion = p.tipo_autorizacion,
+                    usuario = p.usuario,
+                    estadoSinpe = estadoSinpeDb,
+                    tipoGiroSinpe = tipoGiroSinpeDb,
+                    usuarioEspecial = p.autorizacionEspecialUsuario
+                },
+                commandTimeout: 0);
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)

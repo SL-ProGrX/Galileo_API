@@ -295,7 +295,7 @@ namespace Galileo.DataBaseTier
 
                 if (pagina.HasValue && paginacion.HasValue)
                 {
-                    var offset = (pagina.Value) * paginacion.Value;
+                    var offset = pagina.Value;
                     var pageSize = paginacion.Value;
 
                     sb.Append(" OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY");

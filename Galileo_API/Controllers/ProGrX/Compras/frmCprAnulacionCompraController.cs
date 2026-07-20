@@ -18,9 +18,13 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Compras_Obtener")]
-        public ErrorDto<List<CompraDto>> Compras_Obtener(int CodEmpresa, string filtro)
+        public ErrorDto<List<CompraDto>> Compras_Obtener(
+            int CodEmpresa,
+            string filtro,
+            string? sortField,
+            int? sortOrder)
         {
-            return _bl.Compras_Obtener(CodEmpresa, filtro);
+            return _bl.Compras_Obtener(CodEmpresa, filtro, sortField, sortOrder);
         }
 
         [HttpGet("Compra_Datos_Obtener")]

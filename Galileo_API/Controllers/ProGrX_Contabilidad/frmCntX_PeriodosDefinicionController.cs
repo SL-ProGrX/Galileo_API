@@ -19,17 +19,17 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             }
 
             [HttpGet("Inicial")]
-            public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa)
+            public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa, int codContabilidad)
             {
-                return _bl.Inicial(codEmpresa);
+                return _bl.Inicial(codEmpresa, codContabilidad);
             }
 
 
             [HttpPost("Crear")]
-            public ErrorDto Crear(int codEmpresa,PeriodosDefinicionDto dto
+            public ErrorDto Crear(int codEmpresa, int codContabilidad, PeriodosDefinicionDto dto
             )
             {
-                return _bl.Crear(codEmpresa, dto);
+                return _bl.Crear(codEmpresa, codContabilidad, dto);
             }
         }
 

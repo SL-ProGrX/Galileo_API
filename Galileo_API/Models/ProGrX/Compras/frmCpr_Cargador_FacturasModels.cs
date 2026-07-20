@@ -5,6 +5,8 @@ namespace Galileo.Models.CPR
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
+        public string? sortField { get; set; }
+        public int? sortOrder { get; set; }
     }
 
     public class CprFacturasXmlLista

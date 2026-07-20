@@ -205,8 +205,9 @@ namespace Galileo_API.DataBaseTier.TES
             p.Add("@like", hasFiltro ? $"%{texto}%" : null);
 
             // fechas (si no se usan, no pasa nada)
-            var vFechaIni = validaFechaGlobal(filtros.FechaInicio!.Value) ?? string.Empty;
-            var vFechaCorte = validaFechaGlobal(filtros.FechaCorte!.Value.AddDays(1).AddTicks(-1)) ?? string.Empty;
+            string vFechaIni = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.FechaInicio!), "yyyy-MM-dd" + " 00:00:00") ?? "";
+            string vFechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.FechaCorte!), "yyyy-MM-dd" + " 23:59:59") ?? "";
+
             p.Add("@FechaInicio", vFechaIni);
             p.Add("@FechaCorte", vFechaCorte);
 

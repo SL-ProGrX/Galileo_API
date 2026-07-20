@@ -24,21 +24,22 @@ namespace Galileo.Controllers
             return _bl.ObtenerTiposOrdenes(CodEmpresa, filtros);
         }
 
-        [HttpPut("TipoOrden_Actualizar")]
-        public ErrorDto TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDto tiposOrden)
+        [HttpPost("Cpr_TiposOrden_Guardar")]
+        public ErrorDto Cpr_TiposOrden_Guardar(
+            int CodEmpresa,
+            string usuario,
+            TiposOrdenDto tipoOrden)
         {
-            return _bl.TipoOrden_Actualizar(CodEmpresa, tiposOrden);
+            return _bl.Cpr_TiposOrden_Guardar(CodEmpresa, usuario, tipoOrden);
         }
 
-        [HttpDelete("TipoOrden_Eliminar")]
-        public ErrorDto TipoOrden_Eliminar(int CodEmpresa, string tiposOrden)
+        [HttpDelete("Cpr_TiposOrden_Eliminar")]
+        public ErrorDto Cpr_TiposOrden_Eliminar(
+            int CodEmpresa,
+            string usuario,
+            string tipoOrden)
         {
-            return _bl.TipoOrden_Eliminar(CodEmpresa, tiposOrden);
-        }
-        [HttpPost("TipoOrden_Insertar")]
-        public ErrorDto TipoOrden_Insertar(int CodEmpresa, TiposOrdenDto tiposOrden)
-        {
-            return _bl.TipoOrden_Insertar(CodEmpresa, tiposOrden);
+            return _bl.Cpr_TiposOrden_Eliminar(CodEmpresa, usuario, tipoOrden);
         }
 
         [HttpGet("rangosMontos_Obtener")]
