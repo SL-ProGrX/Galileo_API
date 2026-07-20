@@ -264,48 +264,40 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
             TesEmisionDocFiltros filtro,
             bool esUsuarioEspecial)
         {
-            var query = esUsuarioEspecial
-                ? @" Select TOP (@top) t.*, 
-CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+            var query = new StringBuilder(@"
+SELECT q.*,
+       CAST(q.id_rechazo AS varchar(10)) + ' - ' + sm.descripcion AS estadoSinpe,
+       dbo.fxTes_Cuentas_Bancarias_Pass(q.Id_Banco, q.Cta_Ahorros) AS Pass
+FROM
 (
-    SELECT descripcion
-    FROM SINPE_MOTIVOS
-    WHERE cod_motivo = t.id_rechazo
-) AS estadoSinpe,
-dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
-From Tes_Transacciones t
-Where t.Estado='P'
-  And t.Autoriza = 'S'
-  and t.fecha_hold is null
-  and UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario "
-                : @" Select TOP (@top) t.*,
-CAST(t.id_rechazo AS varchar(10)) + ' - ' +
-(
-    SELECT descripcion
-    FROM SINPE_MOTIVOS
-    WHERE cod_motivo = t.id_rechazo
-) AS estadoSinpe,
-dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
-From Tes_Transacciones t
-Where t.Estado='P'
-  And t.Tipo = @tipoDoc
-  And t.Id_Banco = @banco
-  And t.Autoriza = 'S'
-  and t.fecha_hold is null
-  and t.USUARIO_AUTORIZA_ESPECIAL is null ";
+    SELECT TOP (@top) t.*
+    FROM Tes_Transacciones AS t
+    WHERE t.Estado = 'P'
+      AND t.Autoriza = 'S'
+      AND t.fecha_hold IS NULL");
+
+            query.AppendLine(esUsuarioEspecial
+                ? "      AND t.USUARIO_AUTORIZA_ESPECIAL = @usuario"
+                : @"      AND t.Tipo = @tipoDoc
+      AND t.Id_Banco = @banco
+      AND t.USUARIO_AUTORIZA_ESPECIAL IS NULL");
 
             if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
             {
-                query += " And t.NSolicitud Between @minimo And @maximo";
+                query.AppendLine("      AND t.NSolicitud BETWEEN @minimo AND @maximo");
             }
             else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
             {
-                query += " And t.Fecha_Solicitud Between @fechaInicio And @fechaCorte";
+                query.AppendLine("      AND t.Fecha_Solicitud BETWEEN @fechaInicio AND @fechaCorte");
             }
 
-            query += " Order by t.NSolicitud";
+            query.Append(@"    ORDER BY t.NSolicitud
+) AS q
+LEFT JOIN SINPE_MOTIVOS AS sm
+    ON sm.cod_motivo = q.id_rechazo
+ORDER BY q.NSolicitud");
 
-            return query;
+            return query.ToString();
         }
 
         public ErrorDto TES_EmisionDocumento_ValidaNumDocumento(

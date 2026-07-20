@@ -45,10 +45,10 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return DbFndPlanillaFondos.FND_PlanillaFondos_Procesos_ObtenerRango(CodEmpresa, Proceso);
         }
 
-        public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, string Request)
+        public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, CargarDeduccionesRequest Request)
         {
-            CargarDeduccionesRequest request = JsonConvert.DeserializeObject<CargarDeduccionesRequest>(Request) ?? new CargarDeduccionesRequest();
-            return DbFndPlanillaFondos.FND_PlanillaFondos_Deducciones_Cargar(CodEmpresa, request);
+            
+            return DbFndPlanillaFondos.FND_PlanillaFondos_Deducciones_Cargar(CodEmpresa, Request);
         }
 
         public ErrorDto<object> FND_PlanillaFondos_Procesar(int CodEmpresa, string Request)
