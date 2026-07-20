@@ -17,9 +17,24 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
-        public ErrorDto<List<CompraDto>> Compras_Obtener(int codEmpresa, string filtro)
+        /// <summary>
+        /// Obtiene las compras disponibles para anulación con ordenamiento validado.
+        /// </summary>
+        public ErrorDto<List<CompraDto>> Compras_Obtener(
+            int codEmpresa,
+            string filtro,
+            string? sortField,
+            int? sortOrder)
         {
             var like = $"%{(filtro ?? string.Empty).Trim()}%";
+            var campoOrden = sortField?.Trim().ToLowerInvariant() switch
+            {
+                "cod_orden" => "cod_orden",
+                "cod_factura" => "cod_factura",
+                "proveedor" => "proveedor",
+                _ => "cod_compra"
+            };
+            var direccionOrden = sortOrder == 1 ? 1 : -1;
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 conn.Query<CompraDto>(
@@ -34,8 +49,31 @@ namespace Galileo.DataBaseTier
                       WHERE E.cod_compra  LIKE @F
                          OR E.cod_orden   LIKE @F
                          OR E.cod_factura LIKE @F
-                         OR P.descripcion LIKE @F",
-                    new { F = like }
+                         OR P.descripcion LIKE @F
+                      ORDER BY
+                          CASE WHEN @SortField = 'cod_compra' AND @SortOrder = 1
+                              THEN E.cod_compra END ASC,
+                          CASE WHEN @SortField = 'cod_compra' AND @SortOrder = -1
+                              THEN E.cod_compra END DESC,
+                          CASE WHEN @SortField = 'cod_factura' AND @SortOrder = 1
+                              THEN E.cod_factura END ASC,
+                          CASE WHEN @SortField = 'cod_factura' AND @SortOrder = -1
+                              THEN E.cod_factura END DESC,
+                          CASE WHEN @SortField = 'cod_orden' AND @SortOrder = 1
+                              THEN E.cod_orden END ASC,
+                          CASE WHEN @SortField = 'cod_orden' AND @SortOrder = -1
+                              THEN E.cod_orden END DESC,
+                          CASE WHEN @SortField = 'proveedor' AND @SortOrder = 1
+                              THEN P.descripcion END ASC,
+                          CASE WHEN @SortField = 'proveedor' AND @SortOrder = -1
+                              THEN P.descripcion END DESC,
+                          E.cod_compra DESC",
+                    new
+                    {
+                        F = like,
+                        SortField = campoOrden,
+                        SortOrder = direccionOrden
+                    }
                 ).ToList()
             );
         }

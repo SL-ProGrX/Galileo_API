@@ -448,7 +448,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         FROM Tes_Transacciones t
                         INNER JOIN SINPE_MOV_TRANSITO s
                             ON s.COD_REFERENCIA = t.REFERENCIA_SINPE
-                        WHERE s.RECHAZO_CODIGO > 0 AND s.ESTADO = 4 and t.id_banco = @id_banco
+                        WHERE s.RECHAZO_CODIGO > 0 AND s.ESTADO = 3 and t.id_banco = @id_banco
                         AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
                         AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)";
 

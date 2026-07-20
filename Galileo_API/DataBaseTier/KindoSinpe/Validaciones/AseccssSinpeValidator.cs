@@ -465,15 +465,24 @@ namespace Galileo_API.DataBaseTier
 
                         break;
                     case 2: // Pasaporte 
-                        if (cedula.Length != 9)
+                        if (cedula.Length == 9)
                         {
                             ErrorDto.Code = -1;
                             ErrorDto.Description = "Formato de cédula inválido.";
                             ErrorDto.Result = cedula;
                             return ErrorDto;
                         }
+                        else if(cedula.Length > 9)
+                        {
+                            formato = "{0}-{1}-{2}";
+                            response = string.Format(formato, cedula.Substring(0, 1), cedula.Substring(1, 3), cedula.Substring(4));
+                        }
+                        else
+                        {
+                            response = cedula;
+                        }
 
-                        response = cedula;
+                        
 
                         break;
                     default:

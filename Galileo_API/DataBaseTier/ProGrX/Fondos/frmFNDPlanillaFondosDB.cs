@@ -338,7 +338,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         Cuenta = cuenta,
                         Tipo = NormalizarTexto(request.tipo)
                     },
-                    commandType: CommandType.StoredProcedure));
+                    commandType: CommandType.StoredProcedure, commandTimeout: 0));
 
             if (result.Code != 0)
             {
@@ -463,7 +463,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         Institucion = request.CodInstitucion,
                         Operadora = request.Operadora,
                         Plan = NormalizarTexto(request.Plan),
-                        CuentaPlanilla = NormalizarTexto(request.CuentaPlanilla),
+                        CtaConta = NormalizarTexto(request.CuentaPlanilla),
                         Comprobante = NormalizarTexto(request.Comprobante),
                         Usuario = NormalizarTexto(request.Usuario)
                     },
@@ -521,16 +521,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpPlanillaDirectaSube,
                     new
                     {
-                        CodInstitucion = request.cod_institucion,
-                        CodOperadora = request.cod_operadora,
+                        Institucion = request.cod_institucion,
+                        Operadora = request.cod_operadora,
                         Plan = NormalizarTexto(request.plan),
-                        Comprobante = NormalizarTexto(request.comprobante),
+                        Documento = NormalizarTexto(request.comprobante),
                         Proceso = request.proceso,
                         Cedula = NormalizarTexto(item.cedula),
                         Nombre = NormalizarTexto(item.nombre),
                         Fondos = item.fondos,
                         Linea = linea,
-                        EsPrimero = linea == 1 ? 1 : 0
+                        Inicializa = linea == 1 ? 1 : 0
                     },
                     commandType: CommandType.StoredProcedure);
             }
@@ -542,10 +542,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 SpPlanillaDirectaConsulta,
                 new
                 {
-                    CodOperadora = request.cod_operadora,
+                    Operadora = request.cod_operadora,
                     Plan = NormalizarTexto(request.plan),
-                    Comprobante = NormalizarTexto(request.comprobante),
-                    TipoConsulta = 1
+                    Documento = NormalizarTexto(request.comprobante),
+                    Revisar = 1
                 },
                 commandType: CommandType.StoredProcedure).ToList();
         }
