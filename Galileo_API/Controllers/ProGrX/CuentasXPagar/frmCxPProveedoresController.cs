@@ -169,9 +169,14 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ProveedorUsuario_RenovarClaveWeb")]
-        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string Usuario, string Email)
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(
+            [FromQuery] int CodEmpresa,
+            [FromQuery] int CodProveedor,
+            [FromQuery] string Usuario,
+            [FromQuery] string? Email = null,
+            [FromQuery] string UsuarioSesion = "")
         {
-            return _bl.ProveedorUsuario_RenovarClaveWeb(CodEmpresa, CodProveedor, Usuario, Email, User.Identity?.Name ?? string.Empty);
+            return _bl.ProveedorUsuario_RenovarClaveWeb(CodEmpresa, CodProveedor, Usuario, Email, UsuarioSesion);
         }
 
         [HttpGet("BitacoraProveedor_Obtener")]
