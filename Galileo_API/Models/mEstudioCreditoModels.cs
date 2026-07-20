@@ -43,62 +43,62 @@
         public string estado_desc { get; set; } = string.Empty;
         public string estado_v2 { get; set; } = string.Empty;
         public string estado_v2_desc { get; set; } = string.Empty;
-        public bool editable { get; set; }
+        public bool editable { get; set; } = false;
         public string fecha_ingreso { get; set; } = string.Empty;
         public string edad_justifica { get; set; } = string.Empty;
-        public int edad_ind { get; set; }
-        public int edad_n_cuotas { get; set; }
+        public int edad_ind { get; set; } = 0;
+        public int edad_n_cuotas { get; set; } = 0;
     }
 
     public sealed class MEstudioCreditoOperacion
     {
-        public long operacion { get; set; }
+        public long operacion { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public string estado_solicitud { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public decimal monto_aprobado { get; set; }
-        public long operacion_consulta { get; set; }
-        public bool valida { get; set; }
+        public decimal monto_aprobado { get; set; } = 0;
+        public long operacion_consulta { get; set; } = 0;
+        public bool valida { get; set; } = false;
         public string documento { get; set; } = string.Empty;
         public string ts { get; set; } = string.Empty;
         public string ventana { get; set; } = string.Empty;
-        public DateTime fecha_desembolso { get; set; }
-        public decimal tasa_pts_bono { get; set; }
-        public int plazo_bono { get; set; }
-        public decimal primera_deduccion { get; set; }
-        public int dia_pago { get; set; }
+        public DateTime? fecha_desembolso { get; set; }
+        public decimal tasa_pts_bono { get; set; } = 0;
+        public int plazo_bono { get; set; } = 0;
+        public decimal primera_deduccion { get; set; } = 0;
+        public int dia_pago { get; set; } = 0;
         public string garantia_tipo { get; set; } = string.Empty;
-        public long garantia_id { get; set; }
+        public long garantia_id { get; set; } = 0;
         public string garantia_parametro { get; set; } = string.Empty;
         public string expediente { get; set; } = string.Empty;
     }
 
     public sealed class MEstudioCreditoParametros
     {
-        public int edad_maxima_hombre { get; set; }
-        public int edad_maxima_mujer { get; set; }
+        public int edad_maxima_hombre { get; set; } = 0;
+        public int edad_maxima_mujer { get; set; } = 0;
         public string restriccion_garantia_ahorros { get; set; } = string.Empty;
         public string restriccion_garantia_fiduciaria { get; set; } = string.Empty;
         public string restriccion_garantia_hipotecaria { get; set; } = string.Empty;
         public string restriccion_creditos_sin_garantia { get; set; } = string.Empty;
         public string porcentaje_ccss { get; set; } = string.Empty;
-        public decimal porcentaje_asociacion_solidarista { get; set; }
-        public int porcentaje_frap_fap { get; set; }
-        public long porcentaje_liquidez_libre { get; set; }
+        public decimal porcentaje_asociacion_solidarista { get; set; } = 0;
+        public int porcentaje_frap_fap { get; set; } = 0;
+        public long porcentaje_liquidez_libre { get; set; } = 0;
         public string consecutivo_expedientes { get; set; } = string.Empty;
-        public int vencimiento_dias_no_ejecutados { get; set; }
+        public int vencimiento_dias_no_ejecutados { get; set; } = 0;
         public string socio { get; set; } = string.Empty;
-        public double porcentaje_poliza_saldo_deudor { get; set; }
+        public double porcentaje_poliza_saldo_deudor { get; set; } = 0;
         public string aplica_fianzas_endeudamiento { get; set; } = string.Empty;
-        public double aplicar_fianzas_monto_girar_mayor { get; set; }
-        public decimal salario_minimo_inembargable { get; set; }
-        public decimal salario_normativo { get; set; }
-        public double poliza_factor_vida { get; set; }
-        public double poliza_factor_incendio { get; set; }
-        public double poliza_factor_prenda { get; set; }
-        public double poliza_factor_desempleo { get; set; }
+        public double aplicar_fianzas_monto_girar_mayor { get; set; } = 0;
+        public decimal salario_minimo_inembargable { get; set; } = 0;
+        public decimal salario_normativo { get; set; } = 0;
+        public double poliza_factor_vida { get; set; } = 0;
+        public double poliza_factor_incendio { get; set; } = 0;
+        public double poliza_factor_prenda { get; set; } = 0;
+        public double poliza_factor_desempleo { get; set; } = 0;
     }
 
     public sealed class MEstudioCreditoRenta
@@ -113,11 +113,11 @@
             this.porcentaje = porcentaje;
         }
 
-        public decimal desde { get; }
+        public decimal desde { get; } = 0;
 
-        public decimal hasta { get; }
+        public decimal hasta { get; } = 0;
 
-        public decimal porcentaje { get; }
+        public decimal porcentaje { get; } = 0;
     }
 
     public sealed class MEstudioCreditoInteresesData
@@ -134,13 +134,13 @@
             this.fecha_calculo = fecha_calculo;
         }
 
-        public decimal interes { get; }
+        public decimal interes { get; } = 0;
 
         public decimal? interes_variable { get; }
 
-        public decimal monto_solicitado { get; }
+        public decimal monto_solicitado { get; } = 0;
 
-        public DateTime fecha_calculo { get; }
+        public DateTime? fecha_calculo { get; }
     }
 
     public sealed class MEstudioCreditoParametroData
@@ -153,8 +153,8 @@
             this.valor = valor;
         }
 
-        public string cod_parametro { get; }
+        public string cod_parametro { get; } = string.Empty;
 
-        public string valor { get; }
+        public string valor { get; } = string.Empty;
     }
 }
