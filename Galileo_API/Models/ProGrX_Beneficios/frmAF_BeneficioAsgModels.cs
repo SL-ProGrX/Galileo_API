@@ -64,7 +64,7 @@ namespace Galileo.Models.AF
         public string cod_beneficio { get; set; } = string.Empty;
         public int iBeneficiario { get; set; } = 0;
         public string solicita { get; set; } = string.Empty;
-        public float monto { get; set; }
+        public float monto { get; set; } = 0;
         public bool bConsulta { get; set; } = false;
         public bool bNuevo { get; set; } = false;
         public bool bAsignado { get; set; } = false;

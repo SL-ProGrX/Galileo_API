@@ -2,6 +2,7 @@ using Dapper;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -141,8 +142,13 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return;
             }
 
-            var fechaIni = DateTimeOffset.Parse(filtro.fechaInicio!).ToString("yyyy-MM-dd");
-            var fechaFin = DateTimeOffset.Parse(filtro.fechaCorte!).ToString("yyyy-MM-dd");
+            var fechaIni = DateTimeOffset
+                .Parse(filtro.fechaInicio!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+            var fechaFin = DateTimeOffset
+                .Parse(filtro.fechaCorte!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             p.Add("@fechaIni", $"{fechaIni} 00:00:00");
             p.Add("@fechaFin", $"{fechaFin} 23:59:59");
         }

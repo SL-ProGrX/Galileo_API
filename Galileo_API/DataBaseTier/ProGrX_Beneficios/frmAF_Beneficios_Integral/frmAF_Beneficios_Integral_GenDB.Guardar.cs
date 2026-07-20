@@ -12,6 +12,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     {
         private const string InsertaVal = "Inserta";
         private const string ActualizaVal = "Actualiza";
+        private const float ToleranciaMonto = 0.005f;
 
         /// <summary>
         /// Guardado central del beneficio: aplica validaciones y decide inserción o actualización.
@@ -70,17 +71,20 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
 
             return beneficioGeneral.id_beneficio == 0
-                ? await Guarda_Beneficio(CodCliente, beneficioGeneral, "S", fuente)
+                ? await Guarda_Beneficio(CodCliente, beneficioGeneral)
                 : Actualiza_Beneficio(CodCliente, beneficioGeneral, "S", fuente);
         }
 
         /// <summary>
         /// Inserta un nuevo beneficio (afi_bene_otorga + productos), deja bitácora, montos/motivos y notifica por correo.
         /// </summary>
-        private async Task<ErrorDto<BeneficioGeneralDatos>> Guarda_Beneficio(int CodCliente, BeneficioGeneralDatos beneficio, string modificaMonto, string fuente)
+        private async Task<ErrorDto<BeneficioGeneralDatos>> Guarda_Beneficio(
+            int CodCliente,
+            BeneficioGeneralDatos beneficio)
         {
             var codBeneficio = beneficio.cod_beneficio?.item ?? string.Empty;
             var tipoItem = beneficio.tipo?.item ?? string.Empty;
+            var modificaMonto = tipoItem == "P" ? "N" : "S";
 
             var justError = _mBeneficiosDB.ValidarBeneficioJustificaDato(CodCliente, beneficio, beneficio.requiere_justificacion);
             if (justError.Code == -1)
@@ -100,7 +104,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 var vBeneConsec = _mBeneficiosDB.fxConsec(CodCliente, codBeneficio);
                 beneficio.consec = Convert.ToInt32(vBeneConsec);
-                modificaMonto = tipoItem == "P" ? "N" : "S";
 
                 int idGenerado;
                 using (var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente))
@@ -149,7 +152,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     }
                 }
 
-                var tipoDesc = tipoItem == "P" ? "Producto" : tipoItem == "M" ? "Monetario" : "Mixto";
+                var tipoDesc = ObtenerDescripcionTipo(tipoItem);
                 RegistrarBitacora(CodCliente, codBeneficio, vBeneConsec, InsertaVal,
                     $"Inserta Datos Generales - Beneficio {tipoDesc}: [{idGenerado} {codBeneficio} {vBeneConsec}]", beneficio.registra_user ?? string.Empty);
 
@@ -267,7 +270,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         idBeneficio = beneficio.id_beneficio
                     }));
 
-                var tipoDesc = tipoItem == "P" ? "Producto" : tipoItem == "M" ? "Monetario" : "Mixto";
+                var tipoDesc = ObtenerDescripcionTipo(tipoItem);
 
                 var error = new ErrorDto { Code = 0 };
                 switch (fuente)
@@ -325,7 +328,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                            WHERE CONSEC = @consec AND [COD_BENEFICIO] = @codBeneficio",
                         new { montoNuevo = beneficio.monto_aplicado, montoAnterior, notas = beneficio.observaciones_monto, usuario = beneficio.registra_user, consec = beneficio.consec, codBeneficio });
 
-                    if (montoAnterior != beneficio.monto_aplicado)
+                    if (MontoFueModificado(montoAnterior, beneficio.monto_aplicado))
                     {
                         RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, ActualizaVal,
                             $"Actualiza Monto de {montoAnterior} a {beneficio.monto_aplicado} ", beneficio.registra_user ?? string.Empty);
@@ -358,6 +361,20 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return new ErrorDto { Code = -1, Description = "InsertarActualizarMontos - " + ex.Message };
             }
         }
+
+        private static string ObtenerDescripcionTipo(string tipoItem) =>
+            tipoItem switch
+            {
+                "P" => "Producto",
+                "M" => "Monetario",
+                _ => "Mixto"
+            };
+
+        private static bool MontoFueModificado(
+            float montoAnterior,
+            float? montoNuevo) =>
+            !montoNuevo.HasValue ||
+            MathF.Abs(montoAnterior - montoNuevo.Value) > ToleranciaMonto;
 
         /// <summary>
         /// Elimina y reinserta los productos del beneficio; recalcula el monto aplicado cuando el tipo es Producto.
@@ -509,7 +526,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Inserta o actualiza el motivo del beneficio.
         /// </summary>
-        private void InsertarActualizarMotivos(int CodCliente, BeneficioGeneralDatos beneficio)
+        private ErrorDto InsertarActualizarMotivos(int CodCliente, BeneficioGeneralDatos beneficio)
         {
             var codBeneficio = beneficio.cod_beneficio?.item ?? string.Empty;
             var motivoItem = beneficio.cod_motivo?.item ?? string.Empty;
@@ -546,10 +563,12 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, InsertaVal,
                         $"Inserta Motivo {beneficio.cod_motivo?.descripcion}", beneficio.registra_user ?? string.Empty);
                 }
+
+                return new ErrorDto { Code = 0 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // El motivo es metadata secundaria: si falla su registro no se aborta el guardado principal (paridad con el comportamiento original).
+                return new ErrorDto { Code = -1, Description = "InsertarActualizarMotivos - " + ex.Message };
             }
         }
 

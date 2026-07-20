@@ -13,7 +13,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>Datos internos de la fecha de corte de pago automático.</summary>
         private sealed class FechaCortePago
         {
-            public DateTime? fecha_corte { get; set; } = new DateTime();
+            public DateTime? fecha_corte { get; set; } = new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
             public int? monto { get; set; } = 0;
         }
 

@@ -1,4 +1,5 @@
 using Dapper;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 
@@ -71,7 +72,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var validaciones = connection.Query<ValidacionRow>(sqlValidaciones, new { beneficio }).ToList();
-                var mensajes = string.Empty;
+                var mensajes = new StringBuilder();
 
                 foreach (var validacion in validaciones)
                 {
@@ -85,11 +86,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                     if (valor == validacion.resultado_val)
                     {
-                        mensajes += validacion.msj_val + "...\n";
+                        mensajes.Append(validacion.msj_val).Append("...\n");
                     }
                 }
 
-                return mensajes;
+                return mensajes.ToString();
             });
 
             if (result.Code != 0)
