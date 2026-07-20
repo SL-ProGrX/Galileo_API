@@ -51,7 +51,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             // 3. Parcialidad del beneficio (reutiliza frmAF_BeneficioAsg)
             var afiBeneficios = _frmAsgDb.AfiBeneficioDTO_Obtener(CodCliente, codBeneficio).Result;
-            _bAplicaParcial = afiBeneficios?.aplica_parcial == 1;
+            var _bAplicaParcial = afiBeneficios?.aplica_parcial == 1;
 
             // 4. Requisitos
             if (beneficioGeneral.consec != null)
