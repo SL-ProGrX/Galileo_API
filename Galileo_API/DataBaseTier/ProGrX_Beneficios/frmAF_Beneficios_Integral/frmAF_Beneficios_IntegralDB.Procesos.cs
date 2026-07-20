@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -74,13 +75,13 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
 
-                foreach (var b in beneficios)
+                var errorValidacion = beneficios
+                    .Select(b => ValidarBeneficiarioDeposito(connection, b, mes))
+                    .FirstOrDefault(error => error != null);
+
+                if (errorValidacion != null)
                 {
-                    var error = ValidarBeneficiarioDeposito(connection, b, mes);
-                    if (error != null)
-                    {
-                        return error;
-                    }
+                    return errorValidacion;
                 }
 
                 foreach (var b in beneficios)
