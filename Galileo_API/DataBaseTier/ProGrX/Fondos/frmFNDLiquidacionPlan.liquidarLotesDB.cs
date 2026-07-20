@@ -120,18 +120,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             int codEmpresa,
             FndLiquidacionPlanProcesoContinuarRequest request)
         {
-            SqlConnection? conn = null;
-            SqlTransaction? tx = null;
-
             try
             {
                 string? validacion = ValidarContinuacion(request);
                 if (!string.IsNullOrWhiteSpace(validacion))
                     return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(validacion);
 
-                conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
-                tx = conn.BeginTransaction();
+                using var tx = conn.BeginTransaction();
 
                 var contexto = ObtenerProcesoPorId(conn, tx, request.procesoId, request.usuario);
                 if (contexto == null)
@@ -160,11 +157,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Trace.TraceError("FND_LiquidacionPlan_Proceso_Continuar {0}: {1}", request.procesoId, ex);
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(
                     "No fue posible procesar el siguiente lote de la liquidación.");
-            }
-            finally
-            {
-                tx?.Dispose();
-                conn?.Dispose();
             }
         }
 
