@@ -85,3 +85,5 @@ appsettings.Development.json.backup
 **/publish/
 **/Publish/
 
+*.cs
+/Galileo_API.Tests
