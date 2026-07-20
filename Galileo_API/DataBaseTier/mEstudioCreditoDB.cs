@@ -657,30 +657,5 @@ namespace Galileo_API.DataBaseTier
                     ? resultado
                     : 0;
         }
-
-        /*
-         * Dependencias VB6 deliberadamente no migradas al API:
-         *
-         * mPreAnalisis.bas -> gsbPulsarTecla
-         * Llamaba a user32.dll -> keybd_event(...).
-         * Es automatización de teclado exclusiva de VB6.
-         *
-         * mPreAnalisis.bas -> Formularios
-         * Llamaba a Derecho(control, formulario).
-         * Asignaba permisos directamente sobre controles VB6.
-         *
-         * mPreAnalisis.bas -> ValidaEstadoPreanalisis
-         * Llamaba a MsgBox(...).
-         * El API solamente devuelve el resultado de la validación.
-         *
-         * mPreAnalisis.bas -> sbInicializaGlobales
-         * Llamaba a cMensaje.deError(...).
-         * El API devuelve el error mediante ErrorDto.
-         *
-         * mPreAnalisis.bas -> fxMemFechaIngeso,
-         * fxMemCalculo y fxFechaCalculo
-         * Llamaban a fxFechaServidor.
-         * Se sustituyó por GetDate().
-         */
     }
 }
