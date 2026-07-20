@@ -200,7 +200,7 @@ namespace Galileo.DataBaseTier
 
                     return new CprFacturasXmlLista
                     {
-                        total = list.Count == 0 ? 0 : total,
+                        total = total,
                         lista = list
                     };
                 });

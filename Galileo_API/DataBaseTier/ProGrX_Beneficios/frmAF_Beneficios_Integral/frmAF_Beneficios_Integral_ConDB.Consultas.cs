@@ -154,7 +154,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Agrega los parámetros de paginación. Sin página se recorre todo el conjunto (offset 0, fetch máximo).
+        /// Agrega los parámetros de paginación. Sin página se recorre el conjunto (offset 0, fetch máximo).
         /// </summary>
         private static void AgregarParametrosPaginacion(BeneConsultaFiltros filtro, DynamicParameters p)
         {

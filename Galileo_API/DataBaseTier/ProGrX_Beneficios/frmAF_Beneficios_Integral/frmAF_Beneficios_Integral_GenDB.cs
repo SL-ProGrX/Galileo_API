@@ -15,8 +15,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private readonly string _sendEmail;
         private readonly string _notificacionCobros;
 
-        // Indica si el beneficio aplica pago parcial (usado por el flujo de guardado).
+        /** Indica si el beneficio aplica pago parcial (usado por el flujo de guardado).
         private bool _bAplicaParcial;
+        **/
 
         /// <summary>
         /// Inicializa el acceso a datos y las dependencias (validaciones, bitácora, correo, asignación) con la configuración inyectada.
