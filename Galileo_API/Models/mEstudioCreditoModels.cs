@@ -140,7 +140,7 @@
 
         public decimal monto_solicitado { get; } = 0;
 
-        public DateTime fecha_calculo { get; } = DateTime.MinValue;
+        public DateTime fecha_calculo { get; } 
     }
 
     public sealed class MEstudioCreditoParametroData
