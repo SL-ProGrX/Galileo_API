@@ -120,15 +120,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             int codEmpresa,
             FndLiquidacionPlanProcesoContinuarRequest request)
         {
+            string? validacion = ValidarContinuacion(request);
+            if (!string.IsNullOrWhiteSpace(validacion))
+                return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(validacion);
+
+            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
             try
             {
-                string? validacion = ValidarContinuacion(request);
-                if (!string.IsNullOrWhiteSpace(validacion))
-                    return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(validacion);
-
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                conn.Open();
-                using var tx = conn.BeginTransaction();
+               
 
                 var contexto = ObtenerProcesoPorId(conn, tx, request.procesoId, request.usuario);
                 if (contexto == null)

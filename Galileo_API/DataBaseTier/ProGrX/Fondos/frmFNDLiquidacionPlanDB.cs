@@ -666,11 +666,12 @@ where F.Cod_Operadora = @CodOperadora
             if (request.contratos.Count == 0)
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanLiquidarResult>("Debe seleccionar al menos un contrato.");
 
+            using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
             try
             {
-                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                conn.Open();
-                using var tx = conn.BeginTransaction();
+               
 
                 int codOperadora = int.Parse(request.cod_operadora);
                 var plan = ObtenerPlanInfo(conn, tx, codOperadora, request.cod_plan);
