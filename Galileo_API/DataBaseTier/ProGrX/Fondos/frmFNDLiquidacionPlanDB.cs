@@ -666,14 +666,11 @@ where F.Cod_Operadora = @CodOperadora
             if (request.contratos.Count == 0)
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanLiquidarResult>("Debe seleccionar al menos un contrato.");
 
-            SqlConnection? conn = null;
-            SqlTransaction? tx = null;
-
             try
             {
-                conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
-                tx = conn.BeginTransaction();
+                using var tx = conn.BeginTransaction();
 
                 int codOperadora = int.Parse(request.cod_operadora);
                 var plan = ObtenerPlanInfo(conn, tx, codOperadora, request.cod_plan);
@@ -761,11 +758,6 @@ where F.Cod_Operadora = @CodOperadora
             {
                 RollbackSeguro(tx);
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanLiquidarResult>($"Error al liquidar el plan: {ex.Message}");
-            }
-            finally
-            {
-                tx?.Dispose();
-                conn?.Dispose();
             }
         }
 
