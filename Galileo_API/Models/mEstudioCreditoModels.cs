@@ -134,11 +134,11 @@
             this.fecha_calculo = fecha_calculo;
         }
 
-        public decimal interes { get; } = 0;
+        public decimal interes { get; } 
 
         public decimal? interes_variable { get; }
 
-        public decimal monto_solicitado { get; } = 0;
+        public decimal monto_solicitado { get; }
 
         public DateTime fecha_calculo { get; } 
     }
@@ -153,8 +153,8 @@
             this.valor = valor;
         }
 
-        public string cod_parametro { get; } = string.Empty;
+        public string cod_parametro { get; } 
 
-        public string valor { get; } = string.Empty;
+        public string valor { get; } 
     }
 }
