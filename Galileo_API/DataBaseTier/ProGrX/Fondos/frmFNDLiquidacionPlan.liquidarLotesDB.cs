@@ -24,7 +24,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             int codEmpresa,
             FndLiquidacionPlanProcesoIniciarRequest request)
         {
-            SqlConnection? conn = null;
             SqlTransaction? tx = null;
 
             try
@@ -33,7 +32,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 if (!string.IsNullOrWhiteSpace(validacionBasica))
                     return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(validacionBasica);
 
-                conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
 
                 var globales = mProGrx.sbSifParametrosInicializa(
@@ -110,11 +109,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Trace.TraceError("FND_LiquidacionPlan_Proceso_Iniciar: {0}", ex);
                 return DbHelper.CreateErrorResponse<FndLiquidacionPlanProcesoResult>(
                     "No fue posible iniciar la liquidación del plan.");
-            }
-            finally
-            {
-                tx?.Dispose();
-                conn?.Dispose();
             }
         }
 
