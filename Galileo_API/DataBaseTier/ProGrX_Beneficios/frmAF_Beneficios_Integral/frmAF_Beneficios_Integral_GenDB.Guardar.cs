@@ -526,7 +526,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Inserta o actualiza el motivo del beneficio.
         /// </summary>
-        private ErrorDto InsertarActualizarMotivos(int CodCliente, BeneficioGeneralDatos beneficio)
+        private void InsertarActualizarMotivos(int CodCliente, BeneficioGeneralDatos beneficio)
         {
             var codBeneficio = beneficio.cod_beneficio?.item ?? string.Empty;
             var motivoItem = beneficio.cod_motivo?.item ?? string.Empty;
@@ -563,12 +563,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     RegistrarBitacora(CodCliente, codBeneficio, beneficio.consec, InsertaVal,
                         $"Inserta Motivo {beneficio.cod_motivo?.descripcion}", beneficio.registra_user ?? string.Empty);
                 }
-
-                return new ErrorDto { Code = 0 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return new ErrorDto { Code = -1, Description = "InsertarActualizarMotivos - " + ex.Message };
+                // El motivo es metadata secundaria: si falla su registro no se aborta el guardado principal (paridad con el comportamiento original).
             }
         }
 
