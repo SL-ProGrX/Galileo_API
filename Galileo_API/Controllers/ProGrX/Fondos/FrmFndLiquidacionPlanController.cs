@@ -66,12 +66,23 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
-        [HttpPost("FND_LiquidacionPlan_Liquidar")]
-        public ErrorDto<FndLiquidacionPlanLiquidarResult> FND_LiquidacionPlan_Liquidar(
+        [HttpPost("FND_LiquidacionPlan_Proceso_Iniciar")]
+        public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Iniciar(
          int codEmpresa,
-         FndLiquidacionPlanLiquidarRequest request)
+         FndLiquidacionPlanProcesoIniciarRequest request)
         {
-            return _bl.FND_LiquidacionPlan_Liquidar(codEmpresa, request);
+            request.usuario = User.Identity?.Name ?? string.Empty;
+            return _bl.FND_LiquidacionPlan_Proceso_Iniciar(codEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpPost("FND_LiquidacionPlan_Proceso_Continuar")]
+        public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Continuar(
+         int codEmpresa,
+         FndLiquidacionPlanProcesoContinuarRequest request)
+        {
+            request.usuario = User.Identity?.Name ?? string.Empty;
+            return _bl.FND_LiquidacionPlan_Proceso_Continuar(codEmpresa, request);
         }
 
         [Authorize]

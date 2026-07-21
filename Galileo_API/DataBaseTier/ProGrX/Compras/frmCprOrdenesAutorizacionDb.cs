@@ -15,13 +15,25 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Obtiene las órdenes pendientes con paginación y ordenamiento validado.
+        /// </summary>
         public ErrorDto<OrdenCompraDto> OrdenesCompra_Autorizacion_Obtener(
             int codEmpresa,
-            int pagina,
-            int paginacion,
-            string? filtro,
             OrdenCompraRequestDto req)
         {
+            var campoOrden = (req.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "tipoordendesc" or "tipoorden" => "tipo_orden",
+                "proceso" => "proceso",
+                "total" => "total",
+                "genera_user" => "genera_user",
+                "genera_fecha" => "genera_fecha",
+                "nota" => "nota",
+                _ => "cod_orden"
+            };
+            var direccionOrden = req.sortOrder == -1 ? -1 : 1;
+
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 if (conn.State != ConnectionState.Open) conn.Open();
@@ -29,8 +41,8 @@ namespace Galileo.DataBaseTier
                 string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
                 string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
 
-                var like = NormalizeLike(filtro);
-                var (offset, fetch) = NormalizePaging(pagina, paginacion);
+                var like = NormalizeLike(req.filtro);
+                var (offset, fetch) = NormalizePaging(req.pagina, req.paginacion);
 
                 const string sqlTotal = @"
 SELECT COUNT(O.cod_orden)
@@ -97,7 +109,36 @@ WHERE O.autoriza_fecha IS NULL
         OR O.nota LIKE @F
         OR O.proceso LIKE @F
   )
-ORDER BY O.cod_orden
+ORDER BY
+    CASE WHEN @SortField = 'cod_orden' AND @SortOrder = 1
+        THEN O.cod_orden END ASC,
+    CASE WHEN @SortField = 'cod_orden' AND @SortOrder = -1
+        THEN O.cod_orden END DESC,
+    CASE WHEN @SortField = 'tipo_orden' AND @SortOrder = 1
+        THEN C.Descripcion END ASC,
+    CASE WHEN @SortField = 'tipo_orden' AND @SortOrder = -1
+        THEN C.Descripcion END DESC,
+    CASE WHEN @SortField = 'proceso' AND @SortOrder = 1
+        THEN O.proceso END ASC,
+    CASE WHEN @SortField = 'proceso' AND @SortOrder = -1
+        THEN O.proceso END DESC,
+    CASE WHEN @SortField = 'total' AND @SortOrder = 1
+        THEN O.total END ASC,
+    CASE WHEN @SortField = 'total' AND @SortOrder = -1
+        THEN O.total END DESC,
+    CASE WHEN @SortField = 'genera_user' AND @SortOrder = 1
+        THEN O.genera_user END ASC,
+    CASE WHEN @SortField = 'genera_user' AND @SortOrder = -1
+        THEN O.genera_user END DESC,
+    CASE WHEN @SortField = 'genera_fecha' AND @SortOrder = 1
+        THEN O.genera_fecha END ASC,
+    CASE WHEN @SortField = 'genera_fecha' AND @SortOrder = -1
+        THEN O.genera_fecha END DESC,
+    CASE WHEN @SortField = 'nota' AND @SortOrder = 1
+        THEN O.nota END ASC,
+    CASE WHEN @SortField = 'nota' AND @SortOrder = -1
+        THEN O.nota END DESC,
+    O.cod_orden ASC
 OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
@@ -112,7 +153,9 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
                         FechaCorte = fechaFin,
                         F = like,
                         Offset = offset,
-                        Fetch = fetch
+                        Fetch = fetch,
+                        SortField = campoOrden,
+                        SortOrder = direccionOrden
                     }
                 ).ToList();
 

@@ -5,6 +5,7 @@
         public string tipo_orden { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public bool activo { get; set; } = false;
+        public bool isNew { get; set; } = false;
     }
 
     public class TipoOrdenFiltro
@@ -12,6 +13,8 @@
         public int pagina { get; set; }
         public int paginacion { get; set; }
         public string filtro { get; set; } = string.Empty;
+        public string sortField { get; set; } = string.Empty;
+        public int sortOrder { get; set; } = 1;
     }
 
     public class TiposOrdenLista

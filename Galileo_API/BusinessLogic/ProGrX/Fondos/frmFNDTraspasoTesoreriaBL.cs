@@ -98,5 +98,11 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         {
             return _db.TraspasoTesoreria_LiquidacionDetalle(param);
         }
+
+        public ErrorDto<FndTraspasoTesoreriaProcesarLoteResult> FND_TraspasoTesoreria_ProcesarLote(
+            FndTraspasoTesoreriaProcesarLoteRequest request)
+        {
+            return _db.FND_TraspasoTesoreria_ProcesarLote(request);
+        }
     }
 }

@@ -2,7 +2,6 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -21,82 +20,60 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Obtiene contabilidades
+        /// Obtiene las contabilidades disponibles para eliminación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa cuya base de datos se consultará.</param>
+        /// <returns>Lista de códigos y nombres de contabilidades.</returns>
         public ErrorDto<List<CntxContabilidadListaDto>> CntxUtil_Contabilidades_Obtener(int codEmpresa)
         {
-            var response = new ErrorDto<List<CntxContabilidadListaDto>>();
+            const string sql = @"SELECT COD_CONTABILIDAD AS cod_contabilidad,
+                                        NOMBRE AS nombre
+                                 FROM CntX_Contabilidades
+                                 ORDER BY COD_CONTABILIDAD";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CntxContabilidadListaDto>(
-                    @"SELECT COD_CONTABILIDAD as cod_contabilidad,
-                             NOMBRE as nombre
-                      FROM CntX_Contabilidades
-                      ORDER BY COD_CONTABILIDAD"
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<CntxContabilidadListaDto>(
+                _portalDb,
+                codEmpresa,
+                sql);
         }
 
         /// <summary>
-        /// Elimina contabilidades
+        /// Elimina las contabilidades solicitadas y registra cada movimiento en la bitácora.
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="request">Empresa, usuario y códigos de contabilidad que se eliminarán.</param>
+        /// <returns>Resultado que indica si el proceso concluyó correctamente.</returns>
         public ErrorDto<bool> CntxUtil_Contabilidades_Eliminar(CntxUtilEliminaContabilidadesRequestDto request)
         {
-            var response = new ErrorDto<bool>();
             if (request == null)
             {
-                response.Code = -1;
-                response.Description = "El parámetro 'request' no puede ser nulo.";
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "El parámetro 'request' no puede ser nulo.");
             }
 
             if (!request.cod_empresa.HasValue)
             {
-                response.Code = -1;
-                response.Description = "El campo 'cod_empresa' es obligatorio.";
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "El campo 'cod_empresa' es obligatorio.");
             }
 
             if (request.contabilidades == null || !request.contabilidades.Any())
             {
-                response.Code = -1;
-                response.Description = "Debe enviar al menos una contabilidad a eliminar.";
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "Debe enviar al menos una contabilidad a eliminar.");
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
             {
-                response.Code = -1;
-                response.Description = "El campo 'usuario' es obligatorio.";
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "El campo 'usuario' es obligatorio.");
             }
 
-            try
+            return DbHelper.WithConn(_portalDb, request.cod_empresa.Value, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(request.cod_empresa.Value));
-
-                cn.Open();
-
                 foreach (var codContabilidad in request.contabilidades)
                 {
                     cn.Execute(
-                        "exec spCntX_Util_Contabilidad_Elimina @codContabilidad, @usuario, @token",
+                        "EXEC spCntX_Util_Contabilidad_Elimina @codContabilidad, @usuario, @token",
                         new
                         {
                             codContabilidad,
@@ -115,15 +92,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         });
                 }
 
-                response.Result = true;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+                return true;
+            });
         }
     }
 }

@@ -199,7 +199,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public int fxTipoIdentificacion(int CodEmpresa, string cedula)
         {
-            var ced_destino = MKindoServiceDb.Inferir(cedula!);
+            var cedulaNormalizada = cedula;
+            var indiceGuionBajo = cedula.IndexOf('_');
+
+            if (indiceGuionBajo >= 0)
+            {
+                var indiceGuion = cedula.IndexOf('-', indiceGuionBajo + 1);
+
+                if (indiceGuion >= 0 && indiceGuion < cedula.Length - 1)
+                {
+                    cedulaNormalizada = cedula[(indiceGuion + 1)..];
+                }
+            }
+            var ced_destino = MKindoServiceDb.Inferir(cedulaNormalizada!);
             var tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
             return mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, tipo_ced_destino).Result;
         }

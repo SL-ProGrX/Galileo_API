@@ -6,8 +6,8 @@
         public int? cod_contabilidad { get; set; }
         public string? tipo_asiento { get; set; } = string.Empty;
 
-        public DateTime? desde { get; set; }
-        public DateTime? hasta { get; set; }
+        public string? desde { get; set; } = string.Empty;
+        public string? hasta { get; set; } = string.Empty;
 
         public int? anio { get; set; }
         public int? mes { get; set; }
