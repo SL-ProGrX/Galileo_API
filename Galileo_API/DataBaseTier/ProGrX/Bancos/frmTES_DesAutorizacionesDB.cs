@@ -68,6 +68,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (filtro.tipo_autorizacion == 0)
                 {
                     query += " and T.fecha_autorizacion is not null and T.monto between @MontoInicio and @MontoFin ";
+                    if (!string.IsNullOrWhiteSpace(filtro.token))
+                        query += " and T.id_token = @Token ";
                 }
                 else
                 {
@@ -96,7 +98,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         MontoInicio = filtro.monto_inicio,
                         MontoFin = filtro.monto_fin,
                         Detalle = $"%{filtro.detalle}%",
-                        CodigoApp = $"%{filtro.appid}%"
+                        CodigoApp = $"%{filtro.appid}%",
+                        Token = filtro.token
                     }).ToList();
             }
             catch (Exception ex)
