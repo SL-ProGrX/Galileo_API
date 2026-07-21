@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Pasivos;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 {
@@ -45,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 var lista = conn.Query<DropDownListaGenericaModel>(sql, new { sortCode }).ToList();
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message, -1, []);
             }
@@ -76,7 +77,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 var lista = conn.Query<CrApaReportesOperacion>(sql, new { CodAcreedor = codAcreedor }).ToList();
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrApaReportesOperacion>>(ex.Message, -1, []);
             }
