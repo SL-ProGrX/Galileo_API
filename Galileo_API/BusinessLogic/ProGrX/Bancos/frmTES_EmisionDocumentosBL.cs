@@ -92,6 +92,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
+        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
+            TesEmisionGenerarLoteRequest request)
+        {
+            return _db.TES_EmisionDocumento_GenerarLote(request);
+        }
+
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
             int codEmpresa,
             string propietario,

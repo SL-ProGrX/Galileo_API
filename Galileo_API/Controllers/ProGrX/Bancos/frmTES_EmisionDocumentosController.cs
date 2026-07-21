@@ -109,6 +109,13 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
+        [HttpPost("TES_EmisionDocumento_GenerarLote")]
+        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
+            [FromBody] TesEmisionGenerarLoteRequest request)
+        {
+            return _bl.TES_EmisionDocumento_GenerarLote(request);
+        }
+
         [HttpPost("TES_EmisionDocumentos_Proceso_Iniciar")]
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
             int codEmpresa,

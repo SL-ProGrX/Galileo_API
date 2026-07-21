@@ -159,6 +159,65 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
 
         #region ===== Solicitudes =====
 
+        /// <summary>
+        /// Emite un lote acotado de solicitudes SINPE (TS) reutilizando la consulta de
+        /// transacciones del proceso normal, y devuelve el conteo real por solicitud para
+        /// el avance de la ventana de emisión.
+        /// </summary>
+        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
+            TesEmisionGenerarLoteRequest request)
+        {
+            var error = ValidarGenerarLote(request);
+            if (error != null)
+                return DbHelper.CreateErrorResponse(error, -2, new TesEmisionGenerarLoteResult());
+
+            var filtro = ParseFiltros(request.Filtros);
+            filtro.usuario = request.Usuario;
+            filtro.generarPor = nSolicitudes;
+            filtro.minimo = request.Minimo;
+            filtro.maximo = request.Maximo;
+
+            if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
+                return DbHelper.CreateErrorResponse(
+                    "GenerarLote solo aplica a documentos SINPE (TS).",
+                    -2,
+                    new TesEmisionGenerarLoteResult());
+
+            return DbHelper.WithConn(_portalDB, request.CodEmpresa, conn =>
+            {
+                conn.Open();
+                var q = BuildQueries(filtro);
+                var transacciones = conn.Query<TesTransaccionDto>(q.QueryTransac, q.Parametros).ToList();
+
+                var resultado = mTesFunciones.SbTesBancoSinpeGeneralLote(
+                    request.CodEmpresa, filtro.usuario, transacciones);
+
+                // Datos para el paso final que abre "Procesar Transferencias" (cambia el estado).
+                // QueryTransac es parametrizado, así que sirve con el rango completo del front.
+                resultado.BancoConsec = filtro.docInicial.ToString(CultureInfo.InvariantCulture);
+                resultado.StrQuery = new TesEmisionLoteQuery
+                {
+                    QueryTransac = q.QueryTransac,
+                    BaseQuery = q.BaseQuery
+                };
+                return resultado;
+            });
+        }
+
+        /// <summary>
+        /// Valida los datos mínimos de un lote de emisión SINPE.
+        /// </summary>
+        private static string? ValidarGenerarLote(TesEmisionGenerarLoteRequest request)
+        {
+            if (request is null) return "La solicitud es requerida.";
+            if (string.IsNullOrWhiteSpace(request.Usuario)) return "El usuario es requerido.";
+            if (string.IsNullOrWhiteSpace(request.Filtros)) return "Los filtros son requeridos.";
+            if (request.Minimo <= 0 || request.Maximo <= 0) return "El rango de solicitudes es inválido.";
+            if (request.Minimo > request.Maximo) return "La solicitud inicial no puede ser mayor que la de corte.";
+            if (request.NSolicitudes.Count > 200) return "El lote no puede superar 200 registros.";
+            return null;
+        }
+
         public ErrorDto<List<TesSolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)
         {
             var filtro = ParseFiltros(filtros);
