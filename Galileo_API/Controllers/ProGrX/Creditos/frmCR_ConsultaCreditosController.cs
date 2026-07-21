@@ -49,6 +49,23 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [HttpPost("CR_Socios_BloqueoCreditos_Guardar")]
+        public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool bloqueo,
+            string nota,
+            string usuario)
+        {
+            return _BL.CR_Socios_BloqueoCreditos_Guardar(
+                CodEmpresa,
+                cedula,
+                bloqueo,
+                nota,
+                usuario);
+        }
+
+        [Authorize]
         [HttpPost("fxCajas_SaldoaFavor")]
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
@@ -58,6 +75,81 @@ namespace Galileo.Controllers.ProGrX.Credito
 
 
         #region Créditos
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_CreditoContexto_Obtener")]
+        public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(
+            int CodEmpresa)
+        {
+            return _BL.CR_ConsultaCrd_CreditoContexto_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_Cancelacion_Obtener")]
+        public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
+            int CodEmpresa,
+            int operacion,
+            DateTime corte)
+        {
+            return _BL.CR_ConsultaCrd_Cancelacion_Obtener(
+                CodEmpresa,
+                operacion,
+                corte);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_PreAnalisisOperacion_Obtener")]
+        public ErrorDto<string> CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
+            int CodEmpresa,
+            int operacion)
+        {
+            return _BL.CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
+                CodEmpresa,
+                operacion);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaPlanillaAbonoDist_Inicializar")]
+        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _BL.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaPlanillaAbonoDist_UltimoMonto")]
+        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso)
+        {
+            return _BL.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
+                CodEmpresa,
+                cedula,
+                codInstitucion,
+                proceso);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaPlanillaAbonoDist_Consultar")]
+        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso,
+            decimal monto,
+            DateTime corte)
+        {
+            return _BL.CR_ConsultaPlanillaAbonoDist_Consultar(
+                CodEmpresa,
+                cedula,
+                codInstitucion,
+                proceso,
+                monto,
+                corte);
+        }
         
         [Authorize]
         [HttpGet("CR_ConsultaCrd_Creditos_Obtener")]
@@ -103,6 +195,21 @@ namespace Galileo.Controllers.ProGrX.Credito
         public ErrorDto<List<CrConsultaAsignacionCobroData>> CR_ConsultaAsignacion_Obtener(int CodEmpresa, string cedula)
         {
             return _BL.CR_ConsultaAsignacion_Obtener(CodEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpPost("CR_ConsultaCobros_NotificacionEmail_Procesar")]
+        public ErrorDto CR_ConsultaCobros_NotificacionEmail_Procesar(
+            int CodEmpresa,
+            string cedula,
+            string tipo,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCobros_NotificacionEmail_Procesar(
+                CodEmpresa,
+                cedula,
+                tipo,
+                usuario);
         }
 
         #endregion
@@ -164,6 +271,16 @@ namespace Galileo.Controllers.ProGrX.Credito
         public ErrorDto<List<CrPatrimonioData>> CR_Patrimonio_Obtener(int CodEmpresa, string cedula, string tipo)
         {
             return _BL.CR_Patrimonio_Obtener(CodEmpresa, cedula, tipo);
+        }
+
+        [Authorize]
+        [HttpGet("CR_Patrimonio_Garantia_Obtener")]
+        public ErrorDto<CrPatrimonioGarantiaData?> CR_Patrimonio_Garantia_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string garantia)
+        {
+            return _BL.CR_Patrimonio_Garantia_Obtener(CodEmpresa, cedula, garantia);
         }
 
         [Authorize]
