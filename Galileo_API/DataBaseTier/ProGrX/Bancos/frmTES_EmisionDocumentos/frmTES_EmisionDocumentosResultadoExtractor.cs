@@ -2,7 +2,7 @@ using Galileo.Models.TES;
 using Newtonsoft.Json.Linq;
 using System.Text;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     public static class FrmTesEmisionDocumentosResultadoExtractor
     {

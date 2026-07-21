@@ -3,7 +3,7 @@ using PdfSharp.Pdf.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     public static class TesEmisionDocumentosEstado
     {

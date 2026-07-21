@@ -2,7 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
-using Galileo_API.DataBaseTier.ProGrX.Bancos;
+using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 {

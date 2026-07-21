@@ -1,7 +1,7 @@
 using Galileo.Models.TES;
 using System.Security.Cryptography;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     public sealed class TesEmisionDocumentosArchivoStore
     {

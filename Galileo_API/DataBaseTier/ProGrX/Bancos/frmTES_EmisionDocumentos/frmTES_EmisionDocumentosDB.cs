@@ -13,7 +13,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     public partial class FrmTesEmisionDocumentosDb
     {

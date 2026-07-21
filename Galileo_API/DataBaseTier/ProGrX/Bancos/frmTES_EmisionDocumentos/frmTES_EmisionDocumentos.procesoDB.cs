@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using System.Data;
 using System.Diagnostics;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     public partial class FrmTesEmisionDocumentosDb
     {

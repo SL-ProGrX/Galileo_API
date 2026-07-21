@@ -1,4 +1,4 @@
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
     /// <summary>
     /// Reutiliza la configuración inmutable del tipo de gestión durante una consulta.

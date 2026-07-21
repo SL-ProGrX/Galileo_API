@@ -2,7 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
-using Galileo_API.DataBaseTier.ProGrX.Bancos;
+using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
 using Galileo_API.Services.ProGrX.Bancos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
