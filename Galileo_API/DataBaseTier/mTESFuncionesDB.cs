@@ -108,6 +108,43 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        /// <summary>
+        /// Emite un lote acotado de solicitudes SINPE (TS) y devuelve el conteo real por
+        /// solicitud, para reportar avance exacto en la ventana de emisión.
+        /// </summary>
+        public TesEmisionGenerarLoteResult SbTesBancoSinpeGeneralLote(
+            int codEmpresa,
+            string usuario,
+            List<TesTransaccionDto> transaccionesList)
+        {
+            var resultado = new TesEmisionGenerarLoteResult();
+
+            if (transaccionesList == null || transaccionesList.Count == 0)
+                return resultado;
+
+            var servicio = _factory.CrearServicio(codEmpresa, usuario);
+
+            foreach (var trx in transaccionesList)
+            {
+                var emision = EmitirSinpe(servicio, codEmpresa, usuario, trx);
+                if (emision.Code == 0)
+                {
+                    resultado.Procesados++;
+                }
+                else
+                {
+                    resultado.Errores.Add(new TesEmisionProcesoError
+                    {
+                        NSolicitud = trx.nsolicitud,
+                        Descripcion = emision.Description ?? "Emisión no válida."
+                    });
+                }
+            }
+
+            resultado.ConErrores = resultado.Errores.Count;
+            return resultado;
+        }
+
         private ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
         {
             var now = DateTime.Now;

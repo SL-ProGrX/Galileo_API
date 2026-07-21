@@ -15,7 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
-    public class FrmTesEmisionDocumentosDb
+    public partial class FrmTesEmisionDocumentosDb
     {
         private readonly MTesoreria mTesoreria;
         private readonly MSecurityMainDb _Security_MainDB;
@@ -227,6 +227,8 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
             var now = DateTime.Now;
             var consecutivoVisible = request.Filtro.docInicial;
             var consecutivoInterno = request.ConsecutivoInterno;
+            var tipoGestionCache = new FrmTesEmisionDocumentosTipoGestionCache(
+                (banco, tipo) => ObtenerTipoGestionDocumento(request.CodEmpresa, banco, tipo));
 
             foreach (var item in request.Solicitudes)
             {
@@ -235,7 +237,7 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
                     ? request.Filtro.tipoDoc
                     : item.tipo;
 
-                var tipoGestion = ObtenerTipoGestionDocumento(request.CodEmpresa, bancoItem, tipoItem);
+                var tipoGestion = tipoGestionCache.Resolver(bancoItem, tipoItem);
 
                 if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
                 {
@@ -427,7 +429,10 @@ where B.estado = 'A'
 
         #region ===== Generación principal =====
 
-        public ErrorDto<object> TES_EmisionDocumento_Generar(int codEmpresa, string filtros)
+        public ErrorDto<object> TES_EmisionDocumento_Generar(
+            int codEmpresa,
+            string filtros,
+            Action<int, int>? avance = null)
         {
             try
             {
@@ -437,6 +442,9 @@ where B.estado = 'A'
                 {
                     var responses = new List<object>();
                     var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
+
+                    var procesadas = 0;
+                    var totalSolicitudes = solicitudes?.Count ?? 0;
 
                     foreach (var item in solicitudes!)
                     {
@@ -485,13 +493,20 @@ where B.estado = 'A'
                         {
                             result = proceso.Result
                         });
+                        procesadas++;
+                        avance?.Invoke(procesadas, totalSolicitudes);
                     }
 
                     return DbHelper.CreateOkResponse<object>(
                         JsonConvert.SerializeObject(responses, Formatting.Indented));
                 }
 
-                return ProcesoDocumentos(codEmpresa, filtro);
+                var resultado = ProcesoDocumentos(codEmpresa, filtro);
+                if (resultado.Code == 0)
+                {
+                    avance?.Invoke(filtro.cantidad, filtro.cantidad);
+                }
+                return resultado;
             }
             catch (Exception ex)
             {

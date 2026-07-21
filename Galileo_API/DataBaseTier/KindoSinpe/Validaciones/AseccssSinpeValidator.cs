@@ -40,6 +40,9 @@ namespace Galileo_API.DataBaseTier
         private readonly SINPE_TFTClient _srvSinpeTft = new SINPE_TFTClient();
         private readonly SINPE_CCDClient _srvSinpeCcd = new SINPE_CCDClient();
         private Galileo.Models.KindoSinpe.ParametrosSinpe _parametrosSinpe;
+        // Cache del "servicio disponible" durante la vida de la instancia (= un lote).
+        // Evita repetir el round-trip remoto de disponibilidad por cada solicitud.
+        private bool? _servicioDisponibleLote;
         private readonly FactElectronica.ServicioClient _srvFactElectronica = new FactElectronica.ServicioClient();
 
         private readonly MKindoServiceDb _mKindo;
@@ -390,7 +393,7 @@ namespace Galileo_API.DataBaseTier
         }
 
         private ErrorDto<string> fxFormatoIdentificacionSinpe(string cedula, int tipoID)
-        {
+         {
             ErrorDto<string> ErrorDto = new();
             string response = "";
             string formato = "";
@@ -814,7 +817,7 @@ namespace Galileo_API.DataBaseTier
             {
                 if (Nsolicitud > 0)
                 {
-                    if (fxTesConsultarServicioDisponible(CodEmpresa, vUsuario).Result == false)
+                    if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
@@ -906,6 +909,16 @@ namespace Galileo_API.DataBaseTier
                 response.Result = false;
             }
             return response;
+        }
+
+        /// <summary>
+        /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el resultado),
+        /// evitando repetir el round-trip remoto por cada solicitud.
+        /// </summary>
+        private bool ServicioDisponibleLote(int CodEmpresa, string vUsuario)
+        {
+            _servicioDisponibleLote ??= fxTesConsultarServicioDisponible(CodEmpresa, vUsuario).Result;
+            return _servicioDisponibleLote.Value;
         }
 
         private ErrorDto<Sinpe_CCD.IModelosRastroSIF> fxCrearRastroSINPESIF_CCD(string vUsuario)
@@ -1165,7 +1178,7 @@ namespace Galileo_API.DataBaseTier
                     }
                     else //Uso de canal CanalTFT
                     {
-                        if (fxTesConsultarServicioDisponible(CodEmpresa, vUsuario).Result == false)
+                        if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
                         {
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;

@@ -25,6 +25,10 @@ namespace Galileo_API.DataBaseTier
 
         private const string SinpeRejectionMessage = "Rechazo SINPE";
 
+        // Cache del "servicio disponible" durante la vida de la instancia (= un lote).
+        // Evita repetir el round-trip remoto de disponibilidad por cada solicitud.
+        private bool? _servicioDisponibleLote;
+
         public CoopeSanGabrielValidator(IConfiguration config)
         {
             _mKindo = new MKindoServiceDb(config);
@@ -64,10 +68,16 @@ namespace Galileo_API.DataBaseTier
 
                 var uriConn = GetServiceUri(parametrosSinpe, sinpeTipo);
 
-                var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
+                // Se verifica la disponibilidad una sola vez por lote (se cachea solo el resultado positivo).
+                if (_servicioDisponibleLote != true)
+                {
+                    var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
 
-                if (!servicio.ServiceAvailable)
-                    return DbHelper.ErrorResponse("Servicio no disponible: " + servicio!.Errors?[0].Message);
+                    if (!servicio.ServiceAvailable)
+                        return DbHelper.ErrorResponse("Servicio no disponible: " + servicio!.Errors?[0].Message);
+
+                    _servicioDisponibleLote = true;
+                }
 
                 string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
 

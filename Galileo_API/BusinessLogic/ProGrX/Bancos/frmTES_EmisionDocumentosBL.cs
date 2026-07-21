@@ -92,6 +92,49 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
+        public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
+            int codEmpresa,
+            string propietario,
+            TesEmisionDocumentosProcesoIniciarRequest request)
+        {
+            return _db.TES_EmisionDocumentos_Proceso_Iniciar(codEmpresa, propietario, request);
+        }
+
+        public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Estado_Obtener(
+            int codEmpresa,
+            Guid procesoId,
+            string propietario)
+        {
+            return _db.TES_EmisionDocumentos_Proceso_Estado_Obtener(
+                codEmpresa,
+                procesoId,
+                propietario);
+        }
+
+        public ErrorDto<TesEmisionDocumentosProcesoManifiestoResult> TES_EmisionDocumentos_Proceso_Resultado_Obtener(
+            int codEmpresa,
+            Guid procesoId,
+            string propietario)
+        {
+            return _db.TES_EmisionDocumentos_Proceso_Resultado_Obtener(
+                codEmpresa,
+                procesoId,
+                propietario);
+        }
+
+        public TesEmisionDocumentosArchivoContexto? TES_EmisionDocumentos_Proceso_Archivo_Obtener(
+            int codEmpresa,
+            Guid procesoId,
+            Guid archivoId,
+            string propietario)
+        {
+            return _db.TES_EmisionDocumentos_Proceso_Archivo_Obtener(
+                codEmpresa,
+                procesoId,
+                archivoId,
+                propietario);
+        }
+
         public ErrorDto<int> ValidaUsuarioEspecial(int CodEmpresa, string usuario)
         {
             return _db.ValidaUsuarioEspecial(CodEmpresa, usuario);

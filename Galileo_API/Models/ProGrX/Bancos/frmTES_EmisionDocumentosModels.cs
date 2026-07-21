@@ -98,6 +98,38 @@ namespace Galileo.Models.TES
         public long ConsecutivoInterno { get; init; } = 0;
     }
 
+    public sealed class TesEmisionGenerarLoteRequest
+    {
+        public required int CodEmpresa { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public string Filtros { get; set; } = string.Empty;   // JSON de filtros base
+        public int Minimo { get; set; }
+        public int Maximo { get; set; }
+        public List<int> NSolicitudes { get; set; } = new();
+    }
+
+    public sealed class TesEmisionProcesoError
+    {
+        public int NSolicitud { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public sealed class TesEmisionLoteQuery
+    {
+        public string QueryTransac { get; set; } = string.Empty;
+        public string BaseQuery { get; set; } = string.Empty;
+    }
+
+    public sealed class TesEmisionGenerarLoteResult
+    {
+        public int Procesados { get; set; }
+        public int ConErrores { get; set; }
+        public List<TesEmisionProcesoError> Errores { get; set; } = new();
+        // Datos para el paso final (abrir "Procesar Transferencias" que cambia el estado)
+        public string BancoConsec { get; set; } = string.Empty;
+        public TesEmisionLoteQuery? StrQuery { get; set; }
+    }
+
 }
 
 
