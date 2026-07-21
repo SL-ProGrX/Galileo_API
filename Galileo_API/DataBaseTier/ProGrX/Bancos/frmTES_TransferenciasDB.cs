@@ -116,8 +116,10 @@ namespace Galileo_API.DataBaseTier
                         }
 
                         consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+
+                        ActualizaTesBancosDocsConse(conn, consc, transferencia);
                     }
-                    ActualizaTesBancosDocsConse(conn, consc, transferencia);
+                    
 
                     var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
 

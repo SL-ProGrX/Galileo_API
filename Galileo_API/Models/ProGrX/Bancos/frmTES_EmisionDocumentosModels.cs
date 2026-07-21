@@ -14,20 +14,20 @@ namespace Galileo.Models.TES
 
     public class TesEmisionDocFiltros
     {
-        public int cantidad { get; set; }
-        public int banco { get; set; }
+        public int cantidad { get; set; } = 0;
+        public int banco { get; set; } = 0;
         public string plan { get; set; } = string.Empty;
-        public int docInicial { get; set; }
+        public int docInicial { get; set; } = 0;
         public string generarPor { get; set; } = string.Empty;
         public string tipoDoc { get; set; } = string.Empty;
-        public int minimo { get; set; }
-        public int maximo { get; set; }
-        public int verificacion { get; set; }
-        public DateTime? fecha_inicio { get; set; }
-        public DateTime? fecha_corte { get; set; }
-        public string? formatoTE { get; set; }
+        public int minimo { get; set; } = 0;
+        public int maximo { get; set; } = 0;
+        public int verificacion { get; set; } = 0;
+        public DateTime? fecha_inicio { get; set; } = null;
+        public DateTime? fecha_corte { get; set; } = null;
+        public string? formatoTE { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
-        public bool? docBloqueo { get; set; }
+        public bool? docBloqueo { get; set; } = false;
         public bool especial { get; set; } = false;
 
         public string? bancoDescripcion { get; set; } = string.Empty;

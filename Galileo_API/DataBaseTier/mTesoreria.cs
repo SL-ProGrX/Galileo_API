@@ -1162,47 +1162,48 @@ namespace Galileo.DataBaseTier
                         + " # " + banco.item + " la suma de ¢ ";
                 }
 
-
-                if (vTipo == "C")
-                {
-                    string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
+                string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
                             where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
-                    if (vPlan != "-sp-")
-                    {
-                        strSQL += " and Cod_Plan = @vPlan";
-                    }
-                    strSQL += " group by cod_divisa";
-
-                    var rs = connection.QueryFirstOrDefault(strSQL,
-                        new
-                        {
-                            vDocumento,
-                            vBanco,
-                            vTransac,
-                            vPlan
-                        });
-                    if (rs != null)
-                    {
-                        curMonto = rs.Monto;
-                        lngCasos = rs.Casos;
-                        strDivisa = rs.cod_divisa;
-                    }
-
-                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(connection,CodEmpresa, strDivisa).Result;
-
-                    resp.Result.registros = lngCasos;
-                    resp.Result.montoLetras = vMontoLetras;
-                    resp.Result.totalMonto = curMonto;
-                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
-                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
-                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
-                    resp.Result.letras1 = vLetra;
-                }
-                else
+                if (vPlan != "-sp-")
                 {
-                    // No additional processing for tipos distintos de "C":
-                    // se mantiene la respuesta con los valores por defecto inicializados.
+                    strSQL += " and Cod_Plan = @vPlan";
                 }
+                strSQL += " group by cod_divisa";
+
+                var rs = connection.QueryFirstOrDefault(strSQL,
+                    new
+                    {
+                        vDocumento,
+                        vBanco,
+                        vTransac,
+                        vPlan
+                    });
+                if (rs != null)
+                {
+                    curMonto = rs.Monto;
+                    lngCasos = rs.Casos;
+                    strDivisa = rs.cod_divisa;
+                }
+
+                string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(connection, CodEmpresa, strDivisa).Result;
+
+                resp.Result.registros = lngCasos;
+                resp.Result.montoLetras = vMontoLetras;
+                resp.Result.totalMonto = curMonto;
+                resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
+                resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
+                resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
+                resp.Result.letras1 = vLetra;
+
+                //if (vTipo == "C")
+                //{
+                    
+                //}
+                //else
+                //{
+                //    // No additional processing for tipos distintos de "C":
+                //    // se mantiene la respuesta con los valores por defecto inicializados.
+                //}
             }
             catch (Exception ex)
             {
