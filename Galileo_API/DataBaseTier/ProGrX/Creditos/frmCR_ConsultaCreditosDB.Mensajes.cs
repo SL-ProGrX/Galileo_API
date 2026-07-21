@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     })
                     .ToList();
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
@@ -128,7 +128,22 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     });
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (DataException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (ArgumentException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
@@ -169,7 +184,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     mensaje = data.mensaje
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (InvalidOperationException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
@@ -209,7 +229,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     mensaje = data.mensaje
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;

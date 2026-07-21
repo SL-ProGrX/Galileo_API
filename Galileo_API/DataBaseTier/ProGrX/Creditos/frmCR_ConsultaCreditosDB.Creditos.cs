@@ -126,7 +126,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
                     interesCorriente =
                         credito.saldo * credito.interesv / 36000m *
-                        (corte.Day + meses * 30);
+                        (corte.Day + meses * 30m);
                 }
 
                 if (credito.principalAtrasado >= credito.saldo)
