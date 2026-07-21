@@ -10,6 +10,7 @@ using Microsoft.ReportingServices.Diagnostics.Internal;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Sinpe_TFT;
 using System.Data;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -54,7 +55,7 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 var vFecha = DateTime.Now;
 
-                allowedSql = ValTipoTransferenciaTS(transferencia.tipoDoc!, allowedSql);
+                //allowedSql = ValTipoTransferenciaTS(transferencia.tipoDoc!, allowedSql);
 
                 var cantidadSolicitudes = transferencia.parametros!.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
@@ -75,21 +76,45 @@ namespace Galileo_API.DataBaseTier
                 long current = conn.QueryFirstOrDefault<long>("SELECT ISNULL(CONSECUTIVO_DET,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco", new { Tipo = transferencia.parametros.tipoDoc, Banco = transferencia.parametros.banco});
                 consc = current;
 
+                
+
                 if (result.Count > 0)
                 {
+                    var vDocumento = consc.ToString("D4");
+
+                    var linea = 1;
                     foreach (var item in result)
                     {
                        
-                        var vDocumento = consc.ToString("D4");
+                       if(item.tipo == "TS")
+                        {
+                            item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
+                             $"{linea.ToString("000", CultureInfo.InvariantCulture)}";
+                            linea++;
 
-                        item.documento = vDocumento;
+                            vDocumento = item.documento;
+                        }
+                        else if(item.tipo == "TE")
+                        {
+                            item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
+                             $"{consc.ToString("000", CultureInfo.InvariantCulture)}";
+                            consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+                            vDocumento = item.documento;
+                        }
+                        else
+                        {
+                            item.documento = consc.ToString("000", CultureInfo.InvariantCulture);
+                            consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+                            vDocumento = item.documento;
+                        }
+
                         curMonto += item.monto;
 
                         conn.Execute(FrmTesAutorizacionSql.Query_UpdateTransacciones, new
                         {
                             
                             fechaEmision = vFecha, // DateTime, no string
-                            nDocumento = vDocumento,
+                            nDocumento = item.documento,
                             usuario = transferencia.usuario,
                             bancoConsec = transferencia.bancoConsec,
                             plan = transferencia.plan,
@@ -114,12 +139,9 @@ namespace Galileo_API.DataBaseTier
                         {
                             ActualizaReferencia(conn, vDocumento, item);
                         }
-
-                        consc = NextConsecutivo(CodEmpresa, transferencia, consc);
-
-                        ActualizaTesBancosDocsConse(conn, consc, transferencia);
                     }
-                    
+
+                    ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
                     var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
 

@@ -1138,7 +1138,7 @@ namespace Galileo.DataBaseTier
     new ErrorDto { Code = code, Description = description };
 
 
-        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(SqlConnection connection, int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(SqlConnection connection, int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-", DateTime? vFecha = null)
         {
             
             var resp = new ErrorDto<TesReporteTransferenciaDto>()
@@ -1162,21 +1162,28 @@ namespace Galileo.DataBaseTier
                         + " # " + banco.item + " la suma de ¢ ";
                 }
 
-                string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
+                string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones
                             where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
                 if (vPlan != "-sp-")
                 {
                     strSQL += " and Cod_Plan = @vPlan";
+                }
+                // Filtro de fecha opcional: evita traer documentos de años pasados con el mismo
+                // documento_base. Solo lo envía el flujo de emisión; la reimpresión histórica no.
+                if (vFecha.HasValue)
+                {
+                    strSQL += " and CAST(Fecha_Emision AS DATE) = CAST(@vFecha AS DATE)";
                 }
                 strSQL += " group by cod_divisa";
 
                 var rs = connection.QueryFirstOrDefault(strSQL,
                     new
                     {
-                        vDocumento,
-                        vBanco,
-                        vTransac,
-                        vPlan
+                        vDocumento = vTipo,
+                        vBanco = vBanco,
+                        vTransac = vTransac,
+                        vPlan = vPlan,
+                        vFecha = vFecha
                     });
                 if (rs != null)
                 {

@@ -116,6 +116,20 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_GenerarLote(request);
         }
 
+        [HttpPost("TES_EmisionDocumento_ConsecutivoIniciar")]
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _bl.TES_EmisionDocumento_ConsecutivoIniciar(CodEmpresa, banco, tipoDoc, plan);
+        }
+
+        [HttpPost("TES_EmisionDocumento_ConsecutivoRevertir")]
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _bl.TES_EmisionDocumento_ConsecutivoRevertir(CodEmpresa, banco, tipoDoc, plan);
+        }
+
         [HttpPost("TES_EmisionDocumentos_Proceso_Iniciar")]
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
             int codEmpresa,

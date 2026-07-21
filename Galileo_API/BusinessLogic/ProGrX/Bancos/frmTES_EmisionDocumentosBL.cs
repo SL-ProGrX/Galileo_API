@@ -98,6 +98,18 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.TES_EmisionDocumento_GenerarLote(request);
         }
 
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _db.TES_EmisionDocumento_ConsecutivoIniciar(CodEmpresa, banco, tipoDoc, plan);
+        }
+
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _db.TES_EmisionDocumento_ConsecutivoRevertir(CodEmpresa, banco, tipoDoc, plan);
+        }
+
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
             int codEmpresa,
             string propietario,

@@ -106,6 +106,9 @@ namespace Galileo.Models.TES
         public int Minimo { get; set; }
         public int Maximo { get; set; }
         public List<int> NSolicitudes { get; set; } = new();
+        // Documento único de la emisión (modelo v6: un documento por emisión).
+        // Se avanza una sola vez al inicio y se marca en todas las solicitudes del lote.
+        public long BancoConsec { get; set; }
     }
 
     public sealed class TesEmisionProcesoError

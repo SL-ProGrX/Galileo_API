@@ -32,9 +32,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpGet("TES_TransferenciaRepControl_Carta_Obtener")]
-        public ErrorDto<TesReporteTransferenciaDto> TES_TransferenciaRepControl_Carta_Obtener(int CodEmpresa, int Banco, long NTransac, string TipoDoc, string Plan)
+        public ErrorDto<TesReporteTransferenciaDto> TES_TransferenciaRepControl_Carta_Obtener(int CodEmpresa, int Banco, long NTransac, string TipoDoc, string Plan, DateTime? Fecha = null)
         {
-            return _transferenciaRepControlBL.TES_TransferenciaRepControl_Carta_Obtener(CodEmpresa, Banco, NTransac, TipoDoc, Plan);
+            return _transferenciaRepControlBL.TES_TransferenciaRepControl_Carta_Obtener(CodEmpresa, Banco, NTransac, TipoDoc, Plan, Fecha);
         }
 
         [HttpGet("TES_TransferenciaRepControl_Archivo_Generar")]

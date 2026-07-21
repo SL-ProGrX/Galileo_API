@@ -192,9 +192,20 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
                 var resultado = mTesFunciones.SbTesBancoSinpeGeneralLote(
                     request.CodEmpresa, filtro.usuario, transacciones);
 
-                // Datos para el paso final que abre "Procesar Transferencias" (cambia el estado).
-                // QueryTransac es parametrizado, así que sirve con el rango completo del front.
-                resultado.BancoConsec = filtro.docInicial.ToString(CultureInfo.InvariantCulture);
+                // Modelo v6 (un documento por emisión): marca las solicitudes emitidas de este
+                // lote con el documento único de la emisión (bancoConsec avanzado una sola vez),
+                // para que el reporte y "Procesar Transferencias" las agrupen correctamente.
+                // El comprobante SINPE por solicitud queda preservado en NDocumento/REFERENCIA_SINPE.
+                conn.Execute(SqlMarcarDocumentoBaseLote, new
+                {
+                    bancoConsec = request.BancoConsec,
+                    tipoDoc = filtro.tipoDoc,
+                    banco = filtro.banco,
+                    minimo = filtro.minimo,
+                    maximo = filtro.maximo
+                });
+
+                resultado.BancoConsec = request.BancoConsec.ToString(CultureInfo.InvariantCulture);
                 resultado.StrQuery = new TesEmisionLoteQuery
                 {
                     QueryTransac = q.QueryTransac,
@@ -202,6 +213,31 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
                 };
                 return resultado;
             });
+        }
+
+        private const string SqlMarcarDocumentoBaseLote = @"
+UPDATE Tes_Transacciones
+SET Documento_Base = @bancoConsec
+WHERE Estado = 'I' AND Tipo = @tipoDoc AND ID_Banco = @banco
+  AND NSolicitud BETWEEN @minimo AND @maximo";
+
+        /// <summary>
+        /// Avanza (+1) el documento inicial de la emisión SINPE una sola vez por emisión
+        /// (modelo v6) y devuelve el consecutivo asignado.
+        /// </summary>
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "+", plan);
+        }
+
+        /// <summary>
+        /// Revierte (-1) el documento inicial cuando la emisión falla (modelo v6, rollback).
+        /// </summary>
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "-", plan);
         }
 
         /// <summary>
@@ -288,6 +324,8 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
             var consecutivoInterno = request.ConsecutivoInterno;
             var tipoGestionCache = new FrmTesEmisionDocumentosTipoGestionCache(
                 (banco, tipo) => ObtenerTipoGestionDocumento(request.CodEmpresa, banco, tipo));
+            var linea = 1;
+            var consecutivoInternoTS = consecutivoVisible;
 
             foreach (var item in request.Solicitudes)
             {
@@ -298,12 +336,19 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
 
                 var tipoGestion = tipoGestionCache.Resolver(bancoItem, tipoItem);
 
-                if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(item.tipo, "TE", StringComparison.OrdinalIgnoreCase))
                 {
                     item.documento =
                         $"{consecutivoVisible.ToString(CultureInfo.InvariantCulture)}-" +
                         $"{consecutivoInterno.ToString("000", CultureInfo.InvariantCulture)}";
                     consecutivoInterno++;
+                }
+                else if (string.Equals(item.tipo, "TS", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.documento =
+                        $"{consecutivoInternoTS.ToString(CultureInfo.InvariantCulture)}-" +
+                        $"{linea.ToString("000", CultureInfo.InvariantCulture)}";
+                    linea++;
                 }
                 else
                 {

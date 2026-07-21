@@ -373,10 +373,11 @@ Where Estado = 'T'
             long vTransac,
             string? vTipo = "C",
             string? vDocumento = "TE",
-            string? vPlan = "-sp-")
+            string? vPlan = "-sp-",
+            DateTime? vFecha = null)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            return mTesoreria.sbTesReporteTransferencia(conn, CodEmpresa, vBanco, vTransac, vTipo, vDocumento, vPlan);
+            return mTesoreria.sbTesReporteTransferencia(conn, CodEmpresa, vBanco, vTransac, vTipo, vDocumento, vPlan, vFecha);
         }
     }
 }
