@@ -560,7 +560,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     lista = lista
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CrReportesSeguridadReportesLista>(ex.Message);
             }
@@ -583,7 +583,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var lista = QueryReportes(conn, codGrupo, filtros, out total);
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrReportesSeguridadReporteData>>(ex.Message);
             }
@@ -734,7 +734,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Reporte autorizado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -761,7 +761,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Reporte desautorizado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
