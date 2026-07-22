@@ -1112,7 +1112,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrReportesInformesArbolDto>>(
+                    ex.Message,
+                    -1,
+                    new List<CrReportesInformesArbolDto>());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrReportesInformesArbolDto>>(
                     ex.Message,
@@ -1166,7 +1173,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new CrReportesInformesArbolDto());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -1303,7 +1317,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     -2,
                     new CrReportesInformesGenerarResult());
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new CrReportesInformesGenerarResult());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,

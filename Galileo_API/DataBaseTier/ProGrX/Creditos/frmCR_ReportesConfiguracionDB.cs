@@ -147,9 +147,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     lista = lista
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CrReportesConfigGruposLista>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse<CrReportesConfigGruposLista>(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<CrReportesConfigGruposLista>(
+                    "Ocurrió un error inesperado al obtener la configuración de reportes.");
             }
         }
 
@@ -171,7 +180,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var lista = QueryConfigGrupos(conn, filtros, out total);
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrReportesConfigGrupoData>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrReportesConfigGrupoData>>(ex.Message);
             }
@@ -224,7 +237,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var result = conn.Query<DropDownListaGenericaModel>(sql).ToList();
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
@@ -297,7 +310,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Grupo registrado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -328,7 +341,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Grupo actualizado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -373,7 +386,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     lista = lista
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CrReportesConfigMiembrosLista>(ex.Message);
             }
