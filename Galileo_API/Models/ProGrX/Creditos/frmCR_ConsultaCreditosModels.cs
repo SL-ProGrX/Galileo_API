@@ -647,6 +647,9 @@ namespace Galileo.Models.ProGrX.Credito
         public string? resolucion { get; set; }
         public DateTime? resolucion_fecha { get; set; }
         public string? resolucion_usuario { get; set; }
+        public DateTime? vencimiento_original { get; set; }
+        public string? usuario_original { get; set; }
+        public string? mensaje_original { get; set; }
     }
 
     public class SysMailLoadData
