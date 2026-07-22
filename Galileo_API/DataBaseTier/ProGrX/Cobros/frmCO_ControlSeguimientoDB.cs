@@ -1124,14 +1124,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 R.Id_Solicitud                 as operacion,
                 rtrim(isnull(R.CODIGO,''))     as codigo,
                 isnull(R.CUOTA,0)              as cuotas,
-                isnull(M.mora,0)               as mora,
+                isnull(V.cuota,0)              as mora,
                 isnull(R.SALDO,0)              as saldo,
                 isnull(R.AMORTIZA,0)           as abono,
                 rtrim(isnull(R.ESTADO,''))     as estado_actual
             from Reg_Creditos R
-            left join MOROSIDAD M
-                   on R.Id_Solicitud = M.Id_Solicitud
-                  and M.Estado = 'A'
+            left join VISTA_MOROSIDAD V
+                   on R.Id_Solicitud = V.Id_Solicitud
             where R.CEDULA = @cedula
               and R.ESTADO = 'A'
               and (

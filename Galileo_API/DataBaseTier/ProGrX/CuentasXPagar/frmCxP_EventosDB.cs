@@ -116,28 +116,66 @@ namespace Galileo.DataBaseTier
             }
 
             var activo = evento.activo == true ? 1 : 2;
+            var codigoEvento = string.IsNullOrWhiteSpace(evento.cod_evento) ? "0" : evento.cod_evento.Trim();
+            const string sql = @"
+                EXEC spCxP_Eventos_Add
+                    @Evento,
+                    @Descripcion,
+                    @Activo,
+                    @FechaInicio,
+                    @FechaFinaliza,
+                    @LugarVenta,
+                    @Notas,
+                    @ComisionPorc,
+                    @ComisionCuenta,
+                    @CodLineaCrd,
+                    @RegistroUsuario;";
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodCliente,
-                "spCxP_Eventos_Add",
+                sql,
                 new
                 {
-                    evento.cod_evento,
-                    evento.descripcion,
-                    activo,
-                    evento.fecha_inicio,
-                    evento.fecha_finaliza,
-                    evento.lugar_venta,
-                    evento.notas,
-                    evento.comision_porc,
-                    comision_cuenta = evento.comision_cuenta,
-                    cod_linea_crd = evento.cod_linea_crd,
-                    registro_usuario = evento.registro_usuario
+                    Evento = codigoEvento,
+                    Descripcion = evento.descripcion,
+                    Activo = activo,
+                    FechaInicio = evento.fecha_inicio,
+                    FechaFinaliza = evento.fecha_finaliza,
+                    LugarVenta = evento.lugar_venta,
+                    Notas = evento.notas,
+                    ComisionPorc = evento.comision_porc,
+                    ComisionCuenta = evento.comision_cuenta,
+                    CodLineaCrd = evento.cod_linea_crd,
+                    RegistroUsuario = evento.registro_usuario
                 });
 
-            return result.Code == 0
-                ? new ErrorDto { Code = 0, Description = evento.cod_evento ?? string.Empty }
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar el evento.", result.Code.GetValueOrDefault(-1));
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(result.Description ?? "Error al guardar el evento.", result.Code.GetValueOrDefault(-1));
+            }
+
+            if (codigoEvento != "0")
+            {
+                return new ErrorDto { Code = 0, Description = codigoEvento };
+            }
+
+            var generado = DbHelper.ExecuteSingleQuery<string>(
+                CreatePortalDb(),
+                CodCliente,
+                @"SELECT TOP 1 CONVERT(varchar(20), cod_evento)
+                  FROM CXP_EVENTOS
+                  WHERE registro_usuario = @RegistroUsuario
+                    AND descripcion = @Descripcion
+                  ORDER BY registro_fecha DESC, cod_evento DESC;",
+                string.Empty,
+                new { RegistroUsuario = evento.registro_usuario, Descripcion = evento.descripcion });
+
+            if (generado.Code != 0 || string.IsNullOrWhiteSpace(generado.Result))
+            {
+                return DbHelper.ErrorResponse(generado.Description ?? "No fue posible obtener el código generado del evento.", generado.Code.GetValueOrDefault(-1));
+            }
+
+            return new ErrorDto { Code = 0, Description = generado.Result.Trim() };
         }
 
         /// <summary>
@@ -171,7 +209,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 "spCxP_Eventos_Proveedores_List",
-                new { cod_evento });
+                new { Evento = cod_evento });
         }
 
         /// <summary>
@@ -191,10 +229,10 @@ namespace Galileo.DataBaseTier
                 "spCxP_Proveedores_Eventos_Asigna",
                 new
                 {
-                    proveedor,
-                    evento,
-                    activa,
-                    usuario
+                    Proveedor = proveedor,
+                    Evento = evento,
+                    Activa = activa,
+                    Usuario = usuario
                 });
 
             return result.Code == 0

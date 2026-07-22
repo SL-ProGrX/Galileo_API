@@ -75,7 +75,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 ErrorDto<string?> nombreResponse = DbHelper.ExecuteSingleQuery<string>(
                     _portalDb,
                     codEmpresa,
-                    "select isnull(dbo.fxNombre(@Cedula), '')",
+                    @"select isnull(Nombre, '')
+                        from Socios
+                       where Cedula = @Cedula",
                     string.Empty,
                     new { Cedula = cedula });
 

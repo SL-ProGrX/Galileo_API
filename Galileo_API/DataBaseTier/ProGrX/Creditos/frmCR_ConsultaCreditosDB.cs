@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
@@ -12,11 +12,12 @@ using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX.Credito
 {
-    public class FrmCRConsultaCreditosDB
+    public partial class FrmCRConsultaCreditosDB
     {
         private readonly IConfiguration _config;
         private readonly MProGrxMain _mProGrx_Main;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly MAfilicacionDB _mAfilicacionDB;
         private const string FormatoFechaIso = "yyyy-MM-dd";
         private const string MensajeOperacionRealizadaCorrectamente = "Operación realizada correctamente";
 
@@ -25,6 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mProGrx_Main = new MProGrxMain(_config);
             _Security_MainDB = new MSecurityMainDb(_config);
+            _mAfilicacionDB = new MAfilicacionDB(_config);
         }
 
         /// <summary>
@@ -161,6 +163,40 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.ErrorResponse(result.Description ?? "Error al registrar nota del socio.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Registra el bloqueo o desbloqueo de nuevos créditos para una persona.
+        /// </summary>
+        public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool bloqueo,
+            string nota,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@Cedula", (cedula ?? string.Empty).Trim());
+                parameters.Add("@Indicador", 19);
+                parameters.Add("@Valor", bloqueo ? 1 : 0);
+                parameters.Add("@Usuario", (usuario ?? string.Empty).Trim());
+                parameters.Add("@Nota", (nota ?? string.Empty).Trim());
+
+                connection.Execute(
+                    "spAFI_Persona_Indicadores",
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+
+                return true;
+            });
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al registrar el bloqueo de créditos.",
+                    result.Code.GetValueOrDefault(-1));
+        }
+
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             var result = DbHelper.ExecuteSingleQuery<decimal>(
@@ -175,980 +211,17 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar saldo a favor.", result.Code.GetValueOrDefault(-1), 0m);
         }
 
-        #region Créditos
 
-        /// <summary>
-        /// Método para consultar Activos y Cancelados
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="sheetName"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrdCreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)
-        {
-            return EjecutarStoredProcedureList<CrConsultaCrdCreditosData>(
-                CodEmpresa,
-                "spSys_Consulta_Integrada_Creditos",
-                new { Cedula = cedula, Estado = sheetName });
-        }
 
-        /// <summary>
-        /// Consulta tramite credito
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="sheetName"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrdSolicitudData>> CR_ConsultaCrd_Tramite_Obtener(int CodEmpresa, string cedula, string sheetName)
-        {
-            return EjecutarStoredProcedureList<CrConsultaCrdSolicitudData>(
-                CodEmpresa,
-                "spSIFEstadoSolicitud",
-                new { Cedula = cedula });
-        }
 
-        /// <summary>
-        /// Consulta tramite credito
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCreditosData>> CR_ConsultaCrd_Tramite_Obtener(int CodEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<CrConsultaCreditosData>(
-                CodEmpresa,
-                "spSIFEstadoSolicitud",
-                new { Cedula = cedula });
-        }
 
-        /// <summary>
-        /// Obtiene Créditos en PreAnalisis
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrdPreanalisisData>> CR_ConsultaCrd_PreAnalisis_Obtener(int CodEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<CrConsultaCrdPreanalisisData>(
-                CodEmpresa,
-                "spSIFEstadoPreAnalisis",
-                new { Cedula = cedula });
-        }
 
-        /// <summary>
-        /// Obtiene Créditos en Incobrable
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrdIncobrableData>> CR_ConsultaCrd_Incobrable_Obtener(int CodEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<CrConsultaCrdIncobrableData>(
-                CodEmpresa,
-                "spSIFEstadoIncobrable",
-                new { Cedula = cedula });
-        }
 
-        #endregion
 
-        #region Cobros
 
-        /// <summary>
-        /// Obtiene los cobros de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaCobroDto>> CR_ConsultaCobros_Obtener(int codEmpresa, string cedula)
-        {
-            return DbHelper.ExecuteListQuery<CrConsultaCobroDto>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT 
-                    S.*, 
-                    ISNULL(G.descripcion, '') AS Gestion,
-                    ISNULL(C.descripcion, '') AS Causa,
-                    ISNULL(A.descripcion, '') AS Arreglo
-                FROM CBR_Seguimiento S
-                LEFT JOIN cbr_gestiones G 
-                    ON S.cod_gestion = G.cod_gestion
-                LEFT JOIN CBR_CAUSAS_MOROSIDAD C 
-                    ON S.cod_causa = C.cod_causa
-                LEFT JOIN CBR_TIPOS_ARREGLOS A 
-                    ON S.cod_arreglo = A.cod_arreglo
-                WHERE S.cedula = @Cedula
-                ORDER BY S.cod_seg DESC;",
-                new { Cedula = cedula });
-        }
 
-        /// <summary>
-        /// Consulta Asignacion de Oficina de Cobro
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaAsignacionCobroData>> CR_ConsultaAsignacion_Obtener(int codEmpresa, string cedula)
-        {
-            return DbHelper.ExecuteListQuery<CrConsultaAsignacionCobroData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT 
-                    usuario,
-                    cedula,
-                    fecha_asignacion,
-                    mantener,
-                    rebajo_doble,
-                    aplica_mora
-                FROM CBR_Asignacion_H
-                WHERE cedula = @Cedula
-                ORDER BY fecha_asignacion DESC;",
-                new { Cedula = cedula });
-        }
 
-        #endregion
 
-        #region Ahorros
-
-        /// <summary>
-        /// Consulta los movimientos de ahorro de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrConsultaContratosData>> CR_ContratosConsulta_Obtener(int codEmpresa, string cedula, string usuario)
-        {
-            return EjecutarStoredProcedureList<CrConsultaContratosData>(
-                codEmpresa,
-                "spFndContratosConsulta",
-                new { Cedula = cedula, Usuario = usuario });
-        }
-
-        /// <summary>
-        /// Consulta los movimientos de ahorro de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codOperadora"></param>
-        /// <param name="codPlan"></param>
-        /// <param name="codContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrContratosMovimientosData>> CR_Contratos_Movimientos_Obtener(int codEmpresa, int codOperadora, string codPlan, long codContrato)
-        {
-            return DbHelper.ExecuteListQuery<CrContratosMovimientosData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT 
-                    Det.fecha,
-                    Det.Fecha_Proceso,
-                    Det.Monto,
-                    ISNULL(Doc.Descripcion, '') AS DocDesc,
-                    Det.nCon,
-                    ISNULL(Con.Descripcion, '') AS ConDesc,
-                    Det.Usuario,
-                    Det.Detalle_01
-                FROM fnd_contratos_detalle AS Det
-                LEFT JOIN SIF_Documentos AS Doc 
-                    ON Det.Tcon = Doc.Tipo_Documento
-                LEFT JOIN SIF_Conceptos AS Con 
-                    ON Det.Cod_Concepto = Con.Cod_Concepto
-                WHERE Det.cod_operadora = @CodOperadora
-                  AND Det.cod_plan = @CodPlan
-                  AND Det.cod_contrato = @CodContrato
-                ORDER BY Det.Fecha DESC, Det.COD_fnd_detalle DESC;",
-                new
-                {
-                    CodOperadora = codOperadora,
-                    CodPlan = codPlan,
-                    CodContrato = codContrato
-                });
-        }
-
-        /// <summary>
-        /// Consulta los cupones de un contrato de ahorro
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codOperadora"></param>
-        /// <param name="codPlan"></param>
-        /// <param name="codContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrContratosCuponesData>> CR_Contratos_Cupones_Obtener(int codEmpresa, int codOperadora, string codPlan, long codContrato)
-        {
-            return DbHelper.ExecuteListQuery<CrContratosCuponesData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT 
-                    Cupon_Id,
-                    Fecha_Vence,
-                    Monto_Base,
-                    Tasa_Aplicada,
-                    Cupon_Monto,
-                    Rendimiento,
-                    Principal,
-                    Dias,
-                    Estado_Desc,
-                    Consec,
-                    ISR_PORC,
-                    ISR_MNT_GRAVABLE,
-                    ISR_MONTO,
-                    TOTAL_GIRAR,
-                    Tesoreria_Id,
-                    Tes_Documento,
-                    Bancos_Estado,
-                    IBAN
-                FROM vFnd_Contratos_Cupones
-                WHERE cod_operadora = @CodOperadora
-                  AND cod_plan = @CodPlan
-                  AND cod_contrato = @CodContrato
-                ORDER BY Fecha_Vence;",
-                new
-                {
-                    CodOperadora = codOperadora,
-                    CodPlan = codPlan,
-                    CodContrato = codContrato
-                });
-        }
-
-        /// <summary>
-        /// Consulta la bitacora de los contratos
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codOperadora"></param>
-        /// <param name="codPlan"></param>
-        /// <param name="codContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrContratosBitacoraData>> CR_Contratos_Bitacora_Obtener(int codEmpresa, int codOperadora, string codPlan, long codContrato)
-        {
-            return DbHelper.ExecuteListQuery<CrContratosBitacoraData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT 
-                    C.ID_BITACORA,
-                    C.COD_OPERADORA,
-                    C.COD_PLAN,
-                    C.COD_CONTRATO,
-                    C.USUARIO,
-                    C.FECHA,
-                    C.MOVIMIENTO,
-                    C.DETALLE,
-                    C.REVISADO_USUARIO,
-                    C.REVISADO_FECHA,
-                    S.cedula,
-                    S.nombre,
-                    M.Descripcion AS MovimientoDesc,
-                    CASE 
-                        WHEN C.revisado_fecha IS NULL THEN 0 
-                        ELSE 1 
-                    END AS Revisado
-                FROM fnd_contratos_cambios AS C
-                INNER JOIN fnd_contratos AS X 
-                    ON C.cod_operadora = X.cod_operadora
-                   AND C.cod_plan = X.cod_plan
-                   AND C.cod_contrato = X.cod_contrato
-                INNER JOIN Socios AS S 
-                    ON X.cedula = S.cedula
-                INNER JOIN US_MOVIMIENTOS_BE AS M 
-                    ON C.Movimiento = M.Movimiento
-                   AND M.modulo = 18
-                WHERE C.cod_operadora = @CodOperadora
-                  AND C.cod_plan = @CodPlan
-                  AND C.cod_contrato = @CodContrato
-                ORDER BY C.fecha DESC;",
-                new
-                {
-                    CodOperadora = codOperadora,
-                    CodPlan = codPlan,
-                    CodContrato = codContrato
-                });
-        }
-
-        /// <summary>
-        /// Consulta los cierres de contratos
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codOperadora"></param>
-        /// <param name="codPlan"></param>
-        /// <param name="codContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrContratosCierresData>> CR_Contratos_Cierres_Obtener(int codEmpresa, int codOperadora, string codPlan, long codContrato)
-        {
-            return DbHelper.ExecuteListQuery<CrContratosCierresData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT TOP 36
-                    A.Anio,
-                    A.Mes,
-                    A.Aportes,
-                    A.Rendimientos,
-                    (A.Aportes + A.Rendimientos) AS Total,
-                    A.Monto_Transito,
-                    A.Sobre_Giro,
-                    A.Rend_Corte,
-                    A.Ind_Deduccion,
-                    A.Tipo_Deduc,
-                    A.Porc_Deduc,
-                    A.Monto,
-                    A.Inversion,
-                    A.Cashback_Pts_Corte,
-                    A.Cashback_Pts_Otorgados,
-                    A.Cashback_Pts_Redimidos,
-                    A.Cod_Plan,
-                    A.Cod_Contrato
-                FROM FND_PER_CERRADOS AS A
-                WHERE A.Cod_Operadora = @CodOperadora
-                  AND A.Cod_Plan = @CodPlan
-                  AND A.Cod_Contrato = @CodContrato
-                ORDER BY A.Anio DESC, A.Mes DESC;",
-                new
-                {
-                    CodOperadora = codOperadora,
-                    CodPlan = codPlan,
-                    CodContrato = codContrato
-                });
-        }
-
-        /// <summary>
-        /// Obtiene si la sesion esta activa o no
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="identificacion"></param>
-        /// <returns></returns>
-        public ErrorDto<CajasSesionDto> Cajas_Sesion_ObtenerActiva(int codEmpresa, string usuario, string identificacion)
-        {
-            var result = DbHelper.ExecuteSingleQuery<CajasSesionDto>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"SELECT TOP 1 *
-                  FROM CAJAS_SESION
-                  WHERE cod_usuario = @Usuario
-                    AND estado = 1
-                    AND identificacion = @Identificacion",
-                null,
-                new { Usuario = usuario, Identificacion = identificacion });
-
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<CajasSesionDto>(result.Description ?? "Error al consultar sesión activa.", result.Code.GetValueOrDefault(-1), null!);
-            }
-
-            return result.Result is not null
-                ? DbHelper.CreateOkResponse(result.Result)
-                : DbHelper.CreateErrorResponse<CajasSesionDto>("No se encontró sesión activa.", -2, null!);
-        }
-
-
-        #endregion
-
-        #region Patrimonio
-
-        /// <summary>
-        /// Obtiene el patrimonio de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrPatrimonioData>> CR_Patrimonio_Obtener(int codEmpresa, string cedula, string tipo)
-        {
-            return DbHelper.ExecuteListQuery<CrPatrimonioData>(
-                CreatePortalDb(),
-                codEmpresa,
-                @"
-                SELECT TOP 30
-                    Ah.*,
-                    ISNULL(Doc.Descripcion, '') AS DocDesc,
-                    ISNULL(Con.Descripcion, '') AS ConDesc,
-                    CASE Ah.Tipo
-                        WHEN 'O' THEN 'Obrero'
-                        WHEN 'P' THEN 'Patronal'
-                        WHEN 'X' THEN 'AP.Custodia'
-                        WHEN 'C' THEN 'Capitalización'
-                        ELSE Ah.Tipo
-                    END AS Tipo
-                FROM Ahorro_Detallado Ah
-                LEFT JOIN SIF_Documentos Doc 
-                       ON Ah.Tcon = Doc.Tipo_Documento
-                LEFT JOIN SIF_Conceptos Con 
-                       ON Ah.cod_Concepto = Con.cod_Concepto
-                WHERE Ah.Cedula = @Cedula
-                  AND (@Tipo = 'T' OR Ah.Tipo = @Tipo)
-                ORDER BY Ah.Fecha DESC;",
-                new { Cedula = cedula, Tipo = tipo });
-        }
-
-        /// <summary>
-        /// Obtiene los periodos visibles para un socio
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ExcPeriodosVisiblesData>> EXC_Periodos_Visibles_Obtener(int codEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<ExcPeriodosVisiblesData>(
-                codEmpresa,
-                "spEXC_Periodos_Visibles",
-                new { Cedula = cedula });
-        }
-
-        #endregion
-
-        #region Beneficios
-
-        /// <summary>
-        /// Obtiene los beneficios de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<AfiBeneficiosConsultaData>> AFI_Beneficios_Consulta(int codEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<AfiBeneficiosConsultaData>(
-                codEmpresa,
-                "spAFI_Beneficios_Consulta",
-                new { Cedula = cedula });
-        }
-
-        #endregion
-
-        #region Renuncias
-        /// <summary>
-        /// Obtiene las renuncias en tránsito de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<AfiRenunciaTransitoData>> AFI_ConsultaRenunciaTransito(int codEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<AfiRenunciaTransitoData>(
-                codEmpresa,
-                "spAFI_ConsultaRenunciaTransito",
-                new { Cedula = cedula });
-        }
-
-        /// <summary>
-        /// Obtiene las renuncias de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<AfiRenunciasConsultaData>> AFI_Renuncias_Consulta(int codEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<AfiRenunciasConsultaData>(
-                codEmpresa,
-                "spAFI_Renuncias_Consulta",
-                new { Cedula = cedula });
-        }
-
-        #endregion
-
-        #region Mensajes
-        /// <summary>
-        /// Obtiene los mensajes de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<AfiSociosMensajesData>> AFI_Socios_Mensajes_Obtener(int codEmpresa, string cedula, string tipo)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<AfiSociosMensajesData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<AfiSociosMensajesData>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
-                        SELECT *
-                        FROM socios_mensajes
-                        WHERE cedula = @Cedula
-                          AND DATEDIFF(DAY, dbo.MyGetdate(), vencimiento) >= 0
-                          AND Tipo = @Tipo
-                          AND ISNULL(Resolucion, 'P') = 'P'
-                        ORDER BY Fecha DESC;
-                    ";
-
-                response.Result = connection
-                    .Query<AfiSociosMensajesData>(query, new
-                    {
-                        Cedula = cedula,
-                        Tipo = tipo
-                    })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-
-            return response;
-        }
-
-        public ErrorDto AFI_Socios_Mensajes_Guardar(int codEmpresa, AfiSociosMensajesData data)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                //Valida si existe
-                var query = @"SELECT COUNT('X') FROM socios_mensajes where cedula = @cedula 
-                         and vencimiento = @fecha 
-                         and substring(mensaje,1,15) = substring(@mensaje,1,15) 
-                         and usuario = @usuario 
-                         and Tipo = 'G'
-                         and resolucion = 'P'";
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-                string vfechaReg = MProGrXAuxiliarDB.validaFechaGlobal(data.fecha, FormatoFechaIso) ?? string.Empty;
-
-                var existe = connection.Query<int>(query, new
-                {
-                    cedula = data.cedula,
-                    usuario = data.usuario,
-                    fecha = vfecha,
-                    mensaje = data.mensaje
-                }).FirstOrDefault();
-
-                if (existe > 0)
-                {
-                    query = @"
-                        update socios_mensajes set mensaje = @mensaje, vencimiento = @fecha_vence
-                           where cedula = @cedula 
-                             and fecha = @fecha 
-                             and substring(mensaje,1,15) = substring(@ mensaje,1,15) 
-                             and usuario = @usuario 
-                             and Tipo = 'G'
-                             and resolucion = 'P'";
-                    connection.ExecuteAsync(query, new
-                    {
-                        cedula = data.cedula,
-                        usuario = data.usuario,
-                        fecha = vfechaReg,
-                        fecha_vence = vfecha,
-                        mensaje = data.mensaje
-                    });
-                }
-                else
-                {
-                    query = @"
-                        insert socios_mensajes(fecha,cedula,usuario,vencimiento,mensaje,Tipo) 
-                        values(dbo.MyGetdate(),@cedula,@usuario,@fecha_vence,@mensaje,'G')";
-                    connection.ExecuteAsync(query, new
-                    {
-                        cedula = data.cedula,
-                        usuario = data.usuario,
-                        fecha_vence = vfecha,
-                        mensaje = data.mensaje
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        public ErrorDto AFI_Socios_Mensajes_Elimina(int codEmpresa, AfiSociosMensajesData data)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
-                       delete from socios_mensajes 
-                       where cedula = @cedula 
-                         and vencimiento = @fecha 
-                         and substring(mensaje,1,15) = substring(@mensaje,1,15) 
-                         and usuario = @usuario 
-                         and Tipo = 'G'
-                         and resolucion = 'P'
-                    ";
-
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-
-                connection.ExecuteAsync(query, new
-                {
-                    cedula = data.cedula,
-                    usuario = data.usuario,
-                    fecha = vfecha,
-                    mensaje = data.mensaje
-                });
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        public ErrorDto AFI_Socios_Mensajes_Resolucion(int codEmpresa, string usuario, AfiSociosMensajesData data)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
-                       update socios_mensajes set Resolucion = 'R', Resolucion_Fecha = dbo.MyGetdate()
-                          , Resolucion_Usuario = @usuario
-                           where cedula = @cedula 
-                           and usuario = @userMsj
-                           and vencimiento = @fecha_vence
-                           and substring(mensaje,1,15) = substring(@mensaje,1,15)";
-
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-
-                connection.ExecuteAsync(query, new
-                {
-                    cedula = data.cedula,
-                    usuario = usuario,
-                    userMsj = data.usuario,
-                    fecha_vence = vfecha,
-                    mensaje = data.mensaje
-                });
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        #endregion
-
-        #region Correo
-
-        /// <summary>
-        /// Obtiene los correos de una persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<List<SysMailLoadData>> Sys_Mail_Load(int codEmpresa, string cedula)
-        {
-            return EjecutarStoredProcedureList<SysMailLoadData>(
-                codEmpresa,
-                "spSys_Mail_Load",
-                new { Cedula = cedula });
-        }
-
-
-        #endregion
-
-        #region Info
-
-        /// <summary>
-        /// Obtiene la información general de una persona
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<CRConsultaInfoDto> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var parametros = new { Cedula = cedula, Usuario = usuario };
-                using var multi = connection.QueryMultiple(
-                    "spCR_InfoPersona_Consulta",
-                    param: parametros,
-                    commandType: CommandType.StoredProcedure);
-
-                Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-                return new CRConsultaInfoDto
-                {
-                    Telefonos = multi.Read<AfTelefonoDto>().ToList(),
-                    CuentasBancarias = multi.Read<AfCuentaBancariaDto>().ToList(),
-                    Ingresos = multi.Read<AfPersonaIngresoDto>().ToList(),
-                    Liquidaciones = multi.Read<CRliquidacionDto>().ToList(),
-                    Beneficiarios = multi.Read<AfPersonaBeneficiarioDto>().ToList(),
-                    Canales = multi.Read<AfCanalesDto>().ToList(),
-                    Bienes = multi.Read<AfBienDto>().ToList(),
-                    Escolaridad = multi.Read<AfEscolaridadDto>().ToList(),
-                    Contacto = multi.Read<AFPersonaDetalleDto>().ToList(),
-                    EstadoLaboral = multi.Read<AFPersonaEstadoLaboralDto>().ToList(),
-                    BenePolizas = multi.Read<AFPersonaBenePolizaDto>().ToList(),
-                    Preferencias = multi.Read<CrPreferenciaDto>().ToList()
-                };
-            });
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new CRConsultaInfoDto())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar información de la persona.", result.Code.GetValueOrDefault(-1), new CRConsultaInfoDto());
-        }
-
-        public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string req)
-        {
-            AfCanalesDto request = JsonConvert.DeserializeObject<AfCanalesDto>(req) ?? new AfCanalesDto();
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var p = new DynamicParameters();
-                p.Add("@Cedula", request.cedula);
-                p.Add("@Canal", request.canal_tipo.ToString("D2"));
-                p.Add("@TipoMov", request.asignado ? "A" : "E");
-                p.Add("@Usuario", request.registro_usuario);
-                connection.Execute("dbo.spAFI_Persona_Canales_Registra", p, commandType: CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse(MensajeOperacionRealizadaCorrectamente)
-                : DbHelper.ErrorResponse(result.Description ?? "Error al registrar canales de la persona.", result.Code.GetValueOrDefault(-1));
-        }
-
-
-        /// <summary>
-        /// Registra bienes de la persona
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public ErrorDto AF_Persona_Bienes_Registra(int CodEmpresa, string req)
-        {
-            AfPersonaBienesRegistraDto request = JsonConvert.DeserializeObject<AfPersonaBienesRegistraDto>(req) ?? new AfPersonaBienesRegistraDto();
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var p = new DynamicParameters();
-                p.Add("@Cedula", request.Cedula);
-                p.Add("@Codigo", FormatearCodigoCompuesto(request.CodBien));
-                p.Add("@TipoMov", request.Asignado ? "A" : "E");
-                p.Add("@Usuario", request.Usuario);
-                connection.Execute("dbo.spAFI_Persona_Bienes_Registra", p, commandType: CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse(MensajeOperacionRealizadaCorrectamente)
-                : DbHelper.ErrorResponse(result.Description ?? "Error al registrar bienes de la persona.", result.Code.GetValueOrDefault(-1));
-        }
-
-
-        /// <summary>
-        /// Registra escolaridad de la persona
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
-        {
-            AfPersonaEscolaridadRegistraDto req = JsonConvert.DeserializeObject<AfPersonaEscolaridadRegistraDto>(request) ?? new AfPersonaEscolaridadRegistraDto();
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var p = new DynamicParameters();
-                p.Add("@Cedula", req.Cedula);
-                p.Add("@Codigo", FormatearCodigoCompuesto(req.CodEscolaridad));
-                p.Add("@TipoMov", req.Asignado ? "A" : "E");
-                p.Add("@Usuario", req.Usuario);
-                connection.Execute("dbo.spAFI_Persona_Escolaridad_Registra", p, commandType: CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse(MensajeOperacionRealizadaCorrectamente)
-                : DbHelper.ErrorResponse(result.Description ?? "Error al registrar escolaridad de la persona.", result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Registra la preferencia de una persona
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto AF_Persona_Preferencia_Registra(int CodEmpresa, string request)
-        {
-            CrPreferenciaDto req = JsonConvert.DeserializeObject<CrPreferenciaDto>(request) ?? new CrPreferenciaDto();
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var p = new DynamicParameters();
-                p.Add("@Cedula", req.Cedula);
-                p.Add("@Codigo", FormatearCodigoCompuesto(req.CodPreferencia.ToString()));
-                p.Add("@TipoMov", req.asignado ? "A" : "E");
-                p.Add("@Usuario", req.Usuario);
-                connection.Execute("dbo.spAFI_Persona_Preferencias_Registra", p, commandType: CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse(MensajeOperacionRealizadaCorrectamente)
-                : DbHelper.ErrorResponse(result.Description ?? "Error al registrar preferencia de la persona.", result.Code.GetValueOrDefault(-1));
-        }
-
-        #endregion
-
-        #region Estado
-
-        public ErrorDto<EmpresaEnlaceResultDto> ConsultaVersionEmpresa(int codEmpresa)
-        {
-            var lista = EmpresaEnlaceObtener(codEmpresa);
-            return lista.Count > 0
-                ? DbHelper.CreateOkResponse(lista[0])
-                : DbHelper.CreateErrorResponse("No se encontró información de la empresa.", -1, new EmpresaEnlaceResultDto());
-        }
-
-        public List<EmpresaEnlaceResultDto> EmpresaEnlaceObtener(int CodEmpresa)
-        {
-            var result = DbHelper.ExecuteListQuery<EmpresaEnlaceResultDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"select 
-                        cod_empresa_enlace,
-                        Nombre,
-                        SysCrdPlanPago,
-                        SysDocVersion,
-                        SysTesVersion, 
-                        SYS_CCSS_IND,
-                        ec_visible_patrimonio,
-                        ec_visible_fondos,
-                        ec_visible_creditos,
-                        ec_visible_fianzas,
-                        estadoCuenta
-                  from dbo.sif_empresa");
-
-            return result.Code == 0 ? result.Result ?? new List<EmpresaEnlaceResultDto>() : new List<EmpresaEnlaceResultDto>();
-        }
-
-        #endregion
-
-        #region @
-
-        /// <summary>
-        /// Método que obtiene el correo y los periodos de cierre disponibles para un socio
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        public ErrorDto<SocioCierresData> Email_SocioPeriodos_Obtener(int CodEmpresa, string cedula)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                string email = connection.QueryFirstOrDefault<string>(
-                    "select rtrim(isnull(AF_Email,'')) as Email from socios where cedula = @cedula",
-                    new { cedula }) ?? string.Empty;
-
-                var periodosList = connection.Query<SociosPeriodoData>(
-                    "spSys_Periodos_Cierre_Consulta",
-                    commandType: CommandType.StoredProcedure).ToList();
-
-                return new SocioCierresData
-                {
-                    email = email,
-                    periodos = periodosList
-                        .Select(p => new DropDownListaGenericaModel
-                        {
-                            item = p?.itmx?.ToString() ?? string.Empty,
-                            descripcion = p?.idx?.ToString() ?? string.Empty
-                        })
-                        .ToList()
-                };
-            });
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new SocioCierresData())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar correo y periodos del socio.", result.Code.GetValueOrDefault(-1), new SocioCierresData());
-        }
-
-        public ErrorDto Email_SocioEstadoCuenta_Enviar(int CodEmpresa, string usuario, string cedula, string email, string periodo, string tipo)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                if (tipo == "T")
-                {
-                    connection.Query(
-                        "spuProGrX_MOBILE_CUENTAS_ENVIAESTADO",
-                        new { cedula },
-                        commandType: CommandType.StoredProcedure);
-
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = usuario,
-                        DetalleMovimiento = $"Estado de Cuenta: [email]: {email}",
-                        Movimiento = "Aplica - WEB",
-                        Modulo = 10
-                    });
-
-                    return DbHelper.OkResponse("Estado de Cuenta enviado al Correo Electrónico registrado de la persona!");
-                }
-
-                DateTime? vCorte = string.IsNullOrEmpty(periodo) ? null : DateTime.Parse(periodo, System.Globalization.CultureInfo.InvariantCulture);
-                return _mProGrx_Main.sbEstadoCuenta_Email_Corte(CodEmpresa, usuario, cedula, email, vCorte);
-            });
-
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? "Error al enviar estado de cuenta.", result.Code.GetValueOrDefault(-1));
-        }
-
-
-
-        #endregion
-
-        #region Aut/C.I
-
-        /// <summary>
-        /// Registra consentimiento de la persona
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto CR_RegistraConsentimiento(int codEmpresa, string cedula, string usuario)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Cedula", cedula);
-                parameters.Add("@Indicador", 29);
-                parameters.Add("@Valor", 1);
-                parameters.Add("@Usuario", usuario);
-
-                connection.Execute("spAFI_Persona_Indicadores", parameters, commandType: CommandType.StoredProcedure);
-                return true;
-            });
-
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al registrar consentimiento.", result.Code.GetValueOrDefault(-1));
-        }
-
-
-        #endregion
 
         private void PrepararConsultaIntegrada(SqlConnection connection, int codEmpresa, string cedula, CrConsultaCrdData persona)
         {
@@ -1161,7 +234,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             if (persona.estadoactual == "S")
             {
                 persona.membresiaCaption = "Membresía: " + MCredito.fxMembresia(vFechaIng);
-                persona.membresiaToolTip = "[Ing.:" + vFechaIng.ToString("g");
+                persona.membresiaToolTip = "[Ing.:" + vFechaIng.ToString("dd/MM/yyyy") + "]";
 
                 var renuncias = connection.QueryFirstOrDefault<CrConsultaCrdData>(
                     "spAFI_ConsultaRenunciaTransito",
@@ -1175,11 +248,17 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 }
             }
 
-            persona.clasificacionCaption = $"Clasificación Crediticia : [{persona.clasificacion}]";
+            persona.estadox = string.IsNullOrWhiteSpace(persona.estadox)
+                ? persona.estadoactual == "S" ? "Asociado" : "No Asociado"
+                : persona.estadox.Trim();
+            persona.institucionx = string.IsNullOrWhiteSpace(persona.institucionx)
+                ? "Empresa/Deductora?"
+                : persona.institucionx.Trim();
+            persona.clasificacionCaption = $"Clasificación Crediticia : [{(string.IsNullOrWhiteSpace(persona.clasificacion) ? "?" : persona.clasificacion.Trim())}]";
             persona.salarioTrasladaCaption = persona.salario_traslada == 1 ? "Traslada Salario: Sí" : "Sin Tramite (Traslado Salario)";
             persona.patrimonio = persona.ahorro + persona.aporte + persona.custodia + persona.capitaliza;
-            persona.tarjetaCaption = $"Tarjeta: {persona.tarjeta_numero}";
-            persona.ibanCaption = $"IBAN: {persona.iban}";
+            persona.tarjetaCaption = $"Tarjeta: {(string.IsNullOrWhiteSpace(persona.tarjeta_numero) ? "No" : persona.tarjeta_numero.Trim())}";
+            persona.ibanCaption = $"IBAN: {(string.IsNullOrWhiteSpace(persona.iban) ? "No" : persona.iban.Trim())}";
             persona.estadoMensajesCaption = persona.indmensajes == 0 ? "Mensajes ?" : $"Mensajes ({persona.indmensajes})";
             persona.estadoCobrosCaption = persona.indcobro == 0 ? "Sin Gestión de Cobro" : $"Gestiones de Cobro ({persona.indcobro})";
             persona.estadoAdvertenciaCaption = persona.indadvertencias == 0 ? "Sin Advertencias" : $"Advertencias ({persona.indadvertencias})";
@@ -1204,16 +283,24 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             CargarMensajesPersona(connection, cedula, persona);
             persona.pat_tipoSaldo = "Saldos en Garantía";
 
-            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "C");
-            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>()).Where(c => c.procesoCod == "J"))
+            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "A");
+            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>())
+                .Where(c => c.procesoCod == "J" || (c.moraCuota ?? 0) > 0))
             {
                 persona.vMora = true;
-                persona.vMoraCaption = $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}";
+                persona.vMoraCaption = credito.procesoCod == "J"
+                    ? $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}"
+                    : $"Morosidad: {credito.moraCuota ?? 0} cuota(s)";
+                break;
             }
         }
 
         private static void CargarMensajesPersona(SqlConnection connection, string cedula, CrConsultaCrdData persona)
         {
+            persona.indmensajes = connection.QuerySingleOrDefault<int?>(
+                "SELECT dbo.fxSIFMensajesNumero(@cedula)",
+                new { cedula }) ?? 0;
+
             var mensajes = connection.QueryFirstOrDefault<CrConsultaCrdData>(
                 "spSIFPersonaMensajes",
                 new { cedula },
@@ -1232,7 +319,52 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             persona.advertenciasCaption = persona.advertencias > 0 ? $"Advertencias ({persona.advertencias})" : "Msj Advertencias?";
             persona.generalesCaption = persona.generales > 0 ? $"General ({persona.generales})" : "Msj Generales?";
             persona.morosidadCaption = persona.morosidad > 0 ? $"Morosidad ({persona.morosidad})" : "Msj Morosidad?";
-            persona.bloqueosCaption = persona.bloqueos > 0 ? $"Bloqueos ({persona.bloqueo})" : "Msj Bloqueos?";
+            persona.bloqueosCaption = persona.bloqueos > 0 ? $"Bloqueos ({persona.bloqueos})" : "Msj Bloqueos?";
+            persona.estadoMensajesCaption = persona.indmensajes > 0
+                ? $"Mensajes ({persona.indmensajes})"
+                : "Mensajes ?";
+        }
+
+        /// <summary>
+        /// Calcula el patrimonio disponible y los saldos asociados a un tipo de garantía.
+        /// </summary>
+        public ErrorDto<CrPatrimonioGarantiaData?> CR_Patrimonio_Garantia_Obtener(
+            int codEmpresa,
+            string cedula,
+            string garantia)
+        {
+            return DbHelper.ExecuteSingleQuery<CrPatrimonioGarantiaData>(
+                CreatePortalDb(),
+                codEmpresa,
+                @"SELECT
+                    dbo.fxCrdGarantiaPatMnt(S.Cedula, @Garantia, 'M') AS pat_garantia_total,
+                    dbo.fxCrdGarantiaPatMnt(S.Cedula, @Garantia, 'S')
+                      + dbo.fxCrdGarantiaPatMnt_SldTramite(S.Cedula, 'A') AS pat_garantia_saldos
+                  FROM Socios S
+                  WHERE S.Cedula = @Cedula;",
+                null,
+                new { Cedula = cedula, Garantia = garantia });
+        }
+
+        private static int SiguienteProceso(int proceso)
+        {
+            var anio = proceso / 100;
+            var mes = proceso % 100;
+            return mes >= 12
+                ? (anio + 1) * 100 + 1
+                : anio * 100 + mes + 1;
+        }
+
+        private sealed class CrConsultaCancelacionLegacyRow
+        {
+            public decimal saldo { get; set; }
+            public decimal interesv { get; set; }
+            public int fecUlt { get; set; }
+            public decimal intMora { get; set; }
+            public decimal cargos { get; set; }
+            public int moraCuota { get; set; }
+            public decimal principalAtrasado { get; set; }
+            public int priDeduc { get; set; }
         }
 
         private ErrorDto<List<T>> EjecutarStoredProcedureList<T>(int codEmpresa, string storedProcedure, object parameters)
@@ -1261,3 +393,4 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         private PortalDB CreatePortalDb() => new(_config);
     }
 }
+

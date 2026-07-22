@@ -3,6 +3,64 @@ using System.Text.Json.Serialization;
 
 namespace Galileo.Models.ProGrX.Credito
 {
+    public class CrConsultaPlanillaAbonoDistInicialData
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public int cod_institucion { get; set; }
+        public DateTime fecha { get; set; }
+        public int proceso { get; set; }
+        public List<DropDownListaGenericaModel> deductoras { get; set; } = new();
+    }
+
+    public class CrConsultaPlanillaAbonoDistUltimoData
+    {
+        public decimal monto { get; set; }
+        public int proceso { get; set; }
+    }
+
+    public sealed class CrConsultaCreditoContextoData
+    {
+        public DateTime fechaServidor { get; set; }
+        public int sysPlanPagos { get; set; }
+    }
+
+    public sealed class CrConsultaCancelacionData
+    {
+        public decimal intcor { get; set; }
+        public decimal intmor { get; set; }
+        public decimal cargos { get; set; }
+        public decimal principal { get; set; }
+        public decimal cargoanticipo { get; set; }
+        public decimal cuota { get; set; }
+        public decimal poliza { get; set; }
+        public decimal iva { get; set; }
+        public decimal intereses => intcor + intmor;
+        public decimal total =>
+            principal + intcor + intmor + cargos + cargoanticipo + poliza + iva;
+    }
+
+    public class CrConsultaPlanillaAbonoDistDetalleData
+    {
+        public long operacion { get; set; }
+        public string linea { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+        public int proceso { get; set; }
+        public decimal abIntCor { get; set; }
+        public decimal abIntMor { get; set; }
+        public decimal abCargo { get; set; }
+        public decimal abAmortiza { get; set; }
+        public decimal intCor { get; set; }
+        public decimal intMor { get; set; }
+        public decimal cargo { get; set; }
+        public decimal amortiza { get; set; }
+        public int orden { get; set; }
+        public decimal total => abIntCor + abIntMor + abCargo + abAmortiza;
+        public decimal compromisoPendiente => tipo == "E"
+            ? abAmortiza * -1
+            : (intCor + intMor + cargo + amortiza) - total;
+    }
+
     public class CrConsultaCrdSociosData
     {
         public string? cedula { get; set; }
@@ -288,6 +346,8 @@ namespace Galileo.Models.ProGrX.Credito
 
         public string? tiempo_resolucion { get; set; }
 
+        public DateTime? arreglo_vence { get; set; }
+
     }
 
     public class CrConsultaAsignacionCobroData
@@ -309,6 +369,7 @@ namespace Galileo.Models.ProGrX.Credito
         public string? cod_vendedor { get; set; }
         public string? estado { get; set; }
         public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public int? plazo { get; set; }
         public decimal? monto { get; set; }
         public string? moneda { get; set; }
@@ -337,7 +398,12 @@ namespace Galileo.Models.ProGrX.Credito
         public decimal? rendimiento { get; set; }
         public decimal? total { get; set; }
         public string? plan_desc { get; set; }
+        public decimal? tasa_referencia { get; set; }
+        public string? estado_desc { get; set; }
+        public DateTime? ultimo_mov { get; set; }
         public string? operadora_desc { get; set; }
+        public string? iban { get; set; }
+        public int? valida_inversion { get; set; }
     }
 
     public class CrContratosMovimientosData
@@ -432,6 +498,12 @@ namespace Galileo.Models.ProGrX.Credito
         public string? cod_concepto { get; set; }
         public string? docdesc { get; set; }
         public string? condesc { get; set; }
+    }
+
+    public class CrPatrimonioGarantiaData
+    {
+        public decimal pat_garantia_total { get; set; }
+        public decimal pat_garantia_saldos { get; set; }
     }
 
     public class ExcPeriodosVisiblesData
@@ -575,6 +647,9 @@ namespace Galileo.Models.ProGrX.Credito
         public string? resolucion { get; set; }
         public DateTime? resolucion_fecha { get; set; }
         public string? resolucion_usuario { get; set; }
+        public DateTime? vencimiento_original { get; set; }
+        public string? usuario_original { get; set; }
+        public string? mensaje_original { get; set; }
     }
 
     public class SysMailLoadData
