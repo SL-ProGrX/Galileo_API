@@ -1,8 +1,11 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo.Models.TES;
 using Newtonsoft.Json;
+using System.Data;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -68,13 +71,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (filtro.tipo_autorizacion == 0)
                 {
                     query += " and T.fecha_autorizacion is not null and T.monto between @MontoInicio and @MontoFin ";
-                    if (!string.IsNullOrWhiteSpace(filtro.token))
-                        query += " and T.id_token = @Token ";
+                    
                 }
                 else
                 {
                     query += @" and T.FIRMAS_AUTORIZA_FECHA is not null and T.monto > B.firmas_hasta";
                 }
+
+                if (!string.IsNullOrWhiteSpace(filtro.token))
+                {
+                    query += " and T.id_token = @Token ";
+                }
+                    
 
                 if (!string.IsNullOrWhiteSpace(filtro.detalle))
                 {
@@ -109,69 +117,126 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        /// <summary>
-        /// Aplicar la des-autorización de las solicitudes seleccionadas
+        // <summary>
+        /// Aplica la desautorización de las solicitudes seleccionadas.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="clave"></param>
-        /// <param name="usuario"></param>
-        /// <param name="tipo_autorizacion"></param>
-        /// <param name="solicitudesLista"></param>
-        /// <returns></returns>
-        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, string solicitudesLista)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="clave">Clave del autorizador.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <param name="tipo_autorizacion">
+        /// Tipo de autorización: 0 para emisión y 1 para firma electrónica.
+        /// </param>
+        /// <param name="solicitudesLista">Solicitudes serializadas en JSON.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto TES_DesAutorizaciones_Aplicar(
+            int CodEmpresa,
+            string clave,
+            string usuario,
+            int tipo_autorizacion,
+            List<int> solicitudesLista)
         {
-            List<int> lista = JsonConvert.DeserializeObject<List<int>>(solicitudesLista) ?? new List<int>();
+            
+            if (solicitudesLista.Count == 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "Debe seleccionar al menos una solicitud.");
+            }
+
+            if (tipo_autorizacion is not 0 and not 1)
+            {
+                return DbHelper.ErrorResponse(
+                    "El tipo de autorización no es válido.");
+            }
+
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                var query = "";
-                var querySP = "";
-                var queryAuth = FrmTesAutorizacionSql.Query_Autorizaciones;
-                var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionData>(queryAuth, new
-                {
-                    clave,
-                    usuario
-                });
+                var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionData>(
+                    FrmTesAutorizacionSql.Query_Autorizaciones,
+                    new
+                    {
+                        clave,
+                        usuario
+                    });
 
                 if (autorizacion == null)
                 {
-                    return DbHelper.ErrorResponse("Contrase&ntilde;a Incorrecta, o no Existe Nivel de Autorizaci&oacute;n");
+                    return DbHelper.ErrorResponse(
+                        "Contraseña incorrecta o no existe nivel de autorización.");
                 }
 
-                foreach (var solicitud in lista)
+                string estado = tipo_autorizacion == 0 ? "D" : "X";
+
+                foreach (int[] lote in solicitudesLista.Chunk(1000))
                 {
-                    string descBitacora = "";
-                    //Valida tipo de autorizacion (Emision Documento o Firma)
-                    if (tipo_autorizacion == 0)
-                    {
-                        //Emision
-                        query = "Update Tes_Transacciones set Autoriza='N', Fecha_Autorizacion = Null, User_Autoriza = Null Where Nsolicitud = @nsolicitud ";
-
-                        descBitacora = "Des-Autorización de Tipo Emisión de Documentos";
-                    }
-                    else
-                    {
-                        //Firmas
-                        query = "Update Tes_Transacciones set FIRMAS_AUTORIZA_FECHA = Null, FIRMAS_AUTORIZA_USUARIO = Null Where Nsolicitud = @nsolicitud ";
-
-                        descBitacora = "Des-Autorización de Tipo Firmas Electrónicas";
-                    }
-
-                    querySP = "exec spTesBitacora @nsolicitud,'03',@detalle,@usuario";
-
-                    conn.Execute(query, new { usuario, nsolicitud = solicitud });
-                    conn.Execute(querySP, new { usuario, nsolicitud = solicitud , detalle = descBitacora });
+                    TES_DesAutorizaciones_InsertarLote(
+                        conn,
+                        lote,
+                        estado,
+                        usuario);
                 }
 
-                return DbHelper.OkResponse("Des-autorizacion procesada correctamente!");
+                conn.Execute(
+                    "EXEC spTes_Mass_Aplica @Usuario, @Estado",
+                    new
+                    {
+                        Usuario = usuario,
+                        Estado = estado
+                    },
+                    commandTimeout:0);
+
+                return DbHelper.OkResponse(
+                    "Desautorización procesada correctamente.");
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-    }
-}   
 
-                
+        /// <summary>
+        /// Inserta un lote de solicitudes para el proceso de desautorización masiva.
+        /// </summary>
+        private static void TES_DesAutorizaciones_InsertarLote(
+            IDbConnection conn,
+            IReadOnlyList<int> solicitudes,
+            string estado,
+            string usuario)
+        {
+            try
+            {
+                var sql = new StringBuilder(
+                "INSERT INTO TES_MASS_AUTORIZACION " +
+                "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
+
+                var parametros = new DynamicParameters();
+
+                parametros.Add("Estado", estado);
+                parametros.Add("Usuario", usuario);
+
+                for (int indice = 0; indice < solicitudes.Count; indice++)
+                {
+                    if (indice > 0)
+                    {
+                        sql.Append(',');
+                    }
+
+                    string nombreParametro = $"Solicitud{indice}";
+
+                    sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
+                    parametros.Add(nombreParametro, solicitudes[indice]);
+                }
+
+                conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            
+        }
+    }
+}
+
+
