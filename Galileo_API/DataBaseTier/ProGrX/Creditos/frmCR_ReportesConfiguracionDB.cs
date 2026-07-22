@@ -155,11 +155,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateErrorResponse<CrReportesConfigGruposLista>(ex.Message);
             }
-            catch (Exception)
-            {
-                return DbHelper.CreateErrorResponse<CrReportesConfigGruposLista>(
-                    "Ocurrió un error inesperado al obtener la configuración de reportes.");
-            }
         }
 
         /// <summary>
@@ -412,7 +407,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var lista = QueryConfigMiembros(conn, codGrupo, filtros, out total);
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrReportesConfigMiembroData>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrReportesConfigMiembroData>>(ex.Message);
             }
@@ -545,7 +544,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Miembro asignado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -576,7 +575,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Miembro desasignado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -609,7 +608,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     lista = lista
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CrReportesConfigReportesLista>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<CrReportesConfigReportesLista>(ex.Message);
             }
@@ -633,7 +636,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var lista = QueryConfigReportes(conn, filtros, out total);
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrReportesConfigReporteData>>(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrReportesConfigReporteData>>(ex.Message);
             }
@@ -680,7 +687,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.OkResponse(
                     "Lista de informes actualizada correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -799,7 +806,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Informe registrado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -830,7 +837,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Informe actualizado correctamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
