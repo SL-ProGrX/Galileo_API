@@ -1,8 +1,10 @@
 using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -247,14 +249,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
 
-            var solicitudes = DbHelper.DeserializeOrNew<List<int>>(nsolicitud.solicitudesLista);
+            if (nsolicitud.solicitudesLista!.Count == 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "Debe seleccionar al menos una solicitud.");
+            }
+
+
+
             try
             {
                 if (!UsuarioAutorizado(conn, nsolicitud))
                     return DbHelper.ErrorResponse("Contrase&ntilde;a Incorrecta, o no Existe Nivel de Autorizaci&oacute;n", -2);
 
 
-                var resultado = ProcesarSolicitudes(conn, nsolicitud, solicitudes);
+                var resultado = ProcesarSolicitudes(conn, nsolicitud, nsolicitud.solicitudesLista);
 
                 var mensaje = resultado.codigo == 0
                 ? "Autorización procesada correctamente!"
@@ -278,24 +287,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private (int codigo, string mensaje) ProcesarSolicitudes(
-    SqlConnection conn,
+    IDbConnection conn,
     TesAutorizaParametros p,
     IEnumerable<int> solicitudes)
         {
             var solicitudesUnicas = solicitudes.Distinct().ToList();
             var bloqueaAutoAutorizacion =
                 _mTesoreria.fxTesParametro(p.codEmpresa, "12") == "S";
+
             var bloqueadasPorMismoUsuario = ObtenerSolicitudesBloqueadas(
                 conn,
                 bloqueaAutoAutorizacion,
                 solicitudesUnicas,
                 p.usuario!);
+            
             var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
             var solicitudesAutorizables = solicitudesUnicas
                 .Where(id => !bloqueadas.Contains(id))
                 .ToList();
 
-            EjecutarAutorizacionLote(conn, solicitudesAutorizables, p);
+            string estado = p.tipo_autorizacion == 0 ? "A":"F";
+
+            foreach (int[] lote in solicitudesAutorizables.Chunk(1000))
+            {
+                EjecutarAutorizacionLote(
+                    conn,
+                    lote,
+                    estado,
+                    p.usuario);
+            }
+
+            conn.Execute(
+                    "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",
+                    new
+                    {
+                        Usuario = p.usuario,
+                        Estado = estado,
+                        SINPE_Tipo = p.tipoGiroSinpe,
+                        UsuarioEspecial = p.autorizacionEspecialUsuario
+                    },
+                    commandTimeout: 0);
 
             var codigo = bloqueadasPorMismoUsuario.Any() ? -1 : 0;
             var msg = bloqueadasPorMismoUsuario.Any()
@@ -306,7 +337,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private static List<int> ObtenerSolicitudesBloqueadas(
-            SqlConnection conn,
+            IDbConnection conn,
             bool bloqueaAutoAutorizacion,
             IReadOnlyCollection<int> solicitudes,
             string usuario)
@@ -327,30 +358,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private static void EjecutarAutorizacionLote(
-            SqlConnection conn,
-            IReadOnlyCollection<int> solicitudes,
-            TesAutorizaParametros p)
+            IDbConnection conn,
+            IReadOnlyList<int> solicitudes,
+            string estado,
+            string usuario)
         {
-            if (solicitudes.Count == 0) return;
+            try
+            {
+                var sql = new StringBuilder(
+                "INSERT INTO TES_MASS_AUTORIZACION " +
+                "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
 
-            var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
-            var solicitudesXml = new XElement(
-                "solicitudes",
-                solicitudes.Select(id => new XElement("id", id)))
-                .ToString(SaveOptions.DisableFormatting);
+            var parametros = new DynamicParameters();
 
-            conn.Execute(
-                FrmTesAutorizacionSql.SQL_AUTORIZACION_LOTE,
-                new
+            parametros.Add("Estado", estado);
+            parametros.Add("Usuario", usuario);
+
+            for (int indice = 0; indice < solicitudes.Count; indice++)
+            {
+                if (indice > 0)
                 {
-                    solicitudesXml,
-                    tipoAutorizacion = p.tipo_autorizacion,
-                    usuario = p.usuario,
-                    estadoSinpe = estadoSinpeDb,
-                    tipoGiroSinpe = tipoGiroSinpeDb,
-                    usuarioEspecial = p.autorizacionEspecialUsuario
-                },
-                commandTimeout: 0);
+                    sql.Append(',');
+                }
+
+                string nombreParametro = $"Solicitud{indice}";
+
+                sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
+                parametros.Add(nombreParametro, solicitudes[indice]);
+            }
+
+            conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
