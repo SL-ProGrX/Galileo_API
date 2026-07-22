@@ -216,7 +216,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public decimal? cashback_pts_redimidos { get; set; }
 
         [JsonPropertyName("cashback_pts_corte")]
-        public decimal? cashback_pts_corte { get; set; }
+        public DateTime? cashback_pts_corte { get; set; }
 
         [JsonPropertyName("bono_salario_fecha")]
         public DateTime? bono_salario_fecha { get; set; }
