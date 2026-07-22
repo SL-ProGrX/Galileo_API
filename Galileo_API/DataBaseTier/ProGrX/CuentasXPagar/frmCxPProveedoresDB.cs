@@ -469,7 +469,9 @@ namespace Galileo.DataBaseTier
                             email = @Email,
                             telefono = @Telefono,
                             email_02 = @Email_02,
+                            telefono_ext = @Telefono_Ext,
                             fax = @Fax,
+                            fax_ext = @Fax_Ext,
                             contacto_compras = @Contacto_Compras,
                             contacto_ventas = @Contacto_Ventas,
                             cod_cuenta = @Cod_Cuenta,
@@ -483,18 +485,14 @@ namespace Galileo.DataBaseTier
                             cod_Banco = @Cod_Banco,
                             web_auto_gestion = @Gestion,
                             web_ferias = @Ferias,
-                            registro_fecha = @Registro_Fecha,
-                            fecha_vencimiento = @Fecha_Vencimiento,
-                            representante_legal = @Representante_Legal,
-                            convenio = @Convenio,
-                            plazo = @Plazo,
-                            criticidad = @Criticidad
+                            modifica_fecha = GETDATE(),
+                            modifica_usuario = @user_modifica
                       WHERE cod_proveedor = @Cod_Proveedor",
                     new
                     {
                         request.Descripcion,
                         request.Cod_Alter,
-                        Cedjur = request.Cedjur,
+                        request.Cedjur,
                         request.Tipo,
                         request.Observacion,
                         request.Estado,
@@ -503,7 +501,9 @@ namespace Galileo.DataBaseTier
                         request.Email,
                         request.Telefono,
                         request.Email_02,
+                        request.Telefono_Ext,
                         request.Fax,
+                        request.Fax_Ext,
                         request.Contacto_Compras,
                         request.Contacto_Ventas,
                         request.Cod_Cuenta,
@@ -517,12 +517,7 @@ namespace Galileo.DataBaseTier
                         request.Cod_Banco,
                         Gestion = gestion,
                         Ferias = ferias,
-                        Registro_Fecha = request.registro_fecha,
-                        Fecha_Vencimiento = request.fecha_vencimiento,
-                        Representante_Legal = request.representante_legal,
-                        Convenio = request.convenio,
-                        Plazo = request.plazo,
-                        Criticidad = request.criticidad,
+                        request.user_modifica,
                         request.Cod_Proveedor
                     });
 
@@ -536,7 +531,7 @@ namespace Galileo.DataBaseTier
                     EmpresaId = CodEmpresa,
                     cod_proveedor = request.Cod_Proveedor.ToString(),
                     consec = 0,
-                    movimiento = "Inserta",
+                    movimiento = "Modifica",
                     detalle = request.justificacion_estado ?? string.Empty,
                     registro_usuario = request.user_modifica ?? string.Empty
                 });
@@ -566,15 +561,15 @@ namespace Galileo.DataBaseTier
                             estado, contacto_ventas, contacto_compras, telefono, telefono_ext, fax, fax_ext,
                             email, email_02, aptopostal, direccion, credito_plazo, credito_monto,
                             descuento_porc, saldo, cod_cuenta, cedJur, Nit_Codigo, Nit_Nombre,
-                            cod_divisa, saldo_divisa_real, cod_banco, fecha_vencimiento, registro_fecha,
-                            plazo, convenio, representante_legal, criticidad)
+                            cod_divisa, saldo_divisa_real, cod_banco, web_auto_gestion, web_ferias, registro_fecha,
+                            registro_usuario)
                       VALUES(
                             @Cod_Proveedor, @Tipo, @Cod_Clasificacion, @Descripcion, @Cod_Alter, @Observacion,
                             @Estado, @Contacto_Ventas, @Contacto_Compras, @Telefono, @Telefono_Ext, @Fax, @Fax_Ext,
                             @Email, @Email_02, @Aptopostal, @Direccion, @Credito_Plazo, @Credito_Monto,
                             @Descuento_Porc, @Saldo, @Cod_Cuenta, @Cedjur, @Nit_Codigo, @Nit_Nombre,
-                            @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Fecha_Vencimiento, @Registro_Fecha,
-                            @Plazo, @Convenio, @Representante_Legal, @Criticidad)",
+                            @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Web_Auto_Gestion, @Web_Ferias, GETDATE(),
+                            @Registro_Usuario)",
                     new
                     {
                         Cod_Proveedor = siguiente,
@@ -599,18 +594,15 @@ namespace Galileo.DataBaseTier
                         request.Descuento_Porc,
                         request.Saldo,
                         request.Cod_Cuenta,
-                        Cedjur = request.Cedjur,
+                        request.Cedjur,
                         request.Nit_Codigo,
                         request.Nit_Nombre,
                         request.Cod_Divisa,
                         request.Saldo_Divisa_Real,
                         request.Cod_Banco,
-                        Fecha_Vencimiento = request.fecha_vencimiento,
-                        Registro_Fecha = request.registro_fecha,
-                        Plazo = request.plazo,
-                        Convenio = request.convenio,
-                        Representante_Legal = request.representante_legal,
-                        Criticidad = request.criticidad
+                        request.Web_Auto_Gestion,
+                        request.Web_Ferias,
+                        request.registro_Usuario
                     });
 
                 return siguiente;
@@ -1014,6 +1006,22 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto CxPProveedoresUsuario_Agregar(int CodEmpresa, ProveedorUsuariosListaDatos datos)
         {
+            if (datos.isNew)
+            {
+                var duplicado = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                    connection.QueryFirstOrDefault<int>(
+                        @"SELECT COUNT(1)
+                          FROM CXP_AG_USUARIOS
+                          WHERE cod_Proveedor = @Proveedor
+                            AND UPPER(LTRIM(RTRIM(USUARIO))) = UPPER(@Usuario)",
+                        new { Proveedor = datos.cod_proveedor, Usuario = datos.usuario?.Trim() ?? string.Empty }));
+
+                if (duplicado.Code != 0)
+                    return DbHelper.ErrorResponse(duplicado.Description ?? "Error al validar el usuario del proveedor.", duplicado.Code.GetValueOrDefault(-1));
+                if (duplicado.Result > 0)
+                    return DbHelper.ErrorResponse("El usuario ya existe para este proveedor.");
+            }
+
             int portal = datos.web_auto_gestion ? 1 : 0;
             int ferias = datos.web_ferias ? 1 : 0;
             int activo = datos.activo ? 1 : 0;
@@ -1042,7 +1050,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Renueva la clave de AutoGestión del usuario de un proveedor.
         /// </summary>
-        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string email, string usuarioSesion)
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string? email, string usuarioSesion)
         {
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
             const string sp = @"

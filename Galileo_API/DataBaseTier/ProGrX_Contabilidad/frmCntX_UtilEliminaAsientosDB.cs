@@ -3,7 +3,6 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -23,150 +22,136 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Obtine los tipos de asientos
+        /// Obtiene los tipos de asiento configurados para la contabilidad.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad activa.</param>
+        /// <returns>Lista de tipos de asiento.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(
             int codEmpresa,
             int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = [
-                    ..cn.Query<DropDownListaGenericaModel>(
-                        @"SELECT tipo_asiento as item,
+            const string sql = @"SELECT tipo_asiento as item,
                         RTRIM(tipo_asiento) + ' - ' + RTRIM(descripcion) AS descripcion
                           FROM CntX_Tipos_Asientos
-                          WHERE cod_contabilidad = @cod_contabilidad",
-                        new { cod_contabilidad })
-                ];
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+                          WHERE cod_contabilidad = @cod_contabilidad";
 
-            return response;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb, codEmpresa, sql, new { cod_contabilidad });
         }
 
         /// <summary>
-        /// Calcula los asientos
+        /// Calcula los asientos pendientes de eliminar dentro del rango indicado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="tipo_asiento"></param>
-        /// <param name="desde"></param>
-        /// <param name="hasta"></param>
-        /// <param name="anio"></param>
-        /// <param name="mes"></param>
-        /// <returns></returns>
-        public ErrorDto<int> Cntx_Util_Asientos_Calcular(int codEmpresa,int cod_contabilidad,string tipo_asiento,
-                DateTime desde,DateTime hasta,int anio,int mes)
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad activa.</param>
+        /// <param name="tipo_asiento">Tipo de asiento seleccionado.</param>
+        /// <param name="desde">Número de asiento inicial.</param>
+        /// <param name="hasta">Número de asiento final.</param>
+        /// <param name="anio">Año del período contable.</param>
+        /// <param name="mes">Mes del período contable.</param>
+        /// <returns>Total de asientos pendientes que cumplen los filtros.</returns>
+        public ErrorDto<int> Cntx_Util_Asientos_Calcular(int codEmpresa, int cod_contabilidad, string tipo_asiento,
+                string desde, string hasta, int anio, int mes)
         {
-            var response = new ErrorDto<int>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var total = cn.ExecuteScalar<int>(
-                @"SELECT COUNT(*)
+            const string sql = @"SELECT COUNT(*)
           FROM Cntx_Asientos
           WHERE anio = @anio
           AND mes = @mes
           AND tipo_asiento = @tipo_asiento
-          AND fecha_asiento BETWEEN @desde AND @hasta
+          AND num_asiento BETWEEN @desde AND @hasta
           AND fecha_aplicado IS NULL
           AND cod_contabilidad = @cod_contabilidad
-          AND modulo = 20",
-                new
-                {
-                    cod_contabilidad,
-                    tipo_asiento,
-                    desde,
-                    hasta,
-                    anio,
-                    mes
-                });
+          AND modulo = 20";
 
-                response.Result = total;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDb, codEmpresa, sql, 0,
+                new { cod_contabilidad, tipo_asiento, desde, hasta, anio, mes });
         }
 
         /// <summary>
-        /// Elimina los asientos
+        /// Elimina, en una transacción, los encabezados elegibles y sus detalles.
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="request">Empresa, contabilidad, período, tipo y rango de números de asiento.</param>
+        /// <returns>Indicador de finalización o el error producido.</returns>
         public ErrorDto<bool> Cntx_Util_Asientos_Eliminar(CntxEliminarAsientosRequestDto request)
         {
-            var response = new ErrorDto<bool>();
-
-            if (!request.cod_empresa.HasValue)
+            if (!request.cod_empresa.HasValue || !request.cod_contabilidad.HasValue ||
+                !request.anio.HasValue || !request.mes.HasValue ||
+                string.IsNullOrWhiteSpace(request.tipo_asiento) ||
+                string.IsNullOrWhiteSpace(request.desde) || string.IsNullOrWhiteSpace(request.hasta))
             {
-                response.Code = -1;
-                response.Description = "El campo cod_empresa es obligatorio.";
-                return response;
+                return DbHelper.CreateErrorResponse<bool>(
+                    "La empresa, contabilidad, período, tipo y rango de asientos son obligatorios.");
             }
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(request.cod_empresa.Value));
+            const string eliminarDetallesSql = @"
+                DELETE detalle
+                FROM Cntx_Asientos_detalle detalle
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM Cntx_Asientos asiento
+                    WHERE asiento.num_asiento = detalle.num_asiento
+                      AND asiento.tipo_asiento = detalle.tipo_asiento
+                      AND asiento.cod_contabilidad = detalle.cod_contabilidad
+                      AND asiento.tipo_asiento = @tipo_asiento
+                      AND asiento.num_asiento BETWEEN @desde AND @hasta
+                      AND asiento.cod_contabilidad = @cod_contabilidad
+                      AND asiento.fecha_aplicado IS NULL
+                      AND asiento.anio = @anio
+                      AND asiento.mes = @mes
+                      AND asiento.modulo = 20);";
 
+            const string eliminarEncabezadosSql = @"
+                DELETE Cntx_Asientos
+                WHERE tipo_asiento = @tipo_asiento
+                  AND num_asiento BETWEEN @desde AND @hasta
+                  AND cod_contabilidad = @cod_contabilidad
+                  AND fecha_aplicado IS NULL
+                  AND anio = @anio
+                  AND mes = @mes
+                  AND modulo = 20;";
+
+            var response = DbHelper.WithConn(_portalDb, request.cod_empresa.Value, cn =>
+            {
                 cn.Open();
+                using var transaction = cn.BeginTransaction();
+                try
+                {
+                    cn.Execute(eliminarDetallesSql, request, transaction);
+                    cn.Execute(eliminarEncabezadosSql, request, transaction);
+                    transaction.Commit();
+                    return true;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            });
 
-                var sql = @"
-
-                    DELETE Cntx_Asientos_detalle
-                    WHERE tipo_asiento = @tipo_asiento
-                    AND num_asiento BETWEEN @desde AND @hasta
-                    AND cod_contabilidad = @cod_contabilidad
-
-                    DELETE Cntx_Asientos
-                    WHERE tipo_asiento = @tipo_asiento
-                    AND num_asiento BETWEEN @desde AND @hasta
-                    AND cod_contabilidad = @cod_contabilidad
-                    AND fecha_aplicado IS NULL
-                    AND anio = @anio
-                    AND mes = @mes
-                    AND modulo = 20";
-
-                cn.Execute(sql, request);
-
-                _mSecurityMainDb.Bitacora(
-                    new Galileo.Models.Security.BitacoraInsertarDto
-                    {
-                        EmpresaId = request.cod_empresa.Value,
-                        Usuario = request.usuario!,
-                        Movimiento = "Elimina Asientos - WEB",
-                        DetalleMovimiento =
-                            $"Tipo:{request.tipo_asiento} D:{request.desde} H:{request.hasta}",
-                        Modulo = 20
-                    });
-
-                response.Result = true;
-            }
-            catch (Exception ex)
+            if (response.Code == 0)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                try
+                {
+                    _mSecurityMainDb.Bitacora(
+                        new Galileo.Models.Security.BitacoraInsertarDto
+                        {
+                            EmpresaId = request.cod_empresa.Value,
+                            Usuario = request.usuario!,
+                            Movimiento = "Elimina Asientos - WEB",
+                            DetalleMovimiento =
+                                $"TIPO:{request.tipo_asiento} D:{request.desde} H:{request.hasta}",
+                            Modulo = 20
+                        });
+                    response.Description = "Eliminación finalizada.";
+                }
+                catch (Exception ex)
+                {
+                    return DbHelper.CreateErrorResponse<bool>(
+                        $"Los asientos se eliminaron, pero no se pudo registrar la bitácora: {ex.Message}",
+                        result: true);
+                }
             }
 
             return response;
@@ -174,39 +159,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
         /// <summary>
-        /// Obtiene el periodo actual
+        /// Obtiene el período contable abierto.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad activa.</param>
+        /// <returns>Año y mes del primer período abierto.</returns>
         public ErrorDto<CntxPeriodoActualDto> Cntx_PeriodoActual_Obtener(int codEmpresa,int cod_contabilidad)
         {
-            var response = new ErrorDto<CntxPeriodoActualDto>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var periodo = cn.QueryFirstOrDefault<CntxPeriodoActualDto>(
-                @"SELECT TOP 1
+            const string sql = @"SELECT TOP 1
               anio,
               mes
           FROM CntX_Periodos
           WHERE cod_contabilidad = @cod_contabilidad
           AND estado = 'P'
-          ORDER BY anio ASC, mes ASC",
-                new { cod_contabilidad });
+          ORDER BY anio ASC, mes ASC";
 
-                response.Result = periodo;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteSingleQuery<CntxPeriodoActualDto>(
+                _portalDb, codEmpresa, sql, null, new { cod_contabilidad });
         }
     }
 }

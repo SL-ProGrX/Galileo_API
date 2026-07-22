@@ -26,7 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [HttpGet]
         [Route("Cntx_Util_Asientos_Calcular")]
-        public ErrorDto<int> CalcularTotal(int codEmpresa, int cod_contabilidad, string tipo_asiento, DateTime desde, DateTime hasta, int anio, int mes)
+        public ErrorDto<int> CalcularTotal(int codEmpresa, int cod_contabilidad, string tipo_asiento, string desde, string hasta, int anio, int mes)
         {
             return _bl.Cntx_Util_Asientos_Calcular(codEmpresa, cod_contabilidad, tipo_asiento, desde,
                 hasta, anio, mes);

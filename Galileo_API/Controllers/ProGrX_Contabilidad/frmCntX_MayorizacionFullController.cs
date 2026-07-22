@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntX_TiposAsientos_Listar(codEmpresa, codContabilidad);
         }
 
+        [Authorize]
         [HttpPost("Procesar")]
         public ErrorDto<bool> Procesar(int codEmpresa,int codContabilidad,CntxMayorizacionProcesarDto request)
         {

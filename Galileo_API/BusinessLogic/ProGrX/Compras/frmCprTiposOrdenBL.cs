@@ -16,18 +16,20 @@ namespace Galileo.BusinessLogic
         {
             return _db.ObtenerTiposOrdenes(CodCliente, filtros);
         }
-        public ErrorDto TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDto tiposOrden)
+        public ErrorDto Cpr_TiposOrden_Guardar(
+            int CodEmpresa,
+            string usuario,
+            TiposOrdenDto tipoOrden)
         {
-            return _db.TipoOrden_Actualizar(CodEmpresa, tiposOrden);
-        }
-        public ErrorDto TipoOrden_Eliminar(int CodEmpresa, string tiposOrden)
-        {
-            return _db.TipoOrden_Eliminar(CodEmpresa, tiposOrden);
+            return _db.Cpr_TiposOrden_Guardar(CodEmpresa, usuario, tipoOrden);
         }
 
-        public ErrorDto TipoOrden_Insertar(int CodEmpresa, TiposOrdenDto tiposOrden)
+        public ErrorDto Cpr_TiposOrden_Eliminar(
+            int CodEmpresa,
+            string usuario,
+            string tipoOrden)
         {
-            return _db.TipoOrden_Insertar(CodEmpresa, tiposOrden);
+            return _db.Cpr_TiposOrden_Eliminar(CodEmpresa, usuario, tipoOrden);
         }
 
         public ErrorDto<List<RangosMontos>> rangosMontos_Obtener(int CodEmpresa, string usuario)

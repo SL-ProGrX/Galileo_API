@@ -161,6 +161,40 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.ErrorResponse(result.Description ?? "Error al registrar nota del socio.", result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Registra el bloqueo o desbloqueo de nuevos créditos para una persona.
+        /// </summary>
+        public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool bloqueo,
+            string nota,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@Cedula", (cedula ?? string.Empty).Trim());
+                parameters.Add("@Indicador", 19);
+                parameters.Add("@Valor", bloqueo ? 1 : 0);
+                parameters.Add("@Usuario", (usuario ?? string.Empty).Trim());
+                parameters.Add("@Nota", (nota ?? string.Empty).Trim());
+
+                connection.Execute(
+                    "spAFI_Persona_Indicadores",
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+
+                return true;
+            });
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al registrar el bloqueo de créditos.",
+                    result.Code.GetValueOrDefault(-1));
+        }
+
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             var result = DbHelper.ExecuteSingleQuery<decimal>(
@@ -176,6 +210,289 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         #region Créditos
+
+        /// <summary>
+        /// Obtiene la fecha del servidor y la versión de cálculo de créditos.
+        /// </summary>
+        public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(int codEmpresa)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.QueryFirstOrDefault<CrConsultaCreditoContextoData>(
+                    @"select dbo.MyGetdate() as fechaServidor,
+                             isnull(SysCrdPlanPago, 0) as sysPlanPagos
+                        from SIF_EMPRESA"));
+
+            return result.Code == 0 && result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener el contexto de créditos.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaCreditoContextoData());
+        }
+
+        /// <summary>
+        /// Calcula los valores de cancelación de una operación a una fecha de corte.
+        /// </summary>
+        public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
+            int codEmpresa,
+            int operacion,
+            DateTime corte)
+        {
+            if (operacion <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar una operación válida.",
+                    -1,
+                    new CrConsultaCancelacionData());
+            }
+
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+            {
+                var sysPlanPagos = connection.QueryFirstOrDefault<int>(
+                    "select isnull(SysCrdPlanPago, 0) from SIF_EMPRESA");
+
+                if (sysPlanPagos == 1)
+                {
+                    return connection.QueryFirstOrDefault<CrConsultaCancelacionData>(
+                        "spCrdPlanPagosInfoCancelacion",
+                        new
+                        {
+                            OperacionId = operacion,
+                            FechaCancelacion = corte.Date
+                        },
+                        commandType: CommandType.StoredProcedure);
+                }
+
+                var credito = connection.QueryFirstOrDefault<CrConsultaCancelacionLegacyRow>(
+                    @"select R.saldo,
+                             R.interesv,
+                             R.fecUlt,
+                             isnull(V.intc + V.intm, 0) as intMora,
+                             isnull(V.cargos, 0) as cargos,
+                             isnull(V.cuota, 0) as moraCuota,
+                             isnull(V.Amortiza, 0) as principalAtrasado,
+                             R.PriDeduc
+                        from REG_CREDITOS R
+                        inner join CATALOGO C on R.codigo = C.codigo
+                        left join VISTA_MOROSIDAD V
+                          on R.id_solicitud = V.id_solicitud
+                       where R.id_solicitud = @Operacion",
+                    new { Operacion = operacion });
+
+                if (credito is null)
+                {
+                    return null;
+                }
+
+                var ultimoProceso = credito.fecUlt;
+                if (credito.moraCuota > 0)
+                {
+                    var procesoMora = connection.QueryFirstOrDefault<int?>(
+                        @"select max(fechap)
+                            from MOROSIDAD
+                           where estado = 'A'
+                             and id_solicitud = @Operacion",
+                        new { Operacion = operacion });
+                    if (procesoMora.GetValueOrDefault() > ultimoProceso)
+                    {
+                        ultimoProceso = procesoMora.GetValueOrDefault();
+                    }
+                }
+
+                var procesoCorte = corte.Year * 100 + corte.Month;
+                decimal interesCorriente = 0;
+
+                if (procesoCorte == credito.priDeduc &&
+                    ultimoProceso < procesoCorte)
+                {
+                    interesCorriente =
+                        credito.saldo * credito.interesv / 36000m * corte.Day;
+                }
+                else if (procesoCorte > credito.priDeduc &&
+                         ultimoProceso <= procesoCorte)
+                {
+                    var meses = -1;
+                    var procesoTemporal = ultimoProceso;
+                    while (procesoCorte > procesoTemporal)
+                    {
+                        meses++;
+                        procesoTemporal = SiguienteProceso(procesoTemporal);
+                    }
+
+                    interesCorriente =
+                        credito.saldo * credito.interesv / 36000m *
+                        (corte.Day + meses * 30);
+                }
+
+                if (credito.principalAtrasado >= credito.saldo)
+                {
+                    interesCorriente = 0;
+                }
+
+                return new CrConsultaCancelacionData
+                {
+                    principal = credito.saldo,
+                    intcor = interesCorriente,
+                    intmor = credito.intMora,
+                    cargos = credito.cargos
+                };
+            });
+
+            return result.Code == 0 && result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No se encontró la operación indicada.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaCancelacionData());
+        }
+
+        /// <summary>
+        /// Obtiene el expediente de preanálisis relacionado con una operación.
+        /// </summary>
+        public ErrorDto<string> CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
+            int codEmpresa,
+            int operacion)
+        {
+            if (operacion <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar una operación válida.",
+                    -1,
+                    string.Empty);
+            }
+
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.QueryFirstOrDefault<string>(
+                    @"select top (1)
+                             ltrim(rtrim(convert(varchar(50), cod_preAnalisis)))
+                        from CRD_PREA_PREANALISIS
+                       where id_solicitud = @Operacion",
+                    new { Operacion = operacion }));
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? string.Empty)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener el expediente.",
+                    result.Code.GetValueOrDefault(-1),
+                    string.Empty);
+        }
+
+        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
+            int CodEmpresa,
+            string cedula)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                var socio = connection.QueryFirstOrDefault<CrConsultaPlanillaAbonoDistInicialData>(
+                    @"select cod_institucion,
+                             rtrim(cedula) as cedula,
+                             rtrim(nombre) as nombre,
+                             dbo.MyGetdate() as fecha,
+                             year(dbo.MyGetdate()) * 100 + month(dbo.MyGetdate()) as proceso
+                        from socios
+                       where cedula = @Cedula",
+                    new { Cedula = (cedula ?? string.Empty).Trim() });
+
+                if (socio is null)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la persona indicada.",
+                        -1,
+                        new CrConsultaPlanillaAbonoDistInicialData());
+                }
+
+                socio.deductoras = connection.Query<PlanillaAbonoDeductoraRow>(
+                        "exec spAFI_Institucion_Vinculadas @Institucion, 3",
+                        new { Institucion = socio.cod_institucion })
+                    .Select(item => new DropDownListaGenericaModel
+                    {
+                        item = item.Idx.ToString(),
+                        descripcion = (item.ItmX ?? string.Empty).Trim()
+                    })
+                    .ToList();
+
+                return DbHelper.CreateOkResponse(socio);
+            });
+
+            return result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al inicializar la consulta preliminar.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaPlanillaAbonoDistInicialData());
+        }
+
+        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso)
+        {
+            var result = DbHelper.ExecuteSingleQuery<CrConsultaPlanillaAbonoDistUltimoData>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"select isnull(sum(Cuota), 0) as monto,
+                         isnull(max(FecPro), @Proceso) as proceso
+                    from PRM_ENVIADO_DETALLE
+                   where COD_INSTITUCION = @CodInstitucion
+                     and cedula = @Cedula
+                     and FECPRO in (
+                         select max(proceso)
+                           from PRM_BITACORA
+                          where COD_INSTITUCION = @CodInstitucion
+                            and GESTION = 'E')",
+                new CrConsultaPlanillaAbonoDistUltimoData { proceso = proceso },
+                new
+                {
+                    Cedula = (cedula ?? string.Empty).Trim(),
+                    CodInstitucion = codInstitucion,
+                    Proceso = proceso
+                });
+
+            return result.Code == 0 && result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al consultar el último monto de planilla.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaPlanillaAbonoDistUltimoData { proceso = proceso });
+        }
+
+        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso,
+            decimal monto,
+            DateTime corte)
+        {
+            return DbHelper.ExecuteListQuery<CrConsultaPlanillaAbonoDistDetalleData>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"exec spPrmCreditoDetalleAbonos
+                        @CodInstitucion,
+                        @Proceso,
+                        @Cedula,
+                        @Monto,
+                        @Corte,
+                        'S',
+                        1,
+                        1,
+                        1",
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    Proceso = proceso,
+                    Cedula = (cedula ?? string.Empty).Trim(),
+                    Monto = monto,
+                    Corte = corte
+                });
+        }
+
+        private sealed class PlanillaAbonoDeductoraRow
+        {
+            public int Idx { get; set; }
+            public string? ItmX { get; set; }
+        }
 
         /// <summary>
         /// Método para consultar Activos y Cancelados
@@ -266,10 +583,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 codEmpresa,
                 @"
                 SELECT 
-                    S.*, 
-                    ISNULL(G.descripcion, '') AS Gestion,
-                    ISNULL(C.descripcion, '') AS Causa,
-                    ISNULL(A.descripcion, '') AS Arreglo
+        S.*,
+        ISNULL(G.descripcion, '') AS Gestion,
+        ISNULL(C.descripcion, '') AS Causa,
+        ISNULL(A.descripcion, '') AS Arreglo,
+        DATEADD(day, ISNULL(S.tiempo_resolucion, 0), S.fecha) AS comision_vence
                 FROM CBR_Seguimiento S
                 LEFT JOIN cbr_gestiones G 
                     ON S.cod_gestion = G.cod_gestion
@@ -305,6 +623,37 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 WHERE cedula = @Cedula
                 ORDER BY fecha_asignacion DESC;",
                 new { Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Procesa la notificación de cobros por email de una persona.
+        /// </summary>
+        public ErrorDto CR_ConsultaCobros_NotificacionEmail_Procesar(
+            int codEmpresa,
+            string cedula,
+            string tipo,
+            string usuario)
+        {
+            var resultado = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+            {
+                connection.Execute(
+                    "spSys_Notifica_Cobros_01_Atrasos",
+                    new
+                    {
+                        Cedula = (cedula ?? string.Empty).Trim(),
+                        Tipo = string.Equals(tipo, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "R",
+                        Usuario = (usuario ?? string.Empty).Trim()
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return true;
+            });
+
+            return resultado.Code == 0
+                ? DbHelper.OkResponse(MensajeOperacionRealizadaCorrectamente)
+                : DbHelper.ErrorResponse(
+                    resultado.Description ?? "Error al procesar la notificación por email.",
+                    resultado.Code.GetValueOrDefault(-1));
         }
 
         #endregion
@@ -566,10 +915,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     ISNULL(Con.Descripcion, '') AS ConDesc,
                     CASE Ah.Tipo
                         WHEN 'O' THEN 'Obrero'
-                        WHEN 'P' THEN 'Patronal'
-                        WHEN 'X' THEN 'AP.Custodia'
-                        WHEN 'C' THEN 'Capitalización'
-                        ELSE Ah.Tipo
+            WHEN 'P' THEN 'Patronal'
+            WHEN 'X' THEN 'AP.Custodia'
+            WHEN 'C' THEN 'Capitalización'
+            WHEN 'E' THEN 'Extraordinario'
+            ELSE Ah.Tipo
                     END AS Tipo
                 FROM Ahorro_Detallado Ah
                 LEFT JOIN SIF_Documentos Doc 
@@ -577,7 +927,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 LEFT JOIN SIF_Conceptos Con 
                        ON Ah.cod_Concepto = Con.cod_Concepto
                 WHERE Ah.Cedula = @Cedula
-                  AND (@Tipo = 'T' OR Ah.Tipo = @Tipo)
+      AND ((@Tipo = 'T' AND Ah.Tipo IN ('O', 'P', 'C', 'E', 'X')) OR Ah.Tipo = @Tipo)
                 ORDER BY Ah.Fecha DESC;",
                 new { Cedula = cedula, Tipo = tipo });
         }
@@ -708,56 +1058,20 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                //Valida si existe
-                var query = @"SELECT COUNT('X') FROM socios_mensajes where cedula = @cedula 
-                         and vencimiento = @fecha 
-                         and substring(mensaje,1,15) = substring(@mensaje,1,15) 
-                         and usuario = @usuario 
-                         and Tipo = 'G'
-                         and resolucion = 'P'";
+                const string query = @"
+                    INSERT INTO socios_mensajes
+                        (fecha, cedula, usuario, vencimiento, mensaje, Tipo)
+                    VALUES
+                        (dbo.MyGetdate(), @cedula, @usuario, @fechaVence, @mensaje, 'G');";
                 string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-                string vfechaReg = MProGrXAuxiliarDB.validaFechaGlobal(data.fecha, FormatoFechaIso) ?? string.Empty;
 
-                var existe = connection.Query<int>(query, new
+                connection.Execute(query, new
                 {
                     cedula = data.cedula,
                     usuario = data.usuario,
-                    fecha = vfecha,
+                    fechaVence = vfecha,
                     mensaje = data.mensaje
-                }).FirstOrDefault();
-
-                if (existe > 0)
-                {
-                    query = @"
-                        update socios_mensajes set mensaje = @mensaje, vencimiento = @fecha_vence
-                           where cedula = @cedula 
-                             and fecha = @fecha 
-                             and substring(mensaje,1,15) = substring(@ mensaje,1,15) 
-                             and usuario = @usuario 
-                             and Tipo = 'G'
-                             and resolucion = 'P'";
-                    connection.ExecuteAsync(query, new
-                    {
-                        cedula = data.cedula,
-                        usuario = data.usuario,
-                        fecha = vfechaReg,
-                        fecha_vence = vfecha,
-                        mensaje = data.mensaje
-                    });
-                }
-                else
-                {
-                    query = @"
-                        insert socios_mensajes(fecha,cedula,usuario,vencimiento,mensaje,Tipo) 
-                        values(dbo.MyGetdate(),@cedula,@usuario,@fecha_vence,@mensaje,'G')";
-                    connection.ExecuteAsync(query, new
-                    {
-                        cedula = data.cedula,
-                        usuario = data.usuario,
-                        fecha_vence = vfecha,
-                        mensaje = data.mensaje
-                    });
-                }
+                });
             }
             catch (Exception ex)
             {
@@ -1161,7 +1475,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             if (persona.estadoactual == "S")
             {
                 persona.membresiaCaption = "Membresía: " + MCredito.fxMembresia(vFechaIng);
-                persona.membresiaToolTip = "[Ing.:" + vFechaIng.ToString("g");
+                persona.membresiaToolTip = "[Ing.:" + vFechaIng.ToString("dd/MM/yyyy") + "]";
 
                 var renuncias = connection.QueryFirstOrDefault<CrConsultaCrdData>(
                     "spAFI_ConsultaRenunciaTransito",
@@ -1175,11 +1489,17 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 }
             }
 
-            persona.clasificacionCaption = $"Clasificación Crediticia : [{persona.clasificacion}]";
+            persona.estadox = string.IsNullOrWhiteSpace(persona.estadox)
+                ? persona.estadoactual == "S" ? "Asociado" : "No Asociado"
+                : persona.estadox.Trim();
+            persona.institucionx = string.IsNullOrWhiteSpace(persona.institucionx)
+                ? "Empresa/Deductora?"
+                : persona.institucionx.Trim();
+            persona.clasificacionCaption = $"Clasificación Crediticia : [{(string.IsNullOrWhiteSpace(persona.clasificacion) ? "?" : persona.clasificacion.Trim())}]";
             persona.salarioTrasladaCaption = persona.salario_traslada == 1 ? "Traslada Salario: Sí" : "Sin Tramite (Traslado Salario)";
             persona.patrimonio = persona.ahorro + persona.aporte + persona.custodia + persona.capitaliza;
-            persona.tarjetaCaption = $"Tarjeta: {persona.tarjeta_numero}";
-            persona.ibanCaption = $"IBAN: {persona.iban}";
+            persona.tarjetaCaption = $"Tarjeta: {(string.IsNullOrWhiteSpace(persona.tarjeta_numero) ? "No" : persona.tarjeta_numero.Trim())}";
+            persona.ibanCaption = $"IBAN: {(string.IsNullOrWhiteSpace(persona.iban) ? "No" : persona.iban.Trim())}";
             persona.estadoMensajesCaption = persona.indmensajes == 0 ? "Mensajes ?" : $"Mensajes ({persona.indmensajes})";
             persona.estadoCobrosCaption = persona.indcobro == 0 ? "Sin Gestión de Cobro" : $"Gestiones de Cobro ({persona.indcobro})";
             persona.estadoAdvertenciaCaption = persona.indadvertencias == 0 ? "Sin Advertencias" : $"Advertencias ({persona.indadvertencias})";
@@ -1204,16 +1524,24 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             CargarMensajesPersona(connection, cedula, persona);
             persona.pat_tipoSaldo = "Saldos en Garantía";
 
-            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "C");
-            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>()).Where(c => c.procesoCod == "J"))
+            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "A");
+            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>())
+                .Where(c => c.procesoCod == "J" || (c.moraCuota ?? 0) > 0))
             {
                 persona.vMora = true;
-                persona.vMoraCaption = $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}";
+                persona.vMoraCaption = credito.procesoCod == "J"
+                    ? $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}"
+                    : $"Morosidad: {credito.moraCuota ?? 0} cuota(s)";
+                break;
             }
         }
 
         private static void CargarMensajesPersona(SqlConnection connection, string cedula, CrConsultaCrdData persona)
         {
+            persona.indmensajes = connection.QuerySingleOrDefault<int?>(
+                "SELECT dbo.fxSIFMensajesNumero(@cedula)",
+                new { cedula }) ?? 0;
+
             var mensajes = connection.QueryFirstOrDefault<CrConsultaCrdData>(
                 "spSIFPersonaMensajes",
                 new { cedula },
@@ -1232,7 +1560,52 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             persona.advertenciasCaption = persona.advertencias > 0 ? $"Advertencias ({persona.advertencias})" : "Msj Advertencias?";
             persona.generalesCaption = persona.generales > 0 ? $"General ({persona.generales})" : "Msj Generales?";
             persona.morosidadCaption = persona.morosidad > 0 ? $"Morosidad ({persona.morosidad})" : "Msj Morosidad?";
-            persona.bloqueosCaption = persona.bloqueos > 0 ? $"Bloqueos ({persona.bloqueo})" : "Msj Bloqueos?";
+            persona.bloqueosCaption = persona.bloqueos > 0 ? $"Bloqueos ({persona.bloqueos})" : "Msj Bloqueos?";
+            persona.estadoMensajesCaption = persona.indmensajes > 0
+                ? $"Mensajes ({persona.indmensajes})"
+                : "Mensajes ?";
+        }
+
+        /// <summary>
+        /// Calcula el patrimonio disponible y los saldos asociados a un tipo de garantía.
+        /// </summary>
+        public ErrorDto<CrPatrimonioGarantiaData?> CR_Patrimonio_Garantia_Obtener(
+            int codEmpresa,
+            string cedula,
+            string garantia)
+        {
+            return DbHelper.ExecuteSingleQuery<CrPatrimonioGarantiaData>(
+                CreatePortalDb(),
+                codEmpresa,
+                @"SELECT
+                    dbo.fxCrdGarantiaPatMnt(S.Cedula, @Garantia, 'M') AS pat_garantia_total,
+                    dbo.fxCrdGarantiaPatMnt(S.Cedula, @Garantia, 'S')
+                      + dbo.fxCrdGarantiaPatMnt_SldTramite(S.Cedula, 'A') AS pat_garantia_saldos
+                  FROM Socios S
+                  WHERE S.Cedula = @Cedula;",
+                null,
+                new { Cedula = cedula, Garantia = garantia });
+        }
+
+        private static int SiguienteProceso(int proceso)
+        {
+            var anio = proceso / 100;
+            var mes = proceso % 100;
+            return mes >= 12
+                ? (anio + 1) * 100 + 1
+                : anio * 100 + mes + 1;
+        }
+
+        private sealed class CrConsultaCancelacionLegacyRow
+        {
+            public decimal saldo { get; set; }
+            public decimal interesv { get; set; }
+            public int fecUlt { get; set; }
+            public decimal intMora { get; set; }
+            public decimal cargos { get; set; }
+            public int moraCuota { get; set; }
+            public decimal principalAtrasado { get; set; }
+            public int priDeduc { get; set; }
         }
 
         private ErrorDto<List<T>> EjecutarStoredProcedureList<T>(int codEmpresa, string storedProcedure, object parameters)
