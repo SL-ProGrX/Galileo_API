@@ -165,9 +165,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpCuentasBancarias,
                     new
                     {
-                        Cedula = NormalizarTexto(Cedula),
-                        Banco,
-                        Tipo = 1
+                        Identificacion = NormalizarTexto(Cedula),
+                        BancoId = Banco,
+                        DivisaCheck = 1
                     },
                     commandType: System.Data.CommandType.StoredProcedure)
                 .Select(row => new DropDownListaGenericaModel
