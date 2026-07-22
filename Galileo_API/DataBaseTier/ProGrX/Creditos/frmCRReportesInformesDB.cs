@@ -49,7 +49,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -196,7 +196,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
+                    ex.Message,
+                    -1,
+                    new List<DropDownListaGenericaModel>());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -349,7 +356,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -406,7 +413,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -475,7 +482,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -620,7 +627,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -664,7 +671,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
+                    ex.Message,
+                    -1,
+                    new List<DropDownListaGenericaModel>());
+            }
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
+                    ex.Message,
+                    -1,
+                    new List<DropDownListaGenericaModel>());
+            }
+            catch (ArgumentException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -826,7 +847,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
+                    ex.Message,
+                    -1,
+                    new List<DropDownListaGenericaModel>());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -880,7 +908,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
@@ -1000,7 +1028,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
                     ex.Message,
