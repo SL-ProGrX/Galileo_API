@@ -131,6 +131,13 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpDelete("AF_Grupos_Eliminar")]
+        public ErrorDto AF_Grupos_Eliminar(int CodEmpresa, string cod_grupo)
+        {
+            return BL_AF_Reportes.AF_Grupos_Eliminar(CodEmpresa, cod_grupo);
+        }
+
+        [Authorize]
         [HttpPost("AF_Miembros_Guardar")]
         public ErrorDto AF_Miembros_Guardar(int CodEmpresa, string cod_grupo, AfGrupoMiembroDto miembro)
         {
@@ -149,6 +156,13 @@ namespace Galileo.Controllers
         public ErrorDto AF_Reportes_Grupo_Guardar(int CodEmpresa, AfSeguridadGrupoDto grupo)
         {
             return BL_AF_Reportes.AF_Reportes_Grupo_Guardar(CodEmpresa, grupo);
+        }
+
+        [Authorize]
+        [HttpDelete("AF_Reportes_Grupo_Eliminar")]
+        public ErrorDto AF_Reportes_Grupo_Eliminar(int CodEmpresa, int codgrupo)
+        {
+            return BL_AF_Reportes.AF_Reportes_Grupo_Eliminar(CodEmpresa, codgrupo);
         }
 
         [Authorize]

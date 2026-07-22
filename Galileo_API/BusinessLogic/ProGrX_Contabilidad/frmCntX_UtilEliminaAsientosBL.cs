@@ -19,8 +19,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Cntx_TiposAsientos_Buscar(codEmpresa, cod_contabilidad);
         }
 
-        public ErrorDto<int> Cntx_Util_Asientos_Calcular(int codEmpresa, int cod_contabilidad, string tipo_asiento, DateTime desde,
-            DateTime hasta, int anio, int mes)
+        public ErrorDto<int> Cntx_Util_Asientos_Calcular(int codEmpresa, int cod_contabilidad, string tipo_asiento, string desde,
+            string hasta, int anio, int mes)
         {
             return _db.Cntx_Util_Asientos_Calcular(codEmpresa, cod_contabilidad, tipo_asiento, desde, hasta, anio, mes);
         }

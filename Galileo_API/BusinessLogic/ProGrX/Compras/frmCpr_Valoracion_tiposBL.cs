@@ -13,14 +13,19 @@ namespace Galileo.BusinessLogic
             _db = new FrmCprValoracionTiposDB(config);
         }
 
-        public ErrorDto<CprValoraEsquemaDtoList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraEsquemaDtoList> CPR_frmCpr_Valoracion_Tipos_EsquemaValoracion_Obtener(
+            int codEmpresa,
+            CprValoraConsultaRequest request)
         {
-            return _db.EsquemaValoracion_Obtener(CodEmpresa, pagina, paginacion, filtro);
+            return _db.CPR_frmCpr_Valoracion_Tipos_EsquemaValoracion_Obtener(codEmpresa, request);
         }
 
-        public ErrorDto<CprValoraItemsDtoList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraItemsDtoList> CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(
+            int codEmpresa,
+            string val_id,
+            CprValoraConsultaRequest request)
         {
-            return _db.ValoracionItems_Obtener(CodEmpresa, val_id, pagina, paginacion, filtro);
+            return _db.CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(codEmpresa, val_id, request);
         }
 
         public ErrorDto EsquemaValoracion_Upsert(int CodEmpresa, string usuario, CprValoraEsquemaDto request)

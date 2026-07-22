@@ -159,16 +159,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 string query = BaseSelectProveedoresSelect + BaseSelectProveedoresFromWhere + @"
                 ORDER BY
-                    CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN CAST(COD_PROVEEDOR AS int) END ASC,
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN TRY_CAST(COD_PROVEEDOR AS int) END ASC,
+                    CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN COD_PROVEEDOR END ASC,
+
                     CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN DESCRIPCION END ASC,
                     CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN REGISTRO_USUARIO END ASC,
                     CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN ACTIVO END ASC,
 
-                    CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN CAST(COD_PROVEEDOR AS int) END DESC,
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN TRY_CAST(COD_PROVEEDOR AS int) END DESC,
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN COD_PROVEEDOR END DESC,
+
                     CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN DESCRIPCION END DESC,
                     CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN REGISTRO_USUARIO END DESC,
-                    CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN ACTIVO END DESC
+                    CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN ACTIVO END DESC,
 
+                    COD_PROVEEDOR ASC
                 OFFSET @offset ROWS
                 FETCH NEXT @fetch ROWS ONLY;";
 

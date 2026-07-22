@@ -156,13 +156,17 @@ namespace Galileo.DataBaseTier
 
         private  static ErrorDto ValidarAutorizacion(SqlConnection conn, SqlTransaction tx, string codOrden, string usuario)
         {
-            var codUnidad = "GEN";
-            /**
-             * Si son directas no pido UEN
+            var codUnidad = "";
+            
+            //Si son directas no pido UEN
             codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
             if (string.IsNullOrWhiteSpace(codUnidad))
-                return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);
-            **/
+            {
+                codUnidad = "GEN";
+                /**return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);**/
+            }
+                
+            
 
             var montoColones = ObtenerMontoOrden(conn, tx, codOrden);
             var tipoCambio = ObtenerTipoCambio(conn, tx);
@@ -173,7 +177,7 @@ namespace Galileo.DataBaseTier
             if (montoDolares == 0)
                 return DbHelper.ErrorResponse("El monto de la orden de compra no puede ser 0.", -1);
 
-            if (!UsuarioEnRango(conn, tx, usuario, codUnidad, montoDolares))
+            if (!UsuarioEnRango(conn, tx, usuario, codUnidad, montoDolares) && codUnidad != "GEN")
                 return DbHelper.ErrorResponse("El Usuario actual no está dentro del rango para esta Gestión.", -1);
 
             if (!UsuarioPuedeAutorizarPendientes(conn, tx, usuario))
@@ -182,8 +186,6 @@ namespace Galileo.DataBaseTier
             return DbHelper.CreateOkResponse();
         }
 
-        /**
-         * respaldo de metodo
         private static string? ObtenerCodUnidad(SqlConnection conn, SqlTransaction tx, string codOrden)
         {
             return conn.QueryFirstOrDefault<string>(
@@ -194,7 +196,7 @@ namespace Galileo.DataBaseTier
                 transaction: tx
             );
         }
-        **/
+        
 
         private static decimal ObtenerMontoOrden(SqlConnection conn, SqlTransaction tx, string codOrden)
         {

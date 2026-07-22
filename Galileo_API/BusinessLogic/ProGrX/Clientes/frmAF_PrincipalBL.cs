@@ -129,6 +129,11 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_Persona_Consulta_Obtener(CodEmpresa, cedula, usuario);
         }
 
+        public ErrorDto<List<AfPersonaRelacionDto>> AF_Persona_Relacion_List(int CodEmpresa, string cedula)
+        {
+            return _db.AF_Persona_Relacion_List(CodEmpresa, cedula);
+        }
+
         public ErrorDto AF_Persona_Indicadores_Registra(int CodEmpresa, string request)
         {
             return _db.AF_Persona_Indicadores_Registra(CodEmpresa, request);

@@ -33,7 +33,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             string query = @"select cod_destino,descripcion,tasa,tbp,int_form,
             case when isnull(TCIntForma,'A') = 'A' then 'Adelantado' else 'Vencido' end as 'TipoCbrInt', 
-            primer_cuota,ENVIO_TESORERIA,prioridad from Catalogo_Destinos 
+            primer_cuota,ENVIO_TESORERIA,
+            case
+                when isnumeric(ltrim(rtrim(convert(varchar(20), isnull(prioridad, ''))))) = 1
+                    then convert(int, ltrim(rtrim(convert(varchar(20), prioridad))))
+                else 0
+            end as prioridad
+            from Catalogo_Destinos 
             order by cod_destino";
             return DbHelper.ExecuteListQuery<CrCatalogoDestinoData>(_portalDb, codEmpresa, query);
         }
@@ -63,7 +69,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<CrCatalogoDestinoData>> CrCatalogoDestinos_Asignados_Obtener(int codEmpresa, string codigo)
         {
-            string query = @"SELECT R.*, 
+            string query = @"SELECT
+                R.cod_destino,
+                R.descripcion,
+                R.tasa,
+                R.tbp,
+                R.int_form,
+                case when isnull(R.TCIntForma,'A') = 'A' then 'Adelantado' else 'Vencido' end as TipoCbrInt,
+                R.primer_cuota,
+                R.ENVIO_TESORERIA,
+                case
+                    when isnumeric(ltrim(rtrim(convert(varchar(20), isnull(R.prioridad, ''))))) = 1
+                        then convert(int, ltrim(rtrim(convert(varchar(20), R.prioridad))))
+                    else 0
+                end as prioridad,
                 CASE 
                     WHEN A.codigo IS NOT NULL THEN 1
                     ELSE 0

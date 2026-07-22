@@ -290,7 +290,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "spFndSeguridad_ApAnul_Delete",
                     new
                     {
-                        tp_rol = NormalizarTexto(tp_rol),
+                        Grupo = NormalizarTexto(tp_rol),
                         usuario = NormalizarTexto(usuario)
                     },
                     commandType: CommandType.StoredProcedure));

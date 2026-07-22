@@ -158,4 +158,27 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? TokenConsulta { get; set; }
         public string? AppProductName { get; set; }
     }
+
+    public sealed class FndTraspasoTesoreriaProcesarLoteRequest
+    {
+        public required int CodEmpresa { get; set; }
+        public List<int> Consecutivos { get; set; } = new();
+        public string Usuario { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+        public string? Token { get; set; }
+        public string? RetencionCodigo { get; set; }
+    }
+
+    public sealed class FndTraspasoTesoreriaProcesoError
+    {
+        public int Consec { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public sealed class FndTraspasoTesoreriaProcesarLoteResult
+    {
+        public int Procesados { get; set; }
+        public int ConErrores { get; set; }
+        public List<FndTraspasoTesoreriaProcesoError> Errores { get; set; } = new();
+    }
 }

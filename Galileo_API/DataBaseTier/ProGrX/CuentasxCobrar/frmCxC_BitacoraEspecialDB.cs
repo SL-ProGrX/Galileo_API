@@ -261,10 +261,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     break;
             }
 
-            if (filtros.filtro != "")
-            {
-                where.Add("C.Revisado_Fecha is not null");
-            }
 
             if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 where.Add("(C.bitacora_id LIKE '%' + @term + '%' OR C.Operacion LIKE '%' + @term + '%' OR C.Usuario LIKE '%' + @term + '%' OR S.cedula LIKE '%' + @term + '%'" +

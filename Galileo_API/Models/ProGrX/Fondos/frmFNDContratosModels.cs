@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
 namespace Galileo.Models.ProGrX.Fondos
@@ -6,13 +6,13 @@ namespace Galileo.Models.ProGrX.Fondos
     public class ContratosModels
     {
         [JsonPropertyName("cod_operadora")]
-        public int cod_operadora { get; set; }
+        public int cod_operadora { get; set; } = 0;
 
         [JsonPropertyName("cod_plan")]
         public string? cod_plan { get; set; }
 
         [JsonPropertyName("cod_contrato")]
-        public int cod_contrato { get; set; }
+        public int cod_contrato { get; set; } = 0;
 
         [JsonPropertyName("cedula")]
         public string? cedula { get; set; }
@@ -69,7 +69,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public decimal? liq_neto { get; set; }
 
         [JsonPropertyName("ind_deduccion")]
-        public bool ind_deduccion { get; set; }
+        public bool? ind_deduccion { get; set; } = false;
 
         [JsonPropertyName("operacion")]
         public string? operacion { get; set; }
@@ -183,7 +183,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? analista_recepcion { get; set; }
 
         [JsonPropertyName("permite_giro_terceros")]
-        public string? permite_giro_terceros { get; set; }
+        public bool? permite_giro_terceros { get; set; }
 
         [JsonPropertyName("sobre_giro")]
         public string? sobre_giro { get; set; }
@@ -201,7 +201,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public DateTime? tarjeta_estado_fecha { get; set; }
 
         [JsonPropertyName("tarjeta_saldo_update")]
-        public bool tarjeta_saldo_update { get; set; }
+        public bool? tarjeta_saldo_update { get; set; } = false;
 
         [JsonPropertyName("tarjetas_ret_efectivo")]
         public decimal? tarjetas_ret_efectivo { get; set; }
@@ -272,35 +272,36 @@ namespace Galileo.Models.ProGrX.Fondos
         [JsonPropertyName("ind_final_crm")]
         public string? ind_final_crm { get; set; }
         public DateTime? tarjeta_exp_fecha { get; set; }
-        public string? tasa_preferencial_aplica { get; set; }
+        public bool? tasa_preferencial_aplica { get; set; }
         public string? cod_tasa_ref { get; set; }
-        public string? cdp_paga_cupon { get; set; }
+        public bool? cdp_paga_cupon { get; set; }
         public string? cliente { get; set; }
         public string? vendedor { get; set; }
         public string? plandesc { get; set; }
-        public int cuenta_maestra { get; set; }
-        public bool tipo_cdp { get; set; }
+        public int? cuenta_maestra { get; set; } = 0;
+        public bool? tipo_cdp { get; set; } = false;
         public string? cdp_paga_cupon_cfg { get; set; }
-        public string? planpermitegt { get; set; }
+        public bool? planpermitegt { get; set; }
         public string? cod_moneda { get; set; }
-        public int bancoid { get; set; }
+        public int? bancoid { get; set; } = 0;
         public string? bancodesc { get; set; }
         public int? frecuencia_dias { get; set; }
         public int? frecuencia_meses { get; set; }
         public int? dias_inversion { get; set; }
-        public string? plazo_id { get; set; }
+        [JsonPropertyName("plazo_id")]
+        public int? plazo_id { get; set; }
         public string? plazo_desc { get; set; }
         public int? plazo_dias { get; set; }
         public int? plazo_meses { get; set; }
-        public string? frecuencia_cupon_id { get; set; }
+        public int? frecuencia_cupon_id { get; set; }
         public string? frecuencia_cupon_desc { get; set; }
-        public bool aplicaBeneficiarios { get; set; }
-        public decimal intereses { get; set; }
-        public decimal tasa { get; set; }
-        public bool isNew { get; set; }
+        public bool? aplicaBeneficiarios { get; set; } = false;
+        public decimal? intereses { get; set; } = 0;
+        public decimal? tasa { get; set; } = 0;
+        public bool isNew { get; set; } = false;
         public string?  mTipoDeduc { get; set; }
         public decimal? mPorcRef { get; set; }
-        public string? mSubCuentasMax { get; set; }
+        public int? mSubCuentasMax { get; set; }
         public decimal? vMontoMin { get; set; }
         public decimal? vPlazoMin { get; set; }
         public decimal? vInversionMin { get; set; }
@@ -481,11 +482,24 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndCambios
     {
-        public decimal vPlazo { get; set; }
-        public decimal vCuota { get; set; }
-        public decimal vInversion { get; set; }
+        public decimal vPlazo { get; set; } = 0;
+        public decimal vCuota { get; set; } = 0;
+        public decimal vInversion { get; set; } = 0;
         public string? vDescPlazo { get; set; }
-        public bool vDedPlanilla { get; set; }
+        public bool vDedPlanilla { get; set; } = false;
+    }
+
+    /// <summary>
+    /// Request para guardar (insertar o actualizar) un contrato FND.
+    /// Agrupa los cambios anteriores y los datos actuales del contrato.
+    /// </summary>
+    public class FndContratosGuardarRequest
+    {
+        [JsonPropertyName("cambios")]
+        public required FndCambios Cambios { get; set; }
+
+        [JsonPropertyName("contrato")]
+        public required ContratosModels Contrato { get; set; }
     }
 
     public class FndSociosListaData
@@ -538,3 +552,4 @@ namespace Galileo.Models.ProGrX.Fondos
     }
 
 }
+

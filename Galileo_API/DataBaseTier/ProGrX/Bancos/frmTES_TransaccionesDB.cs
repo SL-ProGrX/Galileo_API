@@ -181,12 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var tipoCalculado = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
 
-                    // Solo se recalcula si no coincide y el valor actual es <= 1 (default/no confiable).
-                    // Si coincide, o si ya es > 1 (asignado explícitamente), se conserva.
-                    if (trx.tipo_ced_destino != tipoCalculado && trx.tipo_ced_destino <= 1)
-                    {
-                        trx.tipo_ced_destino = tipoCalculado;
-                    }
+                    trx.tipo_ced_destino = tipoCalculado;
                 }
 
 
@@ -204,7 +199,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public int fxTipoIdentificacion(int CodEmpresa, string cedula)
         {
-            var ced_destino = MKindoServiceDb.Inferir(cedula!);
+            var cedulaNormalizada = cedula;
+            var indiceGuionBajo = cedula.IndexOf('_');
+
+            if (indiceGuionBajo >= 0)
+            {
+                var indiceGuion = cedula.IndexOf('-', indiceGuionBajo + 1);
+
+                if (indiceGuion >= 0 && indiceGuion < cedula.Length - 1)
+                {
+                    cedulaNormalizada = cedula[(indiceGuion + 1)..];
+                }
+            }
+            var ced_destino = MKindoServiceDb.Inferir(cedulaNormalizada!);
             var tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
             return mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, tipo_ced_destino).Result;
         }
@@ -1632,7 +1639,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (t.detalle.Length == 0)
                 errores.Add(" - El Detalle no es válido ...\n");
 
-            if (t.estado != "P")
+            if (t.estado != "P" && t.estado != "S")
                 errores.Add("- No se puede modificar este Documento porque se encuentra Emitido o Anulado ...\n");
         }
 

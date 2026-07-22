@@ -1,4 +1,5 @@
-﻿using Dapper;
+using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
@@ -9,6 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     public class FrmFndCalculoRendimientoDb
     {
         private readonly IConfiguration _config;
+        private readonly MProGrxMain _mProGrxMain;
         private const string SpAjusteTasaContratosVencidos = "dbo.spFndAjusteTasaCntVencidos";
         private const string SpGenerarRendimientoPlanSql = @"
             EXEC dbo.spFndRndGenPlanMain
@@ -25,6 +27,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         public FrmFndCalculoRendimientoDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _mProGrxMain = new MProGrxMain(config);
         }
 
         /// <summary>
@@ -167,6 +170,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     new FndRendimientoResultadoDto());
             }
 
+            dto.oficina = ObtenerOficinaRendimiento(CodEmpresa, dto);
+            if (string.IsNullOrWhiteSpace(dto.oficina))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se pudo obtener la oficina titular del usuario.",
+                    -2,
+                    new FndRendimientoResultadoDto());
+            }
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
             {
                 EjecutarAjusteTasa(connection, dto);
@@ -185,6 +196,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             };
         }
 
+        private string ObtenerOficinaRendimiento(int CodEmpresa, FndRendimientoRequestDto dto)
+        {
+            var oficina = NormalizarTexto(dto.oficina);
+            if (!string.IsNullOrWhiteSpace(oficina))
+            {
+                return oficina;
+            }
+
+            var oficinas = _mProGrxMain.CargaOficinas(dto.usuario, CodEmpresa);
+            return NormalizarTexto(oficinas?.FirstOrDefault()?.Titular) ?? string.Empty;
+        }
         /// <summary>
         /// Obtener lista historial rendimiento
         /// </summary>

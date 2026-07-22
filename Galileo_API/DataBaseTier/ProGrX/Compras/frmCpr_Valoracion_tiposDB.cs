@@ -7,6 +7,10 @@ namespace Galileo.DataBaseTier
     public class FrmCprValoracionTiposDB
     {
         private const string ErrorMessage = "Error";
+        private static readonly IReadOnlySet<string> EsquemaSortFields =
+            new HashSet<string>(new[] { "val_id", "descripcion", "activo" }, StringComparer.OrdinalIgnoreCase);
+        private static readonly IReadOnlySet<string> ItemSortFields =
+            new HashSet<string>(new[] { "val_item", "descripcion", "peso" }, StringComparer.OrdinalIgnoreCase);
         private readonly PortalDB _portalDb;
 
         public FrmCprValoracionTiposDB(IConfiguration config)
@@ -32,15 +36,40 @@ namespace Galileo.DataBaseTier
             public int Total { get; set; } = 0;
         }
 
-        private static void BuildSearch(string? filtro, int? pagina, int? paginacion, out string? like, out int offset, out int fetch)
+        private sealed class SearchOptions
         {
-            like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro.Trim()}%";
+            public string? Like { get; init; }
+            public int Offset { get; init; }
+            public int Fetch { get; init; }
+            public string SortField { get; init; } = string.Empty;
+            public int SortOrder { get; init; }
+        }
 
-            offset = pagina.GetValueOrDefault(0);
-            if (offset < 0) offset = 0;
+        /// <summary>
+        /// Normaliza el filtro, la paginación y el orden solicitado contra una lista permitida.
+        /// </summary>
+        private static SearchOptions BuildSearch(
+            CprValoraConsultaRequest? request,
+            string defaultSortField,
+            IReadOnlySet<string> allowedSortFields)
+        {
+            request ??= new CprValoraConsultaRequest();
+            var requestedSortField = request.SortField ?? string.Empty;
+            var sortField = allowedSortFields.Contains(requestedSortField)
+                ? requestedSortField.ToLowerInvariant()
+                : defaultSortField;
 
-            fetch = paginacion.GetValueOrDefault(int.MaxValue);
+            var fetch = request.Paginacion.GetValueOrDefault(int.MaxValue);
             if (fetch <= 0) fetch = int.MaxValue;
+
+            return new SearchOptions
+            {
+                Like = string.IsNullOrWhiteSpace(request.Filtro) ? null : $"%{request.Filtro.Trim()}%",
+                Offset = Math.Max(request.Pagina.GetValueOrDefault(), 0),
+                Fetch = fetch,
+                SortField = sortField,
+                SortOrder = request.SortOrder == 0 ? 0 : 1
+            };
         }
 
         private ErrorDto MergeUpsert(int codEmpresa, string mergeSql, object param, string insertMsg, string updateMsg)
@@ -55,9 +84,14 @@ namespace Galileo.DataBaseTier
             return DbHelper.OkResponse(msg);
         }
 
-        public ErrorDto<CprValoraEsquemaDtoList> EsquemaValoracion_Obtener(int codEmpresa, int? pagina, int? paginacion, string? filtro)
+        /// <summary>
+        /// Obtiene los esquemas de valoración filtrados, ordenados y paginados.
+        /// </summary>
+        public ErrorDto<CprValoraEsquemaDtoList> CPR_frmCpr_Valoracion_Tipos_EsquemaValoracion_Obtener(
+            int codEmpresa,
+            CprValoraConsultaRequest request)
         {
-            BuildSearch(filtro, pagina, paginacion, out var like, out var offset, out var fetch);
+            var search = BuildSearch(request, "val_id", EsquemaSortFields);
 
             const string sql = @"SELECT VAL_ID AS val_id,
        descripcion,
@@ -65,14 +99,28 @@ namespace Galileo.DataBaseTier
        COUNT(*) OVER() AS Total
   FROM CPR_VALORA_ESQUEMA
  WHERE (@F IS NULL OR VAL_ID LIKE @F OR descripcion LIKE @F)
- ORDER BY VAL_ID DESC
+ ORDER BY
+       CASE WHEN @SortField = 'val_id' AND @SortOrder = 1 THEN VAL_ID END ASC,
+       CASE WHEN @SortField = 'val_id' AND @SortOrder = 0 THEN VAL_ID END DESC,
+       CASE WHEN @SortField = 'descripcion' AND @SortOrder = 1 THEN descripcion END ASC,
+       CASE WHEN @SortField = 'descripcion' AND @SortOrder = 0 THEN descripcion END DESC,
+       CASE WHEN @SortField = 'activo' AND @SortOrder = 1 THEN Activo END ASC,
+       CASE WHEN @SortField = 'activo' AND @SortOrder = 0 THEN Activo END DESC,
+       VAL_ID ASC
  OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
             var rowsResp = DbHelper.ExecuteListQuery<EsquemaRow>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new { F = like, Offset = offset, Fetch = fetch }
+                new
+                {
+                    F = search.Like,
+                    search.Offset,
+                    search.Fetch,
+                    search.SortField,
+                    search.SortOrder
+                }
             );
 
             var code = rowsResp.Code is int c ? c : -1;
@@ -96,9 +144,15 @@ namespace Galileo.DataBaseTier
             });
         }
 
-        public ErrorDto<CprValoraItemsDtoList> ValoracionItems_Obtener(int codEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
+        /// <summary>
+        /// Obtiene los ítems de un esquema de valoración filtrados, ordenados y paginados.
+        /// </summary>
+        public ErrorDto<CprValoraItemsDtoList> CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(
+            int codEmpresa,
+            string val_id,
+            CprValoraConsultaRequest request)
         {
-            BuildSearch(filtro, pagina, paginacion, out var like, out var offset, out var fetch);
+            var search = BuildSearch(request, "val_item", ItemSortFields);
 
             const string sql = @"SELECT VAL_ITEM AS val_item,
        descripcion,
@@ -107,14 +161,29 @@ namespace Galileo.DataBaseTier
   FROM CPR_VALORA_ITEMS
  WHERE VAL_ID = @ValId
    AND (@F IS NULL OR VAL_ITEM LIKE @F OR descripcion LIKE @F)
- ORDER BY VAL_ITEM
+ ORDER BY
+       CASE WHEN @SortField = 'val_item' AND @SortOrder = 1 THEN VAL_ITEM END ASC,
+       CASE WHEN @SortField = 'val_item' AND @SortOrder = 0 THEN VAL_ITEM END DESC,
+       CASE WHEN @SortField = 'descripcion' AND @SortOrder = 1 THEN descripcion END ASC,
+       CASE WHEN @SortField = 'descripcion' AND @SortOrder = 0 THEN descripcion END DESC,
+       CASE WHEN @SortField = 'peso' AND @SortOrder = 1 THEN Peso END ASC,
+       CASE WHEN @SortField = 'peso' AND @SortOrder = 0 THEN Peso END DESC,
+       VAL_ITEM ASC
  OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
             var rowsResp = DbHelper.ExecuteListQuery<ItemRow>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new { ValId = val_id, F = like, Offset = offset, Fetch = fetch }
+                new
+                {
+                    ValId = val_id,
+                    F = search.Like,
+                    search.Offset,
+                    search.Fetch,
+                    search.SortField,
+                    search.SortOrder
+                }
             );
 
             var code = rowsResp.Code is int c ? c : -1;

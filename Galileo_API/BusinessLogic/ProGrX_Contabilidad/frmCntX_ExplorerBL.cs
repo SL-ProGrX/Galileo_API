@@ -46,6 +46,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.AsientoDetalle_Listar(codEmpresa, filtros);
         }
 
+        public ErrorDto<List<CntxConsultaAnaliticaDto>> ConsultaAnalitica(
+            int codEmpresa,
+            int codContabilidad,
+            CntxExploradorFiltrosDto filtros)
+        {
+            return _db.ConsultaAnalitica(codEmpresa, codContabilidad, filtros);
+        }
+
+        public ErrorDto<CntxMovimientoNodoDto> MovimientosNodo(CntxMovimientoNodoRequest request)
+        {
+            return _db.MovimientosNodo(request);
+        }
+
         #endregion
 
         #region AUX
@@ -62,9 +75,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CuentasPorPadre(codEmpresa, cod_contabilidad, codCuentaPadre);
         }
 
-        public ErrorDto<List<CntxAsientoTreeDto>> AsientosTreePorTipo(int codEmpresa, int cod_contabilidad, string tipo)
+        public ErrorDto<List<CntxAsientoTreeDto>> AsientosTreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
         {
-            return _db.Cntx_Asientos_TreePorTipo(codEmpresa, cod_contabilidad, tipo);
+            return _db.Cntx_Asientos_TreePorTipo(codEmpresa, cod_contabilidad, tipo, anio, mes);
         }
 
         public ErrorDto<List<CntxTipoCuentaDto>> Cntx_TiposCuenta_Obtener(int codEmpresa, int codContabilidad)
@@ -132,9 +145,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.PlantillaRate_Detalle(codEmpresa, codContabilidad, codPlantilla);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int? codAreaPadre)
+        public ErrorDto<List<AreaTrabajoDto>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int codContabilidad)
         {
-            return _db.AreasTrabajo_ObtenerPorPadre(codEmpresa, codAreaPadre);
+            return _db.AreasTrabajo_ObtenerPorPadre(codEmpresa, codContabilidad);
+        }
+
+        public ErrorDto<List<AreaCuentaDto>> AreasTrabajo_Cuentas(int codEmpresa, int codContabilidad, int codArea)
+        {
+            return _db.AreasTrabajo_Cuentas(codEmpresa, codContabilidad, codArea);
         }
 
         public ErrorDto<List<AreaResumenDto>> AreasTrabajo_Resumen(int codEmpresa, int codContabilidad, int codArea, DateTime fechaDesde, DateTime fechaHasta)
@@ -157,7 +175,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Asientos_Mayorizar(dto);
         }
 
-        public ErrorDto<string?> NotasAsiento(int codEmpresa, int cod_contabilidad, string tipo_asiento, int num_asiento)
+        public ErrorDto<bool> Asiento_Borrar(CntxBorrarAsientoRequest dto)
+        {
+            return _db.Asiento_Borrar(dto);
+        }
+
+        public ErrorDto<string?> NotasAsiento(int codEmpresa, int cod_contabilidad, string tipo_asiento, string num_asiento)
         {
             return _db.NotasAsiento(codEmpresa, cod_contabilidad, tipo_asiento, num_asiento);
         }

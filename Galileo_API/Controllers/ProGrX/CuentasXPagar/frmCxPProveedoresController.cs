@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.CxP;
@@ -9,6 +10,7 @@ using Galileo.BusinessLogic.ProGrX.CxP;
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class FrmCxPProveedoresController : ControllerBase
     {
@@ -17,6 +19,12 @@ namespace Galileo.Controllers
         public FrmCxPProveedoresController(IConfiguration config)
         {
             _bl = new FrmCxPProveedoresBL(config);
+        }
+
+        [HttpGet("Proveedores_Obtener")]
+        public ErrorDto<TablasListaGenericaModel> Proveedores_Obtener(int CodEmpresa, string filtro, string parametros)
+        {
+            return _bl.Proveedores_Obtener(CodEmpresa, filtro, parametros);
         }
 
         [HttpGet("ProveedorDetalle_Obtener")]
@@ -158,6 +166,17 @@ namespace Galileo.Controllers
         public ErrorDto CxPProveedoresUsuario_Agregar(int CodEmpresa, ProveedorUsuariosListaDatos datos)
         {
             return _bl.CxPProveedoresUsuario_Agregar(CodEmpresa, datos);
+        }
+
+        [HttpPost("ProveedorUsuario_RenovarClaveWeb")]
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(
+            [FromQuery] int CodEmpresa,
+            [FromQuery] int CodProveedor,
+            [FromQuery] string Usuario,
+            [FromQuery] string? Email = null,
+            [FromQuery] string UsuarioSesion = "")
+        {
+            return _bl.ProveedorUsuario_RenovarClaveWeb(CodEmpresa, CodProveedor, Usuario, Email, UsuarioSesion);
         }
 
         [HttpGet("BitacoraProveedor_Obtener")]

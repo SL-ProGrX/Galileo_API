@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Personas;
+using Galileo_API.Models.ProGrX_Personas;
 using Galileo.Models.Security;
+using Galileo.DataBaseTier;
 
-
-namespace Galileo.DataBaseTier.ProGrX_Personas
+namespace Galileo_API.DataBaseTier.ProGrX_Personas
 {
     public class FrmAFCrNoAumentoTasasAutorizadoresDB
     {
@@ -19,21 +19,19 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         }
 
         /// <summary>
-        /// Obtiene la lista de autorizadores usando el SP y el parámetro EstadoAutorizado.
+        /// Obtiene la lista de autorizadores usando el SP sin parámetros.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="EstadoAutorizado"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
+        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query<AfNatAutorizadores>(
-                    "spAFI_Renuncia_NAT_Autorizadores_Obtener",
-                    new { SoloAutorizados = EstadoAutorizado },
+                    "spAFI_Renuncia_NAT_Autorizadores",
                     commandType: System.Data.CommandType.StoredProcedure).ToList());
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfNatAutorizadores>())
+                ? DbHelper.CreateOkResponse(result.Result ?? [])
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener autorizadores NAT.", result.Code.GetValueOrDefault(-1), new List<AfNatAutorizadores>());
         }
 

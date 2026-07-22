@@ -61,8 +61,8 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
-        [HttpGet("FND_PlanillaFondos_Deducciones_Cargar")]
-        public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, string Request)
+        [HttpPost("FND_PlanillaFondos_Deducciones_Cargar")]
+        public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, CargarDeduccionesRequest Request)
         {
             return BlFndPlanillaFondos.FND_PlanillaFondos_Deducciones_Cargar(CodEmpresa, Request);
         }

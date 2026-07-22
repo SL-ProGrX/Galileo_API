@@ -18,15 +18,20 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("EsquemaValoracion_Obtener")]
-        public ErrorDto<CprValoraEsquemaDtoList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraEsquemaDtoList> CPR_frmCpr_Valoracion_Tipos_EsquemaValoracion_Obtener(
+            int CodEmpresa,
+            [FromQuery] CprValoraConsultaRequest request)
         {
-            return _bl.EsquemaValoracion_Obtener(CodEmpresa, pagina, paginacion, filtro);
+            return _bl.CPR_frmCpr_Valoracion_Tipos_EsquemaValoracion_Obtener(CodEmpresa, request);
         }
 
         [HttpGet("ValoracionItems_Obtener")]
-        public ErrorDto<CprValoraItemsDtoList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraItemsDtoList> CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(
+            int CodEmpresa,
+            string val_id,
+            [FromQuery] CprValoraConsultaRequest request)
         {
-            return _bl.ValoracionItems_Obtener(CodEmpresa, val_id, pagina, paginacion, filtro);
+            return _bl.CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(CodEmpresa, val_id, request);
         }
 
         [HttpPost("EsquemaValoracion_Upsert")]

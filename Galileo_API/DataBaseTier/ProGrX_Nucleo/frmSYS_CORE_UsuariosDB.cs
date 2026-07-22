@@ -452,22 +452,27 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<CoreMiembrosRolData>> CoreUsuariosUENs_Roles_Obtener(int CodEmpresa, string usuario)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto<List<CoreMiembrosRolData>> resp = new ErrorDto<List<CoreMiembrosRolData>>();
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                const string sp = "spSys_CORE_Users_UENs_Roles_Consultas";
-                resp.Result = connection.Query<CoreMiembrosRolData>(sp, new { usuario }, commandType: CommandType.StoredProcedure).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
+            const string query = @"SELECT U.COD_UNIDAD,
+                                          U.DESCRIPCION,
+                                          U.ACTIVA,
+                                          U.REGISTRO_FECHA,
+                                          U.REGISTRO_USUARIO,
+                                          UR.ROL_SOLICITA,
+                                          UR.ROL_CONSULTA,
+                                          UR.ROL_AUTORIZA,
+                                          UR.ROL_ENCARGADO,
+                                          UR.ROL_LIDER
+                                   FROM CORE_UENS U
+                                   INNER JOIN CORE_UENS_USUARIOS_ROLES UR
+                                       ON U.COD_UNIDAD = UR.COD_UNIDAD
+                                      AND UR.CORE_USUARIO = @usuario
+                                   WHERE U.ACTIVA = 1";
 
-            return resp;
+            return DbHelper.ExecuteListQuery<CoreMiembrosRolData>(
+                new PortalDB(_config),
+                CodEmpresa,
+                query,
+                new { usuario });
         }
 
         /// <summary>
@@ -498,9 +503,9 @@ namespace Galileo.DataBaseTier
                 connection.Execute(sp, new
                 {
                     uen = core.uen,
-                    core_usuario = core.core_usuario,
-                    usuario = core.usuario,
-                    movItem
+                    CoreUser = core.core_usuario,
+                    RegUser = core.usuario,
+                    Mov = movItem
                 }, commandType: CommandType.StoredProcedure);
                 resp.Description = "UENs actualizados satisfactoriamente!";
             }

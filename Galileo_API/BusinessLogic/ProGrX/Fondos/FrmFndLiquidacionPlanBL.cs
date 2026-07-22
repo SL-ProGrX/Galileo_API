@@ -50,11 +50,18 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _db.FND_LiquidacionPlan_Catalogo_Buscar(CodEmpresa);
         }
 
-        public ErrorDto<FndLiquidacionPlanLiquidarResult> FND_LiquidacionPlan_Liquidar(
+        public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Iniciar(
            int codEmpresa,
-           FndLiquidacionPlanLiquidarRequest request)
+           FndLiquidacionPlanProcesoIniciarRequest request)
         {
-            return _db.FND_LiquidacionPlan_Liquidar(codEmpresa, request); 
+            return _db.FND_LiquidacionPlan_Proceso_Iniciar(codEmpresa, request);
+        }
+
+        public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Continuar(
+           int codEmpresa,
+           FndLiquidacionPlanProcesoContinuarRequest request)
+        {
+            return _db.FND_LiquidacionPlan_Proceso_Continuar(codEmpresa, request);
         }
 
         public ErrorDto<int> FND_LiquidacionPlan_ArchivoRef_Cargar(

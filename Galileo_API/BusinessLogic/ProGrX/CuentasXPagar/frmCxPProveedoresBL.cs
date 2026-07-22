@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
+using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic.ProGrX.CxP
 {
@@ -12,6 +13,13 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         public FrmCxPProveedoresBL(IConfiguration config)
         {
             _db = new FrmCxPProveedoresDB(config);
+        }
+
+        public ErrorDto<TablasListaGenericaModel> Proveedores_Obtener(int CodEmpresa, string filtro, string parametros)
+        {
+            FiltrosLazyLoadData jfiltro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro) ?? new FiltrosLazyLoadData();
+            CxPProveedorFiltros jparametros = JsonConvert.DeserializeObject<CxPProveedorFiltros>(parametros) ?? new CxPProveedorFiltros();
+            return _db.Proveedores_Obtener(CodEmpresa, jfiltro, jparametros);
         }
 
         public ErrorDto<ProveedorDto> ProveedorDetalle_Obtener(int CodEmpresa, int Cod_Proveedor)
@@ -130,6 +138,11 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.CxPProveedoresUsuario_Agregar(CodEmpresa, datos);
         }
 
+        public ErrorDto ProveedorUsuario_RenovarClaveWeb(int CodEmpresa, int CodProveedor, string usuario, string? email, string usuarioSesion)
+        {
+            return _db.ProveedorUsuario_RenovarClaveWeb(CodEmpresa, CodProveedor, usuario, email, usuarioSesion);
+        }
+
 
         public ErrorDto<List<BitacoraProveedorDto>> BitacoraProveedor_Obtener(int CodCliente, int cod_proveedor)
         {
@@ -147,4 +160,3 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         }
     }//end class
 }//end namespace
-

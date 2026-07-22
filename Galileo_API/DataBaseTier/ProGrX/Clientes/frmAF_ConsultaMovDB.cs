@@ -16,7 +16,7 @@ namespace Galileo.DataBaseTier
         private const string SpLiquidacionReversaValidacion = "spAFI_Liquidacion_Reversa_Validacion";
         private const string SpLiquidacionReversa = "spAFI_Liquidacion_Reversa";
 
-        private const string SqlFechaServidor = "SELECT dbo.MyGetdate() AS Fecha;";
+        private const string SqlFechaServidor = "SELECT Getdate() AS Fecha;";
 
         public FrmAfConsultaMovDb(IConfiguration config)
         {

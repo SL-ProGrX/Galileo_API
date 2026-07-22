@@ -42,12 +42,12 @@ namespace Galileo.DataBaseTier
 
         private const string SqlBloqueosBaseFromWhere = @"
                     FROM dbo.afi_congelar C
-                    INNER JOIN dbo.Socios S
-                        ON C.cedula = S.cedula
-                    INNER JOIN dbo.afi_congelar_causas X
+                    LEFT JOIN dbo.Socios S
+                        ON TRIM(C.cedula) = TRIM(S.cedula)
+                    LEFT JOIN dbo.afi_congelar_causas X
                         ON C.cod_causa = X.cod_causa
-                    WHERE C.cedula LIKE @Cedula
-                      AND S.nombre LIKE @Nombre
+                    WHERE (@Cedula = '' OR C.cedula LIKE '%' + @Cedula + '%')
+                      AND (@Nombre = '' OR S.nombre LIKE '%' + @Nombre + '%')
                       AND (@AplicarFecha = 0 OR C.fecha_Inicia BETWEEN @FechaDesde AND @FechaHasta)
                       AND (@Estado = 'X' OR C.estado = @Estado)";
 
@@ -102,7 +102,8 @@ namespace Galileo.DataBaseTier
                         per_cobro_FndSol = @PerCobroFndSol,
                         per_cobro_cuotaCr = @PerCobroCuotaCr,
                         fecha_inicia = @FechaInicia,
-                        fecha_finaliza = @FechaFinaliza
+                        fecha_finaliza = @FechaFinaliza,
+                        cedula = @Cedula
                     WHERE cod_congelar = @CodCongelar;";
 
         private const string SqlCongelarInsert = @"
@@ -153,7 +154,8 @@ namespace Galileo.DataBaseTier
                         @PerGeneracionMora,
                         @PerCobroFndSol,
                         @PerCobroCuotaCr
-                    );";
+                    );
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
         private const string SqlCausaUso = @"
                     SELECT COUNT(*)
@@ -309,23 +311,35 @@ namespace Galileo.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="congelar"></param>
         /// <returns></returns>
-        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
+        public ErrorDto<int> AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
         {
-            if (congelar is null)
+            try
             {
-                return DbHelper.ErrorResponse("Los datos del bloqueo o congelamiento son requeridos.", -2);
+                if (congelar is null)
+                    return DbHelper.CreateErrorResponse<int>("Los datos del bloqueo o congelamiento son requeridos.", -2);
+
+                var parametros = CrearParametrosCongelar(usuario, congelar);
+
+                if (congelar.cod_congelar != 0)
+                {
+                    var update = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodEmpresa, SqlCongelarUpdate, parametros);
+                    return update.Code == 0
+                        ? DbHelper.CreateOkResponse<int>(congelar.cod_congelar, "Guardado correctamente")
+                        : DbHelper.CreateErrorResponse<int>(update.Description ?? "Error al guardar bloqueo o congelamiento.", update.Code.GetValueOrDefault(-1));
+                }
+
+                var insert = DbHelper.ExecuteSingleQuery<int>(CreatePortalDb(), CodEmpresa, SqlCongelarInsert, 0, parametros);
+
+
+
+                return insert.Code == 0
+                    ? DbHelper.CreateOkResponse<int>(insert.Result!, "Guardado correctamente")
+                    : DbHelper.CreateErrorResponse<int>(insert.Description ?? "Error al guardar bloqueo o congelamiento.", insert.Code.GetValueOrDefault(-1));
             }
-
-            var sql = congelar.cod_congelar != 0 ? SqlCongelarUpdate : SqlCongelarInsert;
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodEmpresa,
-                sql,
-                CrearParametrosCongelar(usuario, congelar));
-
-            return result.Code == 0
-                ? DbHelper.OkResponse("Guardado correctamente")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar bloqueo o congelamiento.", result.Code.GetValueOrDefault(-1));
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<int>($"Error al guardar bloqueo o congelamiento: {ex.Message}", -1);
+            }
         }
 
         #endregion
@@ -452,11 +466,11 @@ namespace Galileo.DataBaseTier
         {
             return new
             {
-                Cedula = CrearLikeContiene(filtro.cedula),
-                Nombre = CrearLikeContiene(filtro.nombre),
+                Cedula = NormalizarTexto(filtro.cedula),
+                Nombre = NormalizarTexto(filtro.nombre),
                 AplicarFecha = filtro.chkTodasFechas ? 0 : 1,
                 FechaDesde = filtro.fecha_desde.Date,
-                FechaHasta = filtro.fecha_hasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
+                FechaHasta = filtro.fecha_hasta.Date.AddDays(1).AddTicks(-1),
                 Estado = NormalizarEstado(filtro.estado)
             };
         }
@@ -525,12 +539,6 @@ namespace Galileo.DataBaseTier
         {
             var valor = NormalizarTexto(estado);
             return string.IsNullOrWhiteSpace(valor) ? "X" : valor;
-        }
-
-        private static string CrearLikeContiene(string? valor)
-        {
-            var texto = NormalizarTexto(valor);
-            return string.IsNullOrWhiteSpace(texto) ? "%" : $"%{texto}%";
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();

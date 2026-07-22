@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo_API.Models.ProGrX.Bancos;
+using System.Diagnostics;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -54,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private ErrorDto eliminarCuentasCerradas(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
+            
             if (cuenta.error != 23)
             {
                 return DbHelper.ErrorResponse($"La cuenta no esta en estado Cerrada");
@@ -62,11 +63,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             string vCedula = cuenta.cedula.Trim().Replace("-","");
 
+            const string GrupoBanco = "SELECT COD_GRUPO FROM TES_BANCOS WHERE  ID_BANCO =  @Banco ";
+            var codGrupo = conn.Query<string>(GrupoBanco, new { Banco = cuenta.idBanco }).FirstOrDefault();
+
             var parameters = new
             {
                 Cedula = vCedula,
                 CuentaIBAN = cuenta.cuentaIban,
-                Banco = cuenta.idBanco
+                Banco = codGrupo
             };
 
             //valida si existe:

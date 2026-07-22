@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Personas;
-using Galileo.BusinessLogic.ProGrX_Personas;
+using Galileo_API.Models.ProGrX_Personas;
+using Galileo_API.BusinessLogic.ProGrX_Personas;
 
-namespace Galileo.Controllers.ProGrX_Personas
+namespace Galileo_API.Controllers.ProGrX_Personas
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -19,9 +19,9 @@ namespace Galileo.Controllers.ProGrX_Personas
 
         [Authorize]
         [HttpGet("AF_NAT_Autorizadores_Obtener")]
-        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
+        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa)
         {
-            return _bl.AF_NAT_Autorizadores_Obtener(CodEmpresa, EstadoAutorizado);
+            return _bl.AF_NAT_Autorizadores_Obtener(CodEmpresa);
         }
 
         [Authorize]

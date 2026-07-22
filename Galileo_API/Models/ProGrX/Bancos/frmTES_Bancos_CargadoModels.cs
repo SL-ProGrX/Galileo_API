@@ -34,6 +34,11 @@
         public DateTime? fecha { get; set; }
         public decimal importe { get; set; }
         public string descripcion { get; set; } = string.Empty;
+        public string? cod_concepto { get; set; }
+        public string? concepto_desc { get; set; }
+        public string? cod_cuenta { get; set; }
+        public string? cod_unidad { get; set; }
+        public string? estado_desc { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? procesado_fecha { get; set; }
@@ -67,6 +72,49 @@
         public string Unidad { get; set; } = string.Empty;
         public string Centro { get; set; } = string.Empty;
         public string Cuenta { get; set; } = string.Empty;
-        public short DP_Tramite_Apl { get; set; }
+        public short DP_Tramite_Apl { get; set; } = 0;
+    }
+
+    public class TesBancosCargadoReclasificaConceptoModel
+    {
+        public List<int> Solicitudes   { get; set; } = new();
+        public string CodConcepto      { get; set; } = string.Empty;
+        public string? Usuario         { get; set; }
+        public string? Nota            { get; set; }
+        public bool ReemplazarAsientos { get; set; } = false;
+    }
+
+    public class TesBancosCargadoDetalleExcluirModel
+    {
+        public List<long> LineasId { get; set; } = new();
+        public string? Usuario     { get; set; }
+    }
+
+    public class TesBancosCargadoDetalleRegistrarModel
+    {
+        public List<long> LineasId { get; set; } = new();
+        public string Concepto     { get; set; } = string.Empty;
+        public string Unidad       { get; set; } = string.Empty;
+        public string Centro       { get; set; } = string.Empty;
+        public string Cuenta       { get; set; } = string.Empty;
+        public string? Usuario     { get; set; }
+    }
+
+    public class TesFiltrosDetalleMovimientoDto
+    {
+        public string BancoId        { get; set; } = string.Empty;
+        public string Documento      { get; set; } = string.Empty;
+        public string Tipo           { get; set; } = string.Empty;
+        public string FechaTipo      { get; set; } = "Doc";
+        public DateTime FechaInicio  { get; set; }
+        public DateTime FechaCorte   { get; set; }
+        public decimal MontoInicio   { get; set; }
+        public decimal MontoCorte    { get; set; }
+        public string Estado         { get; set; } = string.Empty;
+        public string Descripcion    { get; set; } = string.Empty;
+        public string CodConcepto    { get; set; } = string.Empty;
+        public string CodCuenta      { get; set; } = string.Empty;
+        public string CodUnidad      { get; set; } = string.Empty;
+        public string CodCentroCosto { get; set; } = string.Empty;
     }
 }

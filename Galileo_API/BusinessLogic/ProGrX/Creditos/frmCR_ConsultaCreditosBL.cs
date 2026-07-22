@@ -36,12 +36,89 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.CR_Socios_RegistrarNota(CodEmpresa, cedula, nota, usuario);
         }
 
+        public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool bloqueo,
+            string nota,
+            string usuario)
+        {
+            return _Db.CR_Socios_BloqueoCreditos_Guardar(
+                CodEmpresa,
+                cedula,
+                bloqueo,
+                nota,
+                usuario);
+        }
+
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             return _Db.fxCajas_SaldoaFavor(CodEmpresa, cedula);
         }
 
         #region Créditos
+
+        public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(int codEmpresa)
+        {
+            return _Db.CR_ConsultaCrd_CreditoContexto_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
+            int codEmpresa,
+            int operacion,
+            DateTime corte)
+        {
+            return _Db.CR_ConsultaCrd_Cancelacion_Obtener(
+                codEmpresa,
+                operacion,
+                corte);
+        }
+
+        public ErrorDto<string> CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
+            int codEmpresa,
+            int operacion)
+        {
+            return _Db.CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
+                codEmpresa,
+                operacion);
+        }
+
+        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _Db.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
+        }
+
+        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso)
+        {
+            return _Db.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
+                CodEmpresa,
+                cedula,
+                codInstitucion,
+                proceso);
+        }
+
+        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
+            int CodEmpresa,
+            string cedula,
+            int codInstitucion,
+            int proceso,
+            decimal monto,
+            DateTime corte)
+        {
+            return _Db.CR_ConsultaPlanillaAbonoDist_Consultar(
+                CodEmpresa,
+                cedula,
+                codInstitucion,
+                proceso,
+                monto,
+                corte);
+        }
 
         public ErrorDto<List<CrConsultaCrdCreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)
         {
@@ -75,6 +152,19 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
         public ErrorDto<List<CrConsultaAsignacionCobroData>> CR_ConsultaAsignacion_Obtener(int CodEmpresa, string cedula)
         {
             return _Db.CR_ConsultaAsignacion_Obtener(CodEmpresa, cedula);
+        }
+
+        public ErrorDto CR_ConsultaCobros_NotificacionEmail_Procesar(
+            int CodEmpresa,
+            string cedula,
+            string tipo,
+            string usuario)
+        {
+            return _Db.CR_ConsultaCobros_NotificacionEmail_Procesar(
+                CodEmpresa,
+                cedula,
+                tipo,
+                usuario);
         }
 
 
@@ -118,6 +208,14 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
         public ErrorDto<List<CrPatrimonioData>> CR_Patrimonio_Obtener(int CodEmpresa, string cedula, string tipo)
         {
             return _Db.CR_Patrimonio_Obtener(CodEmpresa, cedula, tipo);
+        }
+
+        public ErrorDto<CrPatrimonioGarantiaData?> CR_Patrimonio_Garantia_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string garantia)
+        {
+            return _Db.CR_Patrimonio_Garantia_Obtener(CodEmpresa, cedula, garantia);
         }
 
         public ErrorDto<List<ExcPeriodosVisiblesData>> EXC_Periodos_Visibles_Obtener(int CodEmpresa, string cedula)

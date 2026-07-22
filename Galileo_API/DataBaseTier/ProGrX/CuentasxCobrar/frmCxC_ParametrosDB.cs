@@ -195,9 +195,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     pCuenta: item.Valor,
                     optMensaje: 1);
 
-                item.cuentaDetalle = mCntLink.fxgCntCuentaDesc(
-                    codContabilidad,
-                    pCuenta: item.Valor);
+                item.cuentaDetalle = mCntLink.fxgCntCuentaDesc(codEmpresa,item.Valor,codContabilidad); 
             }
         }
 
