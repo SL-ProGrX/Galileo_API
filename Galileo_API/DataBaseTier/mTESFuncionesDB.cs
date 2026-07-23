@@ -54,7 +54,7 @@ namespace Galileo.DataBaseTier
 
             if (filtro.docInicial > 0)
             {
-                bancoConsec = filtro.docInicial!;
+                bancoConsec = filtro.docInicial;
             } 
                 
 
