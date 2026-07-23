@@ -334,7 +334,7 @@ namespace Galileo.DataBaseTier
 
                 string baseDir = Path.GetFullPath(Path.Combine(dirRDLC, CodEmpresa.ToString()));
 
-                string nombreFirmas = Path.GetFileName(archivosData!.archivo_cheques_firmas ?? string.Empty);
+                string nombreFirmas = Path.GetFileName(archivosData.archivo_cheques_firmas ?? string.Empty);
                 string nombreSinFirmas = Path.GetFileName(archivosData.archivo_cheques_sin_firmas ?? string.Empty);
 
                 string archivoFirmas = Path.GetFullPath(Path.Combine(baseDir, nombreFirmas));
