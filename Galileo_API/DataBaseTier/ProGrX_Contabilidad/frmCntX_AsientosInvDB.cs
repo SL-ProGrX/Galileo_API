@@ -464,6 +464,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Elimina un asiento de ajuste
         /// para inventario periodico.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto
             CntX_frmCntX_AsientosInv_Eliminar(
                 int codEmpresa,
