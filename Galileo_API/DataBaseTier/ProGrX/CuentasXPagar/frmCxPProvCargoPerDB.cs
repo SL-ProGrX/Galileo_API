@@ -301,11 +301,11 @@ namespace Galileo.DataBaseTier
                          descripcion,
                          cod_divisa,
                          saldo,
-                         dbo.fxCntXTipoCambio(1, COD_DIVISA, Getdate(), 'V') as Tipo_Cambio
+                         ISNULL(dbo.fxCntXTipoCambio(@CodEmpresa, COD_DIVISA, Getdate(), 'V'), 1) as Tipo_Cambio
                   from cxp_proveedores
                   where cod_proveedor = @Cod_Proveedor",
                 null,
-                new { Cod_Proveedor });
+                new { CodEmpresa, Cod_Proveedor });
 
             return CrearRespuestaSingle(
                 result,
@@ -437,14 +437,14 @@ namespace Galileo.DataBaseTier
                 @"UPDATE cxp_cargosper
                   SET detalle = @Detalle,
                       concepto = @Concepto,
-                      Fecha_Cobro_Cargo = @FechaInicioCobro,
+                      Fecha_Cobro_Cargo = @Fecha_Cobro_Cargo,
                       Vence = @Vence
                   WHERE id = @Id AND cod_proveedor = @Cod_Proveedor",
                 new
                 {
                     data.Detalle,
                     data.Concepto,
-                    FechaInicioCobro = data.FechaInicioCobro,
+                    Fecha_Cobro_Cargo = data.Fecha_Cobro_Cargo,
                     data.Vence,
                     data.Id,
                     data.Cod_Proveedor
@@ -472,6 +472,12 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto Cargo_Insertar(int CodEmpresa, CargoPerDto data)
         {
+            if (data.Tipo_Cambio <= 0)
+            {
+                return DbHelper.ErrorResponse("El tipo de cambio debe ser mayor que cero.", -1);
+            }
+
+            var esMonto = string.Equals(data.Tipo, "M", StringComparison.OrdinalIgnoreCase);
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 var siguiente = connection.QueryFirstOrDefault<int>(
@@ -491,11 +497,11 @@ namespace Galileo.DataBaseTier
                         data.Tipo,
                         data.Valor,
                         data.Vence,
-                        Saldo = data.Valor,
+                        Saldo = esMonto ? data.Valor : 0,
                         data.Concepto,
                         data.Detalle,
                         Recaudado = 0,
-                        Importe_Divisa_Real = data.Valor / data.Tipo_Cambio,
+                        Importe_Divisa_Real = esMonto ? data.Valor / data.Tipo_Cambio : 0,
                         Registro_Fecha = DateTime.Now,
                         data.Registro_Usuario,
                         data.Cod_Divisa,
@@ -503,7 +509,10 @@ namespace Galileo.DataBaseTier
                         Fecha_Cobro_Cargo = data.Fecha_Cobro_Cargo
                     });
 
-                ActualizarSaldoProveedor(connection, data.Cod_Proveedor, data.Valor, data.Tipo_Cambio, false);
+                if (esMonto)
+                {
+                    ActualizarSaldoProveedor(connection, data.Cod_Proveedor, data.Valor, data.Tipo_Cambio, false);
+                }
 
                 return siguiente;
             });
@@ -543,7 +552,7 @@ namespace Galileo.DataBaseTier
                         data.Id
                     });
 
-                if (filas > 0)
+                if (filas > 0 && string.Equals(data.Tipo, "M", StringComparison.OrdinalIgnoreCase))
                 {
                     ActualizarSaldoProveedor(connection, data.Cod_Proveedor, data.Valor, data.Tipo_Cambio, true);
                 }
