@@ -255,18 +255,12 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
             var now = DateTime.Now;
             var consecutivoVisible = request.Filtro.docInicial;
             var consecutivoInterno = request.ConsecutivoInterno;
-            var tipoGestionCache = new FrmTesEmisionDocumentosTipoGestionCache(
-                (banco, tipo) => ObtenerTipoGestionDocumento(request.CodEmpresa, banco, tipo));
+           
             var linea = 1;
             var consecutivoInternoTS = consecutivoVisible;
 
             foreach (var item in request.Solicitudes)
             {
-                var bancoItem = item.id_banco ?? request.Filtro.banco;
-                var tipoItem = string.IsNullOrWhiteSpace(item.tipo)
-                    ? request.Filtro.tipoDoc
-                    : item.tipo;
-
 
                 if (string.Equals(item.tipo, "TE", StringComparison.OrdinalIgnoreCase))
                 {
