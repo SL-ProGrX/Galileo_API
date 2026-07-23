@@ -85,6 +85,56 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSResumen_Obtener")]
+        public ErrorDto<List<CrConsultaSoSResumenData>> CR_ConsultaCrd_SoSResumen_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSResumen_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSOperaciones_Obtener")]
+        public ErrorDto<List<CrConsultaSoSOperacionData>> CR_ConsultaCrd_SoSOperaciones_Obtener(
+            int CodEmpresa,
+            string cedula,
+            decimal proceso,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSOperaciones_Obtener(
+                CodEmpresa,
+                cedula,
+                proceso,
+                usuario);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSExclusion_Obtener")]
+        public ErrorDto<CrConsultaSoSExclusionData> CR_ConsultaCrd_SoSExclusion_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSExclusion_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        [Authorize]
+        [HttpPost("CR_ConsultaCrd_SoSExclusion_Guardar")]
+        public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool excluir,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSExclusion_Guardar(
+                CodEmpresa,
+                cedula,
+                excluir,
+                usuario);
+        }
+
+        [Authorize]
         [HttpGet("CR_ConsultaCrd_Cancelacion_Obtener")]
         public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
             int CodEmpresa,

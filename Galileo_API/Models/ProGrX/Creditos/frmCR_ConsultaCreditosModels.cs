@@ -23,6 +23,44 @@ namespace Galileo.Models.ProGrX.Credito
     {
         public DateTime fechaServidor { get; set; }
         public int sysPlanPagos { get; set; }
+        public string cajasParametro01 { get; set; } = "N";
+        public string cajasParametro03 { get; set; } = "N";
+        public int portalId { get; set; }
+    }
+
+    public sealed class CrConsultaSoSResumenData
+    {
+        public decimal proceso { get; set; }
+        public decimal devolucion { get; set; }
+        public string tipo { get; set; } = string.Empty;
+        public string iban { get; set; } = string.Empty;
+        public string tesoreria_Id { get; set; } = string.Empty;
+        public string bancos_Cuenta { get; set; } = string.Empty;
+        public string bancos_Estado { get; set; } = string.Empty;
+        public string bancos_Fecha { get; set; } = string.Empty;
+        public string bancos_TF { get; set; } = string.Empty;
+        public string bancos_Documento { get; set; } = string.Empty;
+    }
+
+    public sealed class CrConsultaSoSOperacionData
+    {
+        public decimal proceso { get; set; }
+        public long id_Solicitud { get; set; }
+        public string codigo { get; set; } = string.Empty;
+        public string linea_Desc { get; set; } = string.Empty;
+        public string garantia_Desc { get; set; } = string.Empty;
+        public decimal monto_Base { get; set; }
+        public decimal devolucion { get; set; }
+        public string tipo_Doc { get; set; } = string.Empty;
+        public string num_Com { get; set; } = string.Empty;
+    }
+
+    public sealed class CrConsultaSoSExclusionData
+    {
+        public string estado { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public bool excluido => string.Equals(estado, "A", StringComparison.OrdinalIgnoreCase);
     }
 
     public sealed class CrConsultaCancelacionData
