@@ -471,8 +471,11 @@ where B.estado = 'A'
                 if (filtro.especial)
                 {
                     var responses = new List<object>();
-                    var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result ?? new List<TES_EmisionDocumento_Solicitudes>();
-
+                    var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
+                    if(solicitudes == null)
+                    {
+                        return DbHelper.CreateErrorResponse<object>("Solicitud no Encontrada");
+                    }
                     var procesadas = 0;
                     var totalSolicitudes = solicitudes.Count;
 
