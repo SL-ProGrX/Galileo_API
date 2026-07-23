@@ -1120,7 +1120,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
 
-                    if (ConsultarIsPINEntity(solicitud.Cuenta).Result == true)
+                    if (ConsultarIsPINEntity(solicitud.Cuenta).Result)
                     {
                         if (!ConsultarIsServiceAvailable(CodEmpresa, vUsuario).Result) // NOSONAR
                         {
