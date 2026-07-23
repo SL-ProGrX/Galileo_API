@@ -83,7 +83,8 @@ namespace Galileo_API.DataBaseTier
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
 
-                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
+                var currencyCode = cuenta.Account?.CurrencyCode ?? "X";
+                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, currencyCode);
                 if (valOrigen.Code == -1)
                 {
                     return DbHelper.ErrorResponse(valOrigen.Description!);
