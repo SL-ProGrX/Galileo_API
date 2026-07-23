@@ -67,12 +67,12 @@ namespace Galileo.Models.TES
     internal sealed class EmisionClasificacionRequest
     {
         public int CodEmpresa { get; init; }
-        public TesEmisionDocFiltros Filtro { get; init; } = default!;
-        public TesBancoDocsData BancoDocs { get; init; } = default!;
-        public TesBancoData BancoData { get; init; } = default!;
+        public TesEmisionDocFiltros Filtro { get; init; } = default;
+        public TesBancoDocsData BancoDocs { get; init; } = default;
+        public TesBancoData BancoData { get; init; } = default;
         public int UsaFirmas { get; init; } // vFirmas
-        public TesArchivosEspecialesData ChequesReport { get; init; } = default!;
-        public FrmReporteGlobal ReporteData { get; init; } = default!;
+        public TesArchivosEspecialesData ChequesReport { get; init; } = default;
+        public FrmReporteGlobal ReporteData { get; init; } = default;
     }
 
     internal sealed class EmisionClasificacionState
@@ -93,7 +93,7 @@ namespace Galileo.Models.TES
     public class TesSolicitudesFormatoRequest
     {
         public int CodEmpresa { get; init; } = 0;
-        public TesEmisionDocFiltros Filtro { get; init; } = default!;
+        public TesEmisionDocFiltros Filtro { get; init; } = default;
         public List<TesSolicitudesGenData> Solicitudes { get; init; } = new();
         public long ConsecutivoInterno { get; init; } = 0;
     }
