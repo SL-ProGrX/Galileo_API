@@ -1185,7 +1185,7 @@ namespace Galileo_API.DataBaseTier
 
                         var resultadoPin =
                             ElResultadoDeSendTransfer?.PINSendingResult;
-                        if (estadoSinpe && resultadoPin is null)
+                        if (estadoSinpe || resultadoPin is null)
                         {
                             estadoSinpe = false;
                             idRechazo = -1;
@@ -1193,7 +1193,7 @@ namespace Galileo_API.DataBaseTier
                                 "SINPE no devolvió el resultado de la transferencia.";
                         }
 
-                        if (estadoSinpe && resultadoPin != null)
+                        if (estadoSinpe)
                         {
                             datos.NumeroSolicitud = Nsolicitud;
                             datos.FechaEmision = vfecha;
