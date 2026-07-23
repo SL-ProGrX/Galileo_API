@@ -208,7 +208,7 @@ namespace Galileo.Models.ProGrX.Fondos
     public sealed class FndTraspasoTesoreriaProcesoContinuarRequest
     {
         public Guid ProcesoId { get; set; } = Guid.NewGuid();
-        public bool ReintentarErrores { get; set; } = false;
+        public bool? ReintentarErrores { get; set; }
 
         [System.Text.Json.Serialization.JsonIgnore]
         public string Usuario { get; set; } = string.Empty;

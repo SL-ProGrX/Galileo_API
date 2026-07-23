@@ -267,7 +267,6 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
                     ? request.Filtro.tipoDoc
                     : item.tipo;
 
-                var tipoGestion = tipoGestionCache.Resolver(bancoItem, tipoItem);
 
                 if (string.Equals(item.tipo, "TE", StringComparison.OrdinalIgnoreCase))
                 {

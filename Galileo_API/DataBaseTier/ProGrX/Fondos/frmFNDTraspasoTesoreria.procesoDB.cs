@@ -44,8 +44,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         request.Usuario,
                         Token = request.Token?.Trim(),
                         RetencionCodigo = request.RetencionCodigo?.Trim(),
-                        FechaDesde = request.FechaDesde.Date,
-                        FechaHasta = request.FechaHasta.Date,
+                        FechaDesde = request.FechaDesde?.Date,
+                        FechaHasta = request.FechaHasta?.Date,
                         request.AplicaRevision,
                         request.BancoId,
                         Oficina = request.Oficina?.Trim(),
@@ -120,7 +120,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             if (modo == "U" && accion != "D")
                 return "Los casos unificados solamente permiten desembolsar.";
             if (request.FechaDesde == default || request.FechaHasta == default ||
-                request.FechaHasta.Date < request.FechaDesde.Date)
+                request.FechaHasta?.Date < request.FechaDesde?.Date)
                 return "El rango de fechas no es válido.";
             if (accion == "D" && string.IsNullOrWhiteSpace(request.Token))
                 return "El token es requerido para desembolsar.";
@@ -204,8 +204,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Accion = accion,
                 Token = request.Token?.Trim(),
                 RetencionCodigo = request.RetencionCodigo?.Trim(),
-                FechaDesde = request.FechaDesde.Date,
-                FechaHasta = request.FechaHasta.Date,
+                FechaDesde = request.FechaDesde?.Date,
+                FechaHasta = request.FechaHasta?.Date,
                 request.AplicaRevision,
                 request.BancoId,
                 Oficina = request.Oficina?.Trim(),
