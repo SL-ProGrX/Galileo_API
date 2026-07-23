@@ -1228,7 +1228,7 @@ namespace Galileo_API.DataBaseTier
                     }
                     else //Uso de canal CanalTFT
                     {
-                        if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
+                        if (!ServicioDisponibleLote(CodEmpresa, vUsuario))
                         {
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;
