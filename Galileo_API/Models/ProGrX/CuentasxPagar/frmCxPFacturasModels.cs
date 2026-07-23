@@ -108,6 +108,7 @@ namespace Galileo.Models.CxP
     public class FacturaAntSig
     {
         public string Cod_Factura { get; set; } = string.Empty;
+        public int Cod_Proveedor { get; set; }
     }
 
     public class FacturaAnular
@@ -174,5 +175,18 @@ namespace Galileo.Models.CxP
         public required decimal Importe_Divisa_Real { get; set; }
         public required decimal Tipo_Cambio { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
+    }
+
+    public class FacturaGuardarCompleta
+    {
+        public FacturaDto Factura { get; set; } = new()
+        {
+            Cod_Proveedor = 0,
+            Plantilla = 0
+        };
+        public List<AsientoFactura> Asientos { get; set; } = new();
+        public PagoContado? PagoContado { get; set; }
+        public decimal Saldo { get; set; }
+        public decimal Saldo_Divisa { get; set; }
     }
 }

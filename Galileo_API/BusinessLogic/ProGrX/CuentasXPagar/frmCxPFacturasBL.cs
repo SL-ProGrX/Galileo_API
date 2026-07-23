@@ -67,9 +67,9 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.ProveedorFactura_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
-        public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo)
+        public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo, int Cod_Proveedor)
         {
-            return _db.ConsultaAscDesc(CodEmpresa, Cod_Factura, tipo);
+            return _db.ConsultaAscDesc(CodEmpresa, Cod_Factura, tipo, Cod_Proveedor);
         }
 
         public ErrorDto Factura_Anular(int CodEmpresa, FacturaAnular data)
@@ -97,7 +97,7 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.CuentaProveedor_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
-        public int TipoCambio_Obtener(int CodEmpresa, string cod_Divisa, string Fecha)
+        public decimal TipoCambio_Obtener(int CodEmpresa, string cod_Divisa, string Fecha)
         {
             return _db.TipoCambio_Obtener(CodEmpresa, cod_Divisa, Fecha);
         }
@@ -126,6 +126,11 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDto data)
         {
             return _db.Factura_Insertar(CodEmpresa, data);
+        }
+
+        public ErrorDto FacturaCompleta_Insertar(int CodEmpresa, FacturaGuardarCompleta data)
+        {
+            return _db.FacturaCompleta_Insertar(CodEmpresa, data);
         }
     }
 }
