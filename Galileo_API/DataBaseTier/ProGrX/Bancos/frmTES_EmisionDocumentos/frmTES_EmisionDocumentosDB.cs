@@ -249,7 +249,7 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
         /// <summary>
         /// Formatea los documentos visibles y marca la información complementaria de las solicitudes generadas.
         /// </summary>
-        private List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
+        private static List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
             TesSolicitudesFormatoRequest request)
         {
             var now = DateTime.Now;

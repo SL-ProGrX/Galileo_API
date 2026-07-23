@@ -125,7 +125,7 @@ namespace Galileo_API.DataBaseTier
                             }
                             else
                             {
-                                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(CodEmpresa, solicitud, LaInformacionDeLaCuentaPIN.Account!.CurrencyCode ?? "X");
+                                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(CodEmpresa, solicitud, LaInformacionDeLaCuentaPIN.Account.CurrencyCode ?? "X");
                                 if (valOrigen.Code == -1)
                                 {
                                     response = valOrigen;
@@ -295,7 +295,7 @@ namespace Galileo_API.DataBaseTier
                 Guid newGuid = Guid.NewGuid();
                 ReqPINEntity PINEntity = new ReqPINEntity();
                 // Crear instancia del objeto de solicitud ReqPINEntity
-                var obtenerIpEquipoActual = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost!);
+                var obtenerIpEquipoActual = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost);
                 if (obtenerIpEquipoActual.Code == -1)
                 {
                     return new ErrorDto<bool>
@@ -542,7 +542,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     HostId = _parametrosSinpe.vHostPin,
                     OperationId = newGuid,
-                    ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost!).Result
+                    ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost).Result
                 };
 
                 BaseRequestBody contextBody = new BaseRequestBody();
@@ -581,7 +581,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     HostId = _parametrosSinpe.vHostPin,
                     OperationId = newGuid,
-                    ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost!).Result,
+                    ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost).Result,
                     AccountNumber = iban
                 };
 
@@ -1314,7 +1314,7 @@ namespace Galileo_API.DataBaseTier
                 Guid newGuid = Guid.NewGuid();
                 TransferData.HostId = _parametrosSinpe.vHostPin;
                 TransferData.OperationId = newGuid;
-                TransferData.ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost!).Result;
+                TransferData.ClientIpAddress = _mKindo.fxObtenerIpEquipoActual(_parametrosSinpe.vHost).Result;
                 TransferData.CoreIntegrationPoint = 1; // Punto de integración
                 TransferData.CostCenter = 1; // Centro de costo
                 TransferData.UserCode = _parametrosSinpe.vUserCGP;

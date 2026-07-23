@@ -84,7 +84,7 @@ namespace Galileo_API.DataBaseTier
                        
                        if(item.tipo == "TS")
                         {
-                            item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
+                            item.documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
                              $"{linea.ToString("0000", CultureInfo.InvariantCulture)}";
                             linea++;
 
@@ -92,7 +92,7 @@ namespace Galileo_API.DataBaseTier
                         }
                         else if(item.tipo == "TE")
                         {
-                            item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
+                            item.documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
                              $"{consc.ToString("0000", CultureInfo.InvariantCulture)}";
                             consc = NextConsecutivo(CodEmpresa, transferencia, consc);
                             vDocumento = item.documento;
