@@ -1193,7 +1193,7 @@ namespace Galileo_API.DataBaseTier
                                 "SINPE no devolvió el resultado de la transferencia.";
                         }
 
-                        if (estadoSinpe && resultadoPin is not null)
+                        if (estadoSinpe && resultadoPin != null)
                         {
                             datos.NumeroSolicitud = Nsolicitud;
                             datos.FechaEmision = vfecha;
