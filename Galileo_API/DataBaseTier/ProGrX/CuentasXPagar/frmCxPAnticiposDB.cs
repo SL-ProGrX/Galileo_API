@@ -52,11 +52,10 @@ namespace Galileo.DataBaseTier
                 if (!CargoExiste(connection, transaction, cargoPrincipal))
                     return RollbackError(transaction, $"El cargo '{cargoPrincipal}' no existe.", -1);
 
-                foreach (CargoAdicionalAnticipoDto cargo in cargosAdicionales)
-                {
-                    if (!CargoExiste(connection, transaction, cargo.codCargo))
-                        return RollbackError(transaction, $"El cargo adicional '{cargo.codCargo}' no existe.", -1);
-                }
+                CargoAdicionalAnticipoDto? cargoInvalido = cargosAdicionales
+                    .FirstOrDefault(cargo => !CargoExiste(connection, transaction, cargo.codCargo));
+                if (cargoInvalido != null)
+                    return RollbackError(transaction, $"El cargo adicional '{cargoInvalido.codCargo}' no existe.", -1);
 
                 int consecutivo = connection.ExecuteScalar<int>(
                     @"select isnull(max(IDX), 0) + 1
