@@ -834,7 +834,7 @@ namespace Galileo_API.DataBaseTier
             {
                 if (Nsolicitud > 0)
                 {
-                    if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
+                    if (!ServicioDisponibleLote(CodEmpresa, vUsuario))
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
