@@ -29,7 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         #region ===== Helpers (mínimos; la mayoría se movió a MTesFuncionesDb) =====
 
         private static ErrorDto<object> Err(string msg, int code = -1)
-            => DbHelper.CreateErrorResponse<object>(msg, code, default!);
+            => DbHelper.CreateErrorResponse<object>(msg, code, default);
 
         #endregion
 
