@@ -281,7 +281,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var servicioDisponible = fxValidacionSinpe(
                     parametros.codEmpresa,
                     parametros.nSolicitud.ToString(),
-                    parametros.usuario!,
+                    parametros.usuario,
                     "PIN");
 
                 if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
@@ -295,7 +295,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     fxGuardaID_RespuestaSinpe(parametros.codEmpresa, idRechazo, parametros.nSolicitud.ToString());
                 }
                 // 2) Envío
-                var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario!);
+                var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario);
                 respuesta = envio.Result;
 
                 if(envio.Result!.MotivoError! == 32)
@@ -316,14 +316,14 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                         _mTesoreria.sbTesBitacoraEspecial(
                             parametros.codEmpresa, parametros.nSolicitud, "10",
                             "Se produjo un error al actualizar la transacción",
-                            parametros.usuario!);
+                            parametros.usuario);
                     }
 
                     // 4) Bitácora final
                     _mTesoreria.sbTesBitacoraEspecial(
                         parametros.codEmpresa, parametros.nSolicitud, "10",
                         estadoSinpe ? bitacoraExito : $"{bitacoraRechazo}: {rechazoTexto}",
-                        parametros.usuario!);
+                        parametros.usuario);
                 }
 
                 if (envio.Code != 0 || (respuesta != null && respuesta.MotivoError != 32))
@@ -388,7 +388,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
         {
             try
             {
-                var parametrosSinpe = _mKindo.GetUriEmpresa(parametros.codEmpresa, parametros.usuario!);
+                var parametrosSinpe = _mKindo.GetUriEmpresa(parametros.codEmpresa, parametros.usuario);
                 if (parametrosSinpe?.Result == null)
                     return new ErrorDto<RespuestaRegistro> { Code = -1, Description = "No se pudieron obtener parámetros SINPE." };
 
