@@ -110,10 +110,12 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpPost("TES_EmisionDocumento_GenerarLote")]
-        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
+        public Task<ErrorDto<TesEmisionGenerarLoteResult>>
+            TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
             [FromBody] TesEmisionGenerarLoteRequest request)
         {
-            return _bl.TES_EmisionDocumento_GenerarLote(request);
+            return _bl.TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
+                request);
         }
 
         [HttpPost("TES_EmisionDocumento_ConsecutivoIniciar")]
@@ -163,7 +165,8 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 procesoId,
                 ObtenerPropietario());
             if (response.Code == 0 &&
-                response.Result?.estado == TesEmisionDocumentosEstado.Pendiente)
+                response.Result != null &&
+                TesEmisionDocumentosEstado.EsActivo(response.Result.estado))
             {
                 _queue.Encolar(new TesEmisionDocumentosProcesoTrabajo
                 {
@@ -172,6 +175,40 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 });
             }
             return response;
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Activo_Banco")]
+        public ErrorDto<TesEmisionDocumentosProcesoResult?>
+            TES_EmisionDocumentos_Proceso_Activo_Banco(
+                int codEmpresa,
+                int banco)
+        {
+            var response = _bl
+                .TES_EmisionDocumentos_Proceso_Activo_Banco_Obtener(
+                    codEmpresa,
+                    banco);
+            if (response.Code == 0 &&
+                response.Result != null &&
+                TesEmisionDocumentosEstado.EsActivo(response.Result.estado))
+            {
+                _queue.Encolar(new TesEmisionDocumentosProcesoTrabajo
+                {
+                    CodEmpresa = codEmpresa,
+                    ProcesoId = response.Result.procesoId
+                });
+            }
+            return response;
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Errores")]
+        public ErrorDto<IReadOnlyList<TesEmisionProcesoError>>
+            TES_EmisionDocumentos_Proceso_Errores(
+                int codEmpresa,
+                Guid procesoId)
+        {
+            return _bl.TES_EmisionDocumentos_Proceso_Errores_Obtener(
+                codEmpresa,
+                procesoId);
         }
 
         [HttpGet("TES_EmisionDocumentos_Proceso_Resultado")]

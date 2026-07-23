@@ -3,11 +3,16 @@ namespace Galileo.Models.TES
     public sealed class TesEmisionDocumentosProcesoIniciarRequest
     {
         public TesEmisionDocFiltros filtros { get; init; } = new();
+        public int banco { get; init; }
+        public string plan { get; init; } = string.Empty;
+        public IReadOnlyList<int> solicitudes { get; init; } = [];
     }
 
     public sealed class TesEmisionDocumentosProcesoResult
     {
         public Guid procesoId { get; init; }
+        public int banco { get; init; }
+        public long? documentoBase { get; init; }
         public string estado { get; init; } = string.Empty;
         public string etapa { get; init; } = string.Empty;
         public int total { get; init; }
@@ -18,7 +23,9 @@ namespace Galileo.Models.TES
         public decimal porcentaje { get; init; }
         public DateTime fechaInicio { get; init; }
         public DateTime ultimaActividad { get; init; }
+        public long tiempoTranscurridoMs { get; init; }
         public string mensaje { get; init; } = string.Empty;
+        public string resultadoContexto { get; init; } = string.Empty;
     }
 
     public sealed class TesEmisionDocumentosArchivoResult
@@ -51,6 +58,21 @@ namespace Galileo.Models.TES
     {
         public int CodEmpresa { get; init; }
         public Guid ProcesoId { get; init; }
+    }
+
+    public sealed class TesEmisionDocumentosProcesoTrabajoContexto
+    {
+        public Guid ProcesoId { get; init; }
+        public int CodEmpresa { get; init; }
+        public int Banco { get; init; }
+        public string Cod_Plan { get; init; } = string.Empty;
+        public string Usuario { get; init; } = string.Empty;
+        public int Total { get; init; }
+    }
+
+    public sealed class TesEmisionDocumentosProcesoDetalleTrabajo
+    {
+        public int NSolicitud { get; init; }
     }
 
     public sealed class TesEmisionDocumentosAvancePersistir

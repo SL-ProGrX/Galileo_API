@@ -1,5 +1,6 @@
 using Galileo.Models.TES;
 using PdfSharp.Pdf.IO;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -14,6 +15,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
         public const string Completado = "Completado";
         public const string Error = "Error";
         public const string RequiereRevision = "RequiereRevision";
+        public const string Procesando = "Procesando";
+        public const string Finalizando = "Finalizando";
+        public const string CompletadoConErrores = "CompletadoConErrores";
 
         private static readonly HashSet<(string Actual, string Siguiente)> Transiciones = new()
         {
@@ -31,6 +35,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 
         public static bool PuedeCambiar(string actual, string siguiente) =>
             Transiciones.Contains((actual, siguiente));
+
+        public static bool EsActivo(string estado) =>
+            estado is Pendiente or Procesando or Finalizando;
+    }
+
+    public static class TesEmisionDocumentosNumeracion
+    {
+        public static string CrearNDocumento(
+            long documentoBase,
+            int secuencia)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(documentoBase);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(secuencia);
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"{documentoBase}-{secuencia:D3}");
+        }
+
+        public static string? CrearNDocumentoOpcional(
+            long documentoBase,
+            int secuencia) =>
+            documentoBase > 0 && secuencia > 0
+                ? CrearNDocumento(documentoBase, secuencia)
+                : null;
     }
 
     public static class TesEmisionDocumentosProcesoHash

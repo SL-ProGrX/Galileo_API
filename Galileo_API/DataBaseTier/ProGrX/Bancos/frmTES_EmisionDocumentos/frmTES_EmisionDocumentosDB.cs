@@ -36,6 +36,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             mReporting = new MReportingServicesDB(config);
             _portalDB = new PortalDB(config);
             mTesFunciones = new MTesFuncionesDb(config);
+            var maximoParalelo = config.GetValue<int?>(
+                "TES_EmisionDocumentos:SinpeMaximoParalelo");
+            _tesEmisionDocumentosSinpeProcessor =
+                new TesEmisionDocumentosSinpeParallelProcessor(
+                    TesEmisionDocumentosSinpeParallelProcessor
+                        .NormalizarMaximoParalelo(maximoParalelo),
+                    (codEmpresa, usuario) =>
+                        new VerificadorCoreFactory(config)
+                            .CrearServicio(codEmpresa, usuario));
         }
 
         #region ===== Helpers comunes (reducción de duplicación / Sonar) =====
@@ -160,68 +169,6 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
         #region ===== Solicitudes =====
 
         /// <summary>
-        /// Emite un lote acotado de solicitudes SINPE (TS) reutilizando la consulta de
-        /// transacciones del proceso normal, y devuelve el conteo real por solicitud para
-        /// el avance de la ventana de emisión.
-        /// </summary>
-        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
-            TesEmisionGenerarLoteRequest request)
-        {
-            var error = ValidarGenerarLote(request);
-            if (error != null)
-                return DbHelper.CreateErrorResponse(error, -2, new TesEmisionGenerarLoteResult());
-
-            var filtro = ParseFiltros(request.Filtros);
-            filtro.usuario = request.Usuario;
-            filtro.generarPor = nSolicitudes;
-            filtro.minimo = request.Minimo;
-            filtro.maximo = request.Maximo;
-
-            if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
-                return DbHelper.CreateErrorResponse(
-                    "GenerarLote solo aplica a documentos SINPE (TS).",
-                    -2,
-                    new TesEmisionGenerarLoteResult());
-
-            return DbHelper.WithConn(_portalDB, request.CodEmpresa, conn =>
-            {
-                conn.Open();
-                var q = BuildQueries(filtro);
-                var transacciones = conn.Query<TesTransaccionDto>(q.QueryTransac, q.Parametros).ToList();
-
-                var resultado = mTesFunciones.SbTesBancoSinpeGeneralLote(
-                    request.CodEmpresa, filtro.usuario, transacciones);
-
-                // Modelo v6 (un documento por emisión): marca las solicitudes emitidas de este
-                // lote con el documento único de la emisión (bancoConsec avanzado una sola vez),
-                // para que el reporte y "Procesar Transferencias" las agrupen correctamente.
-                // El comprobante SINPE por solicitud queda preservado en NDocumento/REFERENCIA_SINPE.
-                conn.Execute(SqlMarcarDocumentoBaseLote, new
-                {
-                    bancoConsec = request.BancoConsec,
-                    tipoDoc = filtro.tipoDoc,
-                    banco = filtro.banco,
-                    minimo = filtro.minimo,
-                    maximo = filtro.maximo
-                });
-
-                resultado.BancoConsec = request.BancoConsec.ToString(CultureInfo.InvariantCulture);
-                resultado.StrQuery = new TesEmisionLoteQuery
-                {
-                    QueryTransac = q.QueryTransac,
-                    BaseQuery = q.BaseQuery
-                };
-                return resultado;
-            });
-        }
-
-        private const string SqlMarcarDocumentoBaseLote = @"
-UPDATE Tes_Transacciones
-SET Documento_Base = @bancoConsec
-WHERE Estado = 'I' AND Tipo = @tipoDoc AND ID_Banco = @banco
-  AND NSolicitud BETWEEN @minimo AND @maximo";
-
-        /// <summary>
         /// Avanza (+1) el documento inicial de la emisión SINPE una sola vez por emisión
         /// (modelo v6) y devuelve el consecutivo asignado.
         /// </summary>
@@ -238,20 +185,6 @@ WHERE Estado = 'I' AND Tipo = @tipoDoc AND ID_Banco = @banco
             int CodEmpresa, int banco, string tipoDoc, string plan)
         {
             return mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "-", plan);
-        }
-
-        /// <summary>
-        /// Valida los datos mínimos de un lote de emisión SINPE.
-        /// </summary>
-        private static string? ValidarGenerarLote(TesEmisionGenerarLoteRequest request)
-        {
-            if (request is null) return "La solicitud es requerida.";
-            if (string.IsNullOrWhiteSpace(request.Usuario)) return "El usuario es requerido.";
-            if (string.IsNullOrWhiteSpace(request.Filtros)) return "Los filtros son requeridos.";
-            if (request.Minimo <= 0 || request.Maximo <= 0) return "El rango de solicitudes es inválido.";
-            if (request.Minimo > request.Maximo) return "La solicitud inicial no puede ser mayor que la de corte.";
-            if (request.NSolicitudes.Count > 200) return "El lote no puede superar 200 registros.";
-            return null;
         }
 
         public ErrorDto<List<TesSolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)

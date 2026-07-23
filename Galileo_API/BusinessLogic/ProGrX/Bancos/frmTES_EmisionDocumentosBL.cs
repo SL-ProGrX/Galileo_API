@@ -92,10 +92,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
-        public ErrorDto<TesEmisionGenerarLoteResult> TES_EmisionDocumento_GenerarLote(
+        public Task<ErrorDto<TesEmisionGenerarLoteResult>>
+            TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
             TesEmisionGenerarLoteRequest request)
         {
-            return _db.TES_EmisionDocumento_GenerarLote(request);
+            return _db.TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
+                request);
         }
 
         public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
@@ -115,7 +117,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             string propietario,
             TesEmisionDocumentosProcesoIniciarRequest request)
         {
-            return _db.TES_EmisionDocumentos_Proceso_Iniciar(codEmpresa, propietario, request);
+            return _db.TES_EmisionDocumentos_Sinpe_Proceso_Iniciar(
+                codEmpresa,
+                propietario,
+                request);
         }
 
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Estado_Obtener(
@@ -123,10 +128,31 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             Guid procesoId,
             string propietario)
         {
-            return _db.TES_EmisionDocumentos_Proceso_Estado_Obtener(
+            return _db.TES_EmisionDocumentos_Sinpe_Proceso_Estado_Obtener(
                 codEmpresa,
-                procesoId,
-                propietario);
+                procesoId);
+        }
+
+        public ErrorDto<TesEmisionDocumentosProcesoResult?>
+            TES_EmisionDocumentos_Proceso_Activo_Banco_Obtener(
+                int codEmpresa,
+                int banco)
+        {
+            return _db
+                .TES_EmisionDocumentos_Sinpe_Proceso_Activo_Banco_Obtener(
+                    codEmpresa,
+                    banco);
+        }
+
+        public ErrorDto<IReadOnlyList<TesEmisionProcesoError>>
+            TES_EmisionDocumentos_Proceso_Errores_Obtener(
+                int codEmpresa,
+                Guid procesoId)
+        {
+            return _db
+                .TES_EmisionDocumentos_Sinpe_Proceso_Errores_Obtener(
+                    codEmpresa,
+                    procesoId);
         }
 
         public ErrorDto<TesEmisionDocumentosProcesoManifiestoResult> TES_EmisionDocumentos_Proceso_Resultado_Obtener(

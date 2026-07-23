@@ -4,6 +4,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
 using Galileo_API.Models.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
@@ -822,6 +823,10 @@ namespace Galileo_API.DataBaseTier
                         estadoSinpe = false;
                         idRechazo = 83;
                         rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                        response = TesEmisionDocumentosSinpeResultado
+                            .TES_EmisionDocumentos_Sinpe_CrearRechazo(
+                                idRechazo,
+                                rechazo);
                     }
                     else
                     {
@@ -830,8 +835,12 @@ namespace Galileo_API.DataBaseTier
                         if (respuesta!.MotivoError != 0)
                         {
                             estadoSinpe = false;
-                            idRechazo = 83;
+                            idRechazo = respuesta.MotivoError;
                             rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta!.MotivoError).Result!;
+                            response = TesEmisionDocumentosSinpeResultado
+                                .TES_EmisionDocumentos_Sinpe_CrearRechazo(
+                                    idRechazo,
+                                    rechazo);
                         }
                         else
                         {
@@ -1112,7 +1121,7 @@ namespace Galileo_API.DataBaseTier
                             {
                                 estadoSinpe = false;
 
-                                if (ElResultadoDeSendTransfer!.Errors.Length >= 0)
+                                if (ElResultadoDeSendTransfer?.Errors?.Length > 0)
                                 {
                                     idRechazo = ElResultadoDeSendTransfer.Errors[0].Code;
                                     rechazo = ElResultadoDeSendTransfer.Errors[0].Message;
@@ -1129,22 +1138,46 @@ namespace Galileo_API.DataBaseTier
                             }
                         }
 
-                        switch (ElResultadoDeSendTransfer.PINSendingResult.State)
+                        if (ElResultadoDeSendTransfer is
+                            { IsSuccessful: true })
                         {
-                            case 32:
-                                estadoSinpe = true;
-                                break;
-                            case 128:
-                                estadoSinpe = false;
-                                rechazo = "Se ha rechazado la transacción. Favor intente mas tarde.";
-                                break;
-                            case 256:
-                                estadoSinpe = false;
-                                rechazo = "La confirmación la transacción esta en espera, favor consulte sus movimientos mas tarde.";
-                                break;
+                            switch (ElResultadoDeSendTransfer.PINSendingResult.State)
+                            {
+                                case 32:
+                                    estadoSinpe = true;
+                                    break;
+                                case 128:
+                                    estadoSinpe = false;
+                                    idRechazo = 128;
+                                    rechazo = "Se ha rechazado la transacción. Favor intente más tarde.";
+                                    break;
+                                case 256:
+                                    estadoSinpe = false;
+                                    idRechazo = 256;
+                                    rechazo = "La confirmación de la transacción está en espera; consulte sus movimientos más tarde.";
+                                    break;
+                                default:
+                                    estadoSinpe = false;
+                                    idRechazo =
+                                        ElResultadoDeSendTransfer
+                                            .PINSendingResult.State;
+                                    rechazo =
+                                        "SINPE devolvió un estado de transferencia no exitoso.";
+                                    break;
+                            }
                         }
 
-                        if (estadoSinpe)
+                        var resultadoPin =
+                            ElResultadoDeSendTransfer?.PINSendingResult;
+                        if (estadoSinpe && resultadoPin is null)
+                        {
+                            estadoSinpe = false;
+                            idRechazo = -1;
+                            rechazo =
+                                "SINPE no devolvió el resultado de la transferencia.";
+                        }
+
+                        if (estadoSinpe && resultadoPin is not null)
                         {
                             datos.NumeroSolicitud = Nsolicitud;
                             datos.FechaEmision = vfecha;
@@ -1152,7 +1185,8 @@ namespace Galileo_API.DataBaseTier
                             datos.UsuarioGenera = vUsuario;
                             datos.estadoSinpe = estadoSinpe;
                             datos.IdMotivoRechazo = idRechazo;
-                            datos.CodigoReferencia = ElResultadoDeSendTransfer.PINSendingResult.SINPERefNumber;
+                            datos.CodigoReferencia =
+                                resultadoPin.SINPERefNumber;
                             datos.DocumentoBase = doc_base.ToString();
                             datos.contador = contador.ToString();
 
@@ -1216,11 +1250,10 @@ namespace Galileo_API.DataBaseTier
                             if (estadoSinpe)
                             {
                                 EnviaNotificacionesCajas(CodEmpresa, datos.CodigoReferencia);
-                            }
-
-                            if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
-                            {
-                                _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Se produjo un error al actualizar la transacción", vUsuario);
+                                if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                                {
+                                    _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Se produjo un error al actualizar la transacción", vUsuario);
+                                }
                             }
                         }
                     }
@@ -1236,6 +1269,15 @@ namespace Galileo_API.DataBaseTier
                 response.Code = -1;
                 response.Description = "Error al procesar la solicitud de emisión de SINPE Tiempo Real.";
             }
+
+            if (!estadoSinpe && response.Code == 0)
+            {
+                response = TesEmisionDocumentosSinpeResultado
+                    .TES_EmisionDocumentos_Sinpe_CrearRechazo(
+                        idRechazo,
+                        rechazo);
+            }
+
             return response;
         }
 
@@ -1844,22 +1886,32 @@ namespace Galileo_API.DataBaseTier
                 Result = false
             };
 
-            string nDocumento = "";
+            string? nDocumento = null;
 
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 if (datos.IdMotivoRechazo != 201)
                 {
-                    nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
-                                 .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
+                    _ = long.TryParse(
+                        datos.DocumentoBase,
+                        out var documentoBase);
+                    _ = int.TryParse(
+                        datos.contador,
+                        out var secuencia);
+                    nDocumento =
+                        TesEmisionDocumentosNumeracion
+                            .CrearNDocumentoOpcional(
+                                documentoBase,
+                                secuencia);
 
 
-                    var query = $@"Update Tes_Transacciones Set Estado='I',Fecha_Emision= @FECHAEMITE, 
+                    var query = @"Update Tes_Transacciones Set Estado='I',Fecha_Emision= @FECHAEMITE, 
                                     Ubicacion_Actual='T',FECHA_TRASLADO= @FECHATRASLADO, User_Genera = @USUARIO, 
                                     Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, Referencia_Sinpe= @REFERENCIA, 
-                                    Documento_Base = @DOCBASE, NDocumento = CASE WHEN USUARIO_AUTORIZA_ESPECIAL IS 
-                                    NULL THEN @NDOC ELSE @REFERENCIA END where NSolicitud= @SOLICITUD";
+                                    Documento_Base = CASE WHEN @NDOC IS NULL THEN Documento_Base ELSE @DOCBASE END,
+                                    NDocumento = CASE WHEN @NDOC IS NULL THEN NDocumento ELSE @NDOC END
+                                    where NSolicitud= @SOLICITUD";
                     var result = connection.Execute(query, new
                     {
                         FECHAEMITE = datos.FechaEmision,

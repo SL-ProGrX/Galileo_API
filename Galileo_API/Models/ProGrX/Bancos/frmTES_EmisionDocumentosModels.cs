@@ -114,6 +114,7 @@ namespace Galileo.Models.TES
     public sealed class TesEmisionProcesoError
     {
         public int NSolicitud { get; set; }
+        public int Codigo { get; set; }
         public string Descripcion { get; set; } = string.Empty;
     }
 
