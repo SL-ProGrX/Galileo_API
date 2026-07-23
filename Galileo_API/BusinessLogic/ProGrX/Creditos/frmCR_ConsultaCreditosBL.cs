@@ -63,6 +63,48 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.CR_ConsultaCrd_CreditoContexto_Obtener(codEmpresa);
         }
 
+        public ErrorDto<List<CrConsultaSoSResumenData>> CR_ConsultaCrd_SoSResumen_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _Db.CR_ConsultaCrd_SoSResumen_Obtener(codEmpresa, cedula, usuario);
+        }
+
+        public ErrorDto<List<CrConsultaSoSOperacionData>> CR_ConsultaCrd_SoSOperaciones_Obtener(
+            int codEmpresa,
+            string cedula,
+            decimal proceso,
+            string usuario)
+        {
+            return _Db.CR_ConsultaCrd_SoSOperaciones_Obtener(
+                codEmpresa,
+                cedula,
+                proceso,
+                usuario);
+        }
+
+        public ErrorDto<CrConsultaSoSExclusionData> CR_ConsultaCrd_SoSExclusion_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _Db.CR_ConsultaCrd_SoSExclusion_Obtener(codEmpresa, cedula, usuario);
+        }
+
+        public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
+            int codEmpresa,
+            string cedula,
+            bool excluir,
+            string usuario)
+        {
+            return _Db.CR_ConsultaCrd_SoSExclusion_Guardar(
+                codEmpresa,
+                cedula,
+                excluir,
+                usuario);
+        }
+
         public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
             int codEmpresa,
             int operacion,

@@ -24,7 +24,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
                 connection.QueryFirstOrDefault<CrConsultaCreditoContextoData>(
                     @"select dbo.MyGetdate() as fechaServidor,
-                             isnull(SysCrdPlanPago, 0) as sysPlanPagos
+                             isnull(SysCrdPlanPago, 0) as sysPlanPagos,
+                             isnull(dbo.fxCajasParametros('01'), 'N') as cajasParametro01,
+                             isnull(dbo.fxCajasParametros('03'), 'N') as cajasParametro03,
+                             isnull(Portal_ID, 0) as portalId
                         from SIF_EMPRESA"));
 
             return result.Code == 0 && result.Result is not null
@@ -33,6 +36,115 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     result.Description ?? "No fue posible obtener el contexto de créditos.",
                     result.Code.GetValueOrDefault(-1),
                     new CrConsultaCreditoContextoData());
+        }
+
+        /// <summary>
+        /// Obtiene el resumen de salidas SoS de la persona consultada.
+        /// </summary>
+        public ErrorDto<List<CrConsultaSoSResumenData>> CR_ConsultaCrd_SoSResumen_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Query<CrConsultaSoSResumenData>(
+                    "exec spSOS_Consulta_Resumen @cedula, @usuario",
+                    new { cedula, usuario }).AsList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<CrConsultaSoSResumenData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener el resumen SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<CrConsultaSoSResumenData>());
+        }
+
+        /// <summary>
+        /// Obtiene las operaciones relacionadas con un proceso SoS.
+        /// </summary>
+        public ErrorDto<List<CrConsultaSoSOperacionData>> CR_ConsultaCrd_SoSOperaciones_Obtener(
+            int codEmpresa,
+            string cedula,
+            decimal proceso,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Query<CrConsultaSoSOperacionData>(
+                    "exec spSOS_Consulta_Operaciones @cedula, @proceso, @usuario",
+                    new { cedula, proceso, usuario }).AsList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<CrConsultaSoSOperacionData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener las operaciones SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<CrConsultaSoSOperacionData>());
+        }
+
+        /// <summary>
+        /// Obtiene el estado de exclusión de la persona en el proceso de devolución SoS.
+        /// </summary>
+        public ErrorDto<CrConsultaSoSExclusionData> CR_ConsultaCrd_SoSExclusion_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.QueryFirstOrDefault<CrConsultaSoSExclusionData>(
+                    "exec spSOS_Exclusiones_Consulta @cedula, @usuario",
+                    new { cedula = cedula.Trim(), usuario = usuario.Trim() })
+                ?? new CrConsultaSoSExclusionData());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new CrConsultaSoSExclusionData())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible consultar la exclusión SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaSoSExclusionData());
+        }
+
+        /// <summary>
+        /// Incluye o excluye a la persona del proceso de devolución SoS.
+        /// </summary>
+        public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
+            int codEmpresa,
+            string cedula,
+            bool excluir,
+            string usuario)
+        {
+            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
+            var usuarioNormalizado = (usuario ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(cedulaNormalizada))
+            {
+                return DbHelper.ErrorResponse("Debe indicar la cédula.", -1);
+            }
+
+            var accion = excluir ? "A" : "I";
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+            {
+                connection.Execute(
+                    "exec spSOS_Exclusiones_Registro @cedula, @accion, @usuario",
+                    new { cedula = cedulaNormalizada, accion, usuario = usuarioNormalizado });
+                return true;
+            });
+
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    result.Description ?? "No fue posible actualizar la exclusión SoS.",
+                    result.Code.GetValueOrDefault(-1));
+            }
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuarioNormalizado,
+                Modulo = 3,
+                Movimiento = excluir ? "Registra" : "Elimina",
+                DetalleMovimiento = $"Exclusión del Programa SOS -> Cédula: {cedulaNormalizada}"
+            });
+
+            return DbHelper.OkResponse("Operación realizada correctamente.");
         }
 
         /// <summary>
