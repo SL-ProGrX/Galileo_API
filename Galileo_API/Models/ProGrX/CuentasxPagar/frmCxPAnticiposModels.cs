@@ -10,11 +10,18 @@
         public string notas { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
         public string fechaCargo { get; set; } = string.Empty;
+        public List<CargoAdicionalAnticipoDto> cargosAdicionales { get; set; } = [];
+    }
+
+    public class CargoAdicionalAnticipoDto
+    {
+        public string codCargo { get; set; } = string.Empty;
+        public decimal monto { get; set; }
     }
 
     public class CargoDto
     {
-        public int COD_CARGO { get; set; }
+        public string COD_CARGO { get; set; } = string.Empty;
         public string DESCRIPCION { get; set; } = string.Empty;
         public decimal MONTO { get; set; }
     }
@@ -23,7 +30,7 @@
     {
         public int idx { get; set; }
         public int cod_proveedor { get; set; }
-        public int cod_cargo { get; set; }
+        public string cod_cargo { get; set; } = string.Empty;
         public int id_cargo { get; set; }
         public string notas { get; set; } = string.Empty;
         public DateTime fecha { get; set; }
