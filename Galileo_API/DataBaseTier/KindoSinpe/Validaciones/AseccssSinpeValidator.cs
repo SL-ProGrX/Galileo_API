@@ -1266,7 +1266,7 @@ namespace Galileo_API.DataBaseTier
                             if (estadoSinpe)
                             {
                                 EnviaNotificacionesCajas(CodEmpresa, datos.CodigoReferencia);
-                                if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                                if (!fxTesRespuestaSinpe(CodEmpresa, datos).Result)
                                 {
                                     _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Se produjo un error al actualizar la transacción", vUsuario);
                                 }
