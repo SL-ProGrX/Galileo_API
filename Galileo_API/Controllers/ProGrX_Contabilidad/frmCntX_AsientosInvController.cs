@@ -22,6 +22,17 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet(
+            "CntX_frmCntX_AsientosInv_Parametros_Obtener")]
+        public ErrorDto<DefMascarasDto>
+            CntX_frmCntX_AsientosInv_Parametros_Obtener(
+                int codEmpresa)
+        {
+            return _bl
+                .CntX_frmCntX_AsientosInv_Parametros_Obtener(
+                    codEmpresa);
+        }
+
+        [HttpGet(
             "CntX_frmCntX_AsientosInv_Asiento_Obtener")]
         public ErrorDto<CntXAsientosInvResponse?>
             CntX_frmCntX_AsientosInv_Asiento_Obtener(

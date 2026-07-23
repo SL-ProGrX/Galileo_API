@@ -24,6 +24,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Obtiene el período contable utilizado para inicializar
+        /// el formulario de asientos de inventario periódico.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<DefMascarasDto>
+            CntX_frmCntX_AsientosInv_Parametros_Obtener(
+                int codEmpresa)
+        {
+            var parametros =
+                _cntLinkDb.sbgCntParametros(
+                    codEmpresa);
+
+            if (parametros.Result is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    parametros.Description
+                        ?? "No fue posible obtener los par&aacute;metros contables.",
+                    parametros.Code.GetValueOrDefault(-1),
+                    new DefMascarasDto());
+            }
+
+            if (!parametros.Result.gPeriodoAnio.HasValue
+                || !parametros.Result.gPeriodoMes.HasValue
+                || parametros.Result.gPeriodoAnio.Value <= 0
+                || parametros.Result.gPeriodoMes.Value
+                    is < 1 or > 12)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El per&iacute;odo contable no es v&aacute;lido.",
+                    -2,
+                    new DefMascarasDto());
+            }
+
+            return DbHelper.CreateOkResponse(
+                parametros.Result);
+        }
+
+        /// <summary>
         /// Obtiene el encabezado y el detalle de un asiento
         /// de ajuste de inventario periodico.
         /// </summary>
@@ -126,16 +165,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                             detalle = detalle
                         };
                     });
-
-            if (consulta.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<
-                    CntXAsientosInvResponse?>(
-                    consulta.Description
-                        ?? "No fue posible consultar el asiento.",
-                    consulta.Code.GetValueOrDefault(-1),
-                    null);
-            }
 
             if (consulta.Result is null)
             {
@@ -287,11 +316,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         Cuenta = cuentaFormateada
                     });
 
-            if (consulta.Code != 0)
-            {
-                return consulta;
-            }
-
             if (consulta.Result is null)
             {
                 return DbHelper.CreateErrorResponse<
@@ -329,8 +353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     codEmpresa,
                     request);
 
-            if (detallePreparado.Code != 0
-                || detallePreparado.Result is null)
+            if (detallePreparado.Result is null)
             {
                 return DbHelper.ErrorResponse(
                     detallePreparado.Description
@@ -719,8 +742,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     codEmpresa,
                     request.detalle);
 
-            if (lineasFormateadas.Code != 0
-                || lineasFormateadas.Result is null)
+            if (lineasFormateadas.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
                     lineasFormateadas.Description
@@ -748,8 +770,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     request.asiento.cod_contabilidad,
                     cuentas);
 
-            if (cuentasValidas.Code != 0
-                || cuentasValidas.Result is null)
+            if (cuentasValidas.Result is null)
             {
                 return DbHelper.CreateErrorResponse(
                     cuentasValidas.Description

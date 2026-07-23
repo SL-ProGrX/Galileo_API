@@ -15,6 +15,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmCntXAsientosInvDb(config);
         }
 
+        public ErrorDto<DefMascarasDto>
+            CntX_frmCntX_AsientosInv_Parametros_Obtener(
+                int codEmpresa)
+        {
+            return _db
+                .CntX_frmCntX_AsientosInv_Parametros_Obtener(
+                    codEmpresa);
+        }
+
         public ErrorDto<CntXAsientosInvResponse?>
             CntX_frmCntX_AsientosInv_Asiento_Obtener(
                 int codEmpresa,
