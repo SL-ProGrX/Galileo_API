@@ -181,4 +181,56 @@ namespace Galileo.Models.ProGrX.Fondos
         public int ConErrores { get; set; }
         public List<FndTraspasoTesoreriaProcesoError> Errores { get; set; } = new();
     }
+
+    public sealed class FndTraspasoTesoreriaProcesoIniciarRequest
+    {
+        public Guid ProcesoId { get; set; }
+        public string Modo { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+        public string? Token { get; set; }
+        public string? RetencionCodigo { get; set; }
+        public DateTime FechaDesde { get; set; }
+        public DateTime FechaHasta { get; set; }
+        public bool AplicaRevision { get; set; }
+        public int? BancoId { get; set; }
+        public string? Oficina { get; set; }
+        public string? UsuarioFiltro { get; set; }
+        public string? SistemaFiltro { get; set; }
+        public string? TokenFiltro { get; set; }
+        public string AppProductName { get; set; } = "ProGrX";
+        public List<int> Consecutivos { get; set; } = new();
+        public List<string> Cedulas { get; set; } = new();
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string Usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class FndTraspasoTesoreriaProcesoContinuarRequest
+    {
+        public Guid ProcesoId { get; set; }
+        public bool ReintentarErrores { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string Usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class FndTraspasoTesoreriaProcesoErrorResult
+    {
+        public int Consec { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public sealed class FndTraspasoTesoreriaProcesoResult
+    {
+        public Guid ProcesoId { get; set; }
+        public string Estado { get; set; } = string.Empty;
+        public int TotalRegistros { get; set; }
+        public int Procesados { get; set; }
+        public int ConErrores { get; set; }
+        public int Pendientes { get; set; }
+        public decimal Porcentaje { get; set; }
+        public bool ProcesoFinalizado { get; set; }
+        public string? ErrorMensaje { get; set; }
+        public List<FndTraspasoTesoreriaProcesoErrorResult> Errores { get; set; } = new();
+    }
 }
