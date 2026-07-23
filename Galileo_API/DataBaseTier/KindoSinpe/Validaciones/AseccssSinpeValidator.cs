@@ -834,7 +834,7 @@ namespace Galileo_API.DataBaseTier
             {
                 if (Nsolicitud > 0)
                 {
-                    if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
+                    if (!ServicioDisponibleLote(CodEmpresa, vUsuario))
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
@@ -1228,7 +1228,7 @@ namespace Galileo_API.DataBaseTier
                     }
                     else //Uso de canal CanalTFT
                     {
-                        if (ServicioDisponibleLote(CodEmpresa, vUsuario) == false)
+                        if (!ServicioDisponibleLote(CodEmpresa, vUsuario))
                         {
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;
@@ -1266,7 +1266,7 @@ namespace Galileo_API.DataBaseTier
                             if (estadoSinpe)
                             {
                                 EnviaNotificacionesCajas(CodEmpresa, datos.CodigoReferencia);
-                                if (fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                                if (!fxTesRespuestaSinpe(CodEmpresa, datos).Result)
                                 {
                                     _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Se produjo un error al actualizar la transacción", vUsuario);
                                 }
