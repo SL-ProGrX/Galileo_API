@@ -316,7 +316,16 @@ namespace Galileo_API.DataBaseTier
 
                 // Llamar al método IsPINEntity con los parámetros
                 Elresutado = IsPINEntity(PINEntity).Result;
-                ErrorDto.Result = Elresutado!.PINEntity;
+                if (Elresutado is null)
+                {
+                    return new ErrorDto<bool>
+                    {
+                        Code = -1,
+                        Description = "No se obtuvo respuesta del servicio PIN.",
+                        Result = false
+                    };
+                }
+                ErrorDto.Result = Elresutado.PINEntity ;
             }
             catch (Exception ex)
             {
@@ -549,7 +558,8 @@ namespace Galileo_API.DataBaseTier
                 contextBody.BaseRequest = context;
 
                 var elResultado = IsServiceAvailable(context, vUsuario);
-                if (!elResultado.Result!.ServiceAvailable)
+
+                if (elResultado.Result == null || !elResultado.Result.ServiceAvailable)
                 {
                     ErrorDto.Code = -1;
                     ErrorDto.Description = "Servicio PIN NO Disponible RESPUESTA: " + elResultado.Result.Errors;
@@ -586,7 +596,13 @@ namespace Galileo_API.DataBaseTier
                 };
 
 
-                var laInformacionDeLaCuentaPIN = fxCrearAccountInfo(GetAccountInfo(accountData).Result!);
+                var accountInfo = GetAccountInfo(accountData).Result;
+                if (accountInfo is null)
+                {
+                    return DbHelper.CreateErrorResponse<ResAccountInfo>("No se obtuvo información de la cuenta PIN.");
+                }
+
+                var laInformacionDeLaCuentaPIN = fxCrearAccountInfo(accountInfo);
                 ErrorDto.Result = laInformacionDeLaCuentaPIN.Result;
             }
             catch (Exception ex)
@@ -806,7 +822,7 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result!;
+            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result;
 
 
             var respuesta = new Sinpe_CCD.RespuestaRegistro();
@@ -822,7 +838,7 @@ namespace Galileo_API.DataBaseTier
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
-                        rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                        rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
                         response = TesEmisionDocumentosSinpeResultado
                             .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                 idRechazo,
@@ -832,11 +848,11 @@ namespace Galileo_API.DataBaseTier
                     {
                         respuesta = fxTesEnvioSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vUsuario).Result;
 
-                        if (respuesta!.MotivoError != 0)
+                        if (respuesta.MotivoError != 0)
                         {
                             estadoSinpe = false;
                             idRechazo = respuesta.MotivoError;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta!.MotivoError).Result!;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta.MotivoError).Result;
                             response = TesEmisionDocumentosSinpeResultado
                                 .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                     idRechazo,
@@ -978,7 +994,7 @@ namespace Galileo_API.DataBaseTier
               
 
                 body.Rastro = new Sinpe_CCD.Rastro();
-                detalle = (solicitud!.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4 + solicitud.Detalle5)
+                detalle = (solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4 + solicitud.Detalle5)
                     .Substring(0, Math.Min(255,
                         (solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4 + solicitud.Detalle5).Length));
 
@@ -1088,7 +1104,7 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result!;
+            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result;
 
             var solicitud = new Galileo.Models.KindoSinpe.TesTransaccion();
             var ElResultadoDeSendTransfer = new ResPINSending();
@@ -1104,13 +1120,13 @@ namespace Galileo_API.DataBaseTier
                 {
                     solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
 
-                    if (ConsultarIsPINEntity(solicitud!.Cuenta!).Result == true) // NOSONAR
+                    if (ConsultarIsPINEntity(solicitud.Cuenta).Result == true)
                     {
                         if (!ConsultarIsServiceAvailable(CodEmpresa, vUsuario).Result) // NOSONAR
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!; // NOSONAR
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
                         }
                         else
                         {
@@ -1129,7 +1145,7 @@ namespace Galileo_API.DataBaseTier
                                 else
                                 {
                                     idRechazo = -1;
-                                    rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                                    rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
                                 }
                             }
                             else
@@ -1217,18 +1233,18 @@ namespace Galileo_API.DataBaseTier
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
                             _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Emisión Transferencia Sinpe: {rechazo}", vUsuario);
                         }
                         else
                         {
                             respuesta = fxTesEnvioSinpeTiempoReal(solicitud).Result;
 
-                            if (respuesta!.MotivoError != 0)
+                            if (respuesta.MotivoError != 0)
                             {
                                 estadoSinpe = false;
                                 idRechazo = 83;
-                                rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                                rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo}", vUsuario);
                             }
                             else
@@ -1326,20 +1342,20 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.Description = detalle;
                 TransferData.Transfer.OriginEntityIBAN = ""; 
                 TransferData.Transfer.OriginCustomer = new Sinpe_PIN.OriginCustomer();
-                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen!.Trim()); 
-                TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo);
+                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo), solicitud.CedulaOrigen.Trim()); 
+                TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo);
                 TransferData.Transfer.OriginCustomer.Name = solicitud.NombreOrigen;
                 TransferData.Transfer.OriginCustomer.IBAN = solicitud.CuentaOrigen;
                 TransferData.Transfer.OriginCustomer.Email = "";
                 TransferData.Transfer.OriginCustomer.DebitIBAN = true;
                 TransferData.Transfer.DestinationCustomer = new DestinationCustomer();
-                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo!.Trim());
-                TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo);
+                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo), solicitud.Codigo.Trim());
+                TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo);
                 TransferData.Transfer.DestinationCustomer.Name = solicitud.Beneficiario;
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
                 TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica; ;
 
-                ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera!).Result!;
+                ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera).Result;
 
                 ErrorDto.Result = ElResultadoDeSendTransfer;
             }
@@ -1462,18 +1478,18 @@ namespace Galileo_API.DataBaseTier
                 transaccion.DatosDebito.EntidadOrigen = 205;
                 transaccion.DatosDebito.FirmaDigital = false;
                 transaccion.DatosDebito.IDCorrelation = "1";
-                transaccion.DatosDebito.eMAIL = solicitud.CorreoNotifica!.Trim();
+                transaccion.DatosDebito.eMAIL = solicitud.CorreoNotifica.Trim();
 
                 transaccion.ClienteOrigen = new Cliente
                 {
-                    Identificacion = fxFormatoIdentificacionSinpe(solicitud.CedulaOrigen!.Trim(), solicitud.tipoCedOrigen.GetHashCode()).Result,
+                    Identificacion = fxFormatoIdentificacionSinpe(solicitud.CedulaOrigen.Trim(), solicitud.tipoCedOrigen.GetHashCode()).Result,
                     Nombre = solicitud.NombreOrigen,
                     IBAN = solicitud.CuentaOrigen,
                 };
 
                 transaccion.ClienteDestino = new Cliente
                 {
-                    Identificacion = fxFormatoIdentificacionSinpe(solicitud.Codigo!.Trim(), solicitud.tipoCedDestino.GetHashCode()).Result,
+                    Identificacion = fxFormatoIdentificacionSinpe(solicitud.Codigo.Trim(), solicitud.tipoCedDestino.GetHashCode()).Result,
                     Nombre = solicitud.Beneficiario,
                     IBAN = solicitud.Cuenta,
                 };
@@ -1525,7 +1541,7 @@ namespace Galileo_API.DataBaseTier
             byte pTipoDocEletronico, string pNotas, string pTipoTramite)
         {
             var response = new ErrorDto<bool>();
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, "ProGrx").Result!;
+            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, "ProGrx").Result;
 
             try
             {
@@ -1561,7 +1577,7 @@ namespace Galileo_API.DataBaseTier
                 EncabezadoServicio.SituacionEnvio = (byte)Galileo.Models.KindoSinpe.E_SituacionEnvio.Normal;
 
                 parametrosEncabezado = ObtieneParametrosEncabezado(CodEmpresa).Result;
-                EncabezadoServicio.CantDeci = parametrosEncabezado!.CantDeci; //Cantidad de decimales
+                EncabezadoServicio.CantDeci = parametrosEncabezado.CantDeci; //Cantidad de decimales
                 EncabezadoServicio.Sucursal = parametrosEncabezado.Sucursal; //Sucursal asignada por GTI
                 EncabezadoServicio.CodigoActividad = parametrosEncabezado.CodigoActividad; //Codigo de actividad de la empresa
                 EncabezadoServicio.Terminal = parametrosEncabezado.Terminal; //Terminal asignada por GTI
@@ -1648,7 +1664,7 @@ namespace Galileo_API.DataBaseTier
                 var receptorVal = new Galileo.Models.KindoSinpe.FE_Receptor();
 
                 receptorVal = receptorValidado(CodEmpresa, pCedula, null).Result;
-                receptorValServicio.Nombre = receptorVal!.Nombre;
+                receptorValServicio.Nombre = receptorVal.Nombre;
                 receptorValServicio.Correo = receptorVal.Correo;
                 receptorValServicio.TipoIdent = receptorVal.TipoIdent;
                 receptorValServicio.Identificacion = receptorVal.Identificacion;
@@ -1726,7 +1742,7 @@ namespace Galileo_API.DataBaseTier
                     return new ErrorDto<List<Galileo.Models.KindoSinpe.FE_Detalles>>();
 
                 foreach (var item in response.Result
-                    .Where(x => !string.Equals(x.PrecioUnitario!.ToString(), "0", StringComparison.Ordinal)))
+                    .Where(x => !string.Equals(x.PrecioUnitario.ToString(), "0", StringComparison.Ordinal)))
                 {
                     item.Descuentos = ObtieneDescuentos(CodEmpresa, pNumComprobante, pTipoDocumento).Result;
                     item.Impuestos = ObtieneImpuestos(
@@ -1819,10 +1835,10 @@ namespace Galileo_API.DataBaseTier
                     pNotas = "Recibo de Pago ASECCSS";
                 }
 
-                response.Result!.TipoDocumento = pTipoDoc;
-                response.Result!.SistemaSiglas = "ProGrx ASECCSS";
-                response.Result!.NumeroDeComprobante = pNumeroComprobante;
-                response.Result!.Notas = pNotas;
+                response.Result.TipoDocumento = pTipoDoc;
+                response.Result.SistemaSiglas = "ProGrx ASECCSS";
+                response.Result.NumeroDeComprobante = pNumeroComprobante;
+                response.Result.Notas = pNotas;
 
             }
             catch (Exception ex)
