@@ -71,16 +71,9 @@ namespace Galileo_API.DataBaseTier
 
                 var uriConn = GetServiceUri(parametrosSinpe, sinpeTipo);
 
-                // Se verifica la disponibilidad una sola vez por lote (se cachea solo el resultado positivo).
-                if (_servicioDisponibleLote != true)
-                {
-                    var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
-
-                    if (!servicio.ServiceAvailable)
-                        return DbHelper.ErrorResponse("Servicio no disponible: " + servicio.Errors?[0].Message);
-
-                    _servicioDisponibleLote = true;
-                }
+                var errorDisponible = VerificarServicioDisponible(uriConn, context);
+                if (errorDisponible != null)
+                    return errorDisponible;
 
                 string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula);
 
@@ -113,24 +106,51 @@ namespace Galileo_API.DataBaseTier
                 }
 
 
-                if (estado == 0 || estado == 1)
-                {
-                    var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a
-nombre de {cuenta.Account.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {info.tipoID}
-Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
-
-                    return DbHelper.OkResponse(desc);
-                }
-                else
-                {
-                    var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? SinpeRejectionMessage;
-                    return DbHelper.ErrorResponse(rechazo, estado);
-                }
+                return ConstruirRespuestaEstado(codEmpresa, estado, info, cuenta);
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse("Ocurrió un problema con la validación. - " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el positivo).
+        /// Devuelve un error si no está disponible, o null si está OK.
+        /// </summary>
+        private ErrorDto VerificarServicioDisponible(string uriConn, ReqBase context)
+        {
+            if (_servicioDisponibleLote == true)
+                return null;
+
+            var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
+            if (!servicio.ServiceAvailable)
+                return DbHelper.ErrorResponse("Servicio no disponible: " + servicio.Errors?[0].Message);
+
+            _servicioDisponibleLote = true;
+            return null;
+        }
+
+        /// <summary>
+        /// Construye la respuesta según el estado de la cuenta: 0/1 = OK con descripción; otros = rechazo con motivo.
+        /// </summary>
+        private ErrorDto ConstruirRespuestaEstado(
+            int codEmpresa,
+            int estado,
+            vInfoSinpe info,
+            Galileo.Models.KindoSinpe.ResAccountInfo cuenta)
+        {
+            if (estado == 0 || estado == 1)
+            {
+                var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a
+nombre de {cuenta.Account.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {info.tipoID}
+Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
+
+                return DbHelper.OkResponse(desc);
+            }
+
+            var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? SinpeRejectionMessage;
+            return DbHelper.ErrorResponse(rechazo, estado);
         }
 
         public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
