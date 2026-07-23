@@ -476,7 +476,7 @@ where B.estado = 'A'
                     var procesadas = 0;
                     var totalSolicitudes = solicitudes?.Count ?? 0;
 
-                    foreach (var item in solicitudes!)
+                    foreach (var item in solicitudes)
                     {
                         var filtroItem = new TesEmisionDocFiltros
                         {
@@ -500,7 +500,7 @@ where B.estado = 'A'
                             filtroItem.banco,
                             filtroItem.plan).Result;
 
-                        filtroItem.cantidad = documento!.total;
+                        filtroItem.cantidad = documento.total;
                         filtroItem.docBloqueo = documento.docBloqueo;
                         filtroItem.docInicial = (int)documento.docInicial;
 
@@ -510,7 +510,7 @@ where B.estado = 'A'
 
                         filtroItem.formatoTE = item.tipo == "TS"
                             ? "SG"
-                            : (string)formato![0].item!;
+                            : (string)formato[0].item;
 
                         var proceso = ProcesoDocumentos(codEmpresa, filtroItem);
                         if (proceso.Code != 0)
@@ -1543,10 +1543,10 @@ where nsolicitud in ";
                 detalle.Append(item.nsolicitud.ToString().PadLeft(10, '0'));
                 detalle.Append(bancoId.PadLeft(12, '0'));
                 detalle.Append(((long)Math.Round(montoItem * 100, 0)).ToString("D15", CultureInfo.InvariantCulture));
-                detalle.Append(item.beneficiario!.PadRight(50));
+                detalle.Append(item.beneficiario.PadRight(50));
                 detalle.Append(item.estado);
-                detalle.Append(item.cta_ahorros!.PadLeft(20, '0'));
-                detalle.Append(item.ndocumento!.PadLeft(15, '0'));
+                detalle.Append(item.cta_ahorros.PadLeft(20, '0'));
+                detalle.Append(item.ndocumento.PadLeft(15, '0'));
 
                 sb.AppendLine(detalle.ToString());
             }
