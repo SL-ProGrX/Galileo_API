@@ -56,7 +56,10 @@ namespace Galileo_API.DataBaseTier
                 if (infoSinpeResult.Code == -1)
                     return DbHelper.ErrorResponse(infoSinpeResult.Description ?? "Error al consultar info SINPE.");
 
-                var info = infoSinpeResult.Result!;
+                var info = infoSinpeResult.Result;
+                if(info == null)
+                    return DbHelper.ErrorResponse("No se pudo obtener información SINPE.");
+
                 if (!TieneDatosMinimos(info))
                     return ok; // mismo comportamiento actual: si no hay datos, regresa Ok
 
@@ -74,19 +77,19 @@ namespace Galileo_API.DataBaseTier
                     var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
 
                     if (!servicio.ServiceAvailable)
-                        return DbHelper.ErrorResponse("Servicio no disponible: " + servicio!.Errors?[0].Message);
+                        return DbHelper.ErrorResponse("Servicio no disponible: " + servicio.Errors?[0].Message);
 
                     _servicioDisponibleLote = true;
                 }
 
-                string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
+                string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula);
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
 
                 var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
                 if (valOrigen.Code == -1)
                 {
-                    return DbHelper.ErrorResponse(valOrigen.Description!);
+                    return DbHelper.ErrorResponse(valOrigen.Description);
                 }
                 if (!cuenta.IsSuccessful)
                 {
@@ -103,7 +106,7 @@ namespace Galileo_API.DataBaseTier
                 // Estados 0/1: OK; otros: rechazo con motivo
                 var estado = (cuenta.Account?.State ?? 0);
 
-                if(cedula.Replace("-", "") != cuenta.Account.HolderId!.Replace("-", ""))
+                if(cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
                 {
                     return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
                 }
@@ -154,12 +157,12 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
         private static bool TieneDatosMinimos(vInfoSinpe info) =>
             !string.IsNullOrWhiteSpace(info?.Cedula) &&
-            !string.IsNullOrWhiteSpace(info!.CuentaIBAN);
+            !string.IsNullOrWhiteSpace(info.CuentaIBAN);
 
         private static ReqBase CrearContexto(ErrorDto<ParametrosSinpe> parametrosSinpe) =>
             new ReqBase
             {
-                HostId = parametrosSinpe.Result!.vHostPin,
+                HostId = parametrosSinpe.Result.vHostPin,
                 OperationId = Guid.NewGuid().ToString(),
                 ClientIPAddress = parametrosSinpe.Result.vIpHost,
                 CultureCode = "ES-CR",
@@ -200,7 +203,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
         private static string GetServiceUri(ErrorDto<ParametrosSinpe> parametros, SinpeTipo tipo)
         {
-            var r = parametros.Result!;
+            var r = parametros.Result;
             return tipo == SinpeTipo.PIN
                 ? (r.UrlCGP_PIN ?? string.Empty)
                 : (r.UrlCGP_DTR ?? string.Empty);
@@ -298,7 +301,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario);
                 respuesta = envio.Result;
 
-                if(envio.Result.MotivoError! == 32)
+                if(envio.Result.MotivoError == 32)
                 {
                     // 3) Persistir respuesta
                     datos.NumeroSolicitud = parametros.nSolicitud;
@@ -514,7 +517,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
             var context = CrearContexto(parametrosSinpe);
 
-            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN!, context);
+            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN, context);
             if (!servicio.ServiceAvailable)
                 return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
@@ -531,7 +534,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
             if (cuentaSinpe.Account?.State != null)
             {
-                var estado = cuentaSinpe.Account.State!;
+                var estado = cuentaSinpe.Account.State;
                 var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado ?? 0).Result ?? SinpeRejectionMessage;
                 return DbHelper.ErrorResponse(rechazo, estado ?? 0);
             }
@@ -553,7 +556,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 Amount = solicitud.Monto,
                 CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa),
                 Description = BuildDescription(solicitud),
-                OriginEntityIBAN = solicitud.CuentaOrigen!,
+                OriginEntityIBAN = solicitud.CuentaOrigen,
                 OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
                 DestinationCustomer = BuildDestinationCustomer(solicitud),
                 CustomData = BuildCustomData(),
@@ -606,7 +609,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             {
                 Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
                 IdType = Convert.ToInt32(info.Codigo),
-                Name = s.NombreOrigen!,
+                Name = s.NombreOrigen,
                 IBAN = s.CuentaOrigen,
                 DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(codEmpresa, s.CuentaOrigen),
                 Email = (s.CorreoNotifica as string ?? "").Trim()
@@ -622,8 +625,8 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             {
                 Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
                 IdType = Convert.ToInt32(info.Codigo),
-                Name = s.Beneficiario!,
-                IBAN = s.Cuenta!,
+                Name = s.Beneficiario,
+                IBAN = s.Cuenta,
                 Email = s.CorreoNotifica
             };
         }
