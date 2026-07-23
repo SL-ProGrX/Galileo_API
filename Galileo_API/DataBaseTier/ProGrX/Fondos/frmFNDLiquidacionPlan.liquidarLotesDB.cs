@@ -41,7 +41,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     request.usuario,
                     request.codContabilidad).Result;
 
-                request.oficinaTitular = globales!.GOficinaTitular;
+                request.oficinaTitular = globales.GOficinaTitular;
                 request.oficinaUnidad = globales.GOficinaUnidad;
                 request.oficinaCentroCosto = globales.GOficinaCentroCosto;
 
