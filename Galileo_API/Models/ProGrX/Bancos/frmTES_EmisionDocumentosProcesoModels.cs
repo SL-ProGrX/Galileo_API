@@ -11,7 +11,7 @@ namespace Galileo.Models.TES
     public sealed class TesEmisionDocumentosProcesoResult
     {
         public Guid procesoId { get; init; }
-        public int banco { get; init; }
+        public int banco { get; init; } = 0;
         public long? documentoBase { get; init; }
         public string estado { get; init; } = string.Empty;
         public string etapa { get; init; } = string.Empty;
