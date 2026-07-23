@@ -103,12 +103,12 @@ namespace Galileo.Models.TES
         public required int CodEmpresa { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Filtros { get; set; } = string.Empty;   // JSON de filtros base
-        public int Minimo { get; set; }
-        public int Maximo { get; set; }
+        public int Minimo { get; set; } = 0;
+        public int Maximo { get; set; } = 0;
         public List<int> NSolicitudes { get; set; } = new();
         // Documento único de la emisión (modelo v6: un documento por emisión).
         // Se avanza una sola vez al inicio y se marca en todas las solicitudes del lote.
-        public long BancoConsec { get; set; }
+        public long BancoConsec { get; set; } = 0;
     }
 
     public sealed class TesEmisionProcesoError

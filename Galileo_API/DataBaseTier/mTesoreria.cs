@@ -17,11 +17,13 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly string dirRDLC;
         private readonly MSecurityMainDb DBBitacora;
+        private readonly PortalDB _portalDB;
 
         public MTesoreria(IConfiguration config)
         {
             _config = config;
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
+            _portalDB = new PortalDB(config);
             DBBitacora = new MSecurityMainDb(config);
         }
 
@@ -1138,9 +1140,9 @@ namespace Galileo.DataBaseTier
     new ErrorDto { Code = code, Description = description };
 
 
-        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(SqlConnection connection, int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-", DateTime? vFecha = null)
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-", DateTime? vFecha = null)
         {
-            
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var resp = new ErrorDto<TesReporteTransferenciaDto>()
             {
                 Code = 0,
@@ -1202,15 +1204,6 @@ namespace Galileo.DataBaseTier
                 resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
                 resp.Result.letras1 = vLetra;
 
-                //if (vTipo == "C")
-                //{
-                    
-                //}
-                //else
-                //{
-                //    // No additional processing for tipos distintos de "C":
-                //    // se mantiene la respuesta con los valores por defecto inicializados.
-                //}
             }
             catch (Exception ex)
             {

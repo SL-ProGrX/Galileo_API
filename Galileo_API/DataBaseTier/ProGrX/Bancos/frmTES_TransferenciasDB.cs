@@ -55,8 +55,6 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 var vFecha = DateTime.Now;
 
-                //allowedSql = ValTipoTransferenciaTS(transferencia.tipoDoc!, allowedSql);
-
                 var cantidadSolicitudes = transferencia.parametros!.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
 
@@ -76,12 +74,10 @@ namespace Galileo_API.DataBaseTier
                 long current = conn.QueryFirstOrDefault<long>("SELECT ISNULL(CONSECUTIVO_DET,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco", new { Tipo = transferencia.parametros.tipoDoc, Banco = transferencia.parametros.banco});
                 consc = current;
 
-                
+                var vDocumento = string.Empty;
 
                 if (result.Count > 0)
                 {
-                    var vDocumento = consc.ToString("D4");
-
                     var linea = 1;
                     foreach (var item in result)
                     {
@@ -89,7 +85,7 @@ namespace Galileo_API.DataBaseTier
                        if(item.tipo == "TS")
                         {
                             item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
-                             $"{linea.ToString("000", CultureInfo.InvariantCulture)}";
+                             $"{linea.ToString("0000", CultureInfo.InvariantCulture)}";
                             linea++;
 
                             vDocumento = item.documento;
@@ -97,13 +93,13 @@ namespace Galileo_API.DataBaseTier
                         else if(item.tipo == "TE")
                         {
                             item.documento = $"{transferencia.bancoConsec.ToString(CultureInfo.InvariantCulture)}-" +
-                             $"{consc.ToString("000", CultureInfo.InvariantCulture)}";
+                             $"{consc.ToString("0000", CultureInfo.InvariantCulture)}";
                             consc = NextConsecutivo(CodEmpresa, transferencia, consc);
                             vDocumento = item.documento;
                         }
                         else
                         {
-                            item.documento = consc.ToString("000", CultureInfo.InvariantCulture);
+                            item.documento = consc.ToString("0000", CultureInfo.InvariantCulture);
                             consc = NextConsecutivo(CodEmpresa, transferencia, consc);
                             vDocumento = item.documento;
                         }
@@ -114,7 +110,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             
                             fechaEmision = vFecha, // DateTime, no string
-                            nDocumento = item.documento,
+                            nDocumento = vDocumento,
                             usuario = transferencia.usuario,
                             bancoConsec = transferencia.bancoConsec,
                             plan = transferencia.plan,
@@ -160,15 +156,6 @@ namespace Galileo_API.DataBaseTier
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-        }
-
-        private static string ValTipoTransferenciaTS(string tipoDoc , string allowedSql)
-        {
-            if (tipoDoc == "TS")
-            {
-                return allowedSql.Replace("Estado = 'P'", "Estado IN ('P', 'I')");
-            }
-            return allowedSql;
         }
 
         private static  int ValCantidadSolicitudes(int cantidadSolicitudes, TesTransferenciasInfo transferencia)

@@ -184,14 +184,14 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public sealed class FndTraspasoTesoreriaProcesoIniciarRequest
     {
-        public Guid ProcesoId { get; set; }
+        public Guid ProcesoId { get; set; } =  Guid.NewGuid();
         public string Modo { get; set; } = string.Empty;
         public string Accion { get; set; } = string.Empty;
         public string? Token { get; set; }
         public string? RetencionCodigo { get; set; }
-        public DateTime FechaDesde { get; set; }
-        public DateTime FechaHasta { get; set; }
-        public bool AplicaRevision { get; set; }
+        public DateTime? FechaDesde { get; set; } 
+        public DateTime? FechaHasta { get; set; }
+        public bool AplicaRevision { get; set; } = false;
         public int? BancoId { get; set; }
         public string? Oficina { get; set; }
         public string? UsuarioFiltro { get; set; }
@@ -207,8 +207,8 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public sealed class FndTraspasoTesoreriaProcesoContinuarRequest
     {
-        public Guid ProcesoId { get; set; }
-        public bool ReintentarErrores { get; set; }
+        public Guid ProcesoId { get; set; } = Guid.NewGuid();
+        public bool ReintentarErrores { get; set; } = false;
 
         [System.Text.Json.Serialization.JsonIgnore]
         public string Usuario { get; set; } = string.Empty;
