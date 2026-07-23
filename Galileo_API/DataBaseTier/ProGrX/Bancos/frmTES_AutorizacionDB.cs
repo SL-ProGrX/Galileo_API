@@ -58,7 +58,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 // 4) Conteo total
-                response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
+                response.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
                 var baseQuery = FrmTesAutorizacionSql.SP_TRANSACCIONES_PENDIENTES;
@@ -249,7 +249,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
 
-            if (nsolicitud.solicitudesLista!.Count == 0)
+            if (nsolicitud.solicitudesLista.Count == 0)
             {
                 return DbHelper.ErrorResponse(
                     "Debe seleccionar al menos una solicitud.");
@@ -299,7 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 conn,
                 bloqueaAutoAutorizacion,
                 solicitudesUnicas,
-                p.usuario!);
+                p.usuario);
             
             var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
             var solicitudesAutorizables = solicitudesUnicas
@@ -407,7 +407,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 estado = estadoSinpe.Value ? 1 : 0;
             }
-            var giro = string.IsNullOrWhiteSpace(tipoGiroSinpe) ? "NA" : tipoGiroSinpe!;
+            var giro = string.IsNullOrWhiteSpace(tipoGiroSinpe) ? "NA" : tipoGiroSinpe;
             return (estado, giro);
         }
 
