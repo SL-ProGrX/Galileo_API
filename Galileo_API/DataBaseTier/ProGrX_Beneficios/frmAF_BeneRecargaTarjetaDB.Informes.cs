@@ -185,7 +185,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return formFiles;
             }
 
-            var stream = new MemoryStream(byteArray);
+            var stream = new ReadOnlyMemory<byte>(byteArray).AsStream();
             var formFile = new FormFile(stream, 0, byteArray.Length, "file", fileName ?? "file")
             {
                 Headers = new HeaderDictionary(),
