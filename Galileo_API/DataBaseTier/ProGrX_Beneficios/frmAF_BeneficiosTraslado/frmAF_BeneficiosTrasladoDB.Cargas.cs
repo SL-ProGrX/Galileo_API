@@ -92,7 +92,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     || fxSupervisaBanco(connection, filtro.cod_banco);
 
                 var parametros = new DynamicParameters();
-                var sql = ConstruirQueryCargas(CodCliente, connection, filtro, fechas, supervisar, parametros);
+                var sql = ConstruirQueryCargas(CodCliente, filtro, fechas, supervisar, parametros);
 
                 response.Beneficios = connection.Query<AfiBeneficiosCargasData>(sql, parametros).ToList();
                 ValidarCargas(CodCliente, response.Beneficios, filtro.registro_usuario);
@@ -114,7 +114,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Construye la consulta de cargas con los filtros aplicados de forma parametrizada.
         /// </summary>
-        private string ConstruirQueryCargas(int CodCliente, SqlConnection connection, AfiFiltrosCargas filtro,
+        private string ConstruirQueryCargas(int CodCliente, AfiFiltrosCargas filtro,
             AfiBeneficiosRemesasDto fechas, bool supervisar, DynamicParameters parametros)
         {
             var columnaDuplicado = supervisar

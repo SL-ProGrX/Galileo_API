@@ -126,19 +126,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private sealed class PermisosCategoriaRow
         {
-            public int I_CAMBIAR_ESTADO { get; set; }
-            public int I_MODIFICA_EXPEDIENTE { get; set; }
-            public int I_TRASLADO_TESORERIA { get; set; }
-            public int I_PAGO_PROGRAMAR { get; set; }
-            public int I_PAGO_APROBAR_M { get; set; }
-            public int I_PAGO_REALIZAR { get; set; }
-            public int I_INGRESAR_SOLICITUD { get; set; }
-            public int I_PERIODO { get; set; }
-            public int I_PAGO_CONSULTA { get; set; }
-            public int I_APROBAR { get; set; }
-            public int I_RECHAZAR { get; set; }
-            public int I_ANULAR { get; set; }
-            public int I_DEVOLVER_RESOLUCION { get; set; }
+            public int I_CAMBIAR_ESTADO { get;  }
+            public int I_MODIFICA_EXPEDIENTE { get;  }
+            public int I_TRASLADO_TESORERIA { get;  }
+            public int I_PAGO_PROGRAMAR { get;  }
+            public int I_PAGO_APROBAR_M { get; }
+            public int I_PAGO_REALIZAR { get; }
+            public int I_INGRESAR_SOLICITUD { get; }
+            public int I_PAGO_CONSULTA { get; }
+            public int I_APROBAR { get; }
+            public int I_RECHAZAR { get; }
+            public int I_ANULAR { get; }
+            public int I_DEVOLVER_RESOLUCION { get; }
         }
     }
 }

@@ -4,6 +4,7 @@ using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Globalization;
 using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
@@ -79,7 +80,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     break;
                 case "date":
                     question.respuestaFecha = question.respuesta != null
-                        ? DateTime.Parse(question.respuesta?.ToString() ?? string.Empty)
+                        ? DateTime.Parse(
+                            Convert.ToString(question.respuesta, CultureInfo.InvariantCulture) ?? string.Empty,
+                            CultureInfo.InvariantCulture)
                         : DateTime.Now;
                     break;
             }
@@ -179,12 +182,12 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private static ErrorDto? ValidarRequeridas(Form frm)
         {
-            foreach (var item in (frm.questions ?? new List<FormQuestion>()).Where(item => item.requerido == true && item.respuesta == null))
-            {
-                return DbHelper.ErrorResponse("La pregunta " + item.pregunta_titulo + " es requerida");
-            }
+            var preguntaRequerida = (frm.questions ?? new List<FormQuestion>())
+                .FirstOrDefault(item => item.requerido == true && item.respuesta == null);
 
-            return null;
+            return preguntaRequerida == null
+                ? null
+                : DbHelper.ErrorResponse("La pregunta " + preguntaRequerida.pregunta_titulo + " es requerida");
         }
 
         /// <summary>
