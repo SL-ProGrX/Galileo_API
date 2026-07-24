@@ -8,7 +8,7 @@
         public int vModulo { get; set; }
         public string strTipoMovimiento { get; set; } = string.Empty;
         public string strDetalleMovimiento { get; set; } = string.Empty;
-        public string AppName { get; set; } = "ProGrX";
+        public string AppName { get; set; } = "ProGrX_WEB";
         public string AppVersion { get; set; } = string.Empty;
         public string Maquina { get; set; } = string.Empty;
         public string Maquina_MAC { get; set; } = string.Empty;
