@@ -7,11 +7,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
     /// <summary>
     /// Lógica de negocio de Bancos habilitados para Beneficios (frmAF_BeneficiosBancosX).
     /// </summary>
-    public class FrmAfBeneficiosBancosXBL
+    public class FrmAfBeneficiosBancosXbl
     {
         private readonly FrmAfBeneficiosBancosXDB _db;
 
-        public FrmAfBeneficiosBancosXBL(IConfiguration config)
+        public FrmAfBeneficiosBancosXbl(IConfiguration config)
         {
             if (config == null)
             {

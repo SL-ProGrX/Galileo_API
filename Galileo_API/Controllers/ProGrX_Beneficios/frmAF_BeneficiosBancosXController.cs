@@ -13,7 +13,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
     [ApiController]
     public class FrmAfBeneficiosBancosXController : ControllerBase
     {
-        private readonly FrmAfBeneficiosBancosXBL _bl;
+        private readonly FrmAfBeneficiosBancosXbl _bl;
 
         public FrmAfBeneficiosBancosXController(IConfiguration config)
         {
@@ -22,7 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _bl = new FrmAfBeneficiosBancosXBL(config);
+            _bl = new FrmAfBeneficiosBancosXbl(config);
         }
 
         /// <summary>Lista de bancos habilitados para beneficios.</summary>
