@@ -28,5 +28,9 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         public ErrorDto<List<DropDownListaGenericaModel>> Co_AplFnd_ContratosInformes_Aplicaciones_Obtener(int codEmpresa)
               => _bl.Co_AplFnd_ContratosInformes_Aplicaciones_Obtener(codEmpresa);
 
+        [Authorize]
+        [HttpPost("Co_AplFnd_ContratosInformes_Bitacora_Registrar")]
+        public ErrorDto Co_AplFnd_ContratosInformes_Bitacora_Registrar(int codEmpresa, string usuario, string strTipoMovimiento, string strDetalleMovimiento)
+           => _bl.Co_AplFnd_ContratosInformes_Bitacora_Registrar(codEmpresa, usuario, strTipoMovimiento, strDetalleMovimiento);
     }
 }
