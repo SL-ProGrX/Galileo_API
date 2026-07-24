@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -185,7 +186,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return formFiles;
             }
 
-            var stream = new ReadOnlyMemory<byte>(byteArray).AsStream();
+            var stream = new MemoryStream(byteArray);
             var formFile = new FormFile(stream, 0, byteArray.Length, "file", fileName ?? "file")
             {
                 Headers = new HeaderDictionary(),
