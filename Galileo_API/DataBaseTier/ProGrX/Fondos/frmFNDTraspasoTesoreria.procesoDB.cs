@@ -33,34 +33,87 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 string modo = request.Modo.Trim().ToUpperInvariant();
                 string accion = request.Accion.Trim().ToUpperInvariant();
-
-                conn.Execute(
-                    "spFND_W_TraspasoTesoreria_Proceso_Iniciar",
-                    new
+                string solicitudHash =
+                    FND_TraspasoTesoreria_Proceso_CalcularHash(request, modo, accion);
+                string seleccionXml =
+                    FND_TraspasoTesoreria_Proceso_CrearSeleccionXml(request, modo);
+                string recursoBloqueo = FND_TraspasoTesoreria_Proceso_Bloqueo_Adquirir(
+                    conn,
+                    solicitudHash);
+                try
+                {
+                    var procesoActivo =
+                        FND_TraspasoTesoreria_Proceso_Activo_Equivalente_Obtener(
+                            conn,
+                            solicitudHash);
+                    if (procesoActivo != null)
                     {
-                        request.ProcesoId,
-                        Modo = modo,
-                        Accion = accion,
-                        request.Usuario,
-                        Token = request.Token?.Trim(),
-                        RetencionCodigo = request.RetencionCodigo?.Trim(),
-                        FechaDesde = request.FechaDesde?.Date,
-                        FechaHasta = request.FechaHasta?.Date,
-                        request.AplicaRevision,
-                        request.BancoId,
-                        Oficina = request.Oficina?.Trim(),
-                        UsuarioFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.UsuarioFiltro),
-                        SistemaFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.SistemaFiltro),
-                        TokenFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.TokenFiltro),
-                        AppProductName = request.AppProductName.Trim(),
-                        SeleccionXml = FND_TraspasoTesoreria_Proceso_CrearSeleccionXml(request, modo),
-                        SolicitudHash = FND_TraspasoTesoreria_Proceso_CalcularHash(request, modo, accion)
-                    },
-                    commandType: CommandType.StoredProcedure,
-                    commandTimeout: 0);
+                        var procesoRecuperado = FND_TraspasoTesoreria_Proceso_Consultar(
+                            conn,
+                            procesoActivo.ProcesoId,
+                            procesoActivo.Usuario);
+                        procesoRecuperado.ProcesoRecuperado = true;
+                        return DbHelper.CreateOkResponse(procesoRecuperado);
+                    }
 
-                return DbHelper.CreateOkResponse(
-                    FND_TraspasoTesoreria_Proceso_Consultar(conn, request.ProcesoId, request.Usuario));
+                    try
+                    {
+                        conn.Execute(
+                            "spFND_W_TraspasoTesoreria_Proceso_Iniciar",
+                            new
+                            {
+                                request.ProcesoId,
+                                Modo = modo,
+                                Accion = accion,
+                                request.Usuario,
+                                Token = request.Token?.Trim(),
+                                RetencionCodigo = request.RetencionCodigo?.Trim(),
+                                FechaDesde = request.FechaDesde?.Date,
+                                FechaHasta = request.FechaHasta?.Date,
+                                request.AplicaRevision,
+                                request.BancoId,
+                                Oficina = request.Oficina?.Trim(),
+                                UsuarioFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.UsuarioFiltro),
+                                SistemaFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.SistemaFiltro),
+                                TokenFiltro = FND_TraspasoTesoreria_Proceso_CrearFiltro(request.TokenFiltro),
+                                AppProductName = request.AppProductName.Trim(),
+                                SeleccionXml = seleccionXml,
+                                SolicitudHash = solicitudHash
+                            },
+                            commandType: CommandType.StoredProcedure,
+                            commandTimeout: 0);
+                    }
+                    catch (SqlException ex) when (
+                        FND_TraspasoTesoreria_Proceso_EsConflictoPendiente(ex.Message))
+                    {
+                        var procesoSolapado =
+                            FND_TraspasoTesoreria_Proceso_Activo_Seleccion_Obtener(
+                                conn,
+                                seleccionXml,
+                                modo);
+                        if (procesoSolapado is null)
+                            throw;
+
+                        var procesoRecuperado = FND_TraspasoTesoreria_Proceso_Consultar(
+                            conn,
+                            procesoSolapado.ProcesoId,
+                            procesoSolapado.Usuario);
+                        procesoRecuperado.ProcesoRecuperado = true;
+                        return DbHelper.CreateOkResponse(procesoRecuperado);
+                    }
+
+                    return DbHelper.CreateOkResponse(
+                        FND_TraspasoTesoreria_Proceso_Consultar(
+                            conn,
+                            request.ProcesoId,
+                            request.Usuario));
+                }
+                finally
+                {
+                    FND_TraspasoTesoreria_Proceso_Bloqueo_Liberar(
+                        conn,
+                        recursoBloqueo);
+                }
             }
             catch (Exception ex)
             {
@@ -83,13 +136,25 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using SqlConnection conn = DbHelper.OpenConnection(new PortalDB(_config), codEmpresa);
                 conn.Open();
+                var proceso =
+                    FND_TraspasoTesoreria_Proceso_Contexto_Obtener(
+                        conn,
+                        request.ProcesoId);
+                if (proceso.Estado is "C" or "E")
+                {
+                    return DbHelper.CreateOkResponse(
+                        FND_TraspasoTesoreria_Proceso_Consultar(
+                            conn,
+                            request.ProcesoId,
+                            proceso.Usuario));
+                }
 
                 conn.Execute(
                     "spFND_W_TraspasoTesoreria_Lote_Procesar",
                     new
                     {
                         request.ProcesoId,
-                        request.Usuario,
+                        proceso.Usuario,
                         TamanoLote = FndTraspasoTesoreriaTamanoLoteProceso,
                         request.ReintentarErrores
                     },
@@ -97,7 +162,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     commandTimeout: 0);
 
                 return DbHelper.CreateOkResponse(
-                    FND_TraspasoTesoreria_Proceso_Consultar(conn, request.ProcesoId, request.Usuario));
+                    FND_TraspasoTesoreria_Proceso_Consultar(
+                        conn,
+                        request.ProcesoId,
+                        proceso.Usuario));
             }
             catch (Exception ex)
             {
@@ -244,6 +312,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 SELECT
                     P.PROCESO_ID AS ProcesoId,
                     P.ESTADO AS Estado,
+                    P.USUARIO AS UsuarioOrigen,
                     P.TOTAL_REGISTROS AS TotalRegistros,
                     P.PROCESADOS AS Procesados,
                     P.CON_ERRORES AS ConErrores,
@@ -257,7 +326,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     ON D.PROCESO_ID = P.PROCESO_ID
                 WHERE P.PROCESO_ID = @ProcesoId
                   AND P.USUARIO = @Usuario
-                GROUP BY P.PROCESO_ID, P.ESTADO, P.TOTAL_REGISTROS,
+                GROUP BY P.PROCESO_ID, P.ESTADO, P.USUARIO, P.TOTAL_REGISTROS,
                     P.PROCESADOS, P.CON_ERRORES, P.ERROR_MENSAJE;";
 
             var resultado = conn.QuerySingleOrDefault<FndTraspasoTesoreriaProcesoResult>(
@@ -317,6 +386,161 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return resultado;
         }
 
+        /// <summary>
+        /// Obtiene el proceso no terminal asociado al mismo hash de solicitud.
+        /// </summary>
+        private static FndTraspasoTesoreriaProcesoActivo?
+            FND_TraspasoTesoreria_Proceso_Activo_Equivalente_Obtener(
+                SqlConnection conn,
+                string solicitudHash)
+        {
+            const string sql = @"
+                SELECT TOP (1)
+                    PROCESO_ID AS ProcesoId,
+                    USUARIO AS Usuario
+                FROM dbo.FND_TRASPASO_TES_PROCESO
+                WHERE SOLICITUD_HASH = @SolicitudHash
+                  AND ESTADO NOT IN ('C', 'E')
+                ORDER BY PROCESO_ID;";
+
+            return conn.QuerySingleOrDefault<FndTraspasoTesoreriaProcesoActivo>(
+                sql,
+                new { SolicitudHash = solicitudHash });
+        }
+
+        /// <summary>
+        /// Obtiene el proceso pendiente que contiene alguna liquidación de la selección.
+        /// </summary>
+        private static FndTraspasoTesoreriaProcesoActivo?
+            FND_TraspasoTesoreria_Proceso_Activo_Seleccion_Obtener(
+                SqlConnection conn,
+                string seleccionXml,
+                string modo)
+        {
+            const string sql = @"
+                DECLARE @Seleccion XML = TRY_CAST(@SeleccionXml AS XML);
+
+                IF @Modo = 'G'
+                BEGIN
+                    SELECT TOP (1)
+                        P.PROCESO_ID AS ProcesoId,
+                        P.USUARIO AS Usuario,
+                        P.ESTADO AS Estado
+                    FROM dbo.FND_TRASPASO_TES_PROCESO P
+                    INNER JOIN dbo.FND_TRASPASO_TES_PROCESO_DET D
+                        ON D.PROCESO_ID = P.PROCESO_ID
+                    INNER JOIN @Seleccion.nodes('/seleccion/item') X(Item)
+                        ON D.CONSEC = X.Item.value('(consec/text())[1]', 'INT')
+                    WHERE P.ESTADO NOT IN ('C', 'E')
+                    GROUP BY P.PROCESO_ID, P.USUARIO, P.ESTADO
+                    ORDER BY COUNT_BIG(*) DESC, P.PROCESO_ID;
+                END
+                ELSE
+                BEGIN
+                    SELECT TOP (1)
+                        P.PROCESO_ID AS ProcesoId,
+                        P.USUARIO AS Usuario,
+                        P.ESTADO AS Estado
+                    FROM dbo.FND_TRASPASO_TES_PROCESO P
+                    INNER JOIN dbo.FND_TRASPASO_TES_PROCESO_DET D
+                        ON D.PROCESO_ID = P.PROCESO_ID
+                    INNER JOIN dbo.FND_LIQUIDACION L
+                        ON L.CONSEC = D.CONSEC
+                    INNER JOIN dbo.FND_CONTRATOS C
+                        ON C.COD_OPERADORA = L.COD_OPERADORA
+                       AND C.COD_PLAN = L.COD_PLAN
+                       AND C.COD_CONTRATO = L.COD_CONTRATO
+                    INNER JOIN @Seleccion.nodes('/seleccion/item') X(Item)
+                        ON LTRIM(RTRIM(C.CEDULA)) =
+                           LTRIM(RTRIM(X.Item.value(
+                               '(cedula/text())[1]',
+                               'VARCHAR(20)')))
+                    WHERE P.ESTADO NOT IN ('C', 'E')
+                    GROUP BY P.PROCESO_ID, P.USUARIO, P.ESTADO
+                    ORDER BY COUNT_BIG(*) DESC, P.PROCESO_ID;
+                END";
+
+            return conn.QuerySingleOrDefault<FndTraspasoTesoreriaProcesoActivo>(
+                sql,
+                new
+                {
+                    SeleccionXml = seleccionXml,
+                    Modo = modo
+                });
+        }
+
+        private static bool FND_TraspasoTesoreria_Proceso_EsConflictoPendiente(
+            string mensaje)
+        {
+            return mensaje.Contains(
+                "Una liquidación pertenece a otro proceso pendiente",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Serializa los inicios equivalentes mientras la conexión permanezca abierta.
+        /// </summary>
+        private static string FND_TraspasoTesoreria_Proceso_Bloqueo_Adquirir(
+            SqlConnection conn,
+            string solicitudHash)
+        {
+            const string sql = @"
+                DECLARE @Resultado INT;
+                EXEC @Resultado = sys.sp_getapplock
+                    @Resource = @Recurso,
+                    @LockMode = 'Exclusive',
+                    @LockOwner = 'Session',
+                    @LockTimeout = 10000;
+                SELECT @Resultado;";
+            string recurso = $"FND_TRASPASO_TES:{solicitudHash}";
+            int resultado = conn.ExecuteScalar<int>(sql, new { Recurso = recurso });
+
+            if (resultado < 0)
+            {
+                throw new InvalidOperationException(
+                    "No fue posible reservar el inicio del proceso.");
+            }
+
+            return recurso;
+        }
+
+        /// <summary>
+        /// Libera el bloqueo de sesión antes de devolver la conexión al pool.
+        /// </summary>
+        private static void FND_TraspasoTesoreria_Proceso_Bloqueo_Liberar(
+            SqlConnection conn,
+            string recurso)
+        {
+            const string sql = @"
+                EXEC sys.sp_releaseapplock
+                    @Resource = @Recurso,
+                    @LockOwner = 'Session';";
+            conn.Execute(sql, new { Recurso = recurso });
+        }
+
+        /// <summary>
+        /// Obtiene el propietario y estado actual del proceso persistente.
+        /// </summary>
+        private static FndTraspasoTesoreriaProcesoActivo
+            FND_TraspasoTesoreria_Proceso_Contexto_Obtener(
+            SqlConnection conn,
+            Guid procesoId)
+        {
+            const string sql = @"
+                SELECT
+                    PROCESO_ID AS ProcesoId,
+                    USUARIO AS Usuario,
+                    ESTADO AS Estado
+                FROM dbo.FND_TRASPASO_TES_PROCESO
+                WHERE PROCESO_ID = @ProcesoId;";
+
+            return conn.QuerySingleOrDefault<FndTraspasoTesoreriaProcesoActivo>(
+                    sql,
+                    new { ProcesoId = procesoId })
+                ?? throw new InvalidOperationException(
+                    "No se encontró el proceso solicitado.");
+        }
+
         private static ErrorDto<FndTraspasoTesoreriaProcesoResult>
             FND_TraspasoTesoreria_Proceso_CrearError(Exception ex, string operacion)
         {
@@ -330,6 +554,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 : "No fue posible procesar el traspaso de tesorería.";
 
             return DbHelper.CreateErrorResponse<FndTraspasoTesoreriaProcesoResult>(mensaje);
+        }
+
+        private sealed class FndTraspasoTesoreriaProcesoActivo
+        {
+            public Guid ProcesoId { get; init; }
+            public string Usuario { get; init; } = string.Empty;
+            public string Estado { get; init; } = string.Empty;
         }
     }
 }
