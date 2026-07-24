@@ -94,6 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static object CrearParametrosAutoRegistro(TesAutoRegistroDto registro)
         {
+            var activo = (registro.activo == true) ? 1 : 0;
 
             return new
             {
