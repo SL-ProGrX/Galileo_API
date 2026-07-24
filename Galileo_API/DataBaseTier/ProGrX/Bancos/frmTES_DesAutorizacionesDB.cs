@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesDesAutorizacionesDB
     {
-        private const int MaxSolicitudesPorPeticion = 1000;
+        private const int MaxSolicitudesPorPeticion = 50000;
         private readonly PortalDB _portalDB;
 
         public FrmTesDesAutorizacionesDB(IConfiguration config)
@@ -175,11 +175,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string estado = tipo_autorizacion == 0 ? "D" : "X";
 
-                TES_DesAutorizaciones_InsertarLote(
-                    conn,
-                    solicitudesLista,
-                    estado,
-                    usuario);
+                foreach (int[] lote in solicitudesLista.Chunk(1000))
+                {
+                    TES_DesAutorizaciones_InsertarLote(
+                        conn,
+                        lote,
+                        estado,
+                        usuario);
+                }
 
                 conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado",
@@ -208,40 +211,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             string estado,
             string usuario)
         {
-            try
-            {
-                var sql = new StringBuilder(
+            var sql = new StringBuilder(
                 "INSERT INTO TES_MASS_AUTORIZACION " +
                 "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
 
-                var parametros = new DynamicParameters();
+            var parametros = new DynamicParameters();
 
-                parametros.Add("Estado", estado);
-                parametros.Add("Usuario", usuario);
+            parametros.Add("Estado", estado);
+            parametros.Add("Usuario", usuario);
 
-                int indice = 0;
+            int indice = 0;
 
-                foreach (int solicitud in solicitudes)
+            foreach (int solicitud in solicitudes)
+            {
+                if (indice > 0)
                 {
-                    if (indice > 0)
-                    {
-                        sql.Append(',');
-                    }
-
-                    string nombreParametro = $"Solicitud{indice}";
-
-                    sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
-                    parametros.Add(nombreParametro, solicitud);
-                    indice++;
+                    sql.Append(',');
                 }
 
-                conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
+                string nombreParametro = $"Solicitud{indice}";
+
+                sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
+                parametros.Add(nombreParametro, solicitud);
+                indice++;
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            
+
+            conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
         }
     }
 }
