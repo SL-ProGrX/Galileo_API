@@ -74,7 +74,7 @@ namespace Galileo.Models.TES
         public bool? estadoSinpe { get; set; }
         public string? tipoGiroSinpe { get; set; }
         public string? tipoDocumento { get; set; }
-        public string? solicitudesLista { get; set; }
+        public List<int>? solicitudesLista { get; set; }
         public string? autorizacionEspecialUsuario { get; set; }
     }
 }

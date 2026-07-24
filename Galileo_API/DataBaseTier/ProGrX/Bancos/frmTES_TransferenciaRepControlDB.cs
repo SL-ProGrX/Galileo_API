@@ -29,7 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         #region ===== Helpers (mínimos; la mayoría se movió a MTesFuncionesDb) =====
 
         private static ErrorDto<object> Err(string msg, int code = -1)
-            => DbHelper.CreateErrorResponse<object>(msg, code, default!);
+            => DbHelper.CreateErrorResponse<object>(msg, code, default);
 
         #endregion
 
@@ -373,10 +373,10 @@ Where Estado = 'T'
             long vTransac,
             string? vTipo = "C",
             string? vDocumento = "TE",
-            string? vPlan = "-sp-")
+            string? vPlan = "-sp-",
+            DateTime? vFecha = null)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            return mTesoreria.sbTesReporteTransferencia(conn, CodEmpresa, vBanco, vTransac, vTipo, vDocumento, vPlan);
+            return mTesoreria.sbTesReporteTransferencia(CodEmpresa, vBanco, vTransac, vTipo, vDocumento, vPlan, vFecha);
         }
     }
 }

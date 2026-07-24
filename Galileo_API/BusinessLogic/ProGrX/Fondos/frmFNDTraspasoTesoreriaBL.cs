@@ -104,5 +104,25 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         {
             return _db.FND_TraspasoTesoreria_ProcesarLote(request);
         }
+
+        /// <summary>
+        /// Inicializa el proceso persistente de traspaso de tesorería.
+        /// </summary>
+        public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Iniciar(
+            int codEmpresa,
+            FndTraspasoTesoreriaProcesoIniciarRequest request)
+        {
+            return _db.FND_TraspasoTesoreria_Proceso_Iniciar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Ejecuta el siguiente lote pendiente del traspaso de tesorería.
+        /// </summary>
+        public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Continuar(
+            int codEmpresa,
+            FndTraspasoTesoreriaProcesoContinuarRequest request)
+        {
+            return _db.FND_TraspasoTesoreria_Proceso_Continuar(codEmpresa, request);
+        }
     }
 }
