@@ -16,6 +16,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
     {
         #region Estado
 
+        /// <summary>
+        /// Obtiene la configuración de versión de la empresa activa.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Configuración de enlace y versiones de la empresa.</returns>
         public ErrorDto<EmpresaEnlaceResultDto> ConsultaVersionEmpresa(int codEmpresa)
         {
             var lista = EmpresaEnlaceObtener(codEmpresa);
@@ -24,6 +29,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.CreateErrorResponse("No se encontró información de la empresa.", -1, new EmpresaEnlaceResultDto());
         }
 
+        /// <summary>
+        /// Consulta los datos de enlace y configuración de la empresa.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <returns>Lista con la configuración de la empresa.</returns>
         public List<EmpresaEnlaceResultDto> EmpresaEnlaceObtener(int CodEmpresa)
         {
             var result = DbHelper.ExecuteListQuery<EmpresaEnlaceResultDto>(
@@ -49,4 +59,3 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         #endregion
     }
 }
-
