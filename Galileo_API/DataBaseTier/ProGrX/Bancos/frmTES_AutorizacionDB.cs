@@ -15,7 +15,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizacionDb
     {
-        private const int MaxSolicitudesPorPeticion = 1000;
+        private const int MaxSolicitudesPorPeticion = 50000;
+        private const int TamanoLoteConsulta = 2000;
+        private const int TamanoLoteInsercion = 1000;
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
@@ -315,11 +317,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             string estado = p.tipo_autorizacion == 0 ? "A":"F";
 
-            EjecutarAutorizacionLote(
-                conn,
-                solicitudesAutorizables,
-                estado,
-                p.usuario);
+            foreach (int[] lote in solicitudesAutorizables.Chunk(TamanoLoteInsercion))
+            {
+                EjecutarAutorizacionLote(
+                    conn,
+                    lote,
+                    estado,
+                    p.usuario);
+            }
 
             conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",
@@ -355,10 +360,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 WHERE NSOLICITUD IN @Solicitudes
                   AND USER_SOLICITA = @Usuario;";
 
-            return conn.Query<int>(
-                sql,
-                new { Solicitudes = solicitudes, Usuario = usuario })
-                .ToList();
+            var bloqueadas = new List<int>();
+
+            foreach (int[] lote in solicitudes.Chunk(TamanoLoteConsulta))
+            {
+                bloqueadas.AddRange(
+                    conn.Query<int>(
+                        sql,
+                        new { Solicitudes = lote, Usuario = usuario }));
+            }
+
+            return bloqueadas;
         }
 
         private static void EjecutarAutorizacionLote(
@@ -367,9 +379,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             string estado,
             string usuario)
         {
-            try
-            {
-                var sql = new StringBuilder(
+            var sql = new StringBuilder(
                 "INSERT INTO TES_MASS_AUTORIZACION " +
                 "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
 
@@ -395,11 +405,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
 
             conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
