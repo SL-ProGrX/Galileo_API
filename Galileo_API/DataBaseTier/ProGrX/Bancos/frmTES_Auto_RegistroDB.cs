@@ -46,9 +46,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-
-               
-
                 string sql = @" EXEC spTes_Auto_Registro_Add
                                     @AutoId,
                                     @Descripcion,
@@ -97,9 +94,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static object CrearParametrosAutoRegistro(TesAutoRegistroDto registro)
         {
-            bool esNuevo = registro.id_auto.GetValueOrDefault() == 0;
-
-            int activo = (registro.id_auto == 0 || (registro.activo ?? false)) ? 1 : 0;
 
             return new
             {

@@ -9,7 +9,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
     /// </summary>
     public class FrmAfBeneficiosBancosXbl
     {
-        private readonly FrmAfBeneficiosBancosXDB _db;
+        private readonly FrmAfBeneficiosBancosXdb _db;
 
         public FrmAfBeneficiosBancosXbl(IConfiguration config)
         {
@@ -18,7 +18,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
                 throw new ArgumentNullException(nameof(config));
             }
 
-            _db = new FrmAfBeneficiosBancosXDB(config);
+            _db = new FrmAfBeneficiosBancosXdb(config);
         }
 
         /// <summary>Lista de bancos habilitados para beneficios.</summary>

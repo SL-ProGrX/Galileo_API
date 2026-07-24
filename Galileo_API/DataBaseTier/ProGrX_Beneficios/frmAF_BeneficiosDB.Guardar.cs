@@ -7,6 +7,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     public partial class FrmAfBeneficiosDB
     {
+        private const string ActualizaWeb = "Actualiza-Web";
+        private const string InsertaWeb = "Inserta-Web";
         /// <summary>
         /// Actualiza un beneficio, reasigna su grupo y registra en bitácora los cambios relevantes.
         /// </summary>
@@ -47,10 +49,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 connection.Execute(SqlInsertarBeneficio, MapBeneficioParams(Beneficio));
                 ReasignarGrupo(connection, Beneficio);
 
-                RegistrarBitacora(CodCliente, "Inserta-Web", $"Inserta [{Beneficio.vigencia_meses} meses] de vigencia del Beneficio", Beneficio.cod_beneficio, Beneficio.registra_user);
-                RegistrarBitacora(CodCliente, "Inserta-Web", $"Inserta [{Beneficio.estado}] de Estado", Beneficio.cod_beneficio, Beneficio.registra_user);
-                RegistrarBitacora(CodCliente, "Inserta-Web", $"Inserta categoria [{Beneficio.cod_categoria}]", Beneficio.cod_beneficio, Beneficio.registra_user);
-                RegistrarBitacora(CodCliente, "Inserta-Web", $"Inserta grupo [{Beneficio.cod_grupo}]", Beneficio.cod_beneficio, Beneficio.registra_user);
+                RegistrarBitacora(CodCliente, InsertaWeb, $"Inserta [{Beneficio.vigencia_meses} meses] de vigencia del Beneficio", Beneficio.cod_beneficio, Beneficio.registra_user);
+                RegistrarBitacora(CodCliente, InsertaWeb, $"Inserta [{Beneficio.estado}] de Estado", Beneficio.cod_beneficio, Beneficio.registra_user);
+                RegistrarBitacora(CodCliente, InsertaWeb, $"Inserta categoria [{Beneficio.cod_categoria}]", Beneficio.cod_beneficio, Beneficio.registra_user);
+                RegistrarBitacora(CodCliente, InsertaWeb, $"Inserta grupo [{Beneficio.cod_grupo}]", Beneficio.cod_beneficio, Beneficio.registra_user);
 
                 return new ErrorDto { Code = 0 };
             }
@@ -138,29 +140,29 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             if (b.vigencia_meses != ant.VIGENCIA_MESES)
             {
-                RegistrarBitacora(CodCliente, "Actualiza-Web", $"Actualiza vigencia del Beneficio de [{ant.VIGENCIA_MESES} meses] por [{b.vigencia_meses} meses]", b.cod_beneficio, b.registra_user);
+                RegistrarBitacora(CodCliente, ActualizaWeb, $"Actualiza vigencia del Beneficio de [{ant.VIGENCIA_MESES} meses] por [{b.vigencia_meses} meses]", b.cod_beneficio, b.registra_user);
             }
 
             if (b.estado != ant.ESTADO)
             {
                 var nuevo = b.estado == "A" ? "Activo" : "Inactivo";
                 var previo = ant.ESTADO == "A" ? "Activo" : "Inactivo";
-                RegistrarBitacora(CodCliente, "Actualiza-Web", $"Actualiza estado del Beneficio de [{previo}] por [{nuevo}]", b.cod_beneficio, b.registra_user);
+                RegistrarBitacora(CodCliente, ActualizaWeb, $"Actualiza estado del Beneficio de [{previo}] por [{nuevo}]", b.cod_beneficio, b.registra_user);
             }
 
             if (b.notas != ant.NOTAS)
             {
-                RegistrarBitacora(CodCliente, "Actualiza-Web", $"Actualiza las notas a: {b.notas}", b.cod_beneficio, b.registra_user);
+                RegistrarBitacora(CodCliente, ActualizaWeb, $"Actualiza las notas a: {b.notas}", b.cod_beneficio, b.registra_user);
             }
 
             if (b.cod_categoria != (ant.COD_CATEGORIA ?? string.Empty))
             {
-                RegistrarBitacora(CodCliente, "Actualiza-Web", $"Actualiza categoria del Beneficio de [{ant.COD_CATEGORIA}] por [{b.cod_categoria}]", b.cod_beneficio, b.registra_user);
+                RegistrarBitacora(CodCliente, ActualizaWeb, $"Actualiza categoria del Beneficio de [{ant.COD_CATEGORIA}] por [{b.cod_categoria}]", b.cod_beneficio, b.registra_user);
             }
 
             if (b.cod_grupo != (ant.COD_GRUPO ?? string.Empty))
             {
-                RegistrarBitacora(CodCliente, "Actualiza-Web", $"Actualiza grupo del Beneficio de [{ant.COD_GRUPO}] por [{b.cod_grupo}]", b.cod_beneficio, b.registra_user);
+                RegistrarBitacora(CodCliente, ActualizaWeb, $"Actualiza grupo del Beneficio de [{ant.COD_GRUPO}] por [{b.cod_grupo}]", b.cod_beneficio, b.registra_user);
             }
         }
 
@@ -223,11 +225,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private sealed class BeneficioAnteriorRow
         {
-            public int VIGENCIA_MESES { get; set; }
+            public int VIGENCIA_MESES { get; set; } = 0;
             public string ESTADO { get; set; } = string.Empty;
-            public string? NOTAS { get; set; }
-            public string? COD_CATEGORIA { get; set; }
-            public string? COD_GRUPO { get; set; }
+            public string? NOTAS { get; set; } = string.Empty;
+            public string? COD_CATEGORIA { get; set; } = string.Empty;
+            public string? COD_GRUPO { get; set; } = string.Empty;
         }
     }
 }

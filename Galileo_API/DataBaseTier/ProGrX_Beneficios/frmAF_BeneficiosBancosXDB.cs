@@ -8,7 +8,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     /// <summary>
     /// Acceso a datos de la configuración de Bancos habilitados para Beneficios (frmAF_BeneficiosBancosX).
     /// </summary>
-    public partial class FrmAfBeneficiosBancosXDB
+    public partial class FrmAfBeneficiosBancosXdb
     {
         private readonly IConfiguration _config;
 
@@ -16,7 +16,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmAfBeneficiosBancosXDB(IConfiguration config)
+        public FrmAfBeneficiosBancosXdb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
