@@ -947,7 +947,12 @@ namespace Galileo.DataBaseTier
 
                 if (esContado)
                 {
-                    PagoContado pago = data.PagoContado!;
+                    PagoContado? pago = data.PagoContado;
+                    if (pago is null)
+                    {
+                        transaction.Rollback();
+                        return DbHelper.ErrorResponse("Debe proporcionar los datos de pago contado.", -1);
+                    }
                     pago.Cod_Factura = factura.Cod_Factura;
                     pago.Cod_Proveedor = factura.Cod_Proveedor;
                     InsertarPagoContado(connection, transaction, pago);
