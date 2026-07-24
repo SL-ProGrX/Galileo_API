@@ -131,7 +131,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var monto = connection.QueryFirstOrDefault<float>(sqlMonto, new { primero.cod_beneficio });
 
                 var sumaMonto = DataFechas.Sum(x => x.monto);
-                if (monto != sumaMonto && primero.cod_categoria != "B_RECO" && primero.cod_categoria != "B_FENA")
+                const float toleranciaMonto = 0.01f;
+                if (Math.Abs(monto - sumaMonto) > toleranciaMonto && primero.cod_categoria != "B_RECO" && primero.cod_categoria != "B_FENA")
                 {
                     return DbHelper.ErrorResponse("El monto total debe ser igual al monto del grupo asignado: " + monto);
                 }
