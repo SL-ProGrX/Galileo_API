@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesAutoRegistroDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config!);
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     BeneficiarioId = registro.beneficiario_id,
                     BeneficiarioNombre = registro.beneficiario_nombre,
                     Activo = activo,
-                    Usuario = (registro.id_auto! == 0) ? registro.registro_usuario! : registro.modifica_usuario!,
+                    Usuario = (registro.id_auto == 0) ? registro.registro_usuario : registro.modifica_usuario,
                     Mov = "A",
                     TipoMov = registro.apl_tipo_mov,
                     TipoDoc = registro.tipo_doc,
@@ -102,10 +102,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     FiltraCtas = (registro.filtra_cta_bancos == true) ? 1 : 0
                 };
 
-                var response = DbHelper.ExecuteSingleQuery <AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
+                var response = DbHelper.ExecuteSingleQuery<AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
 
-                return DbHelper.OkResponse(response.Result!.auto_id.ToString());
- 
+                if (response.Code != 0 || response.Result is null)
+                {
+                    return DbHelper.ErrorResponse(
+                        response.Description ?? "No fue posible guardar el auto registro.",
+                        response.Code ?? -1);
+                }
+
+                return DbHelper.OkResponse(response.Result.auto_id.ToString());
+
             }
             catch (Exception ex)
             {
@@ -183,7 +190,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var response = DbHelper.ExecuteSingleQuery<AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
 
-                return DbHelper.OkResponse(response.Result!.auto_id.ToString());
+                if (response.Code != 0 || response.Result is null)
+                {
+                    return DbHelper.ErrorResponse(
+                        response.Description ?? "No fue posible eliminar el auto registro.",
+                        response.Code ?? -1);
+                }
+
+                return DbHelper.OkResponse(response.Result.auto_id.ToString());
             }
             catch (Exception ex)
             {
@@ -403,8 +417,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var datos = conn.Query<TipoMovData>(query, new { TipoMov = TipoMov }).ToList();
                 foreach (var item in datos)
                 {
-                    string idx = item.tipo!;
-                    string itmx = item.descripcion!;
+                    string idx = item.tipo ?? string.Empty;
+                    string itmx = item.descripcion ?? string.Empty;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }

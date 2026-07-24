@@ -159,7 +159,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var valida = fxValida(autorizador);
                 if (valida.Code == -1)
                 {
-                    return DbHelper.ErrorResponse(valida.Description!, (int)valida.Code);
+                    return DbHelper.ErrorResponse(
+                        valida.Description ?? "Los datos del autorizador no son válidos.",
+                        valida.Code ?? -1);
                 }
 
                 //valida si existe

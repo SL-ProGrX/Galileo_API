@@ -143,8 +143,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var like = hasFiltro ? $"%{texto}%" : null;
 
                 
-                var offset = filtros!.pagina;
-                var fetch = filtros!.paginacion;
+                var offset = filtros.pagina;
+                var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0;
 
                 const string sqlCount = @"
@@ -520,7 +520,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             if(response.Code == -1)
             {
-                return DbHelper.ErrorResponse(response.Description!);
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "No fue posible eliminar el banco.");
             }
 
             return DbHelper.OkResponse("Banco eliminado correctamente");
@@ -554,7 +555,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             if (response.Code == -1)
             {
-                return DbHelper.ErrorResponse(response.Description!);
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "No fue posible actualizar los rangos de firmas.");
             }
 
             Bitacora(new BitacoraInsertarDto
@@ -594,7 +596,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             if (response.Code == -1)
             {
-                return DbHelper.ErrorResponse(response.Description!);
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "No fue posible actualizar el saldo y la fecha del banco.");
             }
 
             Bitacora(new BitacoraInsertarDto
@@ -646,7 +649,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             if (response.Code == -1)
             {
-                return DbHelper.ErrorResponse(response.Description!);
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "No fue posible actualizar las reglas de conciliación.");
             }
 
             Bitacora(new BitacoraInsertarDto
