@@ -250,40 +250,49 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
         /// Formatea los documentos visibles y marca la información complementaria de las solicitudes generadas.
         /// </summary>
         private static List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
-            TesSolicitudesFormatoRequest request)
+    TesSolicitudesFormatoRequest request)
         {
-            var now = DateTime.Now;
+            var fechaProceso = DateTime.Now;
             var consecutivoVisible = request.Filtro.docInicial;
             var consecutivoInterno = request.ConsecutivoInterno;
-           
-            var linea = 1;
             var consecutivoInternoTS = consecutivoVisible;
+            var linea = 1;
 
-            foreach (var item in request.Solicitudes)
+            foreach (var solicitud in request.Solicitudes)
             {
-
-                if (string.Equals(item.tipo, "TE", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(
+                        solicitud.tipo,
+                        "TE",
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    item.documento =
-                        $"{consecutivoVisible.ToString(CultureInfo.InvariantCulture)}-" +
-                        $"{consecutivoInterno.ToString("000", CultureInfo.InvariantCulture)}";
+                    solicitud.documento = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{consecutivoVisible}-{consecutivoInterno:000}");
+
                     consecutivoInterno++;
                 }
-                else if (string.Equals(item.tipo, "TS", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(
+                             solicitud.tipo,
+                             "TS",
+                             StringComparison.OrdinalIgnoreCase))
                 {
-                    item.documento =
-                        $"{consecutivoInternoTS.ToString(CultureInfo.InvariantCulture)}-" +
-                        $"{linea.ToString("000", CultureInfo.InvariantCulture)}";
+                    solicitud.documento = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{consecutivoInternoTS}-{linea:000}");
+
                     linea++;
                 }
                 else
                 {
-                    item.documento = consecutivoVisible.ToString(CultureInfo.InvariantCulture);
+                    solicitud.documento =
+                        consecutivoVisible.ToString(CultureInfo.InvariantCulture);
+
                     consecutivoVisible++;
                 }
 
-                item.fecha = now;
-                item.firmas = item.firmas_autoriza_fecha == null ? "No" : "Sí";
+                solicitud.fecha = fechaProceso;
+                solicitud.firmas =
+                    solicitud.firmas_autoriza_fecha.HasValue ? "Sí" : "No";
             }
 
             return request.Solicitudes;
