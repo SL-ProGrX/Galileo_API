@@ -4,6 +4,7 @@ using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -160,12 +161,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                 var id_respuesta = connection.QueryFirstOrDefault<int>("SELECT ISNULL(MAX(ID_RESPUESTA), 0) + 1 FROM AFI_BENE_FORM_RESPUESTAS_W");
 
-                foreach (var item in frm.questions ?? new List<FormQuestion>())
+                foreach (var item in (frm.questions ?? new List<FormQuestion>()).Where(q => q.respuesta != null))
                 {
-                    if (item.respuesta != null)
-                    {
-                        GuardarRespuestaPregunta(connection, datos, frm.id, id_respuesta, item);
-                    }
+                    GuardarRespuestaPregunta(connection, datos, frm.id, id_respuesta, item);
                 }
 
                 return new ErrorDto { Code = 0 };
