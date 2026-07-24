@@ -17,7 +17,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     {
         private const int MaxSolicitudesPorPeticionAuth = 50000;
         private const int TamanoLoteConsulta = 2000;
-        private const int TamanoLoteInsercion = 1000;
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
@@ -317,14 +316,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             string estado = p.tipo_autorizacion == 0 ? "A":"F";
 
-            foreach (int[] lote in solicitudesAutorizables.Chunk(TamanoLoteInsercion))
-            {
-                EjecutarAutorizacionLote(
-                    conn,
-                    lote,
-                    estado,
-                    p.usuario);
-            }
+            FrmTesAutorizacionesLotesDB.TES_Autorizaciones_InsertarSolicitudes(
+                conn,
+                solicitudesAutorizables,
+                estado,
+                p.usuario);
 
             conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",
@@ -371,40 +367,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
 
             return bloqueadas;
-        }
-
-        private static void EjecutarAutorizacionLote(
-            IDbConnection conn,
-            IReadOnlyList<int> solicitudes,
-            string estado,
-            string usuario)
-        {
-            var sql = new StringBuilder(
-                "INSERT INTO TES_MASS_AUTORIZACION " +
-                "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
-
-            var parametros = new DynamicParameters();
-
-            parametros.Add("Estado", estado);
-            parametros.Add("Usuario", usuario);
-
-            int indice = 0;
-
-            foreach (int solicitud in solicitudes)
-            {
-                if (indice > 0)
-                {
-                    sql.Append(',');
-                }
-
-                string nombreParametro = $"Solicitud{indice}";
-
-                sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
-                parametros.Add(nombreParametro, solicitud);
-                indice++;
-            }
-
-            conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)

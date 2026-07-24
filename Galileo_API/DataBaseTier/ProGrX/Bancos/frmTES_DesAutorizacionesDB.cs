@@ -4,8 +4,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo.Models.TES;
 using Newtonsoft.Json;
-using System.Data;
-using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -175,14 +173,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string estado = tipo_autorizacion == 0 ? "D" : "X";
 
-                foreach (int[] lote in solicitudesLista.Chunk(1000))
-                {
-                    TES_DesAutorizaciones_InsertarLote(
-                        conn,
-                        lote,
-                        estado,
-                        usuario);
-                }
+                FrmTesAutorizacionesLotesDB.TES_Autorizaciones_InsertarSolicitudes(
+                    conn,
+                    solicitudesLista,
+                    estado,
+                    usuario);
 
                 conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado",
@@ -202,42 +197,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
-        /// <summary>
-        /// Inserta un lote de solicitudes para el proceso de desautorización masiva.
-        /// </summary>
-        private static void TES_DesAutorizaciones_InsertarLote(
-            IDbConnection conn,
-            IReadOnlyList<int> solicitudes,
-            string estado,
-            string usuario)
-        {
-            var sql = new StringBuilder(
-                "INSERT INTO TES_MASS_AUTORIZACION " +
-                "(NSOLICITUD, ESTADO, USUARIO) VALUES ");
-
-            var parametros = new DynamicParameters();
-
-            parametros.Add("Estado", estado);
-            parametros.Add("Usuario", usuario);
-
-            int indice = 0;
-
-            foreach (int solicitud in solicitudes)
-            {
-                if (indice > 0)
-                {
-                    sql.Append(',');
-                }
-
-                string nombreParametro = $"Solicitud{indice}";
-
-                sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
-                parametros.Add(nombreParametro, solicitud);
-                indice++;
-            }
-
-            conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
-        }
     }
 }
 
