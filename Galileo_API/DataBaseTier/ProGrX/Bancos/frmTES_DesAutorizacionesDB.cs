@@ -11,6 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesDesAutorizacionesDB
     {
+        private const int MaxSolicitudesPorPeticion = 1000;
         private readonly PortalDB _portalDB;
 
         public FrmTesDesAutorizacionesDB(IConfiguration config)
@@ -136,10 +137,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             List<int> solicitudesLista)
         {
             
-            if (solicitudesLista.Count == 0)
+            if (solicitudesLista is not { Count: > 0 })
             {
                 return DbHelper.ErrorResponse(
                     "Debe seleccionar al menos una solicitud.");
+            }
+
+            if (solicitudesLista.Count > MaxSolicitudesPorPeticion)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No se pueden procesar más de {MaxSolicitudesPorPeticion} solicitudes por petición.");
             }
 
             if (tipo_autorizacion is not 0 and not 1)
@@ -168,14 +175,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string estado = tipo_autorizacion == 0 ? "D" : "X";
 
-                foreach (int[] lote in solicitudesLista.Chunk(1000))
-                {
-                    TES_DesAutorizaciones_InsertarLote(
-                        conn,
-                        lote,
-                        estado,
-                        usuario);
-                }
+                TES_DesAutorizaciones_InsertarLote(
+                    conn,
+                    solicitudesLista,
+                    estado,
+                    usuario);
 
                 conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado",
@@ -215,7 +219,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 parametros.Add("Estado", estado);
                 parametros.Add("Usuario", usuario);
 
-                for (int indice = 0; indice < solicitudes.Count; indice++)
+                int indice = 0;
+
+                foreach (int solicitud in solicitudes)
                 {
                     if (indice > 0)
                     {
@@ -225,7 +231,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     string nombreParametro = $"Solicitud{indice}";
 
                     sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
-                    parametros.Add(nombreParametro, solicitudes[indice]);
+                    parametros.Add(nombreParametro, solicitud);
+                    indice++;
                 }
 
                 conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
