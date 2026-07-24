@@ -9,20 +9,22 @@ namespace Galileo.DataBaseTier
     public class MProGrXSecurityMainDb
     {
         private readonly IConfiguration _config;
-
+        private const string connectionStringName = "DefaultConnString";
         public MProGrXSecurityMainDb(IConfiguration config)
         {
             _config = config;
         }
 
-        private ErrorDto Bitacora(MProGrXSecurityMainBitacora bitacora)
+        public ErrorDto Bitacora(MProGrXSecurityMainBitacora bitacora)
         {
             var response = new ErrorDto();
 
             try
             {
-                var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
+                var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                //    var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
+                //using var connection1 = new SqlConnection(connectionStringName);
 
                 // Normalizar / truncar strings
                 var detalle = Trunc(bitacora.strDetalleMovimiento, 500);
@@ -49,16 +51,16 @@ namespace Galileo.DataBaseTier
 
                 var args = new
                 {
-                    pCliente = bitacora.pCliente,
-                    usuario = usuario,
-                    vModulo = bitacora.vModulo,
-                    strTipoMovimiento = tipoMov,
-                    strDetalleMovimiento = detalle,
+                    Cliente = bitacora.CodEmpresa,
+                    Usuario = usuario,
+                    Modulo = bitacora.vModulo,
+                    Movimiento = tipoMov,
+                    Detalle = detalle,
                     AppName = appName,
                     AppVersion = appVersion,
-                    nombreMaquina = nombreMaquina,
-                    ip = "",              // estabas pasando '' fijo
-                    macAddress = macAddress
+                    LogEquipo = nombreMaquina,
+                    LogIP = "",              // estabas pasando '' fijo
+                    LogEquipoMac = macAddress
                 };
 
                 connection.Execute(sp, args, commandType: System.Data.CommandType.StoredProcedure);
