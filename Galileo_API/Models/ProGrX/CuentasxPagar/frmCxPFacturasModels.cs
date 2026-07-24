@@ -186,7 +186,7 @@ namespace Galileo.Models.CxP
         };
         public List<AsientoFactura> Asientos { get; set; } = new();
         public PagoContado? PagoContado { get; set; }
-        public decimal Saldo { get; set; }
-        public decimal Saldo_Divisa { get; set; }
+        public required decimal Saldo { get; set; } 
+        public required decimal Saldo_Divisa { get; set; }
     }
 }
