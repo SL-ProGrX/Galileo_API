@@ -510,34 +510,22 @@ namespace Galileo.DataBaseTier
             string query;
             object parametros;
 
-            if (tipo == "desc")
+            bool descendente = tipo == "desc";
+            bool primeraFactura = Cod_Factura == "0";
+            string operador = descendente ? "<" : ">";
+            string orden = descendente ? "desc" : "asc";
+
+            query = @"select Top 1 cod_factura, cod_proveedor
+                      from cxp_facturas";
+            if (!primeraFactura)
             {
-                if (Cod_Factura == "0")
-                {
-                    query = @"select Top 1 cod_factura, cod_proveedor
-                              from cxp_facturas
-                              order by cod_factura desc, cod_proveedor desc";
-                    parametros = new { };
-                }
-                else
-                {
-                    query = @"select Top 1 cod_factura, cod_proveedor
-                              from cxp_facturas
-                              where cod_factura < @Cod_Factura
-                                 or (cod_factura = @Cod_Factura and cod_proveedor < @Cod_Proveedor)
-                              order by cod_factura desc, cod_proveedor desc";
-                    parametros = new { Cod_Factura, Cod_Proveedor };
-                }
+                query += $@"
+                          where cod_factura {operador} @Cod_Factura
+                             or (cod_factura = @Cod_Factura and cod_proveedor {operador} @Cod_Proveedor)";
             }
-            else
-            {
-                query = @"select Top 1 cod_factura, cod_proveedor
-                          from cxp_facturas
-                          where cod_factura > @Cod_Factura
-                             or (cod_factura = @Cod_Factura and cod_proveedor > @Cod_Proveedor)
-                          order by cod_factura asc, cod_proveedor asc";
-                parametros = new { Cod_Factura, Cod_Proveedor };
-            }
+            query += $@"
+                      order by cod_factura {orden}, cod_proveedor {orden}";
+            parametros = primeraFactura ? new { } : new { Cod_Factura, Cod_Proveedor };
 
             var result = DbHelper.ExecuteSingleQuery<FacturaAntSig>(
                 CreatePortalDb(),
