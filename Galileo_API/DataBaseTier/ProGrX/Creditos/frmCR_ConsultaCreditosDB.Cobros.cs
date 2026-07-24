@@ -74,6 +74,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Procesa la notificación de cobros por email de una persona.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="tipo">Tipo de notificación que se debe procesar.</param>
+        /// <param name="usuario">Usuario que registra el movimiento.</param>
+        /// <returns>Resultado del procesamiento de la notificación.</returns>
         public ErrorDto CR_ConsultaCobros_NotificacionEmail_Procesar(
             int codEmpresa,
             string cedula,
@@ -83,14 +88,13 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             var resultado = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
             {
                 connection.Execute(
-                    "spSys_Notifica_Cobros_01_Atrasos",
+                    "exec spSys_Notifica_Cobros_01_Atrasos @cedula, @tipo, @usuario",
                     new
                     {
-                        Cedula = (cedula ?? string.Empty).Trim(),
-                        Tipo = string.Equals(tipo, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "R",
-                        Usuario = (usuario ?? string.Empty).Trim()
-                    },
-                    commandType: CommandType.StoredProcedure);
+                        cedula = (cedula ?? string.Empty).Trim(),
+                        tipo = string.Equals(tipo, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "R",
+                        usuario = (usuario ?? string.Empty).Trim()
+                    });
 
                 return true;
             });
@@ -105,4 +109,3 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         #endregion
     }
 }
-

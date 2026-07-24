@@ -42,7 +42,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         .Select(p =>
                         {
                             string valor = p?.idx?.Trim() ?? string.Empty;
-                            if (DateTime.TryParse(valor, out DateTime fechaCorte))
+                            if (DateTime.TryParse(
+                                valor,
+                                System.Globalization.CultureInfo.CurrentCulture,
+                                System.Globalization.DateTimeStyles.None,
+                                out DateTime fechaCorte))
                             {
                                 valor = fechaCorte.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
                             }
@@ -62,6 +66,16 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar correo y periodos del socio.", result.Code.GetValueOrDefault(-1), new SocioCierresData());
         }
 
+        /// <summary>
+        /// Envía el estado de cuenta solicitado al correo registrado de la persona.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="usuario">Usuario que solicita el envío.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="email">Correo electrónico de destino.</param>
+        /// <param name="periodo">Período de corte, cuando corresponde.</param>
+        /// <param name="tipo">Tipo de estado de cuenta solicitado.</param>
+        /// <returns>Resultado del envío del estado de cuenta.</returns>
         public ErrorDto Email_SocioEstadoCuenta_Enviar(int CodEmpresa, string usuario, string cedula, string email, string periodo, string tipo)
         {
             if (string.IsNullOrWhiteSpace(cedula))
@@ -117,4 +131,3 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         #endregion
     }
 }
-
