@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     break;
                 case "date":
                     question.respuestaFecha = question.respuesta != null
-                        ? DateTime.Parse(question.respuesta.ToString()!)
+                        ? DateTime.Parse(question.respuesta?.ToString() ?? string.Empty)
                         : DateTime.Now;
                     break;
             }
@@ -225,10 +225,20 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 case "select":
                 case "multiSelect":
                 case "checkbox":
-                    id_opciones = GuardarOpcionesRespuesta(datos.codCliente, item.id_frm_pregunta, id_respuesta, datos.usuario ?? string.Empty, item.respuesta!).Result;
+                    id_opciones = GuardarOpcionesRespuesta(
+                        datos.codCliente,
+                        item.id_frm_pregunta,
+                        id_respuesta,
+                        datos.usuario ?? string.Empty,
+                        item.respuesta ?? string.Empty).Result;
                     break;
                 case "radio":
-                    id_opciones = GuardaOpcionSelectRespuesta(datos.codCliente, item.id_frm_pregunta, id_respuesta, datos.usuario ?? string.Empty, item.respuesta!).Result;
+                    id_opciones = GuardaOpcionSelectRespuesta(
+                        datos.codCliente,
+                        item.id_frm_pregunta,
+                        id_respuesta,
+                        datos.usuario ?? string.Empty,
+                        item.respuesta ?? string.Empty).Result;
                     break;
             }
 

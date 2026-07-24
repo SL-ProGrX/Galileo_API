@@ -87,9 +87,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 };
 
                 var fechas = ObtenerFechasRemesa(connection, filtro.cod_remesa);
-                var supervisar = filtro.cod_banco != "" && filtro.extraFiltros
-                    ? fxSupervisaBanco(connection, filtro.cod_banco)
-                    : true;
+                var supervisar = filtro.cod_banco == string.Empty
+                    || !filtro.extraFiltros
+                    || fxSupervisaBanco(connection, filtro.cod_banco);
 
                 var parametros = new DynamicParameters();
                 var sql = ConstruirQueryCargas(CodCliente, connection, filtro, fechas, supervisar, parametros);

@@ -34,6 +34,20 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         public ErrorDto<AfiBeneficiosCargasDataLista> AfiTraslado_Obtener(int CodCliente, string filtros)
         {
             var filtro = JsonConvert.DeserializeObject<AfiBeneficiosTrasladoDto>(filtros) ?? new AfiBeneficiosTrasladoDto();
+            var filtroTexto = filtro.vfiltro?.Trim() ?? string.Empty;
+            var aplicaFiltro = filtroTexto.Length > 0;
+            var offset = filtro.pagina ?? 0;
+            var fetch = filtro.pagina.HasValue ? filtro.paginacion ?? 10 : int.MaxValue;
+            var parametros = new
+            {
+                filtro.cod_remesa,
+                filtro.fecha_inicio,
+                filtro.fecha_corte,
+                aplicaFiltro,
+                vfiltro = aplicaFiltro ? $"{filtroTexto}%" : string.Empty,
+                offset,
+                fetch
+            };
 
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
@@ -46,44 +60,35 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                           INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
                                           INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
                                           WHERE O.cod_remesa = @cod_remesa
-                                            AND O.registra_fecha BETWEEN @fecha_inicio AND @fecha_corte
+                                            AND B.registro_fecha BETWEEN @fecha_inicio AND @fecha_corte
                                             AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
-                                            AND B.tesoreria IS NULL";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, new { filtro.cod_remesa, filtro.fecha_inicio, filtro.fecha_corte });
+                                            AND B.tesoreria IS NULL
+                                            AND (@aplicaFiltro = 0
+                                                 OR B.cedula LIKE @vfiltro
+                                                 OR B.cta_Bancaria LIKE @vfiltro
+                                                 OR O.Nombre LIKE @vfiltro
+                                                 OR Ban.Descripcion LIKE @vfiltro)";
+                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
 
-                var parametros = new DynamicParameters();
-                parametros.Add("cod_remesa", filtro.cod_remesa);
-                parametros.Add("fecha_inicio", filtro.fecha_inicio);
-                parametros.Add("fecha_corte", filtro.fecha_corte);
-
-                var vfiltro = string.Empty;
-                if (!string.IsNullOrEmpty(filtro.vfiltro))
-                {
-                    vfiltro = @" AND (B.cedula LIKE @vfiltro OR B.cta_Bancaria LIKE @vfiltro OR O.Nombre LIKE @vfiltro OR Ban.Descripcion LIKE @vfiltro)";
-                    parametros.Add("vfiltro", $"{filtro.vfiltro}%");
-                }
-
-                var paginado = string.Empty;
-                if (filtro.pagina != null)
-                {
-                    paginado = " ORDER BY B.cod_Beneficio OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-                    parametros.Add("offset", filtro.pagina);
-                    parametros.Add("fetch", filtro.paginacion);
-                }
-
-                var sql = $@"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
-                                    O.cod_remesa, O.registra_fecha, O.ID_BENEFICIO,
-                                    (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = B.COD_BENEFICIO) AS BENEFICIO_DESC, B.id_pago
-                             FROM afi_bene_pago B
-                             INNER JOIN socios S ON B.cedula = S.cedula
-                             INNER JOIN afi_bene_otorga O ON B.cod_beneficio = O.cod_beneficio AND B.consec = O.consec
-                             INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
-                             INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
-                             WHERE O.cod_remesa = @cod_remesa
-                               AND B.registro_fecha BETWEEN @fecha_inicio AND @fecha_corte
-                               AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
-                               AND B.tesoreria IS NULL {vfiltro} {paginado}";
-
+                const string sql = @"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
+                                            O.cod_remesa, O.registra_fecha, O.ID_BENEFICIO,
+                                            (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = B.COD_BENEFICIO) AS BENEFICIO_DESC, B.id_pago
+                                     FROM afi_bene_pago B
+                                     INNER JOIN socios S ON B.cedula = S.cedula
+                                     INNER JOIN afi_bene_otorga O ON B.cod_beneficio = O.cod_beneficio AND B.consec = O.consec
+                                     INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
+                                     INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
+                                     WHERE O.cod_remesa = @cod_remesa
+                                       AND B.registro_fecha BETWEEN @fecha_inicio AND @fecha_corte
+                                       AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
+                                       AND B.tesoreria IS NULL
+                                       AND (@aplicaFiltro = 0
+                                            OR B.cedula LIKE @vfiltro
+                                            OR B.cta_Bancaria LIKE @vfiltro
+                                            OR O.Nombre LIKE @vfiltro
+                                            OR Ban.Descripcion LIKE @vfiltro)
+                                     ORDER BY B.cod_Beneficio
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
                 response.Beneficios = connection.Query<AfiBeneficiosCargasData>(sql, parametros).ToList();
                 return response;
             });

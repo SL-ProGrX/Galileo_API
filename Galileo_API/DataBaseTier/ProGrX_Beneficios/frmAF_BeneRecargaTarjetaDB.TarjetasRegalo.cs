@@ -21,13 +21,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var parametros = new DynamicParameters();
             parametros.Add("estado", estado);
-
-            var condiciones = new List<string>();
-            AgregarFiltroTarjetaTexto(infoFiltros, condiciones, parametros);
-            AgregarFiltroTarjetaSinAsignar(sinAsignar, condiciones);
-            AgregarFiltroTarjetaFecha(infoFiltros, condiciones, parametros);
-
-            var extra = condiciones.Count == 0 ? string.Empty : " AND " + string.Join(" AND ", condiciones);
+            AgregarFiltroTarjetaTexto(infoFiltros, parametros);
+            AgregarFiltroTarjetaSinAsignar(sinAsignar, parametros);
+            AgregarFiltroTarjetaFecha(infoFiltros, parametros);
 
             var offset = infoFiltros.pagina ?? 0;
             var fetch = infoFiltros.paginacion ?? 10;
@@ -38,16 +34,32 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 var response = new AfiBeneTarjetasDataLista();
 
-                var sqlCount = $"SELECT COUNT(*) FROM AFI_BENE_TARJETAS_REGALO T WHERE T.ESTADO = 'P' {extra}";
+                const string sqlCount = @"SELECT COUNT(*)
+                                          FROM AFI_BENE_TARJETAS_REGALO T
+                                          WHERE T.ESTADO = @estado
+                                            AND (@aplicaTexto = 0
+                                                 OR T.cod_remesa_tr LIKE @filtroLike
+                                                 OR T.registro_usuario LIKE @filtroLike
+                                                 OR CONVERT(VARCHAR(19), T.registro_fecha, 120) LIKE @filtroLike
+                                                 OR T.estado LIKE @filtroLike)
+                                            AND (@sinAsignar = 0 OR T.ID_PAGO IS NULL)
+                                            AND (@aplicaFecha = 0 OR T.registro_fecha BETWEEN @fechaInicio AND @fechaCorte)";
                 response.Total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
 
-                var sql = $@"SELECT T.*,
-                                (SELECT NOMBRE FROM socios WHERE CEDULA = T.cedula) AS NOMBRE,
-                                (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = T.COD_BENEFICIO) AS BENEFICIO_DESC
-                             FROM AFI_BENE_TARJETAS_REGALO T
-                             WHERE T.ESTADO = @estado {extra}
-                             ORDER BY T.registro_fecha DESC
-                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+                const string sql = @"SELECT T.*,
+                                            (SELECT NOMBRE FROM socios WHERE CEDULA = T.cedula) AS NOMBRE,
+                                            (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = T.COD_BENEFICIO) AS BENEFICIO_DESC
+                                     FROM AFI_BENE_TARJETAS_REGALO T
+                                     WHERE T.ESTADO = @estado
+                                       AND (@aplicaTexto = 0
+                                            OR T.cod_remesa_tr LIKE @filtroLike
+                                            OR T.registro_usuario LIKE @filtroLike
+                                            OR CONVERT(VARCHAR(19), T.registro_fecha, 120) LIKE @filtroLike
+                                            OR T.estado LIKE @filtroLike)
+                                       AND (@sinAsignar = 0 OR T.ID_PAGO IS NULL)
+                                       AND (@aplicaFecha = 0 OR T.registro_fecha BETWEEN @fechaInicio AND @fechaCorte)
+                                     ORDER BY T.registro_fecha DESC
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 
                 response.Tarjetas = connection.Query<AfiBeneTarjetasData>(sql, parametros).ToList();
                 return response;
@@ -57,35 +69,34 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Agrega el filtro de texto de búsqueda de tarjetas.
         /// </summary>
-        private static void AgregarFiltroTarjetaTexto(AfiTarjetasFiltros filtros, List<string> condiciones, DynamicParameters parametros)
+        private static void AgregarFiltroTarjetaTexto(AfiTarjetasFiltros filtros, DynamicParameters parametros)
         {
-            if (string.IsNullOrWhiteSpace(filtros.vfiltro))
-            {
-                return;
-            }
-
-            parametros.Add("like", $"%{filtros.vfiltro.Trim()}%");
-            condiciones.Add("(cod_remesa_tr LIKE @like OR registro_usuario LIKE @like OR registro_fecha LIKE @like OR estado LIKE @like)");
+            var filtroTexto = filtros.vfiltro?.Trim() ?? string.Empty;
+            var aplicaTexto = filtroTexto.Length > 0;
+            parametros.Add("aplicaTexto", aplicaTexto);
+            parametros.Add("filtroLike", aplicaTexto ? $"%{filtroTexto}%" : string.Empty);
         }
 
         /// <summary>
         /// Agrega el filtro de tarjetas sin pago asignado.
         /// </summary>
-        private static void AgregarFiltroTarjetaSinAsignar(bool? sinAsignar, List<string> condiciones)
+        private static void AgregarFiltroTarjetaSinAsignar(bool? sinAsignar, DynamicParameters parametros)
         {
-            if (sinAsignar == true)
-            {
-                condiciones.Add("T.ID_PAGO IS NULL");
-            }
+            parametros.Add("sinAsignar", sinAsignar == true);
         }
 
         /// <summary>
         /// Agrega el filtro de rango de fechas de registro de tarjetas.
         /// </summary>
-        private void AgregarFiltroTarjetaFecha(AfiTarjetasFiltros filtros, List<string> condiciones, DynamicParameters parametros)
+        private static void AgregarFiltroTarjetaFecha(AfiTarjetasFiltros filtros, DynamicParameters parametros)
         {
-            if (filtros.fecha_inicio == null)
+            var aplicaFecha = filtros.fecha_inicio != null;
+            parametros.Add("aplicaFecha", aplicaFecha);
+
+            if (!aplicaFecha)
             {
+                parametros.Add("fechaInicio", string.Empty);
+                parametros.Add("fechaCorte", string.Empty);
                 return;
             }
 
@@ -94,7 +105,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             parametros.Add("fechaInicio", $"{fechaInicio}T00:00:00");
             parametros.Add("fechaCorte", $"{fechaCorte}T11:59:59");
-            condiciones.Add("T.registro_fecha BETWEEN @fechaInicio AND @fechaCorte");
         }
 
         /// <summary>

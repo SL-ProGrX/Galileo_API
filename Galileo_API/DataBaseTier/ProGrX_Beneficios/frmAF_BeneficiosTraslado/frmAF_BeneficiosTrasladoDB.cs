@@ -66,35 +66,41 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var filtro = string.IsNullOrWhiteSpace(filtros)
                 ? new AfiRemesasFiltros()
                 : JsonConvert.DeserializeObject<AfiRemesasFiltros>(filtros) ?? new AfiRemesasFiltros();
+            var filtroTexto = filtro.filtro?.Trim() ?? string.Empty;
+            var aplicaFiltro = filtroTexto.Length > 0;
+            var offset = filtro.pagina ?? 0;
+            var fetch = filtro.pagina.HasValue ? filtro.paginacion ?? 10 : int.MaxValue;
+            var parametros = new
+            {
+                aplicaFiltro,
+                filtroLike = aplicaFiltro ? $"%{filtroTexto}%" : string.Empty,
+                offset,
+                fetch
+            };
 
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var response = new AfiBeneficiosRemesasDtoLista();
-                var parametros = new DynamicParameters();
 
-                var where = string.Empty;
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    where = @"WHERE cod_remesa LIKE '%' + @filtro + '%'
-                                 OR usuario LIKE '%' + @filtro + '%'
-                                 OR estado LIKE '%' + @filtro + '%'
-                                 OR CONVERT(VARCHAR(19), fecha, 120) LIKE '%' + @filtro + '%'";
-                    parametros.Add("filtro", filtro.filtro);
-                }
+                const string sqlCount = @"SELECT COUNT(*)
+                                          FROM AFI_BENEFICIOS_REMESAS
+                                          WHERE @aplicaFiltro = 0
+                                             OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
+                                             OR usuario LIKE @filtroLike
+                                             OR estado LIKE @filtroLike
+                                             OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike";
+                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
 
-                var countSql = $"SELECT COUNT(*) FROM AFI_BENEFICIOS_REMESAS {where}";
-                response.Total = connection.QueryFirstOrDefault<int>(countSql, parametros);
-
-                var paginado = string.Empty;
-                if (filtro.pagina.HasValue && filtro.paginacion.HasValue)
-                {
-                    paginado = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-                    parametros.Add("offset", filtro.pagina.Value);
-                    parametros.Add("fetch", filtro.paginacion.Value);
-                }
-
-                var dataSql = $"SELECT * FROM AFI_BENEFICIOS_REMESAS {where} ORDER BY fecha DESC {paginado}";
-                response.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(dataSql, parametros).ToList();
+                const string sql = @"SELECT *
+                                     FROM AFI_BENEFICIOS_REMESAS
+                                     WHERE @aplicaFiltro = 0
+                                        OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
+                                        OR usuario LIKE @filtroLike
+                                        OR estado LIKE @filtroLike
+                                        OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike
+                                     ORDER BY fecha DESC
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+                response.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(sql, parametros).ToList();
                 return response;
             });
         }
