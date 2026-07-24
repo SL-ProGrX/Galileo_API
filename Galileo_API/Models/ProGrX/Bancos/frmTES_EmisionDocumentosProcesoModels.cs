@@ -3,7 +3,7 @@ namespace Galileo.Models.TES
     public sealed class TesEmisionDocumentosProcesoIniciarRequest
     {
         public TesEmisionDocFiltros filtros { get; init; } = new();
-        public int banco { get; init; }
+        public int banco { get; init; } = 0;
         public string plan { get; init; } = string.Empty;
         public IReadOnlyList<int> solicitudes { get; init; } = [];
     }
