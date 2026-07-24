@@ -66,7 +66,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
-        [HttpPost("fxCajas_SaldoaFavor")]
+        [HttpGet("fxCajas_SaldoaFavor")]
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             return _BL.fxCajas_SaldoaFavor(CodEmpresa, cedula);

@@ -24,18 +24,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <returns></returns>
         public ErrorDto<List<AfiSociosMensajesData>> AFI_Socios_Mensajes_Obtener(int codEmpresa, string cedula, string tipo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<AfiSociosMensajesData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<AfiSociosMensajesData>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
+            const string query = @"
                         SELECT *
                         FROM socios_mensajes
                         WHERE cedula = @Cedula
@@ -45,38 +34,35 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         ORDER BY Fecha DESC;
                     ";
 
-                response.Result = connection
-                    .Query<AfiSociosMensajesData>(query, new
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Query<AfiSociosMensajesData>(query, new
                     {
                         Cedula = cedula,
                         Tipo = tipo
                     })
-                    .ToList();
-            }
-            catch (SqlException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
+                    .ToList());
 
-            return response;
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfiSociosMensajesData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al obtener los mensajes de la persona.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<AfiSociosMensajesData>());
         }
 
+        /// <summary>
+        /// Guarda o actualiza un mensaje de la persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="data">Datos del mensaje que se debe guardar.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto AFI_Socios_Mensajes_Guardar(int codEmpresa, AfiSociosMensajesData data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
+            string tipo = string.IsNullOrWhiteSpace(data.tipo) ? "G" : data.tipo.Trim().ToUpperInvariant();
 
-            try
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-
                 if (data.vencimiento_original.HasValue && !string.IsNullOrWhiteSpace(data.mensaje_original))
                 {
                     const string query = @"
@@ -87,7 +73,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                            AND vencimiento = @fechaOriginal
                            AND usuario = @usuarioOriginal
                            AND SUBSTRING(mensaje, 1, 15) = SUBSTRING(@mensajeOriginal, 1, 15)
-                           AND Tipo = 'G'
+                           AND Tipo = @tipo
                            AND ISNULL(resolucion, 'P') = 'P';";
 
                     string fechaOriginal = MProGrXAuxiliarDB.validaFechaGlobal(
@@ -102,115 +88,90 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         mensaje = data.mensaje,
                         fechaOriginal,
                         usuarioOriginal = data.usuario_original,
-                        mensajeOriginal = data.mensaje_original
+                        mensajeOriginal = data.mensaje_original,
+                        tipo
                     });
 
-                    if (filas == 0)
-                    {
-                        response.Code = -1;
-                        response.Description = "No fue posible localizar el mensaje original para actualizarlo.";
-                    }
+                    return filas;
                 }
-                else
-                {
-                    const string query = @"
+
+                const string insertQuery = @"
                         INSERT INTO socios_mensajes
                             (fecha, cedula, usuario, vencimiento, mensaje, Tipo)
                         VALUES
-                            (dbo.MyGetdate(), @cedula, @usuario, @fechaVence, @mensaje, 'G');";
+                            (dbo.MyGetdate(), @cedula, @usuario, @fechaVence, @mensaje, @tipo);";
 
-                    connection.Execute(query, new
-                    {
-                        cedula = data.cedula,
-                        usuario = data.usuario,
-                        fechaVence = vfecha,
-                        mensaje = data.mensaje
-                    });
-                }
-            }
-            catch (SqlException ex)
+                return connection.Execute(insertQuery, new
+                {
+                    cedula = data.cedula,
+                    usuario = data.usuario,
+                    fechaVence = vfecha,
+                    mensaje = data.mensaje,
+                    tipo
+                });
+            });
+
+            if (result.Code != 0)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            catch (DataException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            catch (InvalidOperationException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            catch (ArgumentException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(
+                    result.Description ?? "Error al guardar el mensaje.",
+                    result.Code.GetValueOrDefault(-1));
             }
 
-            return response;
+            return result.Result > 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    "No fue posible localizar el mensaje original para actualizarlo.",
+                    -1);
         }
 
+        /// <summary>
+        /// Elimina un mensaje pendiente de la persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="data">Datos que identifican el mensaje.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto AFI_Socios_Mensajes_Elimina(int codEmpresa, AfiSociosMensajesData data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
+            const string query = @"
                        delete from socios_mensajes 
                        where cedula = @cedula 
                          and vencimiento = @fecha 
                          and substring(mensaje,1,15) = substring(@mensaje,1,15) 
                          and usuario = @usuario 
-                         and Tipo = 'G'
+                         and Tipo = @tipo
                          and resolucion = 'P'
                     ";
 
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-
-                connection.ExecuteAsync(query, new
+            string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
+            string tipo = string.IsNullOrWhiteSpace(data.tipo) ? "G" : data.tipo.Trim().ToUpperInvariant();
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Execute(query, new
                 {
                     cedula = data.cedula,
                     usuario = data.usuario,
                     fecha = vfecha,
-                    mensaje = data.mensaje
-                });
-            }
-            catch (SqlException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            catch (InvalidOperationException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+                    mensaje = data.mensaje,
+                    tipo
+                }));
 
-            return response;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al eliminar el mensaje.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Registra la resolución de un mensaje pendiente.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="usuario">Usuario que registra la resolución.</param>
+        /// <param name="data">Datos que identifican el mensaje.</param>
+        /// <returns>Resultado de la operación.</returns>
         public ErrorDto AFI_Socios_Mensajes_Resolucion(int codEmpresa, string usuario, AfiSociosMensajesData data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
+            const string query = @"
                        update socios_mensajes set Resolucion = 'R', Resolucion_Fecha = dbo.MyGetdate()
                           , Resolucion_Usuario = @usuario
                            where cedula = @cedula 
@@ -218,24 +179,22 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                            and vencimiento = @fecha_vence
                            and substring(mensaje,1,15) = substring(@mensaje,1,15)";
 
-                string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
-
-                connection.ExecuteAsync(query, new
+            string vfecha = MProGrXAuxiliarDB.validaFechaGlobal(data.vencimiento, FormatoFechaIso) ?? string.Empty;
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Execute(query, new
                 {
                     cedula = data.cedula,
                     usuario = usuario,
                     userMsj = data.usuario,
                     fecha_vence = vfecha,
                     mensaje = data.mensaje
-                });
-            }
-            catch (SqlException ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+                }));
 
-            return response;
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al resolver el mensaje.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
         #endregion

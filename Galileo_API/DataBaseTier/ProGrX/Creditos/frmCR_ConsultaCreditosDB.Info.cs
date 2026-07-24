@@ -70,6 +70,43 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     };
                 }
 
+                const string liquidacionesSql = @"
+                    SELECT
+                        L.CONSEC AS consec,
+                        L.FECLIQ AS fecliq,
+                        L.ESTADOACTLIQ AS estadoactliq,
+                        CASE
+                            WHEN L.ESTADOACTLIQ = 'A' THEN 'Ren.Asociación'
+                            ELSE 'Ren.Patronal'
+                        END AS estadoactliqdesc,
+                        L.ESTADOACTUAL AS estadoactual,
+                        RTRIM(ISNULL(E.DESCRIPCION, '')) AS estadoactualdesc,
+                        RTRIM(ISNULL(E.DESCRIPCION, '')) AS estadopersona,
+                        CONCAT(
+                            RTRIM(ISNULL(L.TDOCUMENTO, '')),
+                            RTRIM(ISNULL(CONVERT(varchar(50), L.NDOCUMENTO), ''))
+                        ) AS tdocumento,
+                        L.UBICACION AS ubicacion,
+                        CASE
+                            WHEN L.UBICACION = 'C' THEN 'Contabilidad'
+                            ELSE 'Tesorería'
+                        END AS ubicaciondesc,
+                        ISNULL(L.TNETO, 0) AS tneto,
+                        L.ESTADO AS estado,
+                        CASE
+                            WHEN L.ESTADO = 'P' THEN 'Procesada'
+                            ELSE 'Reversada'
+                        END AS estadodesc
+                    FROM LIQUIDACION L
+                    INNER JOIN AFI_ESTADOS_PERSONA E
+                        ON L.ESTADOACTUAL = E.COD_ESTADO
+                    WHERE L.CEDULA = @Cedula
+                    ORDER BY L.FECLIQ;";
+
+                info.Liquidaciones = connection.Query<CRliquidacionDto>(
+                    liquidacionesSql,
+                    parametros).ToList();
+
                 const string contactoSql = @"
                     SELECT
                         S.direccion,
@@ -144,6 +181,15 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 {
                     var codigoPoliza = Convert.ToString(poliza.COD_POLIZA) ?? string.Empty;
                     var descripcionPoliza = Convert.ToString(poliza.POLIZA_DESC) ?? string.Empty;
+
+                    info.BenePolizas.Add(new AFPersonaBenePolizaDto
+                    {
+                        linea = 0,
+                        tipo_id = null,
+                        poliza = codigoPoliza.Trim(),
+                        poliza_desc = descripcionPoliza.Trim()
+                    });
+
                     var beneficiariosPoliza = connection.Query<AFPersonaBenePolizaDto>(
                         "EXEC spPoliza_Persona_Beneficiarios @Cedula, @Poliza",
                         new { Cedula = cedula.Trim(), Poliza = codigoPoliza }).ToList();
@@ -165,6 +211,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al consultar información de la persona.", result.Code.GetValueOrDefault(-1), new CRConsultaInfoDto());
         }
 
+        /// <summary>
+        /// Registra o elimina un canal de contacto de la persona.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="req">Datos serializados del canal y el movimiento.</param>
+        /// <returns>Resultado del registro del canal.</returns>
         public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string req)
         {
             AfCanalesDto request = JsonConvert.DeserializeObject<AfCanalesDto>(req) ?? new AfCanalesDto();

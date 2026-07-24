@@ -23,7 +23,6 @@ namespace Galileo.Models.ProGrX.Credito
     {
         public DateTime fechaServidor { get; set; }
         public int sysPlanPagos { get; set; }
-        public string cajasParametro01 { get; set; } = "N";
         public string cajasParametro03 { get; set; } = "N";
         public int portalId { get; set; }
     }
@@ -743,6 +742,7 @@ namespace Galileo.Models.ProGrX.Credito
         public string? cod_parentesco { get; set; }
         public string? porcentaje { get; set; }
         public string? parentesco { get; set; }
+        public string? parentesco_desc { get; set; }
         public string? tipo_id_desc { get; set; }
         public string? poliza { get; set; }
         public string? poliza_desc { get; set; }
