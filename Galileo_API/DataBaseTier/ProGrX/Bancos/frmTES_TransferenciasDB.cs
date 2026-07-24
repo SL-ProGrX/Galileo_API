@@ -82,27 +82,8 @@ namespace Galileo_API.DataBaseTier
                     foreach (var item in result)
                     {
                        
-                       if(item.tipo == "TS")
-                        {
-                            item.documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
-                             $"{linea.ToString("0000", CultureInfo.InvariantCulture)}";
-                            linea++;
-
-                            vDocumento = item.documento;
-                        }
-                        else if(item.tipo == "TE")
-                        {
-                            item.documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
-                             $"{consc.ToString("0000", CultureInfo.InvariantCulture)}";
-                            consc = NextConsecutivo(CodEmpresa, transferencia, consc);
-                            vDocumento = item.documento;
-                        }
-                        else
-                        {
-                            item.documento = consc.ToString("0000", CultureInfo.InvariantCulture);
-                            consc = NextConsecutivo(CodEmpresa, transferencia, consc);
-                            vDocumento = item.documento;
-                        }
+                        (vDocumento, consc, linea) = AsignarDocumento(CodEmpresa, transferencia, item, consc, linea);
+                        item.documento = vDocumento;
 
                         curMonto += item.monto;
 
@@ -202,6 +183,35 @@ namespace Galileo_API.DataBaseTier
 
             return null;
         }
+        /// <summary>
+        /// Asigna el número de documento según el tipo: TS usa consecutivo por línea;
+        /// TE y otros usan el consecutivo interno. Devuelve el documento y los consecutivos actualizados.
+        /// </summary>
+        private (string documento, long consc, int linea) AsignarDocumento(
+            int CodEmpresa, TesTransferenciasInfo transferencia, TransferenciasData item, long consc, int linea)
+        {
+            string documento;
+            if (item.tipo == "TS")
+            {
+                documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
+                            $"{linea.ToString("0000", CultureInfo.InvariantCulture)}";
+                linea++;
+            }
+            else if (item.tipo == "TE")
+            {
+                documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
+                            $"{consc.ToString("0000", CultureInfo.InvariantCulture)}";
+                consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+            }
+            else
+            {
+                documento = consc.ToString("0000", CultureInfo.InvariantCulture);
+                consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+            }
+
+            return (documento, consc, linea);
+        }
+
         private long NextConsecutivo(int CodEmpresa, TesTransferenciasInfo transferencia, long actual)
         {
             if (actual > 0) return actual + 1;
