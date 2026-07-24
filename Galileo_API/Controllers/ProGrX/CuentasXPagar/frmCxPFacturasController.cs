@@ -85,9 +85,9 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ConsultaAscDesc")]
-        public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo)
+        public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo, int Cod_Proveedor = 0)
         {
-            return _bl.ConsultaAscDesc(CodEmpresa, Cod_Factura, tipo);
+            return _bl.ConsultaAscDesc(CodEmpresa, Cod_Factura, tipo, Cod_Proveedor);
         }
 
         [HttpPost("Factura_Anular")]
@@ -121,7 +121,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("TipoCambio_Obtener")]
-        public int TipoCambio_Obtener(int CodEmpresa, string cod_Divisa, string Fecha)
+        public decimal TipoCambio_Obtener(int CodEmpresa, string cod_Divisa, string Fecha)
         {
             return _bl.TipoCambio_Obtener(CodEmpresa, cod_Divisa, Fecha);
         }
@@ -155,6 +155,12 @@ namespace Galileo.Controllers
         public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDto data)
         {
             return _bl.Factura_Insertar(CodEmpresa, data);
+        }
+
+        [HttpPost("FacturaCompleta_Insertar")]
+        public ErrorDto FacturaCompleta_Insertar(int CodEmpresa, FacturaGuardarCompleta data)
+        {
+            return _bl.FacturaCompleta_Insertar(CodEmpresa, data);
         }
     }
 }
