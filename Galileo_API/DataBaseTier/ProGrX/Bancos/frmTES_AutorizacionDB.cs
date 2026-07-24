@@ -15,6 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizacionDb
     {
+        private const int MaxSolicitudesPorPeticion = 1000;
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
@@ -247,15 +248,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
+            var solicitudes = nsolicitud.solicitudesLista;
 
-            if (nsolicitud.solicitudesLista.Count == 0)
+            if (solicitudes is not { Count: > 0 })
             {
                 return DbHelper.ErrorResponse(
                     "Debe seleccionar al menos una solicitud.");
             }
 
+            if (solicitudes.Count > MaxSolicitudesPorPeticion)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No se pueden procesar más de {MaxSolicitudesPorPeticion} solicitudes por petición.");
+            }
 
+            using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
 
             try
             {
@@ -263,7 +270,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     return DbHelper.ErrorResponse("Contrase&ntilde;a Incorrecta, o no Existe Nivel de Autorizaci&oacute;n", -2);
 
 
-                var resultado = ProcesarSolicitudes(conn, nsolicitud, nsolicitud.solicitudesLista);
+                var resultado = ProcesarSolicitudes(conn, nsolicitud, solicitudes);
 
                 var mensaje = resultado.codigo == 0
                 ? "Autorización procesada correctamente!"
@@ -308,14 +315,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             string estado = p.tipo_autorizacion == 0 ? "A":"F";
 
-            foreach (int[] lote in solicitudesAutorizables.Chunk(1000))
-            {
-                EjecutarAutorizacionLote(
-                    conn,
-                    lote,
-                    estado,
-                    p.usuario);
-            }
+            EjecutarAutorizacionLote(
+                conn,
+                solicitudesAutorizables,
+                estado,
+                p.usuario);
 
             conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",
@@ -374,7 +378,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             parametros.Add("Estado", estado);
             parametros.Add("Usuario", usuario);
 
-            for (int indice = 0; indice < solicitudes.Count; indice++)
+            int indice = 0;
+
+            foreach (int solicitud in solicitudes)
             {
                 if (indice > 0)
                 {
@@ -384,7 +390,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 string nombreParametro = $"Solicitud{indice}";
 
                 sql.Append($"(@{nombreParametro}, @Estado, @Usuario)");
-                parametros.Add(nombreParametro, solicitudes[indice]);
+                parametros.Add(nombreParametro, solicitud);
+                indice++;
             }
 
             conn.Execute(sql.ToString(), parametros, commandTimeout: 0);
