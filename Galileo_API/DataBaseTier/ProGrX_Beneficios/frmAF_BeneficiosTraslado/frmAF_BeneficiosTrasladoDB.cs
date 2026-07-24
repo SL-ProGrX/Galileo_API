@@ -56,6 +56,22 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var filtro = string.IsNullOrWhiteSpace(filtros)
                 ? new AfiRemesasFiltros()
                 : JsonConvert.DeserializeObject<AfiRemesasFiltros>(filtros) ?? new AfiRemesasFiltros();
+
+            return AfiBeneficiosTraslado_Remesas_Consultar(CodCliente, filtro, incluirEstado: true);
+        }
+
+        /// <summary>
+        /// Consulta las remesas de beneficios con filtro y paginación, habilitando opcionalmente la búsqueda por estado.
+        /// </summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="filtro">Filtros de búsqueda y paginación.</param>
+        /// <param name="incluirEstado">Indica si la búsqueda global debe incluir el estado.</param>
+        /// <returns>Lista de remesas y total.</returns>
+        private ErrorDto<AfiBeneficiosRemesasDtoLista> AfiBeneficiosTraslado_Remesas_Consultar(
+            int CodCliente,
+            AfiRemesasFiltros filtro,
+            bool incluirEstado)
+        {
             var filtroTexto = filtro.filtro?.Trim() ?? string.Empty;
             var aplicaFiltro = filtroTexto.Length > 0;
             var offset = filtro.pagina ?? 0;
@@ -63,6 +79,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var parametros = new
             {
                 aplicaFiltro,
+                incluirEstado,
                 filtroLike = aplicaFiltro ? $"%{filtroTexto}%" : string.Empty,
                 offset,
                 fetch
@@ -77,7 +94,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                           WHERE @aplicaFiltro = 0
                                              OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
                                              OR usuario LIKE @filtroLike
-                                             OR estado LIKE @filtroLike
+                                             OR (@incluirEstado = 1 AND estado LIKE @filtroLike)
                                              OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike";
                 response.Total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
 
@@ -86,7 +103,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                      WHERE @aplicaFiltro = 0
                                         OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
                                         OR usuario LIKE @filtroLike
-                                        OR estado LIKE @filtroLike
+                                        OR (@incluirEstado = 1 AND estado LIKE @filtroLike)
                                         OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike
                                      ORDER BY fecha DESC
                                      OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";

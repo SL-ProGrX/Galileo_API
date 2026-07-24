@@ -1,12 +1,5 @@
 namespace Galileo.Models.AF
 {
-    public class AfiInformesTopFiltros
-    {
-        public string? filtro { get; set; }
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-    }
-
     public class AfiRemesasFiltros
     {
         public string? filtro { get; set; }

@@ -15,42 +15,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <returns>Lista de remesas y total.</returns>
         public ErrorDto<AfiBeneficiosRemesasDtoLista> AfiInformesTop_Obtener(int CodCliente, string filtros)
         {
-            var filtro = JsonConvert.DeserializeObject<AfiInformesTopFiltros>(filtros) ?? new AfiInformesTopFiltros();
-            var filtroTexto = filtro.filtro?.Trim() ?? string.Empty;
-            var aplicaFiltro = filtroTexto.Length > 0;
-            var offset = filtro.pagina ?? 0;
-            var fetch = filtro.pagina.HasValue ? filtro.paginacion ?? 10 : int.MaxValue;
-            var parametros = new
-            {
-                aplicaFiltro,
-                filtroLike = aplicaFiltro ? $"%{filtroTexto}%" : string.Empty,
-                offset,
-                fetch
-            };
-
-            return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                var response = new AfiBeneficiosRemesasDtoLista();
-
-                const string sqlCount = @"SELECT COUNT(*)
-                                          FROM AFI_BENEFICIOS_REMESAS
-                                          WHERE @aplicaFiltro = 0
-                                             OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
-                                             OR usuario LIKE @filtroLike
-                                             OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
-
-                const string sql = @"SELECT *
-                                     FROM AFI_BENEFICIOS_REMESAS
-                                     WHERE @aplicaFiltro = 0
-                                        OR CONVERT(VARCHAR(20), cod_remesa) LIKE @filtroLike
-                                        OR usuario LIKE @filtroLike
-                                        OR CONVERT(VARCHAR(19), fecha, 120) LIKE @filtroLike
-                                     ORDER BY fecha DESC
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-                response.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(sql, parametros).ToList();
-                return response;
-            });
+            var filtro = JsonConvert.DeserializeObject<AfiRemesasFiltros>(filtros) ?? new AfiRemesasFiltros();
+            return AfiBeneficiosTraslado_Remesas_Consultar(CodCliente, filtro, incluirEstado: false);
         }
 
         /// <summary>
