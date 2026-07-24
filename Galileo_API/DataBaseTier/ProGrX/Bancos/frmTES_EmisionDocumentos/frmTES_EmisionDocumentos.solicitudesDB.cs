@@ -279,16 +279,16 @@ FETCH NEXT @filas ROWS ONLY;
 
         private sealed class TesSolicitudesPaginaResumen
         {
-            public int total { get; set; }
-            public decimal monto_total { get; set; }
-            public bool tiene_restricciones { get; set; }
+            public int total { get; set; } = 0;
+            public decimal monto_total { get; set; } = 0;
+            public bool tiene_restricciones { get; set; } = false;
         }
 
         private sealed class TesSolicitudPaginaData : TesSolicitudesGenData
         {
-            public int orden_te { get; set; }
-            public int orden_ts { get; set; }
-            public int orden_visible { get; set; }
+            public int orden_te { get; set; } = 0;
+            public int orden_ts { get; set; } = 0;
+            public int orden_visible { get; set; } = 0;
         }
     }
 }

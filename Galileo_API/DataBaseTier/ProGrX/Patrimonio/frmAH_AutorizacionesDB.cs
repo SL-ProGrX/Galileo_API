@@ -98,7 +98,15 @@ order by Registro_Fecha;";
                 return validacion;
             }
 
-            var usuario = request!.usuario.Trim();
+            if (request == null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El request no puede ser nulo.",
+                    -1,
+                    response);
+            }
+
+            var usuario = request.usuario.Trim();
             var accion = request.accion.Trim().ToUpperInvariant();
             var idsAutorizacion = request.ids_autorizacion
                 .Where(id => !string.IsNullOrWhiteSpace(id))

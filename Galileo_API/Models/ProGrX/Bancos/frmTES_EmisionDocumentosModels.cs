@@ -52,7 +52,7 @@ namespace Galileo.Models.TES
     public sealed class TesEmisionDocumentoSolicitudesPaginaRequest
     {
         public string filtros { get; set; } = string.Empty;
-        public int offset { get; set; }
+        public int offset { get; set; } = 0;
         public int filas { get; set; } = 30;
         public string? busqueda { get; set; }
     }
