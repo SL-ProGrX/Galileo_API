@@ -82,7 +82,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
 
             CrearDetallesTesoreria(CodCliente, item, proveedor.cuenta, beneficio.cod_cuenta, vTesoreria);
-            ActualizarEstadoTarjeta(connection, CodCliente, info, item, vTesoreria);
+            ActualizarEstadoTarjeta(connection, CodCliente, info, item);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Actualiza el estado de la tarjeta: 'D' si no tiene pago asignado, o 'E' con bitácora si sí lo tiene.
         /// </summary>
-        private void ActualizarEstadoTarjeta(SqlConnection connection, int CodCliente, AfiBeneTarjetasRecargaData info, AfiBeneTarjetasData item, long vTesoreria)
+        private void ActualizarEstadoTarjeta(SqlConnection connection, int CodCliente, AfiBeneTarjetasRecargaData info, AfiBeneTarjetasData item)
         {
             if (item.id_pago == null)
             {
