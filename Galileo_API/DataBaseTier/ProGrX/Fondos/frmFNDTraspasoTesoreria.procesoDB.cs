@@ -558,7 +558,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private sealed class FndTraspasoTesoreriaProcesoActivo
         {
-            public Guid ProcesoId { get; init; }
+            public Guid ProcesoId { get; init; } = Guid.Empty;
             public string Usuario { get; init; } = string.Empty;
             public string Estado { get; init; } = string.Empty;
         }
