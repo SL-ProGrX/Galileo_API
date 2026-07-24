@@ -179,12 +179,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private static ErrorDto? ValidarRequeridas(Form frm)
         {
-            foreach (var item in frm.questions ?? new List<FormQuestion>())
+            foreach (var item in (frm.questions ?? new List<FormQuestion>()).Where(item => item.requerido == true && item.respuesta == null))
             {
-                if (item.requerido == true && item.respuesta == null)
-                {
-                    return DbHelper.ErrorResponse("La pregunta " + item.pregunta_titulo + " es requerida");
-                }
+                return DbHelper.ErrorResponse("La pregunta " + item.pregunta_titulo + " es requerida");
             }
 
             return null;
