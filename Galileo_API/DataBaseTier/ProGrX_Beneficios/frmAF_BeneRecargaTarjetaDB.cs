@@ -17,7 +17,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
         private readonly IConfiguration _config;
         private readonly EnvioCorreoDB _envioCorreoDB;
-        private readonly MProGrXAuxiliarDB _mAuxiliarDB;
         private readonly MSecurityMainDb _bitacoraDb;
         private readonly MTesFuncionesDb _mTes;
         private readonly MBeneficiosDB _mBeneficiosDB;
@@ -31,7 +30,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _envioCorreoDB = new EnvioCorreoDB(_config);
-            _mAuxiliarDB = new MProGrXAuxiliarDB(_config);
             _bitacoraDb = new MSecurityMainDb(_config);
             _mTes = new MTesFuncionesDb(_config);
             _mBeneficiosDB = new MBeneficiosDB(_config);

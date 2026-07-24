@@ -18,12 +18,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private readonly MSecurityMainDb _bitacoraDb;
         private readonly MBeneficiosDB _mBeneficiosDB;
         private readonly MTesFuncionesDb _mTes;
-        private readonly EnvioCorreoDB _envioCorreoDB;
-        private readonly MProGrXAuxiliarDB _mAuxiliarDB;
         private readonly MTesoreria _mTesoreria;
-        private readonly string _sendEmail;
-        private readonly string _testMail;
-        private readonly string _notificaciones;
         private readonly string _codComision;
         private readonly string _ctaComision;
 
@@ -37,12 +32,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             _bitacoraDb = new MSecurityMainDb(_config);
             _mBeneficiosDB = new MBeneficiosDB(_config);
             _mTes = new MTesFuncionesDb(_config);
-            _envioCorreoDB = new EnvioCorreoDB(_config);
-            _mAuxiliarDB = new MProGrXAuxiliarDB(_config);
             _mTesoreria = new MTesoreria(_config);
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? string.Empty;
-            _testMail = _config.GetSection("AppSettings").GetSection("TestEmail").Value ?? string.Empty;
-            _notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value ?? string.Empty;
             _codComision = _config.GetSection("AFI_Beneficios").GetSection("CodComision").Value ?? string.Empty;
             _ctaComision = _config.GetSection("AFI_Beneficios").GetSection("CtaComisionBeneficios").Value ?? string.Empty;
         }
