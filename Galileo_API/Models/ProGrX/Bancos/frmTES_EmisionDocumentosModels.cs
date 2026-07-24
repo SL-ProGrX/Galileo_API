@@ -49,6 +49,23 @@ namespace Galileo.Models.TES
         public int? id_banco { get; set; }
     }
 
+    public sealed class TesEmisionDocumentoSolicitudesPaginaRequest
+    {
+        public string filtros { get; set; } = string.Empty;
+        public int offset { get; set; }
+        public int filas { get; set; } = 30;
+        public string? busqueda { get; set; }
+    }
+
+    public sealed class TesEmisionDocumentoSolicitudesPaginaResult
+    {
+        public List<TesSolicitudesGenData> lista { get; set; } = new();
+        public int total { get; set; }
+        public int totalFiltrado { get; set; }
+        public decimal montoTotal { get; set; }
+        public bool tieneRestricciones { get; set; }
+    }
+
     public class TesBancoDocsData
     {
         public int doc_auto { get; set; }

@@ -246,7 +246,7 @@ order by Registro_Fecha;";
             if (request.ids_autorizacion == null || request.ids_autorizacion.Count == 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe seleccionar al menos una solicitud.",
+                    "Debe seleccionar al menos una solicitud para procesar.",
                     -2,
                     response);
             }

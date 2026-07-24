@@ -21,10 +21,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
         {
             try
             {
-                var solicitudes = request.solicitudes
-                    .Where(item => item > 0)
+                request.filtros.banco = request.banco;
+                request.filtros.plan = request.plan;
+                request.filtros.usuario = usuario;
+
+                var solicitudesResponse =
+                    TES_EmisionDocumento_Solicitudes_Ids_Obtener(
+                        codEmpresa,
+                        request.filtros);
+                if (solicitudesResponse.Code != 0)
+                {
+                    return DbHelper.CreateErrorResponse<TesEmisionDocumentosProcesoResult>(
+                        solicitudesResponse.Description
+                        ?? "No fue posible obtener las solicitudes de la emisión TS.");
+                }
+
+                var solicitudes = solicitudesResponse.Result
+                    ?.Where(item => item > 0)
                     .Distinct()
-                    .ToArray();
+                    .ToArray()
+                    ?? [];
                 if (request.banco <= 0 || solicitudes.Length == 0)
                 {
                     return DbHelper.CreateErrorResponse<TesEmisionDocumentosProcesoResult>(

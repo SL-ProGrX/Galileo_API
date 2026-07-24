@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizacionDb
     {
-        private const int MaxSolicitudesPorPeticion = 50000;
+        private const int MaxSolicitudesPorPeticionAuth = 50000;
         private const int TamanoLoteConsulta = 2000;
         private const int TamanoLoteInsercion = 1000;
         private readonly VerificadorCoreFactory _factory;
@@ -255,13 +255,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (solicitudes is not { Count: > 0 })
             {
                 return DbHelper.ErrorResponse(
-                    "Debe seleccionar al menos una solicitud.");
+                    "Debe seleccionar al menos una solicitud para autorizar.");
             }
 
-            if (solicitudes.Count > MaxSolicitudesPorPeticion)
+            if (solicitudes.Count > MaxSolicitudesPorPeticionAuth)
             {
                 return DbHelper.ErrorResponse(
-                    $"No se pueden procesar más de {MaxSolicitudesPorPeticion} solicitudes por petición.");
+                    $"No se pueden autorizar más de {MaxSolicitudesPorPeticionAuth} solicitudes por petición.");
             }
 
             using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);

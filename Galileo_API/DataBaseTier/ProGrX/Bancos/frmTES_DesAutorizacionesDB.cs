@@ -140,13 +140,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (solicitudesLista is not { Count: > 0 })
             {
                 return DbHelper.ErrorResponse(
-                    "Debe seleccionar al menos una solicitud.");
+                    "Debe seleccionar al menos una solicitud para desautorizar.");
             }
 
             if (solicitudesLista.Count > MaxSolicitudesPorPeticion)
             {
                 return DbHelper.ErrorResponse(
-                    $"No se pueden procesar más de {MaxSolicitudesPorPeticion} solicitudes por petición.");
+                    $"No se pueden desautorizar más de {MaxSolicitudesPorPeticion} solicitudes por petición.");
             }
 
             if (tipo_autorizacion is not 0 and not 1)

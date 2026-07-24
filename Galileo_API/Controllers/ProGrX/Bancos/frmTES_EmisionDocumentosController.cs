@@ -67,6 +67,17 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_Solicitudes_Obtener(CodEmpresa, filtros);
         }
 
+        [HttpGet("TES_EmisionDocumento_Solicitudes_Pagina_Obtener")]
+        public ErrorDto<TesEmisionDocumentoSolicitudesPaginaResult>
+            TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesEmisionDocumentoSolicitudesPaginaRequest request)
+        {
+            return _bl.TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                CodEmpresa,
+                request);
+        }
+
         [HttpGet("TES_EmisionDocumento_TipoDocGestion")]
         public ErrorDto<string> TES_EmisionDocumento_TipoDocGestion(int CodEmpresa, int banco, string tipoDoc)
         {

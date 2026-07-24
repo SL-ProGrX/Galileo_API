@@ -47,6 +47,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.TES_EmisionDocumento_Solicitudes_Obtener(CodEmpresa, filtros);
         }
 
+        public ErrorDto<TesEmisionDocumentoSolicitudesPaginaResult>
+            TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                int CodEmpresa,
+                TesEmisionDocumentoSolicitudesPaginaRequest request)
+        {
+            return _db.TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                CodEmpresa,
+                request);
+        }
+
         public ErrorDto<string> TES_EmisionDocumento_TipoDocGestion(int CodEmpresa, int banco, string tipoDoc)
         {
             ErrorDto<string> comprobante = mTesoreria.fxTesTipoDocExtraeDato(CodEmpresa, banco, tipoDoc, "Comprobante");

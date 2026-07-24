@@ -356,7 +356,7 @@ WHERE T.Estado = 'I'
                 return "Los filtros son requeridos.";
             if (request.NSolicitudes is null
                 || request.NSolicitudes.Count == 0)
-                return "Debe seleccionar al menos una solicitud.";
+                return "Debe seleccionar al menos una solicitud para emitir.";
             if (request.NSolicitudes.Count > 200)
                 return "El lote no puede superar 200 registros.";
             if (request.NSolicitudes.Any(item => item <= 0))
