@@ -88,14 +88,13 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             var resultado = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
             {
                 connection.Execute(
-                    "spSys_Notifica_Cobros_01_Atrasos",
+                    "exec spSys_Notifica_Cobros_01_Atrasos @cedula, @tipo, @usuario",
                     new
                     {
-                        Cedula = (cedula ?? string.Empty).Trim(),
-                        Tipo = string.Equals(tipo, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "R",
-                        Usuario = (usuario ?? string.Empty).Trim()
-                    },
-                    commandType: CommandType.StoredProcedure);
+                        cedula = (cedula ?? string.Empty).Trim(),
+                        tipo = string.Equals(tipo, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "R",
+                        usuario = (usuario ?? string.Empty).Trim()
+                    });
 
                 return true;
             });
