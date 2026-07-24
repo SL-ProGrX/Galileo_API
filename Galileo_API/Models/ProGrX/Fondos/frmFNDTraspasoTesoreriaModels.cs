@@ -224,11 +224,14 @@ namespace Galileo.Models.ProGrX.Fondos
     {
         public Guid ProcesoId { get; set; }
         public string Estado { get; set; } = string.Empty;
+        public bool ProcesoRecuperado { get; set; }
+        public string UsuarioOrigen { get; set; } = string.Empty;
         public int TotalRegistros { get; set; }
         public int Procesados { get; set; }
         public int ConErrores { get; set; }
         public int Pendientes { get; set; }
         public decimal Porcentaje { get; set; }
+        public long TiempoTranscurridoMs { get; set; }
         public bool ProcesoFinalizado { get; set; }
         public string? ErrorMensaje { get; set; }
         public List<FndTraspasoTesoreriaProcesoErrorResult> Errores { get; set; } = new();
