@@ -122,14 +122,29 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             if (request.FechaDesde == default || request.FechaHasta == default ||
                 request.FechaHasta?.Date < request.FechaDesde?.Date)
                 return "El rango de fechas no es válido.";
-            if (accion == "D" && string.IsNullOrWhiteSpace(request.Token))
-                return "El token es requerido para desembolsar.";
-            if (accion == "R" && string.IsNullOrWhiteSpace(request.RetencionCodigo))
-                return "El código de retención es requerido.";
+            var errorCredenciales = FND_TraspasoTesoreria_Proceso_ValidarCredencialesAccion(request, accion);
+            if (errorCredenciales != null)
+                return errorCredenciales;
+
             if (string.IsNullOrWhiteSpace(request.AppProductName))
                 return "El nombre de la aplicación es requerido.";
 
             return FND_TraspasoTesoreria_Proceso_ValidarSeleccion(request, modo);
+        }
+
+        /// <summary>
+        /// Valida las credenciales requeridas según la acción: token para desembolsar (D),
+        /// código de retención para retener (R).
+        /// </summary>
+        private static string? FND_TraspasoTesoreria_Proceso_ValidarCredencialesAccion(
+            FndTraspasoTesoreriaProcesoIniciarRequest request,
+            string accion)
+        {
+            if (accion == "D" && string.IsNullOrWhiteSpace(request.Token))
+                return "El token es requerido para desembolsar.";
+            if (accion == "R" && string.IsNullOrWhiteSpace(request.RetencionCodigo))
+                return "El código de retención es requerido.";
+            return null;
         }
 
         private static string? FND_TraspasoTesoreria_Proceso_ValidarSeleccion(
