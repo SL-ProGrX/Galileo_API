@@ -2,17 +2,20 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using static Galileo_API.Models.ProGrX.Cobros.FrmCoAplFndContratosInformesModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplFndContratosInformesDB
     {
-        private readonly PortalDB _portalDB; 
-
+        private readonly PortalDB _portalDB;
+        private readonly MProGrXSecurityMainDb _MProGrXSecurityMainDb;
+        private readonly int vModulo = 4;
         public FrmCoAplFndContratosInformesDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config); 
+            _portalDB = new PortalDB(config);
+            _MProGrXSecurityMainDb = new MProGrXSecurityMainDb(config);
         }
 
         /// <summary>
@@ -47,6 +50,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         .Query<DropDownListaGenericaModel>(query)
                         .ToList());
         }
+
+        /// <summary>
+        /// Registra un movimiento en la bitácora del sistema
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="strTipoMovimiento"></param>
+        /// <param name="strDetalleMovimiento"></param>
+        /// <returns></returns>
+        public ErrorDto Co_AplFnd_ContratosInformes_Bitacora_Registrar(int codEmpresa,string usuario,string strTipoMovimiento, string strDetalleMovimiento)
+        { 
+          return  _MProGrXSecurityMainDb.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                    CodEmpresa = codEmpresa,
+                usuario = (usuario ?? string.Empty).ToUpper(),
+                strDetalleMovimiento = strDetalleMovimiento,
+                strTipoMovimiento = strTipoMovimiento, 
+                vModulo = vModulo
+            });
+        }
+ 
 
     }
 }
