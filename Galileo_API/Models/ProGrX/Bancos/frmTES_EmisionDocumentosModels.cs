@@ -14,20 +14,20 @@ namespace Galileo.Models.TES
 
     public class TesEmisionDocFiltros
     {
-        public int cantidad { get; set; }
-        public int banco { get; set; }
+        public int cantidad { get; set; } = 0;
+        public int banco { get; set; } = 0;
         public string plan { get; set; } = string.Empty;
-        public int docInicial { get; set; }
+        public int docInicial { get; set; } = 0;
         public string generarPor { get; set; } = string.Empty;
         public string tipoDoc { get; set; } = string.Empty;
-        public int minimo { get; set; }
-        public int maximo { get; set; }
-        public int verificacion { get; set; }
-        public DateTime? fecha_inicio { get; set; }
-        public DateTime? fecha_corte { get; set; }
-        public string? formatoTE { get; set; }
+        public int minimo { get; set; } = 0;
+        public int maximo { get; set; } = 0;
+        public int verificacion { get; set; } = 0;
+        public DateTime? fecha_inicio { get; set; } = null;
+        public DateTime? fecha_corte { get; set; } = null;
+        public string? formatoTE { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
-        public bool? docBloqueo { get; set; }
+        public bool? docBloqueo { get; set; } = false;
         public bool especial { get; set; } = false;
 
         public string? bancoDescripcion { get; set; } = string.Empty;
@@ -49,6 +49,23 @@ namespace Galileo.Models.TES
         public int? id_banco { get; set; }
     }
 
+    public sealed class TesEmisionDocumentoSolicitudesPaginaRequest
+    {
+        public string filtros { get; set; } = string.Empty;
+        public int offset { get; set; } = 0;
+        public int filas { get; set; } = 30;
+        public string? busqueda { get; set; }
+    }
+
+    public sealed class TesEmisionDocumentoSolicitudesPaginaResult
+    {
+        public List<TesSolicitudesGenData> lista { get; set; } = new();
+        public int total { get; set; }
+        public int totalFiltrado { get; set; }
+        public decimal montoTotal { get; set; }
+        public bool tieneRestricciones { get; set; }
+    }
+
     public class TesBancoDocsData
     {
         public int doc_auto { get; set; }
@@ -67,12 +84,12 @@ namespace Galileo.Models.TES
     internal sealed class EmisionClasificacionRequest
     {
         public int CodEmpresa { get; init; }
-        public TesEmisionDocFiltros Filtro { get; init; } = default!;
-        public TesBancoDocsData BancoDocs { get; init; } = default!;
-        public TesBancoData BancoData { get; init; } = default!;
+        public TesEmisionDocFiltros Filtro { get; init; } = default;
+        public TesBancoDocsData BancoDocs { get; init; } = default;
+        public TesBancoData BancoData { get; init; } = default;
         public int UsaFirmas { get; init; } // vFirmas
-        public TesArchivosEspecialesData ChequesReport { get; init; } = default!;
-        public FrmReporteGlobal ReporteData { get; init; } = default!;
+        public TesArchivosEspecialesData ChequesReport { get; init; } = default;
+        public FrmReporteGlobal ReporteData { get; init; } = default;
     }
 
     internal sealed class EmisionClasificacionState
@@ -93,9 +110,45 @@ namespace Galileo.Models.TES
     public class TesSolicitudesFormatoRequest
     {
         public int CodEmpresa { get; init; } = 0;
-        public TesEmisionDocFiltros Filtro { get; init; } = default!;
+        public TesEmisionDocFiltros Filtro { get; init; } = default;
         public List<TesSolicitudesGenData> Solicitudes { get; init; } = new();
         public long ConsecutivoInterno { get; init; } = 0;
+    }
+
+    public sealed class TesEmisionGenerarLoteRequest
+    {
+        public required int CodEmpresa { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public string Filtros { get; set; } = string.Empty;   // JSON de filtros base
+        public int Minimo { get; set; } = 0;
+        public int Maximo { get; set; } = 0;
+        public List<int> NSolicitudes { get; set; } = new();
+        // Documento único de la emisión (modelo v6: un documento por emisión).
+        // Se avanza una sola vez al inicio y se marca en todas las solicitudes del lote.
+        public long BancoConsec { get; set; } = 0;
+    }
+
+    public sealed class TesEmisionProcesoError
+    {
+        public int NSolicitud { get; set; }
+        public int Codigo { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public sealed class TesEmisionLoteQuery
+    {
+        public string QueryTransac { get; set; } = string.Empty;
+        public string BaseQuery { get; set; } = string.Empty;
+    }
+
+    public sealed class TesEmisionGenerarLoteResult
+    {
+        public int Procesados { get; set; }
+        public int ConErrores { get; set; }
+        public List<TesEmisionProcesoError> Errores { get; set; } = new();
+        // Datos para el paso final (abrir "Procesar Transferencias" que cambia el estado)
+        public string BancoConsec { get; set; } = string.Empty;
+        public TesEmisionLoteQuery? StrQuery { get; set; }
     }
 
 }

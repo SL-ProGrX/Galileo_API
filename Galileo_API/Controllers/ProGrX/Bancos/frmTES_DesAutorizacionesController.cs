@@ -38,7 +38,7 @@ namespace Galileo_API.Controllers
         }
 
         [HttpPost("TES_DesAutorizaciones_Aplicar")]
-        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, string solicitudesLista)
+        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, List<int> solicitudesLista)
         {
             return DesAutorizacionesBL.TES_DesAutorizaciones_Aplicar(CodEmpresa, clave, usuario, tipo_autorizacion, solicitudesLista);
         }

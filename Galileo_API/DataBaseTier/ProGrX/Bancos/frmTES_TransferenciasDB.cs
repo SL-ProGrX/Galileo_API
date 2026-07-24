@@ -10,6 +10,7 @@ using Microsoft.ReportingServices.Diagnostics.Internal;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Sinpe_TFT;
 using System.Data;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -54,9 +55,7 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 var vFecha = DateTime.Now;
 
-                allowedSql = ValTipoTransferenciaTS(transferencia.tipoDoc!, allowedSql);
-
-                var cantidadSolicitudes = transferencia.parametros!.cantidad;
+                var cantidadSolicitudes = transferencia.parametros.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
 
                 // 2) Ejecutar SOLO SQL permitido
@@ -75,14 +74,17 @@ namespace Galileo_API.DataBaseTier
                 long current = conn.QueryFirstOrDefault<long>("SELECT ISNULL(CONSECUTIVO_DET,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco", new { Tipo = transferencia.parametros.tipoDoc, Banco = transferencia.parametros.banco});
                 consc = current;
 
+                var vDocumento = string.Empty;
+
                 if (result.Count > 0)
                 {
+                    var linea = 1;
                     foreach (var item in result)
                     {
                        
-                        var vDocumento = consc.ToString("D4");
-
+                        (vDocumento, consc, linea) = AsignarDocumento(CodEmpresa, transferencia, item, consc, linea);
                         item.documento = vDocumento;
+
                         curMonto += item.monto;
 
                         conn.Execute(FrmTesAutorizacionSql.Query_UpdateTransacciones, new
@@ -114,12 +116,11 @@ namespace Galileo_API.DataBaseTier
                         {
                             ActualizaReferencia(conn, vDocumento, item);
                         }
-
-                        consc = NextConsecutivo(CodEmpresa, transferencia, consc);
                     }
+
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
+                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, transferencia.bancoConsec, transferencia.usuario);
 
                     if(aplicaInterno.aplica == "1")
                     {
@@ -138,19 +139,10 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
-        private static string ValTipoTransferenciaTS(string tipoDoc , string allowedSql)
-        {
-            if (tipoDoc == "TS")
-            {
-                return allowedSql.Replace("Estado = 'P'", "Estado IN ('P', 'I')");
-            }
-            return allowedSql;
-        }
-
         private static  int ValCantidadSolicitudes(int cantidadSolicitudes, TesTransferenciasInfo transferencia)
         {
             if (cantidadSolicitudes <= 0 &&
-                    transferencia.parametros!.maximo >= transferencia.parametros.minimo &&
+                    transferencia.parametros.maximo >= transferencia.parametros.minimo &&
                     transferencia.parametros.minimo > 0)
             {
                 cantidadSolicitudes =
@@ -191,6 +183,35 @@ namespace Galileo_API.DataBaseTier
 
             return null;
         }
+        /// <summary>
+        /// Asigna el número de documento según el tipo: TS usa consecutivo por línea;
+        /// TE y otros usan el consecutivo interno. Devuelve el documento y los consecutivos actualizados.
+        /// </summary>
+        private (string documento, long consc, int linea) AsignarDocumento(
+            int CodEmpresa, TesTransferenciasInfo transferencia, TransferenciasData item, long consc, int linea)
+        {
+            string documento;
+            if (item.tipo == "TS")
+            {
+                documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
+                            $"{linea.ToString("0000", CultureInfo.InvariantCulture)}";
+                linea++;
+            }
+            else if (item.tipo == "TE")
+            {
+                documento = $"{transferencia.bancoConsec?.ToString(CultureInfo.InvariantCulture)}-" +
+                            $"{consc.ToString("0000", CultureInfo.InvariantCulture)}";
+                consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+            }
+            else
+            {
+                documento = consc.ToString("0000", CultureInfo.InvariantCulture);
+                consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+            }
+
+            return (documento, consc, linea);
+        }
+
         private long NextConsecutivo(int CodEmpresa, TesTransferenciasInfo transferencia, long actual)
         {
             if (actual > 0) return actual + 1;
@@ -301,7 +322,7 @@ Where ID_Solicitud = @IdSolicitud";
                          };
                 }
 
-                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, "-", transferencia.plan!);
+                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, "-", transferencia.plan);
                 return DbHelper.OkResponse("Transferencia Revertida Correctamente");
             }
             catch (Exception ex)

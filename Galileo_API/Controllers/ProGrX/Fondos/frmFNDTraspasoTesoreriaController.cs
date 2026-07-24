@@ -144,5 +144,31 @@ namespace Galileo.Controllers.ProGrX.Fondos
         {
             return _bl.FND_TraspasoTesoreria_ProcesarLote(request);
         }
+
+        /// <summary>
+        /// Inicializa el proceso persistente de traspaso de tesorería.
+        /// </summary>
+        [Authorize]
+        [HttpPost("FND_TraspasoTesoreria_Proceso_Iniciar")]
+        public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Iniciar(
+            [FromQuery] int codEmpresa,
+            [FromBody] FndTraspasoTesoreriaProcesoIniciarRequest request)
+        {
+            request.Usuario = User.Identity?.Name ?? string.Empty;
+            return _bl.FND_TraspasoTesoreria_Proceso_Iniciar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Ejecuta el siguiente lote pendiente del traspaso de tesorería.
+        /// </summary>
+        [Authorize]
+        [HttpPost("FND_TraspasoTesoreria_Proceso_Continuar")]
+        public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Continuar(
+            [FromQuery] int codEmpresa,
+            [FromBody] FndTraspasoTesoreriaProcesoContinuarRequest request)
+        {
+            request.Usuario = User.Identity?.Name ?? string.Empty;
+            return _bl.FND_TraspasoTesoreria_Proceso_Continuar(codEmpresa, request);
+        }
     }
 }

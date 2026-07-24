@@ -1,8 +1,10 @@
 using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -13,6 +15,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizacionDb
     {
+        private const int MaxSolicitudesPorPeticionAuth = 50000;
+        private const int TamanoLoteConsulta = 2000;
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
@@ -56,7 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 // 4) Conteo total
-                response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
+                response.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
                 var baseQuery = FrmTesAutorizacionSql.SP_TRANSACCIONES_PENDIENTES;
@@ -245,9 +249,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
+            var solicitudes = nsolicitud.solicitudesLista;
+
+            if (solicitudes is not { Count: > 0 })
+            {
+                return DbHelper.ErrorResponse(
+                    "Debe seleccionar al menos una solicitud para autorizar.");
+            }
+
+            if (solicitudes.Count > MaxSolicitudesPorPeticionAuth)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No se pueden autorizar más de {MaxSolicitudesPorPeticionAuth} solicitudes por petición.");
+            }
+
             using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
 
-            var solicitudes = DbHelper.DeserializeOrNew<List<int>>(nsolicitud.solicitudesLista);
             try
             {
                 if (!UsuarioAutorizado(conn, nsolicitud))
@@ -278,24 +295,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private (int codigo, string mensaje) ProcesarSolicitudes(
-    SqlConnection conn,
+    IDbConnection conn,
     TesAutorizaParametros p,
     IEnumerable<int> solicitudes)
         {
             var solicitudesUnicas = solicitudes.Distinct().ToList();
             var bloqueaAutoAutorizacion =
                 _mTesoreria.fxTesParametro(p.codEmpresa, "12") == "S";
+
             var bloqueadasPorMismoUsuario = ObtenerSolicitudesBloqueadas(
                 conn,
                 bloqueaAutoAutorizacion,
                 solicitudesUnicas,
-                p.usuario!);
+                p.usuario);
+            
             var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
             var solicitudesAutorizables = solicitudesUnicas
                 .Where(id => !bloqueadas.Contains(id))
                 .ToList();
 
-            EjecutarAutorizacionLote(conn, solicitudesAutorizables, p);
+            string estado = p.tipo_autorizacion == 0 ? "A":"F";
+
+            FrmTesAutorizacionesLotesDB.TES_Autorizaciones_InsertarSolicitudes(
+                conn,
+                solicitudesAutorizables,
+                estado,
+                p.usuario);
+
+            conn.Execute(
+                    "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",
+                    new
+                    {
+                        Usuario = p.usuario,
+                        Estado = estado,
+                        SINPE_Tipo = p.tipoGiroSinpe,
+                        UsuarioEspecial = p.autorizacionEspecialUsuario
+                    },
+                    commandTimeout: 0);
 
             var codigo = bloqueadasPorMismoUsuario.Any() ? -1 : 0;
             var msg = bloqueadasPorMismoUsuario.Any()
@@ -306,7 +342,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private static List<int> ObtenerSolicitudesBloqueadas(
-            SqlConnection conn,
+            IDbConnection conn,
             bool bloqueaAutoAutorizacion,
             IReadOnlyCollection<int> solicitudes,
             string usuario)
@@ -320,37 +356,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 WHERE NSOLICITUD IN @Solicitudes
                   AND USER_SOLICITA = @Usuario;";
 
-            return conn.Query<int>(
-                sql,
-                new { Solicitudes = solicitudes, Usuario = usuario })
-                .ToList();
-        }
+            var bloqueadas = new List<int>();
 
-        private static void EjecutarAutorizacionLote(
-            SqlConnection conn,
-            IReadOnlyCollection<int> solicitudes,
-            TesAutorizaParametros p)
-        {
-            if (solicitudes.Count == 0) return;
+            foreach (int[] lote in solicitudes.Chunk(TamanoLoteConsulta))
+            {
+                bloqueadas.AddRange(
+                    conn.Query<int>(
+                        sql,
+                        new { Solicitudes = lote, Usuario = usuario }));
+            }
 
-            var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
-            var solicitudesXml = new XElement(
-                "solicitudes",
-                solicitudes.Select(id => new XElement("id", id)))
-                .ToString(SaveOptions.DisableFormatting);
-
-            conn.Execute(
-                FrmTesAutorizacionSql.SQL_AUTORIZACION_LOTE,
-                new
-                {
-                    solicitudesXml,
-                    tipoAutorizacion = p.tipo_autorizacion,
-                    usuario = p.usuario,
-                    estadoSinpe = estadoSinpeDb,
-                    tipoGiroSinpe = tipoGiroSinpeDb,
-                    usuarioEspecial = p.autorizacionEspecialUsuario
-                },
-                commandTimeout: 0);
+            return bloqueadas;
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
@@ -365,7 +381,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 estado = estadoSinpe.Value ? 1 : 0;
             }
-            var giro = string.IsNullOrWhiteSpace(tipoGiroSinpe) ? "NA" : tipoGiroSinpe!;
+            var giro = string.IsNullOrWhiteSpace(tipoGiroSinpe) ? "NA" : tipoGiroSinpe;
             return (estado, giro);
         }
 
