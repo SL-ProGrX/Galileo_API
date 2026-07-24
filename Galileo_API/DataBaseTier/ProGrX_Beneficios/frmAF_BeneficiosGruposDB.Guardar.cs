@@ -85,7 +85,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 grupo.cod_grupo
             });
 
-            if (grupo.monto != montoAnterior)
+            const decimal montoEpsilon = 0.0001m;
+            if (Math.Abs(Convert.ToDecimal(grupo.monto) - Convert.ToDecimal(montoAnterior)) > montoEpsilon)
             {
                 _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                 {
