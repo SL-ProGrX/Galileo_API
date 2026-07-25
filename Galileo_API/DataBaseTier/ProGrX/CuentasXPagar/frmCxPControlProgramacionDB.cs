@@ -87,7 +87,7 @@ namespace Galileo.DataBaseTier
 
                 foreach (ProgramacionPagoDto ft in respuesta.FacturasPago)
                 {
-                    ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
+                    ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor + '-' + ft.Tipo;
                 }
 
                 return respuesta;
@@ -191,6 +191,34 @@ namespace Galileo.DataBaseTier
                 result,
                 "Error al obtener datos de la factura.",
                 "No se encontró información de la factura.");
+        }
+
+        /// <summary>
+        /// Obtiene el estado vigente de una factura desde la misma vista usada por la programación de pagos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="Cod_Factura">Código de factura.</param>
+        /// <param name="Cod_Proveedor">Código del proveedor.</param>
+        /// <param name="Tipo">Tipo de la fila seleccionada.</param>
+        /// <returns>Estado y datos base de la fila disponible para programación.</returns>
+        public ErrorDto<FacturaProgramacionEstado> FacturaProgramacionEstado_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor, string Tipo)
+        {
+            var result = DbHelper.ExecuteSingleQuery<FacturaProgramacionEstado>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT CxP_Estado, Total, Tipo
+                  FROM vCxP_ProgramacionPago
+                  WHERE Cod_Factura = @Cod_Factura
+                    AND Cod_Proveedor = @Cod_Proveedor
+                    AND Tipo = @Tipo
+                    AND CxP_Estado = 'P'",
+                null,
+                new { Cod_Factura, Cod_Proveedor, Tipo });
+
+            return CrearRespuestaSingle(
+                result,
+                "Error al obtener el estado de programación de la factura.",
+                "No se encontró la factura para programación.");
         }
 
         /// <summary>
