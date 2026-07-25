@@ -41,7 +41,7 @@ namespace Galileo_API.BusinessLogic
             return DesAutorizacionesDB.TES_DesAutorizaciones_Obtener(CodEmpresa, filtros);
         }
 
-        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, string solicitudesLista)
+        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, List<int> solicitudesLista)
         {
             return DesAutorizacionesDB.TES_DesAutorizaciones_Aplicar(CodEmpresa, clave, usuario, tipo_autorizacion, solicitudesLista);
         }

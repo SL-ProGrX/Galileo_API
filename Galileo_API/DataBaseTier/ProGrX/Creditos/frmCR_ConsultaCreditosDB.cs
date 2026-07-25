@@ -32,6 +32,8 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Consulta los tipos de garantía disponibles para el formulario en la tabla CRD_GARANTIA_TIPOS.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
+        /// <returns>Listado de tipos de garantía disponibles.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CR_ConsultaCrdGarantiaTipo_Obtener(int CodEmpresa)
         {
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
@@ -47,6 +49,8 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Consulta los socios disponibles para el formulario.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
+        /// <returns>Listado de socios disponibles para búsqueda.</returns>
         public ErrorDto<List<CrConsultaCrdSociosData>> CR_ConsultaCrdSocios_Obtener(int CodEmpresa)
         {
             return DbHelper.ExecuteListQuery<CrConsultaCrdSociosData>(
@@ -58,32 +62,31 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Consulta los datos de la persona para el formulario de consulta integrada.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
+        /// <param name="cedula">Identificación de la persona consultada.</param>
+        /// <param name="usuario">Usuario que realiza la consulta.</param>
+        /// <returns>Contexto integrado de la persona consultada.</returns>
         public ErrorDto<CrConsultaCrdData> CR_ConsultaCrdConsulta_Integrada_Obtener(int CodEmpresa, string cedula, string usuario)
         {
-            var response = new ErrorDto<CrConsultaCrdData>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CrConsultaCrdData()
-            };
-
             var cedulaNormalizada = (cedula ?? string.Empty).Trim();
             var usuarioNormalizado = usuario ?? string.Empty;
 
             var validaCadena = _mProGrx_Main.fxSIFValidaCadena(cedulaNormalizada);
             if (validaCadena.Code == -1)
             {
-                response.Code = validaCadena.Code;
-                response.Description = validaCadena.Description;
-                return response;
+                return DbHelper.CreateErrorResponse(
+                    validaCadena.Description ?? "La identificación consultada no es válida.",
+                    validaCadena.Code.GetValueOrDefault(-1),
+                    new CrConsultaCrdData());
             }
 
             var vRA_Access = _mProGrx_Main.fxSys_RA_Consulta(CodEmpresa, cedulaNormalizada, usuarioNormalizado);
             if (!vRA_Access.Result)
             {
-                response.Code = -1;
-                response.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorización para Consultar!";
-                return response;
+                return DbHelper.CreateErrorResponse(
+                    "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorización para Consultar!",
+                    -1,
+                    new CrConsultaCrdData());
             }
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -110,6 +113,9 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Obtiene la causa de liquidación más reciente de un socio.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
+        /// <param name="cedula">Identificación de la persona consultada.</param>
+        /// <returns>Descripción de la causa de liquidación o una cadena vacía.</returns>
         private string fxLiquidacion(int CodEmpresa, string cedula)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -134,6 +140,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Método actualiza nota socio.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión.</param>
+        /// <param name="cedula">Identificación del socio.</param>
+        /// <param name="nota">Texto de la nota que se registrará.</param>
+        /// <param name="usuario">Usuario que registra la nota.</param>
+        /// <returns>Resultado de la operación de registro.</returns>
         public ErrorDto CR_Socios_RegistrarNota(int CodEmpresa, string cedula, string nota, string usuario)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -166,6 +177,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Registra el bloqueo o desbloqueo de nuevos créditos para una persona.
         /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="bloqueo">Indica si se activa o se elimina el bloqueo.</param>
+        /// <param name="nota">Nota asociada al cambio de indicador.</param>
+        /// <param name="usuario">Usuario que registra el cambio.</param>
+        /// <returns>Resultado del registro del indicador.</returns>
         public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
             int CodEmpresa,
             string cedula,
@@ -197,6 +214,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     result.Code.GetValueOrDefault(-1));
         }
 
+        /// <summary>
+        /// Consulta el saldo a favor disponible para una persona.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión.</param>
+        /// <param name="cedula">Identificación de la persona consultada.</param>
+        /// <returns>Saldo a favor disponible.</returns>
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             var result = DbHelper.ExecuteSingleQuery<decimal>(
@@ -223,78 +246,160 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
 
 
+        /// <summary>
+        /// Completa los indicadores y textos derivados de la consulta integrada.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="codEmpresa">Código de la empresa consultada.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="persona">Modelo que recibirá los datos derivados.</param>
         private void PrepararConsultaIntegrada(SqlConnection connection, int codEmpresa, string cedula, CrConsultaCrdData persona)
         {
             persona.vMora = false;
-            DateTime vFechaIng = persona.fechaingreso ?? DateTime.Now;
+            ConfigurarMembresia(connection, codEmpresa, cedula, persona);
+            ConfigurarIndicadoresConsultaIntegrada(persona);
+            ConfigurarConsentimiento(persona);
+            CargarMensajesPersona(connection, cedula, persona);
+            persona.pat_tipoSaldo = "Saldos en Garantía";
+            ConfigurarMora(codEmpresa, cedula, persona);
+        }
 
+        /// <summary>
+        /// Configura las leyendas de membresía y renuncia de la persona.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="codEmpresa">Código de la empresa consultada.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="persona">Modelo que recibirá las leyendas.</param>
+        private void ConfigurarMembresia(
+            SqlConnection connection,
+            int codEmpresa,
+            string cedula,
+            CrConsultaCrdData persona)
+        {
+            var fechaIngreso = persona.fechaingreso ?? DateTime.Now;
             persona.membresiaCaption = "Membresía: NADA";
             persona.membresiaToolTip = fxLiquidacion(codEmpresa, cedula);
 
-            if (persona.estadoactual == "S")
+            if (persona.estadoactual != "S")
             {
-                persona.membresiaCaption = "Membresía: " + MCredito.fxMembresia(vFechaIng);
-                persona.membresiaToolTip = "[Ing.:" + vFechaIng.ToString("dd/MM/yyyy") + "]";
-
-                var renuncias = connection.QueryFirstOrDefault<CrConsultaCrdData>(
-                    "spAFI_ConsultaRenunciaTransito",
-                    new { cedula },
-                    commandType: CommandType.StoredProcedure);
-
-                if (renuncias != null)
-                {
-                    persona.membresiaCaption = $"Renuncia: {renuncias.cod_Renuncia} ¦ {renuncias.registro_fecha} ¦ {renuncias.registro_user}";
-                    persona.membresiaToolTip = $"{renuncias.estado} ¦ {renuncias.tipo} ¦ {renuncias.descripcion}";
-                }
+                return;
             }
 
+            persona.membresiaCaption = "Membresía: " + MCredito.fxMembresia(fechaIngreso);
+            persona.membresiaToolTip = "[Ing.:" + fechaIngreso.ToString("dd/MM/yyyy") + "]";
+
+            var renuncia = connection.QueryFirstOrDefault<CrConsultaCrdData>(
+                "spAFI_ConsultaRenunciaTransito",
+                new { cedula },
+                commandType: CommandType.StoredProcedure);
+
+            if (renuncia is null)
+            {
+                return;
+            }
+
+            persona.membresiaCaption =
+                $"Renuncia: {renuncia.cod_Renuncia} ¦ {renuncia.registro_fecha} ¦ {renuncia.registro_user}";
+            persona.membresiaToolTip =
+                $"{renuncia.estado} ¦ {renuncia.tipo} ¦ {renuncia.descripcion}";
+        }
+
+        /// <summary>
+        /// Configura los textos derivados de indicadores de la consulta integrada.
+        /// </summary>
+        /// <param name="persona">Modelo que recibirá los textos derivados.</param>
+        private static void ConfigurarIndicadoresConsultaIntegrada(CrConsultaCrdData persona)
+        {
+            var estadoPersona = persona.estadoactual == "S"
+                ? "Asociado"
+                : "No Asociado";
             persona.estadox = string.IsNullOrWhiteSpace(persona.estadox)
-                ? persona.estadoactual == "S" ? "Asociado" : "No Asociado"
+                ? estadoPersona
                 : persona.estadox.Trim();
             persona.institucionx = string.IsNullOrWhiteSpace(persona.institucionx)
                 ? "Empresa/Deductora?"
                 : persona.institucionx.Trim();
-            persona.clasificacionCaption = $"Clasificación Crediticia : [{(string.IsNullOrWhiteSpace(persona.clasificacion) ? "?" : persona.clasificacion.Trim())}]";
-            persona.salarioTrasladaCaption = persona.salario_traslada == 1 ? "Traslada Salario: Sí" : "Sin Tramite (Traslado Salario)";
-            persona.patrimonio = persona.ahorro + persona.aporte + persona.custodia + persona.capitaliza;
-            persona.tarjetaCaption = $"Tarjeta: {(string.IsNullOrWhiteSpace(persona.tarjeta_numero) ? "No" : persona.tarjeta_numero.Trim())}";
-            persona.ibanCaption = $"IBAN: {(string.IsNullOrWhiteSpace(persona.iban) ? "No" : persona.iban.Trim())}";
-            persona.estadoMensajesCaption = persona.indmensajes == 0 ? "Mensajes ?" : $"Mensajes ({persona.indmensajes})";
-            persona.estadoCobrosCaption = persona.indcobro == 0 ? "Sin Gestión de Cobro" : $"Gestiones de Cobro ({persona.indcobro})";
-            persona.estadoAdvertenciaCaption = persona.indadvertencias == 0 ? "Sin Advertencias" : $"Advertencias ({persona.indadvertencias})";
-
-            if (persona.consentimiento_contacto_fecha != null)
-            {
-                string vFecha = ((DateTime)persona.consentimiento_contacto_fecha).ToString("dd/MM/yyyy");
-                persona.estadoConsentimientoToolTip = $"Fecha : {vFecha} | Usuario: {persona.consentimiento_contacto_usuario}";
-            }
-            else
-            {
-                persona.estadoConsentimientoToolTip = string.Empty;
-                persona.consentimiento_contacto_usuario = null;
-            }
+            persona.clasificacionCaption =
+                $"Clasificación Crediticia : [{(string.IsNullOrWhiteSpace(persona.clasificacion) ? "?" : persona.clasificacion.Trim())}]";
+            persona.salarioTrasladaCaption = persona.salario_traslada == 1
+                ? "Traslada Salario: Sí"
+                : "Sin Tramite (Traslado Salario)";
+            persona.patrimonio =
+                persona.ahorro + persona.aporte + persona.custodia + persona.capitaliza;
+            persona.tarjetaCaption =
+                $"Tarjeta: {(string.IsNullOrWhiteSpace(persona.tarjeta_numero) ? "No" : persona.tarjeta_numero.Trim())}";
+            persona.ibanCaption =
+                $"IBAN: {(string.IsNullOrWhiteSpace(persona.iban) ? "No" : persona.iban.Trim())}";
+            persona.estadoMensajesCaption = persona.indmensajes == 0
+                ? "Mensajes ?"
+                : $"Mensajes ({persona.indmensajes})";
+            persona.estadoCobrosCaption = persona.indcobro == 0
+                ? "Sin Gestión de Cobro"
+                : $"Gestiones de Cobro ({persona.indcobro})";
+            persona.estadoAdvertenciaCaption = persona.indadvertencias == 0
+                ? "Sin Advertencias"
+                : $"Advertencias ({persona.indadvertencias})";
 
             if (!string.IsNullOrWhiteSpace(persona.pat_advertencia))
             {
                 persona.estadoAdvertenciaCaption = "Advertencia de Aportes no cotizados";
             }
 
-            persona.fianzasCaption = persona.indfianzas == false ? "Fianzas al Día" : "Fianzas en Mora";
-            CargarMensajesPersona(connection, cedula, persona);
-            persona.pat_tipoSaldo = "Saldos en Garantía";
-
-            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "A");
-            foreach (CrConsultaCrdCreditosData credito in (listCredito.Result ?? new List<CrConsultaCrdCreditosData>())
-                .Where(c => c.procesoCod == "J" || (c.moraCuota ?? 0) > 0))
-            {
-                persona.vMora = true;
-                persona.vMoraCaption = credito.procesoCod == "J"
-                    ? $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}"
-                    : $"Morosidad: {credito.moraCuota ?? 0} cuota(s)";
-                break;
-            }
+            persona.fianzasCaption = persona.indfianzas == false
+                ? "Fianzas al Día"
+                : "Fianzas en Mora";
         }
 
+        /// <summary>
+        /// Configura el detalle del consentimiento de contacto.
+        /// </summary>
+        /// <param name="persona">Modelo que recibirá el detalle del consentimiento.</param>
+        private static void ConfigurarConsentimiento(CrConsultaCrdData persona)
+        {
+            if (persona.consentimiento_contacto_fecha is DateTime fecha)
+            {
+                persona.estadoConsentimientoToolTip =
+                    $"Fecha : {fecha:dd/MM/yyyy} | Usuario: {persona.consentimiento_contacto_usuario}";
+                return;
+            }
+
+            persona.estadoConsentimientoToolTip = string.Empty;
+            persona.consentimiento_contacto_usuario = null;
+        }
+
+        /// <summary>
+        /// Configura el indicador de mora a partir de las operaciones vigentes.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa consultada.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="persona">Modelo que recibirá el indicador de mora.</param>
+        private void ConfigurarMora(
+            int codEmpresa,
+            string cedula,
+            CrConsultaCrdData persona)
+        {
+            var listCredito = CR_ConsultaCrd_Creditos_Obtener(codEmpresa, cedula, "A");
+            var credito = (listCredito.Result ?? new List<CrConsultaCrdCreditosData>())
+                .FirstOrDefault(c => c.procesoCod == "J" || (c.moraCuota ?? 0) > 0);
+
+            if (credito is null)
+            {
+                return;
+            }
+
+            persona.vMora = true;
+            persona.vMoraCaption = credito.procesoCod == "J"
+                ? $">> Cobro Judicial << | Fecha : {credito.fecha_enviaProceso} | Nota : {credito.observacion_proceso}"
+                : $"Morosidad: {credito.moraCuota ?? 0} cuota(s)";
+        }
+
+        /// <summary>
+        /// Carga los contadores y leyendas de mensajes asociados a la persona.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="persona">Modelo que recibirá los indicadores de mensajes.</param>
         private static void CargarMensajesPersona(SqlConnection connection, string cedula, CrConsultaCrdData persona)
         {
             persona.indmensajes = connection.QuerySingleOrDefault<int?>(
@@ -328,6 +433,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Calcula el patrimonio disponible y los saldos asociados a un tipo de garantía.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa que define la conexión.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="garantia">Código del tipo de garantía.</param>
+        /// <returns>Totales de patrimonio y saldos comprometidos.</returns>
         public ErrorDto<CrPatrimonioGarantiaData?> CR_Patrimonio_Garantia_Obtener(
             int codEmpresa,
             string cedula,
@@ -346,6 +455,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 new { Cedula = cedula, Garantia = garantia });
         }
 
+        /// <summary>
+        /// Calcula el siguiente período mensual en formato AAAAMM.
+        /// </summary>
+        /// <param name="proceso">Período actual en formato AAAAMM.</param>
+        /// <returns>Siguiente período mensual.</returns>
         private static int SiguienteProceso(int proceso)
         {
             var anio = proceso / 100;
@@ -377,6 +491,11 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 : DbHelper.CreateErrorResponse(result.Description ?? "Error al ejecutar procedimiento almacenado.", result.Code.GetValueOrDefault(-1), new List<T>());
         }
 
+        /// <summary>
+        /// Normaliza un código compuesto para conservar dos dígitos en su parte entera.
+        /// </summary>
+        /// <param name="codigo">Código que se normalizará.</param>
+        /// <returns>Código normalizado.</returns>
         private static string FormatearCodigoCompuesto(string? codigo)
         {
             var valor = codigo ?? string.Empty;
@@ -390,7 +509,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             return valor.PadLeft(2, '0');
         }
 
+        /// <summary>
+        /// Crea el acceso a datos configurado para la empresa solicitada.
+        /// </summary>
+        /// <returns>Instancia configurada de acceso al portal.</returns>
         private PortalDB CreatePortalDb() => new(_config);
     }
 }
-

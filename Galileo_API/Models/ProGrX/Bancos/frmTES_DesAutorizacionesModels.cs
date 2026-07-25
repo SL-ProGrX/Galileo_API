@@ -18,5 +18,6 @@
         public string detalle { get; set; } = string.Empty;
         public string appid { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
+        public string token { get; set; } = string.Empty;
     }
 }

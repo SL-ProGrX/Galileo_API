@@ -13,9 +13,9 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 {
-    public class FrmTesEmisionDocumentosDb
+    public partial class FrmTesEmisionDocumentosDb
     {
         private readonly MTesoreria mTesoreria;
         private readonly MSecurityMainDb _Security_MainDB;
@@ -36,6 +36,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             mReporting = new MReportingServicesDB(config);
             _portalDB = new PortalDB(config);
             mTesFunciones = new MTesFuncionesDb(config);
+            var maximoParalelo = config.GetValue<int?>(
+                "TES_EmisionDocumentos:SinpeMaximoParalelo");
+            _tesEmisionDocumentosSinpeProcessor =
+                new TesEmisionDocumentosSinpeParallelProcessor(
+                    TesEmisionDocumentosSinpeParallelProcessor
+                        .NormalizarMaximoParalelo(maximoParalelo),
+                    (codEmpresa, usuario) =>
+                        new VerificadorCoreFactory(config)
+                            .CrearServicio(codEmpresa, usuario));
         }
 
         #region ===== Helpers comunes (reducción de duplicación / Sonar) =====
@@ -159,6 +168,25 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
 
         #region ===== Solicitudes =====
 
+        /// <summary>
+        /// Avanza (+1) el documento inicial de la emisión SINPE una sola vez por emisión
+        /// (modelo v6) y devuelve el consecutivo asignado.
+        /// </summary>
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "+", plan);
+        }
+
+        /// <summary>
+        /// Revierte (-1) el documento inicial cuando la emisión falla (modelo v6, rollback).
+        /// </summary>
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "-", plan);
+        }
+
         public ErrorDto<List<TesSolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)
         {
             var filtro = ParseFiltros(filtros);
@@ -221,37 +249,50 @@ where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
         /// <summary>
         /// Formatea los documentos visibles y marca la información complementaria de las solicitudes generadas.
         /// </summary>
-        private List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
-            TesSolicitudesFormatoRequest request)
+        private static List<TesSolicitudesGenData> TES_EmisionDocumento_Solicitudes_Formatear(
+    TesSolicitudesFormatoRequest request)
         {
-            var now = DateTime.Now;
+            var fechaProceso = DateTime.Now;
             var consecutivoVisible = request.Filtro.docInicial;
             var consecutivoInterno = request.ConsecutivoInterno;
+            var consecutivoInternoTS = consecutivoVisible;
+            var linea = 1;
 
-            foreach (var item in request.Solicitudes)
+            foreach (var solicitud in request.Solicitudes)
             {
-                var bancoItem = item.id_banco ?? request.Filtro.banco;
-                var tipoItem = string.IsNullOrWhiteSpace(item.tipo)
-                    ? request.Filtro.tipoDoc
-                    : item.tipo;
-
-                var tipoGestion = ObtenerTipoGestionDocumento(request.CodEmpresa, bancoItem, tipoItem);
-
-                if (string.Equals(tipoGestion, "TE", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(
+                        solicitud.tipo,
+                        "TE",
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    item.documento =
-                        $"{consecutivoVisible.ToString(CultureInfo.InvariantCulture)}-" +
-                        $"{consecutivoInterno.ToString("000", CultureInfo.InvariantCulture)}";
+                    solicitud.documento = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{consecutivoVisible}-{consecutivoInterno:000}");
+
                     consecutivoInterno++;
+                }
+                else if (string.Equals(
+                             solicitud.tipo,
+                             "TS",
+                             StringComparison.OrdinalIgnoreCase))
+                {
+                    solicitud.documento = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{consecutivoInternoTS}-{linea:000}");
+
+                    linea++;
                 }
                 else
                 {
-                    item.documento = consecutivoVisible.ToString(CultureInfo.InvariantCulture);
+                    solicitud.documento =
+                        consecutivoVisible.ToString(CultureInfo.InvariantCulture);
+
                     consecutivoVisible++;
                 }
 
-                item.fecha = now;
-                item.firmas = item.firmas_autoriza_fecha == null ? "No" : "Sí";
+                solicitud.fecha = fechaProceso;
+                solicitud.firmas =
+                    solicitud.firmas_autoriza_fecha.HasValue ? "Sí" : "No";
             }
 
             return request.Solicitudes;
@@ -427,7 +468,10 @@ where B.estado = 'A'
 
         #region ===== Generación principal =====
 
-        public ErrorDto<object> TES_EmisionDocumento_Generar(int codEmpresa, string filtros)
+        public ErrorDto<object> TES_EmisionDocumento_Generar(
+            int codEmpresa,
+            string filtros,
+            Action<int, int>? avance = null)
         {
             try
             {
@@ -437,8 +481,14 @@ where B.estado = 'A'
                 {
                     var responses = new List<object>();
                     var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
+                    if(solicitudes == null)
+                    {
+                        return DbHelper.CreateErrorResponse<object>("Solicitud no Encontrada");
+                    }
+                    var procesadas = 0;
+                    var totalSolicitudes = solicitudes.Count;
 
-                    foreach (var item in solicitudes!)
+                    foreach (var item in solicitudes)
                     {
                         var filtroItem = new TesEmisionDocFiltros
                         {
@@ -462,7 +512,7 @@ where B.estado = 'A'
                             filtroItem.banco,
                             filtroItem.plan).Result;
 
-                        filtroItem.cantidad = documento!.total;
+                        filtroItem.cantidad = documento.total;
                         filtroItem.docBloqueo = documento.docBloqueo;
                         filtroItem.docInicial = (int)documento.docInicial;
 
@@ -472,7 +522,7 @@ where B.estado = 'A'
 
                         filtroItem.formatoTE = item.tipo == "TS"
                             ? "SG"
-                            : (string)formato![0].item!;
+                            : (string)formato[0].item;
 
                         var proceso = ProcesoDocumentos(codEmpresa, filtroItem);
                         if (proceso.Code != 0)
@@ -485,13 +535,20 @@ where B.estado = 'A'
                         {
                             result = proceso.Result
                         });
+                        procesadas++;
+                        avance?.Invoke(procesadas, totalSolicitudes);
                     }
 
                     return DbHelper.CreateOkResponse<object>(
                         JsonConvert.SerializeObject(responses, Formatting.Indented));
                 }
 
-                return ProcesoDocumentos(codEmpresa, filtro);
+                var resultado = ProcesoDocumentos(codEmpresa, filtro);
+                if (resultado.Code == 0)
+                {
+                    avance?.Invoke(filtro.cantidad, filtro.cantidad);
+                }
+                return resultado;
             }
             catch (Exception ex)
             {
@@ -1498,10 +1555,10 @@ where nsolicitud in ";
                 detalle.Append(item.nsolicitud.ToString().PadLeft(10, '0'));
                 detalle.Append(bancoId.PadLeft(12, '0'));
                 detalle.Append(((long)Math.Round(montoItem * 100, 0)).ToString("D15", CultureInfo.InvariantCulture));
-                detalle.Append(item.beneficiario!.PadRight(50));
+                detalle.Append(item.beneficiario.PadRight(50));
                 detalle.Append(item.estado);
-                detalle.Append(item.cta_ahorros!.PadLeft(20, '0'));
-                detalle.Append(item.ndocumento!.PadLeft(15, '0'));
+                detalle.Append(item.cta_ahorros.PadLeft(20, '0'));
+                detalle.Append(item.ndocumento.PadLeft(15, '0'));
 
                 sb.AppendLine(detalle.ToString());
             }

@@ -17,11 +17,13 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly string dirRDLC;
         private readonly MSecurityMainDb DBBitacora;
+        private readonly PortalDB _portalDB;
 
         public MTesoreria(IConfiguration config)
         {
             _config = config;
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
+            _portalDB = new PortalDB(config);
             DBBitacora = new MSecurityMainDb(config);
         }
 
@@ -332,7 +334,7 @@ namespace Galileo.DataBaseTier
 
                 string baseDir = Path.GetFullPath(Path.Combine(dirRDLC, CodEmpresa.ToString()));
 
-                string nombreFirmas = Path.GetFileName(archivosData!.archivo_cheques_firmas ?? string.Empty);
+                string nombreFirmas = Path.GetFileName(archivosData.archivo_cheques_firmas ?? string.Empty);
                 string nombreSinFirmas = Path.GetFileName(archivosData.archivo_cheques_sin_firmas ?? string.Empty);
 
                 string archivoFirmas = Path.GetFullPath(Path.Combine(baseDir, nombreFirmas));
@@ -356,8 +358,8 @@ namespace Galileo.DataBaseTier
 
                 if (archivosData.utiliza_formato_especial == 1)
                 {
-                    response.Result.chequesFirmas = File.Exists(archivoFirmas) ? archivosData.archivo_cheques_firmas! : "Banking_DocFormat01";
-                    response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? archivosData.archivo_cheques_sin_firmas! : "Banking_DocFormat02";
+                    response.Result.chequesFirmas = File.Exists(archivoFirmas) ? archivosData.archivo_cheques_firmas : "Banking_DocFormat01";
+                    response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? archivosData.archivo_cheques_sin_firmas : "Banking_DocFormat02";
                 }
                 else
                 {
@@ -1138,9 +1140,9 @@ namespace Galileo.DataBaseTier
     new ErrorDto { Code = code, Description = description };
 
 
-        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(SqlConnection connection, int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-", DateTime? vFecha = null)
         {
-            
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var resp = new ErrorDto<TesReporteTransferenciaDto>()
             {
                 Code = 0,
@@ -1162,47 +1164,46 @@ namespace Galileo.DataBaseTier
                         + " # " + banco.item + " la suma de ¢ ";
                 }
 
-
-                if (vTipo == "C")
-                {
-                    string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
+                string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones
                             where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
-                    if (vPlan != "-sp-")
-                    {
-                        strSQL += " and Cod_Plan = @vPlan";
-                    }
-                    strSQL += " group by cod_divisa";
-
-                    var rs = connection.QueryFirstOrDefault(strSQL,
-                        new
-                        {
-                            vDocumento,
-                            vBanco,
-                            vTransac,
-                            vPlan
-                        });
-                    if (rs != null)
-                    {
-                        curMonto = rs.Monto;
-                        lngCasos = rs.Casos;
-                        strDivisa = rs.cod_divisa;
-                    }
-
-                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(connection,CodEmpresa, strDivisa).Result;
-
-                    resp.Result.registros = lngCasos;
-                    resp.Result.montoLetras = vMontoLetras;
-                    resp.Result.totalMonto = curMonto;
-                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
-                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
-                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
-                    resp.Result.letras1 = vLetra;
-                }
-                else
+                if (vPlan != "-sp-")
                 {
-                    // No additional processing for tipos distintos de "C":
-                    // se mantiene la respuesta con los valores por defecto inicializados.
+                    strSQL += " and Cod_Plan = @vPlan";
                 }
+                // Filtro de fecha opcional: evita traer documentos de años pasados con el mismo
+                // documento_base. Solo lo envía el flujo de emisión; la reimpresión histórica no.
+                if (vFecha.HasValue)
+                {
+                    strSQL += " and CAST(Fecha_Emision AS DATE) = CAST(@vFecha AS DATE)";
+                }
+                strSQL += " group by cod_divisa";
+
+                var rs = connection.QueryFirstOrDefault(strSQL,
+                    new
+                    {
+                        vDocumento = vTipo,
+                        vBanco = vBanco,
+                        vTransac = vTransac,
+                        vPlan = vPlan,
+                        vFecha = vFecha
+                    });
+                if (rs != null)
+                {
+                    curMonto = rs.Monto;
+                    lngCasos = rs.Casos;
+                    strDivisa = rs.cod_divisa;
+                }
+
+                string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(connection, CodEmpresa, strDivisa).Result;
+
+                resp.Result.registros = lngCasos;
+                resp.Result.montoLetras = vMontoLetras;
+                resp.Result.totalMonto = curMonto;
+                resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
+                resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
+                resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
+                resp.Result.letras1 = vLetra;
+
             }
             catch (Exception ex)
             {

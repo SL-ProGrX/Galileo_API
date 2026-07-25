@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -40,7 +41,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     request.usuario,
                     request.codContabilidad).Result;
 
-                request.oficinaTitular = globales!.GOficinaTitular;
+                request.oficinaTitular = globales.GOficinaTitular;
                 request.oficinaUnidad = globales.GOficinaUnidad;
                 request.oficinaCentroCosto = globales.GOficinaCentroCosto;
 
@@ -97,7 +98,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     codOperadora,
                     solicitudHash);
                 InsertarProceso(conn, tx, contexto);
-                InsertarDetalleProceso(conn, tx, request, contexto.proceso_id);
+                FND_LiquidacionPlan_Proceso_DetalleInsertar(
+                    conn,
+                    tx,
+                    request,
+                    contexto.proceso_id);
 
                 var resultado = ObtenerResultadoProceso(conn, tx, contexto);
                 tx.Commit();
@@ -142,8 +147,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     return DbHelper.CreateOkResponse(completado);
                 }
 
-                var contratos = ObtenerSiguienteLote(conn, tx, contexto.proceso_id);
-                ProcesarSiguienteLote(conn, tx, contexto, contratos);
+                FND_LiquidacionPlan_Proceso_LoteProcesar(conn, tx, contexto);
 
                 var resultado = ObtenerResultadoProceso(conn, tx, contexto);
                 FinalizarProcesoSiCorresponde(conn, tx, contexto, resultado);
@@ -310,110 +314,71 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             conn.Execute(sql, contexto, tx);
         }
 
-        private static void InsertarDetalleProceso(
+        /// <summary>
+        /// Inserta masivamente el detalle del proceso de liquidación mediante XML.
+        /// </summary>
+        private static void FND_LiquidacionPlan_Proceso_DetalleInsertar(
             SqlConnection conn,
             SqlTransaction tx,
             FndLiquidacionPlanLiquidarRequest request,
             Guid procesoId)
         {
-            const string sql = @"
-                insert into dbo.FND_LIQUIDACION_PROCESO_DET
-                (PROCESO_ID, COD_CONTRATO, APORTES, RENDIMIENTO, BANCO_FINAL, CUENTA_FINAL, ESTADO)
-                values
-                (@procesoId, @cod_contrato, @aportes, @rendimiento, @bancofinal, @cuentafinal, 'P')";
+            string contratosXml = FND_LiquidacionPlan_Proceso_CrearContratosXml(
+                request.contratos);
 
-            var contratos = request.contratos
-                .GroupBy(item => item.cod_contrato)
-                .Select(grupo => grupo.First())
-                .Select(item => new
+            conn.Execute(
+                "dbo.spFND_W_LiquidacionPlan_Detalle_Insertar",
+                new
                 {
-                    procesoId,
-                    item.cod_contrato,
-                    item.aportes,
-                    item.rendimiento,
-                    item.bancofinal,
-                    item.cuentafinal
-                });
-
-            conn.Execute(sql, contratos, tx);
+                    ProcesoId = procesoId,
+                    ContratosXml = contratosXml
+                },
+                tx,
+                commandTimeout: 0,
+                commandType: CommandType.StoredProcedure);
         }
 
-        private static List<FndLiquidacionPlanProcesoDetalle> ObtenerSiguienteLote(
-            SqlConnection conn,
-            SqlTransaction tx,
-            Guid procesoId)
+        /// <summary>
+        /// Construye el XML normalizado que recibe el procedimiento de detalle masivo.
+        /// </summary>
+        private static string FND_LiquidacionPlan_Proceso_CrearContratosXml(
+            IEnumerable<FndLiquidacionPlanLiquidarItemDto> contratos)
         {
-            const string sql = @"
-                select top (@tamanoLote)
-                    COD_CONTRATO as cod_contrato,
-                    APORTES as aportes,
-                    RENDIMIENTO as rendimiento,
-                    BANCO_FINAL as bancofinal,
-                    CUENTA_FINAL as cuentafinal
-                from dbo.FND_LIQUIDACION_PROCESO_DET with (UPDLOCK, ROWLOCK)
-                where PROCESO_ID = @procesoId
-                  and ESTADO = 'P'
-                order by COD_CONTRATO";
+            var contratosXml = new XElement(
+                "contratos",
+                contratos
+                    .GroupBy(item => item.cod_contrato)
+                    .Select(grupo => grupo.First())
+                    .Select(item => new XElement(
+                        "contrato",
+                        new XElement("cod_contrato", item.cod_contrato),
+                        new XElement("aportes", item.aportes),
+                        new XElement("rendimiento", item.rendimiento),
+                        new XElement("bancofinal", item.bancofinal ?? string.Empty),
+                        new XElement("cuentafinal", item.cuentafinal ?? string.Empty))));
 
-            return conn.Query<FndLiquidacionPlanProcesoDetalle>(sql, new
-            {
-                procesoId,
-                tamanoLote = FndLiquidacionPlanTamanoLote
-            }, tx).ToList();
+            return contratosXml.ToString(SaveOptions.DisableFormatting);
         }
 
-        private static void ProcesarSiguienteLote(
+        /// <summary>
+        /// Ejecuta en SQL Server el siguiente lote pendiente del proceso de liquidación.
+        /// </summary>
+        private static void FND_LiquidacionPlan_Proceso_LoteProcesar(
             SqlConnection conn,
             SqlTransaction tx,
-            FndLiquidacionPlanProcesoContexto contexto,
-            IEnumerable<FndLiquidacionPlanProcesoDetalle> contratos)
+            FndLiquidacionPlanProcesoContexto contexto)
         {
-            foreach (var contrato in contratos)
-            {
-                EjecutarLiquidacionComplementaria(conn, tx, new
+            conn.Execute(
+                "dbo.spFND_W_LiquidacionPlan_Lote_Procesar",
+                new
                 {
-                    Operadora = contexto.cod_operadora,
-                    Plan = contexto.cod_plan,
-                    Contrato = contrato.cod_contrato,
-                    Tipo = "L",
-                    TipoDoc = "FLIQ",
-                    Concepto = "FND006",
-                    DocRef = contexto.documento_referencia,
-                    AporteLiq = contrato.aportes,
-                    RendiLiq = contrato.rendimiento,
-                    Multa = contexto.multa,
-                    Notas = contexto.notas,
                     Usuario = contexto.usuario,
-                    OficinaTitular = contexto.oficina_titular,
-                    ProcesoCodigo = contexto.proceso_codigo,
-                    RetencionCodigo = contexto.retencion_codigo,
-                    CuentaLiquidacion = contexto.cuenta_liquidacion,
-                    Banco = ParseBanco(contrato.bancofinal),
-                    BancoTipo = contexto.tipo_documento,
-                    CuentaAhorros = contrato.cuentafinal,
-                    Origen = "ProGrX",
-                    TipoLiquidacion = contexto.tipo_liquidacion,
-                    FechaVence = contexto.fecha_vence?.Date ?? contexto.fecha_proceso.Date
-                });
-
-                MarcarContratoProcesado(conn, tx, contexto.proceso_id, contrato.cod_contrato);
-            }
-        }
-
-        private static void MarcarContratoProcesado(
-            SqlConnection conn,
-            SqlTransaction tx,
-            Guid procesoId,
-            long codContrato)
-        {
-            const string sql = @"
-                update dbo.FND_LIQUIDACION_PROCESO_DET
-                set ESTADO = 'C', PROCESO_FECHA = dbo.MyGetdate()
-                where PROCESO_ID = @procesoId
-                  and COD_CONTRATO = @codContrato
-                  and ESTADO = 'P'";
-
-            conn.Execute(sql, new { procesoId, codContrato }, tx);
+                    ProcesoId = contexto.proceso_id,
+                    TamanoLote = FndLiquidacionPlanTamanoLote
+                },
+                tx,
+                commandTimeout: 0,
+                commandType: CommandType.StoredProcedure);
         }
 
         private static FndLiquidacionPlanProcesoResult ObtenerResultadoProceso(
@@ -593,13 +558,5 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             public int total_contratos { get; init; }
         }
 
-        private sealed class FndLiquidacionPlanProcesoDetalle
-        {
-            public long cod_contrato { get; init; } = 0;
-            public decimal aportes { get; init; } = 0;
-            public decimal rendimiento { get; init; } = 0;
-            public string bancofinal { get; init; } = string.Empty;
-            public string cuentafinal { get; init; } = string.Empty;
-        }
     }
 }

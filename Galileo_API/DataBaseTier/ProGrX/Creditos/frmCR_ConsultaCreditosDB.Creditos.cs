@@ -19,12 +19,21 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <summary>
         /// Obtiene la fecha del servidor y la versión de cálculo de créditos.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Contexto de configuración requerido por la consulta de créditos.</returns>
         public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(int codEmpresa)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
                 connection.QueryFirstOrDefault<CrConsultaCreditoContextoData>(
                     @"select dbo.MyGetdate() as fechaServidor,
-                             isnull(SysCrdPlanPago, 0) as sysPlanPagos
+                             isnull(SysCrdPlanPago, 0) as sysPlanPagos,
+                             -- fxCajasParametros('01') ya no aplica: los abonos siempre usan Cajas.
+                             isnull((
+                                 select top (1) ltrim(rtrim(valor))
+                                 from CAJAS_PARAMETROS
+                                 where cod_parametro = '03'
+                             ), 'N') as cajasParametro03,
+                             isnull(Portal_ID, 0) as portalId
                         from SIF_EMPRESA"));
 
             return result.Code == 0 && result.Result is not null
@@ -36,8 +45,139 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         /// <summary>
+        /// Obtiene el resumen de salidas SoS de la persona consultada.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="usuario">Usuario que realiza la consulta.</param>
+        /// <returns>Resumen de pagos del programa SoS.</returns>
+        public ErrorDto<List<CrConsultaSoSResumenData>> CR_ConsultaCrd_SoSResumen_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Query<CrConsultaSoSResumenData>(
+                    "exec spSOS_Consulta_Resumen @cedula, @usuario",
+                    new { cedula, usuario }).AsList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<CrConsultaSoSResumenData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener el resumen SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<CrConsultaSoSResumenData>());
+        }
+
+        /// <summary>
+        /// Obtiene las operaciones relacionadas con un proceso SoS.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="proceso">Proceso SoS seleccionado.</param>
+        /// <param name="usuario">Usuario que realiza la consulta.</param>
+        /// <returns>Operaciones asociadas al proceso SoS.</returns>
+        public ErrorDto<List<CrConsultaSoSOperacionData>> CR_ConsultaCrd_SoSOperaciones_Obtener(
+            int codEmpresa,
+            string cedula,
+            decimal proceso,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.Query<CrConsultaSoSOperacionData>(
+                    "exec spSOS_Consulta_Operaciones @cedula, @proceso, @usuario",
+                    new { cedula, proceso, usuario }).AsList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<CrConsultaSoSOperacionData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible obtener las operaciones SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<CrConsultaSoSOperacionData>());
+        }
+
+        /// <summary>
+        /// Obtiene el estado de exclusión de la persona en el proceso de devolución SoS.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="usuario">Usuario que realiza la consulta.</param>
+        /// <returns>Estado de inclusión o exclusión de la persona.</returns>
+        public ErrorDto<CrConsultaSoSExclusionData> CR_ConsultaCrd_SoSExclusion_Obtener(
+            int codEmpresa,
+            string cedula,
+            string usuario)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                connection.QueryFirstOrDefault<CrConsultaSoSExclusionData>(
+                    "exec spSOS_Exclusiones_Consulta @cedula, @usuario",
+                    new { cedula = cedula.Trim(), usuario = usuario.Trim() })
+                ?? new CrConsultaSoSExclusionData());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new CrConsultaSoSExclusionData())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "No fue posible consultar la exclusión SoS.",
+                    result.Code.GetValueOrDefault(-1),
+                    new CrConsultaSoSExclusionData());
+        }
+
+        /// <summary>
+        /// Incluye o excluye a la persona del proceso de devolución SoS.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="excluir">Indica si la persona debe quedar excluida.</param>
+        /// <param name="usuario">Usuario que registra el movimiento.</param>
+        /// <returns>Resultado del registro de la exclusión.</returns>
+        public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
+            int codEmpresa,
+            string cedula,
+            bool excluir,
+            string usuario)
+        {
+            var cedulaNormalizada = (cedula ?? string.Empty).Trim();
+            var usuarioNormalizado = (usuario ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(cedulaNormalizada))
+            {
+                return DbHelper.ErrorResponse("Debe indicar la cédula.", -1);
+            }
+
+            var accion = excluir ? "A" : "I";
+            var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+            {
+                connection.Execute(
+                    "exec spSOS_Exclusiones_Registro @cedula, @accion, @usuario",
+                    new { cedula = cedulaNormalizada, accion, usuario = usuarioNormalizado });
+                return true;
+            });
+
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    result.Description ?? "No fue posible actualizar la exclusión SoS.",
+                    result.Code.GetValueOrDefault(-1));
+            }
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuarioNormalizado,
+                Modulo = 3,
+                Movimiento = excluir ? "Registra" : "Elimina",
+                DetalleMovimiento = $"Exclusión del Programa SOS -> Cédula: {cedulaNormalizada}"
+            });
+
+            return DbHelper.OkResponse("Operación realizada correctamente.");
+        }
+
+        /// <summary>
         /// Calcula los valores de cancelación de una operación a una fecha de corte.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <param name="corte">Fecha de corte del cálculo.</param>
+        /// <returns>Valores calculados para cancelar la operación.</returns>
         public ErrorDto<CrConsultaCancelacionData> CR_ConsultaCrd_Cancelacion_Obtener(
             int codEmpresa,
             int operacion,
@@ -52,96 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             }
 
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
-            {
-                var sysPlanPagos = connection.QueryFirstOrDefault<int>(
-                    "select isnull(SysCrdPlanPago, 0) from SIF_EMPRESA");
-
-                if (sysPlanPagos == 1)
-                {
-                    return connection.QueryFirstOrDefault<CrConsultaCancelacionData>(
-                        "spCrdPlanPagosInfoCancelacion",
-                        new
-                        {
-                            Operacion = operacion,
-                            Fecha = corte.ToString("yyyy/MM/dd")
-                        },
-                        commandType: CommandType.StoredProcedure);
-                }
-
-                var credito = connection.QueryFirstOrDefault<CrConsultaCancelacionLegacyRow>(
-                    @"select R.saldo,
-                             R.interesv,
-                             R.fecUlt,
-                             isnull(V.intc + V.intm, 0) as intMora,
-                             isnull(V.cargos, 0) as cargos,
-                             isnull(V.cuota, 0) as moraCuota,
-                             isnull(V.Amortiza, 0) as principalAtrasado,
-                             R.PriDeduc
-                        from REG_CREDITOS R
-                        inner join CATALOGO C on R.codigo = C.codigo
-                        left join VISTA_MOROSIDAD V
-                          on R.id_solicitud = V.id_solicitud
-                       where R.id_solicitud = @Operacion",
-                    new { Operacion = operacion });
-
-                if (credito is null)
-                {
-                    return null;
-                }
-
-                var ultimoProceso = credito.fecUlt;
-                if (credito.moraCuota > 0)
-                {
-                    var procesoMora = connection.QueryFirstOrDefault<int?>(
-                        @"select max(fechap)
-                            from MOROSIDAD
-                           where estado = 'A'
-                             and id_solicitud = @Operacion",
-                        new { Operacion = operacion });
-                    if (procesoMora.GetValueOrDefault() > ultimoProceso)
-                    {
-                        ultimoProceso = procesoMora.GetValueOrDefault();
-                    }
-                }
-
-                var procesoCorte = corte.Year * 100 + corte.Month;
-                decimal interesCorriente = 0;
-
-                if (procesoCorte == credito.priDeduc &&
-                    ultimoProceso < procesoCorte)
-                {
-                    interesCorriente =
-                        credito.saldo * credito.interesv / 36000m * corte.Day;
-                }
-                else if (procesoCorte > credito.priDeduc &&
-                         ultimoProceso <= procesoCorte)
-                {
-                    var meses = -1;
-                    var procesoTemporal = ultimoProceso;
-                    while (procesoCorte > procesoTemporal)
-                    {
-                        meses++;
-                        procesoTemporal = SiguienteProceso(procesoTemporal);
-                    }
-
-                    interesCorriente =
-                        credito.saldo * credito.interesv / 36000m *
-                        (corte.Day + meses * 30m);
-                }
-
-                if (credito.principalAtrasado >= credito.saldo)
-                {
-                    interesCorriente = 0;
-                }
-
-                return new CrConsultaCancelacionData
-                {
-                    principal = credito.saldo,
-                    intcor = interesCorriente,
-                    intmor = credito.intMora,
-                    cargos = credito.cargos
-                };
-            });
+                ObtenerCancelacion(connection, operacion, corte));
 
             return result.Code == 0 && result.Result is not null
                 ? DbHelper.CreateOkResponse(result.Result)
@@ -152,8 +203,183 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         /// <summary>
+        /// Obtiene la cancelación según la configuración de plan de pagos de la empresa.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <param name="corte">Fecha de corte del cálculo.</param>
+        /// <returns>Valores de cancelación o nulo cuando la operación no existe.</returns>
+        private static CrConsultaCancelacionData? ObtenerCancelacion(
+            SqlConnection connection,
+            int operacion,
+            DateTime corte)
+        {
+            var sysPlanPagos = connection.QueryFirstOrDefault<int>(
+                "select isnull(SysCrdPlanPago, 0) from SIF_EMPRESA");
+
+            return sysPlanPagos == 1
+                ? ObtenerCancelacionConPlanPagos(connection, operacion, corte)
+                : ObtenerCancelacionLegacy(connection, operacion, corte);
+        }
+
+        /// <summary>
+        /// Obtiene la cancelación calculada por el procedimiento de plan de pagos.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <param name="corte">Fecha de corte del cálculo.</param>
+        /// <returns>Valores calculados por el procedimiento configurado.</returns>
+        private static CrConsultaCancelacionData? ObtenerCancelacionConPlanPagos(
+            SqlConnection connection,
+            int operacion,
+            DateTime corte)
+        {
+            return connection.QueryFirstOrDefault<CrConsultaCancelacionData>(
+                "spCrdPlanPagosInfoCancelacion",
+                new
+                {
+                    Operacion = operacion,
+                    Fecha = corte.ToString("yyyy/MM/dd")
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        /// <summary>
+        /// Calcula la cancelación con la lógica histórica para empresas sin plan de pagos.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <param name="corte">Fecha de corte del cálculo.</param>
+        /// <returns>Valores de cancelación o nulo cuando la operación no existe.</returns>
+        private static CrConsultaCancelacionData? ObtenerCancelacionLegacy(
+            SqlConnection connection,
+            int operacion,
+            DateTime corte)
+        {
+            var credito = connection.QueryFirstOrDefault<CrConsultaCancelacionLegacyRow>(
+                @"select R.saldo,
+                         R.interesv,
+                         R.fecUlt,
+                         isnull(V.intc + V.intm, 0) as intMora,
+                         isnull(V.cargos, 0) as cargos,
+                         isnull(V.cuota, 0) as moraCuota,
+                         isnull(V.Amortiza, 0) as principalAtrasado,
+                         R.PriDeduc
+                    from REG_CREDITOS R
+                    inner join CATALOGO C on R.codigo = C.codigo
+                    left join VISTA_MOROSIDAD V
+                      on R.id_solicitud = V.id_solicitud
+                   where R.id_solicitud = @Operacion",
+                new { Operacion = operacion });
+
+            if (credito is null)
+            {
+                return null;
+            }
+
+            var ultimoProceso = ObtenerUltimoProcesoCancelacion(
+                connection,
+                operacion,
+                credito);
+            var interesCorriente = CalcularInteresCorrienteCancelacion(
+                credito,
+                corte,
+                ultimoProceso);
+
+            return new CrConsultaCancelacionData
+            {
+                principal = credito.saldo,
+                intcor = interesCorriente,
+                intmor = credito.intMora,
+                cargos = credito.cargos
+            };
+        }
+
+        /// <summary>
+        /// Determina el último proceso que debe utilizar el cálculo de cancelación.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <param name="credito">Datos históricos de la operación.</param>
+        /// <returns>Último proceso registrado para la operación.</returns>
+        private static int ObtenerUltimoProcesoCancelacion(
+            SqlConnection connection,
+            int operacion,
+            CrConsultaCancelacionLegacyRow credito)
+        {
+            if (credito.moraCuota <= 0)
+            {
+                return credito.fecUlt;
+            }
+
+            var procesoMora = connection.QueryFirstOrDefault<int?>(
+                @"select max(fechap)
+                    from MOROSIDAD
+                   where estado = 'A'
+                     and id_solicitud = @Operacion",
+                new { Operacion = operacion }).GetValueOrDefault();
+
+            return Math.Max(credito.fecUlt, procesoMora);
+        }
+
+        /// <summary>
+        /// Calcula el interés corriente de la cancelación histórica.
+        /// </summary>
+        /// <param name="credito">Datos históricos de la operación.</param>
+        /// <param name="corte">Fecha de corte del cálculo.</param>
+        /// <param name="ultimoProceso">Último proceso aplicado a la operación.</param>
+        /// <returns>Interés corriente calculado.</returns>
+        private static decimal CalcularInteresCorrienteCancelacion(
+            CrConsultaCancelacionLegacyRow credito,
+            DateTime corte,
+            int ultimoProceso)
+        {
+            if (credito.principalAtrasado >= credito.saldo)
+            {
+                return 0;
+            }
+
+            var procesoCorte = corte.Year * 100 + corte.Month;
+            if (procesoCorte == credito.priDeduc && ultimoProceso < procesoCorte)
+            {
+                return credito.saldo * credito.interesv / 36000m * corte.Day;
+            }
+
+            if (procesoCorte <= credito.priDeduc || ultimoProceso > procesoCorte)
+            {
+                return 0;
+            }
+
+            var meses = CalcularMesesCancelacion(ultimoProceso, procesoCorte);
+            return credito.saldo * credito.interesv / 36000m *
+                   (corte.Day + meses * 30m);
+        }
+
+        /// <summary>
+        /// Cuenta los meses completos entre dos procesos AAAAMM para la cancelación.
+        /// </summary>
+        /// <param name="ultimoProceso">Proceso inicial en formato AAAAMM.</param>
+        /// <param name="procesoCorte">Proceso final en formato AAAAMM.</param>
+        /// <returns>Cantidad de meses completos entre ambos procesos.</returns>
+        private static int CalcularMesesCancelacion(int ultimoProceso, int procesoCorte)
+        {
+            var meses = -1;
+            var procesoTemporal = ultimoProceso;
+            while (procesoCorte > procesoTemporal)
+            {
+                meses++;
+                procesoTemporal = SiguienteProceso(procesoTemporal);
+            }
+
+            return meses;
+        }
+
+        /// <summary>
         /// Obtiene el expediente de preanálisis relacionado con una operación.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <returns>Identificador del expediente de preanálisis.</returns>
         public ErrorDto<string> CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
             int codEmpresa,
             int operacion)
@@ -182,6 +408,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     string.Empty);
         }
 
+        /// <summary>
+        /// Inicializa los datos requeridos por la consulta preliminar de distribución de abonos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <returns>Datos de la persona y deductoras disponibles.</returns>
         public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
             int CodEmpresa,
             string cedula)
@@ -227,6 +459,14 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     new CrConsultaPlanillaAbonoDistInicialData());
         }
 
+        /// <summary>
+        /// Obtiene el último monto enviado para la distribución de abonos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="codInstitucion">Código de la institución deductora.</param>
+        /// <param name="proceso">Proceso utilizado como valor predeterminado.</param>
+        /// <returns>Último monto y proceso encontrados.</returns>
         public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
             int CodEmpresa,
             string cedula,
@@ -262,6 +502,16 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     new CrConsultaPlanillaAbonoDistUltimoData { proceso = proceso });
         }
 
+        /// <summary>
+        /// Consulta el detalle preliminar de distribución de abonos.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Identificación de la persona.</param>
+        /// <param name="codInstitucion">Código de la institución deductora.</param>
+        /// <param name="proceso">Proceso de planilla consultado.</param>
+        /// <param name="monto">Monto que se debe distribuir.</param>
+        /// <param name="corte">Fecha de corte de la consulta.</param>
+        /// <returns>Detalle de operaciones y montos distribuidos.</returns>
         public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
             int CodEmpresa,
             string cedula,

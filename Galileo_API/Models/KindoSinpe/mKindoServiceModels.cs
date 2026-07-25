@@ -204,7 +204,7 @@
 
         public class ParametrosSinpe
         {
-            public string? vHost { get; set; } = Environment.MachineName;
+            public string vHost { get; set; } = Environment.MachineName;
             public string? vHostPin { get; set; }
             public string? vIpHost { get; set; }
             public string? vUserCGP { get; set; }

@@ -7,6 +7,7 @@
         public string Contacto { get; set; } = string.Empty;
         public string Numero { get; set; } = string.Empty;
         public int Tipo { get; set; }
+        public string TipoDesc { get; set; } = string.Empty;
         public string Ext { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public DateTime Fecha { get; set; }

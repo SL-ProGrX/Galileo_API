@@ -28,9 +28,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return txtNTran;
         }
 
-        public ErrorDto<TesReporteTransferenciaDto> TES_TransferenciaRepControl_Carta_Obtener(int CodEmpresa, int Banco, long NTransac, string TipoDoc, string Plan)
+        public ErrorDto<TesReporteTransferenciaDto> TES_TransferenciaRepControl_Carta_Obtener(int CodEmpresa, int Banco, long NTransac, string TipoDoc, string Plan, DateTime? Fecha = null)
         {
-            return _transferenciaRepControlDB.sbTesReporteTransferencia(CodEmpresa, Banco, NTransac, TipoDoc, Plan);
+            return _transferenciaRepControlDB.sbTesReporteTransferencia(CodEmpresa, Banco, NTransac, TipoDoc, Plan, vFecha: Fecha);
         }
 
         public ErrorDto<object> TES_TransferenciaRepControl_Archivo_Generar(int CodEmpresa, int Banco, int NTransac, string TipoDoc, string Formato, string Plan)

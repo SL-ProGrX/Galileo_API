@@ -66,7 +66,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
-        [HttpPost("fxCajas_SaldoaFavor")]
+        [HttpGet("fxCajas_SaldoaFavor")]
         public ErrorDto<decimal> fxCajas_SaldoaFavor(int CodEmpresa, string cedula)
         {
             return _BL.fxCajas_SaldoaFavor(CodEmpresa, cedula);
@@ -82,6 +82,56 @@ namespace Galileo.Controllers.ProGrX.Credito
             int CodEmpresa)
         {
             return _BL.CR_ConsultaCrd_CreditoContexto_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSResumen_Obtener")]
+        public ErrorDto<List<CrConsultaSoSResumenData>> CR_ConsultaCrd_SoSResumen_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSResumen_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSOperaciones_Obtener")]
+        public ErrorDto<List<CrConsultaSoSOperacionData>> CR_ConsultaCrd_SoSOperaciones_Obtener(
+            int CodEmpresa,
+            string cedula,
+            decimal proceso,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSOperaciones_Obtener(
+                CodEmpresa,
+                cedula,
+                proceso,
+                usuario);
+        }
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_SoSExclusion_Obtener")]
+        public ErrorDto<CrConsultaSoSExclusionData> CR_ConsultaCrd_SoSExclusion_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSExclusion_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        [Authorize]
+        [HttpPost("CR_ConsultaCrd_SoSExclusion_Guardar")]
+        public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
+            int CodEmpresa,
+            string cedula,
+            bool excluir,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_SoSExclusion_Guardar(
+                CodEmpresa,
+                cedula,
+                excluir,
+                usuario);
         }
 
         [Authorize]

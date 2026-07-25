@@ -2,6 +2,8 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
+using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
+using Galileo_API.Services.ProGrX.Bancos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,10 +15,19 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
     public class FrmTesEmisionDocumentosController : ControllerBase
     {
         private readonly FrmTesEmisionDocumentosBL _bl;
+        private readonly TesEmisionDocumentosProcesoQueue _queue;
+        private readonly string _archivosRaiz;
 
-        public FrmTesEmisionDocumentosController(IConfiguration config)
+        public FrmTesEmisionDocumentosController(
+            IConfiguration config,
+            TesEmisionDocumentosProcesoQueue queue)
         {
             _bl = new FrmTesEmisionDocumentosBL(config);
+            _queue = queue;
+            var rutaBase = config["ArchivosGenerados:RutaBase"] ?? string.Empty;
+            var subcarpeta = config["TES_EmisionDocumentos:Subcarpeta"]
+                ?? "TES_EmisionDocumentos";
+            _archivosRaiz = Path.GetFullPath(Path.Combine(rutaBase, subcarpeta));
         }
 
 
@@ -54,6 +65,17 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         public ErrorDto<List<TesSolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)
         {
             return _bl.TES_EmisionDocumento_Solicitudes_Obtener(CodEmpresa, filtros);
+        }
+
+        [HttpGet("TES_EmisionDocumento_Solicitudes_Pagina_Obtener")]
+        public ErrorDto<TesEmisionDocumentoSolicitudesPaginaResult>
+            TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesEmisionDocumentoSolicitudesPaginaRequest request)
+        {
+            return _bl.TES_EmisionDocumento_Solicitudes_Pagina_Obtener(
+                CodEmpresa,
+                request);
         }
 
         [HttpGet("TES_EmisionDocumento_TipoDocGestion")]
@@ -98,10 +120,167 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
+        [HttpPost("TES_EmisionDocumento_GenerarLote")]
+        public Task<ErrorDto<TesEmisionGenerarLoteResult>>
+            TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
+            [FromBody] TesEmisionGenerarLoteRequest request)
+        {
+            return _bl.TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
+                request);
+        }
+
+        [HttpPost("TES_EmisionDocumento_ConsecutivoIniciar")]
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _bl.TES_EmisionDocumento_ConsecutivoIniciar(CodEmpresa, banco, tipoDoc, plan);
+        }
+
+        [HttpPost("TES_EmisionDocumento_ConsecutivoRevertir")]
+        public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
+            int CodEmpresa, int banco, string tipoDoc, string plan)
+        {
+            return _bl.TES_EmisionDocumento_ConsecutivoRevertir(CodEmpresa, banco, tipoDoc, plan);
+        }
+
+        [HttpPost("TES_EmisionDocumentos_Proceso_Iniciar")]
+        public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
+            int codEmpresa,
+            [FromBody] TesEmisionDocumentosProcesoIniciarRequest request)
+        {
+            var propietario = ObtenerPropietario();
+            var response = _bl.TES_EmisionDocumentos_Proceso_Iniciar(
+                codEmpresa,
+                propietario,
+                request);
+
+            if (response.Code == 0 && response.Result != null)
+            {
+                _queue.Encolar(new TesEmisionDocumentosProcesoTrabajo
+                {
+                    CodEmpresa = codEmpresa,
+                    ProcesoId = response.Result.procesoId
+                });
+            }
+
+            return response;
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Estado")]
+        public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Estado(
+            int codEmpresa,
+            Guid procesoId)
+        {
+            var response = _bl.TES_EmisionDocumentos_Proceso_Estado_Obtener(
+                codEmpresa,
+                procesoId,
+                ObtenerPropietario());
+            if (response.Code == 0 &&
+                response.Result != null &&
+                TesEmisionDocumentosEstado.EsActivo(response.Result.estado))
+            {
+                _queue.Encolar(new TesEmisionDocumentosProcesoTrabajo
+                {
+                    CodEmpresa = codEmpresa,
+                    ProcesoId = procesoId
+                });
+            }
+            return response;
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Activo_Banco")]
+        public ErrorDto<TesEmisionDocumentosProcesoResult?>
+            TES_EmisionDocumentos_Proceso_Activo_Banco(
+                int codEmpresa,
+                int banco)
+        {
+            var response = _bl
+                .TES_EmisionDocumentos_Proceso_Activo_Banco_Obtener(
+                    codEmpresa,
+                    banco);
+            if (response.Code == 0 &&
+                response.Result != null &&
+                TesEmisionDocumentosEstado.EsActivo(response.Result.estado))
+            {
+                _queue.Encolar(new TesEmisionDocumentosProcesoTrabajo
+                {
+                    CodEmpresa = codEmpresa,
+                    ProcesoId = response.Result.procesoId
+                });
+            }
+            return response;
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Errores")]
+        public ErrorDto<IReadOnlyList<TesEmisionProcesoError>>
+            TES_EmisionDocumentos_Proceso_Errores(
+                int codEmpresa,
+                Guid procesoId)
+        {
+            return _bl.TES_EmisionDocumentos_Proceso_Errores_Obtener(
+                codEmpresa,
+                procesoId);
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Resultado")]
+        public ErrorDto<TesEmisionDocumentosProcesoManifiestoResult> TES_EmisionDocumentos_Proceso_Resultado(
+            int codEmpresa,
+            Guid procesoId)
+        {
+            return _bl.TES_EmisionDocumentos_Proceso_Resultado_Obtener(
+                codEmpresa,
+                procesoId,
+                ObtenerPropietario());
+        }
+
+        [HttpGet("TES_EmisionDocumentos_Proceso_Archivo")]
+        public IActionResult TES_EmisionDocumentos_Proceso_Archivo(
+            int codEmpresa,
+            Guid procesoId,
+            Guid archivoId)
+        {
+            var archivo = _bl.TES_EmisionDocumentos_Proceso_Archivo_Obtener(
+                codEmpresa,
+                procesoId,
+                archivoId,
+                ObtenerPropietario());
+            if (archivo == null || !RutaInternaEsValida(archivo.ruta_interna))
+            {
+                return NotFound();
+            }
+
+            var stream = new FileStream(
+                archivo.ruta_interna,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+            return File(stream, archivo.content_type, archivo.nombre, enableRangeProcessing: true);
+        }
+
         [HttpGet("ValidaUsuarioEspecial")]
         public ErrorDto<int> ValidaUsuarioEspecial(int CodEmpresa, string usuario)
         {
             return _bl.ValidaUsuarioEspecial(CodEmpresa, usuario);
+        }
+
+        private string ObtenerPropietario()
+        {
+            var propietario = User.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(propietario))
+            {
+                throw new UnauthorizedAccessException("No se pudo identificar al usuario autenticado.");
+            }
+            return propietario;
+        }
+
+        private bool RutaInternaEsValida(string ruta)
+        {
+            var raiz = _archivosRaiz.EndsWith(Path.DirectorySeparatorChar)
+                ? _archivosRaiz
+                : _archivosRaiz + Path.DirectorySeparatorChar;
+            var rutaCompleta = Path.GetFullPath(ruta);
+            return rutaCompleta.StartsWith(raiz, StringComparison.OrdinalIgnoreCase)
+                && System.IO.File.Exists(rutaCompleta);
         }
     }
 }
