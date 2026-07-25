@@ -4,9 +4,12 @@ namespace Galileo.Models.AF
     {
         public string cod_estado { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
         public string orden { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool p_inicia { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool p_finaliza { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }

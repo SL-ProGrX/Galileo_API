@@ -120,9 +120,9 @@
 
     public sealed class ArchivoDto
     {
-        public string FileName { get; init; } = default!;
+        public string FileName { get; init; } = string.Empty;
         public string ContentType { get; init; } = "application/octet-stream";
-        public string FileContentsBase64 { get; set; } = default!;
+        public string FileContentsBase64 { get; set; } = string.Empty;
     }
 
 }

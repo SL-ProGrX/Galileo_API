@@ -232,13 +232,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     codEmpresa = CodEmpresa,
                     parametros = null,
-                    nombreReporte = ObtenerNombreReporte(solicitud, banco!, transaccion!, docFormatos!, existe > 0),
+                    nombreReporte = ObtenerNombreReporte(solicitud, banco, transaccion, docFormatos, existe > 0),
                     usuario = solicitud.usuarioLogin,
                     cod_reporte = "P",
                     folder = "Bancos"
                 };
 
-                data.parametros = ConstruirParametrosReporte(solicitud, banco!, transaccion!);
+                data.parametros = ConstruirParametrosReporte(solicitud, banco, transaccion);
 
                 var actionResult = srvReportes.ReporteRDLC_v2(data);
                 MapearResultadoReporte(actionResult, response);
@@ -332,7 +332,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
 
             decimal vMonto = Convert.ToDecimal(transaccion.monto);
-            string vMesLetras = MTesoreria.fxTesMesDescripcion(transaccion.fecha_emision!.Value.Month);
+            string vMesLetras = MTesoreria.fxTesMesDescripcion(transaccion.fecha_emision.Value.Month);
 
             var parametrosJson = new
             {
@@ -364,7 +364,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             var json = System.Text.Json.JsonSerializer.Serialize(res);
             var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(json);
 
-            response.Code = err!.Code;
+            response.Code = err.Code;
             response.Description = err.Description;
         }
     }

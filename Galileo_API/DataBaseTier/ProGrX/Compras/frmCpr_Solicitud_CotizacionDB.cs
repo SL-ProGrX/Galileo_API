@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier
 
                 var idCotizacion = EjecutarSpGuardarCotizacion(conn, tx, cotizacion);
 
-                var solicitud = ObtenerSolicitud(conn, tx, cotizacion.cpr_id!.Value);
+                var solicitud = ObtenerSolicitud(conn, tx, cotizacion.cpr_id.Value);
                 if (solicitud is null) continue;
 
                 if (!EsExcepcion(solicitud, tipoExcepcion, tipoExcepcionGM)) continue;
@@ -127,11 +127,11 @@ namespace Galileo.DataBaseTier
             CprSolicitudDto solicitud,
             int idCotizacion)
         {
-            var cprId = solicitud.cpr_id ?? cotizacion.cpr_id!.Value;
-            var proveedorCodigo = cotizacion.proveedor_codigo!.Value;
-            var noCotizacion = cotizacion.cotiza_numero!;
+            var cprId = solicitud.cpr_id ?? cotizacion.cpr_id.Value;
+            var proveedorCodigo = cotizacion.proveedor_codigo.Value;
+            var noCotizacion = cotizacion.cotiza_numero;
 
-            MarcarCotizaVigente(conn, tx, cotizacion.cpr_id!.Value, proveedorCodigo, idCotizacion);
+            MarcarCotizaVigente(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, idCotizacion);
             EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
             InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);

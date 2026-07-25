@@ -8,10 +8,12 @@ namespace Galileo.Models.AF
 
     public class BeneAptProfesionalesData
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public long id_profesional { get; set; }
         public string identificacion { get; set; } = string.Empty;
         public string? nombre { get; set; }
         public string? usuario { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }

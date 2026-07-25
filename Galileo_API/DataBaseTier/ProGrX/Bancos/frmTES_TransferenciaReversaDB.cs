@@ -75,7 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var response = conn.Query<DropDownListaGenericaModel>(query, parameters).ToList();
 
-                return DbHelper.CreateOkResponse<List<DropDownListaGenericaModel>>(response!);
+                return DbHelper.CreateOkResponse<List<DropDownListaGenericaModel>>(response);
          
             }
             catch (Exception ex)
@@ -156,16 +156,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 id_banco = solicitud.id_banco,
 
                 Codigo = filtros.Codigo,
-                CodigoLike = TES_TransferenciaReversa_CrearLike(filtros.Codigo!),
+                CodigoLike = TES_TransferenciaReversa_CrearLike(filtros.Codigo),
 
                 Ndocumento = filtros.Ndocumento,
-                NdocumentoLike = TES_TransferenciaReversa_CrearLike(filtros.Ndocumento!),
+                NdocumentoLike = TES_TransferenciaReversa_CrearLike(filtros.Ndocumento),
 
                 Beneficiario = filtros.Beneficiario,
-                BeneficiarioLike = TES_TransferenciaReversa_CrearLike(filtros.Beneficiario!),
+                BeneficiarioLike = TES_TransferenciaReversa_CrearLike(filtros.Beneficiario),
 
                 CtaAhorros = filtros.CtaAhorros,
-                CtaAhorrosLike = TES_TransferenciaReversa_CrearLike(filtros.CtaAhorros!),
+                CtaAhorrosLike = TES_TransferenciaReversa_CrearLike(filtros.CtaAhorros),
 
                 CodPlan = filtros.CodPlan
             };
@@ -176,16 +176,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return new TesTransferenciaReversaFiltrosObtener
             {
-                Documento = solicitud.documento!.Trim(),
-                Codigo = solicitud.codigo! == "" ? null: solicitud.codigo!,
-                CodigoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo!),
-                Ndocumento = solicitud.ndocumento! == "" ? null : solicitud.ndocumento!,
-                NdocumentoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento!),
-                Beneficiario = solicitud.beneficiario! == "" ? null : solicitud.beneficiario!,
-                BeneficiarioLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario!),
-                CtaAhorros = solicitud.cta_ahorros! == "" ? null : solicitud.cta_ahorros!,
-                CtaAhorrosLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros!),
-                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan!) ?? "-sp-",
+                Documento = solicitud.documento.Trim(),
+                Codigo = solicitud.codigo == "" ? null: solicitud.codigo,
+                CodigoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo),
+                Ndocumento = solicitud.ndocumento == "" ? null : solicitud.ndocumento,
+                NdocumentoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.ndocumento),
+                Beneficiario = solicitud.beneficiario == "" ? null : solicitud.beneficiario,
+                BeneficiarioLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.beneficiario),
+                CtaAhorros = solicitud.cta_ahorros == "" ? null : solicitud.cta_ahorros,
+                CtaAhorrosLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.cta_ahorros),
+                CodPlan = TES_TransferenciaReversa_NormalizarTexto(solicitud.cod_plan) ?? "-sp-",
                 id_banco = solicitud.id_banco,
 
             };
@@ -288,7 +288,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 query = $@"select count(*) as Existe from tes_te_reversion where isnull(Tipo,'T') = 'T'
                                     and id_Banco = @id_banco and Documento = @documento ";
                 var existe = conn.QueryFirstOrDefault<int>(query,
-                    new { transferencia.id_banco, documento = transferencia.ndocumento!.Trim() });
+                    new { transferencia.id_banco, documento = transferencia.ndocumento.Trim() });
 
                 if (existe == 1)
                 {
@@ -303,7 +303,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         transferencia.tipo,
                         documento = transferencia.ndocumento.Trim(),
                         observaciones = transferencia.observaciones ?? string.Empty,
-                        usuario = transferencia.usuario!.ToUpper()
+                        usuario = transferencia.usuario.ToUpper()
                     });
 
                 if (transferencia.lista.Count > 0)
@@ -610,9 +610,9 @@ exec spTES_W_SinpeReversion_Main
                 new
                 {
                     reversa.id_banco,
-                    documento = reversa.documento!.Trim(),
+                    documento = reversa.documento.Trim(),
                     observaciones = reversa.observaciones ?? string.Empty,
-                    usuario = reversa.usuario!.ToUpper()
+                    usuario = reversa.usuario.ToUpper()
                 });
 
             return DbHelper.CreateOkResponse(reversionId);
@@ -627,7 +627,7 @@ exec spTES_W_SinpeReversion_Main
             TesReversaSinpeModel reversa)
         {
             var msj = new StringBuilder();
-            foreach (var item in reversa.lista!)
+            foreach (var item in reversa.lista)
             {
                 try
                 {
@@ -636,7 +636,7 @@ exec spTES_W_SinpeReversion_Main
                     {
                         ReversionId = ReversaID,
                         TesoreriaId = item.nsolicitud,
-                        Usuario = reversa.usuario!.ToUpper(),
+                        Usuario = reversa.usuario.ToUpper(),
                     };
 
                     conn.Execute(sp, parametros, commandTimeout: 0, commandType: CommandType.StoredProcedure);
@@ -769,7 +769,7 @@ WHERE T.NSOLICITUD = @Cod_Referencia";
             _mSecurity.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = reversa.codEmpresa,
-                Usuario = reversa.usuario!,
+                Usuario = reversa.usuario,
                 Modulo = module,
                 Movimiento = "Aplica",
                 DetalleMovimiento = "Reversión Transferencia = " + reversionId +

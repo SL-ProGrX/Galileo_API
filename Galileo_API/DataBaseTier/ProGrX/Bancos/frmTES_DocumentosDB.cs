@@ -17,8 +17,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesDocumentosDB(IConfiguration? config)
         {
-            _portalDB = new PortalDB(config!);
-            _Security_MainDB = new MSecurityMainDb(config!);
+            _portalDB = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -181,18 +181,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var validation = ValidarDocumento(documento);
                 if (validation.Code != 0) return validation;
 
-                var existe = ExisteTipoDocumento(conn, documento.tipo!);
+                var existe = ExisteTipoDocumento(conn, documento.tipo);
                 var parameters = BuildDocumentoParams(documento, usuario);
 
                 if (existe)
                 {
                     ActualizarDocumento(conn, parameters);
-                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo!, "Registra - Web");
+                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo, "Registra - Web");
                 }
                 else
                 {
                     InsertarDocumento(conn, parameters);
-                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo!, "Modifica - Web");
+                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo, "Modifica - Web");
                 }
 
                 return new ErrorDto { Code = 0, Description = "Guardado correctamente" };
@@ -230,7 +230,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return new
             {
-                Tipo = documento.tipo!.Trim(),
+                Tipo = documento.tipo.Trim(),
                 Descripcion = (documento.descripcion ?? string.Empty).ToUpper().Trim(),
                 Movimiento = (documento.movimiento ?? string.Empty).Trim().Substring(0, 1),
                 Generacion = documento.generacion ? 1 : 0,
@@ -367,7 +367,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Id = concepto?.id_conceptos ?? 0,
                     Tipo = tipo,
                     Descripcion = concepto?.descripcion,
-                    Activo = (concepto!.activo) ? 1 : 0,
+                    Activo = concepto.activo ? 1 : 0,
                     Usuario = usuario,
                 };
 
@@ -380,14 +380,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
                         DetalleMovimiento = $"Concepto de Anulación de Documentos de Bancos Id: {resp.codigo} - {concepto.descripcion}",
-                        Movimiento = resp.movimiento!,
+                        Movimiento = resp.movimiento,
                         Modulo = vModulo
                     });
                 }
                 else
                 {
                     response.Code = -1;
-                    response.Description = resp!.mensaje;
+                    response.Description = resp.mensaje;
                 }
             }
             catch (Exception ex)
@@ -417,21 +417,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var sql = @"exec spTes_Anula_Conceptos_Delete @id , @usuario";
                 var resp = conn.Query<TesDocAnulaConcepRespuesta>(sql, new { id = id_conceptos, usuario }).FirstOrDefault();
 
-                if (resp!.pass == 1)
+                if (resp.pass == 1)
                 {
                     _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
                         DetalleMovimiento = $"Concepto de Anulación de Documentos de Bancos Id: {id_conceptos}",
-                        Movimiento = resp.movimiento!,
+                        Movimiento = resp.movimiento,
                         Modulo = vModulo
                     });
                 }
                 else
                 {
                     response.Code = -1;
-                    response.Description = resp!.mensaje;
+                    response.Description = resp.mensaje;
                 }
             }
             catch (Exception ex)

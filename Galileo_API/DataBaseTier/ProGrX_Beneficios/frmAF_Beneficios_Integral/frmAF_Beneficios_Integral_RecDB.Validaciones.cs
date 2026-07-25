@@ -74,7 +74,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 Code = result.Code,
                 Description = result.Code == 0
-                    ? result!.Result.ToString()
+                    ? result.Result.ToString()
                     : origen + ": " + result.Description
             };
         }

@@ -126,7 +126,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     consec = vBeneConsec,
                     codBeneficio = datos.cod_beneficio,
-                    cedula = datos.cedula!.Trim(),
+                    cedula = datos.cedula.Trim(),
                     monto = datos.monto,
                     modificaMonto,
                     usuario = usuario.ToUpper(),
@@ -147,7 +147,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     EmpresaId = CodCliente,
                     Usuario = usuario.ToUpper(),
-                    DetalleMovimiento = $"Registra, Beneficio:{vBeneConsec}-{datos.cod_beneficio}, Cedula [{datos.cedula!.Trim()}]",
+                    DetalleMovimiento = $"Registra, Beneficio:{vBeneConsec}-{datos.cod_beneficio}, Cedula [{datos.cedula.Trim()}]",
                     Movimiento = "REGISTRA - WEB",
                     Modulo = 7
                 });
@@ -213,7 +213,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     nombre = datos.solicita_nombre,
                     tipo = datos.tipoBeneficio,
                     codBeneficio = datos.cod_beneficio,
-                    cedula = datos.cedula!.Trim(),
+                    cedula = datos.cedula.Trim(),
                     consec = datos.consec
                 });
 
@@ -226,7 +226,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     EmpresaId = CodCliente,
                     Usuario = usuario.ToUpper(),
-                    DetalleMovimiento = $"Modifica, Beneficio:{datos.consec}-{datos.cod_beneficio}, Cedula [{datos.cedula!.Trim()}]",
+                    DetalleMovimiento = $"Modifica, Beneficio:{datos.consec}-{datos.cod_beneficio}, Cedula [{datos.cedula.Trim()}]",
                     Movimiento = "MODIFICA - WEB",
                     Modulo = 7
                 });
@@ -293,7 +293,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     {
                         consec = vBeneConsec,
                         codBeneficio = datos.cod_beneficio,
-                        cedula = datos.cedula!.Trim(),
+                        cedula = datos.cedula.Trim(),
                         monto = datos.monto,
                         modificaMonto,
                         usuario,
@@ -313,7 +313,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     {
                         EmpresaId = CodCliente,
                         Usuario = usuario.ToUpper(),
-                        DetalleMovimiento = $"Registra, Beneficio:{vBeneConsec}-{datos.cod_beneficio}, Cedula [{datos.cedula!.Trim()}]",
+                        DetalleMovimiento = $"Registra, Beneficio:{vBeneConsec}-{datos.cod_beneficio}, Cedula [{datos.cedula.Trim()}]",
                         Movimiento = "REGISTRA - WEB",
                         Modulo = 7
                     });
@@ -343,7 +343,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     nombre = datos.solicita_nombre,
                     tipo = datos.tipoBeneficio,
                     codBeneficio = datos.cod_beneficio,
-                    cedula = datos.cedula!.Trim(),
+                    cedula = datos.cedula.Trim(),
                     consec = datos.consec
                 });
 
@@ -356,7 +356,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     EmpresaId = CodCliente,
                     Usuario = usuario.ToUpper(),
-                    DetalleMovimiento = $"Modifica, Beneficio:{datos.consec}-{datos.cod_beneficio}, Cedula [{datos.cedula!.Trim()}]",
+                    DetalleMovimiento = $"Modifica, Beneficio:{datos.consec}-{datos.cod_beneficio}, Cedula [{datos.cedula.Trim()}]",
                     Movimiento = "MODIFICA - WEB",
                     Modulo = 7
                 });

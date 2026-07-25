@@ -38,8 +38,8 @@ namespace Galileo.DataBaseTier
             {
                 if (conn.State != ConnectionState.Open) conn.Open();
 
-                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
-                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaInicio, "yyyy-MM-dd" + " 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(req.fechaCorte, "yyyy-MM-dd" + " 23:59:59") ?? "";
 
                 var like = NormalizeLike(req.filtro);
                 var (offset, fetch) = NormalizePaging(req.pagina, req.paginacion);
@@ -167,7 +167,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
             });
 
             if (r.Code != 0)
-                return DbHelper.CreateErrorResponse<OrdenCompraDto>(r.Description ?? "Error", r.Code ?? -1, null!);
+                return DbHelper.CreateErrorResponse<OrdenCompraDto>(r.Description ?? "Error", r.Code ?? -1, default);
 
             return DbHelper.CreateOkResponse(r.Result ?? new OrdenCompraDto { total = 0, ordenes = new List<OrdenCompra>() });
         }

@@ -15,7 +15,9 @@ namespace Galileo.Models.AF
     public class RmsRemesasData
     {
         public int? IdRemesa { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int CodRemesa { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int IdTipoDocumento { get; set; }
         public int? CodDepartamentoOrigen { get; set; }
         public int? CodDepartamentoDestino { get; set; }
@@ -64,8 +66,10 @@ namespace Galileo.Models.AF
 
     public class RmsRemesaDocuementos
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_beneficio { get; set; }
         public string? n_expediente { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime registra_fecha { get; set; }
         public string? registra_user { get; set; }
         public string? estado { get; set; }
