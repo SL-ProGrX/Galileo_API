@@ -345,7 +345,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (string.IsNullOrWhiteSpace(dto.tipoDocumento))
                 return DbHelper.CreateErrorResponse<string>("tipoDocumento es requerido");
 
-            var tipoDocumento = dto.tipoDocumento!.Trim();
+            var tipoDocumento = (dto.tipoDocumento ?? string.Empty).Trim();
             var usuario = dto.usuario ?? string.Empty;
             var fechaInicio = dto.fechaInicio;
             var fechaFin = dto.fechaFin;

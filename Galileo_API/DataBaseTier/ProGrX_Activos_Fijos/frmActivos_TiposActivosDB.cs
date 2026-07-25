@@ -151,15 +151,15 @@ WHERE a.TIPO_ACTIVO < @cod
         /// <summary>
         /// Obtener lista de tipos de activo.
         /// </summary>
-        public ErrorDto<ActivosTiposActivosLista> Activos_TiposActivosLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivosTiposActivosLista> Activos_TiposActivosLista_Obtener(int CodEmpresa,string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosTiposActivosFiltros>(filtros);
 
             var resp = new ErrorDto<ActivosTiposActivosLista>
             {
-                Code        = 0,
+                Code = 0,
                 Description = MsgVacio,
-                Result      = new ActivosTiposActivosLista()
+                Result = new ActivosTiposActivosLista()
             };
 
             try
@@ -167,6 +167,7 @@ WHERE a.TIPO_ACTIVO < @cod
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 var textoFiltro = (vfiltro?.filtro ?? string.Empty).Trim();
+
                 string? filtroLike = string.IsNullOrWhiteSpace(textoFiltro)
                     ? null
                     : $"%{textoFiltro}%";
@@ -175,54 +176,58 @@ WHERE a.TIPO_ACTIVO < @cod
                 p.Add("@filtro", filtroLike);
 
                 const string qTotal = @"
-                    SELECT COUNT(*)
-                    FROM dbo.ACTIVOS_TIPO_ACTIVO
-                    WHERE (@filtro IS NULL
-                           OR TIPO_ACTIVO LIKE @filtro
-                           OR DESCRIPCION LIKE @filtro);";
+            SELECT COUNT(*)
+            FROM dbo.ACTIVOS_TIPO_ACTIVO
+            WHERE (@filtro IS NULL
+                   OR TIPO_ACTIVO LIKE @filtro
+                   OR DESCRIPCION LIKE @filtro);";
 
                 resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
 
-                bool tienePaginacion = vfiltro?.pagina != null;
-                if (tienePaginacion)
+                if (vfiltro?.pagina is int offset)
                 {
-                    int offset   = vfiltro!.pagina!.Value;          // ya viene como offset
                     int pageSize = vfiltro.paginacion ?? 10;
+
                     p.Add("@offset", offset);
-                    p.Add("@fetch",  pageSize);
+                    p.Add("@fetch", pageSize);
 
                     const string qDatosPag = @"
-                        SELECT
-                            TIPO_ACTIVO            AS tipo_activo,
-                            ISNULL(DESCRIPCION,'') AS descripcion
-                        FROM dbo.ACTIVOS_TIPO_ACTIVO
-                        WHERE (@filtro IS NULL
-                               OR TIPO_ACTIVO LIKE @filtro
-                               OR DESCRIPCION LIKE @filtro)
-                        ORDER BY TIPO_ACTIVO
-                        OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+                SELECT
+                    TIPO_ACTIVO            AS tipo_activo,
+                    ISNULL(DESCRIPCION,'') AS descripcion
+                FROM dbo.ACTIVOS_TIPO_ACTIVO
+                WHERE (@filtro IS NULL
+                       OR TIPO_ACTIVO LIKE @filtro
+                       OR DESCRIPCION LIKE @filtro)
+                ORDER BY TIPO_ACTIVO
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;";
 
-                    resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatosPag, p).ToList();
+                    resp.Result.lista = cn
+                        .Query<ActivosTiposActivosData>(qDatosPag, p)
+                        .ToList();
                 }
                 else
                 {
                     const string qDatos = @"
-                        SELECT
-                            TIPO_ACTIVO            AS tipo_activo,
-                            ISNULL(DESCRIPCION,'') AS descripcion
-                        FROM dbo.ACTIVOS_TIPO_ACTIVO
-                        WHERE (@filtro IS NULL
-                               OR TIPO_ACTIVO LIKE @filtro
-                               OR DESCRIPCION LIKE @filtro)
-                        ORDER BY TIPO_ACTIVO;";
+                SELECT
+                    TIPO_ACTIVO            AS tipo_activo,
+                    ISNULL(DESCRIPCION,'') AS descripcion
+                FROM dbo.ACTIVOS_TIPO_ACTIVO
+                WHERE (@filtro IS NULL
+                       OR TIPO_ACTIVO LIKE @filtro
+                       OR DESCRIPCION LIKE @filtro)
+                ORDER BY TIPO_ACTIVO;";
 
-                    resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatos, p).ToList();
+                    resp.Result.lista = cn
+                        .Query<ActivosTiposActivosData>(qDatos, p)
+                        .ToList();
                 }
             }
             catch (Exception ex)
             {
-                resp.Code         = -1;
-                resp.Description  = ex.Message;
+                resp.Code = -1;
+                resp.Description = ex.Message;
                 resp.Result.total = 0;
                 resp.Result.lista = [];
             }

@@ -58,9 +58,7 @@ namespace Galileo.Controllers
             return ms.ToArray();
         }
 
-        private static async Task<ErrorDto> GuardarImagenAsync(
-            SifEmpresaArchivoRequest request,
-            Func<int, int, byte[], string, ErrorDto> guardarFunc)
+        private static async Task<ErrorDto> GuardarImagenAsync(SifEmpresaArchivoRequest request,Func<int, int, byte[], string, ErrorDto> guardarFunc)
         {
             var validationError = ValidateImageRequest(request);
             if (validationError != null)
@@ -92,10 +90,10 @@ namespace Galileo.Controllers
 
             [BindRequired]
             [Required]
-            public IFormFile file { get; set; } = default!;
+            public required IFormFile file { get; set; }
         }
 
-        
+
         [Authorize]
         [HttpGet("Sif_Empresa_Obtener")]
         public ErrorDto<FrmSifEmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)

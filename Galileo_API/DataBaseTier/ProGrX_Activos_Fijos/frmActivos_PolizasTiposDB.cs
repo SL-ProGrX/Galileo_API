@@ -45,8 +45,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 string? filtroTexto = filtros?.filtro;
                 bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                string? filtroLike = null;
+
+                if (filtros?.filtro is { } texto && !string.IsNullOrWhiteSpace(texto))
+                {
+                    filtroLike = $"%{texto.Trim()}%";
+                }
+
+                p.Add("@tieneFiltro", filtroLike is not null ? 1 : 0);
+                p.Add("@filtro", filtroLike);
 
                 // Paginación
                 int pagina = filtros?.pagina ?? 0;
@@ -124,9 +131,9 @@ FETCH NEXT @rows ROWS ONLY;";
         /// <summary>
         /// Obtiene una lista de tipos de pólizas de activos fijos sin paginación, con filtros aplicados.
         /// </summary>
-        public ErrorDto<List<ActivosPolizasTiposData>> Activos_PolizasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosPolizasTiposData>> Activos_PolizasTipos_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosPolizasTiposData>>()
+            var result = new ErrorDto<List<ActivosPolizasTiposData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -138,21 +145,29 @@ FETCH NEXT @rows ROWS ONLY;";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+
+                string? filtroLike = null;
+
+                if (filtros?.filtro is string textoFiltro &&
+                    !string.IsNullOrWhiteSpace(textoFiltro))
+                {
+                    filtroLike = $"%{textoFiltro.Trim()}%";
+                }
+
+                bool tieneFiltro = filtroLike is not null;
 
                 p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                p.Add("@filtro", filtroLike);
 
                 const string query = @"
-SELECT tipo_poliza,
-       descripcion,
-       CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
-FROM   activos_polizas_tipos
-WHERE (@tieneFiltro = 0
-       OR tipo_poliza LIKE @filtro
-       OR descripcion LIKE @filtro)
-ORDER BY tipo_poliza;";
+                    SELECT tipo_poliza,
+                           descripcion,
+                           CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
+                    FROM   activos_polizas_tipos
+                    WHERE (@tieneFiltro = 0
+                           OR tipo_poliza LIKE @filtro
+                           OR descripcion LIKE @filtro)
+                    ORDER BY tipo_poliza;";
 
                 result.Result = connection
                     .Query<ActivosPolizasTiposData>(query, p)
@@ -164,6 +179,7 @@ ORDER BY tipo_poliza;";
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 

@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 Code        = -1,
                 Description = MensajeDatosNoProv,
-                Result      = default!
+                Result      = default
             };
         }
 
@@ -152,9 +152,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtroTexto}%";
 
                 // ORDER BY con lista blanca -> índice de columna
-                var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? CodTrasladoCol
-                    : filtros.sortField!;
+                string sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
+                ? CodTrasladoCol
+                : filtros.sortField ?? CodTrasladoCol;
 
                 if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortFieldCanonical))
                 {
