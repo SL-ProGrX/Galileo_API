@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesAutoRegistroDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config!);
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -46,9 +46,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-
-                int activo = (registro.id_auto == 0 || (registro.activo ?? false)) ? 1 : 0;
-
                 string sql = @" EXEC spTes_Auto_Registro_Add
                                     @AutoId,
                                     @Descripcion,
@@ -75,42 +72,56 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                     @FiltraCtas
                                 ";
 
-                var parametros = new
+                var parametros = CrearParametrosAutoRegistro(registro);
+
+                var response = DbHelper.ExecuteSingleQuery<AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
+
+                if (response.Code != 0 || response.Result is null)
                 {
-                    AutoId = (registro.id_auto == null) ? 0 : registro.id_auto,
-                    Descripcion = registro.descripcion,
-                    PClave = registro.palabras_clave,
-                    Detalle = registro.detalle,
-                    Concepto = registro.cod_concepto,
-                    Cuenta = (registro.cod_cuenta_mask == null) ? "0" : registro.cod_cuenta_mask.Replace("-", ""),
-                    Unidad = registro.cod_unidad,
-                    CentroCosto = registro.cod_centro_costo,
-                    MntInicio = (registro.mnt_inicio == null) ? 0 : registro.mnt_inicio,
-                    MntCorte = (registro.mnt_corte == null) ? 0 : registro.mnt_corte,
-                    Apl_CargaDiaria = (registro.apl_carga_diaria == true) ? 1 : 0,
-                    Apl_Conciliacion = (registro.apl_conciliacion == true) ? 1 : 0,
-                    IndInfoPersona = (registro.ind_info_persona == true) ? 1 : 0,
-                    TipoBeneficiario = (registro.tipo_beneficiario == null) ? 0 : Convert.ToInt16(registro.tipo_beneficiario),
-                    BeneficiarioId = registro.beneficiario_id,
-                    BeneficiarioNombre = registro.beneficiario_nombre,
-                    Activo = activo,
-                    Usuario = (registro.id_auto! == 0) ? registro.registro_usuario! : registro.modifica_usuario!,
-                    Mov = "A",
-                    TipoMov = registro.apl_tipo_mov,
-                    TipoDoc = registro.tipo_doc,
-                    IgnoraRegistro = (registro.ignora_registro == true) ? 1 : 0,
-                    FiltraCtas = (registro.filtra_cta_bancos == true) ? 1 : 0
-                };
+                    return DbHelper.ErrorResponse(
+                        response.Description ?? "No fue posible guardar el auto registro.",
+                        response.Code ?? -1);
+                }
 
-                var response = DbHelper.ExecuteSingleQuery <AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
+                return DbHelper.OkResponse(response.Result.auto_id.ToString());
 
-                return DbHelper.OkResponse(response.Result!.auto_id.ToString());
- 
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        private static object CrearParametrosAutoRegistro(TesAutoRegistroDto registro)
+        {
+            var activo = (registro.activo == true) ? 1 : 0;
+
+            return new
+            {
+                AutoId = (registro.id_auto == null) ? 0 : registro.id_auto,
+                Descripcion = registro.descripcion,
+                PClave = registro.palabras_clave,
+                Detalle = registro.detalle,
+                Concepto = registro.cod_concepto,
+                Cuenta = (registro.cod_cuenta_mask == null) ? "0" : registro.cod_cuenta_mask.Replace("-", ""),
+                Unidad = registro.cod_unidad,
+                CentroCosto = registro.cod_centro_costo,
+                MntInicio = (registro.mnt_inicio == null) ? 0 : registro.mnt_inicio,
+                MntCorte = (registro.mnt_corte == null) ? 0 : registro.mnt_corte,
+                Apl_CargaDiaria = (registro.apl_carga_diaria == true) ? 1 : 0,
+                Apl_Conciliacion = (registro.apl_conciliacion == true) ? 1 : 0,
+                IndInfoPersona = (registro.ind_info_persona == true) ? 1 : 0,
+                TipoBeneficiario = (registro.tipo_beneficiario == null) ? 0 : Convert.ToInt16(registro.tipo_beneficiario),
+                BeneficiarioId = registro.beneficiario_id,
+                BeneficiarioNombre = registro.beneficiario_nombre,
+                Activo = activo,
+                Usuario = (registro.id_auto == 0) ? registro.registro_usuario : registro.modifica_usuario,
+                Mov = "A",
+                TipoMov = registro.apl_tipo_mov,
+                TipoDoc = registro.tipo_doc,
+                IgnoraRegistro = (registro.ignora_registro == true) ? 1 : 0,
+                FiltraCtas = (registro.filtra_cta_bancos == true) ? 1 : 0
+            };
         }
 
         /// <summary>
@@ -183,7 +194,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var response = DbHelper.ExecuteSingleQuery<AutoRegGuardar>(_portalDB, CodEmpresa, sql, null, parametros);
 
-                return DbHelper.OkResponse(response.Result!.auto_id.ToString());
+                if (response.Code != 0 || response.Result is null)
+                {
+                    return DbHelper.ErrorResponse(
+                        response.Description ?? "No fue posible eliminar el auto registro.",
+                        response.Code ?? -1);
+                }
+
+                return DbHelper.OkResponse(response.Result.auto_id.ToString());
             }
             catch (Exception ex)
             {
@@ -403,8 +421,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var datos = conn.Query<TipoMovData>(query, new { TipoMov = TipoMov }).ToList();
                 foreach (var item in datos)
                 {
-                    string idx = item.tipo!;
-                    string itmx = item.descripcion!;
+                    string idx = item.tipo ?? string.Empty;
+                    string itmx = item.descripcion ?? string.Empty;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic.ProGrX_Beneficios;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Galileo_API.BusinessLogic.ProGrX_Beneficios;
 
-namespace Galileo.Controllers.ProGrX_Beneficios
+namespace Galileo_API.Controllers.ProGrX_Beneficios
 {
     /// <summary>
     /// Endpoints del formulario de Asignación de Beneficios (frmAF_BeneficioAsg).

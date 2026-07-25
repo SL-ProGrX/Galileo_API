@@ -302,8 +302,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 string query = "spTes_Bancos_Mov_Consulta";
 
-                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaInicio!, "yyyy-MM-dd" + " 00:00:00") ?? "";
-                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaCorte!, "yyyy-MM-dd" + " 23:59:59") ?? "";
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaInicio, "yyyy-MM-dd" + " 00:00:00") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(filtro.fechaCorte, "yyyy-MM-dd" + " 23:59:59") ?? "";
 
                 var parameters = new
                 {
@@ -365,7 +365,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                     parametros,
                                     commandType: CommandType.StoredProcedure);
 
-                    if(result!.Ok == 0)
+                    if (result is null)
+                    {
+                        error = " - Línea: " + item.Linea_Id + " error: el proceso no devolvió resultado.";
+                        continue;
+                    }
+
+                    if (result.Ok == 0)
                     {
                         error = " - Linea: " + result.LineaId + " error: " +result.Mensaje;
                     }
@@ -612,12 +618,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 new { codConcepto, nsolicitud });
 
             var detalle = $"Cambio COD_CONCEPTO de {conceptoAnterior} a {codConcepto}. {nota}".Trim();
-            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, nsolicitud, "09", detalle, usuario!);
+            string usuarioRegistro = usuario ?? string.Empty;
+            _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, nsolicitud, "09", detalle, usuarioRegistro);
 
             _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId        = CodEmpresa,
-                Usuario          = usuario!,
+                Usuario          = usuarioRegistro,
                 DetalleMovimiento = $"Solicitud {nsolicitud}: COD_CONCEPTO reclasificado de {conceptoAnterior} a {codConcepto}",
                 Movimiento       = "RECLASIFICACION - WEB",
                 Modulo           = _vModulo

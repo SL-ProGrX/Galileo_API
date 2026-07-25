@@ -3,7 +3,7 @@ using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 
-namespace Galileo.BusinessLogic.ProGrX_Beneficios
+namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
 {
     /// <summary>
     /// Lógica de negocio del formulario de Asignación de Beneficios (frmAF_BeneficioAsg).

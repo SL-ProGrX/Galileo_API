@@ -44,7 +44,12 @@ namespace Galileo_API.DataBaseTier
                             solicitud = solicitud
                         }).FirstOrDefault() ?? new TesAnulacionDocData();
 
-                response.verifica = mTesoreria.fxTesTipoAccesoValida(CodEmpresa, response.id_banco!, usuario, response.tipo!, "N").Result ;
+                response.verifica = mTesoreria.fxTesTipoAccesoValida(
+                   CodEmpresa,
+                   response.id_banco ?? string.Empty,
+                   usuario,
+                   response.tipo ?? string.Empty,
+                   "N").Result;
 
                 return response;
             });
