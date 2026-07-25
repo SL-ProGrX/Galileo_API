@@ -52,6 +52,13 @@ namespace Galileo.Models.CxP
         public decimal Imp_Ventas { get; set; }
     }
 
+    public class FacturaProgramacionEstado
+    {
+        public string CxP_Estado { get; set; } = string.Empty;
+        public decimal Total { get; set; }
+        public string Tipo { get; set; } = string.Empty;
+    }
+
     public class DetallePago
     {
         public required int NPago { get; set; }

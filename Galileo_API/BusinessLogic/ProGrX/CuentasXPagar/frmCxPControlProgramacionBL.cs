@@ -38,6 +38,11 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.FacturaDatos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        public ErrorDto<FacturaProgramacionEstado> FacturaProgramacionEstado_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor, string Tipo)
+        {
+            return _db.FacturaProgramacionEstado_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor, Tipo);
+        }
+
         public ErrorDto<List<DetallePago>> DetallePagos_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
             return _db.DetallePagos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
