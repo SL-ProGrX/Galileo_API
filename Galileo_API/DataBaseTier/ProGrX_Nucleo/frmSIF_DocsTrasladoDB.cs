@@ -340,12 +340,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<string> Sif_DocsTraslado_Aplica(int CodEmpresa, SifDocsTrasladoEjecutarRequest dto)
         {
             if (dto == null)
+            {
                 return DbHelper.CreateErrorResponse<string>("Request inválido");
+            }
 
             if (string.IsNullOrWhiteSpace(dto.tipoDocumento))
+            {
                 return DbHelper.CreateErrorResponse<string>("tipoDocumento es requerido");
+            }
 
-            var tipoDocumento = (dto.tipoDocumento ?? string.Empty).Trim();
+            var tipoDocumento = dto.tipoDocumento.Trim();
             var usuario = dto.usuario ?? string.Empty;
             var fechaInicio = dto.fechaInicio;
             var fechaFin = dto.fechaFin;
@@ -357,24 +361,52 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             var exec = WithEmpresaConn(CodEmpresa, cn =>
             {
                 var p = new DynamicParameters();
+
                 p.Add("@TipoDoc", tipoDocumento, DbType.String);
                 p.Add("@FechaInicio", StartOfDay(fechaInicio), DbType.DateTime);
                 p.Add("@FechaCorte", EndOfDay(fechaFin), DbType.DateTime);
                 p.Add("@pUsuario", usuario, DbType.String);
-                p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
+                p.Add(
+                    BalanceParam,
+                    soloBalanceados ? (short)1 : (short)2,
+                    DbType.Int16);
 
-                cn.Execute(sp, p, commandType: CommandType.StoredProcedure, commandTimeout: 0);
+                cn.Execute(
+                    sp,
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
+
                 return "Traslado realizado";
             });
 
             if ((exec.Code ?? -1) != 0)
+            {
                 return exec;
+            }
 
-            var bit = TryBitacora(CodEmpresa, usuario, "Aplica - WEB", "Asientos del Control de Documentos");
+            var bit = TryBitacora(
+                CodEmpresa,
+                usuario,
+                "Aplica - WEB",
+                "Asientos del Control de Documentos");
+
             if ((bit.Code ?? -1) != 0)
-                return new ErrorDto<string> { Code = bit.Code, Description = bit.Description, Result = null };
+            {
+                return new ErrorDto<string>
+                {
+                    Code = bit.Code,
+                    Description = bit.Description,
+                    Result = null
+                };
+            }
 
-            return new ErrorDto<string> { Code = 0, Description = "Se realizó el Traslado de Asientos a Contabilidad.", Result = exec.Result };
+            return new ErrorDto<string>
+            {
+                Code = 0,
+                Description = "Se realizó el Traslado de Asientos a Contabilidad.",
+                Result = exec.Result
+            };
         }
 
         /// <summary>
