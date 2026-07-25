@@ -130,6 +130,11 @@ namespace Galileo.DataBaseTier
             CprSolicitudDto solicitud,
             int idCotizacion)
         {
+            if (!cotizacion.cpr_id.HasValue || !cotizacion.proveedor_codigo.HasValue)
+            {
+                throw new ArgumentException("La cotización debe incluir cpr_id y proveedor_codigo para aplicar la excepción.");
+            }
+
             var cprId = solicitud.cpr_id ?? cotizacion.cpr_id.Value;
             var proveedorCodigo = cotizacion.proveedor_codigo.Value;
             var noCotizacion = cotizacion.cotiza_numero;
