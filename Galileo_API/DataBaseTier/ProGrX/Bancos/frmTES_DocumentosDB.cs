@@ -361,17 +361,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             };
             try
             {
+                ArgumentNullException.ThrowIfNull(concepto);
+
                 var proc = $@"exec spTes_Anula_Conceptos_Add @Id, @Tipo, @Descripcion, @Activo, @Usuario";
                 var parametros = new
                 {
-                    Id = concepto?.id_conceptos ?? 0,
+                    Id = concepto.id_conceptos,
                     Tipo = tipo,
-                    Descripcion = concepto?.descripcion,
+                    Descripcion = concepto.descripcion,
                     Activo = concepto.activo ? 1 : 0,
                     Usuario = usuario,
                 };
 
-                var resp = conn.Query<TesDocAnulaConcepRespuesta>(proc, parametros).FirstOrDefault();
+                var resp = conn.Query<TesDocAnulaConcepRespuesta>(proc, parametros).FirstOrDefault()
+                    ?? throw new InvalidOperationException("El proceso no devolvió una respuesta.");
 
                 if (resp?.pass == 1)
                 {
@@ -415,7 +418,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 var sql = @"exec spTes_Anula_Conceptos_Delete @id , @usuario";
-                var resp = conn.Query<TesDocAnulaConcepRespuesta>(sql, new { id = id_conceptos, usuario }).FirstOrDefault();
+                var resp = conn.Query<TesDocAnulaConcepRespuesta>(sql, new { id = id_conceptos, usuario }).FirstOrDefault()
+                    ?? throw new InvalidOperationException("El proceso no devolvió una respuesta.");
 
                 if (resp.pass == 1)
                 {
