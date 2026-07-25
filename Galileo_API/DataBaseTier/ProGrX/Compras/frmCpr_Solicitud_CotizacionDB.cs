@@ -60,7 +60,10 @@ namespace Galileo.DataBaseTier
 
                 var idCotizacion = EjecutarSpGuardarCotizacion(conn, tx, cotizacion);
 
-                var solicitud = ObtenerSolicitud(conn, tx, cotizacion.cpr_id.Value);
+                var cprId = cotizacion.cpr_id;
+                if (!cprId.HasValue) continue;
+
+                var solicitud = ObtenerSolicitud(conn, tx, cprId.Value);
                 if (solicitud is null) continue;
 
                 if (!EsExcepcion(solicitud, tipoExcepcion, tipoExcepcionGM)) continue;
