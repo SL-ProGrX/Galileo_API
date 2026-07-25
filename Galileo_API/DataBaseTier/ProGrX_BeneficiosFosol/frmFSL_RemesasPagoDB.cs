@@ -65,17 +65,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 var response = new FslRemesasLista();
 
                 var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
-                var whereClause = @"WHERE (@like IS NULL OR TESORERIA_REMESA LIKE @like OR REGISTRO_USUARIO LIKE @like
-                                       OR REGISTRO_FECHA LIKE @like OR notas LIKE @like)";
-
-                var sqlCount = $"SELECT COUNT(*) FROM FSL_REMESAS_TESORERIA {whereClause}";
+                const string sqlCount = @"SELECT COUNT(*)
+                                          FROM FSL_REMESAS_TESORERIA
+                                          WHERE (@like IS NULL OR TESORERIA_REMESA LIKE @like OR REGISTRO_USUARIO LIKE @like
+                                                 OR REGISTRO_FECHA LIKE @like OR notas LIKE @like)";
                 response.Total = connection.QueryFirstOrDefault<int>(sqlCount, new { like });
 
                 var offset = pagina ?? 0;
                 var fetch = paginacion ?? 10;
-                var sql = $@"SELECT * FROM FSL_REMESAS_TESORERIA {whereClause}
-                             ORDER BY registro_fecha DESC
-                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+                const string sql = @"SELECT *
+                                     FROM FSL_REMESAS_TESORERIA
+                                     WHERE (@like IS NULL OR TESORERIA_REMESA LIKE @like OR REGISTRO_USUARIO LIKE @like
+                                            OR REGISTRO_FECHA LIKE @like OR notas LIKE @like)
+                                     ORDER BY registro_fecha DESC
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 
                 response.Lista = connection.Query<FslRemesasListaDatos>(sql, new { like, offset, fetch }).ToList();
                 return response;

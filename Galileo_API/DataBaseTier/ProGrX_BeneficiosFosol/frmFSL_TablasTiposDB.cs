@@ -11,7 +11,50 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
     /// </summary>
     public partial class FrmFslTablasTiposDB
     {
+        private const string TipoCatalogoInvalido = "Tipo de catálogo inválido";
         private readonly IConfiguration _config;
+
+        private static readonly FslTablaTipoSql GestionesSql = new(
+            @"SELECT COUNT(*) FROM FSL_TIPOS_GESTIONES
+              WHERE (@like IS NULL OR COD_GESTION LIKE @like OR descripcion LIKE @like)",
+            @"SELECT COD_GESTION AS codigo, descripcion, Activa AS activa
+              FROM FSL_TIPOS_GESTIONES
+              WHERE (@like IS NULL OR COD_GESTION LIKE @like OR descripcion LIKE @like)
+              ORDER BY COD_GESTION
+              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
+            "UPDATE FSL_TIPOS_GESTIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_GESTION = @codigo",
+            @"INSERT INTO FSL_TIPOS_GESTIONES (COD_GESTION, descripcion, Activa, registro_fecha, registro_usuario)
+              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
+            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo",
+            "DELETE FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo");
+
+        private static readonly FslTablaTipoSql ApelacionesSql = new(
+            @"SELECT COUNT(*) FROM FSL_TIPOS_APELACIONES
+              WHERE (@like IS NULL OR COD_APELACION LIKE @like OR descripcion LIKE @like)",
+            @"SELECT COD_APELACION AS codigo, descripcion, Activa AS activa
+              FROM FSL_TIPOS_APELACIONES
+              WHERE (@like IS NULL OR COD_APELACION LIKE @like OR descripcion LIKE @like)
+              ORDER BY COD_APELACION
+              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
+            "UPDATE FSL_TIPOS_APELACIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_APELACION = @codigo",
+            @"INSERT INTO FSL_TIPOS_APELACIONES (COD_APELACION, descripcion, Activa, registro_fecha, registro_usuario)
+              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
+            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo",
+            "DELETE FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo");
+
+        private static readonly FslTablaTipoSql EnfermedadesSql = new(
+            @"SELECT COUNT(*) FROM FSL_TIPOS_ENFERMEDADES
+              WHERE (@like IS NULL OR COD_ENFERMEDAD LIKE @like OR descripcion LIKE @like)",
+            @"SELECT COD_ENFERMEDAD AS codigo, descripcion, Activa AS activa
+              FROM FSL_TIPOS_ENFERMEDADES
+              WHERE (@like IS NULL OR COD_ENFERMEDAD LIKE @like OR descripcion LIKE @like)
+              ORDER BY COD_ENFERMEDAD
+              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
+            "UPDATE FSL_TIPOS_ENFERMEDADES SET descripcion = @descripcion, Activa = @activa WHERE COD_ENFERMEDAD = @codigo",
+            @"INSERT INTO FSL_TIPOS_ENFERMEDADES (COD_ENFERMEDAD, descripcion, Activa, registro_fecha, registro_usuario)
+              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
+            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo",
+            "DELETE FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo");
 
         /// <summary>
         /// Inicializa el acceso a datos con la configuración inyectada.
@@ -28,13 +71,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
-        /// Obtiene el mapeo de tabla y columna código según el tipo (G/A/E). Whitelist para evitar inyección.
+        /// Obtiene las consultas predefinidas del catálogo según el tipo (G/A/E).
         /// </summary>
-        private static (string tabla, string colCodigo)? ResolverTabla(string tipo) => tipo switch
+        private static FslTablaTipoSql? ResolverSql(string tipo) => tipo switch
         {
-            "G" => ("FSL_TIPOS_GESTIONES", "COD_GESTION"),
-            "A" => ("FSL_TIPOS_APELACIONES", "COD_APELACION"),
-            "E" => ("FSL_TIPOS_ENFERMEDADES", "COD_ENFERMEDAD"),
+            "G" => GestionesSql,
+            "A" => ApelacionesSql,
+            "E" => EnfermedadesSql,
             _ => null
         };
 
@@ -49,13 +92,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Lista de tipos y total.</returns>
         public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
         {
-            var mapeo = ResolverTabla(tipo);
-            if (mapeo == null)
+            var catalogoSql = ResolverSql(tipo);
+            if (catalogoSql == null)
             {
-                return DbHelper.CreateErrorResponse<FslTablaTipoLista>("Tipo de catálogo inválido");
+                return DbHelper.CreateErrorResponse<FslTablaTipoLista>(TipoCatalogoInvalido);
             }
-
-            var (tabla, colCodigo) = mapeo.Value;
 
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
@@ -65,16 +106,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 var offset = pagina ?? 0;
                 var fetch = paginacion ?? 10;
 
-                var whereClause = $"WHERE (@like IS NULL OR {colCodigo} LIKE @like OR descripcion LIKE @like)";
-
-                var sqlCount = $"SELECT COUNT(*) FROM {tabla} {whereClause}";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, new { like });
-
-                var sql = $@"SELECT {colCodigo} AS codigo, descripcion, Activa AS activa
-                             FROM {tabla} {whereClause}
-                             ORDER BY {colCodigo}
-                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-                response.Lista = connection.Query<FslTablaTipoData>(sql, new { like, offset, fetch }).ToList();
+                response.Total = connection.QueryFirstOrDefault<int>(catalogoSql.Conteo, new { like });
+                response.Lista = connection.Query<FslTablaTipoData>(
+                    catalogoSql.Lista,
+                    new { like, offset, fetch }).ToList();
                 return response;
             });
         }
@@ -88,16 +123,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, FslTablaTipoData tipoData)
         {
-            var mapeo = ResolverTabla(tipo);
-            if (mapeo == null)
+            var catalogoSql = ResolverSql(tipo);
+            if (catalogoSql == null)
             {
-                return DbHelper.ErrorResponse("Tipo de catálogo inválido");
+                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
 
-            var (tabla, colCodigo) = mapeo.Value;
-            var sql = $@"UPDATE {tabla} SET descripcion = @descripcion, Activa = @activa WHERE {colCodigo} = @codigo";
-
-            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new
+            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, catalogoSql.Actualizar, new
             {
                 tipoData.descripcion,
                 activa = tipoData.activa ? 1 : 0,
@@ -122,25 +154,21 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, FslTablaTipoData tipoData)
         {
-            var mapeo = ResolverTabla(tipo);
-            if (mapeo == null)
+            var catalogoSql = ResolverSql(tipo);
+            if (catalogoSql == null)
             {
-                return DbHelper.ErrorResponse("Tipo de catálogo inválido");
+                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
-
-            var (tabla, colCodigo) = mapeo.Value;
 
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
             {
-                if (FslTablaTipoExiste(connection, tabla, colCodigo, tipoData.codigo))
+                if (FslTablaTipoExiste(connection, catalogoSql.Existe, tipoData.codigo))
                 {
                     return FslTablaTipos_Actualizar(CodCliente, tipo, tipoData);
                 }
 
-                var sql = $@"INSERT INTO {tabla} ({colCodigo}, descripcion, Activa, registro_fecha, registro_usuario)
-                             VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)";
-                connection.Execute(sql, new
+                connection.Execute(catalogoSql.Insertar, new
                 {
                     tipoData.codigo,
                     tipoData.descripcion,
@@ -159,9 +187,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Verifica si existe un código en la tabla de tipo indicada.
         /// </summary>
-        private static bool FslTablaTipoExiste(SqlConnection connection, string tabla, string colCodigo, string codigo)
+        private static bool FslTablaTipoExiste(SqlConnection connection, string sql, string codigo)
         {
-            var sql = $"SELECT ISNULL(COUNT(*), 0) FROM {tabla} WHERE {colCodigo} = @codigo";
             return connection.QueryFirstOrDefault<int>(sql, new { codigo }) > 0;
         }
 
@@ -174,16 +201,21 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
         {
-            var mapeo = ResolverTabla(tipo);
-            if (mapeo == null)
+            var catalogoSql = ResolverSql(tipo);
+            if (catalogoSql == null)
             {
-                return DbHelper.ErrorResponse("Tipo de catálogo inválido");
+                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
 
-            var (tabla, colCodigo) = mapeo.Value;
-            var sql = $"DELETE FROM {tabla} WHERE {colCodigo} = @codigo";
-
-            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new { codigo });
+            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, catalogoSql.Eliminar, new { codigo });
         }
+
+        private sealed record FslTablaTipoSql(
+            string Conteo,
+            string Lista,
+            string Actualizar,
+            string Insertar,
+            string Existe,
+            string Eliminar);
     }
 }

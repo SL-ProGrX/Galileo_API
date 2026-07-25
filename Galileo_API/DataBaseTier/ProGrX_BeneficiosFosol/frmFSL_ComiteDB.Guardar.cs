@@ -122,13 +122,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private static ErrorDto FslMiembrosComite_Actualizar(SqlConnection connection, FslMiembrosComitesDto miembro)
         {
             var activo = miembro.activo ? 1 : 0;
-            var salidaSet = activo == 0
-                ? ", Salida_Fecha = GETDATE(), Salida_Usuario = @salida_usuario"
-                : ", Salida_Fecha = NULL, Salida_Usuario = NULL";
-
-            var sql = $@"UPDATE FSL_COMITES_MIEMBROS
-                         SET Nombre = @nombre, USUARIO_VINCULADO = @usuario_Vinculado, Activo = @activo {salidaSet}
-                         WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula";
+            var sql = activo == 0
+                ? @"UPDATE FSL_COMITES_MIEMBROS
+                    SET Nombre = @nombre, USUARIO_VINCULADO = @usuario_Vinculado, Activo = @activo,
+                        Salida_Fecha = GETDATE(), Salida_Usuario = @salida_usuario
+                    WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula"
+                : @"UPDATE FSL_COMITES_MIEMBROS
+                    SET Nombre = @nombre, USUARIO_VINCULADO = @usuario_Vinculado, Activo = @activo,
+                        Salida_Fecha = NULL, Salida_Usuario = NULL
+                    WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula";
 
             connection.Execute(sql, new
             {

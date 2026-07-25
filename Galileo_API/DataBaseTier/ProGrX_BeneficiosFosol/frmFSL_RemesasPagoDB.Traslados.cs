@@ -194,8 +194,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     p.Cuenta,
                     p.Detalle1,
                     detalle2 = p.Detalle2,
-                    p.Referencia,
-                    p.Op,
+                    referencia = 0L,
+                    op = 0L,
                     p.Usuario,
                     autoriza,
                     userAutoriza,
@@ -267,9 +267,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             public float Monto { get; set; }
             public string Codigo { get; set; } = string.Empty;
             public string Beneficiario { get; set; } = string.Empty;
-            public long Op { get; set; }
             public string Detalle1 { get; set; } = string.Empty;
-            public long Referencia { get; set; }
             public string Detalle2 { get; set; } = string.Empty;
             public string Cuenta { get; set; } = string.Empty;
             public DateTime Fecha { get; set; }
