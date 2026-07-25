@@ -8,7 +8,7 @@ namespace Galileo.Models.AF
 
     public class AfBeneficioIntegralGenericLista
     {
-        public int idx { get; set; }
+        public int idx { get; set; } = 0;
         public string itmx { get; set; } = string.Empty;
     }
 
@@ -36,10 +36,10 @@ namespace Galileo.Models.AF
     public class AfiBeneIntegralOrP
     {
         public string cedula { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
-        public float monto { get; set; }
+        public float monto { get; set; } = 0;
         public int? cod_banco { get; set; }
         public string tipo_emision { get; set; } = string.Empty;
         public string? cta_bancaria { get; set; }
@@ -64,13 +64,13 @@ namespace Galileo.Models.AF
 
     public class AfiBenePagoProyecta
     {
-        public int plan_id { get; set; }
+        public int plan_id { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
-        public DateTime fecha_vence { get; set; }
-        public decimal monto { get; set; }
+        public DateTime fecha_vence { get; set; } = DateTime.Now;
+        public decimal monto { get; set; } = 0;
         public int? cod_banco { get; set; }
         public string tipo_emision { get; set; } = string.Empty;
         public string? cta_bancaria { get; set; }
@@ -91,27 +91,27 @@ namespace Galileo.Models.AF
 
     public class AfiBeneTelefono
     {
-        public int id { get; set; }
-        public int id_telefono { get; set; }
+        public int id { get; set; } = 0;
+        public int id_telefono { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
-        public int tipo { get; set; }
+        public int consec { get; set; } = 0;
+        public int tipo { get; set; } = 0;
         public string telefono { get; set; } = string.Empty;
         public string ext { get; set; } = string.Empty;
         public string contacto { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string? modifica_usuario { get; set; } = string.Empty;
         public DateTime? modifica_fecha { get; set; }
     }
 
     public class AfiBeneTelefonoGuardar
     {
-        public int id { get; set; }
-        public int id_telefono { get; set; }
+        public int id { get; set; } = 0;
+        public int id_telefono { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public AfBeneficioIntegralDropsLista tipo { get; set; } = new AfBeneficioIntegralDropsLista();
         public string telefono { get; set; } = string.Empty;
         public string ext { get; set; } = string.Empty;
@@ -157,7 +157,7 @@ namespace Galileo.Models.AF
 
     public class BeneConsultaFiltros
     {
-        public int codCliente { get; set; }
+        public int codCliente { get; set; } = 0;
         public string? cedula { get; set; }
         public string? tipoFecha { get; set; }
         public string? fechaInicio { get; set; }
@@ -178,7 +178,7 @@ namespace Galileo.Models.AF
     public class BeneficioGeneralDatos
     {
         //Datos del Beneficio
-        public int id_beneficio { get; set; }
+        public int id_beneficio { get; set; } = 0;
         public int? consec { get; set; }
         public AfBeneficioIntegralDropsLista cod_beneficio { get; set; } = new AfBeneficioIntegralDropsLista();
         public AfBeneficioIntegralDropsLista tipo { get; set; } = new AfBeneficioIntegralDropsLista();
@@ -227,7 +227,7 @@ namespace Galileo.Models.AF
 
     public class BeneConsultaDatosLista
     {
-        public int total { get; set; }
+        public int total { get; set; } = 0;
         public List<BeneConsultaDatos> lista { get; set; } = new List<BeneConsultaDatos>();
     }
 
@@ -274,7 +274,7 @@ namespace Galileo.Models.AF
 
     public class BeneficioGuadar
     {
-        public int codCliente { get; set; }
+        public int codCliente { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
@@ -354,7 +354,7 @@ namespace Galileo.Models.AF
         public string nombre { get; set; } = string.Empty;
         public string nacionalidad { get; set; } = string.Empty;
         public string cedula_pariente { get; set; } = string.Empty;
-        public int edad { get; set; }
+        public int edad { get; set; } = 0;
         public string estado_civil { get; set; } = string.Empty;
         public string actividad_realiza { get; set; } = string.Empty;
         public string ocupacion { get; set; } = string.Empty;
@@ -379,7 +379,7 @@ namespace Galileo.Models.AF
 
     public class BeneIntNucleoFamDto
     {
-        public long id_socio_familia { get; set; }
+        public long id_socio_familia { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public AfBeneficioIntegralDropsLista parentesco { get; set; } = new AfBeneficioIntegralDropsLista();
         public string? apellido_1 { get; set; }
@@ -399,7 +399,7 @@ namespace Galileo.Models.AF
         public string? discapacidad_desc { get; set; }
         public string? centro_educativo { get; set; }
         public AfBeneficioIntegralDropsLista? grado_academico { get; set; }
-        public bool estudiante_becado { get; set; }
+        public bool estudiante_becado { get; set; } = false;
         public AfBeneficioIntegralDropsLista? ejerce_cuido { get; set; }
         public float? pago_x_cuido { get; set; }
         public string? observaciones { get; set; }
@@ -407,12 +407,12 @@ namespace Galileo.Models.AF
         public string? registro_usuario { get; set; }
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
     }
 
     public class BeneficioSepelio
     {
-        public int codCliente { get; set; }
+        public int codCliente { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
@@ -420,7 +420,7 @@ namespace Galileo.Models.AF
         public string tipoBeneficio { get; set; } = string.Empty;
         public long? id_beneficio { get; set; }
 
-        public int sepelio_identificacion { get; set; }
+        public int sepelio_identificacion { get; set; } = 0;
         public string sepelio_nombre { get; set; } = string.Empty;
 
         public Nullable<DateTime> sepelio_fecha_fallecimiento { get; set; }
@@ -433,12 +433,12 @@ namespace Galileo.Models.AF
 
     public class AfiBeneSocioFinanzasGuardar
     {
-        public int id { get; set; }
+        public int id { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public AfBeneficioIntegralDropsLista id_concepto { get; set; } = new AfBeneficioIntegralDropsLista();
         public string concepto { get; set; } = string.Empty;
-        public float monto { get; set; }
+        public float monto { get; set; } = 0;
         public string? observaciones { get; set; }
         public string? acreedor { get; set; }
         public string? deudor { get; set; }
@@ -446,20 +446,20 @@ namespace Galileo.Models.AF
         public float? saldo { get; set; }
         public float? morosidad { get; set; }
         public string registra_Usuario { get; set; } = string.Empty;
-        public DateTime registra_Fecha { get; set; }
+        public DateTime registra_Fecha { get; set; } = DateTime.Now;
         public string modifica_Usuario { get; set; } = string.Empty;
         public DateTime? modifica_Fecha { get; set; }
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
     }
 
     public class AfiBeneSocioFinanzas
     {
-        public int id { get; set; }
+        public int id { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string id_concepto { get; set; } = string.Empty;
         public string concepto { get; set; } = string.Empty;
-        public float monto { get; set; }
+        public float monto { get; set; } = 0;
         public string? observaciones { get; set; }
         public string? acreedor { get; set; }
         public string? deudor { get; set; }
@@ -476,17 +476,17 @@ namespace Galileo.Models.AF
     public class AfiBeneSintesisFinanzas
     {
         public string cedula { get; set; } = string.Empty;
-        public float ingresos { get; set; }
-        public float gastos { get; set; }
-        public float gasto_especial { get; set; }
-        public int miembros { get; set; }
-        public float manutencion { get; set; }
-        public float endeudamiento { get; set; }
+        public float ingresos { get; set; } = 0;
+        public float gastos { get; set; } = 0;
+        public float gasto_especial { get; set; } = 0;
+        public int miembros { get; set; } = 0;
+        public float manutencion { get; set; } = 0;
+        public float endeudamiento { get; set; } = 0;
     }
 
     public class AfiBeneSocioRegistro
     {
-        public int id_registros { get; set; }
+        public int id_registros { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public Nullable<DateTime> ingreso_fecha { get; set; }
         public Nullable<DateTime> renuncia_fecha { get; set; }
@@ -495,14 +495,14 @@ namespace Galileo.Models.AF
         public string registro_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string modifica_usuario { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
     }
 
     public class AfiBeneApreJustificacion
     {
-        public int id_justificacion { get; set; }
+        public int id_justificacion { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string just_list_id { get; set; } = string.Empty;
         public string? justificacion { get; set; }
@@ -518,18 +518,18 @@ namespace Galileo.Models.AF
 
     public class AfiBeneApreJustificacionGuardar
     {
-        public int id_justificacion { get; set; }
+        public int id_justificacion { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public AfBeneficioIntegralDropsLista just_list_id { get; set; } = new AfBeneficioIntegralDropsLista();
         public string? justificacion { get; set; }
         public string? advertencia { get; set; }
         public string estado { get; set; } = string.Empty;
         public string tipo_beneficio { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime modifica_fecha { get; set; }
+        public DateTime modifica_fecha { get; set; } = DateTime.Now;
         public string? modifica_usuario { get; set; }
 
     }
@@ -582,11 +582,11 @@ namespace Galileo.Models.AF
 
     public class AfiBeneObservaciones
     {
-        public int id_observacion { get; set; }
+        public int id_observacion { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string observacion { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string registro_usuario { get; set; } = string.Empty;
     }
 
@@ -611,12 +611,12 @@ namespace Galileo.Models.AF
 
     public class BitacoraBeneficioIntegralDto
     {
-        public int id_bitacora { get; set; }
+        public int id_bitacora { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string movimiento { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string registro_usuario { get; set; } = string.Empty;
     }
     
@@ -630,10 +630,10 @@ namespace Galileo.Models.AF
 
     public class AfiBeneReconocimientos
     {
-        public int id_reconocimiento { get; set; }
+        public int id_reconocimiento { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
-        public int id_beneficio { get; set; }
+        public int consec { get; set; } = 0;
+        public int id_beneficio { get; set; } = 0;
         public string cedula_estudiante { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_nacimiento { get; set; } = null;
         public int? edad { get; set; }
@@ -656,7 +656,7 @@ namespace Galileo.Models.AF
         public AfBeneficioIntegralDropsLista? reconocimiento_etapa { get; set; }
         public Nullable<DateTime> reconocimiento_fecha { get; set; }
         public AfBeneficioIntegralDropsLista? reconocimiento_nivel { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string registro_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
@@ -664,13 +664,13 @@ namespace Galileo.Models.AF
 
     public class AfiBeneReconocimientosDatos
     {
-        public int id_reconocimiento { get; set; }
+        public int id_reconocimiento { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
-        public int id_beneficio { get; set; }
+        public int consec { get; set; } = 0;
+        public int id_beneficio { get; set; } = 0;
         public string cedula_estudiante { get; set; } = string.Empty;
         public DateTime fecha_nacimiento { get; set; }
-        public int edad { get; set; }
+        public int edad { get; set; } = 0;
         public string? genero { get; set; }
         public string primer_apellido { get; set; } = string.Empty;
         public string? segundo_apellido { get; set; }
@@ -702,22 +702,22 @@ namespace Galileo.Models.AF
 
     public class AfiBeneSocioCreceDto
     {
-        public int id_crece { get; set; }
+        public int id_crece { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
-        public bool capacitacion_cmp { get; set; }
-        public bool aplica_producto { get; set; }
+        public int consec { get; set; } = 0;
+        public bool capacitacion_cmp { get; set; } = false;
+        public bool aplica_producto { get; set; } = false;
         public float couta_inicial { get; set; } = 0;
         public float couta_aplicar { get; set; } = 0;
         public float ahorro { get; set; } = 0;
         public float liquidez { get; set; } = 0;
         public string? observaciones_prod { get; set; }
         public string? observaciones_bene { get; set; }
-        public bool aplica_bene { get; set; }
+        public bool aplica_bene { get; set; } = false; 
         public float monto_primera_tarjeta { get; set; } = 0;
-        public bool entrega_primera_tarjeta { get; set; }
+        public bool entrega_primera_tarjeta { get; set; } = false;
         public float monto_segunda_tarjeta { get; set; } = 0;
-        public bool entrega_segunda_tarjeta { get; set; }
+        public bool entrega_segunda_tarjeta { get; set; } = false;
         public Nullable<DateTime> registro_fecha { get; set; }
         public string? registro_usuario { get; set; }
         public Nullable<DateTime> modifica_fecha { get; set; }
@@ -729,12 +729,12 @@ namespace Galileo.Models.AF
 
     public class AfiBeneSocioCreceSesionesDto
     {
-        public int id_sesion { get; set; }
+        public int id_sesion { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
         public string? sesion { get; set; }
-        public bool asistencia { get; set; }
-        public bool tarea { get; set; }
+        public bool asistencia { get; set; } = false;
+        public bool tarea { get; set; } = false;
         public string? notas { get; set; }
         public Nullable<DateTime> sesion_fecha { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
@@ -751,7 +751,7 @@ namespace Galileo.Models.AF
     public class BeneficioGeneral
     {
         //Datos del Beneficio
-        public int id_beneficio { get; set; }
+        public int id_beneficio { get; set; } = 0;
         public int? consec { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
@@ -818,21 +818,21 @@ namespace Galileo.Models.AF
 
     public class AfiBeneSancionesDto
     {
-        public int sancion_id { get; set; }
+        public int sancion_id { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string tipo_sancion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
         public string? notas { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime fecha_inicio { get; set; } = DateTime.Now;
+        public DateTime fecha_corte { get; set; } = DateTime.Now;
         public float? monto { get; set; }
         public string? codigo_cobro { get; set; }
         public int? plazo { get; set; }
         public int? n_operacion { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
         public string registro_usuario { get; set; } = string.Empty;
         public string? modifica_usuario { get; set; }
-        public DateTime modifica_fecha { get; set; }
+        public DateTime modifica_fecha { get; set; } = DateTime.Now;
         public string? cod_beneficio { get; set; } = string.Empty;
         public int? consec { get; set; }
 
@@ -852,15 +852,15 @@ namespace Galileo.Models.AF
     
     public class BitacoraBeneficioDto
     {
-        public int id_bitacora { get; set; }
+        public int id_bitacora { get; set; } = 0;
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0;
 
         public string movimiento { get; set; } = string.Empty;
 
         public string detalle { get; set; } = string.Empty;
 
-        public DateTime registro_fecha { get; set; }
+        public DateTime registro_fecha { get; set; } = DateTime.Now;
 
         public string registro_usuario { get; set; } = string.Empty;
 
@@ -883,10 +883,10 @@ namespace Galileo.Models.AF
     public class BeneRegistroMoraGuardar
     {
         public string cod_beneficio { get; set; } = string.Empty;
-        public int consec { get; set; }
+        public int consec { get; set; } = 0; 
         public string cedula { get; set; } = string.Empty;
         public string acuerdo { get; set; } = string.Empty;
-        public DateTime acuerdo_fecha { get; set; }
+        public DateTime acuerdo_fecha { get; set; } = DateTime.Now;
         public decimal? cancelacion_mora { get; set; }
         public string? mes_cancelacion { get; set; } = string.Empty;
         public decimal? adelanto_cuota { get; set; }
@@ -898,13 +898,13 @@ namespace Galileo.Models.AF
 
     public class AfiBeneTicketsLista
     {
-        public int total { get; set; }
+        public int total { get; set; } = 0;
         public List<AfiBeneTicketsDatos> lista { get; set; } = new List<AfiBeneTicketsDatos>();
 
-        public int valorPendiente { get; set; }
-        public int valorError { get; set; }
-        public int valorConsultado { get; set; }
-        public int valorIngresado { get; set; }
+        public int valorPendiente { get; set; } = 0;
+        public int valorError { get; set; } = 0;
+        public int valorConsultado { get; set; } = 0;
+        public int valorIngresado { get; set; } = 0;
 
         public List<AfiBeneTicketTipos> tiposTramite { get; set; } = new List<AfiBeneTicketTipos>();
     }
@@ -912,7 +912,7 @@ namespace Galileo.Models.AF
     public class AfiBeneTicketTipos
     {
         public string? tipoTramite { get; set; }
-        public int total { get; set; }
+        public int total { get; set; } = 0;
     }
 
     public class AfiBeneTicketsDatos
@@ -927,12 +927,12 @@ namespace Galileo.Models.AF
         public string? n_expediente { get; set; }
         public string? consec { get; set; }
         public string? cod_beneficio { get; set; }
-        public int id_beneficio { get; set; }
+        public int id_beneficio { get; set; } = 0;
         public string? msj_interface { get; set; }
         public string? estado { get; set; }
         public string? caso_id { get; set; }
-        public bool i_visto { get; set; }
-        public bool i_pendiente { get; set; }
+        public bool i_visto { get; set; } = false;
+        public bool i_pendiente { get; set; } = false;
 
         public string? visto_por { get; set; }
         public string? incluido_por { get; set; }
@@ -964,7 +964,7 @@ namespace Galileo.Models.AF
         public string? CodDocumento { get; set; }
         public string? Consecutivo { get; set; }
         public int? IdSobre { get; set; } // Puede ser null
-        public int IdEstado { get; set; }
+        public int IdEstado { get; set; } = 0;
         public short ConfirmaRecepcion { get; set; }
         public Nullable<DateTime> FechaActualiza { get; set; }
         public string? UsuarioActualiza { get; set; }
@@ -977,7 +977,7 @@ namespace Galileo.Models.AF
 
     public class ZohoTicketAdd
     {
-        public int CodEmpresa { get; set; }
+        public int CodEmpresa { get; set; } = 0;
         public string? ticket { get; set; }
         public string? usuario { get; set; }
         public string? justificacion { get; set; }

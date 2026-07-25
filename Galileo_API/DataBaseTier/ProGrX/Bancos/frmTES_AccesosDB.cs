@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesAccesosDB(IConfiguration? config)
         {
-            _portalDB = new PortalDB(config!);
+            _portalDB = new PortalDB(config ?? throw new ArgumentNullException(nameof(config)));
         }
 
         /// <summary>

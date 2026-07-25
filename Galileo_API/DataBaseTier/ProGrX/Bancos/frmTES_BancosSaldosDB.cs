@@ -206,7 +206,8 @@ FETCH NEXT @fetch ROWS ONLY;";
             try
             {
                 // --- filtros de fechas ---
-                var filtrosFechas = JsonConvert.DeserializeObject<HistoricoFiltros>((string)filtros.parametros!)
+                var parametros = filtros.parametros?.ToString() ?? string.Empty;
+                var filtrosFechas = JsonConvert.DeserializeObject<HistoricoFiltros>(parametros)
                                   ?? new HistoricoFiltros();
 
                 var fechaInicio = filtrosFechas.inicio.Date;
