@@ -212,6 +212,12 @@ namespace Galileo_API.DataBaseTier.TES
         {
             try
             {
+                if (filtros == null)
+                    return new DynamicParameters();
+
+                if (!filtros.mov_fecha_inicio.HasValue || !filtros.mov_fecha_corte.HasValue)
+                    return new DynamicParameters();
+
                 var parameters = new DynamicParameters();
                 if (filtros.cuentas?.Count > 0)
                     parameters.Add("@Cuentas", filtros.cuentas.Select(x => x.item).ToList());
