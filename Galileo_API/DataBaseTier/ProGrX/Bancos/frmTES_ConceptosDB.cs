@@ -51,8 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                 var like = hasFiltro ? $"%{texto}%" : null;
 
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
+                var (offset, fetch) = (filtros.pagina, filtros.paginacion);
                 var usarPaginacion = fetch > 0;
 
                 // Whitelist de sortField (evita inyección por ORDER BY)

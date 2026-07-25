@@ -93,6 +93,18 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslRemesa_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
         {
+            return FslRemesa_CerrarInterno(CodEmpresa, cod_remesa, usuario);
+        }
+
+        /// <summary>
+        /// Ejecuta el cierre compartido de una remesa abierta y registra el movimiento.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="cod_remesa">Código de la remesa.</param>
+        /// <param name="usuario">Usuario que cierra.</param>
+        /// <returns>Resultado de la operación.</returns>
+        private ErrorDto FslRemesa_CerrarInterno(int CodEmpresa, int cod_remesa, string usuario)
+        {
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
             try
             {

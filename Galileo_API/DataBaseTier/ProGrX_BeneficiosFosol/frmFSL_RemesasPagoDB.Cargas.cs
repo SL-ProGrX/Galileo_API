@@ -120,35 +120,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslCargas_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
-            try
-            {
-                var abierta = connection.QueryFirstOrDefault<int>(
-                    "SELECT COUNT(*) AS Existe FROM FSL_REMESAS_TESORERIA WHERE TESORERIA_REMESA = @cod_remesa AND estado = 'A'",
-                    new { cod_remesa });
-
-                if (abierta == 0)
-                {
-                    return DbHelper.ErrorResponse("La Remesa actual; ya se encuentra cerrada...");
-                }
-
-                connection.Execute("UPDATE FSL_REMESAS_TESORERIA SET estado = 'C' WHERE TESORERIA_REMESA = @cod_remesa", new { cod_remesa });
-
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario.ToUpper(),
-                    DetalleMovimiento = "Cierra Remesa Traslado a Tesoreria :" + cod_remesa,
-                    Movimiento = "APLICA - WEB",
-                    Modulo = 7
-                });
-
-                return DbHelper.OkResponse("Remesa cerrada correctamente");
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            return FslRemesa_CerrarInterno(CodEmpresa, cod_remesa, usuario);
         }
     }
 }
