@@ -132,7 +132,9 @@ namespace Galileo_API.DataBaseTier.TES
                     "S" => " AND C.fecha_solicitud BETWEEN @FechaInicio AND @FechaCorte ",
                     _ => string.Empty
                 };
-                if (!string.IsNullOrEmpty(filtroTipoFecha))
+                if (!string.IsNullOrEmpty(filtroTipoFecha)
+                    && filtros.fecha_inicio.HasValue
+                    && filtros.fecha_corte.HasValue)
                 {
                     parameters.Add("@FechaInicio", filtros.fecha_inicio.Value);
                     parameters.Add("@FechaCorte", filtros.fecha_corte.Value.AddDays(1).AddTicks(-1));
