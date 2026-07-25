@@ -9,6 +9,45 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
     public partial class FrmFslConsultaDB
     {
         private const string TodosOpcion = "TODOS";
+        private const string ExpedientesSql = @"
+            SELECT COD_EXPEDIENTE AS cod_expediente, CEDULA AS cedula, NOMBRE AS nombre, EDAD AS edad,
+                   REGISTRO_USUARIO AS registro_usuario, REGISTRO_FECHA AS registro_fecha, ESTADO_DESC AS estado_desc,
+                   PLAN_DESC AS plan_desc, CAUSA_DESC AS causa_desc, ENFERMEDAD_DESC AS enfermedad_desc,
+                   COMITE_DESC AS comite_desc, RESOLUCION_FECHA AS resolucion_fecha,
+                   TOTAL_DISPONIBLE AS total_disponible, TOTAL_APLICADO AS total_aplicado, TOTAL_SOBRANTE AS total_sobrante,
+                   PRESENTA_CEDULA AS presenta_cedula, PRESENTA_NOMBRE AS presenta_nombre
+            FROM vFSL_CasosLista
+            WHERE Estado IN @estados
+              AND (@resolucionAprobada = 0 OR RESOLUCION_ESTADO = 'Y')
+              AND (@aplicaPlan = 0 OR (COD_PLAN = @codPlan AND COD_CAUSA IN @causas))
+              AND (@aplicaEnfermedad = 0 OR COD_ENFERMEDAD IN @enfermedades)
+              AND (@aplicaFechas = 0 OR
+                   (@usarFechaResolucion = 1 AND Resolucion_Fecha BETWEEN @fechaInicio AND @fechaCorte) OR
+                   (@usarFechaResolucion = 0 AND Registro_Fecha BETWEEN @fechaInicio AND @fechaCorte))
+              AND (@buscarCedula = 0 OR cedula LIKE @textoBuscar)
+              AND (@buscarPresentaCedula = 0 OR Presenta_Cedula LIKE @textoBuscar)
+              AND (@buscarPresentaNombre = 0 OR Presenta_Nombre LIKE @textoBuscar)
+              AND (@aplicaNombre = 0 OR Nombre LIKE @nombre)
+              AND (@aplicaTipo = 0 OR Tipo_Desembolso = @codTipo)
+              AND (@aplicaEstadoPersona = 0 OR EstadoActual = @estadoPersona)
+              AND (@aplicaComite = 0 OR COD_COMITE = @codComite)
+              AND CASE
+                      WHEN @aplicaMiembro = 0 THEN 1
+                      WHEN dbo.fxFSL_Expediente_ComiteMiembro(Cod_Expediente, @resueltoMiembro) >= 1 THEN 1
+                      ELSE 0
+                  END = 1
+              AND (@aplicaExpediente = 0 OR cod_expediente = @expediente)
+              AND (@aplicaUsuario = 0 OR Registro_Usuario = @usuario)
+              AND CASE
+                      WHEN @aplicaGestion = 0 THEN 1
+                      WHEN dbo.fxFSL_Expediente_GestionRegistrada(cod_Expediente, @gestionRegistrada) >= 1 THEN 1
+                      ELSE 0
+                  END = 1
+              AND CASE
+                      WHEN @aplicaApelacion = 0 THEN 1
+                      WHEN dbo.fxFSL_Expediente_ApelacionRegistrada(cod_Expediente, @apelacionRegistrada) >= 1 THEN 1
+                      ELSE 0
+                  END = 1;";
 
         /// <summary>
         /// Consulta los expedientes Fosol aplicando los filtros indicados (vista vFSL_CasosLista).
@@ -19,187 +58,61 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         public ErrorDto<List<FslConsultaExpedienteDatos>> FslConsultaExpedientes_Obtener(int CodCliente, string filtros)
         {
             var filtro = JsonConvert.DeserializeObject<FslConsultaFiltros>(filtros) ?? new FslConsultaFiltros();
-
-            var parametros = new DynamicParameters();
-            var estados = filtro.estado == "TODOS"
-                ? new[] { "A", "R", "P", "X", "Y" }
-                : new[] { filtro.estado };
-            parametros.Add("estados", estados);
-
-            var condiciones = new List<string>();
-            AgregarFiltroResolucion(filtro, condiciones);
-            AgregarFiltroPlanCausa(filtro, condiciones, parametros);
-            AgregarFiltroEnfermedad(filtro, condiciones, parametros);
-            AgregarFiltroFechas(filtro, condiciones, parametros);
-            AgregarFiltroBusqueda(filtro, condiciones, parametros);
-            AgregarFiltrosSimples(filtro, condiciones, parametros);
-            AgregarFiltrosFunciones(filtro, condiciones, parametros);
-
-            var extra = condiciones.Count == 0 ? string.Empty : " AND " + string.Join(" AND ", condiciones);
+            var parametros = FslConsultaExpedientes_CrearParametros(filtro);
 
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                var sql = $@"SELECT COD_EXPEDIENTE AS cod_expediente, CEDULA AS cedula, NOMBRE AS nombre, EDAD AS edad,
-                                    REGISTRO_USUARIO AS registro_usuario, REGISTRO_FECHA AS registro_fecha, ESTADO_DESC AS estado_desc,
-                                    PLAN_DESC AS plan_desc, CAUSA_DESC AS causa_desc, ENFERMEDAD_DESC AS enfermedad_desc,
-                                    COMITE_DESC AS comite_desc, RESOLUCION_FECHA AS resolucion_fecha,
-                                    TOTAL_DISPONIBLE AS total_disponible, TOTAL_APLICADO AS total_aplicado, TOTAL_SOBRANTE AS total_sobrante,
-                                    PRESENTA_CEDULA AS presenta_cedula, PRESENTA_NOMBRE AS presenta_nombre
-                             FROM vFSL_CasosLista
-                             WHERE Estado IN @estados {extra}";
-
-                return connection.Query<FslConsultaExpedienteDatos>(sql, parametros).ToList();
-            });
+                connection.Query<FslConsultaExpedienteDatos>(ExpedientesSql, parametros).ToList());
         }
 
         /// <summary>
-        /// Agrega el filtro de resolución aprobada.
+        /// Crea los parámetros y activadores de los filtros de expedientes.
         /// </summary>
-        private static void AgregarFiltroResolucion(FslConsultaFiltros filtro, List<string> condiciones)
+        private static DynamicParameters FslConsultaExpedientes_CrearParametros(FslConsultaFiltros filtro)
         {
-            if (filtro.estado == "AP")
-            {
-                condiciones.Add("RESOLUCION_ESTADO = 'Y'");
-            }
-        }
-
-        /// <summary>
-        /// Agrega el filtro de plan y causas.
-        /// </summary>
-        private static void AgregarFiltroPlanCausa(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (filtro.cod_plan == TodosOpcion)
-            {
-                return;
-            }
-
-            parametros.Add("cod_plan", filtro.cod_plan);
-            condiciones.Add("COD_PLAN = @cod_plan");
-
+            var parametros = new DynamicParameters();
+            var estados = filtro.estado == TodosOpcion
+                ? new[] { "A", "R", "P", "X", "Y" }
+                : new[] { filtro.estado };
             var causas = filtro.cod_causa.Select(c => c.item).ToArray();
-            parametros.Add("causas", causas);
-            condiciones.Add("COD_CAUSA IN @causas");
-        }
-
-        /// <summary>
-        /// Agrega el filtro de enfermedades (excluye 'TODOS').
-        /// </summary>
-        private static void AgregarFiltroEnfermedad(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (filtro.cod_enfermedad.Count == 0)
-            {
-                return;
-            }
-
             var enfermedades = filtro.cod_enfermedad.Select(e => e.item).Where(i => i != TodosOpcion).ToArray();
+            var aplicaComite = filtro.cod_comite != TodosOpcion;
+
+            parametros.Add("estados", estados);
+            parametros.Add("resolucionAprobada", filtro.estado == "AP");
+            parametros.Add("aplicaPlan", filtro.cod_plan != TodosOpcion);
+            parametros.Add("codPlan", filtro.cod_plan);
+            parametros.Add("causas", causas);
+            parametros.Add("aplicaEnfermedad", filtro.cod_enfermedad.Count > 0);
             parametros.Add("enfermedades", enfermedades);
-            condiciones.Add("COD_ENFERMEDAD IN @enfermedades");
-        }
-
-        /// <summary>
-        /// Agrega el filtro de rango de fechas según el estado.
-        /// </summary>
-        private static void AgregarFiltroFechas(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (filtro.fechas)
-            {
-                return;
-            }
-
+            parametros.Add("aplicaFechas", !filtro.fechas);
+            parametros.Add("usarFechaResolucion", filtro.estado is "A" or "R");
             parametros.Add("fechaInicio", filtro.fecha_inicio);
             parametros.Add("fechaCorte", filtro.fecha_corte);
+            var aplicaTexto = !string.IsNullOrEmpty(filtro.texto_buscar);
+            parametros.Add("buscarCedula", aplicaTexto && filtro.cod_buscarPor == "01");
+            parametros.Add("buscarPresentaCedula", aplicaTexto && filtro.cod_buscarPor == "02");
+            parametros.Add("buscarPresentaNombre", aplicaTexto && filtro.cod_buscarPor == "03");
+            parametros.Add("textoBuscar", $"%{filtro.texto_buscar}%");
+            parametros.Add("aplicaNombre", !string.IsNullOrEmpty(filtro.nombre));
+            parametros.Add("nombre", $"%{filtro.nombre}%");
+            parametros.Add("aplicaTipo", filtro.cod_tipo != TodosOpcion);
+            parametros.Add("codTipo", filtro.cod_tipo);
+            parametros.Add("aplicaEstadoPersona", !string.IsNullOrEmpty(filtro.estadoPersona));
+            parametros.Add("estadoPersona", filtro.estadoPersona);
+            parametros.Add("aplicaComite", aplicaComite);
+            parametros.Add("codComite", filtro.cod_comite);
+            parametros.Add("aplicaMiembro", aplicaComite && filtro.resueltoMiembro != TodosOpcion);
+            parametros.Add("resueltoMiembro", filtro.resueltoMiembro);
+            parametros.Add("aplicaExpediente", !string.IsNullOrEmpty(filtro.expediente));
+            parametros.Add("expediente", filtro.expediente);
+            parametros.Add("aplicaUsuario", !string.IsNullOrEmpty(filtro.usuario));
+            parametros.Add("usuario", filtro.usuario);
+            parametros.Add("aplicaGestion", filtro.gestionRegistrada != TodosOpcion);
+            parametros.Add("gestionRegistrada", filtro.gestionRegistrada);
+            parametros.Add("aplicaApelacion", filtro.apelacionRegistrada != TodosOpcion);
+            parametros.Add("apelacionRegistrada", filtro.apelacionRegistrada);
 
-            var columna = filtro.estado is "A" or "R" ? "Resolucion_Fecha" : "Registro_Fecha";
-            condiciones.Add($"{columna} BETWEEN @fechaInicio AND @fechaCorte");
-        }
-
-        /// <summary>
-        /// Agrega el filtro de búsqueda por texto (cédula, cédula/nombre del presentante) y nombre.
-        /// </summary>
-        private static void AgregarFiltroBusqueda(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (!string.IsNullOrEmpty(filtro.texto_buscar))
-            {
-                var columna = filtro.cod_buscarPor switch
-                {
-                    "01" => "cedula",
-                    "02" => "Presenta_Cedula",
-                    "03" => "Presenta_Nombre",
-                    _ => null
-                };
-
-                if (columna != null)
-                {
-                    parametros.Add("textoBuscar", $"%{filtro.texto_buscar}%");
-                    condiciones.Add($"{columna} LIKE @textoBuscar");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(filtro.nombre))
-            {
-                parametros.Add("nombre", $"%{filtro.nombre}%");
-                condiciones.Add("Nombre LIKE @nombre");
-            }
-        }
-
-        /// <summary>
-        /// Agrega los filtros simples de igualdad (tipo, estado persona, comité, expediente, usuario).
-        /// </summary>
-        private static void AgregarFiltrosSimples(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (filtro.cod_tipo != TodosOpcion)
-            {
-                parametros.Add("codTipo", filtro.cod_tipo);
-                condiciones.Add("Tipo_Desembolso = @codTipo");
-            }
-
-            if (!string.IsNullOrEmpty(filtro.estadoPersona))
-            {
-                parametros.Add("estadoPersona", filtro.estadoPersona);
-                condiciones.Add("EstadoActual = @estadoPersona");
-            }
-
-            if (filtro.cod_comite != TodosOpcion)
-            {
-                parametros.Add("codComite", filtro.cod_comite);
-                condiciones.Add("COD_COMITE = @codComite");
-
-                if (filtro.resueltoMiembro != TodosOpcion)
-                {
-                    parametros.Add("resueltoMiembro", filtro.resueltoMiembro);
-                    condiciones.Add("dbo.fxFSL_Expediente_ComiteMiembro(Cod_Expediente, @resueltoMiembro) >= 1");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(filtro.expediente))
-            {
-                parametros.Add("expediente", filtro.expediente);
-                condiciones.Add("cod_expediente = @expediente");
-            }
-
-            if (!string.IsNullOrEmpty(filtro.usuario))
-            {
-                parametros.Add("usuario", filtro.usuario);
-                condiciones.Add("Registro_Usuario = @usuario");
-            }
-        }
-
-        /// <summary>
-        /// Agrega los filtros basados en funciones (gestión y apelación registrada).
-        /// </summary>
-        private static void AgregarFiltrosFunciones(FslConsultaFiltros filtro, List<string> condiciones, DynamicParameters parametros)
-        {
-            if (filtro.gestionRegistrada != TodosOpcion)
-            {
-                parametros.Add("gestionRegistrada", filtro.gestionRegistrada);
-                condiciones.Add("dbo.fxFSL_Expediente_GestionRegistrada(cod_Expediente, @gestionRegistrada) >= 1");
-            }
-
-            if (filtro.apelacionRegistrada != TodosOpcion)
-            {
-                parametros.Add("apelacionRegistrada", filtro.apelacionRegistrada);
-                condiciones.Add("dbo.fxFSL_Expediente_ApelacionRegistrada(cod_Expediente, @apelacionRegistrada) >= 1");
-            }
+            return parametros;
         }
     }
 }

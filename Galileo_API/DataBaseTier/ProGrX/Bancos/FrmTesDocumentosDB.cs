@@ -94,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@"select t.*, c.DESCRIPCION as tipo_asiento_desc from tes_tipos_doc t
+            const string query = @"select t.*, c.DESCRIPCION as tipo_asiento_desc from tes_tipos_doc t
                                    left join CNTX_TIPOS_ASIENTOS c ON t.TIPO_ASIENTO = c.TIPO_ASIENTO where tipo = @tipo";
 
                 return conn.QueryFirstOrDefault<TesTiposDocDto>(query, new { tipo = tipo }) ?? new TesTiposDocDto();
@@ -363,34 +363,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 ArgumentNullException.ThrowIfNull(concepto);
 
-                var proc = $@"exec spTes_Anula_Conceptos_Add @Id, @Tipo, @Descripcion, @Activo, @Usuario";
+                const string proc = @"exec spTes_Anula_Conceptos_Add @Id, @Tipo, @Descripcion, @Activo, @Usuario";
                 var parametros = new
                 {
                     Id = concepto.id_conceptos,
                     Tipo = tipo,
-                    Descripcion = concepto?.descripcion,
-                    Activo = concepto?.activo == true ? 1 : 0,
+                    Descripcion = concepto.descripcion,
+                    Activo = concepto.activo ? 1 : 0,
                     Usuario = usuario,
                 };
 
                 var resp = conn.Query<TesDocAnulaConcepRespuesta>(proc, parametros).FirstOrDefault()
                     ?? throw new InvalidOperationException("El proceso no devolvió una respuesta.");
 
-                if (resp?.pass == 1)
+                if (resp.pass == 1)
                 {
                     _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
                         DetalleMovimiento = $"Concepto de Anulación de Documentos de Bancos Id: {resp.codigo} - {concepto.descripcion}",
-                        Movimiento = resp.movimiento,
+                        Movimiento = resp.movimiento ?? string.Empty,
                         Modulo = vModulo
                     });
                 }
                 else
                 {
                     response.Code = -1;
-                    response.Description = resp?.mensaje ?? "No se obtuvo respuesta del procedimiento.";
+                    response.Description = resp.mensaje ?? "No se obtuvo respuesta del procedimiento.";
                 }
             }
             catch (Exception ex)
@@ -428,7 +428,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
                         DetalleMovimiento = $"Concepto de Anulación de Documentos de Bancos Id: {id_conceptos}",
-                        Movimiento = resp.movimiento,
+                        Movimiento = resp.movimiento ?? string.Empty,
                         Modulo = vModulo
                     });
                 }

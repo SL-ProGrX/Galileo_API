@@ -14,47 +14,60 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private const string TipoCatalogoInvalido = "Tipo de catálogo inválido";
         private readonly IConfiguration _config;
 
-        private static readonly FslTablaTipoSql GestionesSql = new(
-            @"SELECT COUNT(*) FROM FSL_TIPOS_GESTIONES
-              WHERE (@like IS NULL OR COD_GESTION LIKE @like OR descripcion LIKE @like)",
-            @"SELECT COD_GESTION AS codigo, descripcion, Activa AS activa
-              FROM FSL_TIPOS_GESTIONES
-              WHERE (@like IS NULL OR COD_GESTION LIKE @like OR descripcion LIKE @like)
-              ORDER BY COD_GESTION
-              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
-            "UPDATE FSL_TIPOS_GESTIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_GESTION = @codigo",
-            @"INSERT INTO FSL_TIPOS_GESTIONES (COD_GESTION, descripcion, Activa, registro_fecha, registro_usuario)
-              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
-            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo",
-            "DELETE FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo");
+        private const string CatalogosListaSql = @"
+            DECLARE @Catalogo TABLE (codigo NVARCHAR(100), descripcion NVARCHAR(MAX), activa BIT);
 
-        private static readonly FslTablaTipoSql ApelacionesSql = new(
-            @"SELECT COUNT(*) FROM FSL_TIPOS_APELACIONES
-              WHERE (@like IS NULL OR COD_APELACION LIKE @like OR descripcion LIKE @like)",
-            @"SELECT COD_APELACION AS codigo, descripcion, Activa AS activa
-              FROM FSL_TIPOS_APELACIONES
-              WHERE (@like IS NULL OR COD_APELACION LIKE @like OR descripcion LIKE @like)
-              ORDER BY COD_APELACION
-              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
-            "UPDATE FSL_TIPOS_APELACIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_APELACION = @codigo",
-            @"INSERT INTO FSL_TIPOS_APELACIONES (COD_APELACION, descripcion, Activa, registro_fecha, registro_usuario)
-              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
-            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo",
-            "DELETE FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo");
+            IF @tipo = 'G'
+                INSERT INTO @Catalogo SELECT COD_GESTION, descripcion, Activa FROM FSL_TIPOS_GESTIONES;
+            ELSE IF @tipo = 'A'
+                INSERT INTO @Catalogo SELECT COD_APELACION, descripcion, Activa FROM FSL_TIPOS_APELACIONES;
+            ELSE IF @tipo = 'E'
+                INSERT INTO @Catalogo SELECT COD_ENFERMEDAD, descripcion, Activa FROM FSL_TIPOS_ENFERMEDADES;
 
-        private static readonly FslTablaTipoSql EnfermedadesSql = new(
-            @"SELECT COUNT(*) FROM FSL_TIPOS_ENFERMEDADES
-              WHERE (@like IS NULL OR COD_ENFERMEDAD LIKE @like OR descripcion LIKE @like)",
-            @"SELECT COD_ENFERMEDAD AS codigo, descripcion, Activa AS activa
-              FROM FSL_TIPOS_ENFERMEDADES
-              WHERE (@like IS NULL OR COD_ENFERMEDAD LIKE @like OR descripcion LIKE @like)
-              ORDER BY COD_ENFERMEDAD
-              OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY",
-            "UPDATE FSL_TIPOS_ENFERMEDADES SET descripcion = @descripcion, Activa = @activa WHERE COD_ENFERMEDAD = @codigo",
-            @"INSERT INTO FSL_TIPOS_ENFERMEDADES (COD_ENFERMEDAD, descripcion, Activa, registro_fecha, registro_usuario)
-              VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario)",
-            "SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo",
-            "DELETE FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo");
+            SELECT COUNT(*)
+            FROM @Catalogo
+            WHERE @like IS NULL OR codigo LIKE @like OR descripcion LIKE @like;
+
+            SELECT codigo, descripcion, activa
+            FROM @Catalogo
+            WHERE @like IS NULL OR codigo LIKE @like OR descripcion LIKE @like
+            ORDER BY codigo
+            OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+        private const string ActualizarSql = @"
+            IF @tipo = 'G'
+                UPDATE FSL_TIPOS_GESTIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_GESTION = @codigo;
+            ELSE IF @tipo = 'A'
+                UPDATE FSL_TIPOS_APELACIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_APELACION = @codigo;
+            ELSE IF @tipo = 'E'
+                UPDATE FSL_TIPOS_ENFERMEDADES SET descripcion = @descripcion, Activa = @activa WHERE COD_ENFERMEDAD = @codigo;";
+
+        private const string InsertarSql = @"
+            IF @tipo = 'G'
+                INSERT INTO FSL_TIPOS_GESTIONES (COD_GESTION, descripcion, Activa, registro_fecha, registro_usuario)
+                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);
+            ELSE IF @tipo = 'A'
+                INSERT INTO FSL_TIPOS_APELACIONES (COD_APELACION, descripcion, Activa, registro_fecha, registro_usuario)
+                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);
+            ELSE IF @tipo = 'E'
+                INSERT INTO FSL_TIPOS_ENFERMEDADES (COD_ENFERMEDAD, descripcion, Activa, registro_fecha, registro_usuario)
+                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);";
+
+        private const string ExisteSql = @"
+            SELECT CASE @tipo
+                WHEN 'G' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo)
+                WHEN 'A' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo)
+                WHEN 'E' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo)
+                ELSE 0
+            END;";
+
+        private const string EliminarSql = @"
+            IF @tipo = 'G'
+                DELETE FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo;
+            ELSE IF @tipo = 'A'
+                DELETE FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo;
+            ELSE IF @tipo = 'E'
+                DELETE FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo;";
 
         /// <summary>
         /// Inicializa el acceso a datos con la configuración inyectada.
@@ -71,15 +84,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
-        /// Obtiene las consultas predefinidas del catálogo según el tipo (G/A/E).
+        /// Indica si el tipo corresponde a uno de los catálogos permitidos.
         /// </summary>
-        private static FslTablaTipoSql? ResolverSql(string tipo) => tipo switch
-        {
-            "G" => GestionesSql,
-            "A" => ApelacionesSql,
-            "E" => EnfermedadesSql,
-            _ => null
-        };
+        private static bool EsTipoValido(string tipo) => tipo is "G" or "A" or "E";
 
         /// <summary>
         /// Obtiene la lista de tipos (gestiones, apelaciones o enfermedades) con paginación y filtro.
@@ -92,8 +99,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Lista de tipos y total.</returns>
         public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
         {
-            var catalogoSql = ResolverSql(tipo);
-            if (catalogoSql == null)
+            if (!EsTipoValido(tipo))
             {
                 return DbHelper.CreateErrorResponse<FslTablaTipoLista>(TipoCatalogoInvalido);
             }
@@ -106,10 +112,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 var offset = pagina ?? 0;
                 var fetch = paginacion ?? 10;
 
-                response.Total = connection.QueryFirstOrDefault<int>(catalogoSql.Conteo, new { like });
-                response.Lista = connection.Query<FslTablaTipoData>(
-                    catalogoSql.Lista,
-                    new { like, offset, fetch }).ToList();
+                using var resultados = connection.QueryMultiple(
+                    CatalogosListaSql,
+                    new { tipo, like, offset, fetch });
+                response.Total = resultados.ReadSingle<int>();
+                response.Lista = resultados.Read<FslTablaTipoData>().ToList();
                 return response;
             });
         }
@@ -123,14 +130,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, FslTablaTipoData tipoData)
         {
-            var catalogoSql = ResolverSql(tipo);
-            if (catalogoSql == null)
+            if (!EsTipoValido(tipo))
             {
                 return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
 
-            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, catalogoSql.Actualizar, new
+            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, ActualizarSql, new
             {
+                tipo,
                 tipoData.descripcion,
                 activa = tipoData.activa ? 1 : 0,
                 tipoData.codigo
@@ -154,8 +161,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, FslTablaTipoData tipoData)
         {
-            var catalogoSql = ResolverSql(tipo);
-            if (catalogoSql == null)
+            if (!EsTipoValido(tipo))
             {
                 return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
@@ -163,13 +169,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
             {
-                if (FslTablaTipoExiste(connection, catalogoSql.Existe, tipoData.codigo))
+                if (FslTablaTipoExiste(connection, tipo, tipoData.codigo))
                 {
                     return FslTablaTipos_Actualizar(CodCliente, tipo, tipoData);
                 }
 
-                connection.Execute(catalogoSql.Insertar, new
+                connection.Execute(InsertarSql, new
                 {
+                    tipo,
                     tipoData.codigo,
                     tipoData.descripcion,
                     activa = tipoData.activa ? 1 : 0,
@@ -187,9 +194,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Verifica si existe un código en la tabla de tipo indicada.
         /// </summary>
-        private static bool FslTablaTipoExiste(SqlConnection connection, string sql, string codigo)
+        private static bool FslTablaTipoExiste(SqlConnection connection, string tipo, string codigo)
         {
-            return connection.QueryFirstOrDefault<int>(sql, new { codigo }) > 0;
+            return connection.QueryFirstOrDefault<int>(ExisteSql, new { tipo, codigo }) > 0;
         }
 
         /// <summary>
@@ -201,21 +208,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
         {
-            var catalogoSql = ResolverSql(tipo);
-            if (catalogoSql == null)
+            if (!EsTipoValido(tipo))
             {
                 return DbHelper.ErrorResponse(TipoCatalogoInvalido);
             }
 
-            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, catalogoSql.Eliminar, new { codigo });
+            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, EliminarSql, new { tipo, codigo });
         }
-
-        private sealed record FslTablaTipoSql(
-            string Conteo,
-            string Lista,
-            string Actualizar,
-            string Insertar,
-            string Existe,
-            string Eliminar);
     }
 }
