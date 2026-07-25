@@ -22,7 +22,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Obtiene una lista de tipos de póliza de activos fijos con paginación y filtros.
         /// </summary>
-        public ErrorDto<ActivosPolizasTiposLista> Activos_PolizasTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosPolizasTiposLista> Activos_PolizasTiposLista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosPolizasTiposLista>()
             {
@@ -42,11 +42,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var p = new DynamicParameters();
 
                 // Normalizamos filtro para evitar SQL dinámico (S2077)
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
-
                 string? filtroLike = null;
-
                 if (filtros?.filtro is { } texto && !string.IsNullOrWhiteSpace(texto))
                 {
                     filtroLike = $"%{texto.Trim()}%";
@@ -58,6 +54,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 // Paginación
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
+
                 p.Add("@offset", pagina);
                 p.Add("@rows", paginacion);
 
@@ -69,50 +66,50 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     "tipo_poliza" => 1,
                     "descripcion" => 2,
-                    "activo"      => 3,
-                    _             => 1
+                    "activo" => 3,
+                    _ => 1
                 };
+
                 p.Add("@sortIndex", sortIndex);
 
                 int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
                 p.Add("@sortDir", sortDir);
 
                 const string baseCountSql = @"
-SELECT COUNT(tipo_poliza)
-FROM   activos_polizas_tipos
-WHERE (@tieneFiltro = 0
-       OR tipo_poliza LIKE @filtro
-       OR descripcion LIKE @filtro);";
+                    SELECT COUNT(tipo_poliza)
+                    FROM activos_polizas_tipos
+                    WHERE (@tieneFiltro = 0
+                           OR tipo_poliza LIKE @filtro
+                           OR descripcion LIKE @filtro);";
 
                 result.Result.total = connection.QueryFirstOrDefault<int>(baseCountSql, p);
 
                 const string baseDataSql = @"
-SELECT tipo_poliza,
-       descripcion,
-       CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
-FROM   activos_polizas_tipos
-WHERE (@tieneFiltro = 0
-       OR tipo_poliza LIKE @filtro
-       OR descripcion LIKE @filtro)
-ORDER BY
-    -- ASC
-    CASE @sortDir WHEN 1 THEN
-        CASE @sortIndex
-            WHEN 1 THEN tipo_poliza
-            WHEN 2 THEN descripcion
-            WHEN 3 THEN ACTIVO
-        END
-    END ASC,
-    -- DESC
-    CASE @sortDir WHEN 0 THEN
-        CASE @sortIndex
-            WHEN 1 THEN tipo_poliza
-            WHEN 2 THEN descripcion
-            WHEN 3 THEN ACTIVO
-        END
-    END DESC
-OFFSET @offset ROWS 
-FETCH NEXT @rows ROWS ONLY;";
+                    SELECT
+                        tipo_poliza,
+                        descripcion,
+                        CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
+                    FROM activos_polizas_tipos
+                    WHERE (@tieneFiltro = 0
+                           OR tipo_poliza LIKE @filtro
+                           OR descripcion LIKE @filtro)
+                    ORDER BY
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN tipo_poliza
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN ACTIVO
+                            END
+                        END ASC,
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN tipo_poliza
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN ACTIVO
+                            END
+                        END DESC
+                    OFFSET @offset ROWS
+                    FETCH NEXT @rows ROWS ONLY;";
 
                 result.Result.lista = connection
                     .Query<ActivosPolizasTiposData>(baseDataSql, p)
@@ -125,6 +122,7 @@ FETCH NEXT @rows ROWS ONLY;";
                 result.Result.total = 0;
                 result.Result.lista = [];
             }
+
             return result;
         }
 
