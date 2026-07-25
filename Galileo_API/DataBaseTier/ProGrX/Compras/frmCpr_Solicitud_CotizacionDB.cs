@@ -134,7 +134,7 @@ namespace Galileo.DataBaseTier
             var proveedorCodigo = cotizacion.proveedor_codigo.Value;
             var noCotizacion = cotizacion.cotiza_numero;
 
-            MarcarCotizaVigente(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, idCotizacion);
+            MarcarCotizaVigente(conn, tx, cprId, proveedorCodigo, idCotizacion);
             EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
             InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);
