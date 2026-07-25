@@ -367,7 +367,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Id = concepto?.id_conceptos ?? 0,
                     Tipo = tipo,
                     Descripcion = concepto?.descripcion,
-                    Activo = concepto.activo ? 1 : 0,
+                    Activo = concepto?.activo == true ? 1 : 0,
                     Usuario = usuario,
                 };
 
