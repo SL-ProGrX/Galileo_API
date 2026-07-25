@@ -387,7 +387,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 else
                 {
                     response.Code = -1;
-                    response.Description = resp.mensaje;
+                    response.Description = resp?.mensaje ?? "No se obtuvo respuesta del procedimiento.";
                 }
             }
             catch (Exception ex)
