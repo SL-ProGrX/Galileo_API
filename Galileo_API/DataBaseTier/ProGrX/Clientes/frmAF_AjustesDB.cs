@@ -350,20 +350,20 @@ namespace Galileo.DataBaseTier
                 {
                     Code = result.Code,
                     Description = result.Description,
-                    Result = result.Result!
+                    Result = result.Result
                 };
             }
 
             if (result.Result is null)
             {
-                return DbHelper.CreateErrorResponse<AfAjustePersonaDetalle>("No se encontraron datos para la cédula indicada.", 1, null!);
+                return DbHelper.CreateErrorResponse<AfAjustePersonaDetalle>("No se encontraron datos para la cédula indicada.", 1, null);
             }
 
             return new ErrorDto<AfAjustePersonaDetalle>
             {
                 Code = result.Code,
                 Description = result.Description,
-                Result = result.Result!
+                Result = result.Result
             };
         }
 
