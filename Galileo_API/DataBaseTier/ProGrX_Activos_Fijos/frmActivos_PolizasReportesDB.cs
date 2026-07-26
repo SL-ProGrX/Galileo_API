@@ -18,7 +18,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Obtener lista de pólizas (paginada y con filtro).
         /// </summary>
-        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener( int CodEmpresa,string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosPolizasFiltros>(filtros);
 
@@ -33,36 +33,44 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-
-                // Paginación
-                int pagina     = vfiltro?.pagina     ?? 0;
+                int pagina = vfiltro?.pagina ?? 0;
                 int paginacion = vfiltro?.paginacion ?? 50;
-                p.Add("@offset", pagina);
-                p.Add("@rows",   paginacion);
 
-                // Normalizamos el texto de filtro para evitar S2589
-                string? filtroTexto = vfiltro?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                p.Add("@offset", pagina);
+                p.Add("@rows", paginacion);
+
+                string? filtroLike = null;
+
+                if (vfiltro?.filtro is string textoFiltro &&
+                    !string.IsNullOrWhiteSpace(textoFiltro))
+                {
+                    filtroLike = $"%{textoFiltro.Trim()}%";
+                }
+
+                bool tieneFiltro = filtroLike is not null;
 
                 if (tieneFiltro)
                 {
-                    p.Add("@filtro", $"%{filtroTexto!.Trim()}%");
+                    p.Add("@filtro", filtroLike);
                 }
 
-                const string baseCountSql = @"SELECT COUNT(*) FROM ACTIVOS_POLIZAS";
-                const string baseDataSql  = @"
-SELECT 
-    COD_POLIZA  AS cod_poliza,
-    DESCRIPCION AS descripcion
-FROM ACTIVOS_POLIZAS";
+                const string baseCountSql = @"
+                    SELECT COUNT(*)
+                    FROM ACTIVOS_POLIZAS";
 
-                const string whereBlock = @"
-WHERE (
-       COD_POLIZA             LIKE @filtro
-    OR DESCRIPCION           LIKE @filtro
-    OR ISNULL(NUM_POLIZA,'') LIKE @filtro
-    OR ISNULL(DOCUMENTO,'')  LIKE @filtro
-)";
+                                    const string baseDataSql = @"
+                    SELECT
+                        COD_POLIZA  AS cod_poliza,
+                        DESCRIPCION AS descripcion
+                    FROM ACTIVOS_POLIZAS";
+
+                                    const string whereBlock = @"
+                    WHERE (
+                           COD_POLIZA             LIKE @filtro
+                        OR DESCRIPCION            LIKE @filtro
+                        OR ISNULL(NUM_POLIZA, '') LIKE @filtro
+                        OR ISNULL(DOCUMENTO, '')  LIKE @filtro
+                    )";
 
                 string countSql;
                 string dataSql;
@@ -70,24 +78,25 @@ WHERE (
                 if (tieneFiltro)
                 {
                     countSql = baseCountSql + whereBlock + ";";
-                    dataSql  = baseDataSql  + whereBlock + @"
-ORDER BY COD_POLIZA
-OFFSET @offset ROWS 
-FETCH NEXT @rows ROWS ONLY;";
+
+                    dataSql = baseDataSql + whereBlock + @"
+                    ORDER BY COD_POLIZA
+                    OFFSET @offset ROWS
+                    FETCH NEXT @rows ROWS ONLY;";
                 }
                 else
                 {
                     countSql = baseCountSql + ";";
-                    dataSql  = baseDataSql  + @"
-ORDER BY COD_POLIZA
-OFFSET @offset ROWS 
-FETCH NEXT @rows ROWS ONLY;";
+
+                    dataSql = baseDataSql + @"
+                    ORDER BY COD_POLIZA
+                    OFFSET @offset ROWS
+                    FETCH NEXT @rows ROWS ONLY;";
                 }
 
-                // Total
-                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
+                response.Result.total =
+                    connection.QueryFirstOrDefault<int>(countSql, p);
 
-                // Datos
                 response.Result.lista = connection
                     .Query<ActivosPolizasReportesData>(dataSql, p)
                     .ToList();

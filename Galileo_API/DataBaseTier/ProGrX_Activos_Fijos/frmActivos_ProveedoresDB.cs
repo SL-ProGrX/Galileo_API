@@ -45,12 +45,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         #region Helpers privados
 
-        private static void AddFiltroParametros(DynamicParameters parameters, FiltrosLazyLoadData? filtros)
+        private static void AddFiltroParametros(DynamicParameters parameters,FiltrosLazyLoadData? filtros)
         {
-            string? filtroTexto = filtros?.filtro;
-            bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+            string? filtroLike = null;
+
+            if (filtros?.filtro is string textoFiltro &&
+                !string.IsNullOrWhiteSpace(textoFiltro))
+            {
+                filtroLike = $"%{textoFiltro.Trim()}%";
+            }
+
+            bool tieneFiltro = filtroLike is not null;
+
             parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-            parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+            parameters.Add("@filtro", filtroLike);
         }
 
         private static string NormalizeCodigoProveedor(string? cod)

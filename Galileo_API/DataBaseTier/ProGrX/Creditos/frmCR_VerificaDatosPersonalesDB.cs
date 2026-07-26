@@ -742,6 +742,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 conn.Open();
 
                 const string sql = "exec spAFI_Persona_Nombramientos_Consulta @Cedula";
+
                 var rows = conn.Query(sql, new { Cedula = pId });
 
                 var lista = new List<CrVerificaDatosNombramientoItem>();
@@ -757,8 +758,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     });
                 }
 
-                response.Result!.total = lista.Count;
-                response.Result!.lista = lista;
+                response.Result ??= new CrVerificaDatosListaResult<CrVerificaDatosNombramientoItem>();
+
+                response.Result.total = lista.Count;
+                response.Result.lista = lista;
 
                 return response;
             }

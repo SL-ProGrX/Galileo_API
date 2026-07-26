@@ -141,10 +141,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
         }
 
         private ErrorDto EjecutarGuardarInterno(
-            int CodEmpresa,
-            string usuarioSesion,
-            CcCaRemesasTiposData item,
-            bool isInsert)
+    int CodEmpresa,
+    string usuarioSesion,
+    CcCaRemesasTiposData item,
+    bool isInsert)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -155,7 +155,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                         "spPrm_CA_Remesas_Tipos_Add",
                         new
                         {
-                            Remesa = isInsert ? 0 : item.cod_remesa!.Value,
+                            Remesa = isInsert
+                                ? 0
+                                : item.cod_remesa.GetValueOrDefault(),
+
                             Descripcion = NormalizeText(item.descripcion),
                             Activo = item.activo ? 1 : 0,
                             Entidad = NormalizeText(item.cod_entidad),

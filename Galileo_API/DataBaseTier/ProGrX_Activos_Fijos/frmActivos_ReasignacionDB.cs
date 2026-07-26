@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
-    public class FrmActivosReasignacionesDB
+    public class FrmActivosReasignacionDB
     {
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
@@ -102,7 +102,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             int SortDir
         );
 
-        public FrmActivosReasignacionesDB(IConfiguration config)
+        public FrmActivosReasignacionDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
             _mReporting      = new MReportingServicesDB(config);
@@ -263,46 +263,53 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista paginada de activos para el F4 de No. Placa.
         /// </summary>
-        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(
-            int CodEmpresa,
-            FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<ActivosReasignacionesActivosLista>
             {
-                Code        = 0,
+                Code = 0,
                 Description = MensajeOk,
-                Result      = new ActivosReasignacionesActivosLista()
+                Result = new ActivosReasignacionesActivosLista()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p           = new DynamicParameters();
-                var filtroTexto = filtros?.filtro;
-                var tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                var p = new DynamicParameters();
+
+                string? filtroLike = null;
+
+                if (filtros?.filtro is string textoFiltro &&
+                    !string.IsNullOrWhiteSpace(textoFiltro))
+                {
+                    filtroLike = $"%{textoFiltro.Trim()}%";
+                }
+
+                bool tieneFiltro = filtroLike is not null;
 
                 p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro",      tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                p.Add("@filtro", filtroLike);
 
                 const string qTotal = @"
-                    SELECT COUNT(1)
-                    FROM Activos_Principal A
-                    WHERE (@tieneFiltro = 0
-                           OR A.num_placa     LIKE @filtro
-                           OR A.Placa_Alterna LIKE @filtro
-                           OR A.Nombre        LIKE @filtro);";
+            SELECT COUNT(1)
+            FROM Activos_Principal A
+            WHERE (@tieneFiltro = 0
+                   OR A.num_placa     LIKE @filtro
+                   OR A.Placa_Alterna LIKE @filtro
+                   OR A.Nombre        LIKE @filtro);";
 
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
 
-               var sortFieldCanonical = GetActivosSortFieldCanonical(filtros?.sortField);
+                var sortFieldCanonical = GetActivosSortFieldCanonical(filtros?.sortField);
 
                 var sortIndex = sortFieldCanonical switch
                 {
                     ColA_PlacaAlterna => 2,
-                    ColA_Nombre       => 3,
-                    _                 => 1
+                    ColA_Nombre => 3,
+                    _ => 1
                 };
+
                 p.Add("@sortIndex", sortIndex);
 
                 var sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
@@ -313,37 +320,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var offset = pagina <= 0 ? 0 : pagina * paginacion;
 
                 p.Add("@offset", offset);
-                p.Add("@fetch",  paginacion);
+                p.Add("@fetch", paginacion);
 
                 const string qDatos = @"
-                    SELECT
-                        A.num_placa          AS num_placa,
-                        A.Placa_Alterna      AS placa_alterna,
-                        A.Nombre             AS nombre
-                    FROM Activos_Principal A
-                    WHERE (@tieneFiltro = 0
-                           OR A.num_placa     LIKE @filtro
-                           OR A.Placa_Alterna LIKE @filtro
-                           OR A.Nombre        LIKE @filtro)
-                    ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN A.num_placa
-                                WHEN 2 THEN A.Placa_Alterna
-                                WHEN 3 THEN A.Nombre
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1 THEN A.num_placa
-                                WHEN 2 THEN A.Placa_Alterna
-                                WHEN 3 THEN A.Nombre
-                            END
-                        END DESC
-                    OFFSET @offset ROWS
-                    FETCH NEXT @fetch ROWS ONLY;";
+            SELECT
+                A.num_placa     AS num_placa,
+                A.Placa_Alterna AS placa_alterna,
+                A.Nombre        AS nombre
+            FROM Activos_Principal A
+            WHERE (@tieneFiltro = 0
+                   OR A.num_placa     LIKE @filtro
+                   OR A.Placa_Alterna LIKE @filtro
+                   OR A.Nombre        LIKE @filtro)
+            ORDER BY
+                CASE @sortDir WHEN 1 THEN
+                    CASE @sortIndex
+                        WHEN 1 THEN A.num_placa
+                        WHEN 2 THEN A.Placa_Alterna
+                        WHEN 3 THEN A.Nombre
+                    END
+                END ASC,
+                CASE @sortDir WHEN 0 THEN
+                    CASE @sortIndex
+                        WHEN 1 THEN A.num_placa
+                        WHEN 2 THEN A.Placa_Alterna
+                        WHEN 3 THEN A.Nombre
+                    END
+                END DESC
+            OFFSET @offset ROWS
+            FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = connection
                     .Query<ActivosReasignacionesActivoResumen>(qDatos, p)
@@ -351,8 +356,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code         = -1;
-                resp.Description  = ex.Message;
+                resp.Code = -1;
+                resp.Description = ex.Message;
                 resp.Result.total = 0;
                 resp.Result.lista = [];
             }

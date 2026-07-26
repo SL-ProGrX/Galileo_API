@@ -60,6 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             "yyyy/MM/dd HH:mm:ss"
         };
         private static readonly string[] _whitelistEstados = new[] { "T", "A", "P", "R" };
+        private const string PARAMETROSINVALIDOS = "Parámetros inválidos.";
         public FrmSysFacturaElectronicaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -235,16 +236,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             var filtrosResp = TryParseFiltros(parametros, out var filtros, out var error);
             if (!filtrosResp)
-                return DbHelper.CreateErrorResponse<FeCortesLista>(error!);
-
+                return DbHelper.CreateErrorResponse<FeCortesLista>(error ?? PARAMETROSINVALIDOS);
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeCortesLista>(PARAMETROSINVALIDOS);
             var response = DbHelper.CreateOkResponse(new FeCortesLista());
             response.Result ??= new FeCortesLista();
 
             try
             {
-                var codCliente = (ExtractKeyFromParametros(filtros!.parametros, "cod_cliente") ?? "").Trim();
+                var codCliente = (ExtractKeyFromParametros(filtros.parametros, "cod_cliente") ?? "").Trim();
+
                 if (string.IsNullOrWhiteSpace(codCliente))
-                    return DbHelper.CreateErrorResponse<FeCortesLista>("parametros.cod_cliente es requerido para listar cortes.");
+                    return DbHelper.CreateErrorResponse<FeCortesLista>(
+                        "parametros.cod_cliente es requerido para listar cortes.");
 
                 var filtroGlobal = (filtros.filtro ?? "").Trim();
                 var hasTexto = !string.IsNullOrWhiteSpace(filtroGlobal);
@@ -338,9 +342,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<FeCortesLista> FE_Cortes_Lista_Export(int CodEmpresa, string parametros)
         {
             if (!TryParseFiltros(parametros, out var filtros, out var error))
-                return DbHelper.CreateErrorResponse<FeCortesLista>(error!);
+                return DbHelper.CreateErrorResponse<FeCortesLista>(error ?? PARAMETROSINVALIDOS);
 
-            filtros!.pagina = 0;
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeCortesLista>(PARAMETROSINVALIDOS);
+
+            filtros.pagina = 0;
             filtros.paginacion = 0;
 
             return FE_Cortes_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros));
@@ -443,7 +450,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
 
-      
+
 
         /// <summary>
         /// Lista facturas (Detalle) usando spProGrX_Facturas_Consulta.
@@ -454,17 +461,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<FeFacturasLista> FE_Facturas_Lista_Obtener(int CodEmpresa, string parametros)
         {
             if (!TryParseFiltros(parametros, out var filtros, out var error))
-                return DbHelper.CreateErrorResponse<FeFacturasLista>(error!);
+                return DbHelper.CreateErrorResponse<FeFacturasLista>(error ?? PARAMETROSINVALIDOS);
+
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeFacturasLista>(PARAMETROSINVALIDOS);
 
             var response = DbHelper.CreateOkResponse(new FeFacturasLista());
             response.Result ??= new FeFacturasLista();
 
-            var dto = ReadFacturasParams(filtros!);
+            var dto = ReadFacturasParams(filtros);
 
             if (!ValidateFacturasParams(dto, out var ini, out var fin, out var errMsg))
-                return DbHelper.CreateErrorResponse<FeFacturasLista>(errMsg!);
+                return DbHelper.CreateErrorResponse<FeFacturasLista>(errMsg ?? PARAMETROSINVALIDOS);
 
-            var exportAll = IsExportAll(filtros!);
+            var exportAll = IsExportAll(filtros);
 
             try
             {
@@ -473,12 +483,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var rows = ExecuteFacturasConsulta(conn, dto, ini, fin);
                 var lista = MapFacturasRows(rows);
 
-                SortFacturas(lista, filtros!.sortField, filtros.sortOrder);
+                SortFacturas(lista, filtros.sortField, filtros.sortOrder);
 
                 response.Result.total = lista.Count;
                 response.Result.lista = exportAll
                     ? lista
-                    : Page(lista, NormalizePagina(filtros.pagina, exportAll), NormalizePaginacion(filtros.paginacion, exportAll, 30));
+                    : Page(
+                        lista,
+                        NormalizePagina(filtros.pagina, exportAll),
+                        NormalizePaginacion(filtros.paginacion, exportAll, 30));
 
                 return response;
             }
@@ -498,9 +511,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<FeFacturasLista> FE_Facturas_Lista_Export(int CodEmpresa, string parametros)
         {
             if (!TryParseFiltros(parametros, out var filtros, out var error))
-                return DbHelper.CreateErrorResponse<FeFacturasLista>(error!);
+                return DbHelper.CreateErrorResponse<FeFacturasLista>(error ?? PARAMETROSINVALIDOS);
 
-            filtros!.pagina = 0;
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeFacturasLista>(PARAMETROSINVALIDOS);
+
+            filtros.pagina = 0;
             filtros.paginacion = 0;
 
             return FE_Facturas_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros));
@@ -617,17 +633,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<FeFacturasResumen> FE_Facturas_Resumen_Obtener(int CodEmpresa, string parametros)
         {
             if (!TryParseFiltros(parametros, out var filtros, out var error))
-                return DbHelper.CreateErrorResponse<FeFacturasResumen>(error!);
+                return DbHelper.CreateErrorResponse<FeFacturasResumen>(error ?? PARAMETROSINVALIDOS);
+
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeFacturasResumen>(PARAMETROSINVALIDOS);
 
             var resp = DbHelper.CreateOkResponse(new FeFacturasResumen());
             resp.Result ??= new FeFacturasResumen();
 
             try
             {
-                var dto = ReadFacturasParams(filtros!);
+                var dto = ReadFacturasParams(filtros);
 
                 if (!ValidateFacturasParams(dto, out var ini, out var fin, out var errMsg))
-                    return DbHelper.CreateErrorResponse<FeFacturasResumen>(errMsg ?? "Parámetros inválidos.");
+                    return DbHelper.CreateErrorResponse<FeFacturasResumen>(errMsg ?? PARAMETROSINVALIDOS);
 
                 using var conn = OpenPortalProveedorConn(CodEmpresa, dto.cod_cliente);
 
@@ -638,7 +657,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 resp.Result.lista = ExecuteFacturasResumenDetalle(conn, pBase);
 
-                var sf = (filtros!.sortField ?? "").Trim();
+                var sf = (filtros.sortField ?? "").Trim();
                 if (!string.IsNullOrWhiteSpace(sf))
                     SortFacturasResumen(resp.Result.lista, filtros.sortField, filtros.sortOrder);
 
@@ -684,18 +703,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<FeClientesLista> FE_Clientes_Lista_Obtener(int CodEmpresa, string parametros)
         {
             if (!TryParseFiltros(parametros, out var filtros, out var error))
-                return DbHelper.CreateErrorResponse<FeClientesLista>(error!);
+                return DbHelper.CreateErrorResponse<FeClientesLista>(error ?? PARAMETROSINVALIDOS);
+
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<FeClientesLista>(PARAMETROSINVALIDOS);
 
             var response = DbHelper.CreateOkResponse(new FeClientesLista());
             response.Result ??= new FeClientesLista();
 
-            var codCliente = (ExtractKeyFromParametros(filtros!.parametros, "cod_cliente") ?? "").Trim();
+            var codCliente = (ExtractKeyFromParametros(filtros.parametros, "cod_cliente") ?? "").Trim();
+
             if (string.IsNullOrWhiteSpace(codCliente))
                 return DbHelper.CreateErrorResponse<FeClientesLista>("Seleccione un cliente.");
 
             var identificacion = (ExtractKeyFromParametros(filtros.parametros, IDENTIFICACION) ?? "").Trim();
             var nombre = (ExtractKeyFromParametros(filtros.parametros, PARAM_NOMBRE) ?? "").Trim();
-
             var exportAll = IsExportAll(filtros);
 
             try
