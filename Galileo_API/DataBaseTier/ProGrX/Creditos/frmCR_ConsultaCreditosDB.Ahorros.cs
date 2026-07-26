@@ -239,12 +239,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
             if (result.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<CajasSesionDto>(result.Description ?? "Error al consultar sesión activa.", result.Code.GetValueOrDefault(-1), null!);
+                return DbHelper.CreateErrorResponse<CajasSesionDto>(result.Description ?? "Error al consultar sesión activa.", result.Code.GetValueOrDefault(-1), null);
             }
 
             return result.Result is not null
                 ? DbHelper.CreateOkResponse(result.Result)
-                : DbHelper.CreateErrorResponse<CajasSesionDto>("No se encontró sesión activa.", -2, null!);
+                : DbHelper.CreateErrorResponse<CajasSesionDto>("No se encontró sesión activa.", -2, null);
         }
 
 
