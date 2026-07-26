@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.AF
 {
     public class AfiBeneTarjetasDataLista
@@ -61,6 +62,7 @@ namespace Galileo.Models.AF
 
     public class AfiBeneTarjetasRemesasData
     {
+        [JsonRequired]
         public long cod_remesa_tr { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonRequired]
