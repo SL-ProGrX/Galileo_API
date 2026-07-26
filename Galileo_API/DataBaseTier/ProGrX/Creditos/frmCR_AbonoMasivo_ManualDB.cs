@@ -5,16 +5,16 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
 using System.Globalization;
-using static Galileo_API.Models.ProGrX.Creditos.FrmCRAbonoMasivo_ManualModels;
+using static Galileo_API.Models.ProGrX.Creditos.FrmCrAbonoMasivoManualModels;
 using static Galileo_API.Models.ProGrX.Creditos.FrmCRCambioInfoEstadisticaModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCRAbonoMasivo_ManualDB
+    public class FrmCrAbonoMasivoManualDb
     {
         private readonly PortalDB _portalDb;
 
-        public FrmCRAbonoMasivo_ManualDB(IConfiguration config)
+        public FrmCrAbonoMasivoManualDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }
