@@ -51,7 +51,7 @@ WHERE R.ID_SOLICITUD = @numero_operacion;";
                 new
                 {
                     numero_operacion = numero_operacion
-                })!;
+                });
         }
 
         /// <summary>
