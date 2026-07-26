@@ -533,7 +533,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return DbHelper.CreateErrorResponse<string>(
                     result.Description ?? "Error al consultar remesas de la liquidación.",
                     result.Code.GetValueOrDefault(-1),
-                    null!);
+                    null);
             }
 
             return DbHelper.CreateOkResponse(FormatearConsultaRemesas(result.Result));
