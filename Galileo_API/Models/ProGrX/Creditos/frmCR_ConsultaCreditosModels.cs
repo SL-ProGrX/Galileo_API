@@ -798,10 +798,10 @@ namespace Galileo.Models.ProGrX.Credito
 
     public class CRPreferenciaDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public string? CodPreferencia { get; set; }
         public bool Asignado { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class CrPreferenciaDto
