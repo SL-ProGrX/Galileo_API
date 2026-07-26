@@ -35,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 filtros ??= new FiltrosLazyLoadData();
 
                 var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
-                var filtroLike = hasFilter ? $"%{filtros.filtro!.Trim()}%" : null;
+                var filtroLike = hasFilter ? $"%{filtros.filtro.Trim()}%" : null;
 
                 var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
                 var pageSize = filtros.paginacion <= 0 ? 30 : filtros.paginacion;

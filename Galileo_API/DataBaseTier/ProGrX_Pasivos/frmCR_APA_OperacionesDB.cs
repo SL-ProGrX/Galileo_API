@@ -543,7 +543,7 @@ ORDER BY DESCRIPCION;";
             var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
             var parameters = new DynamicParameters();
             parameters.Add("@hasFilter", hasFilter ? 1 : 0, DbType.Int32);
-            parameters.Add("@filtro", hasFilter ? $"%{filtros.filtro!.Trim()}%" : null, DbType.String);
+            parameters.Add("@filtro", hasFilter ? $"%{filtros.filtro.Trim()}%" : null, DbType.String);
             parameters.Add("@offset", filtros.pagina < 0 ? 0 : filtros.pagina, DbType.Int32);
             parameters.Add("@pageSize", filtros.paginacion <= 0 ? 30 : filtros.paginacion, DbType.Int32);
             parameters.Add("@isAsc", filtros.sortOrder != -1 && filtros.sortOrder != 2 ? 1 : 0, DbType.Int32);

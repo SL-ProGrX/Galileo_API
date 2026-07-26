@@ -82,7 +82,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 }
                 else
                 {
-                    codRegion = dto.cod_region!.Value;
+                    codRegion = dto.cod_region.Value;
 
                     // Para update: confirmar que existe (VB6 asumía que sí porque venía del grid)
                     var existe = conn.ExecuteScalar<int>(@"
@@ -305,7 +305,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var validationError = ValidateCantonesListar(codPoliza, cod_region, provinciaTxt, out var provinciaInt);
             if (validationError != null)
             {
-                return DbHelper.CreateErrorResponse<List<CrdPolizasRegionCantonDto>>(validationError.Description!);
+                return DbHelper.CreateErrorResponse<List<CrdPolizasRegionCantonDto>>(validationError.Description);
             }
                 
 
