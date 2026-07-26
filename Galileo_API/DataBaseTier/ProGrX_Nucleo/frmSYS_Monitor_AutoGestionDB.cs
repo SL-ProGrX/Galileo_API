@@ -124,14 +124,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <param name="req"></param>
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa, string jfiltros, MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa, string jfiltros,MonitorAutoGestionBuscarRequest req)
         {
             var filtrosResult = TryParseFiltros(jfiltros);
+
             if (filtrosResult.error != null)
                 return filtrosResult.error;
 
-            var filtros = filtrosResult.filtros!;
+            if (filtrosResult.filtros is not FiltrosLazyLoadData filtros)
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(
+                    "Los filtros enviados no son válidos.");
+
             var response = CreateEmptyOkResponse();
+
+            response.Result ??= new MonitorAutoGestionLista
+            {
+                total = 0,
+                lista = new List<MonitorAutoGestionListaData>()
+            };
 
             try
             {
@@ -140,7 +150,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var p = new DynamicParameters();
                 FillParams(p, filtros, req);
 
-                response.Result!.total = ExecuteTotal(cn, p);
+                response.Result.total = ExecuteTotal(cn, p);
 
                 var sort = ResolveSort(filtros);
                 bool exportAll = IsExportAll(filtros);
@@ -149,7 +159,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 string sql = BuildSelectSql(sort, exportAll);
                 response.Result.lista = ExecuteLista(cn, sql, p);
-
 
                 return response;
             }
@@ -165,17 +174,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <param name="req"></param>
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export(int CodEmpresa, string jfiltros, MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export(int CodEmpresa,string jfiltros, MonitorAutoGestionBuscarRequest req)
         {
             var filtrosResult = TryParseFiltros(jfiltros);
+
             if (filtrosResult.error != null)
                 return filtrosResult.error;
 
-            var filtros = filtrosResult.filtros!;
+            if (filtrosResult.filtros is not FiltrosLazyLoadData filtros)
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(
+                    "Los filtros enviados no son válidos.");
+
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
-            return Sys_Monitor_AutoGestion_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros), req);
+            return Sys_Monitor_AutoGestion_Lista_Obtener(
+                CodEmpresa,
+                JsonConvert.SerializeObject(filtros),
+                req);
         }
         /// <summary>
         /// Obtiene el detalle de un caso por COD_SOLICITUD.

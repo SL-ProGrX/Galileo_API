@@ -6,13 +6,13 @@ using Galileo.Models.ProGrX_Activos_Fijos;
 
 namespace Galileo.BusinessLogic.ProGrX_Activos_Fijos
 {
-    public class FrmActivosReasignacionesBL
+    public class FrmActivosReasignacionBL
     {
-        private readonly FrmActivosReasignacionesDB _db;
+        private readonly FrmActivosReasignacionDB _db;
 
-        public FrmActivosReasignacionesBL(IConfiguration config)
+        public FrmActivosReasignacionBL(IConfiguration config)
         {
-            _db = new FrmActivosReasignacionesDB(config);
+            _db = new FrmActivosReasignacionDB(config);
         }
         public ErrorDto<string> Activos_Reasignacion_SiguienteBoleta_Obtener(int CodEmpresa)
         {

@@ -176,26 +176,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return validacion;
 
                 var preparacion = PrepararAplicacion(conn, CodEmpresa, data);
+
                 if (preparacion.Error != null)
                     return preparacion.Error;
+
+                if (preparacion.Contexto == null)
+                {
+                    return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
+                        "No fue posible preparar el contexto para aplicar el traslado de deuda.");
+                }
+
+                var contexto = preparacion.Contexto;
 
                 EnsureConnectionOpen(conn);
                 tx = conn.BeginTransaction();
 
-                ProcesarAplicacion(conn, tx, preparacion.Contexto!);
+                ProcesarAplicacion(conn, tx, contexto);
 
                 tx.Commit();
                 tx.Dispose();
                 tx = null;
 
                 EnsureConnectionOpen(conn);
-                EjecutarPostAplicacion(conn, CodEmpresa, preparacion.Contexto!);
+                EjecutarPostAplicacion(conn, CodEmpresa, contexto);
 
-                var errorRecibo = ValidarRecibo(CodEmpresa, preparacion.Contexto!);
+                var errorRecibo = ValidarRecibo(CodEmpresa, contexto);
                 if (errorRecibo != null)
                     return errorRecibo;
 
-                CompletarRespuestaAplicacion(response.Result!, preparacion.Contexto!);
+                response.Result ??= new CoTrasladoDeudaAplicarResponse
+                {
+                    id_solicitud = data.id_solicitud.Value
+                };
+
+                CompletarRespuestaAplicacion(response.Result, contexto);
+
                 return response;
             }
             catch (SqlException ex)

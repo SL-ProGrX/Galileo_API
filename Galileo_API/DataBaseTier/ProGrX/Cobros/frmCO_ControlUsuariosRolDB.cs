@@ -93,8 +93,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var lista = conn.Query<CoControlUsuariosRolAntiguedadItem>(sql, new { usuario = pUsuario }).ToList();
 
                 var resp = BuildListaResponse<CoControlUsuariosRolAntiguedadItem>();
-                resp.Result!.total = lista.Count;
-                resp.Result!.lista = lista;
+                resp.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosRolAntiguedadItem>();
+                resp.Result.total = lista.Count;
+                resp.Result.lista = lista;
                 return resp;
             }
             catch (SqlException ex)
@@ -132,8 +133,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var lista = conn.Query<CoControlUsuariosRolGarantiaItem>(sql, new { usuario = pUsuario }).ToList();
 
                 var resp = BuildListaResponse<CoControlUsuariosRolGarantiaItem>();
-                resp.Result!.total = lista.Count;
-                resp.Result!.lista = lista;
+                resp.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosRolGarantiaItem>();
+                resp.Result.total = lista.Count;
+                resp.Result.lista = lista;
                 return resp;
             }
             catch (SqlException ex)
@@ -171,8 +173,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var lista = conn.Query<CoControlUsuariosRolOficinaItem>(sql, new { usuario = pUsuario }).ToList();
 
                 var resp = BuildListaResponse<CoControlUsuariosRolOficinaItem>();
-                resp.Result!.total = lista.Count;
-                resp.Result!.lista = lista;
+                resp.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosRolOficinaItem>();
+                resp.Result.total = lista.Count;
+                resp.Result.lista = lista;
                 return resp;
             }
             catch (SqlException ex)
@@ -210,8 +213,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var lista = conn.Query<CoControlUsuariosRolInstitucionItem>(sql, new { usuario = pUsuario }).ToList();
 
                 var resp = BuildListaResponse<CoControlUsuariosRolInstitucionItem>();
-                resp.Result!.total = lista.Count;
-                resp.Result!.lista = lista;
+                resp.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosRolInstitucionItem>();
+                resp.Result.total = lista.Count;
+                resp.Result.lista = lista;
                 return resp;
             }
             catch (SqlException ex)
@@ -236,8 +240,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(codAnt))
                 return DbHelper.ErrorResponse("Antigüedad inválida.", -2);
 
-            var usuario = req.usuario!.Trim();
-            var usuarioSesion = req.usuario_sesion!.Trim();
+            var usuario = (req.usuario ?? string.Empty).Trim();
+            var usuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -288,8 +292,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(garantia))
                 return DbHelper.ErrorResponse("Garantía inválida.", -2);
 
-            var usuario = req.usuario!.Trim();
-            var usuarioSesion = req.usuario_sesion!.Trim();
+            var usuario = (req.usuario ?? string.Empty).Trim();
+            var usuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -340,8 +344,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(oficina))
                 return DbHelper.ErrorResponse("Oficina inválida.", -2);
 
-            var usuario = req.usuario!.Trim();
-            var usuarioSesion = req.usuario_sesion!.Trim();
+            var usuario = (req.usuario ?? string.Empty).Trim();
+            var usuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -392,8 +396,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(institucion))
                 return DbHelper.ErrorResponse("Institución inválida.", -2);
 
-            var usuario = req.usuario!.Trim();
-            var usuarioSesion = req.usuario_sesion!.Trim();
+            var usuario = (req.usuario ?? string.Empty).Trim();
+            var usuarioSesion = (req.usuario_sesion ?? string.Empty).Trim();
             var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);

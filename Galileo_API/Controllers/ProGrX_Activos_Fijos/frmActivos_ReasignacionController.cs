@@ -9,13 +9,13 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmActivosReasignacionesController : ControllerBase
+    public class FrmActivosReasignacionController : ControllerBase
     {
-        private readonly FrmActivosReasignacionesBL _bl;
+        private readonly FrmActivosReasignacionBL _bl;
 
-        public FrmActivosReasignacionesController(IConfiguration config)
+        public FrmActivosReasignacionController(IConfiguration config)
         {
-            _bl = new FrmActivosReasignacionesBL(config);
+            _bl = new FrmActivosReasignacionBL(config);
         }
 
         [HttpGet("Activos_Reasignacion_SiguienteBoleta_Obtener")]

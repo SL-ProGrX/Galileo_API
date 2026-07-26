@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 Code        = -1,
                 Description = MensajeDatosNoProv,
-                Result      = default!
+                Result      = default
             };
         }
 
@@ -126,15 +126,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Obtener lista de boletas de traslado de responsable con paginación y filtros.
         /// </summary>
-        public ErrorDto<ActivosResponsablesCambioBoletaLista> Activos_ResponsablesCambio_Boletas_Lista_Obtener(
-            int CodEmpresa,
-            FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosResponsablesCambioBoletaLista> Activos_ResponsablesCambio_Boletas_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosResponsablesCambioBoletaLista>
             {
-                Code        = 0,
+                Code = 0,
                 Description = MensajeOk,
-                Result      = new ActivosResponsablesCambioBoletaLista
+                Result = new ActivosResponsablesCambioBoletaLista
                 {
                     total = 0,
                     lista = new List<ActivosResponsablesCambioBoletaResumen>()
@@ -152,9 +150,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtroTexto}%";
 
                 // ORDER BY con lista blanca -> índice de columna
-                var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
+                string sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
                     ? CodTrasladoCol
-                    : filtros.sortField!;
+                    : filtros.sortField;
 
                 if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortFieldCanonical))
                 {
@@ -163,20 +161,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 int sortIndex = sortFieldCanonical switch
                 {
-                    CodTrasladoCol   => 1,
+                    CodTrasladoCol => 1,
                     "identificacion" => 2,
-                    "persona"        => 3,
-                    "estado_desc"    => 4,
+                    "persona" => 3,
+                    "estado_desc" => 4,
                     "registro_fecha" => 5,
-                    _                => 1
+                    _ => 1
                 };
 
                 int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
 
                 // Paginación (pagina 1-based)
-                var pagina     = filtros?.pagina     ?? 1;
+                var pagina = filtros?.pagina ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
-                var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
+                var offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
                 var p = new
                 {
@@ -188,40 +186,40 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 };
 
                 const string qTotal = @"
-                    SELECT COUNT(1)
-                    FROM vActivos_Traslados_Boletas
-                    WHERE (@filtro IS NULL
-                           OR cod_traslado   LIKE @filtro
-                           OR persona        LIKE @filtro
-                           OR identificacion LIKE @filtro);";
+            SELECT COUNT(1)
+            FROM vActivos_Traslados_Boletas
+            WHERE (@filtro IS NULL
+                   OR cod_traslado   LIKE @filtro
+                   OR persona        LIKE @filtro
+                   OR identificacion LIKE @filtro);";
 
                 result.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
 
                 const string qDatos = @"
-                                    SELECT 
-                                        cod_traslado,
-                                        identificacion,
-                                        persona,
-                                        estado_desc,
-                                        CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
-                                    FROM vActivos_Traslados_Boletas
-                                    WHERE (@filtro IS NULL
-                                        OR cod_traslado   LIKE @filtro
-                                        OR persona        LIKE @filtro
-                                        OR identificacion LIKE @filtro)
-                                    ORDER BY
-                                        CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN cod_traslado END ASC,
-                                        CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN identificacion END ASC,
-                                        CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN persona END ASC,
-                                        CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN estado_desc END ASC,
-                                        CASE WHEN @sortDir = 1 AND @sortIndex = 5 THEN registro_fecha END ASC,
-                                        CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN cod_traslado END DESC,
-                                        CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN identificacion END DESC,
-                                        CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN persona END DESC,
-                                        CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN estado_desc END DESC,
-                                        CASE WHEN @sortDir = 0 AND @sortIndex = 5 THEN registro_fecha END DESC
-                                    OFFSET @offset ROWS
-                                    FETCH NEXT @fetch ROWS ONLY;";
+            SELECT
+                cod_traslado,
+                identificacion,
+                persona,
+                estado_desc,
+                CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
+            FROM vActivos_Traslados_Boletas
+            WHERE (@filtro IS NULL
+                   OR cod_traslado   LIKE @filtro
+                   OR persona        LIKE @filtro
+                   OR identificacion LIKE @filtro)
+            ORDER BY
+                CASE WHEN @sortDir = 1 AND @sortIndex = 1 THEN cod_traslado END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 2 THEN identificacion END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 3 THEN persona END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 4 THEN estado_desc END ASC,
+                CASE WHEN @sortDir = 1 AND @sortIndex = 5 THEN registro_fecha END ASC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 1 THEN cod_traslado END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 2 THEN identificacion END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 3 THEN persona END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 4 THEN estado_desc END DESC,
+                CASE WHEN @sortDir = 0 AND @sortIndex = 5 THEN registro_fecha END DESC
+            OFFSET @offset ROWS
+            FETCH NEXT @fetch ROWS ONLY;";
 
                 result.Result.lista = connection
                     .Query<ActivosResponsablesCambioBoletaResumen>(qDatos, p)
@@ -229,8 +227,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code         = -1;
-                result.Description  = ex.Message;
+                result.Code = -1;
+                result.Description = ex.Message;
                 result.Result.total = 0;
                 result.Result.lista = [];
             }
