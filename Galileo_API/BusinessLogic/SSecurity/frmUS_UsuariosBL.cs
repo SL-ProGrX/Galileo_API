@@ -40,7 +40,7 @@ namespace Galileo.BusinessLogic
 
             foreach (UsuarioClienteDto cli in clientes)
             {
-                string strUsuario = cli.Usuario!.Trim();
+                string strUsuario = cli.Usuario.Trim();
 
                 if (!string.IsNullOrEmpty(strUsuario) && strUsuario == nombreUsuario)
                 {
