@@ -162,7 +162,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             if (planResult.Result == null || string.IsNullOrWhiteSpace(planResult.Result.cod_plan))
             {
-                return DbHelper.CreateErrorResponse<FndalertasData>("No se encontró un plan siguiente o anterior.", -2, null!);
+                return DbHelper.CreateErrorResponse<FndalertasData>("No se encontró un plan siguiente o anterior.", -2, null);
             }
 
             return Fnd_AlertasParametros_Alerta_Obtener(codEmpresa, codOperadora, planResult.Result.cod_plan);
@@ -539,7 +539,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
 
         private static ErrorDto<FndalertasData> CrearErrorAlerta(string mensaje) =>
-            DbHelper.CreateErrorResponse<FndalertasData>(mensaje, -1, null!);
+            DbHelper.CreateErrorResponse<FndalertasData>(mensaje, -1, null);
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
         {
