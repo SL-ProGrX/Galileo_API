@@ -263,10 +263,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 var v = ValidarSimulacion(req);
                 if (v.Code != 0)
-                    return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description!);
+                    return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description);
 
                
-                var cuotas = Clamp((int)req.CantidadCuotas!, 0, MAX_CUOTAS);
+                var cuotas = Clamp((int)req.CantidadCuotas, 0, MAX_CUOTAS);
 
                 if (cuotas == 0)
                     return DbHelper.CreateOkResponse(new SimularCuotasResponse());
@@ -288,7 +288,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 {
                     FechaProceso = lngFecha,
                     Saldo = curSaldo,
-                    Cuota = (decimal)req.Cuota!
+                    Cuota = (decimal)req.Cuota
                 };
 
                 var totales = new TotalesSimulacion();
@@ -349,13 +349,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             if (lngFecha < req.PriDeduc)
                 lngFecha = (long)_mCobro.fxFechaProcesoAnterior(codEmpresa, (int)req.PriDeduc);
 
-            return (long)lngFecha!;
+            return (long)lngFecha;
         }
 
         private static decimal CalcularSaldoInicial(SimularCuotasRequest req)
         {
-            if (!(bool)req.EsRetencion!)
-                return (decimal)req.SaldoMes!;
+            if (!(bool)req.EsRetencion)
+                return (decimal)req.SaldoMes;
 
             // reglas heredadas VB6
             return (req.Plazo.HasValue && req.Plazo.Value > 900)
@@ -393,10 +393,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var tmpInter = (estado.Saldo * req.Interes) / 1200m;
                 var tmpAmort = req.Cuota - tmpInter;
 
-                totales.TotalInteres += (decimal)tmpInter!;
-                totales.TotalAmortiza += (decimal)tmpAmort!;
+                totales.TotalInteres += (decimal)tmpInter;
+                totales.TotalAmortiza += (decimal)tmpAmort;
 
-                estado.Saldo -= (decimal)tmpAmort!;
+                estado.Saldo -= (decimal)tmpAmort;
                 estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
 
                 proy.Add(CrearFila((decimal)tmpInter, (decimal)tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
@@ -434,17 +434,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var tmpInter = estado.Saldo * (req.Interes / 100m) * dias / 360m;
                 var tmpAmort = estado.Cuota - tmpInter;
 
-                totales.TotalInteres += (decimal)tmpInter!;
-                totales.TotalAmortiza += (decimal)tmpAmort!;
+                totales.TotalInteres += (decimal)tmpInter;
+                totales.TotalAmortiza += (decimal)tmpAmort;
 
-                estado.Saldo -= (decimal)tmpAmort!;
+                estado.Saldo -= (decimal)tmpAmort;
                 estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
                 baseDate = baseDate.AddMonths(1);
 
-                proy.Add(CrearFila((decimal)tmpInter!, (decimal)tmpAmort!, estado.FechaProceso, estado.Saldo, estado.Cuota));
+                proy.Add(CrearFila((decimal)tmpInter, (decimal)tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
 
                 plazoRst = Math.Max(1, plazoRst - 1);
-                estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes!, "M");
+                estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes, "M");
             }
 
             return cuotaMax;
@@ -485,7 +485,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             // 2400 = 200 años en meses. Ajusta a tu negocio (por ejemplo 1200 = 100 años).
             const int MAX_ITER = 2400;
 
-            long procesosTmp = (long)req.PriDeduc!;
+            long procesosTmp = (long)req.PriDeduc;
             int pasos = 0;
 
             // Si fechaProceso es inválida o está "antes", no iteres.
@@ -494,7 +494,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             // Si ya estamos al día o adelante, no hay que avanzar.
             if (procesosTmp >= fechaProceso)
-                return Math.Max(1, (int)req.Plazo!);
+                return Math.Max(1, (int)req.Plazo);
 
             while (procesosTmp < fechaProceso && pasos < MAX_ITER)
             {
@@ -509,7 +509,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             // req.Plazo es int no-nullable en tu modelo, no uses !
             var plazoRst = req.Plazo - pasos;
-            return Math.Max(1, (int)plazoRst!);
+            return Math.Max(1, (int)plazoRst);
         }
 
         private static int CalcularDiasPeriodo(SimularCuotasRequest req, int plazoRst, DateTime baseDate)
@@ -528,7 +528,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             int cuotaMax)
         {
             // saldoR según regla VB
-            var saldoR = (bool)req.EsRetencion! ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
+            var saldoR = (bool)req.EsRetencion ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
 
             return new SimularCuotasResponse
             {
@@ -537,7 +537,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 TotalAmortiza = totales.TotalAmortiza,
                 FecUltMovR = estado.FechaProceso,
                 CuotaR = estado.Cuota,
-                SaldoR = (decimal)saldoR!,
+                SaldoR = (decimal)saldoR,
                 CuotasMaximas = cuotaMax
             };
         }
@@ -654,7 +654,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (valida.Code != 0)
                     return valida;
 
-                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc!);
+                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc);
                 decimal glngFechaCR = _mProGrx.glngFechaCR(codEmpresa);
 
                 if (request.lblFecUltMovR.HasValue && request.lblFecUltMovR.Value < (long)glngFechaCR)
@@ -713,7 +713,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var mensaje =
                     (VerificaProceso(conn, request) ?? string.Empty) +
                     (VerificaCongelamiento(codEmpresa, request) ?? string.Empty) +
-                    (VerificaOperacion((long)request.id_solicitud!) ?? string.Empty) +
+                    (VerificaOperacion((long)request.id_solicitud) ?? string.Empty) +
                     (VerificaSaldoActual(conn, request) ?? string.Empty);
 
                 mensaje = mensaje.Trim();
@@ -806,7 +806,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 if ((string?)result.Retencion == "S")
                 {
-                    curSaldo = (decimal)result.saldo <= 999m ? (decimal)result.saldo : (decimal)request.saldo!;
+                    curSaldo = (decimal)result.saldo <= 999m ? (decimal)result.saldo : (decimal)request.saldo;
                 }
                 else
                 {
@@ -844,11 +844,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc!);
+                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc);
                 variable.tipoCambio = pTipoCambio;
 
-                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc!, (long)variable.vNumDoc!, "R");
-                var cuentaOperacion = spCrdOperacionCtas(codEmpresa, (long)variable.id_solicutud!);
+                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc, (long)variable.vNumDoc, "R");
+                var cuentaOperacion = spCrdOperacionCtas(codEmpresa, (long)variable.id_solicutud);
 
                 var lineas = BuildLineas(docAfectacion, variable, solicitud);
 
@@ -921,7 +921,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             l[7] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{(solicitud.opex?.ToString() ?? string.Empty).ToUpperInvariant()}";
             l[8] = $"Descripción       ..: {solicitud.descripcion}";
             l[9] = $"Proc. Retencion   ..: {(vRetencion ? "SI" : "NO")}";
-            l[10] = (bool)variable.FechaCancelacionEnable!
+            l[10] = (bool)variable.FechaCancelacionEnable
                 ? $"Fecha Real Abono {variable.FechaCancelacion:dd/MM/yyyy}"
                 : string.Empty;
 
