@@ -325,7 +325,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la validacion de autorizacion.</returns>
         public ErrorDto<FondosRequiereAutorizacionDto> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
         {
-            var response = DbHelper.CreateOkResponse<FondosRequiereAutorizacionDto>(default!);
+            var response = DbHelper.CreateOkResponse<FondosRequiereAutorizacionDto>(default);
 
             try
             {
@@ -374,7 +374,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Estado actual de la gestion.</returns>
         public ErrorDto<GestionEstadoDto> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
         {
-            var response = DbHelper.CreateOkResponse<GestionEstadoDto>(default!);
+            var response = DbHelper.CreateOkResponse<GestionEstadoDto>(default);
 
             try
             {
@@ -407,7 +407,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Gestion registrada.</returns>
         public ErrorDto<FondosGestionRegistroDto> fondos_gestion_registro(int CodEmpresa, FondosGestionRegistroAddDto request)
         {
-            var response = DbHelper.CreateOkResponse<FondosGestionRegistroDto>(default!);
+            var response = DbHelper.CreateOkResponse<FondosGestionRegistroDto>(default);
 
             try
             {
