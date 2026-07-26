@@ -231,7 +231,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 _securityDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = dto.cod_empresa.Value,
-                    Usuario = dto.usuario!,
+                    Usuario = dto.usuario,
                     Modulo = 20,
                     Movimiento = "Elimina Asiento - WEB",
                     DetalleMovimiento = $"Asiento: {dto.tipo_asiento}-{dto.num_asiento} Conta.{dto.cod_contabilidad}"

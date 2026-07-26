@@ -138,7 +138,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         new Galileo.Models.Security.BitacoraInsertarDto
                         {
                             EmpresaId = request.cod_empresa.Value,
-                            Usuario = request.usuario!,
+                            Usuario = request.usuario,
                             Movimiento = "Elimina Asientos - WEB",
                             DetalleMovimiento =
                                 $"TIPO:{request.tipo_asiento} D:{request.desde} H:{request.hasta}",

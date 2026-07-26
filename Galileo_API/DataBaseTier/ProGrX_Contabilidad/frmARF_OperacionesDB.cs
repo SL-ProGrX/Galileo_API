@@ -432,7 +432,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     COD_DIVISA = @cod_divisa
                 where Operacion = @operacion";
 
-            var parametros = CrearParametrosGuardar(request, notas, request.operacion!.Value);
+            var parametros = CrearParametrosGuardar(request, notas, request.operacion.Value);
             cn.Execute(updateSql, parametros, tx);
 
             var operacion = request.operacion.Value;
@@ -714,7 +714,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 RegistrarBitacora(
                     codEmpresa,
-                    request.usuario!,
+                    request.usuario,
                     "Aplica",
                     $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}");
 

@@ -146,8 +146,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 conn.Open();
 
-                Limpiar(conn, f.usuario!);
-                InsertBase(conn, f.usuario!, codContabilidad);
+                Limpiar(conn, f.usuario);
+                InsertBase(conn, f.usuario, codContabilidad);
 
 
                 if (!f.periodo.HasValue)
@@ -171,7 +171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                     string sqlUpdate = ObtenerSqlUpdate(i);
 
-                    EjecutarUpdates(conn, movimientos, sqlUpdate, f.usuario!, codContabilidad);
+                    EjecutarUpdates(conn, movimientos, sqlUpdate, f.usuario, codContabilidad);
 
                     (mes, anio) = SiguienteMes(mes, anio);
                 }

@@ -353,7 +353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if ((validaResp.Result?.casos_erroneos ?? 0) > 0)
             {
                 return CrearError<CntXBalancesLoadProcesoResultDto?>(
-                    $"Existen {validaResp.Result!.casos_erroneos} líneas erróneas, verifíquelas primero antes de importarlas.",
+                    $"Existen {validaResp.Result.casos_erroneos} líneas erróneas, verifíquelas primero antes de importarlas.",
                     -2,
                     null);
             }

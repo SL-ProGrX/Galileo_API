@@ -104,7 +104,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (!filtros.parametro.HasValue)
                 return;
 
-            var operador = ObtenerOperador(filtros.signo!);
+            var operador = ObtenerOperador(filtros.signo);
 
             if (filtros.movimiento == "Ambos")
             {
@@ -117,7 +117,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                                             return;
             }
 
-            var campo = ObtenerCampoMovimiento(filtros.movimiento!);
+            var campo = ObtenerCampoMovimiento(filtros.movimiento);
 
             AppendAnd(where);where.Append($"{campo} {operador} @parametro");
         }

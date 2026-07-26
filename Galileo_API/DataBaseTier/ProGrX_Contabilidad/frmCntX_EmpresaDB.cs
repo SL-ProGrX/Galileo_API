@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             const string query = @"select * from CntX_Empresa_Registro";
             var result = DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, query, new CntXEmpresaDto());
             result.Result ??= new CntXEmpresaDto();
-            return result!;
+            return result;
         }
 
         /// <summary>
