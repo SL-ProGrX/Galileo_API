@@ -373,10 +373,10 @@ namespace Galileo.DataBaseTier
                 query,
                 new TomaFisicaDto
                 {
-                    consecutivo = default!,
-                    Cod_Proveedor_Entrada = default!,
-                    Cod_Entradag = default!,
-                    Cod_Salidag = default!
+                    consecutivo = default,
+                    Cod_Proveedor_Entrada = default,
+                    Cod_Entradag = default,
+                    Cod_Salidag = default
                 },
                 parametros);
 
@@ -385,10 +385,10 @@ namespace Galileo.DataBaseTier
                 "Error al consultar la toma física.",
                 new TomaFisicaDto
                 {
-                    consecutivo = default!,
-                    Cod_Proveedor_Entrada = default!,
-                    Cod_Entradag = default!,
-                    Cod_Salidag = default!
+                    consecutivo = default,
+                    Cod_Proveedor_Entrada = default,
+                    Cod_Entradag = default,
+                    Cod_Salidag = default
                 });
         }
 
@@ -406,10 +406,10 @@ namespace Galileo.DataBaseTier
                 "SELECT * FROM PV_INVTOMAFISICA WHERE CONSECUTIVO = @Consecutivo",
                 new TomaFisicaDto
                 {
-                    consecutivo = default!,
-                    Cod_Proveedor_Entrada = default!,
-                    Cod_Entradag = default!,
-                    Cod_Salidag = default!
+                    consecutivo = default,
+                    Cod_Proveedor_Entrada = default,
+                    Cod_Entradag = default,
+                    Cod_Salidag = default
                 },
                 new { Consecutivo = consecutivo });
 
@@ -418,10 +418,10 @@ namespace Galileo.DataBaseTier
                 "Error al obtener la toma física por consecutivo.",
                 new TomaFisicaDto
                 {
-                    consecutivo = default!,
-                    Cod_Proveedor_Entrada = default!,
-                    Cod_Entradag = default!,
-                    Cod_Salidag = default!
+                    consecutivo = default,
+                    Cod_Proveedor_Entrada = default,
+                    Cod_Entradag = default,
+                    Cod_Salidag = default
                 });
         }
 
@@ -441,9 +441,9 @@ namespace Galileo.DataBaseTier
                 ObtenerQueryProductoPorBarras(tipo),
                 new TomaFisicaDetalleDto
                 {
-                    consecutivo = default!,
-                    Existencia_Logica = default!,
-                    Existencia_Fisica = default!
+                    consecutivo = default,
+                    Existencia_Logica = default,
+                    Existencia_Fisica = default
                 },
                 new
                 {
@@ -462,9 +462,9 @@ namespace Galileo.DataBaseTier
                 Description = result.Description ?? "No existe Producto con este codigo",
                 Result = new TomaFisicaDetalleDto
                 {
-                    consecutivo = default!,
-                    Existencia_Logica = default!,
-                    Existencia_Fisica = default!
+                    consecutivo = default,
+                    Existencia_Logica = default,
+                    Existencia_Fisica = default
                 }
             };
         }

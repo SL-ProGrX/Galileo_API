@@ -187,8 +187,8 @@ namespace Galileo.DataBaseTier
                 null,
                 parametros);
             return result.Code == 0
-                            ? DbHelper.CreateOkResponse(result.Result!)
-                            : DbHelper.CreateErrorResponse(result.Description ?? ErrorDesplazamiento, result.Code.GetValueOrDefault(-1), (BodegasDto)null!);
+                            ? DbHelper.CreateOkResponse(result.Result)
+                            : DbHelper.CreateErrorResponse(result.Description ?? ErrorDesplazamiento, result.Code.GetValueOrDefault(-1), (BodegasDto)null);
         }
 
         /// <summary>
@@ -206,8 +206,8 @@ namespace Galileo.DataBaseTier
                 null,
                 CrearParametrosBodega(consecutivo));
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result!)
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorBodegaConsecutivo, result.Code.GetValueOrDefault(-1), (BodegasDto)null!);
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorBodegaConsecutivo, result.Code.GetValueOrDefault(-1), (BodegasDto)null);
         }
 
         #endregion
