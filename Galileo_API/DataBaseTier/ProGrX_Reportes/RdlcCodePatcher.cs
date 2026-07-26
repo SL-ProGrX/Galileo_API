@@ -16,7 +16,7 @@ namespace Galileo.DataBaseTier
                 throw new FileNotFoundException("No se encontró el archivo RDLC.");
 
             var xdoc   = XDocument.Load(rdlcPath);
-            var ns     = xdoc.Root!.GetDefaultNamespace();
+            var ns     = xdoc.Root.GetDefaultNamespace();
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
 
             if (string.IsNullOrWhiteSpace(codeSection))
@@ -29,7 +29,7 @@ namespace Galileo.DataBaseTier
                     codeText = UpsertFunctionReturn(codeText, kv.Key, kv.Value);
 
                 if (codeNode == null)
-                    xdoc.Root!.Add(new XElement(ns + "Code", codeText));
+                    xdoc.Root.Add(new XElement(ns + "Code", codeText));
                 else
                     codeNode.Value = codeText;
 
@@ -38,7 +38,7 @@ namespace Galileo.DataBaseTier
 
             // VB crudo
             if (codeNode == null)
-                xdoc.Root!.Add(new XElement(ns + "Code", codeSection));
+                xdoc.Root.Add(new XElement(ns + "Code", codeSection));
             else
                 codeNode.Value = codeSection;
 
@@ -139,9 +139,9 @@ End Function
                 {
                     var t = prop.Value?.Type ?? JTokenType.Null;
                     if (t == JTokenType.Boolean)
-                        dict[prop.Name] = ((bool)prop.Value!) ? 1 : 0;
+                        dict[prop.Name] = ((bool)prop.Value) ? 1 : 0;
                     else if (t == JTokenType.Integer || t == JTokenType.Float)
-                        dict[prop.Name] = Convert.ToInt32(prop.Value!.ToString(), CultureInfo.InvariantCulture);
+                        dict[prop.Name] = Convert.ToInt32(prop.Value.ToString(), CultureInfo.InvariantCulture);
                 }
                 return true;
             }
