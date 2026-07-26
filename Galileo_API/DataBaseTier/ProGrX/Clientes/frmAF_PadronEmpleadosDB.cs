@@ -237,7 +237,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     Valor = (x.Value as JObject)?["value"]?.ToString()
                 })
                 .Where(x => !string.IsNullOrWhiteSpace(x.Valor))
-                .ToDictionary(x => x.Key, x => x.Valor!, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(x => x.Key, x => x.Valor, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
