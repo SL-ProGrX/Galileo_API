@@ -465,16 +465,16 @@
     {
         // -------- Bloque Identificación / Estado ----------
         public int TipoId { get; set; }
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public string? Id_Alterno { get; set; }
-        public string Nombre_Completo { get; set; } = default!;
+        public string Nombre_Completo { get; set; } = default;
         public string? Apellido_1 { get; set; }
         public string? Apellido_2 { get; set; }
         public string? Nombre { get; set; }
         public string? RazonSocial { get; set; }
         public string Estado { get; set; } = "S";          // Ej: 'S' Asociado
-        public string EstadoCivil { get; set; } = default!;
-        public string Genero { get; set; } = default!;      // 'M' / 'F' / etc.
+        public string EstadoCivil { get; set; } = default;
+        public string Genero { get; set; } = default;      // 'M' / 'F' / etc.
         public DateTime fNacimiento { get; set; }
         public DateTime fCedulaVence { get; set; }
 
@@ -482,21 +482,21 @@
         public int PromotorId { get; set; }
         public string? Boleta { get; set; }
         public DateTime fIngreso { get; set; }
-        public string EstadoLaboral { get; set; } = default!;
+        public string EstadoLaboral { get; set; } = default;
 
         // -------- Nacimiento / Nacionalidad ----------
-        public string PaisNac { get; set; } = default!;
-        public string Nacionalidad { get; set; } = default!;
+        public string PaisNac { get; set; } = default;
+        public string Nacionalidad { get; set; } = default;
 
         // -------- Contacto ----------
         public string? Email_1 { get; set; }
         public string? Email_2 { get; set; }
 
         // -------- Dirección Principal ----------
-        public string Provincia { get; set; } = default!;
-        public string Canton { get; set; } = default!;
-        public string Distrito { get; set; } = default!;
-        public string Direccion { get; set; } = default!;
+        public string Provincia { get; set; } = default;
+        public string Canton { get; set; } = default;
+        public string Distrito { get; set; } = default;
+        public string Direccion { get; set; } = default;
         public string? AptoPostal { get; set; }
         public string? Notificacion { get; set; }
 
@@ -522,7 +522,7 @@
         public string? Sociedad { get; set; }
         public string? Actividad { get; set; }
         public short Propiedades { get; set; }         // smallint
-        public string Oficina { get; set; } = default!;
+        public string Oficina { get; set; } = default;
 
         // -------- Redes ----------
         public string? Facebook { get; set; }
@@ -571,7 +571,7 @@
         public int? C_Actividad { get; set; }
 
         // -------- Auditoría / Movimiento ----------
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
         public char Mov { get; set; } = 'A';               // 'A' Agregar / 'E' Editar
 
         // -------- Dirección de Trabajo (opcionales, SP los limpia si faltan datos) ----------
@@ -590,15 +590,15 @@
 
     public class AfPersonaRelacionAddDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public int TipoId { get; set; }
-        public string CedulaRelacionada { get; set; } = default!;
+        public string CedulaRelacionada { get; set; } = default;
         public string Apellido1 { get; set; } = "";
         public string Apellido2 { get; set; } = "";
         public string Nombre { get; set; } = "";
         public int TipoVinculo { get; set; }
         public int Parentesco { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
         public int IdRelacion { get; set; } = 0;
         public int Activo { get; set; } = 1;
     }
@@ -606,42 +606,42 @@
     public class AfPersonaRelacionDelDto
     {
         public int IdRelacion { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaSalarioAddDto
     {
-        public string Cedula { get; set; } = default!;
-        public string TipoSalario { get; set; } = default!;
-        public string Divisa { get; set; } = default!;
+        public string Cedula { get; set; } = default;
+        public string TipoSalario { get; set; } = default;
+        public string Divisa { get; set; } = default;
         public DateTime Fecha { get; set; }
         public decimal Devengado { get; set; }
         public decimal Rebajos { get; set; }
         public decimal Neto { get; set; }
         public string? Embargos { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaIngresoEconomicoAddDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public required decimal Ingreso { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
         public int Tipo { get; set; } = 1;
     }
 
     public class AfPersonaDireccionAddDto
     {
-        public string Cedula { get; set; } = default!;
-        public string Provincia { get; set; } = default!;
-        public string Canton { get; set; } = default!;
-        public string Distrito { get; set; } = default!;
-        public string Direccion { get; set; } = default!;
+        public string Cedula { get; set; } = default;
+        public string Provincia { get; set; } = default;
+        public string Canton { get; set; } = default;
+        public string Distrito { get; set; } = default;
+        public string Direccion { get; set; } = default;
         public string? Email_01 { get; set; }
         public string? Email_02 { get; set; }
         public string? Telefono_01 { get; set; }
         public string? Telefono_02 { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
         public string Estado { get; set; } = "A";     // 'A' Activo (como en VB6)
         public string Cod_App { get; set; } = "ProGrX";
         public int Tipo { get; set; } = 2;            // 1=Principal, 2=Trabajo (según tu VB6)
@@ -649,53 +649,53 @@
 
     public class AfPersonaEscolaridadRegistraDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public string? CodEscolaridad { get; set; }
         public bool Asignado { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaPreferenciaRegistraDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public int CodPreferencia { get; set; }
         public bool Asignado { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaCanalRegistraDto
     {
-        public string Cedula { get; set; } = default!;
-        public string CanalTipo { get; set; } = default!;
+        public string Cedula { get; set; } = default;
+        public string CanalTipo { get; set; } = default;
         public bool Asignado { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaPatrimonioVinculaDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
     }
 
     public class AfPersonaBienesRegistraDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public string? CodBien { get; set; }
         public bool Asignado { get; set; }
-        public string Usuario { get; set; } = default!;
+        public string Usuario { get; set; } = default;
     }
 
     public class AfPersonaProductosRegistraDto
     {
-        public string cedula { get; set; } = default!;
+        public string cedula { get; set; } = default;
         public int codproducto { get; set; }
         public bool asignado { get; set; }
-        public string usuario { get; set; } = default!;
+        public string usuario { get; set; } = default;
     }
 
     public class AfRegistroDefaultDto
     {
-        public string Cedula { get; set; } = default!;
-        public string Usuario { get; set; } = default!;
+        public string Cedula { get; set; } = default;
+        public string Usuario { get; set; } = default;
     }
     
     public class AfCumplimientoDto
@@ -825,7 +825,7 @@
 
     public class AfPreferenciaDto
     {
-        public string Cedula { get; set; } = default!;
+        public string Cedula { get; set; } = default;
         public string? cod_preferencia { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public bool asignado { get; set; }
@@ -853,35 +853,35 @@
 
     public class AfPersonaIndicadoresDto
     {
-        public string cedula { get; set; } = default!;
+        public string cedula { get; set; } = default;
         public int indicador { get; set; }
         public bool valor { get; set; }
-        public string usuario { get; set; } = default!;
+        public string usuario { get; set; } = default;
         public string nota { get; set; } = string.Empty;
     }
 
     public class AfPadronPersonaDto
     {
-        public string identificacion { get; set; } = default!;
-        public string apellido_1 { get; set; } = default!;
-        public string apellido_2 { get; set; } = default!;
-        public string nombre { get; set; } = default!;
-        public string sexo { get; set; } = default!;
-        public string estado_civil { get; set; } = default!;
+        public string identificacion { get; set; } = default;
+        public string apellido_1 { get; set; } = default;
+        public string apellido_2 { get; set; } = default;
+        public string nombre { get; set; } = default;
+        public string sexo { get; set; } = default;
+        public string estado_civil { get; set; } = default;
         public DateTime fecha_nacimiento { get; set; }
-        public string cod_pais { get; set; } = default!;
+        public string cod_pais { get; set; } = default;
         public int cod_provincia { get; set; }
         public int cod_canton { get; set; }
         public int cod_distrito { get; set; }
-        public string direccion { get; set; } = default!;
+        public string direccion { get; set; } = default;
         public string? email_01 { get; set; }
         public string? email_02 { get; set; }
         public string? email_03 { get; set; }
         public string? profesion { get; set; }
-        public string pais { get; set; } = default!;
-        public string provincia { get; set; } = default!;
-        public string canton { get; set; } = default!;
-        public string distrito { get; set; } = default!;
+        public string pais { get; set; } = default;
+        public string provincia { get; set; } = default;
+        public string canton { get; set; } = default;
+        public string distrito { get; set; } = default;
         public decimal salario { get; set; }
     }
 
