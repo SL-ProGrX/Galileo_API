@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public FrmCxCCargosTiposDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _Security_MainDB = new MSecurityMainDb(config!);
+            _Security_MainDB = new MSecurityMainDb(config);
             mCntLink = new MCntLinkDB(config);
         }
 
@@ -53,8 +53,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                 var like = hasFiltro ? $"%{texto}%" : null;
 
-                var offset = filtros.pagina!;
-                var fetch = filtros.paginacion!;
+                var offset = filtros.pagina;
+                var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0 && !esExportar;
 
                 // Whitelist de columnas ordenables (evita inyección en ORDER BY)

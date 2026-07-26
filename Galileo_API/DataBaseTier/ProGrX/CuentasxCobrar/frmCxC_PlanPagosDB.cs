@@ -44,7 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 result.Result = new CxCPlanPagosOperacionData();
             }
-            return result!;
+            return result;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 result.Result = new CxCPlanPagosOperacionResumenData();
             }
-            return result!;
+            return result;
         }
 
         /// <summary>

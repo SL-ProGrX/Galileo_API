@@ -37,8 +37,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var datos = conn.Query<BancoAutorizados>(query).ToList();
                 foreach (var item in datos)
                 {
-                    string idx = item.IdX.ToString()!;
-                    string itmx = item.ItmX!;
+                    string idx = item.IdX.ToString();
+                    string itmx = item.ItmX;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }
@@ -73,8 +73,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var datos = conn.Query<CuentasBancarias>(query, new { cedula, codBanco }).ToList();
                 foreach (var item in datos)
                 {
-                    string idx = item.IdX.ToString()!;
-                    string itmx = item.ItmX!;
+                    string idx = item.IdX.ToString();
+                    string itmx = item.ItmX;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }

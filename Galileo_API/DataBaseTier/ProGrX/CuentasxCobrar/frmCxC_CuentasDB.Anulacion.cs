@@ -100,7 +100,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var verifica = CxCCuentasAnulacion_Verifica(codEmpresa, request);
             if (verifica.Code == -1 || verifica.Result is null || !verifica.Result.pass)
             {
-                return DbHelper.CreateErrorResponse<bool>(verifica.Result?.mensaje ?? verifica.Description!);
+                return DbHelper.CreateErrorResponse<bool>(verifica.Result?.mensaje ?? verifica.Description);
             }
 
             try

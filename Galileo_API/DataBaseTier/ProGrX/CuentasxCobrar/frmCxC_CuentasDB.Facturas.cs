@@ -206,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }
 
                 var response = DbHelper.CreateOkResponse(new CxCCuentasFacturasLista());
-                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
                 return response;
             }
             catch (DbException ex)
@@ -250,7 +250,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }).ToList();
 
                 var response = DbHelper.CreateOkResponse(new CxCCuentasFacturasAdelantadasLista());
-                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
                 return response;
             }
             catch (DbException ex)
@@ -336,8 +336,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         adelanta = request.adelanta ? 1 : 0,
                         adelanto_tipo = adelantoTipo,
                         adelanto = request.adelanta ? request.adelanto : 0,
-                        fecha_emision = request.fecha_emision!.Value.ToString(CxCCuentasConstantes.fechaFormat),
-                        fecha_pago = request.fecha_pago!.Value.ToString(CxCCuentasConstantes.fechaFormat),
+                        fecha_emision = request.fecha_emision.Value.ToString(CxCCuentasConstantes.fechaFormat),
+                        fecha_pago = request.fecha_pago.Value.ToString(CxCCuentasConstantes.fechaFormat),
                         usuario
                     });
                 });

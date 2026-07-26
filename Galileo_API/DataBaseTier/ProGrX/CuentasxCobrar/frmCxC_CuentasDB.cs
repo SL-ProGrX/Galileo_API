@@ -503,7 +503,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return EjecutarConsultaUnica<TItem>(
                 request.codEmpresa,
                 sql,
-                request.parametros!,
+                request.parametros,
                 request.mensajeNoEncontrado,
                 request.mensajeDb,
                 request.mensajeGeneral);
@@ -547,7 +547,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public ErrorDto<int> ParametrosInicializa(int codEmpresa, string usuario, long contabilidad)
         {
             var parametros = _proGrxMain.sbSifParametrosInicializa(codEmpresa, usuario, contabilidad);
-            return parametros.Result!.SysDocVersion switch
+            return parametros.Result.SysDocVersion switch
             {
                 0 => DbHelper.CreateErrorResponse<int>("No se pudo obtener la versión del sistema."),
                 _ => DbHelper.CreateOkResponse(parametros.Result.SysDocVersion)
