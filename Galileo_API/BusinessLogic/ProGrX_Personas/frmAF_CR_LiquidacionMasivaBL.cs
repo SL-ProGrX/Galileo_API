@@ -21,7 +21,7 @@ namespace Galileo.BusinessLogic.ProGrX_Personas
 
         public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Causas(int CodEmpresa, string? tipoApl = null, DateTime? inicio = null, DateTime? corte = null)
         {
-            return _db.AF_LiquidacionMasiva_Obtener_Causas(CodEmpresa, tipoApl!, inicio, corte);
+            return _db.AF_LiquidacionMasiva_Obtener_Causas(CodEmpresa, tipoApl, inicio, corte);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Instituciones(int CodEmpresa)
