@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslRemesasLista
@@ -20,9 +21,12 @@ namespace Galileo.Models.FSL
 
     public class FslRemesaInsertar
     {
+        [JsonRequired]
         public long cod_remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
+        [JsonRequired]
         public DateTime fecha_inicio { get; set; }
+        [JsonRequired]
         public DateTime fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
     }
