@@ -175,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     Operacion = request.operacion,
                     Amortizacion = request.amortizacion
-                })!;
+                });
         }
 
         /// <summary>
@@ -848,11 +848,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrAnulaAbonosNewAplicarContext
         {
-            public SqlConnection conn { get; set; } = null!;
-            public SqlTransaction tx { get; set; } = null!;
-            public CrAnulaAbonosNewAplicarRequest request { get; set; } = null!;
-            public CrAnulaAbonosNewOperacionData operacion { get; set; } = null!;
-            public CrAnulaAbonosNewOperacionCtasData cuentas { get; set; } = null!;
+            public SqlConnection conn { get; set; } = null;
+            public SqlTransaction tx { get; set; } = null;
+            public CrAnulaAbonosNewAplicarRequest request { get; set; } = null;
+            public CrAnulaAbonosNewOperacionData operacion { get; set; } = null;
+            public CrAnulaAbonosNewOperacionCtasData cuentas { get; set; } = null;
             public string oficina_titular { get; set; } = string.Empty;
             public int enlace { get; set; } = 0;
             public string numero_documento { get; set; } = string.Empty;
