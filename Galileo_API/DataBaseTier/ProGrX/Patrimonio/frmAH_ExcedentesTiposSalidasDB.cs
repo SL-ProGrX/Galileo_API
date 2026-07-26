@@ -166,7 +166,7 @@ where cod_salida = @cod_salida;";
                 return validacion;
             }
 
-            var codSalidaNormalizado = Ah_ExcedentesTiposSalidas_NormalizarCodigo(request!.cod_salida);
+            var codSalidaNormalizado = Ah_ExcedentesTiposSalidas_NormalizarCodigo(request.cod_salida);
             var descripcionNormalizada = (request.descripcion ?? string.Empty).Trim();
             var tipoAplicacionNormalizado = Ah_ExcedentesTiposSalidas_NormalizarTipoAplicacion(request.tipo_aplicacion);
             var destinoPlanNormalizado = (request.destino_plan ?? string.Empty).Trim();
