@@ -334,8 +334,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     .Select(MapCuenta)
                     .ToList();
 
-                response.Result!.total = lista.Count;
-                response.Result!.lista = lista;
+                response.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosCuentasData>();
+                response.Result.total = lista.Count;
+                response.Result.lista = lista;
                 return response;
             }
             catch (SqlException ex)
@@ -403,8 +404,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var err = ValidarGuardar(req);
             if (err != null) return err;
 
-            var user = req.usuario!.Trim();
-            var userSesion = req.usuario_sesion!.Trim();
+            var user = (req.usuario ?? string.Empty).Trim();
+            var userSesion = (req.usuario_sesion ?? string.Empty).Trim();
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try

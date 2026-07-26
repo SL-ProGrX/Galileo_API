@@ -43,24 +43,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var p = new DynamicParameters();
 
-            // Filtro
             p.Add("@filtro", BuildFiltroLike(filtros), DbType.String);
 
-            // Ordenamiento
             var sortFieldNorm = (filtros?.sortField ?? "id_declara")
                 .Trim()
                 .ToLowerInvariant();
-            int sortOrder = filtros?.sortOrder ?? 0; // 0 = DESC, 1 = ASC
+            int sortOrder = filtros?.sortOrder ?? 0;
 
             p.Add("@sortField", sortFieldNorm, DbType.String);
             p.Add("@sortOrder", sortOrder, DbType.Int32);
 
-            // Paginación
             bool sinPaginacion = filtros == null || filtros.paginacion <= 0;
-            if (!sinPaginacion)
+            if (filtros is not null && !sinPaginacion)
             {
-                p.Add("@offset", filtros!.pagina,      DbType.Int32);
-                p.Add("@rows",   filtros.paginacion,  DbType.Int32);
+                p.Add("@offset", filtros.pagina, DbType.Int32);
+                p.Add("@rows", filtros.paginacion, DbType.Int32);
             }
 
             return (p, sinPaginacion);

@@ -724,7 +724,8 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     return response;
                 }
 
-                response.Result!.boleta = dbResult.Result ?? string.Empty;
+                response.Result ??= new CambioDeptoResponse();
+                response.Result.boleta = dbResult.Result ?? string.Empty;
 
                 _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {

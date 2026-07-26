@@ -618,13 +618,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="parametros"></param>
         /// <param name="soloOperacionesAtrasadas"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa,string parametros,bool soloOperacionesAtrasadas)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa, string parametros, bool soloOperacionesAtrasadas)
         {
             var response = PrepareListaConCedula<CoControlSegFiadorDto>(
-                CodEmpresa, parametros,
-                out var conn, out var filtros, out var fx);
+                CodEmpresa,
+                parametros,
+                out var conn,
+                out var filtros,
+                out var fx);
 
-            if (response.Code != 0 || string.IsNullOrWhiteSpace(fx.Cedula))
+            if (response.Code != 0 || string.IsNullOrWhiteSpace(fx.Cedula) || conn == null)
                 return response;
 
             using (conn)
@@ -662,11 +665,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     E.descripcion as estado_persona,
                     I.descripcion as institucion
                 from fiadores F
-                inner join Socios S on F.cedulaf = S.cedula
-                inner join Instituciones I on S.cod_institucion = I.cod_institucion
-                inner join Reg_Creditos R on F.Id_Solicitud = R.Id_Solicitud
-                inner join AFI_ESTADOS_PERSONA E on E.cod_estado = S.estadoActual
-                left join MOROSIDAD M on F.Id_Solicitud = M.Id_Solicitud and M.Estado = 'A'
+                inner join Socios S
+                    on F.cedulaf = S.cedula
+                inner join Instituciones I
+                    on S.cod_institucion = I.cod_institucion
+                inner join Reg_Creditos R
+                    on F.Id_Solicitud = R.Id_Solicitud
+                inner join AFI_ESTADOS_PERSONA E
+                    on E.cod_estado = S.estadoActual
+                left join MOROSIDAD M
+                    on F.Id_Solicitud = M.Id_Solicitud
+                    and M.Estado = 'A'
                 where F.estado = 'A'
                   and R.cedula = @cedula
                   and R.estado = 'A'
@@ -717,7 +726,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     if (usarPaginacion)
                     {
                         sqlLista += @"
-                    offset @offset rows fetch next @fetch rows only";
+                    offset @offset rows
+                    fetch next @fetch rows only";
                     }
 
                     response.Result.lista = conn.Query<CoControlSegFiadorDto>(sqlLista, new
@@ -1258,19 +1268,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return (cedula, hasTexto ? texto : null, like, pagina, fetch, offset);
         }
         private ErrorDto<TablasListaGenericaModel> PrepareListaConCedula<TDto>(
-            int codEmpresa,
-            string parametros,
-            out SqlConnection conn,
-            out FiltrosLazyLoadData filtros,
-            out (string Cedula, string? Texto, string? Like, int Pagina, int Fetch, int Offset) fx)
+      int codEmpresa,
+      string parametros,
+      out SqlConnection? conn,
+      out FiltrosLazyLoadData filtros,
+      out (string Cedula, string? Texto, string? Like, int Pagina, int Fetch, int Offset) fx)
         {
-            conn = null!;
+            conn = null;
             filtros = new FiltrosLazyLoadData();
             fx = default;
 
             try
             {
-                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros) ?? new FiltrosLazyLoadData();
+                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros)
+                    ?? new FiltrosLazyLoadData();
             }
             catch (JsonException jex)
             {
@@ -1289,6 +1300,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     lista = new List<TDto>()
                 }
             };
+
             response.Result ??= new TablasListaGenericaModel
             {
                 total = 0,
@@ -1302,7 +1314,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 response.Result.total = 0;
                 response.Result.lista = new List<TDto>();
                 conn.Dispose();
-                return response;
+                conn = null;
             }
 
             return response;

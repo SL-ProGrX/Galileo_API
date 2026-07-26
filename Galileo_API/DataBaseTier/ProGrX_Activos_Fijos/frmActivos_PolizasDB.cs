@@ -290,7 +290,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 Code = -1,
                 Description = MsgDebeIndicarPoliza,
-                Result = default!
+                Result = default
             };
         }
 

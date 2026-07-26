@@ -966,35 +966,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return conn.QuerySingle<long>(sql, data, tx);
         }
 
-        private static long ActualizarDesembolso(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrSeguimientoDesembolsosGuardarRequest data)
+        private static long ActualizarDesembolso(SqlConnection conn,SqlTransaction tx,CrSeguimientoDesembolsosGuardarRequest data)
         {
             const string sql = @"
-                update desembolsos
-                set concepto = @concepto,
-                    monto = @monto,
-                    cuenta_conta = @cuenta_conta,
-                    retener = @retener,
-                    modifica = @modifica,
-                    tdocumento = @tdocumento,
-                    cod_banco = @cod_banco,
-                    cta_banco = @cta_banco,
-                    diferido_aplica = @diferido_aplica,
-                    diferido_corte = @diferido_corte,
-                    referencia = @referencia,
-                    identificacion = @identificacion,
-                    tipo_ced_destino = @tipo_ced_destino,
-                    cedula_destino = @cedula_destino,
-                    id_banco_destino = @id_banco_destino,
-                    cta_iban_destino = @cta_iban_destino,
-                    cod_divisa = @cod_divisa,
-                    correo_notifica = @correo_notifica,
-                    detalle = @detalle
-                where id_desembolso = @id_desembolso;";
+        update desembolsos
+        set concepto = @concepto,
+            monto = @monto,
+            cuenta_conta = @cuenta_conta,
+            retener = @retener,
+            modifica = @modifica,
+            tdocumento = @tdocumento,
+            cod_banco = @cod_banco,
+            cta_banco = @cta_banco,
+            diferido_aplica = @diferido_aplica,
+            diferido_corte = @diferido_corte,
+            referencia = @referencia,
+            identificacion = @identificacion,
+            tipo_ced_destino = @tipo_ced_destino,
+            cedula_destino = @cedula_destino,
+            id_banco_destino = @id_banco_destino,
+            cta_iban_destino = @cta_iban_destino,
+            cod_divisa = @cod_divisa,
+            correo_notifica = @correo_notifica,
+            detalle = @detalle
+        where id_desembolso = @id_desembolso;";
 
-            var idDesembolso = data.id_desembolso!.Value;
+            if (!data.id_desembolso.HasValue)
+                throw new InvalidOperationException("El desembolso es requerido.");
+
+            var idDesembolso = data.id_desembolso.Value;
 
             var rows = conn.Execute(sql, data, tx);
             if (rows <= 0)
