@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -545,7 +546,9 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
         private sealed class PlanillaAbonoDeductoraRow
         {
+            [SuppressMessage("Minor Code Smell", "S3459:Unassigned members should be removed", Justification = "Dapper asigna esta propiedad por reflexión desde una columna de consulta.")]
             public int Idx { get; set; }
+            [SuppressMessage("Minor Code Smell", "S3459:Unassigned members should be removed", Justification = "Dapper asigna esta propiedad por reflexión desde una columna de consulta.")]
             public string? ItmX { get; set; }
         }
 
