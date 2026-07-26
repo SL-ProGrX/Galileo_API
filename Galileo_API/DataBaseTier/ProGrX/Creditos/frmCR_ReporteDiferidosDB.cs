@@ -133,7 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new List<CrReporteDiferidosItem>());
             }
 
-            var fechaCorte = request.fecha_corte!.Value.Date;
+            var fechaCorte = request.fecha_corte.Value.Date;
 
             List<CrReporteDiferidosItem> resultado = (baseResp.Result ?? new List<CrReporteDiferidosOperacionBase>())
                 .Select(item => MapearItem(item, fechaCorte))

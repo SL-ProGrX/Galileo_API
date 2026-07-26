@@ -364,7 +364,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 using var tx = conn.BeginTransaction();
 
-                foreach (var item in context.Lista!)
+                foreach (var item in context.Lista)
                 {
                     context.EjecutarEliminacion(conn, tx, item, sysPlanPagos, context.Operacion);
                 }
@@ -615,8 +615,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public string Notas { get; set; } = string.Empty;
             public IList<T>? Lista { get; set; }
             public string MensajeExito { get; set; } = string.Empty;
-            public Action<IDbConnection, IDbTransaction, T, int, int> EjecutarEliminacion { get; set; } = default!;
-            public Action<T, CrMoraCargosAjustesOperacionBaseData, CrMoraCargosAjustesEliminarContext<T>> RegistrarBitacora { get; set; } = default!;
+            public Action<IDbConnection, IDbTransaction, T, int, int> EjecutarEliminacion { get; set; } = default;
+            public Action<T, CrMoraCargosAjustesOperacionBaseData, CrMoraCargosAjustesEliminarContext<T>> RegistrarBitacora { get; set; } = default;
         }
     }
 }
