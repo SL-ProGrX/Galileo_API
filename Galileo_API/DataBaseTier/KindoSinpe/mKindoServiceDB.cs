@@ -87,7 +87,7 @@ namespace Galileo_API.DataBaseTier
             // Selección explícita del resultado según canal
             SinpeResultLite? sr;
             sr = (resPIN?.PINSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber!, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber));
+                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber));
 
             return new
             {
@@ -190,7 +190,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new List<CoreInterno.CL_ResultadoValidacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var t in request.Transacciones!)
+            foreach (var t in request.Transacciones)
             {
                 var identificacion = normalizarId
                     ? (t.Identificacion ?? "").Trim().Replace("-", "").Replace(" ", "")
@@ -203,7 +203,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     CODIGO_MONEDA = t.CodigoMoneda,
                     CODIGO_SERVICIO = t.CodigoServicio,
                     MONTO = t.Monto,
-                    REGISTROUSUARIO = request.Rastro!.Usuario
+                    REGISTROUSUARIO = request.Rastro.Usuario
                 });
 
                 if ((int?)valida?.CODIGO_ERROR > 0)
@@ -237,7 +237,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 Mostrar = true,
                                 Nombre = "PgrX",
                                 NombreFisico = "Galileo",
-                                Valor = valida!.DETALLE
+                                Valor = valida.DETALLE
                             }
                         }
                     });
@@ -396,7 +396,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     Resultado = rechazo
                         ? CoreInterno.E_Resultado.Rechazo
                         : CoreInterno.E_Resultado.Exitoso,
-                    MotivoError = rechazo ? res!.MOT_RECHAZO : 0,
+                    MotivoError = rechazo ? res.MOT_RECHAZO : 0,
                     ComprobanteInterno = codigoReferencia,
                     IdRelacionCliente = idCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
@@ -704,7 +704,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                string tipo = CuentaIBAN!.Substring(8, 2);
+                string tipo = CuentaIBAN.Substring(8, 2);
 
                 int tipoMovimiento;
                 if (tipo == "01")
@@ -720,7 +720,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 {
                     CUENTA = CuentaIBAN,
                     TRANSAC_TIPO = tipoMovimiento,
-                    CEDULA = Identificacion!.Replace("-", "").Replace(" ", ""),
+                    CEDULA = Identificacion.Replace("-", "").Replace(" ", ""),
                     MONEDA = CodigoMoneda
                 });
 
@@ -1071,7 +1071,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     CodigoServicio = Request.codigoServicio
                 });
 
-                bool disponible = Convert.ToBoolean(result!.SaldoDisponible);
+                bool disponible = Convert.ToBoolean(result.SaldoDisponible);
 
                 resultado.disponible = disponible;
                 resultado.SaldoDisponibleResult = disponible
@@ -1311,7 +1311,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 query,
                 "", parametros);
 
-            return result.Result!;
+            return result.Result;
         }
 
         public string ConsecutivoTransSinpe(int CodCliente)
@@ -1496,10 +1496,10 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                 var infoSinpe = new vInfoSinpe
                 {
-                    Cedula = res!.Cedula,
-                    CuentaIBAN = res!.Cuenta,
-                    tipoID = res!.tipoID,
-                    cod_divisa = res!.cod_divisa
+                    Cedula = res.Cedula,
+                    CuentaIBAN = res.Cuenta,
+                    tipoID = res.tipoID,
+                    cod_divisa = res.cod_divisa
                 };
 
                 response.Result = infoSinpe;
@@ -1720,7 +1720,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 if (response.Result is not null)
                 {
                     response.Result.Codigo = infoSinpe?.Cedula?.ToString();
-                    response.Result.NombreOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, Convert.ToInt32(response.Result.id_banco)).Result!.cuenta_desc;
+                    response.Result.NombreOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, Convert.ToInt32(response.Result.id_banco)).Result.cuenta_desc;
                 }
             }
             catch
@@ -1792,7 +1792,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                     return 1;
                 }
 
-                return GetCurrencyCodeId(cuentaValida.Account.CurrencyCode!);
+                return GetCurrencyCodeId(cuentaValida.Account.CurrencyCode);
             }
             return 1;
         }
@@ -1879,7 +1879,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 {
                     refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
-                    estadoSinpe = resPIN.PINSendingResult!.State,
+                    estadoSinpe = resPIN.PINSendingResult.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -1913,7 +1913,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 {
                     refSinpe = resPIN.DTRSendingResult?.SINPERefNumber ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
-                    estadoSinpe = resPIN.DTRSendingResult!.State,
+                    estadoSinpe = resPIN.DTRSendingResult.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -2009,7 +2009,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
 
             var response = conn.QueryFirstOrDefault<dynamic>(Query, new { iban });
 
-            return response != null && response!.TIPO_SINPE == 1 && response!.SINPE_PRODUCTO == 1;
+            return response != null && response.TIPO_SINPE == 1 && response.SINPE_PRODUCTO == 1;
         }
 
         public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)
@@ -2135,8 +2135,8 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 //1) Consulto Cod Divisa Origen
                 const string qryDivisa = "SELECT COD_DIVISA FROM TES_BANCOS WHERE ESTADO = 'A' AND ID_BANCO = @id_banco";
                 var cod_divisa_origen = connection.Query<string>(qryDivisa, 
-                    new { id_banco = solicitud!.id_banco }).FirstOrDefault();
-                string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen!);
+                    new { id_banco = solicitud.id_banco }).FirstOrDefault();
+                string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen);
 
                 if(divisaOrigen != cod_divisa)
                 {
