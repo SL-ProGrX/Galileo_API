@@ -173,8 +173,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             parameters.Add("@Modulo", vModulo);
             parameters.Add("@Cedula", string.IsNullOrWhiteSpace(cedula) ? null : $"%{cedula}%");
             parameters.Add("@FiltraFecha", filtraFecha ? 1 : 0);
-            parameters.Add("@FechaIni", filtraFecha ? request.FechaIni!.Value.Date : null);
-            parameters.Add("@FechaFin", filtraFecha ? request.FechaFin!.Value.Date.AddDays(1).AddSeconds(-1) : null);
+            parameters.Add("@FechaIni", filtraFecha ? request.FechaIni.Value.Date : null);
+            parameters.Add("@FechaFin", filtraFecha ? request.FechaFin.Value.Date.AddDays(1).AddSeconds(-1) : null);
             parameters.Add("@FiltraMovimientos", movimientos.Count > 0 ? 1 : 0);
             parameters.Add("@Movimientos", movimientos);
             parameters.Add("@CodPlan", string.IsNullOrWhiteSpace(codPlan) ? null : codPlan);
