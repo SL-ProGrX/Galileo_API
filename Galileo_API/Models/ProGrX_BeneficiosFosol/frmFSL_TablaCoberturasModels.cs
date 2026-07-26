@@ -1,10 +1,15 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslTablaAplicacionData
     {
+        [JsonRequired]
         public int linea { get; set; }
+        [JsonRequired]
         public int mes_inicio { get; set; }
+        [JsonRequired]
         public int mes_corte { get; set; }
+        [JsonRequired]
         public float cobertura { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string registra_usuario { get; set; } = string.Empty;
