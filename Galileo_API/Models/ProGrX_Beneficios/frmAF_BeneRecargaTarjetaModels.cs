@@ -37,6 +37,7 @@ namespace Galileo.Models.AF
 
     public class AfiBeneTarjetasRecargaData
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public long cod_remesa_tr { get; set; }
         public string usuario { get; set; } = string.Empty;
         public List<AfiBeneTarjetasData> tarjetas { get; set; } = new List<AfiBeneTarjetasData>();
@@ -62,13 +63,18 @@ namespace Galileo.Models.AF
     {
         public long cod_remesa_tr { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime registro_fecha { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime fecha_inicio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int cantidad { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public float monto { get; set; }
         public string? cod_producto { get; set; } = string.Empty;
         public string? cod_producto_inv { get; set; } = string.Empty;
@@ -78,8 +84,11 @@ namespace Galileo.Models.AF
 
     public class DocArchivoBeneRecargaTarjetaDto
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int codCliente { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_remesa_tr { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_proveedor { get; set; }
         public string? body { get; set; }
         public string? usuario { get; set; }

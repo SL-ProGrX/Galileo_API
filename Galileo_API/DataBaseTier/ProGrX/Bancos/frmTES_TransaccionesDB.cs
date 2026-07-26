@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private SqlConnection OpenConnection(int codEmpresa)
         {
-            var cs = new PortalDB(_config!).ObtenerDbConnStringEmpresa(codEmpresa);
+            var cs = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             return new SqlConnection(cs);
         }
 
@@ -171,7 +171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     trx.tipo_ced_destino = string.IsNullOrEmpty(trx.codigo?.Trim())
                         ? 1
-                        : fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                        : fxTipoIdentificacion(CodEmpresa, trx.codigo);
                 }
                 else if (string.IsNullOrEmpty(trx.codigo?.Trim()))
                 {
@@ -179,7 +179,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
                 else
                 {
-                    var tipoCalculado = fxTipoIdentificacion(CodEmpresa, trx.codigo!);
+                    var tipoCalculado = fxTipoIdentificacion(CodEmpresa, trx.codigo);
 
                     trx.tipo_ced_destino = tipoCalculado;
                 }
@@ -211,7 +211,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     cedulaNormalizada = cedula[(indiceGuion + 1)..];
                 }
             }
-            var ced_destino = MKindoServiceDb.Inferir(cedulaNormalizada!);
+            var ced_destino = MKindoServiceDb.Inferir(cedulaNormalizada);
             var tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
             return mKindo.PIN_OBTENER_TIPO_IDENTIFICACION(CodEmpresa, tipo_ced_destino).Result;
         }
@@ -696,13 +696,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static void AjustarTipoCedOrigen(TesTransaccionDto t)
         {
-            var ced_origen = MKindoServiceDb.Inferir(t.cedula_origen!);
+            var ced_origen = MKindoServiceDb.Inferir(t.cedula_origen);
             t.tipo_ced_origen = Convert.ToInt32(ced_origen.Codigo);
         }
 
         private static void AjustarTipoCedDestino(TesTransaccionDto t)
         {
-            var ced_destino = MKindoServiceDb.Inferir(t.codigo!);
+            var ced_destino = MKindoServiceDb.Inferir(t.codigo);
             t.tipo_ced_destino = Convert.ToInt32(ced_destino.Codigo);
         }
 
@@ -1569,7 +1569,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 var errores = new List<string>();
-                var stringConn = new PortalDB(_config!).ObtenerDbConnStringEmpresa(CodEmpresa);
+                var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
                 ValidarUsuarioDestino(CodEmpresa, usuario, transaccion, stringConn, errores);
                 ValidarCamposBasicos(CodEmpresa, usuario, transaccion, errores);
@@ -1809,12 +1809,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                   .Select(g => g.First())
                                   .ToList();
 
-                result = result.Where(x => x.cuenta_desc!.Contains(bancoInfo.cod_divisa!)).ToList();
+                result = result.Where(x => x.cuenta_desc.Contains(bancoInfo.cod_divisa)).ToList();
 
                 if (CuentaInterna == true)
                 {
                     //filtro cuando descripcion contiene INT
-                    result = result.Where(x => x.cuenta_desc!.Contains("INT")).ToList();
+                    result = result.Where(x => x.cuenta_desc.Contains("INT")).ToList();
                 }
 
                 return Ok(result);
@@ -1885,8 +1885,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if(cuentaInfo == null)
                 {
                     //Valido la cedula por Kindo
-                    var servicio = _factory.CrearServicio(CodEmpresa, usuario!);
-                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula!, cuenta!, usuario!);
+                    var servicio = _factory.CrearServicio(CodEmpresa, usuario);
+                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
 
                     return result.Code == 0
                         ? DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.")
@@ -1899,7 +1899,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             .Replace(" ", "")
                             .TrimStart('0');
 
-                var id2 = cedula!.ToString().Trim()
+                var id2 = cedula.ToString().Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');

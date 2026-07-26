@@ -35,7 +35,7 @@ namespace Galileo.DataBaseTier
             => new ErrorDto<T> { Code = 0, Description = desc, Result = result };
 
         private ErrorDto<T> Fail<T>(Exception ex)
-            => new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default! };
+            => new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default };
 
         private ErrorDto OkNoResult(string desc = MsgOk)
             => new ErrorDto { Code = 0, Description = desc };
@@ -138,12 +138,12 @@ namespace Galileo.DataBaseTier
 
                     UpsertLineasAdjudicacion(conn, datos);
 
-                    var adjudicado = ExisteAdjudicacionProveedor(conn, datos.cpr_id, datos.proveedor!.proveedor_codigo);
+                    var adjudicado = ExisteAdjudicacionProveedor(conn, datos.cpr_id, datos.proveedor.proveedor_codigo);
                     SetEstadoProveedor(conn, datos, adjudicado);
 
                     return adjudicado
-                        ? $"Proveedor {datos.proveedor!.descripcion} adjudicado satisfactoriamente!"
-                        : $"Proveedor {datos.proveedor!.descripcion} desadjudicado satisfactoriamente!";
+                        ? $"Proveedor {datos.proveedor.descripcion} adjudicado satisfactoriamente!"
+                        : $"Proveedor {datos.proveedor.descripcion} desadjudicado satisfactoriamente!";
                 });
 
                 return resp.Code == -1
@@ -183,7 +183,7 @@ namespace Galileo.DataBaseTier
             var tipoGm = _solicitudDB.CprSolicitud_TipoExcepcionGM(codEmpresa)?.Description ?? string.Empty;
             if ((solicitud.tipo_orden ?? string.Empty) != tipoGm) return;
 
-            var montos = GetMontosSolicitudGM(conn, datos.cpr_id, datos.proveedor!.proveedor_codigo);
+            var montos = GetMontosSolicitudGM(conn, datos.cpr_id, datos.proveedor.proveedor_codigo);
             var montoOrden = montos.MontoOrden ?? 0f;
             var montoConOrden = montos.MontoAdjudicado + montoOrden;
 
@@ -203,9 +203,9 @@ namespace Galileo.DataBaseTier
                 conn.Execute(sql, new
                 {
                     cpr_id = datos.cpr_id,
-                    proveedor = datos.proveedor!.proveedor_codigo,
+                    proveedor = datos.proveedor.proveedor_codigo,
                     cod_producto = item.cod_producto,
-                    no_cotizacion = datos.proveedor!.no_cotizacion ?? string.Empty
+                    no_cotizacion = datos.proveedor.no_cotizacion ?? string.Empty
                 });
             }
         }
@@ -253,7 +253,7 @@ namespace Galileo.DataBaseTier
                     new
                     {
                         cpr_id = datos.cpr_id,
-                        proveedor = datos.proveedor!.proveedor_codigo,
+                        proveedor = datos.proveedor.proveedor_codigo,
                         usuario = datos.usuario
                     }
                 );
@@ -267,7 +267,7 @@ namespace Galileo.DataBaseTier
                         ADJUDICA_USUARIO = NULL,
                         ADJUDICA_FECHA = NULL
                     {whereBase};",
-                new { cpr_id = datos.cpr_id, proveedor = datos.proveedor!.proveedor_codigo }
+                new { cpr_id = datos.cpr_id, proveedor = datos.proveedor.proveedor_codigo }
             );
         }
         

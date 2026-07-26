@@ -10,7 +10,9 @@ namespace Galileo.Models.AF
     {
         public string id_banco { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool cheque { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool transferencia { get; set; }
     }
 

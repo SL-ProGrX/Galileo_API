@@ -103,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     response.Result = null;
                 }
 
-                return DbHelper.CreateOkResponse<TesUbiRemesaDto>(response.Result!);
+                return DbHelper.CreateOkResponse<TesUbiRemesaDto>(response.Result);
             }
             catch (Exception ex)
             {
@@ -397,7 +397,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = "";
                 var valida = fxVerificaLinea(CodEmpresa, Remesa.cod_ubicacion, Linea.nsolicitud, Remesa.estado);
                 if(!valida.Result) {
-                    return DbHelper.ErrorResponse(valida.Description!);
+                    return DbHelper.ErrorResponse(valida.Description);
                 }
 
                 //Verifica si existe el documento
