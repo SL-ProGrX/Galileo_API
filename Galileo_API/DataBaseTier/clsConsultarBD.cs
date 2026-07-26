@@ -106,7 +106,7 @@ WHERE R.ID_SOLICITUD = @numero_operacion;";
                 {
                     numero_operacion = numeroOperacion
                 }
-            )!;
+            );
         }
 
         public ErrorDto<bool> fxTraerExisteContacto(
@@ -131,7 +131,7 @@ WHERE TipoProfesional = @tipo_profesional
                     id_contacto = idContacto,
                     tipo_profesional = tipoProfesional.Trim()
                 }
-            )!;
+            );
         }
 
     }
