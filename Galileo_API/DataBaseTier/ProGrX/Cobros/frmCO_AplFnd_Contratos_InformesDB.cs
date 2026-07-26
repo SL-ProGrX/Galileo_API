@@ -23,10 +23,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<CoAplFndContratosInformes_Personas_Result>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
+        public ErrorDto<List<CoAplFndContratosInformesPersonasResult>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
         {
             const string query = @"select Cedula, cedular, nombre from socios order by nombre";
-            return DbHelper.ExecuteListQuery<CoAplFndContratosInformes_Personas_Result>(_portalDB, codEmpresa, query);
+            return DbHelper.ExecuteListQuery<CoAplFndContratosInformesPersonasResult>(_portalDB, codEmpresa, query);
         }
         
         /// <summary>
