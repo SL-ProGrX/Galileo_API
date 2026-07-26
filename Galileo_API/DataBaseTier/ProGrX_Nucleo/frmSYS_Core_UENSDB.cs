@@ -185,7 +185,7 @@ namespace Galileo.DataBaseTier
 
                 int existe = connection.QueryFirstOrDefault<int>(existsSql, new
                 {
-                    cod_unidad = request!.cod_unidad
+                    cod_unidad = request.cod_unidad
                 });
 
                 if (existe == 0)
@@ -478,7 +478,7 @@ namespace Galileo.DataBaseTier
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad }).ToList();
 
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_unidad))
-                    return null!;
+                    return null;
 
                 return dto;
             });
@@ -508,7 +508,7 @@ namespace Galileo.DataBaseTier
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad, sub_unidad }).ToList();
 
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_centro_costo))
-                    return null!;
+                    return null;
 
                 return dto;
             });
