@@ -126,7 +126,7 @@ select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmor
                 codEmpresa,
                 sql,
                 "...",
-                new { idSolicitud = request.id_solicitud, montoAmortizacion = request.monto_amortizacion })!;
+                new { idSolicitud = request.id_solicitud, montoAmortizacion = request.monto_amortizacion });
         }
 
         /// <summary>
@@ -574,11 +574,11 @@ exec spCrdPlanPagoAnulaAbono
 
         private sealed class AnulacionContext
         {
-            public SqlConnection Conn { get; init; } = null!;
-            public SqlTransaction Tx { get; init; } = null!;
-            public CrAnulaAbonosProcesarRequest Request { get; init; } = null!;
-            public CrAnulaAbonosOperacionData Operacion { get; init; } = null!;
-            public CrAnulaAbonosOperacionCtasData Ctas { get; init; } = null!;
+            public SqlConnection Conn { get; init; } = null;
+            public SqlTransaction Tx { get; init; } = null;
+            public CrAnulaAbonosProcesarRequest Request { get; init; } = null;
+            public CrAnulaAbonosOperacionData Operacion { get; init; } = null;
+            public CrAnulaAbonosOperacionCtasData Ctas { get; init; } = null;
             public string OficinaTitular { get; init; } = string.Empty;
             public int Enlace { get; init; }
             public string NumDocumento { get; init; } = string.Empty;
