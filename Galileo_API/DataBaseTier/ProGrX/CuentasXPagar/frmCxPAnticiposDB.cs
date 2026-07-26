@@ -128,7 +128,14 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                try { transaction.Rollback(); } catch { }
+                try
+                {
+                    transaction.Rollback();
+                }
+                catch
+                {
+                    // Se conserva el error original; Dispose libera la transacción y la conexión al salir del método.
+                }
                 return DbHelper.ErrorResponse(ex.Message, -1);
             }
         }
