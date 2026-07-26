@@ -18,7 +18,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cajas
         {
             FiltrosLazyLoadData filtros = string.IsNullOrEmpty(jfiltros)
                 ? new FiltrosLazyLoadData()
-                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros)!;
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
             return _db.Cajas_Servicios_Conceptos_Lista_Obtener(CodEmpresa, cod_recaudador, filtros);
         }
 
@@ -46,7 +46,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cajas
         {
             FiltrosLazyLoadData filtros = string.IsNullOrEmpty(jfiltros)
                 ? new FiltrosLazyLoadData()
-                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros)!;
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
             return _db.Cajas_Servicios_Cabys_Lista_Obtener(CodEmpresa, filtros);
         }
 
