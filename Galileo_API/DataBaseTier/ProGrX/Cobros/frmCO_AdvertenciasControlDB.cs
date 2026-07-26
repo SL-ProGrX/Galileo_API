@@ -187,8 +187,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             out DateTime fc)
         {
 
-            fi = DateTime.SpecifyKind(filtros.fecha_inicio!.Value.Date, DateTimeKind.Unspecified);
-            fc = DateTime.SpecifyKind(filtros.fecha_corte!.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+            fi = DateTime.SpecifyKind(filtros.fecha_inicio.Value.Date, DateTimeKind.Unspecified);
+            fc = DateTime.SpecifyKind(filtros.fecha_corte.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
         }
 
         private static (string[] advertencias, string[] estadosP) ParseLists(CoAdvertenciasControlFiltros filtros)
