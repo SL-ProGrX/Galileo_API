@@ -288,7 +288,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 {
                     FechaProceso = lngFecha,
                     Saldo = curSaldo,
-                    Cuota = (decimal)req.Cuota
+                    Cuota = req.Cuota ?? 0m
                 };
 
                 var totales = new TotalesSimulacion();
