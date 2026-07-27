@@ -485,7 +485,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             // 2400 = 200 años en meses. Ajusta a tu negocio (por ejemplo 1200 = 100 años).
             const int MAX_ITER = 2400;
 
-            long procesosTmp = (long)req.PriDeduc;
+            long procesosTmp = req.PriDeduc ?? 0L;
             int pasos = 0;
 
             // Si fechaProceso es inválida o está "antes", no iteres.
