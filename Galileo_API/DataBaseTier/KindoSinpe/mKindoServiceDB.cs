@@ -396,7 +396,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     Resultado = rechazo
                         ? CoreInterno.E_Resultado.Rechazo
                         : CoreInterno.E_Resultado.Exitoso,
-                    MotivoError = rechazo ? res.MOT_RECHAZO : 0,
+                    MotivoError = rechazo ? (res?.MOT_RECHAZO ?? 0) : 0,
                     ComprobanteInterno = codigoReferencia,
                     IdRelacionCliente = idCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
