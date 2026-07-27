@@ -174,59 +174,52 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
 
             using SqlMapper.GridReader grid = conn.QueryMultiple(sql, parameters);
-            int bancoAsignado = grid.ReadSingle<int>();
-            int estadoPersona = grid.ReadSingle<int>();
-            int destino = grid.ReadSingle<int>();
-            int banco = grid.ReadSingle<int>();
-            int comite = grid.ReadSingle<int>();
-            int garantia = grid.ReadSingle<int>();
+            var referencias = new CrSeguimientoTramitesRecepcionReferenciasValidacion
+            {
+                banco_asignado = grid.ReadSingle<int>(),
+                estado_persona = grid.ReadSingle<int>(),
+                destino = grid.ReadSingle<int>(),
+                banco = grid.ReadSingle<int>(),
+                comite = grid.ReadSingle<int>(),
+                garantia = grid.ReadSingle<int>()
+            };
 
             Cr_SeguimientoTramites_Recepcion_Referencias_Mensajes_Agregar(
                 request,
                 mensajes,
-                bancoAsignado,
-                estadoPersona,
-                destino,
-                banco,
-                comite,
-                garantia);
+                referencias);
         }
 
         private static void Cr_SeguimientoTramites_Recepcion_Referencias_Mensajes_Agregar(
             CrSeguimientoTramitesRecepcionGuardarRequest request,
             ICollection<string> mensajes,
-            int bancoAsignado,
-            int estadoPersona,
-            int destino,
-            int banco,
-            int comite,
-            int garantia)
+            CrSeguimientoTramitesRecepcionReferenciasValidacion referencias)
         {
             if ((string.Equals(request.estado_solicitud.Trim(), "P", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(request.estado_solicitud.Trim(), "R", StringComparison.OrdinalIgnoreCase))
-                && bancoAsignado == 0)
+                && referencias.banco_asignado == 0)
             {
                 mensajes.Add(
                     $"- EL BANCO INDICADO NO SE ENCUENTRA AUTORIZADO AL USUARIO : {request.usuario.Trim()}");
             }
 
-            if (estadoPersona == 0)
+            if (referencias.estado_persona == 0)
             {
                 mensajes.Add(
                     "- Esta Línea de Crédito no Admite El estado actual de la persona (verifique.!)");
             }
 
-            if (destino == 0)
+            if (referencias.destino == 0)
             {
                 mensajes.Add("- El Destino No es válido para Esta Línea");
             }
 
-            if (banco == 0)
+            if (referencias.banco == 0)
             {
                 mensajes.Add("- El Banco Especificado NO EXISTE");
             }
 
-            if (comite == 0)
+            if (referencias.comite == 0)
             {
                 mensajes.Add("- El Comité Especificado NO EXISTE");
             }
@@ -241,7 +234,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 mensajes.Add("- La emisión de la operación NO ES VALIDA");
             }
 
-            if (garantia == 0)
+            if (referencias.garantia == 0)
             {
                 mensajes.Add("- La Garantía especificada NO ES VALIDA");
             }

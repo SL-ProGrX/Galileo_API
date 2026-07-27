@@ -145,14 +145,14 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
-            var esNuevo = string.IsNullOrWhiteSpace(request?.cod_unidad);
+            var esNuevo = string.IsNullOrWhiteSpace(request.cod_unidad);
             var okMsg = esNuevo
                 ? "Registro agregado satisfactoriamente"
                 : RegistroActualizadoMsg;
 
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                var activa = ToActivaBit(request?.activa);
+                var activa = ToActivaBit(request.activa);
 
                 if (esNuevo)
                 {
@@ -172,7 +172,7 @@ namespace Galileo.DataBaseTier
                     return connection.Execute(insertSql, new
                     {
                         cod_unidad = nuevoCodigo,
-                        descripcion = request?.descripcion,
+                        descripcion = request.descripcion,
                         activa,
                         usuario
                     });

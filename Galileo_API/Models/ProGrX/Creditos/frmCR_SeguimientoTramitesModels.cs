@@ -346,6 +346,16 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string base_calculo { get; set; } = string.Empty;
     }
 
+    internal sealed class CrSeguimientoTramitesRecepcionReferenciasValidacion
+    {
+        public int banco_asignado { get; init; }
+        public int estado_persona { get; init; }
+        public int destino { get; init; }
+        public int banco { get; init; }
+        public int comite { get; init; }
+        public int garantia { get; init; }
+    }
+
     internal sealed class CrSeguimientoTramitesRecepcionValidacion
     {
         public List<string> mensajes { get; set; } = new();
