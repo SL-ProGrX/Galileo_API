@@ -425,11 +425,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var plazoRst = CalcularPlazoRestante(codEmpresa, req, estado.FechaProceso);
             var baseDate = ParseProcesoToFirstDay(estado.FechaProceso);
 
-            if (estado == null)
-            {
-                throw new ArgumentNullException(nameof(estado));
-            }
-
             // ✅ Loop bound NO viene directo de req.*
             for (int i = 1; i <= cuotas; i++)
             {

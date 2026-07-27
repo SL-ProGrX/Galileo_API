@@ -33,5 +33,25 @@ namespace Galileo.BusinessLogic.ProGrX_Personas
         {
             return _db.AF_LiquidacionMasiva(CodEmpresa, RenunciaId, Usuario, S06);
         }
+
+        public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_Iniciar(int CodEmpresa, AfLiqMasivaIniciarRequest request)
+        {
+            return _db.AF_LiquidacionMasiva_Proceso_Iniciar(CodEmpresa, request);
+        }
+
+        public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_ProcesarLote(int CodEmpresa, Guid ProcesoId, int Tamano)
+        {
+            return _db.AF_LiquidacionMasiva_Proceso_ProcesarLote(CodEmpresa, ProcesoId, Tamano);
+        }
+
+        public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_Estado_Obtener(int CodEmpresa, Guid ProcesoId)
+        {
+            return _db.AF_LiquidacionMasiva_Proceso_Estado_Obtener(CodEmpresa, ProcesoId);
+        }
+
+        public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_Activo_Obtener(int CodEmpresa, string Usuario)
+        {
+            return _db.AF_LiquidacionMasiva_Proceso_Activo_Obtener(CodEmpresa, Usuario);
+        }
     }
 }

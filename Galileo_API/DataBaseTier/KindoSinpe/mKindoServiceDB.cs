@@ -206,12 +206,15 @@ FROM dbo.fxSinpe_ValidaCredito(
                     REGISTROUSUARIO = request.Rastro.Usuario
                 });
 
-                if ((int?)valida?.CODIGO_ERROR > 0)
+                var codigoError = Convert.ToInt32((object?)valida?.CODIGO_ERROR);
+                var detalle = Convert.ToString((object?)valida?.DETALLE) ?? string.Empty;
+
+                if (codigoError > 0)
                 {
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
                         Resultado = CoreInterno.E_Resultado.Error,
-                        MotivoError = (int)valida.CODIGO_ERROR,
+                        MotivoError = codigoError,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
                             new CL_Adicional_Info
@@ -219,7 +222,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 Mostrar = true,
                                 Nombre = "PgrX",
                                 NombreFisico = "Galileo API",
-                                Valor = (string?)valida?.DETALLE ?? string.Empty
+                                Valor = detalle
                             }
                         }
                     });
@@ -237,7 +240,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 Mostrar = true,
                                 Nombre = "PgrX",
                                 NombreFisico = "Galileo",
-                                Valor = (string?)valida?.DETALLE ?? string.Empty
+                                Valor = detalle
                             }
                         }
                     });
@@ -388,15 +391,16 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     parametros,
                     commandType: CommandType.StoredProcedure);
 
-                bool rechazo = (res?.MOT_RECHAZO ?? 0) > 0;
-                string idCliente = Convert.ToString(res?.ID_REFERENCIA) ?? string.Empty;
+                int motivoRechazo = Convert.ToInt32((object?)res?.MOT_RECHAZO);
+                bool rechazo = motivoRechazo > 0;
+                string idCliente = Convert.ToString((object?)res?.ID_REFERENCIA) ?? string.Empty;
 
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
                     Resultado = rechazo
                         ? CoreInterno.E_Resultado.Rechazo
                         : CoreInterno.E_Resultado.Exitoso,
-                    MotivoError = rechazo ? (res?.MOT_RECHAZO ?? 0) : 0,
+                    MotivoError = rechazo ? motivoRechazo : 0,
                     ComprobanteInterno = codigoReferencia,
                     IdRelacionCliente = idCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
@@ -406,7 +410,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                             Mostrar = true,
                             Nombre = "Estado",
                             NombreFisico = "Galileo",
-                            Valor = Convert.ToString(res?.DES_RECHAZO) ?? string.Empty
+                            Valor = Convert.ToString((object?)res?.DES_RECHAZO) ?? string.Empty
                         }
                     }
                 });
