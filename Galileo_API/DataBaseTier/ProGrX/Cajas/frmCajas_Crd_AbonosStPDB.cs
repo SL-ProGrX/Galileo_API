@@ -507,9 +507,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             if (procesosTmp < fechaProceso)
                 return 1;
 
-            // req.Plazo es int no-nullable en tu modelo, no uses !
-            var plazoRst = req.Plazo - pasos;
-            return Math.Max(1, (int)plazoRst);
+            // Cálculo defensivo: si Plazo viniera nulo, usamos un mínimo seguro.
+            var plazoBase = req.Plazo ?? 1;
+            var plazoRst = plazoBase - pasos;
+            return Math.Max(1, plazoRst);
         }
 
         private static int CalcularDiasPeriodo(SimularCuotasRequest req, int plazoRst, DateTime baseDate)
