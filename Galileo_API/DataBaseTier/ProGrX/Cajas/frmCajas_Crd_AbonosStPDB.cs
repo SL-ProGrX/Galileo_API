@@ -494,7 +494,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             // Si ya estamos al día o adelante, no hay que avanzar.
             if (procesosTmp >= fechaProceso)
-                return Math.Max(1, (int)req.Plazo);
+                return Math.Max(1, req.Plazo ?? 1);
 
             while (procesosTmp < fechaProceso && pasos < MAX_ITER)
             {
