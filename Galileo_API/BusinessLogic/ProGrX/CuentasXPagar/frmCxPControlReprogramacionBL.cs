@@ -57,5 +57,10 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         {
             return _db.CargosPagos_Borrar(CodEmpresa, Pago, Cod_Factura, Cod_Proveedor);
         }
+
+        public ErrorDto Reprogramacion_Aplicar(int CodEmpresa, ReprogramacionAplicar data)
+        {
+            return _db.Reprogramacion_Aplicar(CodEmpresa, data);
+        }
     }
 }
