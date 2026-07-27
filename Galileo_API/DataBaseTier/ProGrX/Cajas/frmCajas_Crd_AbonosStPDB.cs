@@ -391,15 +391,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 cuotaMax = i;
 
                 var tmpInter = (estado.Saldo * req.Interes) / 1200m;
-                var tmpAmort = req.Cuota - tmpInter;
+                decimal tmpAmort = (req.Cuota - tmpInter) ?? 0m;
 
                 totales.TotalInteres += (decimal)tmpInter;
-                totales.TotalAmortiza += (decimal)tmpAmort;
+                totales.TotalAmortiza += tmpAmort;
 
-                estado.Saldo -= (decimal)tmpAmort;
+                estado.Saldo -= tmpAmort;
                 estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
 
-                proy.Add(CrearFila((decimal)tmpInter, (decimal)tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
+                proy.Add(CrearFila((decimal)tmpInter, tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
 
                 if (estado.Saldo < 0)
                 {
