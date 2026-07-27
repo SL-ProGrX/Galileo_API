@@ -211,7 +211,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
                         Resultado = CoreInterno.E_Resultado.Error,
-                        MotivoError = (int?)valida?.CODIGO_ERROR ?? 0,
+                        MotivoError = (int)valida.CODIGO_ERROR,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
                             new CL_Adicional_Info
