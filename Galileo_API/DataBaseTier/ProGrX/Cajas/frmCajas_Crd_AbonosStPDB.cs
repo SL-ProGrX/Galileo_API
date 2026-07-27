@@ -354,7 +354,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private static decimal CalcularSaldoInicial(SimularCuotasRequest req)
         {
-            if (!(bool)req.EsRetencion)
+            if (req.EsRetencion != true)
                 return req.SaldoMes ?? 0m;
 
             // reglas heredadas VB6
