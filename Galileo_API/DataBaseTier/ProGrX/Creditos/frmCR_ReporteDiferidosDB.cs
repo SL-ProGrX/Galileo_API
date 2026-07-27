@@ -133,6 +133,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     new List<CrReporteDiferidosItem>());
             }
 
+            if (!request.fecha_corte.HasValue)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar la fecha corte.",
+                    -2,
+                    new List<CrReporteDiferidosItem>());
+            }
+
             var fechaCorte = request.fecha_corte.Value.Date;
 
             List<CrReporteDiferidosItem> resultado = (baseResp.Result ?? new List<CrReporteDiferidosOperacionBase>())
