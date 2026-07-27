@@ -425,6 +425,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var plazoRst = CalcularPlazoRestante(codEmpresa, req, estado.FechaProceso);
             var baseDate = ParseProcesoToFirstDay(estado.FechaProceso);
 
+            if (estado == null)
+            {
+                throw new ArgumentNullException(nameof(estado));
+            }
+
             // ✅ Loop bound NO viene directo de req.*
             for (int i = 1; i <= cuotas; i++)
             {
@@ -433,7 +438,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var dias = CalcularDiasPeriodo(req, plazoRst, baseDate);
 
                 decimal tmpInter = (estado.Saldo * (req.Interes / 100m) * dias / 360m) ?? 0m;
-                decimal tmpAmort = (estado.Cuota ?? 0m) - tmpInter;
+                decimal tmpAmort = estado.Cuota - tmpInter;
 
                 totales.TotalInteres += tmpInter;
                 totales.TotalAmortiza += tmpAmort;
@@ -548,9 +553,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private sealed class SimulacionEstado
         {
-            public long FechaProceso { get; set; }
-            public decimal Saldo { get; set; }
-            public decimal Cuota { get; set; }
+            public long FechaProceso { get; set; } = 0;
+            public decimal Saldo { get; set; } = 0;
+            public decimal Cuota { get; set; } = 0;
         }
 
         private sealed class TotalesSimulacion
