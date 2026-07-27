@@ -186,6 +186,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             out DateTime fi,
             out DateTime fc)
         {
+            if (filtros == null)
+                throw new ArgumentNullException(nameof(filtros));
+
+            if (!filtros.fecha_inicio.HasValue)
+                throw new ArgumentException("fecha_inicio es requerido.", nameof(filtros));
+
+            if (!filtros.fecha_corte.HasValue)
+                throw new ArgumentException("fecha_corte es requerido.", nameof(filtros));
 
             fi = DateTime.SpecifyKind(filtros.fecha_inicio.Value.Date, DateTimeKind.Unspecified);
             fc = DateTime.SpecifyKind(filtros.fecha_corte.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
