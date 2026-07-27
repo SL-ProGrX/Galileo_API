@@ -94,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         new
                         {
                             Cedula = persona.cedula,
-                            BancoId = primerBanco!.item,
+                            BancoId = primerBanco.item,
                             Tipo = 1
                         },
                         commandType: CommandType.Text

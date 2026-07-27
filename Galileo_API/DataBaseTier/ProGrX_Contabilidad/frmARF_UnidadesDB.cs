@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where P.COD_LOCAL = @codUnidad";
             var result = DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, query, new ArfUnidadesData(), new { codUnidad });
             result.Result ??= null;
-            return result!;
+            return result;
         }
 
         /// <summary>

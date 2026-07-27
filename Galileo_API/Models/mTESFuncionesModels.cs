@@ -121,7 +121,7 @@ namespace Galileo.Models
        public List<TesTransaccionDto> transaccionesList { get; set; } = new List<TesTransaccionDto>();
        public long vTestKey { get; set; } = 0;
        public decimal vMontoTotal { get; set; } = 0;
-       public Func<IDbConnection, int, DateTime, int> resolveConsecutivoArchivoDelDia { get; set; } = null!;
+       public Func<IDbConnection, int, DateTime, int> resolveConsecutivoArchivoDelDia { get; set; } = null;
        public long resolveBancoConsec { get; set; } = 0;
     }
 

@@ -133,7 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 tipo = tipo,
                 columns = columns,
-                rows = rows!,
+                rows = rows,
                 total = rows.Count
             };
 

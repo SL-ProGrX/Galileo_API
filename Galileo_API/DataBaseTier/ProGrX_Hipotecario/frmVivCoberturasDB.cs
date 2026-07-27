@@ -53,7 +53,7 @@ ORDER BY NumeroFinca;";
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
 
-                response.Result!.operacion =
+                response.Result.operacion =
                     connection.QueryFirstOrDefault<FrmVivCoberturasOperacionResponse>(
                         sqlOperacion,
                         new

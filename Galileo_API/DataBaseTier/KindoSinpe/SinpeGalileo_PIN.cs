@@ -61,7 +61,7 @@ namespace Galileo_API.DataBaseTier
                    request: accountData,
                    mapOk: serviceRes => new ResAccountInfo
                    {
-                       IsSuccessful = serviceRes!.IsSuccessful,
+                       IsSuccessful = serviceRes.IsSuccessful,
                        OperationId = serviceRes.OperationId,
                        Account = serviceRes.Account,
                        Errors = serviceRes.Errors

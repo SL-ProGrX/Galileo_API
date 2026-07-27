@@ -17,13 +17,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var grupo = CR_GruposTrabajo_NormalizarTexto(codGrupo);
             var err = CR_GruposTrabajo_ValidarRequerido(grupo, "Debe indicar el grupo.");
             if (err != null)
-                return DbHelper.CreateErrorResponse<List<CrGrupoTrabajoMiembroData>>(err.Description!, err.Code ?? 0);
+                return DbHelper.CreateErrorResponse<List<CrGrupoTrabajoMiembroData>>(err.Description, err.Code ?? 0);
 
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
             var grupoErr = CR_GruposTrabajo_ValidarGrupoExiste(conn, grupo);
 
             if (grupoErr != null)
-                return DbHelper.CreateErrorResponse<List<CrGrupoTrabajoMiembroData>>(grupoErr.Description!, grupoErr.Code ?? 0);
+                return DbHelper.CreateErrorResponse<List<CrGrupoTrabajoMiembroData>>(grupoErr.Description, grupoErr.Code ?? 0);
 
             const string sql = @"
                 select

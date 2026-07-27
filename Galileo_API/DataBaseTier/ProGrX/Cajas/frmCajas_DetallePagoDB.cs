@@ -71,7 +71,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CajasDisponibleFondosDto> Cajas_DisponibleFondos(int codEmpresa, string codCaja, int codApertura, string ticket, string codPlan, int codContrato)
         {
-            var response = DbHelper.CreateOkResponse<CajasDisponibleFondosDto>(default!);
+            var response = DbHelper.CreateOkResponse<CajasDisponibleFondosDto>(default);
 
             try
             {

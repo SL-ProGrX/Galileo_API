@@ -17,7 +17,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteUsuariosListaRespuestaDto> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosListaRespuestaDto> result = null!;
+            List<ReporteUsuariosListaRespuestaDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -31,7 +31,7 @@ namespace Galileo.DataBaseTier
                         Vinculado = solicitudDto.Vinculado,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosListaRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<ReporteUsuariosListaRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -43,7 +43,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteUsuariosRolesRespuestaDto> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosRolesRespuestaDto> result = null!;
+            List<ReporteUsuariosRolesRespuestaDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -55,7 +55,7 @@ namespace Galileo.DataBaseTier
                         Usuario = solicitudDto.Usuario,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosRolesRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<ReporteUsuariosRolesRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -67,7 +67,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteUsuariosPermisosRespuestaDto> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosPermisosRespuestaDto> result = null!;
+            List<ReporteUsuariosPermisosRespuestaDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier
                         Usuario = solicitudDto.Usuario,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<ReporteUsuariosPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -91,7 +91,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteRolesPermisosRespuestaDto> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
-            List<ReporteRolesPermisosRespuestaDto> result = null!;
+            List<ReporteRolesPermisosRespuestaDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -101,7 +101,7 @@ namespace Galileo.DataBaseTier
                     {
                         RolId = solicitudDto.RolId
                     };
-                    result = connection.Query<ReporteRolesPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<ReporteRolesPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -113,7 +113,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteUsuarioRolesDto> RolesObtener()
         {
-            List<ReporteUsuarioRolesDto> result = null!;
+            List<ReporteUsuarioRolesDto> result = null;
 
             string sql = "select COD_ROL as 'IdX', DESCRIPCION as 'ItmX' From US_ROLES Where ACTIVO = 1 order by DESCRIPCION";
 
@@ -131,7 +131,7 @@ namespace Galileo.DataBaseTier
 
         public List<ReporteUsuarioVinculacionDto> VinculacionesObtener(int codEmpresa)
         {
-            List<ReporteUsuarioVinculacionDto> result = null!;
+            List<ReporteUsuarioVinculacionDto> result = null;
 
             string sql = "Select Usuario, Nombre, Estado_Desc, Vinculacion From vPGX_Usuarios_Empresa_Historica where cod_empresa = @CodEmpresa order by Nombre";
             var values = new

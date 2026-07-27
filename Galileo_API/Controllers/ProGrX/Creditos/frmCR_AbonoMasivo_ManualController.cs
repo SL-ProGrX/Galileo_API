@@ -1,22 +1,22 @@
 ﻿using Galileo_API.BusinessLogic.ProGrX.Creditos;
 using Galileo.Models.ERROR;
-using static Galileo_API.Models.ProGrX.Creditos.FrmCRAbonoMasivo_ManualModels;
+using static Galileo_API.Models.ProGrX.Creditos.FrmCrAbonoMasivoManualModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models;
 namespace Galileo_API.Controllers.ProGrX.Creditos
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmCRAbonoMasivo_Manual")]
     [ApiController]
     [Authorize]
 
-    public class FrmCRAbonoMasivo_ManualController : ControllerBase
+    public class FrmCrAbonoMasivoManualController : ControllerBase
     {
-        private readonly FrmCRAbonoMasivo_ManualBL _bl;
+        private readonly FrmCrAbonoMasivoManualBl _bl;
 
-        public FrmCRAbonoMasivo_ManualController(IConfiguration config)
+        public FrmCrAbonoMasivoManualController(IConfiguration config)
         {
-            _bl = new FrmCRAbonoMasivo_ManualBL(config);
+            _bl = new FrmCrAbonoMasivoManualBl(config);
         }
 
 

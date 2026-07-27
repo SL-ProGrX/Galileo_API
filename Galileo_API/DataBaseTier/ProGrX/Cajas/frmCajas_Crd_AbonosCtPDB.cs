@@ -173,7 +173,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 result.Result = new CajasCrdAbonosInfoCancelacionData();
             }
-            return result!;
+            return result;
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 totales.Result.cuota = cuotaRs.Result;
             }
 
-            return totales!;
+            return totales;
         }
 
         /// <summary>

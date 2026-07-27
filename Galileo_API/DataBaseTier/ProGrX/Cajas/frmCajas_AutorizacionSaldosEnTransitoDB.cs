@@ -423,7 +423,7 @@ ORDER BY DESCRIPCION;";
             {
                 Code = 0,
                 Description = "Ok",
-                Result = default!
+                Result = default
             };
 
             try

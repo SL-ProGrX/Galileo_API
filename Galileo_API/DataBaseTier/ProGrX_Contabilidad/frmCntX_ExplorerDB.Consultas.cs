@@ -464,7 +464,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                     if (aceptaMovimientos)
                     {
-                        response.Result!.tipo_vista = "DETALLE_ASIENTOS";
+                        response.Result.tipo_vista = "DETALLE_ASIENTOS";
                         response.Result.detalles = cn.Query<CntxMovimientoDetalleDto>(
                             @"SELECT
                                 num_asiento,
@@ -532,7 +532,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 }
 
                 sql.Append(" ORDER BY A.cod_cuenta ");
-                response.Result!.cuentas = cn.Query<CntxMovimientoCuentaDto>(
+                response.Result.cuentas = cn.Query<CntxMovimientoCuentaDto>(
                     sql.ToString(), request).ToList();
             }
             catch (Exception ex)

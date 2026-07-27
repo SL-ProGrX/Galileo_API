@@ -56,7 +56,7 @@ namespace Galileo.DataBaseTier
 
         public UsuarioCuentaRevisarDto UsuarioCuentaObtener(string nombreUsuario)
         {
-            UsuarioCuentaRevisarDto result = null!;
+            UsuarioCuentaRevisarDto result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -66,7 +66,7 @@ namespace Galileo.DataBaseTier
                     {
                         NombreUsuario = nombreUsuario,
                     };
-                    result = connection.QueryFirstOrDefault<UsuarioCuentaRevisarDto>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                    result = connection.QueryFirstOrDefault<UsuarioCuentaRevisarDto>(procedure, values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)

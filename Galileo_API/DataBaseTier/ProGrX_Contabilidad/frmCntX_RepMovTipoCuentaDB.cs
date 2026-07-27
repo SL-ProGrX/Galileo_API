@@ -8,6 +8,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXRepMovTipoCuentaDb
     {
+        private const string ContabilidadInvalidaMensaje = "La contabilidad indicada no es v&aacute;lida.";
         private readonly PortalDB _portalDb;
         private readonly MCntLinkDB _cntLinkDb;
         private readonly MCntXCalculosDb _calculosDb;
@@ -36,7 +37,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (codContabilidad <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     new CntXRepMovTipoCuentaInicializarResponse());
             }
@@ -127,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (codContabilidad <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     new List<DropDownListaGenericaModel>());
             }
@@ -179,7 +180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse<
                     CntXRepMovTipoCuentaData?>(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     null);
             }
@@ -246,7 +247,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (request.cod_contabilidad <= 0)
             {
                 return DbHelper.ErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2);
             }
 

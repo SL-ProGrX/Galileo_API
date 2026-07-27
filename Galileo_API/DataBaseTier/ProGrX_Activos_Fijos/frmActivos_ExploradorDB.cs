@@ -393,7 +393,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                 return;
             }
 
-            if (f.estado!.Equals("D", StringComparison.OrdinalIgnoreCase))
+            if (f.estado.Equals("D", StringComparison.OrdinalIgnoreCase))
             {
                 sql.Append(" AND Estado = 'A' AND ISNULL(valor_libros,0) = 0");
                 return;

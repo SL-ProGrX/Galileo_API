@@ -24,9 +24,9 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             AfCartasNoCotizantesFiltros filtros = JsonConvert.DeserializeObject<AfCartasNoCotizantesFiltros>(jFiltros)
                 ?? new AfCartasNoCotizantesFiltros
                 {
-                    tipoDocumento = default!,
-                    meses = default!,
-                    mora = default!
+                    tipoDocumento = default,
+                    meses = default,
+                    mora = default
                 };
             return db.Af_CartasNoCotizantesDatos_Obtener(CodEmpresa, filtros);
         }

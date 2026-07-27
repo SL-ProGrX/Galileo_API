@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier
                     val = null;
 
                 reportParams.Add(new ReportParameter(prop.Name, val));
-                dict[prop.Name] = val!;
+                dict[prop.Name] = val;
             }
 
             if (data.parametros.Contains(ParamKeys.Filtros, StringComparison.OrdinalIgnoreCase))

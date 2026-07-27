@@ -1,37 +1,18 @@
-﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models.ERROR;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrSeguimientoTramitesDB
+    public partial class FrmCrSeguimientoTramitesDb
     {
         private readonly PortalDB _portalDb;
+        private readonly MProGrxMain _mainDb;
+        private readonly MSecurityMainDb _securityMainDb;
 
-        public FrmCrSeguimientoTramitesDB(IConfiguration config)
+        public FrmCrSeguimientoTramitesDb(IConfiguration config)
         {
-           _portalDb = new PortalDB(config);   
+            _portalDb = new PortalDB(config);
+            _mainDb = new MProGrxMain(config);
+            _securityMainDb = new MSecurityMainDb(config);
         }
-
-        public ErrorDto<List<dynamic>> Cr_SeguimientoTramites_Obtener(int CodEmpresa, string? filtro)
-        {
-            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                const string query = @"
-                    SELECT 
-                        IdTramite,
-                        CodCredito,
-                        NombreCliente,
-                        TipoTramite,
-                        EstadoTramite,
-                        FechaCreacion
-                    FROM CRD_SEGUIMIENTO_TRAMITES
-                    WHERE (@Filtro IS NULL OR NombreCliente LIKE '%' + @Filtro + '%')
-                    ORDER BY FechaCreacion DESC";
-                var result = conn.Query<dynamic>(query, new { Filtro = filtro }).ToList();
-                return result;
-            });
-        }
-
     }
 }

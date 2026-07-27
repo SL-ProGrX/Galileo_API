@@ -153,7 +153,7 @@ exec spPAT_PlanillaDirecta_Consulta
 
                 try
                 {
-                    var tipoAporte = Ah_PlanillaDirecta_NormalizarTipoAporteProceso(request!.tipo_aporte);
+                    var tipoAporte = Ah_PlanillaDirecta_NormalizarTipoAporteProceso(request.tipo_aporte);
 
                     for (var i = 0; i < request.registros.Count; i++)
                     {
@@ -291,7 +291,7 @@ exec spPAT_PlanillaDirecta_Procesa
                         sqlProcesar,
                         new
                         {
-                            Institucion = request!.cod_institucion,
+                            Institucion = request.cod_institucion,
                             Proceso = request.proceso,
                             Tipo = Ah_PlanillaDirecta_NormalizarTipoAporteProceso(request.tipo_aporte),
                             Documento = request.num_doc.Trim(),

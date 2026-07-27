@@ -70,7 +70,7 @@
             public int? IdFactura { get; set; } = 0;
             public int? Linea { get; set; } = 0;
             public string Cedula { get; set; } = string.Empty;
-            public PolizaAseguradoraCorteDetalleData Row { get; init; } = default!;
+            public PolizaAseguradoraCorteDetalleData Row { get; init; } = default;
             public string Usuario { get; set; } = string.Empty;
             public int Inicializa { get; init; } = 0;
         }

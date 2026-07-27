@@ -145,14 +145,14 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
-            var esNuevo = string.IsNullOrWhiteSpace(request?.cod_unidad);
+            var esNuevo = string.IsNullOrWhiteSpace(request.cod_unidad);
             var okMsg = esNuevo
                 ? "Registro agregado satisfactoriamente"
                 : RegistroActualizadoMsg;
 
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                var activa = ToActivaBit(request?.activa);
+                var activa = ToActivaBit(request.activa);
 
                 if (esNuevo)
                 {
@@ -172,7 +172,7 @@ namespace Galileo.DataBaseTier
                     return connection.Execute(insertSql, new
                     {
                         cod_unidad = nuevoCodigo,
-                        descripcion = request?.descripcion,
+                        descripcion = request.descripcion,
                         activa,
                         usuario
                     });
@@ -185,7 +185,7 @@ namespace Galileo.DataBaseTier
 
                 int existe = connection.QueryFirstOrDefault<int>(existsSql, new
                 {
-                    cod_unidad = request!.cod_unidad
+                    cod_unidad = request.cod_unidad
                 });
 
                 if (existe == 0)
@@ -478,7 +478,7 @@ namespace Galileo.DataBaseTier
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad }).ToList();
 
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_unidad))
-                    return null!;
+                    return null;
 
                 return dto;
             });
@@ -508,7 +508,7 @@ namespace Galileo.DataBaseTier
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad, sub_unidad }).ToList();
 
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_centro_costo))
-                    return null!;
+                    return null;
 
                 return dto;
             });

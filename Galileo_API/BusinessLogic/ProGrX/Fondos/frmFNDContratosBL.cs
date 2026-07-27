@@ -44,7 +44,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
 
         public ErrorDto<FndContratosListaData> Fnd_Contratos_Buscar(int CodEmpresa, int operadora, string plan, string strFiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros)!;
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros);
             return _Db.Fnd_Contratos_Buscar(CodEmpresa, operadora, plan, filtros);
         }
 
@@ -90,7 +90,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
 
         public ErrorDto<FndSociosListaData> Fnd_ContratosSocios_Obtener(int CodEmpresa, string strFiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros)!;
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros);
             return _Db.Fnd_ContratosSocios_Obtener(CodEmpresa, filtros);
         }
 
@@ -159,7 +159,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
 
         public ErrorDto<FndContratosLiquidacionesListaData> Fnd_Contratos_Retiros_Obtener(int CodEmpresa, int operadora, string plan, int contrato, string strFiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros)!;
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(strFiltros);
             return _Db.Fnd_Contratos_Retiros_Obtener(CodEmpresa, operadora, plan, contrato, filtros);
         }
 

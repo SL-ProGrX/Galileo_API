@@ -67,7 +67,7 @@ order by cod_parametro;";
                 return validacion;
             }
 
-            var codParametro = (request!.cod_parametro ?? string.Empty).Trim();
+            var codParametro = (request.cod_parametro ?? string.Empty).Trim();
             var tipoNormalizado = Ah_ExcedentesParametros_NormalizarTipo(request.tipo);
             var usuario = (request.usuario ?? string.Empty).Trim();
 

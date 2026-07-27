@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     GarantiaId = request.id_garantia,
                     Operacion = request.numero_operacion
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 {
                     id_garantia = idGarantia
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                     Monto = request.monto,
                     Usuario = request.registro_usuario.Trim()
                 }
-            )!;
+            );
         }
 
     }

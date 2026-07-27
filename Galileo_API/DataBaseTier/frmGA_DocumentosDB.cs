@@ -45,7 +45,7 @@ namespace Galileo.DataBaseTier
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result = null!;
+                resp.Result = null;
             }
             return resp;
         }
@@ -133,7 +133,7 @@ namespace Galileo.DataBaseTier
             try
             {
 
-                List<DocumentosArchivoDto> respGen = null!;
+                List<DocumentosArchivoDto> respGen = null;
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {

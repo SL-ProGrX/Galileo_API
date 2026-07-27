@@ -1,9 +1,11 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslRequisitosData
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activo { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
 
@@ -44,7 +46,9 @@ namespace Galileo.Models.FSL
         public string cod_causa { get; set; } = string.Empty;
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [JsonRequired]
         public bool opcional { get; set; }
+        [JsonRequired]
         public bool asignado { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }

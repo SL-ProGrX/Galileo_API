@@ -27,4 +27,49 @@
         public string? Registro_User { get; set; }       // Reg.Usuario
         public string? Promotor_Desc { get; set; }       // Ejecutivo
     }
+
+    // ============================================================
+    //  Proceso de liquidación masiva por lotes (reanudable)
+    //  Encabezado + detalle: permite mostrar avance y reanudar si
+    //  el usuario cierra el navegador. El procesamiento es
+    //  secuencial (una renuncia a la vez) para no arriesgar los
+    //  consecutivos/contabilidad del SP spAFI_Renuncia_Liquidacion_Procesa.
+    // ============================================================
+
+    /// <summary>Renuncia individual seleccionada para liquidar.</summary>
+    public class AfLiqMasivaRenunciaItem
+    {
+        public int Cod_Renuncia { get; set; }
+        public string? Cedula { get; set; }
+        public short S06 { get; set; } = 1;
+    }
+
+    /// <summary>Petición para iniciar (o reanudar) un proceso de liquidación masiva.</summary>
+    public class AfLiqMasivaIniciarRequest
+    {
+        public string Usuario { get; set; } = "";
+        public List<AfLiqMasivaRenunciaItem> Renuncias { get; set; } = new();
+    }
+
+    /// <summary>Avance del proceso; lo consulta el front para mostrar el Swal y reanudar.</summary>
+    public class AfLiqMasivaProgreso
+    {
+        public Guid Proceso_Id { get; set; }
+        public string Estado { get; set; } = "";   // Procesando | Completado | Error
+        public int Total { get; set; }
+        public int Procesadas { get; set; }
+        public int Exitosas { get; set; }
+        public int Errores { get; set; }
+        public string? Mensaje { get; set; }
+        // true cuando Iniciar detectó un proceso activo previo y lo devolvió para reanudar.
+        public bool Reanudado { get; set; }
+    }
+
+    /// <summary>Fila de detalle pendiente que consume el procesamiento por lotes.</summary>
+    internal class AfLiqMasivaDetalleRow
+    {
+        public long Detalle_Id { get; set; }
+        public int Cod_Renuncia { get; set; }
+        public short S06 { get; set; }
+    }
 }

@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier
             var propertyNames = new[] { "CodEmpresa", "codEmpresa", "EmpresaCod", "empresaCod" };
             var val = context.ActionArguments.Values
                 .Where(arg => arg is not null)
-                .Select(arg => TryGetIntFromProperties(arg!, propertyNames))
+                .Select(arg => TryGetIntFromProperties(arg, propertyNames))
                 .FirstOrDefault(v => v.HasValue);
             if (val.HasValue) return val.Value;
             return null;
@@ -125,7 +125,7 @@ namespace Galileo.DataBaseTier
                  .Where(prop => prop != null)
                  .Select(prop => prop != null ? prop.GetValue(obj) : null)
                  .Where(val => val != null)
-                 .Select(val => TryConvertToInt(val!))
+                 .Select(val => TryConvertToInt(val))
                  .FirstOrDefault(converted => converted.HasValue);
 
 

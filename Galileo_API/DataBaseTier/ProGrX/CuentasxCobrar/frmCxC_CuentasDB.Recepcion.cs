@@ -71,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             if (listaResponse.Code == -1)
             {
-                return DbHelper.CreateErrorResponse<CxCCuentasPersonasFiltroLista>(listaResponse.Description!);
+                return DbHelper.CreateErrorResponse<CxCCuentasPersonasFiltroLista>(listaResponse.Description);
             }
 
             return DbHelper.CreateOkResponse(new CxCCuentasPersonasFiltroLista

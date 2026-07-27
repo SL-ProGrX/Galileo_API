@@ -405,8 +405,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
         private sealed class CcProcesoMensualArchivoF05Contexto
         {
-            public IDbConnection Connection { get; init; } = default!;
-            public CcProcesoMensualGeneraArchivoRequest Request { get; init; } = default!;
+            public IDbConnection Connection { get; init; } = default;
+            public CcProcesoMensualGeneraArchivoRequest Request { get; init; } = default;
             public CcProcesoMensualArchivoF05ConfigDbModel Configuracion { get; init; } = new();
             public CcProcesoMensualArchivoF05EmpresaDbModel Empresa { get; init; } = new();
             public DateTime FechaServidor { get; init; }

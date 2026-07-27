@@ -10,6 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXAsientosInvDb
     {
+        private const string ContabilidadInvalidaMensaje = "La contabilidad indicada no es v&aacute;lida.";
         private const int vModulo = 20;
         private readonly PortalDB _portalDb;
         private readonly MCntLinkDB _cntLinkDb;
@@ -80,7 +81,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse<
                     CntXAsientosInvResponse?>(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     null);
             }
@@ -202,7 +203,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (request.cod_contabilidad <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     new List<DropDownListaGenericaModel>());
             }
@@ -259,7 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse<
                     CntXAsientosInvCuentaData?>(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2,
                     null);
             }
@@ -970,7 +971,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (request.asiento.cod_contabilidad <= 0)
             {
                 return DbHelper.ErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2);
             }
 
@@ -1061,7 +1062,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (request.cod_contabilidad <= 0)
             {
                 return DbHelper.ErrorResponse(
-                    "La contabilidad indicada no es v&aacute;lida.",
+                    ContabilidadInvalidaMensaje,
                     -2);
             }
 

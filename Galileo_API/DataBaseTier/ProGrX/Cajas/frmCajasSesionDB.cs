@@ -87,7 +87,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 Code = response.Code,
                 Description = response.Description,
-                Result = response.Result!
+                Result = response.Result
             };
         }
 
