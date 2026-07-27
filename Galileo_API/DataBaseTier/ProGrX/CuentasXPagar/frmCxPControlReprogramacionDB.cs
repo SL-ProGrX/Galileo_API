@@ -466,38 +466,15 @@ namespace Galileo.DataBaseTier
 
                     var siguientePago = pagosTranscurridos.Pago + 1;
                     var pagosOrdenados = data.Pagos.OrderBy(pago => pago.NPago).ToList();
-                    if (pagosOrdenados[0].NPago != siguientePago ||
-                        pagosOrdenados.Where((pago, index) => pago.NPago != siguientePago + index).Any() ||
-                        pagosOrdenados.Any(pago => pago.Monto < 0 ||
-                                                  pago.Cod_Proveedor != data.Cod_Proveedor ||
-                                                  !string.Equals(pago.Cod_Factura, data.Cod_Factura, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        throw new InvalidOperationException("La numeración o los datos de los pagos no son válidos.");
-                    }
+                    ValidarPagosReprogramacion(pagosOrdenados, siguientePago, data);
 
                     var numerosPago = pagosOrdenados.Select(pago => pago.NPago).ToHashSet();
-                    if (data.Cargos.Any(cargo => cargo.Monto < 0 ||
-                                                 cargo.Cod_Proveedor != data.Cod_Proveedor ||
-                                                 !numerosPago.Contains(cargo.NPago) ||
-                                                 !string.Equals(cargo.Cod_Factura, data.Cod_Factura, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        throw new InvalidOperationException("Los datos de los cargos no son válidos.");
-                    }
-
-                    var saldo = totalFactura.Value - pagosTranscurridos.Monto;
-                    var pendiente = saldo - pagosOrdenados.Sum(pago => pago.Monto);
-                    if (pendiente >= 1)
-                    {
-                        throw new InvalidOperationException("Los montos distribuidos dejan un saldo pendiente.");
-                    }
-
-                    var cargosPorPago = data.Cargos
-                        .GroupBy(cargo => cargo.NPago)
-                        .ToDictionary(grupo => grupo.Key, grupo => grupo.Sum(cargo => cargo.Monto));
-                    if (pagosOrdenados.Any(pago => pago.Monto - cargosPorPago.GetValueOrDefault(pago.NPago) < 0))
-                    {
-                        throw new InvalidOperationException("Los cargos son mayores que el monto de uno de los pagos.");
-                    }
+                    ValidarCargosReprogramacion(data, numerosPago);
+                    ValidarMontosReprogramacion(
+                        totalFactura.Value,
+                        pagosTranscurridos.Monto,
+                        pagosOrdenados,
+                        data.Cargos);
 
                     connection.Execute(
                         @"DELETE cxp_pagoProvCargos
@@ -515,26 +492,7 @@ namespace Galileo.DataBaseTier
                         CrearParametrosPago(siguientePago, data.Cod_Factura, data.Cod_Proveedor),
                         transaction);
 
-                    const string insertarPago = @"INSERT cxp_pagoProv(
-                            npago, cod_proveedor, cod_factura, fecha_vencimiento, monto, frecuencia,
-                            tipo_transac, apl_cargo_flotante, pago_anticipado, forma_pago,
-                            importe_divisa_real, tipo_cambio, cod_divisa)
-                        VALUES(
-                            @NPago, @Cod_Proveedor, @Cod_Factura, @Fecha_Vencimiento, @Monto, @Frecuencia,
-                            @Tipo, @Apl_Cargo_Flotante, @Pago_Anticipado, @Forma_Pago,
-                            @Importe_Divisa_Real, @Tipo_Cambio, @Cod_Divisa)";
-                    connection.Execute(insertarPago, pagosOrdenados, transaction);
-
-                    if (data.Cargos.Count > 0)
-                    {
-                        const string insertarCargo = @"INSERT cxp_PagoProvCargos(
-                                Npago, Cod_factura, cod_proveedor, cod_cargo, monto, registro_fecha,
-                                registro_usuario, cod_divisa, tipo_cambio, tipo_cargo, tipo_proceso)
-                            VALUES(
-                                @NPago, @Cod_Factura, @Cod_Proveedor, @Cod_Cargo, @Monto, dbo.MyGetdate(),
-                                @Registro_Usuario, @Cod_Divisa, @Tipo_Cambio, @Tipo_Cargo, @Tipo_Proceso)";
-                        connection.Execute(insertarCargo, data.Cargos, transaction);
-                    }
+                    InsertarReprogramacion(connection, transaction, pagosOrdenados, data.Cargos);
 
                     connection.Execute(
                         @"UPDATE cxp_pagoProv
@@ -574,6 +532,92 @@ namespace Galileo.DataBaseTier
             return result.Code == 0
                 ? DbHelper.OkResponse("Reprogramación aplicada satisfactoriamente.")
                 : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar la reprogramación.", result.Code.GetValueOrDefault(-1));
+        }
+
+        private static void ValidarPagosReprogramacion(
+            IReadOnlyList<DetallePago> pagos,
+            int siguientePago,
+            ReprogramacionAplicar data)
+        {
+            if (pagos[0].NPago != siguientePago ||
+                pagos.Where((pago, index) => pago.NPago != siguientePago + index).Any() ||
+                pagos.Any(pago => pago.Monto < 0 ||
+                                  pago.Cod_Proveedor != data.Cod_Proveedor ||
+                                  !string.Equals(
+                                      pago.Cod_Factura,
+                                      data.Cod_Factura,
+                                      StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("La numeración o los datos de los pagos no son válidos.");
+            }
+        }
+
+        private static void ValidarCargosReprogramacion(
+            ReprogramacionAplicar data,
+            IReadOnlySet<int> numerosPago)
+        {
+            if (data.Cargos.Any(cargo => cargo.Monto < 0 ||
+                                         cargo.Cod_Proveedor != data.Cod_Proveedor ||
+                                         !numerosPago.Contains(cargo.NPago) ||
+                                         !string.Equals(
+                                             cargo.Cod_Factura,
+                                             data.Cod_Factura,
+                                             StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("Los datos de los cargos no son válidos.");
+            }
+        }
+
+        private static void ValidarMontosReprogramacion(
+            decimal totalFactura,
+            decimal montoTranscurrido,
+            IReadOnlyCollection<DetallePago> pagos,
+            IReadOnlyCollection<PagoProvCargo> cargos)
+        {
+            var saldo = totalFactura - montoTranscurrido;
+            var pendiente = saldo - pagos.Sum(pago => pago.Monto);
+            if (pendiente >= 1)
+            {
+                throw new InvalidOperationException("Los montos distribuidos dejan un saldo pendiente.");
+            }
+
+            var cargosPorPago = cargos
+                .GroupBy(cargo => cargo.NPago)
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.Sum(cargo => cargo.Monto));
+            if (pagos.Any(pago => pago.Monto - cargosPorPago.GetValueOrDefault(pago.NPago) < 0))
+            {
+                throw new InvalidOperationException("Los cargos son mayores que el monto de uno de los pagos.");
+            }
+        }
+
+        private static void InsertarReprogramacion(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            IEnumerable<DetallePago> pagos,
+            IReadOnlyCollection<PagoProvCargo> cargos)
+        {
+            const string insertarPago = @"INSERT cxp_pagoProv(
+                    npago, cod_proveedor, cod_factura, fecha_vencimiento, monto, frecuencia,
+                    tipo_transac, apl_cargo_flotante, pago_anticipado, forma_pago,
+                    importe_divisa_real, tipo_cambio, cod_divisa)
+                VALUES(
+                    @NPago, @Cod_Proveedor, @Cod_Factura, @Fecha_Vencimiento, @Monto, @Frecuencia,
+                    @Tipo, @Apl_Cargo_Flotante, @Pago_Anticipado, @Forma_Pago,
+                    @Importe_Divisa_Real, @Tipo_Cambio, @Cod_Divisa)";
+            connection.Execute(insertarPago, pagos, transaction);
+
+            if (cargos.Count == 0)
+            {
+                return;
+            }
+
+            const string insertarCargo = @"INSERT cxp_PagoProvCargos(
+                    Npago, Cod_factura, cod_proveedor, cod_cargo, monto, registro_fecha,
+                    registro_usuario, cod_divisa, tipo_cambio, tipo_cargo, tipo_proceso)
+                VALUES(
+                    @NPago, @Cod_Factura, @Cod_Proveedor, @Cod_Cargo, @Monto, dbo.MyGetdate(),
+                    @Registro_Usuario, @Cod_Divisa, @Tipo_Cambio, @Tipo_Cargo, @Tipo_Proceso)";
+            connection.Execute(insertarCargo, cargos, transaction);
         }
 
         /// <summary>

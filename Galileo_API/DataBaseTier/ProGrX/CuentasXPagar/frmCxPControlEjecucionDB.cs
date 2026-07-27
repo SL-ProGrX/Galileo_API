@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using System.Data;
+using System.Globalization;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
@@ -52,26 +53,15 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene la lista paginada de proveedores para ejecución de pagos.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="pagina">Fila inicial para paginación.</param>
-        /// <param name="paginacion">Cantidad de filas a retornar.</param>
-        /// <param name="filtro">Filtro libre para código o descripción.</param>
-        /// <param name="filtroQ">Filtro adicional ya construido por la lógica del formulario.</param>
-        /// <param name="CodContabilidad">Código de la contabilidad activa.</param>
-        /// <param name="Vence">Fecha límite para pagos pendientes.</param>
-        /// <param name="SoloPendientes">Indica si limita la lista a proveedores con pagos pendientes.</param>
+        /// <param name="filtros">Filtros y paginación de la consulta.</param>
         /// <returns>Listado paginado de proveedores.</returns>
         public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(
-            int CodCliente,
-            int? pagina,
-            int? paginacion,
-            string? filtro,
-            string? filtroQ,
-            int CodContabilidad = 1,
-            DateTime? Vence = null,
-            bool SoloPendientes = false)
+            ProveedoresPagosFiltro filtros)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            var codCliente = filtros.CodCliente.GetValueOrDefault();
+            var codContabilidad = filtros.CodContabilidad.GetValueOrDefault(1);
+            var soloPendientes = filtros.SoloPendientes.GetValueOrDefault();
+            var result = DbHelper.WithConn(CreatePortalDb(), codCliente, connection =>
             {
                 var respuesta = new ProveedoresPagosLista
                 {
@@ -79,10 +69,10 @@ namespace Galileo.DataBaseTier
                     Proveedores = new List<ProveedorPagos>()
                 };
 
-                var filtroTexto = string.IsNullOrWhiteSpace(filtro) ? null : filtro.Trim();
-                var offset = pagina.GetValueOrDefault();
-                var fetch = paginacion.GetValueOrDefault();
-                var whereAdicional = ConstruirFiltroProveedorSeguro(filtroQ);
+                var filtroTexto = string.IsNullOrWhiteSpace(filtros.Filtro) ? null : filtros.Filtro.Trim();
+                var offset = filtros.Pagina.GetValueOrDefault();
+                var fetch = filtros.Paginacion.GetValueOrDefault();
+                var whereAdicional = ConstruirFiltroProveedorSeguro(filtros.FiltroQ);
                 const string filtroPendientes = @"
                     AND (
                         @SoloPendientes = 0
@@ -113,12 +103,12 @@ namespace Galileo.DataBaseTier
                     new
                     {
                         Filtro = filtroTexto is null ? null : $"%{filtroTexto}%",
-                        CodContabilidad,
-                        Vence,
-                        SoloPendientes
+                        CodContabilidad = codContabilidad,
+                        filtros.Vence,
+                        SoloPendientes = soloPendientes
                     });
 
-                var paginaSql = pagina.HasValue && paginacion.HasValue
+                var paginaSql = filtros.Pagina.HasValue && filtros.Paginacion.HasValue
                     ? " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY "
                     : string.Empty;
 
@@ -149,9 +139,9 @@ namespace Galileo.DataBaseTier
                         Filtro = filtroTexto is null ? null : $"%{filtroTexto}%",
                         Offset = offset,
                         Fetch = fetch,
-                        CodContabilidad,
-                        Vence,
-                        SoloPendientes
+                        CodContabilidad = codContabilidad,
+                        filtros.Vence,
+                        SoloPendientes = soloPendientes
                     }).ToList();
 
                 return respuesta;
@@ -297,47 +287,17 @@ namespace Galileo.DataBaseTier
             }
 
             var facturas = result.Result ?? new List<FacturaPendientePago>();
-            var corteCargos = DateTime.TryParse(request.CorteCargos, out var fechaCargos)
+            var corteCargos = DateTime.TryParse(
+                request.CorteCargos,
+                CultureInfo.CurrentCulture,
+                DateTimeStyles.None,
+                out var fechaCargos)
                 ? fechaCargos
                 : DateTime.Today;
-            decimal saldoCargoFlotante = 0;
-
             if (facturas.Count > 0)
             {
                 using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
-                saldoCargoFlotante = connection.QuerySingleOrDefault<decimal>(
-                    "SELECT dbo.fxCxP_CargoFlotanteSaldo(@Proveedor, @Corte)",
-                    new { request.Proveedor, Corte = corteCargos.Date.AddDays(1).AddTicks(-1) });
-
-                foreach (var item in facturas)
-                {
-                    var porcentaje = connection.QuerySingleOrDefault<decimal>(
-                        @"SELECT ISNULL(SUM(valor / 100), 0)
-                          FROM cxp_cargosPer
-                          WHERE cod_proveedor = @Proveedor
-                            AND tipo = 'P'
-                            AND vence >= @Vence",
-                        new
-                        {
-                            Proveedor = item.Cod_Proveedor,
-                            Vence = item.Fecha_Vencimiento ?? corteCargos
-                        });
-                    var cargoPorcentual = item.Apl_Cargo_Flotante
-                        ? Math.Max(0, (item.Monto - item.Cargos) * porcentaje)
-                        : 0;
-                    var disponibleCargoMonto = Math.Max(0, item.Monto - item.Cargos - cargoPorcentual);
-                    var cargoPorMonto = item.Apl_Cargo_Flotante
-                        ? Math.Min(saldoCargoFlotante, disponibleCargoMonto)
-                        : 0;
-                    saldoCargoFlotante = Math.Max(0, saldoCargoFlotante - cargoPorMonto);
-
-                    item.Cargo_Directo = item.Cargos;
-                    item.Cargo_Flotante = cargoPorcentual + cargoPorMonto;
-                    item.Neto = item.Monto - item.Cargo_Directo - item.Cargo_Flotante;
-                    item.Cargos_DivReal = item.Tipo_Cambio == 0
-                        ? 0
-                        : (item.Cargo_Directo + item.Cargo_Flotante) / item.Tipo_Cambio;
-                }
+                CalcularCargosFacturas(connection, facturas, request.Proveedor, corteCargos);
             }
 
             foreach (var item in facturas)
@@ -346,6 +306,47 @@ namespace Galileo.DataBaseTier
             }
 
             return DbHelper.CreateOkResponse(facturas);
+        }
+
+        private static void CalcularCargosFacturas(
+            IDbConnection connection,
+            IEnumerable<FacturaPendientePago> facturas,
+            int proveedor,
+            DateTime corteCargos)
+        {
+            var saldoCargoFlotante = connection.QuerySingleOrDefault<decimal>(
+                "SELECT dbo.fxCxP_CargoFlotanteSaldo(@Proveedor, @Corte)",
+                new { Proveedor = proveedor, Corte = corteCargos.Date.AddDays(1).AddTicks(-1) });
+
+            foreach (var item in facturas)
+            {
+                var porcentaje = connection.QuerySingleOrDefault<decimal>(
+                    @"SELECT ISNULL(SUM(valor / 100), 0)
+                      FROM cxp_cargosPer
+                      WHERE cod_proveedor = @Proveedor
+                        AND tipo = 'P'
+                        AND vence >= @Vence",
+                    new
+                    {
+                        Proveedor = item.Cod_Proveedor,
+                        Vence = item.Fecha_Vencimiento ?? corteCargos
+                    });
+                var cargoPorcentual = item.Apl_Cargo_Flotante
+                    ? Math.Max(0, (item.Monto - item.Cargos) * porcentaje)
+                    : 0;
+                var disponibleCargoMonto = Math.Max(0, item.Monto - item.Cargos - cargoPorcentual);
+                var cargoPorMonto = item.Apl_Cargo_Flotante
+                    ? Math.Min(saldoCargoFlotante, disponibleCargoMonto)
+                    : 0;
+                saldoCargoFlotante = Math.Max(0, saldoCargoFlotante - cargoPorMonto);
+
+                item.Cargo_Directo = item.Cargos;
+                item.Cargo_Flotante = cargoPorcentual + cargoPorMonto;
+                item.Neto = item.Monto - item.Cargo_Directo - item.Cargo_Flotante;
+                item.Cargos_DivReal = item.Tipo_Cambio == 0
+                    ? 0
+                    : (item.Cargo_Directo + item.Cargo_Flotante) / item.Tipo_Cambio;
+            }
         }
 
         /// <summary>
@@ -1198,30 +1199,11 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
         {
-            if (data.Cod_Proveedor <= 0 || data.Pagos.Count == 0 || string.IsNullOrWhiteSpace(data.Usuario))
+            var errorValidacion = ValidarEjecucionPagos(data);
+            if (errorValidacion is not null)
             {
                 return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    "Debe seleccionar un proveedor y al menos un pago.", -1);
-            }
-
-            if (data.Pagos.Any(pago => pago.Cod_Proveedor != data.Cod_Proveedor))
-            {
-                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    "Los pagos seleccionados no corresponden al proveedor indicado.", -1);
-            }
-
-            if (data.Tipo_Cancelacion == "C" && string.IsNullOrWhiteSpace(data.Cod_Cargo))
-            {
-                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    "Debe seleccionar el cargo para cerrar los pagos.", -1);
-            }
-
-            if (data.Tipo_Cancelacion == "D" &&
-                string.Equals(data.Tipo_Pago, "Transferencia", StringComparison.OrdinalIgnoreCase) &&
-                string.IsNullOrWhiteSpace(data.Cuenta_Banco))
-            {
-                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    "No es posible crear la transferencia sin una cuenta bancaria del proveedor.", -1);
+                    errorValidacion, -1);
             }
 
             try
@@ -1343,6 +1325,33 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        private static string? ValidarEjecucionPagos(EjecucionPagosAplicar data)
+        {
+            if (data.Cod_Proveedor <= 0 || data.Pagos.Count == 0 || string.IsNullOrWhiteSpace(data.Usuario))
+            {
+                return "Debe seleccionar un proveedor y al menos un pago.";
+            }
+
+            if (data.Pagos.Any(pago => pago.Cod_Proveedor != data.Cod_Proveedor))
+            {
+                return "Los pagos seleccionados no corresponden al proveedor indicado.";
+            }
+
+            if (data.Tipo_Cancelacion == "C" && string.IsNullOrWhiteSpace(data.Cod_Cargo))
+            {
+                return "Debe seleccionar el cargo para cerrar los pagos.";
+            }
+
+            if (data.Tipo_Cancelacion == "D" &&
+                string.Equals(data.Tipo_Pago, "Transferencia", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(data.Cuenta_Banco))
+            {
+                return "No es posible crear la transferencia sin una cuenta bancaria del proveedor.";
+            }
+
+            return null;
+        }
+
         private static int CrearSolicitudTesoreria(
             IDbConnection connection,
             IDbTransaction transaction,
@@ -1448,8 +1457,19 @@ namespace Galileo.DataBaseTier
 
             var linea = 1;
             InsertarDetalleTesoreria(
-                connection, transaction, solicitud, cuentaBanco, desembolso.Neto,
-                "H", linea, unidad, data.Banco_Divisa, data.Banco_Tipo_Cambio);
+                connection,
+                transaction,
+                new DetalleTesoreria
+                {
+                    Solicitud = solicitud,
+                    Cuenta = cuentaBanco,
+                    Monto = desembolso.Neto,
+                    DebeHaber = "H",
+                    Linea = linea,
+                    Unidad = unidad,
+                    Divisa = data.Banco_Divisa,
+                    TipoCambio = data.Banco_Tipo_Cambio
+                });
 
             var anticipos = connection.Query<Anticipo>(
                 @"SELECT Cr.COD_CARGO,
@@ -1477,8 +1497,19 @@ namespace Galileo.DataBaseTier
             {
                 linea++;
                 InsertarDetalleTesoreria(
-                    connection, transaction, solicitud, anticipo.Cod_Cuenta,
-                    anticipo.Monto, "H", linea, unidad, anticipo.Cod_Divisa, 1);
+                    connection,
+                    transaction,
+                    new DetalleTesoreria
+                    {
+                        Solicitud = solicitud,
+                        Cuenta = anticipo.Cod_Cuenta,
+                        Monto = anticipo.Monto,
+                        DebeHaber = "H",
+                        Linea = linea,
+                        Unidad = unidad,
+                        Divisa = anticipo.Cod_Divisa,
+                        TipoCambio = 1
+                    });
             }
 
             var montoAnticipos = anticipos.Sum(item => item.Monto);
@@ -1490,33 +1521,51 @@ namespace Galileo.DataBaseTier
                     AND COD_CONTABILIDAD = @Contabilidad",
                 new { Contabilidad = data.Cod_Contabilidad },
                 transaction) ?? string.Empty;
-            var tipoCambioProveedor = string.Equals(
-                proveedor.Cod_Divisa, divisaFuncional, StringComparison.OrdinalIgnoreCase)
-                ? proveedor.Tipo_Cambio
-                : desembolso.Divisa_Real_Neto == 0
-                    ? proveedor.Tipo_Cambio
-                    : desembolso.Neto / desembolso.Divisa_Real_Neto;
+            var tipoCambioProveedor = ObtenerTipoCambioProveedor(
+                proveedor,
+                desembolso,
+                divisaFuncional);
 
             linea++;
             InsertarDetalleTesoreria(
-                connection, transaction, solicitud, proveedor.Cod_Cuenta,
-                montoProveedor, "D", linea, unidad, proveedor.Cod_Divisa,
-                tipoCambioProveedor);
+                connection,
+                transaction,
+                new DetalleTesoreria
+                {
+                    Solicitud = solicitud,
+                    Cuenta = proveedor.Cod_Cuenta,
+                    Monto = montoProveedor,
+                    DebeHaber = "D",
+                    Linea = linea,
+                    Unidad = unidad,
+                    Divisa = proveedor.Cod_Divisa,
+                    TipoCambio = tipoCambioProveedor
+                });
 
             return solicitud;
+        }
+
+        private static decimal ObtenerTipoCambioProveedor(
+            ProveedorInfoEjecucion proveedor,
+            DesembolsoNetos desembolso,
+            string divisaFuncional)
+        {
+            if (string.Equals(
+                proveedor.Cod_Divisa,
+                divisaFuncional,
+                StringComparison.OrdinalIgnoreCase) ||
+                desembolso.Divisa_Real_Neto == 0)
+            {
+                return proveedor.Tipo_Cambio;
+            }
+
+            return desembolso.Neto / desembolso.Divisa_Real_Neto;
         }
 
         private static void InsertarDetalleTesoreria(
             IDbConnection connection,
             IDbTransaction transaction,
-            int solicitud,
-            string cuenta,
-            decimal monto,
-            string debeHaber,
-            int linea,
-            string unidad,
-            string divisa,
-            decimal tipoCambio)
+            DetalleTesoreria detalle)
         {
             connection.Execute(
                 @"INSERT Tes_Trans_Asiento(
@@ -1527,16 +1576,28 @@ namespace Galileo.DataBaseTier
                         @Unidad, '', @Divisa, @TipoCambio)",
                 new
                 {
-                    Solicitud = solicitud,
-                    Cuenta = cuenta.Trim(),
-                    Monto = monto,
-                    DebeHaber = debeHaber,
-                    Linea = linea,
-                    Unidad = unidad,
-                    Divisa = divisa,
-                    TipoCambio = tipoCambio
+                    detalle.Solicitud,
+                    Cuenta = detalle.Cuenta.Trim(),
+                    detalle.Monto,
+                    detalle.DebeHaber,
+                    detalle.Linea,
+                    detalle.Unidad,
+                    detalle.Divisa,
+                    detalle.TipoCambio
                 },
                 transaction);
+        }
+
+        private sealed class DetalleTesoreria
+        {
+            public int Solicitud { get; init; }
+            public string Cuenta { get; init; } = string.Empty;
+            public decimal Monto { get; init; }
+            public string DebeHaber { get; init; } = string.Empty;
+            public int Linea { get; init; }
+            public string Unidad { get; init; } = string.Empty;
+            public string Divisa { get; init; } = string.Empty;
+            public decimal TipoCambio { get; init; }
         }
         
         /// <summary>

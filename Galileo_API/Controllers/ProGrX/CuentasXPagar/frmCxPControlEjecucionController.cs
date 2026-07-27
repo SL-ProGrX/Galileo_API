@@ -25,24 +25,9 @@ namespace Galileo.Controllers
 
         [HttpGet("Proveedores_Obtener")]
         public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(
-            int CodCliente,
-            int? pagina,
-            int? paginacion,
-            string? filtro,
-            string? filtroQ,
-            int CodContabilidad = 1,
-            DateTime? Vence = null,
-            bool SoloPendientes = false)
+            [FromQuery] ProveedoresPagosFiltro filtros)
         {
-            return _bl.Proveedores_Obtener(
-                CodCliente,
-                pagina,
-                paginacion,
-                filtro,
-                filtroQ,
-                CodContabilidad,
-                Vence,
-                SoloPendientes);
+            return _bl.Proveedores_Obtener(filtros);
         }
 
         [HttpGet("DivisaFuncional_Obtener")]

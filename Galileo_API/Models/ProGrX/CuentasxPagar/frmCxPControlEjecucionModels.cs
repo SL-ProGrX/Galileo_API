@@ -6,6 +6,18 @@ namespace Galileo.Models.CxP
         public List<ProveedorPagos> Proveedores { get; set; } = new List<ProveedorPagos>();
     }
 
+    public class ProveedoresPagosFiltro
+    {
+        public int? CodCliente { get; set; }
+        public int? Pagina { get; set; }
+        public int? Paginacion { get; set; }
+        public string? Filtro { get; set; }
+        public string? FiltroQ { get; set; }
+        public int? CodContabilidad { get; set; }
+        public DateTime? Vence { get; set; }
+        public bool? SoloPendientes { get; set; }
+    }
+
     public class ProveedorPagos
     {
         public string Cod_Proveedor { get; set; } = string.Empty;
@@ -32,9 +44,9 @@ namespace Galileo.Models.CxP
         public string Usuario { get; set; } = string.Empty;
         public required int Cod_Cargo { get; set; }
         public required decimal Neto { get; set; }
-        public decimal Cargo_Directo { get; set; }
-        public decimal Cargo_Flotante { get; set; }
-        public decimal Cargos_DivReal { get; set; }
+        public required decimal Cargo_Directo { get; set; }
+        public required decimal Cargo_Flotante { get; set; }
+        public required decimal Cargos_DivReal { get; set; }
         public string Datakey { get; set; } = string.Empty;
     }
 
@@ -195,14 +207,14 @@ namespace Galileo.Models.CxP
 
     public class EjecucionPagosAplicar
     {
-        public int Cod_Proveedor { get; set; }
-        public int Cod_Contabilidad { get; set; }
+        public required int Cod_Proveedor { get; set; }
+        public required int Cod_Contabilidad { get; set; }
         public string Tipo_Cancelacion { get; set; } = "D";
         public string Cod_Cargo { get; set; } = string.Empty;
-        public DateTime Corte_Cargos { get; set; }
-        public bool Pagar_Tercero { get; set; }
+        public required DateTime Corte_Cargos { get; set; }
+        public required bool Pagar_Tercero { get; set; }
         public string Pago_Tercero { get; set; } = string.Empty;
-        public int Banco_Id { get; set; }
+        public required int Banco_Id { get; set; }
         public string Tipo_Pago { get; set; } = "Transferencia";
         public string Cuenta_Banco { get; set; } = string.Empty;
         public decimal Banco_Tipo_Cambio { get; set; } = 1;
