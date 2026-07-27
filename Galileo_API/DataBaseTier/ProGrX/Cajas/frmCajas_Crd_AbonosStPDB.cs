@@ -529,7 +529,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             int cuotaMax)
         {
             // saldoR según regla VB
-            var saldoR = (bool)req.EsRetencion ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
+            var saldoR = req.EsRetencion == true ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
 
             return new SimularCuotasResponse
             {
