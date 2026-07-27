@@ -294,6 +294,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return CrearErrorFacturaMantenimiento(mensajeValidacion);
             }
 
+            if (!request.fecha_emision.HasValue || !request.fecha_pago.HasValue)
+            {
+                return CrearErrorFacturaMantenimiento("Las fechas de emisión y pago son requeridas.");
+            }
+
             return EjecutarFacturaMantenimiento(
                 codEmpresa,
                 "No fue posible registrar la factura.",
