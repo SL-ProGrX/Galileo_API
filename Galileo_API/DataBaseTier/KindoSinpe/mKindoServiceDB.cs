@@ -1879,7 +1879,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 {
                     refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
-                    estadoSinpe = resPIN.PINSendingResult.State,
+                    estadoSinpe = resPIN.PINSendingResult?.State ?? string.Empty,
                     solicitud = Nsolicitud
                 }) > 0;
             }
