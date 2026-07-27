@@ -211,7 +211,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
                         Resultado = CoreInterno.E_Resultado.Error,
-                        MotivoError = valida.CODIGO_ERROR,
+                        MotivoError = (int?)valida?.CODIGO_ERROR ?? 0,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
                             new CL_Adicional_Info
@@ -219,7 +219,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 Mostrar = true,
                                 Nombre = "PgrX",
                                 NombreFisico = "Galileo API",
-                                Valor = valida.DETALLE
+                                Valor = (string?)valida?.DETALLE ?? string.Empty
                             }
                         }
                     });
@@ -237,7 +237,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 Mostrar = true,
                                 Nombre = "PgrX",
                                 NombreFisico = "Galileo",
-                                Valor = valida.DETALLE
+                                Valor = (string?)valida?.DETALLE ?? string.Empty
                             }
                         }
                     });
