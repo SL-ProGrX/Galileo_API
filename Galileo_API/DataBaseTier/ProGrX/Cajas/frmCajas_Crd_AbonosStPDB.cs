@@ -924,7 +924,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             l[7] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{(solicitud.opex?.ToString() ?? string.Empty).ToUpperInvariant()}";
             l[8] = $"Descripción       ..: {solicitud.descripcion}";
             l[9] = $"Proc. Retencion   ..: {(vRetencion ? "SI" : "NO")}";
-            l[10] = (bool)variable.FechaCancelacionEnable
+            l[10] = variable.FechaCancelacionEnable == true
                 ? $"Fecha Real Abono {variable.FechaCancelacion:dd/MM/yyyy}"
                 : string.Empty;
 
