@@ -266,7 +266,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description);
 
                
-                var cuotas = Clamp((int)req.CantidadCuotas, 0, MAX_CUOTAS);
+                var cuotas = Clamp(req.CantidadCuotas ?? 0, 0, MAX_CUOTAS);
 
                 if (cuotas == 0)
                     return DbHelper.CreateOkResponse(new SimularCuotasResponse());
