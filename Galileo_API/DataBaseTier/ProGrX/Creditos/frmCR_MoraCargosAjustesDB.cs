@@ -359,6 +359,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
+                if (context.Lista is null)
+                {
+                    return DbHelper.ErrorResponse("La lista de elementos a procesar es nula.", -1);
+                }
+
                 using var conn = DbHelper.OpenConnection(_portalDb, context.CodEmpresa);
                 conn.Open();
 
