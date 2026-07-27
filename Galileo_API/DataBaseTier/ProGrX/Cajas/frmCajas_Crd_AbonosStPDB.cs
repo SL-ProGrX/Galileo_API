@@ -528,8 +528,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             TotalesSimulacion totales,
             int cuotaMax)
         {
-            // saldoR según regla VB
-            var saldoR = req.EsRetencion == true ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
+            // saldoR según regla VB (defensivo ante nulos)
+            decimal saldoR = req.EsRetencion == true
+                ? (req.Cuota ?? 0m)
+                : ((req.SaldoMes ?? 0m) - totales.TotalAmortiza);
 
             return new SimularCuotasResponse
             {
@@ -538,7 +540,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 TotalAmortiza = totales.TotalAmortiza,
                 FecUltMovR = estado.FechaProceso,
                 CuotaR = estado.Cuota,
-                SaldoR = (decimal)saldoR,
+                SaldoR = saldoR,
                 CuotasMaximas = cuotaMax
             };
         }
