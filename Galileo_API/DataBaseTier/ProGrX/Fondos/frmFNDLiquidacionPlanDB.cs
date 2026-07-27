@@ -272,7 +272,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 DynamicParameters parameters,
                 FndLiquidacionPlanFiltrosData filtro)
         {
-            string grupoBancario = ObtenerGrupoBancario(connection, (int)filtro.id_banco);
+            if (filtro == null)
+                throw new ArgumentNullException(nameof(filtro));
+
+            if (!filtro.id_banco.HasValue)
+                throw new ArgumentException("El filtro requiere un id_banco válido.", nameof(filtro));
+
+            int bancoId = filtro.id_banco.Value;
+            string grupoBancario = ObtenerGrupoBancario(connection, bancoId);
 
             sql.AppendLine(@"
                     select

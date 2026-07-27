@@ -496,7 +496,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Monto = request.MontoNeto,
                         Codigo = cedulaJuridica.Trim(),
                         Beneficiario = request.AseguradoraNombre.Trim(),
-                        CodigoCliente = request.CodigoCliente.Trim(),
+                        CodigoCliente = request.CodigoCliente?.Trim() ?? string.Empty,
                         CtaAhorros = request.CuentaAhorros,
                         Detalle1 = detalle1,
                         Detalle2 = detalle2,
