@@ -431,17 +431,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 var dias = CalcularDiasPeriodo(req, plazoRst, baseDate);
 
-                var tmpInter = estado.Saldo * (req.Interes / 100m) * dias / 360m;
-                var tmpAmort = estado.Cuota - tmpInter;
+                decimal tmpInter = (estado.Saldo * (req.Interes / 100m) * dias / 360m) ?? 0m;
+                decimal tmpAmort = (estado.Cuota ?? 0m) - tmpInter;
 
-                totales.TotalInteres += (decimal)tmpInter;
-                totales.TotalAmortiza += (decimal)tmpAmort;
+                totales.TotalInteres += tmpInter;
+                totales.TotalAmortiza += tmpAmort;
 
-                estado.Saldo -= (decimal)tmpAmort;
+                estado.Saldo -= tmpAmort;
                 estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
                 baseDate = baseDate.AddMonths(1);
 
-                proy.Add(CrearFila((decimal)tmpInter, (decimal)tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
+                proy.Add(CrearFila(tmpInter, tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
 
                 plazoRst = Math.Max(1, plazoRst - 1);
                 estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes, "M");
