@@ -714,7 +714,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var mensaje =
                     (VerificaProceso(conn, request) ?? string.Empty) +
                     (VerificaCongelamiento(codEmpresa, request) ?? string.Empty) +
-                    (VerificaOperacion((long)request.id_solicitud) ?? string.Empty) +
+                    (request.id_solicitud.HasValue
+                        ? (VerificaOperacion(request.id_solicitud.Value) ?? string.Empty)
+                        : string.Empty) +
                     (VerificaSaldoActual(conn, request) ?? string.Empty);
 
                 mensaje = mensaje.Trim();
