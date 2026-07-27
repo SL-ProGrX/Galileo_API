@@ -791,6 +791,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             try
             {
                 decimal curSaldo;
+                if (!request.saldo.HasValue)
+                    return "- No se proporcionó el saldo de la operación.";
+
+                decimal requestSaldo = request.saldo.Value;
                 const string query = @"
                     select 
                         case 
@@ -812,14 +816,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 if ((string?)result.Retencion == "S")
                 {
-                    curSaldo = (decimal)result.saldo <= 999m ? (decimal)result.saldo : (decimal)request.saldo;
+                    curSaldo = (decimal)result.saldo <= 999m ? (decimal)result.saldo : requestSaldo;
                 }
                 else
                 {
                     curSaldo = (decimal)result.saldo;
                 }
 
-                if (curSaldo != request.saldo)
+                if (curSaldo != requestSaldo)
                     return "- Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono...";
 
                 return string.Empty;
