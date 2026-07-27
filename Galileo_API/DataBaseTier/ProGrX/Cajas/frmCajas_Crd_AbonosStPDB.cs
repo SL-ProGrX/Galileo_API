@@ -857,7 +857,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc);
                 variable.tipoCambio = pTipoCambio;
 
-                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc, (long)variable.vNumDoc, "R");
+                if (!variable.vNumDoc.HasValue)
+                    return DbHelper.ErrorResponse("Error al registrar el documento de abono: número de documento inválido.", -1);
+
+                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc, variable.vNumDoc.Value, "R");
                 var cuentaOperacion = spCrdOperacionCtas(codEmpresa, (long)variable.id_solicutud);
 
                 var lineas = BuildLineas(docAfectacion, variable, solicitud);
