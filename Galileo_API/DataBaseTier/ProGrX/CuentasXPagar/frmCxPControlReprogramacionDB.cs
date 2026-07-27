@@ -141,14 +141,15 @@ namespace Galileo.DataBaseTier
                 var parametros = new DynamicParameters();
                 parametros.Add("Cod_Proveedor", Cod_Proveedor);
 
-                var totalQuery = "SELECT COUNT(*) from vCxP_ProgramacionPago where cod_proveedor = @Cod_Proveedor";
-                respuesta.Total = connection.QueryFirstOrDefault<int>(totalQuery, parametros);
-
                 if (Cod_Proveedor <= 0)
                 {
                     return respuesta;
                 }
 
+                var totalBuilder = new StringBuilder(@"SELECT COUNT(*)
+                                                       FROM vCxP_ProgramacionPago
+                                                       WHERE cxp_estado = 'G'
+                                                         AND cod_proveedor = @Cod_Proveedor");
                 var builder = new StringBuilder(@"select cod_factura, cod_proveedor, total as total_factura, fecha, tipo
                                                  from vCxP_ProgramacionPago
                                                  WHERE cxp_estado = 'G'
@@ -156,10 +157,12 @@ namespace Galileo.DataBaseTier
 
                 if (!string.IsNullOrWhiteSpace(filtro))
                 {
+                    totalBuilder.Append(" and cod_factura LIKE @Filtro");
                     builder.Append(" and cod_factura LIKE @Filtro");
                     parametros.Add("Filtro", $"%{filtro.Trim()}%");
                 }
 
+                respuesta.Total = connection.QueryFirstOrDefault<int>(totalBuilder.ToString(), parametros);
                 builder.Append(" order by cod_factura");
 
                 if (pagina.HasValue && paginacion.HasValue)
@@ -270,7 +273,7 @@ namespace Galileo.DataBaseTier
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = data.Registro_Usuario,
-                    DetalleMovimiento = "Ajuste Monto Factura: " + data.Cod_Factura + " [Prov." + data.Cod_Proveedor + "] Mnt.Ant.: " + data.Monto + " -> Mnt.Nv.: " + data.Monto_Ajuste,
+                    DetalleMovimiento = "Ajuste Monto Factura: " + data.Cod_Factura + " [Prov." + data.Cod_Proveedor + "] Mnt.Ant.: " + data.Monto + " -> Mnt.Nv.: " + (data.Monto + data.Monto_Ajuste),
                     Movimiento = "MODIFICA - WEB",
                     Modulo = 30
                 });
@@ -292,7 +295,8 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT ISNULL(MAX(Npago), 0) AS Pago,
-                         ISNULL(SUM(Monto), 0) AS Monto
+                         ISNULL(SUM(Monto), 0) AS Monto,
+                         dbo.MyGetdate() AS Fecha_Servidor
                   FROM CxP_PagoPRov
                   WHERE Tesoreria IS NOT NULL
                     AND Cod_Factura = @Cod_Factura
@@ -325,7 +329,13 @@ namespace Galileo.DataBaseTier
                   LEFT JOIN cxp_PagoProvCargos D ON C.cod_Cargo = D.cod_Cargo
                                                AND D.cod_Proveedor = @Cod_Proveedor
                                                AND D.cod_Factura = @Cod_Factura
-                                               AND D.NPago > 1
+                                               AND D.NPago > ISNULL((
+                                                   SELECT MAX(P.NPago)
+                                                   FROM CxP_PagoProv P
+                                                   WHERE P.Tesoreria IS NOT NULL
+                                                     AND P.cod_Proveedor = @Cod_Proveedor
+                                                     AND P.cod_Factura = @Cod_Factura
+                                               ), 0)
                   GROUP BY C.Cod_Cargo, C.descripcion",
                 new { Cod_Factura, Cod_Proveedor });
         }
@@ -408,6 +418,162 @@ namespace Galileo.DataBaseTier
             return result.Code == 0
                 ? DbHelper.OkResponse("Registro eliminado correctamente")
                 : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar cargos y pagos.", result.Code.GetValueOrDefault(-1));
+        }
+
+        /// <summary>
+        /// Sustituye la programación pendiente de una factura dentro de una única transacción.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="data">Pagos y cargos de la nueva programación.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto Reprogramacion_Aplicar(int CodEmpresa, ReprogramacionAplicar data)
+        {
+            if (data.Pagos.Count == 0 || data.Cod_Proveedor <= 0 || string.IsNullOrWhiteSpace(data.Cod_Factura))
+            {
+                return DbHelper.ErrorResponse("La reprogramación no contiene pagos válidos.", -1);
+            }
+
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Open();
+                using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+                try
+                {
+                    var parametrosFactura = CrearParametrosFactura(data.Cod_Factura, data.Cod_Proveedor);
+                    var totalFactura = connection.QueryFirstOrDefault<decimal?>(
+                        @"SELECT Total
+                          FROM vCxP_ProgramacionPago
+                          WHERE CxP_Estado = 'G'
+                            AND Cod_Factura = @Cod_Factura
+                            AND Cod_Proveedor = @Cod_Proveedor",
+                        parametrosFactura,
+                        transaction);
+
+                    if (!totalFactura.HasValue)
+                    {
+                        throw new InvalidOperationException("La factura no existe en la programación.");
+                    }
+
+                    var pagosTranscurridos = connection.QuerySingle<FacturaDet>(
+                        @"SELECT ISNULL(MAX(NPago), 0) AS Pago,
+                                 ISNULL(SUM(Monto), 0) AS Monto
+                          FROM CxP_PagoProv
+                          WHERE Tesoreria IS NOT NULL
+                            AND Cod_Factura = @Cod_Factura
+                            AND Cod_Proveedor = @Cod_Proveedor",
+                        parametrosFactura,
+                        transaction);
+
+                    var siguientePago = pagosTranscurridos.Pago + 1;
+                    var pagosOrdenados = data.Pagos.OrderBy(pago => pago.NPago).ToList();
+                    if (pagosOrdenados[0].NPago != siguientePago ||
+                        pagosOrdenados.Where((pago, index) => pago.NPago != siguientePago + index).Any() ||
+                        pagosOrdenados.Any(pago => pago.Monto < 0 ||
+                                                  pago.Cod_Proveedor != data.Cod_Proveedor ||
+                                                  !string.Equals(pago.Cod_Factura, data.Cod_Factura, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new InvalidOperationException("La numeración o los datos de los pagos no son válidos.");
+                    }
+
+                    var numerosPago = pagosOrdenados.Select(pago => pago.NPago).ToHashSet();
+                    if (data.Cargos.Any(cargo => cargo.Monto < 0 ||
+                                                 cargo.Cod_Proveedor != data.Cod_Proveedor ||
+                                                 !numerosPago.Contains(cargo.NPago) ||
+                                                 !string.Equals(cargo.Cod_Factura, data.Cod_Factura, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new InvalidOperationException("Los datos de los cargos no son válidos.");
+                    }
+
+                    var saldo = totalFactura.Value - pagosTranscurridos.Monto;
+                    var pendiente = saldo - pagosOrdenados.Sum(pago => pago.Monto);
+                    if (pendiente >= 1)
+                    {
+                        throw new InvalidOperationException("Los montos distribuidos dejan un saldo pendiente.");
+                    }
+
+                    var cargosPorPago = data.Cargos
+                        .GroupBy(cargo => cargo.NPago)
+                        .ToDictionary(grupo => grupo.Key, grupo => grupo.Sum(cargo => cargo.Monto));
+                    if (pagosOrdenados.Any(pago => pago.Monto - cargosPorPago.GetValueOrDefault(pago.NPago) < 0))
+                    {
+                        throw new InvalidOperationException("Los cargos son mayores que el monto de uno de los pagos.");
+                    }
+
+                    connection.Execute(
+                        @"DELETE cxp_pagoProvCargos
+                          WHERE nPago >= @Pago
+                            AND cod_factura = @Cod_Factura
+                            AND cod_proveedor = @Cod_Proveedor",
+                        CrearParametrosPago(siguientePago, data.Cod_Factura, data.Cod_Proveedor),
+                        transaction);
+
+                    connection.Execute(
+                        @"DELETE cxp_pagoProv
+                          WHERE nPago >= @Pago
+                            AND cod_factura = @Cod_Factura
+                            AND cod_proveedor = @Cod_Proveedor",
+                        CrearParametrosPago(siguientePago, data.Cod_Factura, data.Cod_Proveedor),
+                        transaction);
+
+                    const string insertarPago = @"INSERT cxp_pagoProv(
+                            npago, cod_proveedor, cod_factura, fecha_vencimiento, monto, frecuencia,
+                            tipo_transac, apl_cargo_flotante, pago_anticipado, forma_pago,
+                            importe_divisa_real, tipo_cambio, cod_divisa)
+                        VALUES(
+                            @NPago, @Cod_Proveedor, @Cod_Factura, @Fecha_Vencimiento, @Monto, @Frecuencia,
+                            @Tipo, @Apl_Cargo_Flotante, @Pago_Anticipado, @Forma_Pago,
+                            @Importe_Divisa_Real, @Tipo_Cambio, @Cod_Divisa)";
+                    connection.Execute(insertarPago, pagosOrdenados, transaction);
+
+                    if (data.Cargos.Count > 0)
+                    {
+                        const string insertarCargo = @"INSERT cxp_PagoProvCargos(
+                                Npago, Cod_factura, cod_proveedor, cod_cargo, monto, registro_fecha,
+                                registro_usuario, cod_divisa, tipo_cambio, tipo_cargo, tipo_proceso)
+                            VALUES(
+                                @NPago, @Cod_Factura, @Cod_Proveedor, @Cod_Cargo, @Monto, dbo.MyGetdate(),
+                                @Registro_Usuario, @Cod_Divisa, @Tipo_Cambio, @Tipo_Cargo, @Tipo_Proceso)";
+                        connection.Execute(insertarCargo, data.Cargos, transaction);
+                    }
+
+                    connection.Execute(
+                        @"UPDATE cxp_pagoProv
+                             SET Tesoreria = 0,
+                                 fecha_traslada = dbo.MyGetdate(),
+                                 user_traslada = @Registro_Usuario
+                          WHERE cod_proveedor = @Cod_Proveedor
+                            AND cod_factura = @Cod_Factura
+                            AND Npago IN(
+                                SELECT P.npago
+                                FROM cxp_pagoProv P
+                                INNER JOIN cxp_PagoprovCargos C ON P.cod_proveedor = C.cod_proveedor
+                                                               AND P.cod_factura = C.cod_factura
+                                                               AND P.npago = C.npago
+                                WHERE P.cod_proveedor = @Cod_Proveedor
+                                  AND P.cod_factura = @Cod_Factura
+                                GROUP BY P.npago, P.cod_proveedor, P.cod_factura, P.monto
+                                HAVING P.Monto = ISNULL(SUM(C.Monto), 0))",
+                        new
+                        {
+                            data.Registro_Usuario,
+                            data.Cod_Proveedor,
+                            data.Cod_Factura
+                        },
+                        transaction);
+
+                    transaction.Commit();
+                    return true;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            });
+
+            return result.Code == 0
+                ? DbHelper.OkResponse("Reprogramación aplicada satisfactoriamente.")
+                : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar la reprogramación.", result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>

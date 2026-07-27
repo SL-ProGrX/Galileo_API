@@ -57,8 +57,19 @@ namespace Galileo.DataBaseTier
         /// <param name="paginacion">Cantidad de filas a retornar.</param>
         /// <param name="filtro">Filtro libre para código o descripción.</param>
         /// <param name="filtroQ">Filtro adicional ya construido por la lógica del formulario.</param>
+        /// <param name="CodContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="Vence">Fecha límite para pagos pendientes.</param>
+        /// <param name="SoloPendientes">Indica si limita la lista a proveedores con pagos pendientes.</param>
         /// <returns>Listado paginado de proveedores.</returns>
-        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? filtroQ)
+        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(
+            int CodCliente,
+            int? pagina,
+            int? paginacion,
+            string? filtro,
+            string? filtroQ,
+            int CodContabilidad = 1,
+            DateTime? Vence = null,
+            bool SoloPendientes = false)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
@@ -72,12 +83,25 @@ namespace Galileo.DataBaseTier
                 var offset = pagina.GetValueOrDefault();
                 var fetch = paginacion.GetValueOrDefault();
                 var whereAdicional = ConstruirFiltroProveedorSeguro(filtroQ);
+                const string filtroPendientes = @"
+                    AND (
+                        @SoloPendientes = 0
+                        OR EXISTS (
+                            SELECT 1
+                            FROM CXP_PAGOPROV PP
+                            WHERE PP.COD_PROVEEDOR = P.COD_PROVEEDOR
+                              AND PP.TESORERIA IS NULL
+                              AND PP.FECHA_VENCIMIENTO < DATEADD(day, 1, CONVERT(date, @Vence))
+                        )
+                    ) ";
 
                 var totalQuery = @"SELECT COUNT(*)
                                    FROM CXP_PROVEEDORES P
-                                   INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa AND D.cod_contabilidad = 1
+                                   INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa
+                                                               AND D.cod_contabilidad = @CodContabilidad
                                    WHERE 1 = 1 "
-                                   + whereAdicional;
+                                   + whereAdicional
+                                   + filtroPendientes;
 
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
@@ -88,7 +112,10 @@ namespace Galileo.DataBaseTier
                     totalQuery,
                     new
                     {
-                        Filtro = filtroTexto is null ? null : $"%{filtroTexto}%"
+                        Filtro = filtroTexto is null ? null : $"%{filtroTexto}%",
+                        CodContabilidad,
+                        Vence,
+                        SoloPendientes
                     });
 
                 var paginaSql = pagina.HasValue && paginacion.HasValue
@@ -102,9 +129,11 @@ namespace Galileo.DataBaseTier
                                       P.cod_banco,
                                       dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) AS Cuenta_Default
                                FROM cxp_proveedores P
-                               INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa AND D.cod_contabilidad = 1
+                               INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa
+                                                           AND D.cod_contabilidad = @CodContabilidad
                                WHERE 1 = 1 "
-                            + whereAdicional;
+                            + whereAdicional
+                            + filtroPendientes;
 
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
@@ -119,7 +148,10 @@ namespace Galileo.DataBaseTier
                     {
                         Filtro = filtroTexto is null ? null : $"%{filtroTexto}%",
                         Offset = offset,
-                        Fetch = fetch
+                        Fetch = fetch,
+                        CodContabilidad,
+                        Vence,
+                        SoloPendientes
                     }).ToList();
 
                 return respuesta;
@@ -215,6 +247,30 @@ namespace Galileo.DataBaseTier
                   WHERE activo = 1");
         }
 
+        public ErrorDto<List<Divisa>> Divisas_Obtener(int CodEmpresa, int CodContabilidad)
+        {
+            return DbHelper.ExecuteListQuery<Divisa>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT RTRIM(cod_divisa) AS Cod_Divisa,
+                         RTRIM(descripcion) AS Descripcion
+                  FROM CntX_Divisas
+                  WHERE cod_contabilidad = @CodContabilidad
+                  ORDER BY divisa_local DESC, cod_divisa",
+                new { CodContabilidad });
+        }
+
+        public ErrorDto<List<UsuarioEjecucion>> Usuarios_Obtener(int CodEmpresa)
+        {
+            return DbHelper.ExecuteListQuery<UsuarioEjecucion>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT RTRIM(Nombre) AS Item,
+                         RTRIM(Descripcion) AS Descripcion
+                  FROM Usuarios
+                  ORDER BY Nombre");
+        }
+
         /// <summary>
         /// Obtiene las facturas pendientes de pago para un proveedor y criterios seleccionados.
         /// </summary>
@@ -240,12 +296,56 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener facturas pendientes de pago.", result.Code.GetValueOrDefault(-1), new List<FacturaPendientePago>());
             }
 
-            foreach (var item in result.Result ?? new List<FacturaPendientePago>())
+            var facturas = result.Result ?? new List<FacturaPendientePago>();
+            var corteCargos = DateTime.TryParse(request.CorteCargos, out var fechaCargos)
+                ? fechaCargos
+                : DateTime.Today;
+            decimal saldoCargoFlotante = 0;
+
+            if (facturas.Count > 0)
+            {
+                using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
+                saldoCargoFlotante = connection.QuerySingleOrDefault<decimal>(
+                    "SELECT dbo.fxCxP_CargoFlotanteSaldo(@Proveedor, @Corte)",
+                    new { request.Proveedor, Corte = corteCargos.Date.AddDays(1).AddTicks(-1) });
+
+                foreach (var item in facturas)
+                {
+                    var porcentaje = connection.QuerySingleOrDefault<decimal>(
+                        @"SELECT ISNULL(SUM(valor / 100), 0)
+                          FROM cxp_cargosPer
+                          WHERE cod_proveedor = @Proveedor
+                            AND tipo = 'P'
+                            AND vence >= @Vence",
+                        new
+                        {
+                            Proveedor = item.Cod_Proveedor,
+                            Vence = item.Fecha_Vencimiento ?? corteCargos
+                        });
+                    var cargoPorcentual = item.Apl_Cargo_Flotante
+                        ? Math.Max(0, (item.Monto - item.Cargos) * porcentaje)
+                        : 0;
+                    var disponibleCargoMonto = Math.Max(0, item.Monto - item.Cargos - cargoPorcentual);
+                    var cargoPorMonto = item.Apl_Cargo_Flotante
+                        ? Math.Min(saldoCargoFlotante, disponibleCargoMonto)
+                        : 0;
+                    saldoCargoFlotante = Math.Max(0, saldoCargoFlotante - cargoPorMonto);
+
+                    item.Cargo_Directo = item.Cargos;
+                    item.Cargo_Flotante = cargoPorcentual + cargoPorMonto;
+                    item.Neto = item.Monto - item.Cargo_Directo - item.Cargo_Flotante;
+                    item.Cargos_DivReal = item.Tipo_Cambio == 0
+                        ? 0
+                        : (item.Cargo_Directo + item.Cargo_Flotante) / item.Tipo_Cambio;
+                }
+            }
+
+            foreach (var item in facturas)
             {
                 item.Datakey = item.Npago + "-" + item.Cod_Proveedor + "-" + item.Cod_Factura;
             }
 
-            return DbHelper.CreateOkResponse(result.Result ?? new List<FacturaPendientePago>());
+            return DbHelper.CreateOkResponse(facturas);
         }
 
         /// <summary>
@@ -261,7 +361,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT p.credito_plazo as Credito,
-                         p.ultimo_pago,
+                         CONVERT(varchar(19), p.ultimo_pago, 126) AS Ultimo_Pago,
                          p.saldo,
                          dbo.fxCxP_CargoFlotanteSaldo(@Cod_Proveedor, @Vence) AS Car_Per_Saldo,
                          ISNULL((SELECT SUM(valor)
@@ -493,7 +593,7 @@ namespace Galileo.DataBaseTier
         /// <param name="Vence">Fecha de corte.</param>
         /// <param name="tipo">Dirección del desplazamiento: asc o desc.</param>
         /// <returns>Proveedor encontrado según el criterio de navegación.</returns>
-        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, string Vence, string tipo)
+        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, int CodContabilidad, string Vence, string tipo)
         {
             string query;
             object parametros;
@@ -513,14 +613,14 @@ namespace Galileo.DataBaseTier
                                     P.cod_banco,
                                     dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) as Cuenta_Default
                               from cxp_proveedores P
-                              inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = 1
+                              inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = @CodContabilidad
                               where P.cod_proveedor in(
                                     select cod_proveedor
                                     from cxp_PagoProv
                                     where tesoreria Is Null
                                       and fecha_vencimiento <= @VenceFin)
                               order by cod_proveedor desc";
-                    parametros = new { VenceFin = Vence + " 23:59:59" };
+                    parametros = new { VenceFin = Vence + " 23:59:59", CodContabilidad };
                 }
                 else
                 {
@@ -535,7 +635,7 @@ namespace Galileo.DataBaseTier
                                     P.cod_banco,
                                     dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) as Cuenta_Default
                               from cxp_proveedores P
-                              inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = 1
+                              inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = @CodContabilidad
                               where P.cod_proveedor in(
                                     select cod_proveedor
                                     from cxp_PagoProv
@@ -544,7 +644,7 @@ namespace Galileo.DataBaseTier
                                       and cod_proveedor < @Cod_Proveedor
                                     group by cod_proveedor)
                               order by cod_proveedor desc";
-                    parametros = new { VenceFin = Vence + " 23:59:59", Cod_Proveedor };
+                    parametros = new { VenceFin = Vence + " 23:59:59", Cod_Proveedor, CodContabilidad };
                 }
             }
             else
@@ -560,7 +660,7 @@ namespace Galileo.DataBaseTier
                                 P.cod_banco,
                                 dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) as Cuenta_Default
                           from cxp_proveedores P
-                          inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = 1
+                          inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa and D.cod_contabilidad = @CodContabilidad
                           where P.cod_proveedor in(
                                 select cod_proveedor
                                 from cxp_PagoProv
@@ -569,7 +669,7 @@ namespace Galileo.DataBaseTier
                                   and cod_proveedor > @Cod_Proveedor
                                 group by cod_proveedor)
                           order by cod_proveedor asc";
-                parametros = new { VenceFin = Vence + " 23:59:59", Cod_Proveedor };
+                parametros = new { VenceFin = Vence + " 23:59:59", Cod_Proveedor, CodContabilidad };
             }
 
             var result = DbHelper.ExecuteSingleQuery<ProveedorPagos>(
@@ -597,6 +697,30 @@ namespace Galileo.DataBaseTier
                     Description = "No se encontró proveedor para el criterio indicado.",
                     Result = null
                 };
+        }
+
+        public ErrorDto<ProveedorPagos> Proveedor_Obtener(int CodEmpresa, int Cod_Proveedor, int CodContabilidad)
+        {
+            var result = DbHelper.ExecuteSingleQuery<ProveedorPagos>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT P.cod_proveedor,
+                         RTRIM(P.descripcion) AS Descripcion,
+                         RTRIM(D.cod_divisa) AS Divisa,
+                         RTRIM(P.CedJur) AS Cedjuridica,
+                         P.cod_Banco,
+                         dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) AS Cuenta_Default
+                  FROM cxp_proveedores P
+                  INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa
+                                           AND D.cod_contabilidad = @CodContabilidad
+                  WHERE P.cod_proveedor = @Cod_Proveedor",
+                null,
+                new { Cod_Proveedor, CodContabilidad });
+
+            return result.Result is not null
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse<ProveedorPagos>(
+                    result.Description ?? "No se encontró el proveedor.", result.Code.GetValueOrDefault(-2));
         }
 
         /// <summary>
@@ -1070,6 +1194,349 @@ namespace Galileo.DataBaseTier
                   WHERE Cp.COD_PROVEEDOR = @Cod_Proveedor
                     AND Pf.user_traslada = 'xBITxTesx'",
                 new { Cod_Proveedor });
+        }
+
+        public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
+        {
+            if (data.Cod_Proveedor <= 0 || data.Pagos.Count == 0 || string.IsNullOrWhiteSpace(data.Usuario))
+            {
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "Debe seleccionar un proveedor y al menos un pago.", -1);
+            }
+
+            if (data.Pagos.Any(pago => pago.Cod_Proveedor != data.Cod_Proveedor))
+            {
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "Los pagos seleccionados no corresponden al proveedor indicado.", -1);
+            }
+
+            if (data.Tipo_Cancelacion == "C" && string.IsNullOrWhiteSpace(data.Cod_Cargo))
+            {
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "Debe seleccionar el cargo para cerrar los pagos.", -1);
+            }
+
+            if (data.Tipo_Cancelacion == "D" &&
+                string.Equals(data.Tipo_Pago, "Transferencia", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(data.Cuenta_Banco))
+            {
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "No es posible crear la transferencia sin una cuenta bancaria del proveedor.", -1);
+            }
+
+            try
+            {
+                using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
+                connection.Open();
+                using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+
+                try
+                {
+                    foreach (var pago in data.Pagos)
+                    {
+                        if (data.Tipo_Cancelacion == "C")
+                        {
+                            connection.Execute(
+                                "spCxP_EjecucionPagos_RegistroCargos",
+                                new
+                                {
+                                    Proveedor = pago.Cod_Proveedor,
+                                    Factura = pago.Cod_Factura,
+                                    NPago = pago.Npago,
+                                    CodCargo = data.Cod_Cargo,
+                                    Divisa = pago.Cod_Divisa,
+                                    Monto = pago.Neto,
+                                    TipoCambio = pago.Tipo_Cambio,
+                                    Usuario = data.Usuario
+                                },
+                                transaction,
+                                commandType: CommandType.StoredProcedure);
+                        }
+
+                        connection.Execute(
+                            "spCxP_EjecucionPagos_AplicaCargosFlotantes",
+                            new
+                            {
+                                Proveedor = pago.Cod_Proveedor,
+                                Factura = pago.Cod_Factura,
+                                NPago = pago.Npago,
+                                Disponible = pago.Monto - pago.Cargo_Directo,
+                                Corte = data.Corte_Cargos.Date.AddDays(1).AddTicks(-1),
+                                AplicaCargos = pago.Apl_Cargo_Flotante,
+                                Usuario = data.Usuario
+                            },
+                            transaction,
+                            commandType: CommandType.StoredProcedure);
+                    }
+
+                    connection.Execute(
+                        "spCxP_EjecucionPagos_ActualizaSaldosConCargosPorc",
+                        transaction: transaction,
+                        commandType: CommandType.StoredProcedure);
+
+                    var solicitud = data.Tipo_Cancelacion == "D"
+                        ? CrearSolicitudTesoreria(connection, transaction, data)
+                        : 0;
+
+                    if (data.Tipo_Cancelacion == "D")
+                    {
+                        connection.Execute(
+                            @"UPDATE cxp_pagoprov
+                                 SET tesoreria = @Solicitud,
+                                     fecha_traslada = dbo.MyGetdate(),
+                                     user_traslada = @Usuario,
+                                     pago_tercero = @PagoTercero
+                               WHERE user_traslada = 'xBITxTesx'
+                                 AND cod_proveedor = @Proveedor",
+                            new
+                            {
+                                Solicitud = solicitud,
+                                data.Usuario,
+                                PagoTercero = data.Pagar_Tercero ? data.Pago_Tercero : string.Empty,
+                                Proveedor = data.Cod_Proveedor
+                            },
+                            transaction);
+                    }
+                    else
+                    {
+                        connection.Execute(
+                            @"UPDATE cxp_pagoprov
+                                 SET tesoreria = 0,
+                                     Tipo_Cancelacion = 'C',
+                                     Tesoreria_Estado = 'E',
+                                     fecha_traslada = dbo.MyGetdate(),
+                                     user_traslada = @Usuario,
+                                     pago_tercero = '',
+                                     Tesoreria_Emision = dbo.MyGetdate()
+                               WHERE user_traslada = 'xBITxTesx'
+                                 AND cod_proveedor = @Proveedor",
+                            new { data.Usuario, Proveedor = data.Cod_Proveedor },
+                            transaction);
+                    }
+
+                    connection.Execute(
+                        "spCxP_Tesoreria_Detalle_Update",
+                        transaction: transaction,
+                        commandType: CommandType.StoredProcedure);
+
+                    transaction.Commit();
+                    return DbHelper.CreateOkResponse(
+                        new EjecucionPagosResultado
+                        {
+                            NSolicitud = solicitud,
+                            Tipo_Cancelacion = data.Tipo_Cancelacion
+                        },
+                        data.Tipo_Cancelacion == "D"
+                            ? $"Pago registrado en Tesorería. Solicitud: {solicitud}"
+                            : "Cuenta por pagar descontada vía cargos.");
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    ex.Message, -1);
+            }
+        }
+
+        private static int CrearSolicitudTesoreria(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            EjecucionPagosAplicar data)
+        {
+            var desembolso = connection.QuerySingleOrDefault<DesembolsoNetos>(
+                @"SELECT CEDJUR,
+                         cod_proveedor,
+                         SUM(monto - cargos) AS Neto,
+                         SUM(Divisa_Real_Neto) AS Divisa_Real_Neto
+                  FROM vCXP_Pagos
+                  WHERE cod_Proveedor = @Proveedor
+                  GROUP BY cod_proveedor, CEDJUR",
+                new { Proveedor = data.Cod_Proveedor },
+                transaction) ?? throw new InvalidOperationException(
+                    "No se encontraron pagos preparados para el desembolso.");
+
+            if (desembolso.Neto <= 0)
+            {
+                throw new InvalidOperationException(
+                    "El monto a girar es cero; utilice la opción Cerrar / Excluir.");
+            }
+
+            var proveedor = connection.QuerySingleOrDefault<ProveedorInfoEjecucion>(
+                @"SELECT P.CEDJUR,
+                         P.cod_proveedor,
+                         P.descripcion,
+                         P.cod_cuenta,
+                         P.cod_divisa,
+                         D.cod_cuenta AS CtaDivDifIng,
+                         D.cod_cuenta_Gasto AS CtaDivDifGst,
+                         dbo.fxCntXTipoCambio(@Contabilidad, P.COD_DIVISA, dbo.MyGetdate(), 'V') AS TipoCambio,
+                         dbo.MyGetdate() AS Fecha
+                  FROM Cxp_Proveedores P
+                  INNER JOIN CntX_Divisas D ON P.cod_divisa = D.cod_divisa
+                                           AND D.cod_contabilidad = @Contabilidad
+                  WHERE P.cod_proveedor = @Proveedor",
+                new
+                {
+                    Contabilidad = data.Cod_Contabilidad,
+                    Proveedor = data.Cod_Proveedor
+                },
+                transaction) ?? throw new InvalidOperationException(
+                    "No se encontró la información contable del proveedor.");
+
+            var cuentaBanco = connection.QuerySingleOrDefault<string>(
+                "SELECT CTACONTA FROM Tes_Bancos WHERE id_banco = @Banco",
+                new { Banco = data.Banco_Id },
+                transaction) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(cuentaBanco))
+            {
+                throw new InvalidOperationException(
+                    "El banco seleccionado no tiene una cuenta contable configurada.");
+            }
+
+            var parametros = connection.Query<(string Cod_Parametro, string Valor)>(
+                @"SELECT cod_parametro, valor
+                  FROM cxp_parametros
+                  WHERE cod_parametro IN ('01', '02')",
+                transaction: transaction)
+                .ToDictionary(item => item.Cod_Parametro, item => item.Valor);
+            var unidad = parametros.GetValueOrDefault("01", "GEN");
+            var concepto = parametros.GetValueOrDefault("02", "GEN");
+            var tipoPago = string.Equals(data.Tipo_Pago, "Transferencia", StringComparison.OrdinalIgnoreCase) &&
+                           !string.IsNullOrWhiteSpace(data.Cuenta_Banco)
+                ? "TE"
+                : "CK";
+            var montoSolicitud = data.Banco_Tipo_Cambio != 1
+                ? desembolso.Neto / data.Banco_Tipo_Cambio
+                : desembolso.Neto;
+            var beneficiario = data.Pagar_Tercero && !string.IsNullOrWhiteSpace(data.Pago_Tercero)
+                ? data.Pago_Tercero
+                : proveedor.Descripcion;
+
+            var solicitud = connection.QuerySingle<int>(
+                @"EXEC spCxP_Tesoreria_Maestro
+                    @Proveedor, @TipoDocumento, @Banco, @Monto, @Codigo, @Beneficiario,
+                    @Detalle1, @Detalle2, @Cuenta, @Fecha, @UnidadOmision,
+                    @ConceptoOmision, @UsuarioSolicita, @TipoCambio, @Divisa,
+                    @OP, @Referencia, @Token",
+                new
+                {
+                    Proveedor = data.Cod_Proveedor,
+                    TipoDocumento = tipoPago,
+                    Banco = data.Banco_Id,
+                    Monto = montoSolicitud,
+                    Codigo = proveedor.CedJur,
+                    Beneficiario = beneficiario,
+                    Detalle1 = "MODULO DE PROVEEDORES",
+                    Detalle2 = "PAGO AUTOMATICO",
+                    Cuenta = data.Cuenta_Banco,
+                    Fecha = proveedor.Fecha,
+                    UnidadOmision = unidad,
+                    ConceptoOmision = concepto,
+                    UsuarioSolicita = data.Usuario,
+                    TipoCambio = data.Banco_Tipo_Cambio,
+                    Divisa = data.Banco_Divisa,
+                    OP = 0,
+                    Referencia = 0,
+                    Token = string.Empty
+                },
+                transaction);
+
+            var linea = 1;
+            InsertarDetalleTesoreria(
+                connection, transaction, solicitud, cuentaBanco, desembolso.Neto,
+                "H", linea, unidad, data.Banco_Divisa, data.Banco_Tipo_Cambio);
+
+            var anticipos = connection.Query<Anticipo>(
+                @"SELECT Cr.COD_CARGO,
+                         Cr.DESCRIPCION,
+                         Cr.COD_CUENTA,
+                         Pc.monto,
+                         Pc.COD_DIVISA
+                  FROM CXP_CARGOSPER Cp
+                  INNER JOIN CXP_ANTICIPOS Ca ON Cp.COD_PROVEEDOR = Ca.COD_PROVEEDOR
+                                             AND Cp.COD_CARGO = Ca.COD_CARGO
+                                             AND Cp.ID = Ca.ID_CARGO
+                  INNER JOIN cxp_pagoProv Pf ON Pf.COD_PROVEEDOR = Cp.COD_PROVEEDOR
+                  INNER JOIN CXP_PAGOPROVCARGOS Pc ON Pf.COD_PROVEEDOR = Pc.COD_PROVEEDOR
+                                                  AND Pf.COD_FACTURA = Pc.COD_FACTURA
+                                                  AND Pc.NPAGO = Pf.NPAGO
+                                                  AND Pc.ID = Cp.ID
+                  INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
+                  WHERE Cp.COD_PROVEEDOR = @Proveedor
+                    AND Pf.user_traslada = 'xBITxTesx'",
+                new { Proveedor = data.Cod_Proveedor },
+                transaction)
+                .ToList();
+
+            foreach (var anticipo in anticipos)
+            {
+                linea++;
+                InsertarDetalleTesoreria(
+                    connection, transaction, solicitud, anticipo.Cod_Cuenta,
+                    anticipo.Monto, "H", linea, unidad, anticipo.Cod_Divisa, 1);
+            }
+
+            var montoAnticipos = anticipos.Sum(item => item.Monto);
+            var montoProveedor = desembolso.Neto + montoAnticipos;
+            var divisaFuncional = connection.QuerySingleOrDefault<string>(
+                @"SELECT RTRIM(COD_DIVISA)
+                  FROM CNTX_DIVISAS
+                  WHERE DIVISA_LOCAL = 1
+                    AND COD_CONTABILIDAD = @Contabilidad",
+                new { Contabilidad = data.Cod_Contabilidad },
+                transaction) ?? string.Empty;
+            var tipoCambioProveedor = string.Equals(
+                proveedor.Cod_Divisa, divisaFuncional, StringComparison.OrdinalIgnoreCase)
+                ? proveedor.Tipo_Cambio
+                : desembolso.Divisa_Real_Neto == 0
+                    ? proveedor.Tipo_Cambio
+                    : desembolso.Neto / desembolso.Divisa_Real_Neto;
+
+            linea++;
+            InsertarDetalleTesoreria(
+                connection, transaction, solicitud, proveedor.Cod_Cuenta,
+                montoProveedor, "D", linea, unidad, proveedor.Cod_Divisa,
+                tipoCambioProveedor);
+
+            return solicitud;
+        }
+
+        private static void InsertarDetalleTesoreria(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int solicitud,
+            string cuenta,
+            decimal monto,
+            string debeHaber,
+            int linea,
+            string unidad,
+            string divisa,
+            decimal tipoCambio)
+        {
+            connection.Execute(
+                @"INSERT Tes_Trans_Asiento(
+                        nsolicitud, cuenta_contable, monto, debehaber, linea,
+                        cod_unidad, cod_cc, cod_divisa, tipo_cambio)
+                  VALUES(
+                        @Solicitud, @Cuenta, @Monto, @DebeHaber, @Linea,
+                        @Unidad, '', @Divisa, @TipoCambio)",
+                new
+                {
+                    Solicitud = solicitud,
+                    Cuenta = cuenta.Trim(),
+                    Monto = monto,
+                    DebeHaber = debeHaber,
+                    Linea = linea,
+                    Unidad = unidad,
+                    Divisa = divisa,
+                    TipoCambio = tipoCambio
+                },
+                transaction);
         }
         
         /// <summary>

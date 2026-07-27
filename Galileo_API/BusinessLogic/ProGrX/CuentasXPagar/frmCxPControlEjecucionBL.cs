@@ -18,9 +18,25 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.SincronizaTesoreriaCxPReportes(CodEmpresa);
         }
 
-        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? filtroQ)
+        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(
+            int CodCliente,
+            int? pagina,
+            int? paginacion,
+            string? filtro,
+            string? filtroQ,
+            int CodContabilidad = 1,
+            DateTime? Vence = null,
+            bool SoloPendientes = false)
         {
-            return _db.Proveedores_Obtener(CodCliente, pagina, paginacion, filtro, filtroQ);
+            return _db.Proveedores_Obtener(
+                CodCliente,
+                pagina,
+                paginacion,
+                filtro,
+                filtroQ,
+                CodContabilidad,
+                Vence,
+                SoloPendientes);
         }
 
         public ErrorDto<Divisa> DivisaFuncional_Obtener(int CodEmpresa)
@@ -31,6 +47,16 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         public ErrorDto<List<Cargo>> CargosAdicionales_Obtener(int CodEmpresa)
         {
             return _db.CargosAdicionales_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<List<Divisa>> Divisas_Obtener(int CodEmpresa, int CodContabilidad)
+        {
+            return _db.Divisas_Obtener(CodEmpresa, CodContabilidad);
+        }
+
+        public ErrorDto<List<UsuarioEjecucion>> Usuarios_Obtener(int CodEmpresa)
+        {
+            return _db.Usuarios_Obtener(CodEmpresa);
         }
 
         public ErrorDto<List<FacturaPendientePago>> FacturasPendientePago_Obtener(int CodEmpresa, FactPenReq request)
@@ -78,9 +104,14 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.CargoPorcentual_Obtener(CodEmpresa, Cod_Proveedor, Vence);
         }
 
-        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, string Vence, string tipo)
+        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, int CodContabilidad, string Vence, string tipo)
         {
-            return _db.ConsultaAscDesc(CodEmpresa, Cod_Proveedor, Vence, tipo);
+            return _db.ConsultaAscDesc(CodEmpresa, Cod_Proveedor, CodContabilidad, Vence, tipo);
+        }
+
+        public ErrorDto<ProveedorPagos> Proveedor_Obtener(int CodEmpresa, int Cod_Proveedor, int CodContabilidad)
+        {
+            return _db.Proveedor_Obtener(CodEmpresa, Cod_Proveedor, CodContabilidad);
         }
 
         public ErrorDto Detalle_Insertar(int CodEmpresa, TesTransAsiento data)
@@ -151,6 +182,11 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
         public ErrorDto<List<Anticipo>> Anticipos_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
             return _db.Anticipos_Obtener(CodEmpresa, Cod_Proveedor);
+        }
+
+        public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
+        {
+            return _db.EjecucionPagos_Aplicar(CodEmpresa, data);
         }
     }
 }

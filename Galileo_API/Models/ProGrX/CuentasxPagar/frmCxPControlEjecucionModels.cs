@@ -32,6 +32,9 @@ namespace Galileo.Models.CxP
         public string Usuario { get; set; } = string.Empty;
         public required int Cod_Cargo { get; set; }
         public required decimal Neto { get; set; }
+        public decimal Cargo_Directo { get; set; }
+        public decimal Cargo_Flotante { get; set; }
+        public decimal Cargos_DivReal { get; set; }
         public string Datakey { get; set; } = string.Empty;
     }
 
@@ -40,13 +43,14 @@ namespace Galileo.Models.CxP
         public required int Proveedor { get; set; }
         public string Divisa { get; set; } = string.Empty;
         public string Corte { get; set; } = string.Empty;
+        public string CorteCargos { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class Detalle
     {
         public int Credito { get; set; }
-        public DateTime Ultimo_Pago { get; set; }
+        public string? Ultimo_Pago { get; set; }
         public decimal Saldo { get; set; }
         public decimal Car_Per_Saldo { get; set; }
         public decimal Car_Per_Porc { get; set; }
@@ -181,5 +185,35 @@ namespace Galileo.Models.CxP
         public string CtaDivDifGst { get; set; } = string.Empty;
         public decimal Tipo_Cambio { get; set; }
         public DateTime Fecha { get; set; }
+    }
+
+    public class UsuarioEjecucion
+    {
+        public string Item { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class EjecucionPagosAplicar
+    {
+        public int Cod_Proveedor { get; set; }
+        public int Cod_Contabilidad { get; set; }
+        public string Tipo_Cancelacion { get; set; } = "D";
+        public string Cod_Cargo { get; set; } = string.Empty;
+        public DateTime Corte_Cargos { get; set; }
+        public bool Pagar_Tercero { get; set; }
+        public string Pago_Tercero { get; set; } = string.Empty;
+        public int Banco_Id { get; set; }
+        public string Tipo_Pago { get; set; } = "Transferencia";
+        public string Cuenta_Banco { get; set; } = string.Empty;
+        public decimal Banco_Tipo_Cambio { get; set; } = 1;
+        public string Banco_Divisa { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+        public List<FacturaPendientePago> Pagos { get; set; } = new();
+    }
+
+    public class EjecucionPagosResultado
+    {
+        public int NSolicitud { get; set; }
+        public string Tipo_Cancelacion { get; set; } = string.Empty;
     }
 }

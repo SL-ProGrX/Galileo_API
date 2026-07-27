@@ -24,9 +24,25 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Proveedores_Obtener")]
-        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? filtroQ)
+        public ErrorDto<ProveedoresPagosLista> Proveedores_Obtener(
+            int CodCliente,
+            int? pagina,
+            int? paginacion,
+            string? filtro,
+            string? filtroQ,
+            int CodContabilidad = 1,
+            DateTime? Vence = null,
+            bool SoloPendientes = false)
         {
-            return _bl.Proveedores_Obtener(CodCliente, pagina, paginacion, filtro, filtroQ);
+            return _bl.Proveedores_Obtener(
+                CodCliente,
+                pagina,
+                paginacion,
+                filtro,
+                filtroQ,
+                CodContabilidad,
+                Vence,
+                SoloPendientes);
         }
 
         [HttpGet("DivisaFuncional_Obtener")]
@@ -39,6 +55,18 @@ namespace Galileo.Controllers
         public ErrorDto<List<Cargo>> CargosAdicionales_Obtener(int CodEmpresa)
         {
             return _bl.CargosAdicionales_Obtener(CodEmpresa);
+        }
+
+        [HttpGet("Divisas_Obtener")]
+        public ErrorDto<List<Divisa>> Divisas_Obtener(int CodEmpresa, int CodContabilidad)
+        {
+            return _bl.Divisas_Obtener(CodEmpresa, CodContabilidad);
+        }
+
+        [HttpGet("Usuarios_Obtener")]
+        public ErrorDto<List<UsuarioEjecucion>> Usuarios_Obtener(int CodEmpresa)
+        {
+            return _bl.Usuarios_Obtener(CodEmpresa);
         }
 
         [HttpPost("FacturasPendientePago_Obtener")]
@@ -96,9 +124,15 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ConsultaAscDesc")]
-        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, string Vence, string tipo)
+        public ErrorDto<ProveedorPagos> ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, int CodContabilidad, string Vence, string tipo)
         {
-            return _bl.ConsultaAscDesc(CodEmpresa, Cod_Proveedor, Vence, tipo);
+            return _bl.ConsultaAscDesc(CodEmpresa, Cod_Proveedor, CodContabilidad, Vence, tipo);
+        }
+
+        [HttpGet("Proveedor_Obtener")]
+        public ErrorDto<ProveedorPagos> Proveedor_Obtener(int CodEmpresa, int Cod_Proveedor, int CodContabilidad)
+        {
+            return _bl.Proveedor_Obtener(CodEmpresa, Cod_Proveedor, CodContabilidad);
         }
 
         [HttpPost("Detalle_Insertar")]
@@ -183,6 +217,12 @@ namespace Galileo.Controllers
         public ErrorDto<List<Anticipo>> Anticipos_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
             return _bl.Anticipos_Obtener(CodEmpresa, Cod_Proveedor);
+        }
+
+        [HttpPost("EjecucionPagos_Aplicar")]
+        public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
+        {
+            return _bl.EjecucionPagos_Aplicar(CodEmpresa, data);
         }
     }
 }
