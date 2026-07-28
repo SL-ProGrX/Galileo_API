@@ -304,7 +304,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             try
             {
-                request ??= new CxCFacturasMonitoreoDetalleRequestDto();
+                request ??= new CxCFacturasMonitoreoDetalleRequestDto
+                {
+                    Operacion = 0
+                };
 
                 var consulta = string.IsNullOrWhiteSpace(request.Consulta)
                     ? "G"
@@ -353,7 +356,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             try
             {
-                request ??= new CxCFacturasMonitoreoEstadoRequestDto();
+                request ??= new CxCFacturasMonitoreoEstadoRequestDto
+                {
+                    Operacion = 0
+                };
 
                 conn.Execute(
                     "spCxC_Operacion_Factura_Estado",
