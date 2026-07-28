@@ -4,7 +4,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 
@@ -15,17 +14,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Diferidos Obtener
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Diferidos_Obtener(int codEmpresa, int codContabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
             SELECT cod_diferido AS Item,
@@ -41,8 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
 
             return response;
@@ -52,18 +49,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene plantillas diferidos
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="codDiferido"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="codDiferido">Código del diferido seleccionado.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxDiferidoPlantillaDto>> DiferidoPlantillas_Obtener(int codEmpresa,int codContabilidad,int codDiferido)
         {
-            var response = new ErrorDto<List<CntxDiferidoPlantillaDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxDiferidoPlantillaDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
         SELECT 
@@ -88,8 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxDiferidoPlantillaDto>>(ex.Message);
             }
 
             return response;
@@ -99,19 +94,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene diferidos historicos
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="codDiferido"></param>
-        /// <param name="codPlantilla"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="codDiferido">Código del diferido seleccionado.</param>
+        /// <param name="codPlantilla">Código de la plantilla seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxDiferidoHistoricoDto>> DiferidoHistorico_Obtener(int codEmpresa, int codContabilidad, int codDiferido, int codPlantilla)
         {
-            var response = new ErrorDto<List<CntxDiferidoHistoricoDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxDiferidoHistoricoDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
             SELECT num_asiento,
@@ -132,8 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxDiferidoHistoricoDto>>(ex.Message);
             }
 
             return response;
