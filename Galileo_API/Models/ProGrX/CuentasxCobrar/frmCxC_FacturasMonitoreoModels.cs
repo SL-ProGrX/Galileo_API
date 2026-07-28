@@ -44,14 +44,14 @@
 
     public class CxCFacturasMonitoreoDetalleRequestDto
     {
-        public int Operacion { get; set; }
+        public required int Operacion { get; set; }
         public string Factura { get; set; } = string.Empty;
         public string Consulta { get; set; } = "G";
     }
 
     public class CxCFacturasMonitoreoEstadoRequestDto
     {
-        public int Operacion { get; set; }
+        public required int Operacion { get; set; }
         public string Factura { get; set; } = string.Empty;
         public string Estado_Confirmacion { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
