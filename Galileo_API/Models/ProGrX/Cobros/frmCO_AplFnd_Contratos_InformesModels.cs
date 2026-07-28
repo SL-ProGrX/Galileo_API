@@ -3,7 +3,7 @@
     public class FrmCoAplFndContratosInformesModels
     {
 
-        public class CoAplFndContratosInformes_Personas_Result
+        public class CoAplFndContratosInformesPersonasResult
         {
             public string Cedula { get; set; } = string.Empty;
             public string Cedular { get; set; } = string.Empty;

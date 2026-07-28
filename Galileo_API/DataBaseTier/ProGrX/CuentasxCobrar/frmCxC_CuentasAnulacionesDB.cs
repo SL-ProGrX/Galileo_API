@@ -228,7 +228,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     };
                 }
 
-                string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, req.usuario).Result!.GOficinaTitular;
+                string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, req.usuario).Result.GOficinaTitular;
 
                 var respIns = SifTransaccion_Insertar(codEmpresa, new SifTransaccionInsertParams
                 {
@@ -339,7 +339,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             int gEnlace = _mProGrx
                 .sbSifParametrosInicializa(request.CodEmpresa, request.Usuario)
-                .Result!
+                .Result
                 .GEnlace;
 
             return SifDocsAsiento_Registrar(request.CodEmpresa, new SifDocsAsientoParams

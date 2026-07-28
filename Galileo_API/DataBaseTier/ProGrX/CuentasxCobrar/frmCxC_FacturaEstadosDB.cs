@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public FrmCxCFacturaEstadosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
 

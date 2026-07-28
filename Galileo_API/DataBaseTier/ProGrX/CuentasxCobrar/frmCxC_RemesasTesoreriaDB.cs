@@ -41,7 +41,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            return ObtenerRemesasLista(CodEmpresa, filtros.Result!, false);
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaRemesasVacia(
+                    CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
+
+            return ObtenerRemesasLista(CodEmpresa, filtrosData, false);
         }
         /// <summary>
         /// Exporta lista de remesas.
@@ -58,10 +64,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            filtros.Result!.pagina = 0;
-            filtros.Result.paginacion = 0;
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaRemesasVacia(
+                    CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
 
-            return ObtenerRemesasLista(CodEmpresa, filtros.Result, true);
+            filtrosData.pagina = 0;
+            filtrosData.paginacion = 0;
+
+            return ObtenerRemesasLista(CodEmpresa, filtrosData, true);
         }
         /// <summary>
         /// Obtiene una remesa por código.
@@ -278,15 +290,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codOficina"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<CxCRemesasTesoreriaOperacionLista> CxC_RemesasTesoreria_Carga_Lista_Obtener(int CodEmpresa,int tesoreriaRemesa,string? codOficina,string parametros)
+        public ErrorDto<CxCRemesasTesoreriaOperacionLista> CxC_RemesasTesoreria_Carga_Lista_Obtener(int CodEmpresa,int tesoreriaRemesa,string? codOficina, string parametros)
         {
             var filtros = DeserializarFiltros(parametros);
             if (filtros.Code != 0)
             {
-                return CrearRespuestaOperacionesVacia(filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+                return CrearRespuestaOperacionesVacia(
+                    filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            return ObtenerCargaLista(CodEmpresa, tesoreriaRemesa, codOficina, filtros.Result!, false);
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaOperacionesVacia(
+                    CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
+
+            return ObtenerCargaLista(CodEmpresa,tesoreriaRemesa,codOficina, filtrosData,false);
         }
         /// <summary>
         /// Exporta lista de operaciones pendientes de carga.
@@ -296,18 +315,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codOficina"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<CxCRemesasTesoreriaOperacionLista> CxC_RemesasTesoreria_Carga_Lista_Export(int CodEmpresa,int tesoreriaRemesa,string? codOficina,string parametros)
+        public ErrorDto<CxCRemesasTesoreriaOperacionLista> CxC_RemesasTesoreria_Carga_Lista_Export(int CodEmpresa, int tesoreriaRemesa,string? codOficina, string parametros)
         {
             var filtros = DeserializarFiltros(parametros);
             if (filtros.Code != 0)
             {
-                return CrearRespuestaOperacionesVacia(filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+                return CrearRespuestaOperacionesVacia(
+                    filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            filtros.Result!.pagina = 0;
-            filtros.Result.paginacion = 0;
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaOperacionesVacia(
+                    CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
 
-            return ObtenerCargaLista(CodEmpresa, tesoreriaRemesa, codOficina, filtros.Result, true);
+            filtrosData.pagina = 0;
+            filtrosData.paginacion = 0;
+
+            return ObtenerCargaLista(CodEmpresa, tesoreriaRemesa,codOficina,filtrosData,true);
         }
         /// <summary>
         /// Aplica carga de operaciones seleccionadas a la remesa.
@@ -451,7 +477,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return CrearRespuestaOperacionesVacia(filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            return ObtenerTrasladoLista(CodEmpresa, tesoreriaRemesa, filtros.Result!, false);
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaOperacionesVacia(CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
+
+            return ObtenerTrasladoLista(CodEmpresa, tesoreriaRemesa, filtrosData, false);
         }
 
         /// <summary>
@@ -469,10 +500,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return CrearRespuestaOperacionesVacia(filtros.Description ?? CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
             }
 
-            filtros.Result!.pagina = 0;
-            filtros.Result.paginacion = 0;
+            if (filtros.Result is not FiltrosLazyLoadData filtrosData)
+            {
+                return CrearRespuestaOperacionesVacia(CxCRemesasTesoreriaConstantes.MensajeFiltrosInvalidos);
+            }
 
-            return ObtenerTrasladoLista(CodEmpresa, tesoreriaRemesa, filtros.Result, true);
+            filtrosData.pagina = 0;
+            filtrosData.paginacion = 0;
+
+            return ObtenerTrasladoLista(CodEmpresa, tesoreriaRemesa, filtrosData, true);
         }
 
         /// <summary>
@@ -855,7 +891,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return CrearRespuestaRemesasVacia($"No fue posible consultar remesas. {ex.Message}");
             }
         }
-        private ErrorDto<CxCRemesasTesoreriaOperacionLista> ObtenerCargaLista(int CodEmpresa,int tesoreriaRemesa,string? codOficina,FiltrosLazyLoadData filtros,bool esExportar)
+        private ErrorDto<CxCRemesasTesoreriaOperacionLista> ObtenerCargaLista(int CodEmpresa, int tesoreriaRemesa, string? codOficina, FiltrosLazyLoadData filtros, bool esExportar)
         {
             var fechas = ObtenerFechasRemesa(CodEmpresa, tesoreriaRemesa);
             if (fechas.Code != 0)
@@ -867,38 +903,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                var parametros = CrearParametrosOperaciones(filtros, fechas.Result!.inicio, fechas.Result.corte, codOficina);
+                var parametros = CrearParametrosOperaciones(filtros, fechas.Result.inicio, fechas.Result.corte, codOficina);
                 var orderBy = ObtenerOrdenOperaciones(filtros);
                 var usarPaginacion = filtros.paginacion > 0 && !esExportar;
 
                 const string where = @"
-                    where Activa_Fecha between @inicio and @corte
-                      and (@codOficina = '' or Cod_Oficina = @codOficina)
-                      and (
-                            @filtro is null
-                         or cast(Operacion as varchar(20)) like @like
-                         or isnull(Cod_Concepto, '') like @like
-                         or isnull(Cedula, '') like @like
-                         or isnull(Nombre, '') like @like
-                      )";
+            where Activa_Fecha between @inicio and @corte
+              and (@codOficina = '' or Cod_Oficina = @codOficina)
+              and (
+                    @filtro is null
+                 or cast(Operacion as varchar(20)) like @like
+                 or isnull(Cod_Concepto, '') like @like
+                 or isnull(Cedula, '') like @like
+                 or isnull(Nombre, '') like @like
+              )";
 
                 var sqlCount = $@"select count(1) from vCxC_Cuentas_Desembolsos_Pendientes {where};";
                 var sqlTotal = $@"select isnull(sum(DESEMBOLSO_PENDIENTE), 0) from vCxC_Cuentas_Desembolsos_Pendientes {where};";
 
                 var sqlLista = $@"
-                    select
-                        Operacion as operacion,
-                        isnull(Cod_Concepto, '') as cod_concepto,
-                        isnull(Cedula, '') as cedula,
-                        isnull(Nombre, '') as nombre,
-                        isnull(Monto, 0) as monto,
-                        isnull(DESEMBOLSO_PENDIENTE, 0) as desembolso_monto,
-                        cast(0 as decimal(18,2)) as desembolsos,
-                        cast(0 as decimal(18,2)) as otros_giros,
-                        isnull(DESEMBOLSO_PENDIENTE, 0) as total
-                    from vCxC_Cuentas_Desembolsos_Pendientes
-                    {where}
-                    order by {orderBy}";
+            select
+                Operacion as operacion,
+                isnull(Cod_Concepto, '') as cod_concepto,
+                isnull(Cedula, '') as cedula,
+                isnull(Nombre, '') as nombre,
+                isnull(Monto, 0) as monto,
+                isnull(DESEMBOLSO_PENDIENTE, 0) as desembolso_monto,
+                cast(0 as decimal(18,2)) as desembolsos,
+                cast(0 as decimal(18,2)) as otros_giros,
+                isnull(DESEMBOLSO_PENDIENTE, 0) as total
+            from vCxC_Cuentas_Desembolsos_Pendientes
+            {where}
+            order by {orderBy}";
 
                 if (usarPaginacion)
                 {
@@ -989,7 +1025,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 var lista = conn.Query<DropDownListaGenericaModel>(sql, new
                 {
-                    fechas.Result!.inicio,
+                    fechas.Result.inicio,
                     fechas.Result.corte,
                     usaTesoreriaFecha = usaTesoreriaFecha ? 1 : 0
                 }).ToList();
@@ -1323,7 +1359,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var usarPaginacion = fetch > 0 && !esExportar;
 
                 var parametros = new DynamicParameters();
-                parametros.Add("inicio", fechas.Result!.inicio);
+                parametros.Add("inicio", fechas.Result.inicio);
                 parametros.Add("corte", fechas.Result.corte);
                 parametros.Add("tesoreriaRemesa", tesoreriaRemesa);
                 parametros.Add("filtro", hasFiltro ? filtro : null);

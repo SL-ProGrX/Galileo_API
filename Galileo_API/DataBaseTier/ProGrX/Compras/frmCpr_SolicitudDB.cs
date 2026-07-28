@@ -181,7 +181,7 @@ namespace Galileo.DataBaseTier
                 ActualizarEstadoSolicitudSiAplica(conn, cpr_id);
 
                 var solicitud = ObtenerSolicitud(conn, cpr_id);
-                if (solicitud == null) return null!;
+                if (solicitud == null) return null;
 
                 EnriquecerCompraDirectaSiAplica(conn, codEmpresa, cpr_id, solicitud);
                 return solicitud;
@@ -190,7 +190,7 @@ namespace Galileo.DataBaseTier
             var baseResp = MapDbResult(db);
             if (baseResp.Code != 0) return baseResp;
 
-            return ValidarPermisoConsulta(codEmpresa, usuario, baseResp.Result!);
+            return ValidarPermisoConsulta(codEmpresa, usuario, baseResp.Result);
         }
 
         private ErrorDto<CprSolicitudDto> MapDbResult(ErrorDto<CprSolicitudDto> db)
@@ -365,7 +365,7 @@ FROM CPR_SOLICITUD_PROV P
 LEFT JOIN CXP_PROVEEDORES cp ON cp.COD_PROVEEDOR = P.PROVEEDOR_CODIGO
 WHERE P.CPR_ID = @Id;";
 
-                    return conn.QueryFirstOrDefault<CprSolicitudDto>(qProv, new { Id = r.Result.cpr_id })!;
+                    return conn.QueryFirstOrDefault<CprSolicitudDto>(qProv, new { Id = r.Result.cpr_id });
                 });
 
                 if (provR.Code == 0 && provR.Result != null)
@@ -714,7 +714,7 @@ WHERE P.CPR_ID = @Id;";
                          .Where(it => !string.IsNullOrWhiteSpace(it.cod_producto))
                          .Select(it =>
                          {
-                             bool found = map.TryGetValue(it.cod_producto!, out string? unidad);
+                             bool found = map.TryGetValue(it.cod_producto, out string? unidad);
                              return new { Item = it, Found = found, Unidad = unidad };
                          })
                          .Where(x => x.Found))

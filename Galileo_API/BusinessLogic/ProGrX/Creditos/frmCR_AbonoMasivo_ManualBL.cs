@@ -2,18 +2,18 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Creditos;
-using static Galileo_API.Models.ProGrX.Creditos.FrmCRAbonoMasivo_ManualModels;
+using static Galileo_API.Models.ProGrX.Creditos.FrmCrAbonoMasivoManualModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 {
-    public class FrmCRAbonoMasivo_ManualBL
+    public class FrmCrAbonoMasivoManualBl
     {
        
-        private readonly FrmCRAbonoMasivo_ManualDB _db;
+        private readonly FrmCrAbonoMasivoManualDb _db;
 
-        public FrmCRAbonoMasivo_ManualBL(IConfiguration config)
+        public FrmCrAbonoMasivoManualBl(IConfiguration config)
         {
-            _db = new FrmCRAbonoMasivo_ManualDB(config);
+            _db = new FrmCrAbonoMasivoManualDb(config);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> CR_AbonoMasivo_Manual_Operadoras_Obtener(int codEmpresa)

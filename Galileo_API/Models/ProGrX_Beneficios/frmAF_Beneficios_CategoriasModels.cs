@@ -4,12 +4,19 @@ namespace Galileo.Models.AF
     {
         public string cod_categoria { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_apremiante { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_reconocimientos { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_crece { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_fena { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_sepelio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool i_desastres { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }
@@ -41,7 +48,9 @@ namespace Galileo.Models.AF
         public bool i_anular { get; set; } = false;
         public bool i_devolver_resolucion { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime registro_fecha { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_rol { get; set; }
     }
 
@@ -54,6 +63,7 @@ namespace Galileo.Models.AF
     public class BeneCategoriaValidaLista
     {
         public string cod_categoria { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_val { get; set; }
         public bool registro { get; set; } = false;
         public bool registro_justifica { get; set; } = false;
@@ -63,6 +73,7 @@ namespace Galileo.Models.AF
         public bool pago_info { get; set; } = false;
         public bool estado { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime registro_fecha { get; set; }
         public string? modifica_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> modifica_fecha { get; set; }

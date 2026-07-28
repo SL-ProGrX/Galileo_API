@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier
         }
 
         private static ErrorDto<object> CreateOkObjectResponse()
-            => DbHelper.CreateOkResponse<object>(null!);
+            => DbHelper.CreateOkResponse<object>(null);
 
         private static void ApplyException(ErrorDto<object> response, Exception ex)
         {

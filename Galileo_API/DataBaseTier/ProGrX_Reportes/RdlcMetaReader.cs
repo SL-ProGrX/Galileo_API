@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier
                 return (new List<RdlcDataSetMeta>(), new List<string>());
 
             var xdoc = XDocument.Load(rdlcPath);
-            var ns = xdoc.Root!.GetDefaultNamespace();
+            var ns = xdoc.Root.GetDefaultNamespace();
 
             var dataSets = xdoc.Descendants(ns + "DataSet")
                 .Select(ds => new RdlcDataSetMeta
@@ -42,7 +42,7 @@ namespace Galileo.DataBaseTier
             var subreports = xdoc.Descendants(ns + "Subreport")
                 .Select(s => s.Element(ns + "ReportName")?.Value)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s!)  // ← Esto reemplaza la necesidad del .Cast<string>()
+                .Select(s => s)  // ← Esto reemplaza la necesidad del .Cast<string>()
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 

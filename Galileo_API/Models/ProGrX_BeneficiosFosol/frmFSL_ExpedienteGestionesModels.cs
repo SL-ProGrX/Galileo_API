@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslGestionesListaDatos
@@ -8,6 +9,7 @@ namespace Galileo.Models.FSL
 
     public class FslGestionAgregar
     {
+        [JsonRequired]
         public long cod_expediente { get; set; }
         public string cod_gestion { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;

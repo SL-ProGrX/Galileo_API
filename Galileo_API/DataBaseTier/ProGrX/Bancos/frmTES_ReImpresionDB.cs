@@ -232,13 +232,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     codEmpresa = CodEmpresa,
                     parametros = null,
-                    nombreReporte = ObtenerNombreReporte(solicitud, banco!, transaccion!, docFormatos!, existe > 0),
+                    nombreReporte = ObtenerNombreReporte(solicitud, banco, transaccion, docFormatos, existe > 0),
                     usuario = solicitud.usuarioLogin,
                     cod_reporte = "P",
                     folder = "Bancos"
                 };
 
-                data.parametros = ConstruirParametrosReporte(solicitud, banco!, transaccion!);
+                data.parametros = ConstruirParametrosReporte(solicitud, banco, transaccion);
 
                 var actionResult = srvReportes.ReporteRDLC_v2(data);
                 MapearResultadoReporte(actionResult, response);
@@ -331,14 +331,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 lugarEmision += ",";
             }
 
+            if (!transaccion.fecha_emision.HasValue)
+            {
+                throw new System.ArgumentException("La transacción no tiene fecha de emisión.", nameof(transaccion));
+            }
+
+            var fechaEmision = transaccion.fecha_emision.Value;
             decimal vMonto = Convert.ToDecimal(transaccion.monto);
-            string vMesLetras = MTesoreria.fxTesMesDescripcion(transaccion.fecha_emision!.Value.Month);
+            string vMesLetras = MTesoreria.fxTesMesDescripcion(fechaEmision.Month);
 
             var parametrosJson = new
             {
                 filtros = $@" WHERE 1=1 AND CHEQUES.NSOLICITUD = {solicitud.nSolicitud} ",
-                Fecha = $@" {lugarEmision} DE {vMesLetras} DE {transaccion.fecha_emision.Value.Year} ",
-                Año = transaccion.fecha_emision.Value.Year.ToString(),
+                Fecha = $@" {lugarEmision} DE {vMesLetras} DE {fechaEmision.Year} ",
+                Año = fechaEmision.Year.ToString(),
                 Letras = MProGrXAuxiliarDB.NumeroALetras(vMonto).Result,
             };
 
@@ -364,7 +370,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             var json = System.Text.Json.JsonSerializer.Serialize(res);
             var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(json);
 
-            response.Code = err!.Code;
+            response.Code = err.Code;
             response.Description = err.Description;
         }
     }

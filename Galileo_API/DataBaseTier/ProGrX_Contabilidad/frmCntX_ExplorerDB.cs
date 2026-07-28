@@ -1,12 +1,5 @@
-using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models;
-using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX_Contabilidad;
-using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
-using System.Data;
-using System.Text;
+
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {

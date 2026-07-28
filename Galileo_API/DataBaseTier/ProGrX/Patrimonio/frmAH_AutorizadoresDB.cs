@@ -247,7 +247,7 @@ where USUARIO = @usuario;";
                 return validacion;
             }
 
-            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(request!.usuario);
+            var usuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(request.usuario);
             var notasNormalizadas = (request.notas ?? string.Empty).Trim();
             var estadoNormalizado = request.estado.Trim().ToUpperInvariant();
             var registroUsuarioNormalizado = Ah_Autorizadores_NormalizarUsuario(request.registro_usuario);

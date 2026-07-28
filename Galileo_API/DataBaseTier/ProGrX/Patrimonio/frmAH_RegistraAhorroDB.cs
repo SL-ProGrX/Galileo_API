@@ -195,7 +195,7 @@ exec spPAT_Gestion_Registro
                     MntSol = request.mnt_sol,
                     Usuario = usuario
                 }).Result;
-            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result!);
+            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result);
         }
 
         /// <summary>
@@ -220,7 +220,7 @@ exec spPAT_Gestion_Estado
                 sql,
                 response,
                 new { GestionId = gestionId }).Result;
-            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result!);
+            return DbHelper.CreateOkResponse<FrmAhRegistraAhorroGestionResponse>(result);
 
         }
 

@@ -303,7 +303,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 if (dto is null)
                 {
-                    return DbHelper.CreateErrorResponse<FndPlanPuntoDto>("Los datos del punto son requeridos.", -2, null!);
+                    return DbHelper.CreateErrorResponse<FndPlanPuntoDto>("Los datos del punto son requeridos.", -2, null);
                 }
 
                 var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -353,7 +353,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 if (dto is null)
                 {
-                    return DbHelper.CreateErrorResponse<FndPlanPuntoDetalleDto>("Los datos del detalle son requeridos.", -2, null!);
+                    return DbHelper.CreateErrorResponse<FndPlanPuntoDetalleDto>("Los datos del detalle son requeridos.", -2, null);
                 }
 
                 var parametros = CrearParametrosPuntoDetalle(Usuario, dto);

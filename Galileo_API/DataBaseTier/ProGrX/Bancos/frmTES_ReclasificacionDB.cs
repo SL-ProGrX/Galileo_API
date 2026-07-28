@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     return DbHelper.ErrorResponse("El asiento de esta solicitud ya fue generado, no se puede reclasificar...");
                 }
 
-                data.bancoDestino = data.bancoDestino!.Trim();
+                data.bancoDestino = data.bancoDestino.Trim();
 
                 query = $@"exec spTes_Reclasificacion @Nsolicitud, @bancoDestino, @tipo, @usuario,@nota ";
 
@@ -134,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario!,
+                        Usuario = data.usuario,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.bancoDestino}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo
@@ -213,13 +213,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
 
                 string bitacora = $"Cambio N.Documento de {ndocumentoAnterior} a {data.ndocumento}";
-                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario!);
+                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario);
 
                 _Security_MainDB.Bitacora
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario!,
+                        Usuario = data.usuario,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Documento {data.ndocumento}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo
@@ -326,7 +326,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario!,
+                        Usuario = data.usuario,
                         DetalleMovimiento = bitacora,
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo

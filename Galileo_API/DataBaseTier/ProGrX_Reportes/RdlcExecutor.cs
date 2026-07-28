@@ -61,7 +61,7 @@ namespace Galileo.DataBaseTier
             foreach (var (qpName, expr) in ds.QueryParams)
             {
                 var raw = EvalExpr(expr, ctx);
-                paramPairs.Add((qpName!, CoerceEmptyToNull(raw)));
+                paramPairs.Add((qpName, CoerceEmptyToNull(raw)));
             }
 
             // Parámetros adicionales del JSON
@@ -168,7 +168,7 @@ namespace Galileo.DataBaseTier
                     empty[colName] = null;
             }
 
-            rows = new List<object> { empty! };
+            rows = new List<object> { empty };
             return true;
         }
 

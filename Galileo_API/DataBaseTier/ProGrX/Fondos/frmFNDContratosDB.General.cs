@@ -435,7 +435,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     ? actualizarContrato(CodEmpresa, usuario, vCambios, contrato)
                     : insertarContrato(CodEmpresa, usuario, contrato);
 
-                if (response!.Code == 0 && contrato.tipo_cdp == true)
+                if (response.Code == 0 && contrato.tipo_cdp == true)
                 {
                     DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                     {

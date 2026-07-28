@@ -333,7 +333,7 @@ namespace Galileo.DataBaseTier
 
 
                 return insert.Code == 0
-                    ? DbHelper.CreateOkResponse<int>(insert.Result!, "Guardado correctamente")
+                    ? DbHelper.CreateOkResponse<int>(insert.Result, "Guardado correctamente")
                     : DbHelper.CreateErrorResponse<int>(insert.Description ?? "Error al guardar bloqueo o congelamiento.", insert.Code.GetValueOrDefault(-1));
             }
             catch (Exception ex)

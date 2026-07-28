@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslGarantiasData
@@ -14,11 +15,13 @@ namespace Galileo.Models.FSL
 
     public class FslDevolucionesData
     {
+        [JsonRequired]
         public int cod_devolucion { get; set; }
         public Nullable<DateTime> fecha_inicio { get; set; }
         public Nullable<DateTime> fecha_corte { get; set; }
         public string garantia { get; set; } = string.Empty;
         public string _base { get; set; } = string.Empty;
+        [JsonRequired]
         public float porcentaje { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;

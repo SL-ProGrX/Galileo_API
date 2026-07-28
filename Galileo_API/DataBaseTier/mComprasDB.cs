@@ -29,8 +29,8 @@ namespace Galileo.DataBaseTier
             // Paginación
             var paginar = vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue;
             parameters.Add("@Paginar", paginar ? 1 : 0, DbType.Int32);
-            parameters.Add("@Offset", paginar ? vfiltro.pagina!.Value : 0, DbType.Int32);
-            parameters.Add("@PageSize", paginar ? vfiltro.paginacion!.Value : int.MaxValue, DbType.Int32);
+            parameters.Add("@Offset", paginar ? vfiltro.pagina.Value : 0, DbType.Int32);
+            parameters.Add("@PageSize", paginar ? vfiltro.paginacion.Value : int.MaxValue, DbType.Int32);
         }
 
         #endregion

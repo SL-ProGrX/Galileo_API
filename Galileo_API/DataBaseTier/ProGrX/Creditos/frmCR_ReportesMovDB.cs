@@ -129,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     sqlGruposLinea,
                     new
                     {
-                        Codigo = codigo!.Trim()
+                        Codigo = codigo.Trim()
                     }
                 );
             }
@@ -188,7 +188,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     sqlDestinosLinea,
                     new
                     {
-                        Codigo = codigo!.Trim()
+                        Codigo = codigo.Trim()
                     }
                 );
             }

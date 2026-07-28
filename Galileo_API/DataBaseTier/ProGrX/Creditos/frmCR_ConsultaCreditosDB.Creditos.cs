@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -418,6 +419,8 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             int CodEmpresa,
             string cedula)
         {
+            var procesoCredito = Convert.ToInt32(_mProGrx_Main.glngFechaCR(CodEmpresa));
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
                 var socio = connection.QueryFirstOrDefault<CrConsultaPlanillaAbonoDistInicialData>(
@@ -425,10 +428,14 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                              rtrim(cedula) as cedula,
                              rtrim(nombre) as nombre,
                              dbo.MyGetdate() as fecha,
-                             year(dbo.MyGetdate()) * 100 + month(dbo.MyGetdate()) as proceso
+                             @ProcesoCredito as proceso
                         from socios
                        where cedula = @Cedula",
-                    new { Cedula = (cedula ?? string.Empty).Trim() });
+                    new
+                    {
+                        Cedula = (cedula ?? string.Empty).Trim(),
+                        ProcesoCredito = procesoCredito
+                    });
 
                 if (socio is null)
                 {
@@ -545,7 +552,9 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
         private sealed class PlanillaAbonoDeductoraRow
         {
+            [SuppressMessage("Minor Code Smell", "S3459:Unassigned members should be removed", Justification = "Dapper asigna esta propiedad por reflexión desde una columna de consulta.")]
             public int Idx { get; set; }
+            [SuppressMessage("Minor Code Smell", "S3459:Unassigned members should be removed", Justification = "Dapper asigna esta propiedad por reflexión desde una columna de consulta.")]
             public string? ItmX { get; set; }
         }
 

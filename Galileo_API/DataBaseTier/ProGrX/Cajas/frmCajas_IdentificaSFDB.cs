@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             conn.Open();
             try
             {
-                ExecuteIdentificacion(conn, cedula, nombre, usuario, pagadorId, origenRecursosId, casos!);
+                ExecuteIdentificacion(conn, cedula, nombre, usuario, pagadorId, origenRecursosId, casos);
                 return DbHelper.OkResponse("Caso(s) identificado(s) correctamente!");
             }
             catch (Exception ex)

@@ -135,7 +135,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public UsuarioModel UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            UsuarioModel result = null!;
+            UsuarioModel result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -148,7 +148,7 @@ namespace Galileo.DataBaseTier
                         AdminView = AdminView,
                         DirGlobal = DirGlobal
                     };
-                    result = connection.QueryFirstOrDefault<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                    result = connection.QueryFirstOrDefault<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure);
 
                     if (result != null && result.FechaIngreso != null)
                     {
@@ -167,13 +167,13 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
-            return result!;
+            return result;
         }
 
 
         public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            List<UsuarioModel> result = null!;
+            List<UsuarioModel> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -185,19 +185,19 @@ namespace Galileo.DataBaseTier
                         AdminView = AdminView,
                         DirGlobal = DirGlobal
                     };
-                    result = connection.Query<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
-            return result!;
+            return result;
         }
 
         public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
         {
-            List<UsuarioClienteDto> result = null!;
+            List<UsuarioClienteDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -207,7 +207,7 @@ namespace Galileo.DataBaseTier
                     {
                         Usuario = nombreUsuario
                     };
-                    result = connection.Query<UsuarioClienteDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioClienteDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -325,12 +325,12 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
-            return resultado!;
+            return resultado;
         }
 
         public List<UsuarioCuentaBitacora> UsuarioBitacoraConsultar(UsuarioBitacoraRequest request)
         {
-            List<UsuarioCuentaBitacora> result = null!;
+            List<UsuarioCuentaBitacora> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -344,7 +344,7 @@ namespace Galileo.DataBaseTier
                         FechaCorte = request.FechaCorte,
                         CodTransac = request.CodTransac
                     };
-                    result = connection.Query<UsuarioCuentaBitacora>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioCuentaBitacora>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -356,7 +356,7 @@ namespace Galileo.DataBaseTier
 
         public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
-            List<UsuarioClienteRolDto> result = null!;
+            List<UsuarioClienteRolDto> result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -367,7 +367,7 @@ namespace Galileo.DataBaseTier
                         Usuario = nombreUsuario,
                         CodEmpresa = codEmpresa
                     };
-                    result = connection.Query<UsuarioClienteRolDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioClienteRolDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)

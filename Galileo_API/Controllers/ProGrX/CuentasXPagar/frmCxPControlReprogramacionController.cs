@@ -70,5 +70,11 @@ namespace Galileo.Controllers
         {
             return _bl.CargosPagos_Borrar(CodEmpresa, Pago, Cod_Factura, Cod_Proveedor);
         }
+
+        [HttpPost("Reprogramacion_Aplicar")]
+        public ErrorDto Reprogramacion_Aplicar(int CodEmpresa, ReprogramacionAplicar data)
+        {
+            return _bl.Reprogramacion_Aplicar(CodEmpresa, data);
+        }
     }
 }

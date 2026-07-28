@@ -14,7 +14,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             _db = new FrmCoAplFndContratosInformesDB(config);
         }
 
-        public ErrorDto<List<CoAplFndContratosInformes_Personas_Result>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
+        public ErrorDto<List<CoAplFndContratosInformesPersonasResult>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
                 => _db.Co_AplFnd_ContratosInformes_Personas_Obtener(codEmpresa);
 
         public ErrorDto<List<DropDownListaGenericaModel>> Co_AplFnd_ContratosInformes_Aplicaciones_Obtener(int codEmpresa)

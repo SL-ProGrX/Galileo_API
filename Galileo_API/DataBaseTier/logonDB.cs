@@ -193,7 +193,7 @@ namespace Galileo.DataBaseTier
                         Usuario = usuario,
 
                     };
-                    info = connection.QueryFirstOrDefault<TfaData>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                    info = connection.QueryFirstOrDefault<TfaData>(procedure, values, commandType: CommandType.StoredProcedure);
 
                 }
             }

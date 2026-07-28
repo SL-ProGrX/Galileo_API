@@ -65,7 +65,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var estadoOperacion = _clsConsultar.fxEstadoOperacion(codEmpresa, request.numero_operacion);
             if (estadoOperacion.Code < 0)
             {
-                return DbHelper.ErrorResponse(estadoOperacion.Description!);
+                return DbHelper.ErrorResponse(estadoOperacion.Description);
             }
 
             if ((estadoOperacion.Result ?? string.Empty).Trim() != "F")
@@ -76,7 +76,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var yaRegistrado = _db.Viv_GarantiaAvaluoRegistrado_Existe(codEmpresa, request.id_garantia);
             if (yaRegistrado.Code < 0)
             {
-                return DbHelper.ErrorResponse(yaRegistrado.Description!);
+                return DbHelper.ErrorResponse(yaRegistrado.Description);
             }
 
             if (yaRegistrado.Result)
@@ -87,7 +87,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var existeIngeniero = _clsConsultar.fxTraerExisteContacto(codEmpresa, request.id_contacto, "I");
             if (existeIngeniero.Code < 0)
             {
-                return DbHelper.ErrorResponse(existeIngeniero.Description!);
+                return DbHelper.ErrorResponse(existeIngeniero.Description);
             }
 
             if (!existeIngeniero.Result)
@@ -114,7 +114,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 });
 
             return resp.Code < 0
-                ? DbHelper.ErrorResponse(resp.Description!)
+                ? DbHelper.ErrorResponse(resp.Description)
                 : new ErrorDto
                 {
                     Code = 0,

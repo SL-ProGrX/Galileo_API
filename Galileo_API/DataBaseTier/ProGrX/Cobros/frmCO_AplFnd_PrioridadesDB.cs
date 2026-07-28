@@ -292,7 +292,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
         private static int ParseInt(object? value)
         {
-            string v = (value ?? 0).ToString()!.Trim();
+            string v = (value ?? 0).ToString().Trim();
             if (string.IsNullOrWhiteSpace(v))
                 v = "0";
 

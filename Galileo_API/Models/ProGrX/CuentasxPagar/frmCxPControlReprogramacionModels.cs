@@ -37,5 +37,15 @@ namespace Galileo.Models.CxP
     {
         public int Pago { get; set; }
         public decimal Monto { get; set; }
+        public DateTime Fecha_Servidor { get; set; }
+    }
+
+    public class ReprogramacionAplicar
+    {
+        public required int Cod_Proveedor { get; set; }
+        public string Cod_Factura { get; set; } = string.Empty;
+        public string Registro_Usuario { get; set; } = string.Empty;
+        public List<DetallePago> Pagos { get; set; } = new();
+        public List<PagoProvCargo> Cargos { get; set; } = new();
     }
 }

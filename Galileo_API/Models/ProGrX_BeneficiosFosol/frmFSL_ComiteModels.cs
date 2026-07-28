@@ -1,11 +1,14 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslComitesDto
     {
         public string cod_comite { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [JsonRequired]
         public int numero_resolutores { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activo { get; set; }
     }
 
@@ -21,10 +24,13 @@ namespace Galileo.Models.FSL
         public string nombre { get; set; } = string.Empty;
         public string usuario_Vinculado { get; set; } = string.Empty;
         public string cod_comite { get; set; } = string.Empty;
+        [JsonRequired]
         public DateTime registro_Fecha { get; set; }
+        [JsonRequired]
         public DateTime salida_Fecha { get; set; }
         public string registro_Usuario { get; set; } = string.Empty;
         public string salida_usuario { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activo { get; set; }
     }
 

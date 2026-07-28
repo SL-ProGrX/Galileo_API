@@ -72,7 +72,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     response.solicitud = solicitud;
                 }
 
-                return DbHelper.CreateOkResponse(response!);
+                return DbHelper.CreateOkResponse(response);
             }
             catch (Exception ex)
             {

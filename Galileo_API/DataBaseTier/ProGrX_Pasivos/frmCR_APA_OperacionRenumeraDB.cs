@@ -176,7 +176,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 
             var existeOperacion = CR_APA_OperacionRenumera_Operacion_Obtener(
                 codEmpresa,
-                request!.cod_acreedor,
+                request.cod_acreedor,
                 request.operacion);
 
             if (existeOperacion.Code != 0)

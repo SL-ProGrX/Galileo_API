@@ -138,12 +138,12 @@ WHERE NSolicitud = @solicitud;";
                 var nota = fechas.detalle_Anulacion ?? string.Empty;
                 var bitacora = $"Cambia Fecha {etiqueta} de {fechaActual} a {fechaNueva} /Nota: {nota}";
 
-                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacora, fechas.usuario!);
+                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacora, fechas.usuario);
 
                 mSecurity.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = fechas.usuario!,
+                    Usuario = fechas.usuario,
                     Modulo = vModulo,
                     Movimiento = "Modifica",
                     DetalleMovimiento = bitacora

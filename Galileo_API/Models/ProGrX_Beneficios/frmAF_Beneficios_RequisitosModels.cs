@@ -10,7 +10,9 @@ namespace Galileo.Models.AF
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool requerido { get; set; }
         public string? registro_usuario { get; set; }
     }

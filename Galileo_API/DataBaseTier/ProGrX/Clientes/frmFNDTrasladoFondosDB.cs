@@ -114,7 +114,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return DbHelper.CreateErrorResponse<FndTrasladoFondosResult>(
                     "Los datos del traslado son requeridos.",
                     -2,
-                    null!);
+                    null);
             }
 
             return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>

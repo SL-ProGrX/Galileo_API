@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 
         public FrmFndConsultaDetalleDB(IConfiguration? config)
         {
-            _portalDb = new PortalDB(config!);
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>

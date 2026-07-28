@@ -24,7 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public FrmCxCClientesClasificaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
         #region Helpers DRY

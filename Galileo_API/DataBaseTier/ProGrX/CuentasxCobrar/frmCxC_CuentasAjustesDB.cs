@@ -48,7 +48,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 result.Result = new CxCCuentasAjustesOperacionData();
             }
-            return result!;
+            return result;
         }
 
         /// <summary>

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslExpedienteDatos
@@ -139,8 +140,10 @@ namespace Galileo.Models.FSL
 
     public class FslExpedienteUpdate
     {
+        [JsonRequired]
         public bool estado { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
+        [JsonRequired]
         public long cod_expediente { get; set; }
         public string cod_Requisito { get; set; } = string.Empty;
     }
@@ -153,6 +156,7 @@ namespace Galileo.Models.FSL
         public string resolucion_usuario { get; set; } = string.Empty;
         public string resolucion_estado { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
+        [JsonRequired]
         public long cod_expediente { get; set; }
     }
 

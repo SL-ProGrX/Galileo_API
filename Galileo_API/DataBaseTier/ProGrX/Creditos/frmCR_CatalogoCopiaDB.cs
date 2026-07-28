@@ -230,12 +230,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var data = NormalizarRequest(request);
                 var destinos = ResolverDestinos(data);
 
-                response.Result!.detalle.AddRange(
+                response.Result.detalle.AddRange(
                     destinos
                         .Select(destino => CopiarDestino(conn, CodEmpresa, data, destino))
                         .ToList());
 
-                response.Result!.total_procesadas = response.Result.detalle.Count(x => x.procesada);
+                response.Result.total_procesadas = response.Result.detalle.Count(x => x.procesada);
                 response.Description = "Copia Realizada Satisfactoriamente.";
 
                 return response;
@@ -367,7 +367,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 })
                 .ToList();
 
-            if (TieneNuevaLineaCompleta(data) && !IgualCodigo(data.nueva_linea!.codigo, data.linea_origen))
+            if (TieneNuevaLineaCompleta(data) && !IgualCodigo(data.nueva_linea.codigo, data.linea_origen))
             {
                 destinos.Add(new CrCatalogoCopiaDestinoDto
                 {

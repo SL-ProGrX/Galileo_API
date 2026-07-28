@@ -197,7 +197,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public UsuarioEmpresa UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
         {
-            UsuarioEmpresa result = null!;
+            UsuarioEmpresa result = null;
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
@@ -207,7 +207,7 @@ namespace Galileo.DataBaseTier
                     CodEmpresa = codEmpresa,
                     Usuario = nombreUsuario,
                 };
-                result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {

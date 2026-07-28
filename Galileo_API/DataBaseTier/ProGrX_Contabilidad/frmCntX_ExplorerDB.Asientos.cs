@@ -5,7 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 
@@ -16,9 +15,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Mayoriza un asiento contable pendiente y balanceado.
         /// </summary>
+        /// <param name="dto">Empresa, contabilidad, asiento, usuario y sello de concurrencia.</param>
+        /// <returns>Resultado que indica si el asiento fue mayorizado.</returns>
         public ErrorDto<bool> Asientos_Mayorizar(CntxMayorizarRequest dto)
         {
-            var response = new ErrorDto<bool>();
+            var response = DbHelper.CreateOkResponse(false);
 
             if (!dto.cod_empresa.HasValue || dto.cod_contabilidad <= 0 ||
                 string.IsNullOrWhiteSpace(dto.tipo_asiento) ||
@@ -32,8 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(dto.cod_empresa.Value));
+                using var cn = DbHelper.OpenConnection(_portalDb, dto.cod_empresa.Value);
 
                 var asiento = cn.QuerySingleOrDefault<(byte[] ts, DateTime? fecha_aplicado, string balanceado)>(
                     @"SELECT ts, fecha_aplicado, ISNULL(balanceado, 'N') AS balanceado
@@ -99,8 +99,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
             }
 
             return response;
@@ -109,9 +108,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina un asiento respetando concurrencia, período y reglas de autorización.
         /// </summary>
+        /// <param name="dto">Empresa, contabilidad, asiento, usuario y sello de concurrencia.</param>
+        /// <returns>Resultado que indica si el asiento fue eliminado.</returns>
         public ErrorDto<bool> Asiento_Borrar(CntxBorrarAsientoRequest dto)
         {
-            var response = new ErrorDto<bool>();
+            var response = DbHelper.CreateOkResponse(false);
 
             if (!dto.cod_empresa.HasValue || dto.cod_contabilidad <= 0 ||
                 string.IsNullOrWhiteSpace(dto.tipo_asiento) ||
@@ -125,8 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(dto.cod_empresa.Value));
+                using var cn = DbHelper.OpenConnection(_portalDb, dto.cod_empresa.Value);
                 cn.Open();
                 using var transaction = cn.BeginTransaction();
 
@@ -231,7 +231,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 _securityDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = dto.cod_empresa.Value,
-                    Usuario = dto.usuario!,
+                    Usuario = dto.usuario,
                     Modulo = 20,
                     Movimiento = "Elimina Asiento - WEB",
                     DetalleMovimiento = $"Asiento: {dto.tipo_asiento}-{dto.num_asiento} Conta.{dto.cod_contabilidad}"
@@ -241,8 +241,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
             }
 
             return response;
@@ -251,18 +250,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las notas del asiento seleccionado.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="tipo_asiento">Tipo del asiento seleccionado.</param>
+        /// <param name="num_asiento">Número del asiento seleccionado.</param>
+        /// <returns>Texto de las notas asociadas al asiento.</returns>
         public ErrorDto<string?> NotasAsiento(
             int codEmpresa,
             int cod_contabilidad,
             string tipo_asiento,
             string num_asiento)
         {
-            var response = new ErrorDto<string?>();
+            var response = DbHelper.CreateOkResponse<string?>(null);
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 response.Result = cn.QueryFirstOrDefault<string?>(
                     @"SELECT notas
@@ -279,8 +282,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<string?>(ex.Message);
             }
 
             return response;

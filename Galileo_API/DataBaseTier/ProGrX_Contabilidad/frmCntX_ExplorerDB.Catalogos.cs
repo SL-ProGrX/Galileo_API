@@ -4,7 +4,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 
@@ -15,18 +14,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Cuentas por Padre
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="codCuentaPadre"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="codCuentaPadre">Código de la cuenta madre; nulo para consultar la raíz.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxCuentaDto>> CuentasPorPadre(int codEmpresa, int cod_contabilidad, string? codCuentaPadre)
         {
-            var response = new ErrorDto<List<CntxCuentaDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxCuentaDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
             SELECT  
@@ -64,8 +62,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxCuentaDto>>(ex.Message);
             }
 
             return response;
@@ -77,20 +74,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene Asientros TreePorTipo
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="tipo"></param>
-        /// <param name="anio"></param>
-        /// <param name="mes"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="tipo">Tipo de asiento seleccionado.</param>
+        /// <param name="anio">Año contable de la consulta.</param>
+        /// <param name="mes">Mes contable de la consulta.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxAsientoTreeDto>> Cntx_Asientos_TreePorTipo(int codEmpresa, int cod_contabilidad, string tipo, int anio, int mes)
         {
-            var response = new ErrorDto<List<CntxAsientoTreeDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxAsientoTreeDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
                             SELECT
@@ -126,8 +122,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxAsientoTreeDto>>(ex.Message);
             }
 
             return response;
@@ -136,17 +131,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene tipos de Cuenta
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxTipoCuentaDto>> Cntx_TiposCuenta_Obtener(int codEmpresa, int codContabilidad)
         {
-            var response = new ErrorDto<List<CntxTipoCuentaDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxTipoCuentaDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
             SELECT tipo_cuenta     AS item,
@@ -162,8 +156,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxTipoCuentaDto>>(ex.Message);
             }
 
             return response;
@@ -172,18 +165,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene cuenta raiz por Tipo
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="tipoCuenta"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="tipoCuenta">Tipo de cuenta seleccionado.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxCuentaDto>> Cntx_CuentasRaizPorTipo_Obtener(int codEmpresa, int codContabilidad, string tipoCuenta)
         {
-            var response = new ErrorDto<List<CntxCuentaDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxCuentaDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"SELECT  
                             cod_cuenta,
@@ -223,8 +215,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxCuentaDto>>(ex.Message);
             }
 
             return response;
@@ -232,16 +223,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Tipos asientos buscar
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
 
             try
             {
-                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var result = cn.Query<DropDownListaGenericaModel>(
                     @"SELECT tipo_asiento AS item,
@@ -255,8 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
 
             return response;
@@ -267,16 +257,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Buscar unidades
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_Unidades_Buscar(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
 
             try
             {
-                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var result = cn.Query<DropDownListaGenericaModel>(
                     @"SELECT cod_unidad AS item,
@@ -290,8 +280,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
 
             return response;
@@ -301,16 +290,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Centro de costo buscar
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_CentroCosto_Buscar(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var response = DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
 
             try
             {
-                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var result = cn.Query<DropDownListaGenericaModel>(
                     @"SELECT cod_centro_costo AS item,
@@ -324,8 +313,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
 
             return response;
@@ -335,16 +323,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Busca divisas
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxDivisaDto>> Cntx_Divisas_Buscar(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<CntxDivisaDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxDivisaDto>());
 
             try
             {
-                using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var result = cn.Query<CntxDivisaDto>(
                     @"SELECT 
@@ -362,8 +350,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxDivisaDto>>(ex.Message);
             }
 
             return response;

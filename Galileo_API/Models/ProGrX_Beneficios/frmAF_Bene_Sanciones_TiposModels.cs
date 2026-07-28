@@ -6,6 +6,7 @@ namespace Galileo.Models.AF
         public string? descripcion { get; set; }
         public string? codigo_cobro { get; set; }
         public string? plazo_maximo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }

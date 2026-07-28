@@ -4,7 +4,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad.Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Text;
 
@@ -13,18 +12,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public partial class FrmCntXExploradorContableDb
     {
         /// <summary>
-        /// Obtener contabilidades
+        /// Obtiene las ramas habilitadas del explorador para la contabilidad.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Configuración de ramas visibles del árbol contable.</returns>
+        public ErrorDto<CntxConfiguracionArbolDto> ConfiguracionArbol_Obtener(
+            int codEmpresa,
+            int codContabilidad)
         {
-            var response = new ErrorDto<List<CntxContabilidadDto>>();
+            var response = DbHelper.CreateOkResponse(new CntxConfiguracionArbolDto());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                const string sql = @"
+                    SELECT
+                        CAST(ISNULL(expasientos, 0) AS bit) AS exp_asientos,
+                        CAST(ISNULL(expcuentas, 0) AS bit) AS exp_cuentas,
+                        CAST(ISNULL(expareas, 0) AS bit) AS exp_areas,
+                        CAST(ISNULL(expplanfijo, 0) AS bit) AS exp_plan_fijo,
+                        CAST(ISNULL(expplanrate, 0) AS bit) AS exp_plan_rate,
+                        CAST(ISNULL(expdiferidos, 0) AS bit) AS exp_diferidos,
+                        CAST(ISNULL(expmantenimiento, 0) AS bit) AS exp_mantenimiento
+                    FROM CntX_Contabilidades
+                    WHERE cod_contabilidad = @codContabilidad";
+
+                response.Result = cn.QuerySingleOrDefault<CntxConfiguracionArbolDto>(
+                    sql,
+                    new { codContabilidad }) ?? new CntxConfiguracionArbolDto();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CntxConfiguracionArbolDto>(ex.Message);
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Obtener contabilidades
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
+        public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
+        {
+            var response = DbHelper.CreateOkResponse(new List<CntxContabilidadDto>());
+
+            try
+            {
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"
                         SELECT 
@@ -40,8 +78,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxContabilidadDto>>(ex.Message);
             }
 
             return response;
@@ -50,17 +87,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtener Cierres
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <returns>Resultado de la operación solicitado por el explorador contable.</returns>
         public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
         {
-            var response = new ErrorDto<List<CntxCierreDto>>();
+            var response = DbHelper.CreateOkResponse(new List<CntxCierreDto>());
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var sql = @"SELECT
                         INICIO_ANIO      AS in_anio,
@@ -87,8 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<CntxCierreDto>>(ex.Message);
             }
 
             return response;

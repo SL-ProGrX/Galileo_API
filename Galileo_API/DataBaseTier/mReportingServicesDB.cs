@@ -89,7 +89,7 @@ namespace Galileo.DataBaseTier
         // ================= API PRINCIPAL (V2) =================
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
          {
-            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
             if (data.parametros == null)
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
 
@@ -226,8 +226,8 @@ namespace Galileo.DataBaseTier
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
-            string DefaultLogoUrl = GetParametrerValues(codEmpresa, "Rep02").Result!;
-            string DefaultEmpresa = GetParametrerValues(codEmpresa, "Rep03").Result!;
+            string DefaultLogoUrl = GetParametrerValues(codEmpresa, "Rep02").Result;
+            string DefaultEmpresa = GetParametrerValues(codEmpresa, "Rep03").Result;
             var resp = new ErrorDto<object> { Code = 0, Description = "OK", Result = new { LOGO_WEB_SITE = string.Empty, Nombre = string.Empty } };
 
             try
@@ -284,7 +284,7 @@ namespace Galileo.DataBaseTier
 
         private LocalReport CreateReportInstance(FrmReporteGlobal data)
         {
-            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
             var report = new LocalReport { EnableExternalImages = true };
 
             var reportFile = (data.nombreReporte ?? string.Empty).Trim();
@@ -312,7 +312,7 @@ namespace Galileo.DataBaseTier
             var mainDatasets = doc.Descendants()
                 .Where(x => x.Name.LocalName == "DataSet")
                 .Select(ds => (
-                    ReportName: data.nombreReporte!,
+                    ReportName: data.nombreReporte,
                     DataSetName: ds.Attribute("Name")?.Value ?? string.Empty,
                     Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value))
                 .ToList();
@@ -325,7 +325,7 @@ namespace Galileo.DataBaseTier
 
         private IEnumerable<(string ReportName, string DataSetName, string? Query)> LoadSubreportDataSets(System.Xml.Linq.XDocument doc, FrmReporteGlobal data)
         {
-            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
 
             var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
 
@@ -351,7 +351,7 @@ namespace Galileo.DataBaseTier
                 foreach (var ds in subDoc.Descendants().Where(x => x.Name.LocalName == "DataSet"))
                 {
                     yield return (
-                        ReportName: subreportName!,
+                        ReportName: subreportName,
                         DataSetName: ds.Attribute("Name")?.Value ?? string.Empty,
                         Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value
                     );

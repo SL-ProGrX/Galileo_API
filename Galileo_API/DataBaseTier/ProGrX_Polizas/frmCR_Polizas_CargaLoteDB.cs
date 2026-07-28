@@ -496,7 +496,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Monto = request.MontoNeto,
                         Codigo = cedulaJuridica.Trim(),
                         Beneficiario = request.AseguradoraNombre.Trim(),
-                        CodigoCliente = request.CodigoCliente!.Trim(),
+                        CodigoCliente = request.CodigoCliente?.Trim() ?? string.Empty,
                         CtaAhorros = request.CuentaAhorros,
                         Detalle1 = detalle1,
                         Detalle2 = detalle2,
@@ -554,7 +554,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var userAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? request.Usuario : null;
             var fechaAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? (DateTime?)DateTime.Now : null;
 
-            var nSolicitud = request.Conn!.QueryFirstOrDefault<long>(insertSql, new
+            var nSolicitud = request.Conn.QueryFirstOrDefault<long>(insertSql, new
             {
                 Concepto = request.Concepto,
                 Unidad = request.Unidad,
@@ -580,7 +580,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             // Fallback VB6-like si SCOPE_IDENTITY no aplica: MAX por código.
             const string maxSql = @"SELECT MAX(nsolicitud) FROM Tes_Transacciones WHERE codigo = @Codigo;";
-            return request.Conn!.QueryFirstOrDefault<long>(maxSql, new { Codigo = request.CodigoCliente });
+            return request.Conn.QueryFirstOrDefault<long>(maxSql, new { Codigo = request.CodigoCliente });
         }
 
         private static string ObtenerCtaBanco(IDbConnection conn, int idBanco)

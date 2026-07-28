@@ -12,8 +12,8 @@
             public string? cc { get; set; }
 
             public string? mov_tipo { get; set; } = "NA";
-            public decimal mov_desde { get; set; } = 0;
-            public decimal mov_hasta { get; set; } = 999999999999;
+            public required decimal mov_desde { get; set; } = 0;
+            public required decimal mov_hasta { get; set; } = 999999999999;
 
             public string? num_asiento { get; set; }
             public string? num_documento { get; set; }
@@ -86,7 +86,7 @@
             public int? anio { get; set; }
             public int? mes { get; set; }
             public DateTime? fecha_corte { get; set; }
-            public string? cerrado { get; set; }
+            public string? estado { get; set; }
             public string? usuario_cierre { get; set; }
             public DateTime? fecha_cierre { get; set; }
         }
@@ -287,6 +287,27 @@
         public string? contacto { get; set; }
     }
 
+    public class CntxConfiguracionArbolDto
+    {
+        public bool exp_asientos { get; set; }
+        public bool exp_cuentas { get; set; }
+        public bool exp_areas { get; set; }
+        public bool exp_plan_fijo { get; set; }
+        public bool exp_plan_rate { get; set; }
+        public bool exp_diferidos { get; set; }
+        public bool exp_mantenimiento { get; set; }
+    }
+
+    public class CntxPlantillaFijaDetalleDto
+    {
+        public string? cod_cuenta { get; set; }
+        public string? cod_cuenta_mask { get; set; }
+        public string? descripcion { get; set; }
+        public decimal debitos { get; set; }
+        public decimal creditos { get; set; }
+        public string? detalle { get; set; }
+    }
+
     public class CntxCierreDto
     {
         public int? in_anio { get; set; }
@@ -297,7 +318,7 @@
         public string? gan_per { get; set; }
         public string? exc_uti { get; set; }
         public string? renta_cta { get; set; }
-        public int? renta { get; set; }
+        public decimal? renta { get; set; }
         public string? vigente { get; set; }
     }
 

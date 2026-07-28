@@ -27,7 +27,7 @@ namespace Galileo.DataBaseTier
             });
 
             if (r.Code != 0)
-                return DbHelper.CreateErrorResponse<CprSolicitudCotizacionPrvBsLista>(r.Description ?? "Error", r.Code ?? -1, null!);
+                return DbHelper.CreateErrorResponse<CprSolicitudCotizacionPrvBsLista>(r.Description ?? "Error", r.Code ?? -1, default);
 
             return DbHelper.CreateOkResponse(r.Result ?? new CprSolicitudCotizacionPrvBsLista { cotizaciones = new List<CprSolicitudCotizacionPrvBs>() });
         }

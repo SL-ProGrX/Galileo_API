@@ -16,8 +16,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesConciliacionDB(IConfiguration? config)
         {
-            mCntLinkDB = new MCntLinkDB(config!);
-            _portalDB = new PortalDB(config!);
+            mCntLinkDB = new MCntLinkDB(config);
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -318,7 +318,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 const string query = @"exec spTes_Concilia_Periodo_Resultados @BancoId, @Anio ,@Mes,@Ubicacion,@Tipo,@Estado";
 
-                string estado = filtros.estadoCasos!.Substring(0, 1);
+                string estado = filtros.estadoCasos.Substring(0, 1);
 
                 return conn.Query<TesConciliaResultados>(query, new
                 {
@@ -340,7 +340,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta!);
+                    bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta);
                     if (!vCuenta)
                     {
                         return DbHelper.ErrorResponse("La cuenta contable indicada para el auto-registro no es válida!");
@@ -362,7 +362,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         });
                     }
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                     return DbHelper.CreateOkResponse();
                 }),
@@ -467,12 +467,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         if (filtro.ubicacion == "B")
                         {
-                            pId_Bancos = filtro.mov_id!;
+                            pId_Bancos = filtro.mov_id;
                             pId_Libros = item.id.ToString();
                         }
                         else
                         {
-                            pId_Libros = filtro.mov_id!;
+                            pId_Libros = filtro.mov_id;
                             pId_Bancos = item.id.ToString();
                         }
 
@@ -563,13 +563,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         if (filtro.ubicacion == "B")
                         {
-                            pId_Bancos = filtro.mov_id!;
-                            pId_Libros = item.id.ToString()!;
+                            pId_Bancos = filtro.mov_id;
+                            pId_Libros = item.id.ToString();
                         }
                         else
                         {
-                            pId_Libros = filtro.mov_id!;
-                            pId_Bancos = item.id.ToString()!;
+                            pId_Libros = filtro.mov_id;
+                            pId_Bancos = item.id.ToString();
                         }
 
                         conn.Execute(query, new
@@ -583,7 +583,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         });
                     });
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                     return DbHelper.CreateOkResponse();
                 }),

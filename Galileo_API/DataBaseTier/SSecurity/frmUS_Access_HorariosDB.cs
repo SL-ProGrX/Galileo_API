@@ -27,7 +27,7 @@ namespace Galileo.DataBaseTier
                     {
                         EmpresaId = empresaId,
                     };
-                    result = connection.Query<HorarioDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<HorarioDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     foreach (HorarioDto dt in result)
                     {

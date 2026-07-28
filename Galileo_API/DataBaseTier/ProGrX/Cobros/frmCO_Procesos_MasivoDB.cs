@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 EjecutarCargaMasivaProcesos(
                     connection,
-                    operaciones!,
+                    operaciones,
                     usuario,
                     modulo);
 
