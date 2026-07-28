@@ -60,7 +60,10 @@ namespace Galileo.DataBaseTier
 
                 var idCotizacion = EjecutarSpGuardarCotizacion(conn, tx, cotizacion);
 
-                var solicitud = ObtenerSolicitud(conn, tx, cotizacion.cpr_id!.Value);
+                var cprId = cotizacion.cpr_id;
+                if (!cprId.HasValue) continue;
+
+                var solicitud = ObtenerSolicitud(conn, tx, cprId.Value);
                 if (solicitud is null) continue;
 
                 if (!EsExcepcion(solicitud, tipoExcepcion, tipoExcepcionGM)) continue;
@@ -127,11 +130,16 @@ namespace Galileo.DataBaseTier
             CprSolicitudDto solicitud,
             int idCotizacion)
         {
-            var cprId = solicitud.cpr_id ?? cotizacion.cpr_id!.Value;
-            var proveedorCodigo = cotizacion.proveedor_codigo!.Value;
-            var noCotizacion = cotizacion.cotiza_numero!;
+            if (!cotizacion.cpr_id.HasValue || !cotizacion.proveedor_codigo.HasValue)
+            {
+                throw new ArgumentException("La cotización debe incluir cpr_id y proveedor_codigo para aplicar la excepción.");
+            }
 
-            MarcarCotizaVigente(conn, tx, cotizacion.cpr_id!.Value, proveedorCodigo, idCotizacion);
+            var cprId = solicitud.cpr_id ?? cotizacion.cpr_id.Value;
+            var proveedorCodigo = cotizacion.proveedor_codigo.Value;
+            var noCotizacion = cotizacion.cotiza_numero;
+
+            MarcarCotizaVigente(conn, tx, cprId, proveedorCodigo, idCotizacion);
             EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
             InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);

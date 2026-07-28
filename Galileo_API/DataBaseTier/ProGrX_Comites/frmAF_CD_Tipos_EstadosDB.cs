@@ -159,7 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 return error;
             }
 
-            var codigo = datos.CodEstado!.Trim();
+            var codigo = datos.CodEstado.Trim();
             var resultado = DbHelper.ExecuteSingleQuery<string>(
                 _portalDb,
                 codEmpresa,

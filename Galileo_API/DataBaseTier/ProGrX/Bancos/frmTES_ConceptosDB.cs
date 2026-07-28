@@ -17,9 +17,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesConceptosDB(IConfiguration? config)
         {
-            _portalDB = new PortalDB(config!);
-            _mCnt = new MCntLinkDB(config!);
-            _Security_MainDB = new MSecurityMainDb(config!);
+            _portalDB = new PortalDB(config);
+            _mCnt = new MCntLinkDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -51,8 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                 var like = hasFiltro ? $"%{texto}%" : null;
 
-                var offset = filtros.pagina!;
-                var fetch = filtros.paginacion!;
+                var (offset, fetch) = (filtros.pagina, filtros.paginacion);
                 var usarPaginacion = fetch > 0;
 
                 // Whitelist de sortField (evita inyección por ORDER BY)

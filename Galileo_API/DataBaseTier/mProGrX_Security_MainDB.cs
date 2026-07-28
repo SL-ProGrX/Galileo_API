@@ -23,8 +23,8 @@ namespace Galileo.DataBaseTier
             {
                 var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                //    var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
-                //using var connection1 = new SqlConnection(connectionStringName);
+
+
 
                 // Normalizar / truncar strings
                 var detalle = Trunc(bitacora.strDetalleMovimiento, 500);

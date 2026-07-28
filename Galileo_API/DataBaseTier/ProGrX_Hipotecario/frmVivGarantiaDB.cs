@@ -89,7 +89,7 @@ WHERE P.COD_PREANALISIS = @expediente;";
                     operacion = request.operacion,
                     expediente = request.expediente.Trim()
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ WHERE NumeroOperacion = @operacion;";
                 {
                     operacion
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -190,7 +190,7 @@ WHERE R.ID_SOLICITUD = @numero_operacion;";
                 {
                     numero_operacion = numeroOperacion
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -246,7 +246,7 @@ WHERE IdGarantia = @id_garantia
                 {
                     id_garantia = idGarantia
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -335,7 +335,7 @@ WHERE IdGarantia = @id_garantia
             //mapeo los datos a la respuesta
             var result = new ErrorDto<List<FrmVivGarantiaGeneralItem>>
             {
-                Result = general.Result!.Select(g => new FrmVivGarantiaGeneralItem
+                Result = general.Result.Select(g => new FrmVivGarantiaGeneralItem
                 {
                     id_garantia = g.id_garantia,
                     numero_finca = g.numero_finca,
@@ -440,7 +440,7 @@ WHERE IdGarantia = @id_garantia
                 {
                     id_garantia = request.id_garantia
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -627,7 +627,7 @@ WHERE Cedula = @cedula;";
                 {
                     cedula = request.cedula.Trim()
                 }
-            )!;
+            );
         }
 
 
@@ -793,7 +793,7 @@ WHERE IdGarantia = @id_garantia
                     id_contacto = idContacto,
                     tipo_profesional = tipoProfesional.Trim()
                 }
-            )!;
+            );
         }
 
         /// <summary>
@@ -874,7 +874,7 @@ WHERE IdGarantia = @id_garantia
                     IdGarantia = idGarantia,
                     tipo = tipo.Trim()
                 }
-            )!;
+            );
         }
 
         #endregion

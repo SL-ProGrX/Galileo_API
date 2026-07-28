@@ -176,8 +176,8 @@ namespace Galileo.DataBaseTier
                 CrearParametrosPaquete(Cod_Paquete));
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? default(PaqueteDto)!)
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPaquete, result.Code.GetValueOrDefault(-1), default(PaqueteDto)!);
+                ? DbHelper.CreateOkResponse(result.Result ?? default(PaqueteDto))
+                : DbHelper.CreateErrorResponse(result.Description ?? ErrorObtenerPaquete, result.Code.GetValueOrDefault(-1), default(PaqueteDto));
         }
 
         public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)

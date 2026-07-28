@@ -11,6 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntxConInformeEspecialDB
     {
+        private const string FormatoMoneda = "#,##0.00";
         private readonly PortalDB _portalDb;
 
         public FrmCntxConInformeEspecialDB(IConfiguration config)
@@ -160,24 +161,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             new("Cuenta", x => x.COD_CUENTA_MASK),
             new("Descripción", x => x.Cuenta_Desc),
 
-            new("U_Central Año 0", x => x.U_Central_Anio_0, "#,##0.00"),
-            new("U_Hotelera Año 0", x => x.U_Hotel_Anio_0, "#,##0.00"),
-            new("U_Jaúles Año 0", x => x.U_Jaules_Anio_0, "#,##0.00"),
-            new("Consolidado Año 0", x => x.Consolidado_Anio_0, "#,##0.00"),
+            new("U_Central Año 0", x => x.U_Central_Anio_0, FormatoMoneda),
+            new("U_Hotelera Año 0", x => x.U_Hotel_Anio_0, FormatoMoneda),
+            new("U_Jaúles Año 0", x => x.U_Jaules_Anio_0, FormatoMoneda),
+            new("Consolidado Año 0", x => x.Consolidado_Anio_0, FormatoMoneda),
 
-            new("U_Central Año 1", x => x.U_Central_Anio_1, "#,##0.00"),
-            new("U_Hotelera Año 1", x => x.U_Hotel_Anio_1, "#,##0.00"),
-            new("U_Jaúles Año 1", x => x.U_Jaules_Anio_1, "#,##0.00"),
-            new("Consolidado Año 1", x => x.Consolidado_Anio_1, "#,##0.00"),
-            new("Variación Año 1", x => x.Variacion_Anio_1, "#,##0.00"),
-            new("Variación % Año 1", x => x.Variacion_Porc_Anio_1, "#,##0.00"),
+            new("U_Central Año 1", x => x.U_Central_Anio_1, FormatoMoneda),
+            new("U_Hotelera Año 1", x => x.U_Hotel_Anio_1, FormatoMoneda),
+            new("U_Jaúles Año 1", x => x.U_Jaules_Anio_1, FormatoMoneda),
+            new("Consolidado Año 1", x => x.Consolidado_Anio_1, FormatoMoneda),
+            new("Variación Año 1", x => x.Variacion_Anio_1, FormatoMoneda),
+            new("Variación % Año 1", x => x.Variacion_Porc_Anio_1, FormatoMoneda),
 
-            new("U_Central Año 2", x => x.U_Central_Anio_2  , "#,##0.00"),
-            new("U_Hotelera Año 2", x => x.U_Hotel_Anio_2, "#,##0.00"),
-            new("U_Jaúles Año 2", x => x.U_Jaules_Anio_2, "#,##0.00"),
-            new("Consolidado Año 2", x => x.Consolidado_Anio_2, "#,##0.00"),
-            new("Variación Año 2", x => x.Variacion_Anio_2, "#,##0.00"),
-            new("Variación % Año 2", x => x.Variacion_Porc_Anio_2, "#,##0.00"),
+            new("U_Central Año 2", x => x.U_Central_Anio_2  , FormatoMoneda),
+            new("U_Hotelera Año 2", x => x.U_Hotel_Anio_2, FormatoMoneda),
+            new("U_Jaúles Año 2", x => x.U_Jaules_Anio_2, FormatoMoneda),
+            new("Consolidado Año 2", x => x.Consolidado_Anio_2, FormatoMoneda),
+            new("Variación Año 2", x => x.Variacion_Anio_2, FormatoMoneda),
+            new("Variación % Año 2", x => x.Variacion_Porc_Anio_2, FormatoMoneda),
 
             new("Tipo de Cuenta", x => x.Tipo_Cuenta_Desc),
             new("Divisa", x => x.COD_DIVISA),

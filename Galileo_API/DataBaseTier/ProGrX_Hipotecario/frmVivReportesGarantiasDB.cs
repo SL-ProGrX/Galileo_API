@@ -344,7 +344,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 return DbHelper.CreateErrorResponse<VivReporteGarantiasResponse>(
                     "Ocurrió un error al generar el reporte auxiliar de producción acumulada.",
                     -1,
-                    null!);
+                    null);
             }
         }
         private static string CrearFiltroFecha(
@@ -486,7 +486,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                         return DbHelper.CreateErrorResponse<VivReporteGarantiasResponse>(
                             "Tipo de reporte no válido.",
                             -1,
-                            null!);
+                            null);
                 }
 
                 return DbHelper.CreateOkResponse(response);
@@ -496,7 +496,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
                 return DbHelper.CreateErrorResponse<VivReporteGarantiasResponse>(
                     "Ocurrió un error al generar el reporte de garantías.",
                     -1,
-                    null!);
+                    null);
             }
         }
 

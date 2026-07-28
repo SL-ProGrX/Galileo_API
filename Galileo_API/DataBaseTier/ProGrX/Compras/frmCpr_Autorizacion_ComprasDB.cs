@@ -57,8 +57,8 @@ namespace Galileo.DataBaseTier
                 {
                     case "A":
                     {
-                            string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaInico!), "yyyy-MM-dd" + " 00:00:00") ?? "";
-                            string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaCorte!), "yyyy-MM-dd" + " 23:59:59") ?? "";
+                            string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaInico), "yyyy-MM-dd" + " 00:00:00") ?? "";
+                            string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(Convert.ToDateTime(filtros.fechaCorte), "yyyy-MM-dd" + " 23:59:59") ?? "";
 
                        if (string.IsNullOrEmpty(fechaIni))
                             return DbHelper.CreateErrorResponse<List<CprSolicitudAutoriza>>("fechaInico inválida o vacía.");

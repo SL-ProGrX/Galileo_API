@@ -219,7 +219,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var concepto = ObtenerConceptoGuardar(conn, context.cod_concepto);
 
             var requiereContrato =
-                concepto!.requiere_contrato == 1 || concepto.proceso_descuento == 1;
+                concepto.requiere_contrato == 1 || concepto.proceso_descuento == 1;
 
             if (requiereContrato && string.IsNullOrWhiteSpace(context.cod_contrato))
             {

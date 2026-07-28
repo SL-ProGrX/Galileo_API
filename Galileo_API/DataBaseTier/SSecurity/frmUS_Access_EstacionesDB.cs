@@ -28,7 +28,7 @@ namespace Galileo.DataBaseTier
                     {
                         CodEmpresa = codEmpresa,
                     };
-                    result = connection.Query<EstacionDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<EstacionDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     var procedureObtMACs1 = "[spPGX_Estacion_Loggin_MACs]";
                     var procedureObtMACs2 = "[spPGX_Estacion_MACs_Consultar]";
@@ -51,12 +51,12 @@ namespace Galileo.DataBaseTier
                         };
 
                         //Obtiene la direccion MAC 1 y 2 para cada estacion:
-                        List<string> macsList1 = connection.Query<string>(procedureObtMACs1, valuesMACs1, commandType: CommandType.StoredProcedure)!.ToList();
+                        List<string> macsList1 = connection.Query<string>(procedureObtMACs1, valuesMACs1, commandType: CommandType.StoredProcedure).ToList();
                         dt.lstMAC1 = macsList1;
                         dt.lstMAC2 = macsList1;
 
                         //Obtiene la direccion MAC 1 y 2 para cada estacion:
-                        List<EstacionMacDto> macsList2 = connection.Query<EstacionMacDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure)!.ToList();
+                        List<EstacionMacDto> macsList2 = connection.Query<EstacionMacDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure).ToList();
 
                         // Filtrar y agregar a lstMAC1 aquellos elementos de macsList2 cuyo MAC_01 no se encuentre en lstMAC1
                         macsList2
@@ -127,7 +127,7 @@ namespace Galileo.DataBaseTier
                         Cliente = codEmpresa,
                         Loggin = 2
                     };
-                    result = connection.Query<EstacionSinVincularDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<EstacionSinVincularDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     // Filtrar los resultados excluyendo aquellos con Estacion nulo o vacío
                     result = result.Where(e => !string.IsNullOrEmpty(e.Estacion)).ToList();

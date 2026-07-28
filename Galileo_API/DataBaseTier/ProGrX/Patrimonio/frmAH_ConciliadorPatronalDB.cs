@@ -64,7 +64,7 @@ order by COD_INSTITUCION;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request!.registros,
+                request.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)
@@ -91,7 +91,7 @@ order by COD_INSTITUCION;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request!.registros,
+                request.registros,
                 out var validacionRegistrosAplicar,
                 response);
 
@@ -175,13 +175,13 @@ exec spPAT_Concilia_Patronal_Registro
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request!.registros,
+                request.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)
             {
                 return DbHelper.CreateErrorResponse<List<FrmAhConciliadorPatronalConciliacionDto>>(
-                    validacionRegistros.Description!, -1, result);
+                    validacionRegistros.Description, -1, result);
             }
 
             const string sqlConciliacion = @"
@@ -251,13 +251,13 @@ order by x.nombre, x.identificacion;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request!.registros,
+                request.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)
             {
                 return DbHelper.CreateErrorResponse<List<FrmAhConciliadorPatronalResultadoDto>>(
-                    validacionRegistros.Description!,
+                    validacionRegistros.Description,
                     -1,
                     result);
             }

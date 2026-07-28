@@ -34,15 +34,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<CrSeguimientoRefundicionesInicializarDto> CR_SeguimientoRefundiciones_Inicializar(
-            int CodEmpresa,
-            CrSeguimientoRefundicionesInicializarRequest request)
+        public ErrorDto<CrSeguimientoRefundicionesInicializarDto> CR_SeguimientoRefundiciones_Inicializar(int CodEmpresa,CrSeguimientoRefundicionesInicializarRequest request)
         {
             var validation = ValidarInicializar(request);
             if (validation.Code != 0)
-                return ErrorInicializar(validation.Description ?? MensajeValidacion, -2);
+            {
+                return ErrorInicializar(
+                    validation.Description ?? MensajeValidacion,
+                    -2);
+            }
 
-            var operacion = request.operacion!.Value;
+            if (request.operacion is not long operacion)
+                return ErrorInicializar(MensajeOperacionRequerida, -2);
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -50,13 +53,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 var baseData = ObtenerOperacionBase(conn, operacion);
                 if (baseData == null)
-                    return ErrorInicializar("No se encontró la operación indicada.", -2);
+                    return ErrorInicializar(
+                        "No se encontró la operación indicada.",
+                        -2);
 
                 baseData.fecha_desembolso = request.fecha_desembolso;
                 baseData.pri_deduc = request.pri_deduc;
                 baseData.dia_pago = request.dia_pago;
 
-                var montos = CalcularMontosIniciales(CodEmpresa, operacion, baseData);
+                var montos = CalcularMontosIniciales(
+                    CodEmpresa,
+                    operacion,
+                    baseData);
 
                 var disponible = CalcularDisponible(
                     CodEmpresa,
@@ -64,23 +72,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     baseData,
                     montos);
 
-                return DbHelper.CreateOkResponse(new CrSeguimientoRefundicionesInicializarDto
-                {
-                    cedula = baseData.cedula,
-                    codigo = baseData.codigo,
-                    disponible = disponible,
-                    primer_cuota = montos.PrimerCuota,
-                    poliza = montos.Poliza,
-                    interes = montos.Interes,
-                    refundiciones = ObtenerRefundicionesLista(
-                        conn,
-                        operacion,
-                        new FiltrosLazyLoadData()),
-                    prestamos = ObtenerPrestamosSocioLista(
-                        conn,
-                        CrearPrestamosRequest(baseData, operacion),
-                        new FiltrosLazyLoadData())
-                });
+                return DbHelper.CreateOkResponse(
+                    new CrSeguimientoRefundicionesInicializarDto
+                    {
+                        cedula = baseData.cedula,
+                        codigo = baseData.codigo,
+                        disponible = disponible,
+                        primer_cuota = montos.PrimerCuota,
+                        poliza = montos.Poliza,
+                        interes = montos.Interes,
+                        refundiciones = ObtenerRefundicionesLista(
+                            conn,
+                            operacion,
+                            new FiltrosLazyLoadData()),
+                        prestamos = ObtenerPrestamosSocioLista(
+                            conn,
+                            CrearPrestamosRequest(baseData, operacion),
+                            new FiltrosLazyLoadData())
+                    });
             }
             catch (SqlException ex)
             {
@@ -94,15 +103,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<CrSeguimientoRefundicionesListaDto> CR_SeguimientoRefundiciones_Lista_Obtener(
-            int CodEmpresa,
-            CrSeguimientoRefundicionesListaRequest request)
+        public ErrorDto<CrSeguimientoRefundicionesListaDto>CR_SeguimientoRefundiciones_Lista_Obtener(int CodEmpresa, CrSeguimientoRefundicionesListaRequest request)
         {
             var validation = ValidarListaRefundiciones(request);
             if (validation.Code != 0)
-                return ErrorListaRefundiciones(validation.Description ?? MensajeValidacion, -2);
+            {
+                return ErrorListaRefundiciones(
+                    validation.Description ?? MensajeValidacion,
+                    -2);
+            }
 
-            var operacion = request.operacion!.Value;
+            if (request.operacion is not long operacion)
+                return ErrorListaRefundiciones(MensajeOperacionRequerida, -2);
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -111,7 +123,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var filtros = ParseFiltros(request.filtros);
 
                 return DbHelper.CreateOkResponse(
-                    ObtenerRefundicionesLista(conn, operacion, filtros));
+                    ObtenerRefundicionesLista(
+                        conn,
+                        operacion,
+                        filtros));
             }
             catch (SqlException ex)
             {
@@ -277,33 +292,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto CR_SeguimientoRefundiciones_Guardar(
-            int CodEmpresa,
-            CrSeguimientoRefundicionGuardarRequest request)
+        public ErrorDto CR_SeguimientoRefundiciones_Guardar(int CodEmpresa,CrSeguimientoRefundicionGuardarRequest request)
         {
             var validation = ValidarGuardar(request);
             if (validation.Code != 0)
                 return validation;
 
+            var data = NormalizarGuardar(request);
+
+            if (data.operacion_refunde is not long operacionRefunde)
+                return DbHelper.ErrorResponse("No se ha seleccionado ninguna operación.");
+
+            if (data.operacion_nueva is not long operacionNueva)
+                return DbHelper.ErrorResponse("La operación nueva es requerida.");
+
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                var data = NormalizarGuardar(request);
-                var operacionRefunde = data.operacion_refunde!.Value;
-                var operacionNueva = data.operacion_nueva!.Value;
                 var total = data.total ?? 0m;
                 var disponible = data.disponible ?? 0m;
 
                 if (ExisteRefundicion(conn, operacionRefunde, operacionNueva))
-                    return DbHelper.ErrorResponse("Esta Refundición Se encuentra Registrada VERIFIQUE...");
+                {
+                    return DbHelper.ErrorResponse(
+                        "Esta Refundición Se encuentra Registrada VERIFIQUE...");
+                }
 
                 if (total > disponible)
-                    return DbHelper.ErrorResponse("El monto a refundir de la operación es mayor al disponible...");
+                {
+                    return DbHelper.ErrorResponse(
+                        "El monto a refundir de la operación es mayor al disponible...");
+                }
 
                 InsertarRefundicion(conn, data);
 
-                return DbHelper.OkResponse("Refundición registrada correctamente.");
+                return DbHelper.OkResponse(
+                    "Refundición registrada correctamente.");
             }
             catch (SqlException ex)
             {
@@ -317,18 +342,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto CR_SeguimientoRefundiciones_Eliminar(
-            int CodEmpresa,
-            CrSeguimientoRefundicionesEliminarRequest request)
+        public ErrorDto CR_SeguimientoRefundiciones_Eliminar(int CodEmpresa,CrSeguimientoRefundicionesEliminarRequest request)
         {
             var validation = ValidarEliminar(request);
             if (validation.Code != 0)
                 return validation;
 
-            var operacionNueva = request.operacion_nueva!.Value;
+            if (request.operacion_nueva is not long operacionNueva)
+                return DbHelper.ErrorResponse(MensajeOperacionRequerida);
+
             var operaciones = request.operaciones_refunde
                 .Where(x => x.HasValue && x.Value > 0)
-                .Select(x => x!.Value)
+                .Select(x => x.GetValueOrDefault())
                 .ToList();
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -499,21 +524,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        private static List<CrSeguimientoRefundicionCreditoData> ObtenerPrestamosSocio(
-            SqlConnection conn,
-            CrSeguimientoRefundicionesPrestamosRequest request)
+        private static List<CrSeguimientoRefundicionCreditoData> ObtenerPrestamosSocio(SqlConnection conn,CrSeguimientoRefundicionesPrestamosRequest request)
         {
+            if (request.operacion is not long operacion)
+            {
+                throw new InvalidOperationException(
+                    "La operación es requerida para consultar los préstamos del socio.");
+            }
+
             const string sql = @"
-                exec spCrd_SGT_Persona_Creditos_Pendientes_Lista
-                     @Operacion,
-                     @Cedula,
-                     'N',
-                     'S',
-                     @Codigo;";
+        exec spCrd_SGT_Persona_Creditos_Pendientes_Lista
+             @Operacion,
+             @Cedula,
+             'N',
+             'S',
+             @Codigo;";
 
             return ObtenerCreditos(conn, sql, new
             {
-                Operacion = request.operacion!.Value,
+                Operacion = operacion,
                 Cedula = Clean(request.cedula),
                 Codigo = Clean(request.codigo)
             });
@@ -593,17 +622,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// </summary>
         /// <returns></returns>
-        private static CrSeguimientoRefundicionDatosDto? ObtenerRefundeDatos(
-            SqlConnection conn,
-            CrSeguimientoRefundicionesRefundeDatosRequest request)
+        private static CrSeguimientoRefundicionDatosDto? ObtenerRefundeDatos(SqlConnection conn,CrSeguimientoRefundicionesRefundeDatosRequest request)
         {
+            if (request.operacion is not long operacion)
+            {
+                throw new InvalidOperationException(
+                    "La operación es requerida para consultar la refundición.");
+            }
+
             const string sql = @"exec spCrd_SGT_Refunde_Datos @Operacion, @Tipo;";
 
             return conn.QueryFirstOrDefault<CrSeguimientoRefundicionDatosDto>(
                 sql,
                 new
                 {
-                    Operacion = request.operacion!.Value,
+                    Operacion = operacion,
                     Tipo = ResolverTipo(request.tipo)
                 });
         }
@@ -760,14 +793,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return 0m;
             }
 
+            if (baseData.fecha_desembolso is not DateTime fechaDesembolso)
+            {
+                throw new InvalidOperationException(
+                    "La fecha de desembolso es requerida para calcular los intereses.");
+            }
+
+            if (baseData.pri_deduc is not decimal primeraDeduccion)
+            {
+                throw new InvalidOperationException(
+                    "La primera deducción es requerida para calcular los intereses.");
+            }
+
+            if (baseData.dia_pago is not int diaPago)
+            {
+                throw new InvalidOperationException(
+                    "El día de pago es requerido para calcular los intereses.");
+            }
+
             return _mCobroDb.fxInteresesHastaFormalizar(
                 CodEmpresa,
                 operacion,
                 baseData.codigo,
-                baseData.fecha_desembolso!.Value,
+                fechaDesembolso,
                 null,
-                baseData.pri_deduc!.Value,
-                baseData.dia_pago!.Value);
+                primeraDeduccion,
+                diaPago);
         }
 
         /// <summary>

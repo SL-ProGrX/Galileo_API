@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class TiposCausaData
@@ -28,6 +29,7 @@ namespace Galileo.Models.FSL
         public string cod_plan { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string tipo_desembolso { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activo { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }
@@ -39,6 +41,7 @@ namespace Galileo.Models.FSL
         public string descripcion { get; set; } = string.Empty;
         public string monto_base { get; set; } = string.Empty;
         public string tipo_tabla { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activa { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }

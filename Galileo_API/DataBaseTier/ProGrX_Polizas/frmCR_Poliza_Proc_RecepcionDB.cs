@@ -148,7 +148,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
-                return result!;
+                return result;
             });
         }
 
@@ -185,7 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
-                return result!;
+                return result;
             });
         }
 
@@ -360,7 +360,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
-                return result!;
+                return result;
             });
         }
 
@@ -405,7 +405,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
-                return result!;
+                return result;
             });
         }
 
@@ -449,7 +449,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
-                return result!;
+                return result;
             });
         }
 

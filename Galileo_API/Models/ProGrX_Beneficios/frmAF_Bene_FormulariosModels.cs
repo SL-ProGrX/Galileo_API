@@ -24,6 +24,7 @@ namespace Galileo.Models.AF
 
     public class Form
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id { get; set; }
         public List<FormQuestion>? questions { get; set; }
     }
@@ -57,7 +58,9 @@ namespace Galileo.Models.AF
 
     public class FrmReporteDatos
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int codCliente { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_frm { get; set; }
         public string? fechaInicio { get; set; }
         public string? fechaFin { get; set; }
@@ -66,6 +69,7 @@ namespace Galileo.Models.AF
 
     public class FrmFiltros
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int codCliente { get; set; }
         public string? cod_beneficio { get; set; }
         public int? id_beneficio { get; set; }

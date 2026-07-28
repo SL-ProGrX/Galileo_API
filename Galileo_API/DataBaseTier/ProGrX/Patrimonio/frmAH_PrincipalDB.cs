@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
                 var acceso = _mProGrx.fxSys_RA_Consulta(codEmpresa, cedulaNormalizada, usuarioNormalizado);
                 if (acceso.Code == -1)
-                    return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>(acceso.Description!);
+                    return DbHelper.CreateErrorResponse<FrmAhPrincipalConsultaResponse?>(acceso.Description);
 
                 if (!acceso.Result)
                 {

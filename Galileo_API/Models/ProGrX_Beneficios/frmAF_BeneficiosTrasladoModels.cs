@@ -1,12 +1,5 @@
 namespace Galileo.Models.AF
 {
-    public class AfiInformesTopFiltros
-    {
-        public string? filtro { get; set; }
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-    }
-
     public class AfiRemesasFiltros
     {
         public string? filtro { get; set; }
@@ -22,11 +15,11 @@ namespace Galileo.Models.AF
 
     public class AfiBeneficiosRemesasDto
     {
-        public long cod_remesa { get; set; }
+        public long cod_remesa { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime fecha { get; set; } = DateTime.Now;
+        public DateTime fecha_inicio { get; set; } = DateTime.MinValue;
+        public DateTime fecha_corte { get; set; } = DateTime.Now;
         public string notas { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -196,7 +189,7 @@ namespace Galileo.Models.AF
 
     public class CuboParametros
     {
-        public long cod_remesa { get; set; }
+        public long cod_remesa { get; set; } = 0;
         public Nullable<DateTime> fecha_inicio { get; set; }
         public Nullable<DateTime> fecha_corte { get; set; }
         public string detalle { get; set; } = string.Empty;

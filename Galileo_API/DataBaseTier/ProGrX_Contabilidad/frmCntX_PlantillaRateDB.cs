@@ -125,7 +125,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 new { codPlantilla });
 
             if (result.Result == null)
-                return result!;
+                return result;
 
             string queryDet = @"
                 SELECT *
@@ -144,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 detalle.Result ??
                 new List<CntxPlantillaRateDetalleDto>();
 
-            return result!;
+            return result;
         }
 
         /// <summary>

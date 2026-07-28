@@ -141,7 +141,14 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
             var modoValidado = ValidarModo(req.modo);
             if (modoValidado.Code != 0)
             {
-                return DbHelper.ErrorResponse(modoValidado.Description ?? MensajeModoInvalido, modoValidado.Code.GetValueOrDefault(-1));
+                return DbHelper.ErrorResponse(
+                    modoValidado.Description ?? MensajeModoInvalido,
+                    modoValidado.Code.GetValueOrDefault(-1));
+            }
+
+            if (modoValidado.Result is not string modo)
+            {
+                return DbHelper.ErrorResponse(MensajeModoInvalido, -2);
             }
 
             if (string.IsNullOrWhiteSpace(req.dato) || string.IsNullOrWhiteSpace(req.item))
@@ -149,10 +156,18 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
                 return DbHelper.ErrorResponse("Debe indicar dato e item.", -2);
             }
 
-            var parseo = ObtenerRelacionPlanilla(modoValidado.Result!, req.dato, req.item);
+            var parseo = ObtenerRelacionPlanilla(modo, req.dato, req.item);
+
             if (parseo.Code != 0)
             {
-                return DbHelper.ErrorResponse(parseo.Description ?? "Datos inválidos.", parseo.Code.GetValueOrDefault(-1));
+                return DbHelper.ErrorResponse(
+                    parseo.Description ?? "Datos inválidos.",
+                    parseo.Code.GetValueOrDefault(-1));
+            }
+
+            if (parseo.Result is not PlanillaRelacionData relacion)
+            {
+                return DbHelper.ErrorResponse("Datos inválidos.", -2);
             }
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -160,21 +175,21 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
                 if (req.marcado)
                 {
                     const string qInsert = @"
-                    IF NOT EXISTS (
-                        SELECT 1
-                        FROM PRM_USUARIOS
-                        WHERE cod_institucion = @cod_institucion
-                          AND usuario = @usuario
-                    )
-                    BEGIN
-                        INSERT PRM_USUARIOS(cod_institucion, usuario, registro_fecha, registro_usuario)
-                        VALUES(@cod_institucion, @usuario, dbo.MyGetdate(), @registro_usuario);
-                    END;";
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM PRM_USUARIOS
+                    WHERE cod_institucion = @cod_institucion
+                      AND usuario = @usuario
+                )
+                BEGIN
+                    INSERT PRM_USUARIOS(cod_institucion, usuario, registro_fecha, registro_usuario)
+                    VALUES(@cod_institucion, @usuario, dbo.MyGetdate(), @registro_usuario);
+                END;";
 
                     connection.Execute(qInsert, new
                     {
-                        cod_institucion = parseo.Result!.CodInstitucion,
-                        usuario = parseo.Result.Usuario,
+                        cod_institucion = relacion.CodInstitucion,
+                        usuario = relacion.Usuario,
                         registro_usuario = usuarioSesion ?? string.Empty
                     });
 
@@ -182,26 +197,26 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
                         CodEmpresa,
                         usuarioSesion,
                         "Registra - WEB",
-                        $"PRM_USUARIOS (Asigna). Institución: {parseo.Result.CodInstitucion}, Usuario: {parseo.Result.Usuario}");
+                        $"PRM_USUARIOS (Asigna). Institución: {relacion.CodInstitucion}, Usuario: {relacion.Usuario}");
                 }
                 else
                 {
                     const string qDelete = @"
-                    DELETE FROM PRM_USUARIOS
-                    WHERE cod_institucion = @cod_institucion
-                      AND usuario = @usuario;";
+                DELETE FROM PRM_USUARIOS
+                WHERE cod_institucion = @cod_institucion
+                  AND usuario = @usuario;";
 
                     connection.Execute(qDelete, new
                     {
-                        cod_institucion = parseo.Result!.CodInstitucion,
-                        usuario = parseo.Result.Usuario
+                        cod_institucion = relacion.CodInstitucion,
+                        usuario = relacion.Usuario
                     });
 
                     RegistrarBitacora(
                         CodEmpresa,
                         usuarioSesion,
                         "Elimina - WEB",
-                        $"PRM_USUARIOS (Desasigna). Institución: {parseo.Result.CodInstitucion}, Usuario: {parseo.Result.Usuario}");
+                        $"PRM_USUARIOS (Desasigna). Institución: {relacion.CodInstitucion}, Usuario: {relacion.Usuario}");
                 }
 
                 return true;
@@ -209,7 +224,9 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar cambio de planilla usuarios.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al aplicar cambio de planilla usuarios.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -228,7 +245,14 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
             var modoValidado = ValidarModo(req.modo);
             if (modoValidado.Code != 0)
             {
-                return DbHelper.ErrorResponse(modoValidado.Description ?? MensajeModoInvalido, modoValidado.Code.GetValueOrDefault(-1));
+                return DbHelper.ErrorResponse(
+                    modoValidado.Description ?? MensajeModoInvalido,
+                    modoValidado.Code.GetValueOrDefault(-1));
+            }
+
+            if (modoValidado.Result is not string modo)
+            {
+                return DbHelper.ErrorResponse(MensajeModoInvalido, -2);
             }
 
             if (string.IsNullOrWhiteSpace(req.dato))
@@ -240,19 +264,21 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
             {
                 if (!req.todos)
                 {
-                    AplicarTodosOff(connection, CodEmpresa, usuarioSesion, modoValidado.Result!, req.dato);
+                    AplicarTodosOff(connection, CodEmpresa, usuarioSesion, modo, req.dato);
                     return true;
                 }
 
-                AplicarTodosOn(connection, CodEmpresa, usuarioSesion, modoValidado.Result!, req.dato);
+                AplicarTodosOn(connection, CodEmpresa, usuarioSesion, modo, req.dato);
                 return true;
             });
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al aplicar operación masiva de planilla usuarios.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description ?? "Error al aplicar operación masiva de planilla usuarios.",
+                    result.Code.GetValueOrDefault(-1));
         }
-        
+
         private static ErrorDto<string> ValidarModo(string? modo)
         {
             if (string.IsNullOrWhiteSpace(modo))

@@ -16,8 +16,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         public FrmFndLiquidacionPlanDB(IConfiguration? config)
         {
-            _portalDb = new PortalDB(config!);
-            mProGrx = new MProGrxMain(config!);
+            _portalDb = new PortalDB(config);
+            mProGrx = new MProGrxMain(config);
         }
 
         /// <summary>
@@ -272,7 +272,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 DynamicParameters parameters,
                 FndLiquidacionPlanFiltrosData filtro)
         {
-            string grupoBancario = ObtenerGrupoBancario(connection, (int)filtro.id_banco!);
+            if (filtro == null)
+                throw new ArgumentNullException(nameof(filtro));
+
+            if (!filtro.id_banco.HasValue)
+                throw new ArgumentException("El filtro requiere un id_banco válido.", nameof(filtro));
+
+            int bancoId = filtro.id_banco.Value;
+            string grupoBancario = ObtenerGrupoBancario(connection, bancoId);
 
             sql.AppendLine(@"
                     select
@@ -655,7 +662,7 @@ where F.Cod_Operadora = @CodOperadora
 
             var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result;
 
-            request.oficinaTitular = globales!.GOficinaTitular;
+            request.oficinaTitular = globales.GOficinaTitular;
             request.oficinaUnidad = globales.GOficinaUnidad;
             request.oficinaCentroCosto = globales.GOficinaCentroCosto;
 
@@ -893,7 +900,7 @@ where F.Cod_Operadora = @CodOperadora
             CrearDocumentoGeneralParametros parametro
            )
         {
-            var resumen = ObtenerResumenDocumento(parametro.conn!, parametro.tx!, parametro.codOperador, parametro.request!.cod_plan, parametro.docRef!);
+            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx, parametro.codOperador, parametro.request.cod_plan, parametro.docRef);
             string detalleAsiento = LimitarTexto($"Liquidacion general {parametro.request.cod_plan}", 30);
 
             foreach (var item in resumen)
@@ -901,26 +908,26 @@ where F.Cod_Operadora = @CodOperadora
                 InsertarDocumentoMaestro(
                     new InsertarDocumentoMaestroParametros
                     {
-                        conn = parametro.conn!,
-                        tx = parametro.tx!,
-                        request = parametro.request!,
-                        plan = parametro.plan!,
+                        conn = parametro.conn,
+                        tx = parametro.tx,
+                        request = parametro.request,
+                        plan = parametro.plan,
                         item = item,
-                        docRef = parametro.docRef!,
-                        tipoDoc = parametro.tipoDoc!,
-                        concepto = parametro.concepto!
+                        docRef = parametro.docRef,
+                        tipoDoc = parametro.tipoDoc,
+                        concepto = parametro.concepto
                     });
 
                 EjecutarAsiento(
                     new EjecutarAsientoParametros
                     {
-                        conn = parametro.conn!,
-                        tx = parametro.tx!,
-                        tipoDocumento = parametro.tipoDoc!,
-                        numDocumento = parametro.docRef!,
+                        conn = parametro.conn,
+                        tx = parametro.tx,
+                        tipoDocumento = parametro.tipoDoc,
+                        numDocumento = parametro.docRef,
                         monto = item.aporte,
                         debeHaber = "D",
-                        codDivisa = parametro.plan!.cod_moneda,
+                        codDivisa = parametro.plan.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = string.Empty,
@@ -933,13 +940,13 @@ where F.Cod_Operadora = @CodOperadora
                 EjecutarAsiento(
                     new EjecutarAsientoParametros
                     {
-                        conn = parametro.conn!,
-                        tx = parametro.tx!,
-                        tipoDocumento = parametro.tipoDoc!,
-                        numDocumento = parametro.docRef!,
+                        conn = parametro.conn,
+                        tx = parametro.tx,
+                        tipoDocumento = parametro.tipoDoc,
+                        numDocumento = parametro.docRef,
                         monto = item.rendimiento,
                         debeHaber = "D",
-                        codDivisa = parametro.plan!.cod_moneda,
+                        codDivisa = parametro.plan.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = parametro.request.oficinaCentroCosto,
@@ -952,13 +959,13 @@ where F.Cod_Operadora = @CodOperadora
                 EjecutarAsiento(
                     new EjecutarAsientoParametros
                     {
-                        conn = parametro.conn!,
-                        tx = parametro.tx!,
-                        tipoDocumento = parametro.tipoDoc!,
-                        numDocumento = parametro.docRef!,
+                        conn = parametro.conn,
+                        tx = parametro.tx,
+                        tipoDocumento = parametro.tipoDoc,
+                        numDocumento = parametro.docRef,
                         monto = item.isr_monto,
                         debeHaber = "C",
-                        codDivisa = parametro.plan!.cod_moneda,
+                        codDivisa = parametro.plan.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = parametro.request.oficinaCentroCosto,
@@ -971,17 +978,17 @@ where F.Cod_Operadora = @CodOperadora
                 EjecutarAsiento(
                     new EjecutarAsientoParametros
                     {
-                        conn = parametro.conn!,
-                        tx = parametro.tx!,
-                        tipoDocumento = parametro.tipoDoc!,
-                        numDocumento = parametro.docRef!,
+                        conn = parametro.conn,
+                        tx = parametro.tx,
+                        tipoDocumento = parametro.tipoDoc,
+                        numDocumento = parametro.docRef,
                         monto = item.multa,
                         debeHaber = "C",
-                        codDivisa = parametro.plan!.cod_moneda,
+                        codDivisa = parametro.plan.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = parametro.request.oficinaCentroCosto,
-                        codCuenta = parametro.operadora!.cta_ingresos,
+                        codCuenta = parametro.operadora.cta_ingresos,
                         referencia1 = item.cod_operadora,
                         referencia2 = item.cod_plan,
                         detalle = detalleAsiento
@@ -991,13 +998,13 @@ where F.Cod_Operadora = @CodOperadora
                 EjecutarAsiento(
                      new EjecutarAsientoParametros
                      {
-                         conn = parametro.conn!,
-                         tx = parametro.tx!,
-                         tipoDocumento = parametro.tipoDoc!,
-                         numDocumento = parametro.docRef!,
+                         conn = parametro.conn,
+                         tx = parametro.tx,
+                         tipoDocumento = parametro.tipoDoc,
+                         numDocumento = parametro.docRef,
                          monto = neto,
                          debeHaber = "C",
-                         codDivisa = parametro.plan!.cod_moneda,
+                         codDivisa = parametro.plan.cod_moneda,
                          enlace = parametro.request.enlace,
                          codUnidad = parametro.request.oficinaUnidad,
                          codCentroCosto = string.Empty,
@@ -1069,13 +1076,13 @@ where F.Cod_Operadora = @CodOperadora
 
             decimal total = parametros.item.aporte + parametros.item.rendimiento;
             var fecha = DateTime.Now;
-            parametros.conn!.Execute(sql, new
+            parametros.conn.Execute(sql, new
             {
                 DocRef = parametros.docRef,
                 TipoDoc = parametros.tipoDoc,
-                Usuario = parametros.request!.usuario.Trim(),
+                Usuario = parametros.request.usuario.Trim(),
                 ClienteIdentificacion = parametros.request.cod_plan.Trim(),
-                ClienteNombre = parametros.plan!.descripcion,
+                ClienteNombre = parametros.plan.descripcion,
                 Concepto = parametros.concepto,
                 Monto = total,
                 Referencia01 = parametros.item.cod_operadora,

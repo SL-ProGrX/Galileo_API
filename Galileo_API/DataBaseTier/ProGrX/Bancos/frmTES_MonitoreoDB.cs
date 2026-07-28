@@ -61,10 +61,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var fechaCorte = fecha.Date.AddDays(1).AddTicks(-1);
                 var Lista = TES_Monitoreo_Obtener(CodEmpresa, fechaCorte).Result;
                 var result = new List<TesMonitoreoDto>();
-                foreach (var item in Lista!)
+                foreach (var item in Lista)
                 {
                     var fechaInicio = item.inicio.AddDays(-1).Date;
-                    string ctaConta = mCntLink.fxgCntCuentaFormato(CodEmpresa, false, item.cuentaBanco!, 0);
+                    string ctaConta = mCntLink.fxgCntCuentaFormato(CodEmpresa, false, item.cuentaBanco, 0);
 
                     //Emisiones de Documentos
                     var queryE = @"select D.debehaber as Movimiento,sum(D.monto / D.Tipo_Cambio) as Total

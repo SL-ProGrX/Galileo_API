@@ -128,7 +128,11 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                try { transaction.Rollback(); } catch { }
+                try { transaction.Rollback(); }
+                catch (Exception rollbackEx)
+                {
+                    return DbHelper.ErrorResponse($"{ex.Message}. Además, falló el rollback: {rollbackEx.Message}", -1);
+                }
                 return DbHelper.ErrorResponse(ex.Message, -1);
             }
         }

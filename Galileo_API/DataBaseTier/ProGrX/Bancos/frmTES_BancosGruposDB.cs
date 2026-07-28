@@ -181,18 +181,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 
 
-                if (firma.firma_n1!.ToString()!.Contains(","))
+                string firmaN1 = firma.firma_n1?.ToString() ?? string.Empty;
+                string firmaN2 = firma.firma_n2?.ToString() ?? string.Empty;
+
+                if (firmaN1.Contains(','))
                 {
-                    firma.firma_n1 = firma.firma_n1.ToString()!.Split(',')[1] ?? string.Empty; // Elimina el encabezado
+                    firmaN1 = firmaN1.Split(',')[1]; // Elimina el encabezado
                 }
 
-                if (firma.firma_n2!.ToString()!.Contains(","))
+                if (firmaN2.Contains(','))
                 {
-                    firma.firma_n2 = firma.firma_n2.ToString()!.Split(',')[1] ?? string.Empty; // Elimina el encabezado
+                    firmaN2 = firmaN2.Split(',')[1]; // Elimina el encabezado
                 }
 
-                byte[] imageBytes1 = Convert.FromBase64String(firma.firma_n1.ToString() ?? string.Empty);
-                byte[] imageBytes2 = Convert.FromBase64String(firma.firma_n2.ToString() ?? string.Empty);
+                byte[] imageBytes1 = Convert.FromBase64String(firmaN1);
+                byte[] imageBytes2 = Convert.FromBase64String(firmaN2);
 
                 string query = "UPDATE Tes_Bancos_Grupos SET firma_n1 = @Imagen1, firma_n2 = @Imagen2 WHERE cod_Grupo = @cod_grupo ";
                 using (SqlCommand cmd = new SqlCommand(query, conn))

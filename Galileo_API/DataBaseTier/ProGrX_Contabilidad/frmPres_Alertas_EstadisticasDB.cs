@@ -1143,7 +1143,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     request.mes
                 });
 
-                if (periodo == null || (periodo!.ESTADO ?? string.Empty) != "C")
+                if (periodo == null || (periodo.ESTADO ?? string.Empty) != "C")
                 {
                     return new ErrorDto
                     {
@@ -1152,7 +1152,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     };
                 }
 
-                DateTime? cierreFecha = periodo!.CIERRE_FECHA;
+                DateTime? cierreFecha = periodo.CIERRE_FECHA;
                 if (!cierreFecha.HasValue || (DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
                 {
                     return new ErrorDto
@@ -1368,7 +1368,7 @@ ORDER BY FECHA DESC;";
                 };
             }
 
-            if (validacion.Result!.periodo_registrado)
+            if (validacion.Result.periodo_registrado)
             {
                 return new ErrorDto
                 {

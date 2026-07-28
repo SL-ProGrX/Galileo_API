@@ -25,8 +25,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var p = new DynamicParameters();
                 p.Add("@cedula", cedula, DbType.String);
                 p.Add("@filtroLike", filtroLike, DbType.String);
-                p.Add("@offset", aplicarPaginacion ? pagina!.Value : 0, DbType.Int32);
-                p.Add("@fetch", aplicarPaginacion ? paginacion!.Value : int.MaxValue, DbType.Int32);
+                p.Add("@offset", aplicarPaginacion ? pagina.Value : 0, DbType.Int32);
+                p.Add("@fetch", aplicarPaginacion ? paginacion.Value : int.MaxValue, DbType.Int32);
 
                 var datos = new AfiBeneOtorgaAsgDataList
                 {

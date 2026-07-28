@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
 
             try
             {
-                var empresaNombre = _mProGrx.sbSifParametrosInicializa(CodEmpresa, model.usuario).Result!.GNombreInstitucion;
+                var empresaNombre = _mProGrx.sbSifParametrosInicializa(CodEmpresa, model.usuario).Result.GNombreInstitucion;
 
                 var mAsunto = $"{empresaNombre}: Cambio de PIN de Autogestión";
 

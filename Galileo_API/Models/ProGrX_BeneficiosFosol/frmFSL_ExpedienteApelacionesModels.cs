@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslTipoApelacion
@@ -8,6 +9,7 @@ namespace Galileo.Models.FSL
 
     public class FslApleacionAplicar
     {
+        [JsonRequired]
         public long cod_expediente { get; set; }
         public string cod_apelacion { get; set; } = string.Empty;
         public string presentaCedula { get; set; } = string.Empty;

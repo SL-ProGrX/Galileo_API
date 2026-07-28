@@ -93,7 +93,7 @@ where ID_PERIODO = @PeriodoId;";
                 return validacion;
             }
 
-            var requestNormalizado = request!;
+            var requestNormalizado = request;
             var usuarioNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.usuario);
             var estadoNotasNormalizado = Ah_ExcedentesPeriodos_NormalizarTexto(requestNormalizado.estado_notas);
             var tipoAplMensualNormalizado = Ah_ExcedentesPeriodos_NormalizarTipoAplicacion(requestNormalizado.tipo_apl_mensual);

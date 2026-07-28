@@ -405,6 +405,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             ArfOperacionGuardarRequestDto request,
             string notas)
         {
+            if (!request.operacion.HasValue)
+            {
+                throw new ArgumentException("El número de operación es requerido para actualizar una operación.", nameof(request));
+            }
+
+            var operacion = request.operacion.Value;
+
             const string updateSql = @"
                 update ARF_OPERACIONES
                 set
@@ -432,10 +439,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     COD_DIVISA = @cod_divisa
                 where Operacion = @operacion";
 
-            var parametros = CrearParametrosGuardar(request, notas, request.operacion!.Value);
+            var parametros = CrearParametrosGuardar(request, notas, operacion);
             cn.Execute(updateSql, parametros, tx);
-
-            var operacion = request.operacion.Value;
 
             RegistrarBitacora(
                 codEmpresa,
@@ -714,7 +719,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 RegistrarBitacora(
                     codEmpresa,
-                    request.usuario!,
+                    request.usuario,
                     "Aplica",
                     $"Cambio de Condiciones de Operación de Arrendamiento No.: {request.operacion}");
 

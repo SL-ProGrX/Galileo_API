@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FslTablaTipoLista
@@ -10,6 +11,7 @@ namespace Galileo.Models.FSL
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [JsonRequired]
         public bool activa { get; set; }
     }
 }

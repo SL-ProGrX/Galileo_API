@@ -203,7 +203,7 @@ WHERE cod_ubicacion = @cod_ubicacion;";
                 int total;
                 bool usarPaginacion = (filtros?.paginacion ?? 0) > 0;
 
-                var lista = QueryUbicaciones(conn, filtros!, usarPaginacion, out total);
+                var lista = QueryUbicaciones(conn, filtros, usarPaginacion, out total);
 
                 var result = new TesUbicacionesLista
                 {

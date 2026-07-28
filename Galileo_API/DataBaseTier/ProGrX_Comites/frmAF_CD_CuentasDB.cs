@@ -334,25 +334,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 var insertResponse = InsertarCuenta(codEmpresa, usuario, cuentaData, nuevoId);
                 if (HasError(insertResponse))
                 {
-                    return insertResponse!;
+                    return insertResponse;
                 }
 
                 var actividadesResponse = GuardarActividades(codEmpresa, nuevoId, request.actividades);
                 if (HasError(actividadesResponse))
                 {
-                    return actividadesResponse!;
+                    return actividadesResponse;
                 }
 
                 var refundicionResponse = SbGuardaRefundicion(codEmpresa, nuevoId, request.refundiciones);
                 if (HasError(refundicionResponse))
                 {
-                    return refundicionResponse!;
+                    return refundicionResponse;
                 }
 
                 var cargosResponse = SbGuardaCargos(codEmpresa, nuevoId, request.cargos);
                 if (HasError(cargosResponse))
                 {
-                    return cargosResponse!;
+                    return cargosResponse;
                 }
 
                 return new ErrorDto

@@ -11,7 +11,9 @@ namespace Galileo.Models.AF
 
     public class BeneRequisitosGuardar
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int codCliente { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int consec { get; set; }
         public string cod_requisito { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;

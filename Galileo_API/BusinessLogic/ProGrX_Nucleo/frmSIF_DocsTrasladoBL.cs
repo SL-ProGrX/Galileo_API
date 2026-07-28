@@ -10,64 +10,68 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
     {
         private readonly FrmSifDocsTrasladoDB _db = new FrmSifDocsTrasladoDB(config);
 
-        public ErrorDto<SifDocsTrasladoDocumentosLista> Sif_DocsTraslado_Lista_Obtener(int CodEmpresa,string jfiltros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
+        public ErrorDto<SifDocsTrasladoDocumentosLista> Sif_DocsTraslado_Lista_Obtener(int CodEmpresa, string jfiltros, DateTime fechaInicio, DateTime fechaFin, bool soloBalanceados)
         {
-            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros) ? new FiltrosLazyLoadData() 
-             : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros)!;
+            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros)
+                ? new FiltrosLazyLoadData()
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+
             return _db.Sif_DocsTraslado_Lista_Obtener(CodEmpresa, filtros, fechaInicio, fechaFin, soloBalanceados);
         }
 
-        public ErrorDto<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa,string jfiltros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
+        public ErrorDto<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa, string jfiltros, DateTime fechaInicio, DateTime fechaFin, bool soloBalanceados)
         {
-            var filtros = string.IsNullOrWhiteSpace(jfiltros)
+            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros)
                 ? new FiltrosLazyLoadData()
-                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
 
-            return _db.Sif_DocsTraslado_Lista_Export(CodEmpresa, filtros!, fechaInicio, fechaFin, soloBalanceados);
+            return _db.Sif_DocsTraslado_Lista_Export(CodEmpresa, filtros, fechaInicio, fechaFin, soloBalanceados);
         }
 
-        public ErrorDto<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa,string jfiltros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa, string jfiltros, DateTime fechaInicio, DateTime fechaFin)
         {
-            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros) ? new FiltrosLazyLoadData()
-                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros)!;
+            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros)
+                ? new FiltrosLazyLoadData()
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
 
             return _db.Sif_DocsTraslado_Desbalanceados_Obtener(CodEmpresa, filtros, fechaInicio, fechaFin);
         }
 
-        public ErrorDto<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa,string jfiltros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa, string jfiltros, DateTime fechaInicio, DateTime fechaFin)
         {
-            var filtros = string.IsNullOrWhiteSpace(jfiltros)
+            FiltrosLazyLoadData filtros = string.IsNullOrWhiteSpace(jfiltros)
                 ? new FiltrosLazyLoadData()
-                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+                : JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
 
-            return _db.Sif_DocsTraslado_Desbalanceados_Export(CodEmpresa, filtros!, fechaInicio, fechaFin);
+            return _db.Sif_DocsTraslado_Desbalanceados_Export(CodEmpresa, filtros, fechaInicio, fechaFin);
         }
 
-        public ErrorDto<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa,string tipoDocumento)
+        public ErrorDto<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa, string tipoDocumento)
         {
             return _db.Sif_DocsTraslado_Documento_Config_Obtener(CodEmpresa, tipoDocumento);
         }
-        public ErrorDto<string> Sif_DocsTraslado_Reactivar(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+
+        public ErrorDto<string> Sif_DocsTraslado_Reactivar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
             return _db.Sif_DocsTraslado_Reactivar(CodEmpresa, fechaInicio, fechaFin);
         }
 
         public ErrorDto<string> Sif_DocsTraslado_Aplica(int CodEmpresa, string jrequest)
         {
-            var dto = string.IsNullOrWhiteSpace(jrequest)
+            SifDocsTrasladoEjecutarRequest dto = string.IsNullOrWhiteSpace(jrequest)
                 ? new SifDocsTrasladoEjecutarRequest()
-                : JsonConvert.DeserializeObject<SifDocsTrasladoEjecutarRequest>(jrequest);
+                : JsonConvert.DeserializeObject<SifDocsTrasladoEjecutarRequest>(jrequest) ?? new SifDocsTrasladoEjecutarRequest();
 
-            return _db.Sif_DocsTraslado_Aplica(CodEmpresa, dto ?? new SifDocsTrasladoEjecutarRequest());
+            return _db.Sif_DocsTraslado_Aplica(CodEmpresa, dto);
         }
 
         public ErrorDto<SifDocsTrasladoResultadoLote> Sif_DocsTraslado_Aplica_Lote(int CodEmpresa, string jrequest)
         {
-            var dto = string.IsNullOrWhiteSpace(jrequest)
+            SifDocsTrasladoEjecutarLoteRequest dto = string.IsNullOrWhiteSpace(jrequest)
                 ? new SifDocsTrasladoEjecutarLoteRequest()
-                : JsonConvert.DeserializeObject<SifDocsTrasladoEjecutarLoteRequest>(jrequest);
+                : JsonConvert.DeserializeObject<SifDocsTrasladoEjecutarLoteRequest>(jrequest) ?? new SifDocsTrasladoEjecutarLoteRequest();
 
-            return _db.Sif_DocsTraslado_Aplica_Lote(CodEmpresa, dto!);
+            return _db.Sif_DocsTraslado_Aplica_Lote(CodEmpresa, dto);
         }
     }
 }

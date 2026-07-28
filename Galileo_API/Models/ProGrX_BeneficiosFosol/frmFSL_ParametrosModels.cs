@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
     public class FdlParametrosDto
@@ -7,6 +8,7 @@ namespace Galileo.Models.FSL
         public string tipo { get; set; } = string.Empty;
         public string valor { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
+        [JsonRequired]
         public DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }

@@ -317,7 +317,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             if (request is null)
             {
-                return DbHelper.CreateErrorResponse<object>("Los datos del proceso son requeridos.", -2, null!);
+                return DbHelper.CreateErrorResponse<object>("Los datos del proceso son requeridos.", -2, null);
             }
 
             var vNumDoc = NormalizarTexto(request.comprobante);
@@ -345,7 +345,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse<object>(
                     result.Description ?? "Error al procesar deducciones.",
                     result.Code.GetValueOrDefault(-1),
-                    null!);
+                    null);
             }
 
             var recibo = new MRecibos(_config).sbImprimeRecibo(CodEmpresa, vNumDoc, vTipoDoc, request.usuario);

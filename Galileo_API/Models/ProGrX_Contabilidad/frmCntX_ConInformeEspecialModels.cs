@@ -1,11 +1,15 @@
-﻿namespace Galileo_API.Models.ProGrX_Contabilidad
+﻿using System.Text.Json.Serialization;
+namespace Galileo_API.Models.ProGrX_Contabilidad
 {
     public class FrmCntxConInformeEspecialModels
     {
         public sealed class CntConsolidadoEspecialGenerarRequest
         {
+            [JsonRequired]
             public int Contabilidad { get; set; }
+            [JsonRequired]
             public int Anio { get; set; }
+            [JsonRequired]
             public short Mes { get; set; }
         }
 
@@ -65,7 +69,7 @@
 
         public sealed class ArchivoGeneradoModel
         {
-            //public byte[] Contenido { get; set; } = [];
+
 
             public string NombreArchivo { get; set; } = string.Empty;
 

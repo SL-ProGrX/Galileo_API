@@ -221,8 +221,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 conn.Open();
 
                 var op = ObtenerOperacionActiva(conn, req.id_tramite ?? 0);
-                if (op.Error != null || op.Dop == null)
-                    return op.Error ?? DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2);
+                if (op.Error != null)
+                    return op.Error;
 
                 if (PersonaCongelada(conn, tx: null, op.Cedula, "per_readecuaciones"))
                     return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(IDENTIFICACION_CONGELADA, -2);
@@ -1083,15 +1083,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     DocumentoInfo Doc
 );
         private sealed record OperacionActivaInfo(
-            IDictionary<string, object?>? Dop,
-            string Cedula,
-            string Nombre,
-            string Descripcion,
-            string CodigoLinea,
-            int DiaPagoOld,
-            string IndDeduc,
-            int Opex,
-            ErrorDto<CoReadecuacionCambioOperacionAplicarResponse>? Error);
+    IDictionary<string, object?> Dop,
+    string Cedula,
+    string Nombre,
+    string Descripcion,
+    string CodigoLinea,
+    int DiaPagoOld,
+    string IndDeduc,
+    int Opex,
+    ErrorDto<CoReadecuacionCambioOperacionAplicarResponse>? Error);
         private sealed record DocumentoInfo(
             string TipoMov,
             string NumDocStr,
@@ -1190,7 +1190,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (op == null)
             {
                 return new OperacionActivaInfo(
-                    Dop: null,
+                    Dop: new Dictionary<string, object?>(),
                     Cedula: string.Empty,
                     Nombre: string.Empty,
                     Descripcion: string.Empty,
@@ -1198,7 +1198,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     DiaPagoOld: 0,
                     IndDeduc: string.Empty,
                     Opex: 0,
-                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(OPERACION_INVALIDA, -2));
+                    Error: DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(
+                        OPERACION_INVALIDA,
+                        -2));
             }
 
             var dop = (IDictionary<string, object?>)op;
@@ -1325,7 +1327,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new { Id = req.id_tramite },
                 tx);
 
-            var saldoActual = ToDec(V(op.Dop!, "saldo"));
+            var saldoActual = ToDec(V(op.Dop, "saldo"));
             var intCorVenc = interesTotal;
 
             var fechaP = GetFechaCR(conn, tx);
@@ -1397,28 +1399,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var newId = conn.QueryFirstOrDefault<int>(insOp, new
             {
                 Codigo = op.CodigoLinea,
-                IdComite = ToInt(V(op.Dop!, "id_comite")),
+                IdComite = ToInt(V(op.Dop, "id_comite")),
                 Cedula = op.Cedula,
                 Monto = req.no_monto,
                 F = ctx.FechaServidor.ToString(FORMATO_FECHA, CultureInfo.InvariantCulture),
                 Plazo = req.no_plazo,
                 Tasa = req.no_tasa,
                 PriDeduc = primerDeduccion,
-                Acta = ToInt(V(op.Dop!, "acta")),
+                Acta = ToInt(V(op.Dop, "acta")),
                 Cuota = valid.CuotaBe,
                 Opex = op.Opex,
                 Usuario = valid.Usuario,
-                Garantia = S(V(op.Dop!, "garantia")),
+                Garantia = S(V(op.Dop, "garantia")),
                 Obs = valid.Notas,
                 OldId = req.id_tramite,
-                Pagare = ToInt(V(op.Dop!, "pagare")),
-                Premio = ToDec(V(op.Dop!, "premio")),
-                FecUlt = V(op.Dop!, "fecult"),
-                TbpAdd = V(op.Dop!, "TBP_PuntosAdd"),
-                LiqTasa = V(op.Dop!, "LiqTasa"),
-                OfR = V(op.Dop!, "cod_oficina_r"),
-                OfF = V(op.Dop!, "cod_oficina_f"),
-                OfC = V(op.Dop!, "cod_oficina_comision"),
+                Pagare = ToInt(V(op.Dop, "pagare")),
+                Premio = ToDec(V(op.Dop, "premio")),
+                FecUlt = V(op.Dop, "fecult"),
+                TbpAdd = V(op.Dop, "TBP_PuntosAdd"),
+                LiqTasa = V(op.Dop, "LiqTasa"),
+                OfR = V(op.Dop, "cod_oficina_r"),
+                OfF = V(op.Dop, "cod_oficina_f"),
+                OfC = V(op.Dop, "cod_oficina_comision"),
                 Referencia = req.id_tramite,
                 DiaPago = diaPago,
                 IndDeduc = op.IndDeduc

@@ -78,7 +78,7 @@ order by descripcion;";
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                var reporte = AH_ReportesRangosFecha_ResolverReporte(request!.codigo_reporte);
+                var reporte = AH_ReportesRangosFecha_ResolverReporte(request.codigo_reporte);
                 if (reporte == null)
                 {
                     return DbHelper.CreateErrorResponse(

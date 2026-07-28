@@ -23,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
             filtros ??= new FiltrosLazyLoadData();
 
             var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
-            var filtroLike = hasFilter ? $"%{filtros.filtro!.Trim()}%" : null;
+            var filtroLike = hasFilter ? $"%{filtros.filtro.Trim()}%" : null;
 
             var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
             var pageSize = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
@@ -70,12 +70,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 
                 var parameters = CR_APA_CrearParametrosLazyPorAcreedor(
                     codAcreedor,
-                    param.filtros!,
-                    param.defaultSortField!,
-                    param.resolveSortCode!);
+                    param.filtros,
+                    param.defaultSortField,
+                    param.resolveSortCode);
 
-                var total = conn.ExecuteScalar<int>(param.sqlCount!, parameters);
-                var lista = conn.Query<TItem>(param.sqlData!, parameters).ToList();
+                var total = conn.ExecuteScalar<int>(param.sqlCount, parameters);
+                var lista = conn.Query<TItem>(param.sqlData, parameters).ToList();
 
                 setTotal(result, total);
                 setLista(result, lista);

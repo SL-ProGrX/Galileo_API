@@ -18,7 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public FrmCxCBitacoraEspecialDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config);
 
         }
         private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
@@ -201,9 +201,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
           out DateTime fi,
           out DateTime fc)
         {
+            if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
+                throw new ArgumentException("fecha_inicio y fecha_corte son requeridas para normalizar fechas.", nameof(filtros));
 
-            fi = DateTime.SpecifyKind(filtros.fecha_inicio!.Value.Date, DateTimeKind.Unspecified);
-            fc = DateTime.SpecifyKind(filtros.fecha_corte!.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+            fi = DateTime.SpecifyKind(filtros.fecha_inicio.Value.Date, DateTimeKind.Unspecified);
+            fc = DateTime.SpecifyKind(filtros.fecha_corte.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
         }
 
         private static string[] ParseLists(BitacoraEspeciaFiltros filtros)

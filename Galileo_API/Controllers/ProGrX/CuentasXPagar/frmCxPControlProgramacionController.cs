@@ -48,6 +48,12 @@ namespace Galileo.Controllers
             return _bl.FacturaDatos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [HttpGet("FacturaProgramacionEstado_Obtener")]
+        public ErrorDto<FacturaProgramacionEstado> FacturaProgramacionEstado_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor, string Tipo)
+        {
+            return _bl.FacturaProgramacionEstado_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor, Tipo);
+        }
+
         [HttpGet("DetallePagos_Obtener")]
         public ErrorDto<List<DetallePago>> DetallePagos_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {

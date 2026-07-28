@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         public FrmAfCdCargosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config);
            
         }
 

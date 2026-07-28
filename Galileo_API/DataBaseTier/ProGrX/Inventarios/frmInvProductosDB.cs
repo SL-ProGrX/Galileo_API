@@ -47,7 +47,7 @@ namespace Galileo.DataBaseTier
                 {
                     Code = result.Code,
                     Description = result.Description ?? errorMessage,
-                    Result = default!
+                    Result = default
                 };
             }
 
@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier
             {
                 Code = -2,
                 Description = notFoundMessage,
-                Result = default!
+                Result = default
             };
         }
 
@@ -364,25 +364,25 @@ namespace Galileo.DataBaseTier
                   WHERE P.cod_producto = @Cod_Producto",
                 new ProductoDto
                 {
-                    Cod_Prodclas = default!,
-                    Lotes = default!,
-                    Lotesbool = default!,
-                    Costo_Regular = default!,
-                    Precio_Regular = default!,
-                    Comision_Monto = default!,
-                    Comision_Unidad = default!,
-                    Impuesto_Ventas = default!,
-                    Impuesto_Consumo = default!,
-                    Inventario_Calculabool = default!,
-                    Inventario_Minimo = default!,
-                    Inventario_Maximo = default!,
-                    Fracciones = default!,
-                    Precio_Compra = default!,
-                    Descuento_Valor = default!,
-                    Existencia = default!,
-                    Porc_Utilidad = default!,
-                    Tipo_Cambio = default!,
-                    Similar = default!
+                    Cod_Prodclas = default,
+                    Lotes = default,
+                    Lotesbool = default,
+                    Costo_Regular = default,
+                    Precio_Regular = default,
+                    Comision_Monto = default,
+                    Comision_Unidad = default,
+                    Impuesto_Ventas = default,
+                    Impuesto_Consumo = default,
+                    Inventario_Calculabool = default,
+                    Inventario_Minimo = default,
+                    Inventario_Maximo = default,
+                    Fracciones = default,
+                    Precio_Compra = default,
+                    Descuento_Valor = default,
+                    Existencia = default,
+                    Porc_Utilidad = default,
+                    Tipo_Cambio = default,
+                    Similar = default
                 },
                 new { Cod_Producto });
 

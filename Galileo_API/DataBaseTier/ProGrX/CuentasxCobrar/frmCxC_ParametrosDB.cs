@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public FrmCxCParametrosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config);
             mCntLink = new MCntLinkDB(config);
         }
 

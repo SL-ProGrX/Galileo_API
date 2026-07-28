@@ -412,7 +412,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         {
             if (filtro is null)
             {
-                return DbHelper.CreateErrorResponse<AfRenunciaRentaGlobal>("Los filtros de renta global son requeridos.", -2, null!);
+                return DbHelper.CreateErrorResponse<AfRenunciaRentaGlobal>("Los filtros de renta global son requeridos.", -2, null);
             }
 
             return EjecutarStoredProcedureSingle<AfRenunciaRentaGlobal>(
@@ -533,11 +533,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             return result.Code == 0
 
-        ? DbHelper.CreateOkResponse<T>(result.Result!)
+        ? DbHelper.CreateOkResponse<T>(result.Result)
         : DbHelper.CreateErrorResponse<T>(
         result.Description ?? "Error al ejecutar procedimiento almacenado.",
         result.Code.GetValueOrDefault(-1),
-        default!);
+        default);
         }
 
 
@@ -575,7 +575,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             {
                 result.Code = -1;
                 result.Description = ex.Message;
-                result.Result = default!;
+                result.Result = default;
             }
 
             return result;

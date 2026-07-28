@@ -129,7 +129,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             if (_mFNDFunciones.fxFndParametro(CodEmpresa, "01.2") != "S")
             {
-                return DbHelper.CreateOkResponse<FndAutorizaDto>(null!);
+                return DbHelper.CreateOkResponse<FndAutorizaDto>(null);
             }
 
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
@@ -215,15 +215,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             if (Params is null)
             {
-                return DbHelper.CreateErrorResponse<object>("Los datos de anulación son requeridos.", -2, null!);
+                return DbHelper.CreateErrorResponse<object>("Los datos de anulación son requeridos.", -2, null);
             }
 
             var resultado = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 EjecutarAnulacion(CodEmpresa, Params, connection));
 
             return resultado.Code == 0
-                ? resultado.Result ?? DbHelper.CreateErrorResponse<object>("No se obtuvo resultado de anulación.", -1, null!)
-                : DbHelper.CreateErrorResponse<object>(resultado.Description ?? "Error al procesar anulación.", resultado.Code ?? -1, null!);
+                ? resultado.Result ?? DbHelper.CreateErrorResponse<object>("No se obtuvo resultado de anulación.", -1, null)
+                : DbHelper.CreateErrorResponse<object>(resultado.Description ?? "Error al procesar anulación.", resultado.Code ?? -1, null);
         }
 
         private ErrorDto<object> EjecutarAnulacion(int codEmpresa, FndAnulacionesParams parametros, SqlConnection connection)
@@ -231,13 +231,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var contrato = ObtenerContratoAnulacion(connection, parametros);
             if (contrato is null)
             {
-                return DbHelper.CreateErrorResponse<object>("No se encontr&oacute; el contrato...", -2, null!);
+                return DbHelper.CreateErrorResponse<object>("No se encontr&oacute; el contrato...", -2, null);
             }
 
             var validacion = ValidarAnulacion(codEmpresa, parametros, contrato, connection);
             if (validacion.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<object>(validacion.Description ?? "Error al validar anulación.", validacion.Code ?? -1, null!);
+                return DbHelper.CreateErrorResponse<object>(validacion.Description ?? "Error al validar anulación.", validacion.Code ?? -1, null);
             }
 
             var fecha = DateTime.Now;
@@ -246,7 +246,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var recibo = ObtenerConsecutivoRecibo(codEmpresa);
             if (recibo <= 0)
             {
-                return DbHelper.CreateErrorResponse<object>("No se pudo obtener el consecutivo del documento.", -2, null!);
+                return DbHelper.CreateErrorResponse<object>("No se pudo obtener el consecutivo del documento.", -2, null);
             }
 
             AplicarMovimientoContrato(connection, parametros, distribucion, proceso, recibo);

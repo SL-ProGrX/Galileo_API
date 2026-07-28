@@ -293,20 +293,20 @@ namespace Galileo.DataBaseTier
             var existeR = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, existeSql, 0, new { id_pc = PlanCompras, cod_producto = CodProducto });
             var existeCode = existeR.Code is int ec ? ec : -1;
             if (existeCode != 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>(existeR.Description ?? DefaultErrorDescription, existeCode, default!);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(existeR.Description ?? DefaultErrorDescription, existeCode, default);
 
             if (existeR.Result <= 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>("Producto sin registrar", -1, default!);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("Producto sin registrar", -1, default);
 
             const string planSql = @"SELECT * FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
             var planR = DbHelper.ExecuteSingleQuery<CprPlanDTDto>(_portalDB, CodEmpresa, planSql, null, new { id_pc = PlanCompras, cod_producto = CodProducto });
             var planCode = planR.Code is int pc ? pc : -1;
             if (planCode != 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>(planR.Description ?? DefaultErrorDescription, planCode, default!);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(planR.Description ?? DefaultErrorDescription, planCode, default);
 
             var plan = planR.Result;
             if (plan == null)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>("No se pudo obtener la información del producto.", -1, default!);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("No se pudo obtener la información del producto.", -1, default);
 
             const string uenSql = @"
                         SELECT DISTINCT

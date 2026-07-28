@@ -172,7 +172,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 "UPDATE [dbo].[AFI_BENE_REGISTRO_ESTADOS] SET [NOTAS] = @notas WHERE CONSEC = @consec AND [COD_BENEFICIO] = @codBeneficio",
                 new { notas, consec = b.consec, codBeneficio = b.cod_beneficio });
 
-            RegistrarBitacora(CodEmpresa, b.cod_beneficio!, b.consec, "Inserta",
+            RegistrarBitacora(CodEmpresa, b.cod_beneficio, b.consec, "Inserta",
                 $"Autoriza Solicitud de Deposito - Nota: [{b.notas}]", b.usuario);
         }
 

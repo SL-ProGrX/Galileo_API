@@ -422,7 +422,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             if (CrdPolizasReportesHelper.TieneValor(request.Cedula))
             {
-                filtros.Add($"vPolizas_Balance_Estado.CEDULA = '{CrdPolizasReportesHelper.EscaparCrystal(request.Cedula!)}'");
+                filtros.Add($"vPolizas_Balance_Estado.CEDULA = '{CrdPolizasReportesHelper.EscaparCrystal(request.Cedula)}'");
                 subTitulo.Append($"¦ Céd.: {request.Cedula}");
             }
 
@@ -624,7 +624,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return;
             }
 
-            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor!)}'");
+            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor)}'");
             subTitulo.Append($"¦ {etiqueta}: {valor}");
         }
 
@@ -648,7 +648,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return;
             }
 
-            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor!)}'");
+            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor)}'");
             subTitulo.Append($"¦ {etiqueta}: {valor}");
         }
 
@@ -674,7 +674,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return;
             }
 
-            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor!)}'");
+            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(valor)}'");
             subTitulo.Append($"¦ {etiqueta}: {valor}");
         }
 
@@ -699,7 +699,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 ? "{vPoliza_Informe_Main.UP}"
                 : "{vPoliza_Informe_Main.COD_DEPARTAMENTO}";
 
-            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.DepartamentoCodigo!)}'");
+            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.DepartamentoCodigo)}'");
             subTitulo.Append(request.EsAseVersion
                 ? $"¦ UP: {request.DepartamentoCodigo}"
                 : $"¦ Dept: {request.DepartamentoCodigo}");
@@ -725,7 +725,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 ? "{vPoliza_Informe_Main.UT}"
                 : "{vPoliza_Informe_Main.COD_SECCION}";
 
-            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.SeccionCodigo!)}'");
+            filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.SeccionCodigo)}'");
             subTitulo.Append(request.EsAseVersion
                 ? $"¦ UT: {request.SeccionCodigo}"
                 : $"¦ Sección: {request.SeccionCodigo}");
@@ -747,7 +747,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return;
             }
 
-            var sexo = request.Sexo!.Trim().StartsWith("F", StringComparison.OrdinalIgnoreCase) ? "F" : "M";
+            var sexo = request.Sexo.Trim().StartsWith("F", StringComparison.OrdinalIgnoreCase) ? "F" : "M";
             filtros.Add($"vPoliza_Informe_Main.SEXO = '{sexo}'");
             subTitulo.Append($"¦ Sexo: {request.Sexo}");
         }

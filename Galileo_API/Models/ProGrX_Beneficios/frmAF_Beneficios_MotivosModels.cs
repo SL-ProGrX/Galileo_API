@@ -4,6 +4,7 @@ namespace Galileo.Models.AF
     {
         public string cod_motivo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string? registro_usuario { get; set; }

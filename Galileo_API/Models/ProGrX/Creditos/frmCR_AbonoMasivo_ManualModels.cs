@@ -1,6 +1,7 @@
-﻿namespace Galileo_API.Models.ProGrX.Creditos
+﻿using System.Text.Json.Serialization;
+namespace Galileo_API.Models.ProGrX.Creditos
 {
-    public class FrmCRAbonoMasivo_ManualModels
+    public class FrmCrAbonoMasivoManualModels
     {
         public  class CrAplicacionAbonoMasivoRequest
         {
@@ -33,9 +34,11 @@
         public  class CrAplicacionAbonoMasivoProcesarRequest
         {
             public string Usuario { get; set; } = string.Empty;
+            [JsonRequired]
             public long Operadora { get; set; }
             public string Plan { get; set; } = string.Empty;
             public string Cuenta { get; set; } = string.Empty;
+            [JsonRequired]
             public bool FondoGeneral { get; set; }
             public string Tipo { get; set; } = string.Empty;
         }

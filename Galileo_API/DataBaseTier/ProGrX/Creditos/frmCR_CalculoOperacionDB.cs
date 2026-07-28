@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
-            garantiaResp.Result!.refundiciones = refundicionesResp.Result!;
+            garantiaResp.Result.refundiciones = refundicionesResp.Result;
 
             return garantiaResp;
         }
@@ -113,8 +113,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             var codigoTipo = ObtenerTipoCodigo(codEmpresa, codigo);
-            var dias = ObtenerDiasInteres(codEmpresa, lineaResp.Result!);
-            var frecuenciaPago = lineaResp.Result!.base_calculo == "06" ? "Q" : "M";
+            var dias = ObtenerDiasInteres(codEmpresa, lineaResp.Result);
+            var frecuenciaPago = lineaResp.Result.base_calculo == "06" ? "Q" : "M";
             var montoSolicitado = ObtenerMontoSolicitadoInicial(codEmpresa, cedula, codigoTipo);
             var rangoMaximo = FxRangoMaximo(codEmpresa, codigo);
 
@@ -127,15 +127,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     {
                         cedula = cedula,
                         codigo = codigo,
-                        descripcion = lineaResp.Result!.descripcion,
-                        base_calculo = lineaResp.Result!.base_calculo,
+                        descripcion = lineaResp.Result.descripcion,
+                        base_calculo = lineaResp.Result.base_calculo,
                         frecuencia_pago = frecuenciaPago,
                         dias = dias,
                         codigo_tipo = codigoTipo,
                         monto_solicitado = montoSolicitado,
                         rango_maximo = rangoMaximo,
-                        refunde = lineaResp.Result!.refunde,
-                        operaciones_activas = lineaResp.Result!.operaciones_activas
+                        refunde = lineaResp.Result.refunde,
+                        operaciones_activas = lineaResp.Result.operaciones_activas
                     },
                     cargos = cargosResp.Result ?? new List<CrCalculoOperacionCargoData>()
                 }

@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpGet("Co_AplFnd_ContratosInformes_Personas_Obtener")]
-        public ErrorDto<List<CoAplFndContratosInformes_Personas_Result>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
+        public ErrorDto<List<CoAplFndContratosInformesPersonasResult>> Co_AplFnd_ContratosInformes_Personas_Obtener(int codEmpresa)
                 => _bl.Co_AplFnd_ContratosInformes_Personas_Obtener(codEmpresa);
 
         [Authorize]

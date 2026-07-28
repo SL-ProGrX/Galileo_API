@@ -178,7 +178,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             var movimiento = ResolveMovement(resultado.Result);
             if (!string.IsNullOrWhiteSpace(movimiento))
             {
-                RegistrarBitacora(codEmpresa, usuario, datos.CodTipoCuenta!, movimiento);
+                RegistrarBitacora(codEmpresa, usuario, datos.CodTipoCuenta, movimiento);
             }
 
             return Success();

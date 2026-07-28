@@ -33,13 +33,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             var periodosResp = AH_ExcedentesAjuste_Periodos_Lista(codEmpresa);
             if (periodosResp.Code < 0)
             {
-                return DbHelper.CreateErrorResponse<FrmAhExcedentesAjusteCargarResponse>(periodosResp.Description!);
+                return DbHelper.CreateErrorResponse<FrmAhExcedentesAjusteCargarResponse>(periodosResp.Description);
             }
 
             var pendientesResp = AH_ExcedentesAjuste_Pendientes_Lista(codEmpresa, request);
             if (pendientesResp.Code < 0)
             {
-                return DbHelper.CreateErrorResponse<FrmAhExcedentesAjusteCargarResponse>(pendientesResp.Description!);
+                return DbHelper.CreateErrorResponse<FrmAhExcedentesAjusteCargarResponse>(pendientesResp.Description);
             }
 
             var resumen = AH_ExcedentesAjuste_CalcularResumen(pendientesResp.Result ?? []);
@@ -233,7 +233,7 @@ ORDER BY A.AJUSTE_ID DESC;";
                 return validacion;
             }
 
-            var cedula = AH_ExcedentesAjuste_NormalizarCedula(request!.cedula);
+            var cedula = AH_ExcedentesAjuste_NormalizarCedula(request.cedula);
             var detalle = AH_ExcedentesAjuste_NormalizarTextoLibre(request.detalle, 500);
             var usuario = AH_ExcedentesAjuste_NormalizarTextoLibre(request.usuario, 50);
 

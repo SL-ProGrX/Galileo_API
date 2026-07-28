@@ -1,10 +1,14 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿using System.Text.Json.Serialization;
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class CargarDeduccionesRequest
     {
+        [JsonRequired]
         public int cod_institucion { get; set; }
+        [JsonRequired]
         public int cod_operadora { get; set; }
         public string? plan { get; set; }
+        [JsonRequired]
         public int proceso { get; set; }
         public string? comprobante { get; set; }
         public List<FndPlanillaFondosArchivoData> registros { get; set; } = new();

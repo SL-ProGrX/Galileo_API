@@ -12,7 +12,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public FrmTesMotivosSinpeDB(IConfiguration? config)
         {
-            _portalDB = new PortalDB(config!);
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -44,8 +44,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                 var like = hasFiltro ? $"%{texto}%" : null;
 
-                var offset = filtros.pagina!;
-                var fetch = filtros.paginacion!;
+                var offset = filtros.pagina;
+                var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0;
 
                 // Si viene vacío, default

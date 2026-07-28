@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var estado = NormalizarTexto(filtro.estado);
             p.Add("@estadoLike", estado == "T" ? null : $"%{estado}%");
-            p.Add("@cedulaLike", EsCedulaVacia(filtro.cedula) ? null : $"%{filtro.cedula!.Trim()}%");
+            p.Add("@cedulaLike", EsCedulaVacia(filtro.cedula) ? null : $"%{filtro.cedula.Trim()}%");
             p.Add("@expLike", filtro.noExpediente != null ? $"%{filtro.noExpediente}%" : null);
             p.Add("@usuarioLike", filtro.usuario != null ? $"%{filtro.usuario.Trim().ToUpper()}%" : null);
             p.Add("@filtroLike", string.IsNullOrEmpty(filtro.filtro) ? null : $"%{filtro.filtro}%");
@@ -143,11 +143,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
 
             var fechaIni = DateTimeOffset
-                .Parse(filtro.fechaInicio!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                .Parse(filtro.fechaInicio, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
                 .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             var fechaFin = DateTimeOffset
-                .Parse(filtro.fechaCorte!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                .Parse(filtro.fechaCorte, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
                 .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             p.Add("@fechaIni", $"{fechaIni} 00:00:00");
             p.Add("@fechaFin", $"{fechaFin} 23:59:59");

@@ -109,7 +109,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 : DbHelper.CreateErrorResponse<AfInstitucionDto?>(
                     result.Description ?? "Error al navegar instituciones.",
                     result.Code.GetValueOrDefault(-1),
-                    null!);
+                    null);
         }
 
         /// <summary>

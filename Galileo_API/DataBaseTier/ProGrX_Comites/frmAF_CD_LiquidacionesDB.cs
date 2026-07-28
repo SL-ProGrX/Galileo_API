@@ -366,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<object> AfCdLiquidacionOperacion_Liquidar(int codEmpresa, int operacion, string usuario, string notas)
         {
-            string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario).Result!.GOficinaTitular ?? "";
+            string gOficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, usuario).Result.GOficinaTitular ?? "";
             const string sqlLiq = @"exec spAFI_CD_AsientoLiquidacion @NOperacion, @Usuario, @Oficina, @Notas;";
 
             var resp = DbHelper.ExecuteSingleQuery<dynamic>(
