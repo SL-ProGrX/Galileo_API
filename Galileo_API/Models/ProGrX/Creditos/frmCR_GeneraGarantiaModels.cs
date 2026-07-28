@@ -1,12 +1,23 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Galileo_API.Models.ProGrX.Creditos
 {
     public class CrGeneraGarantiaOperacionRequest
     {
         public required long operacion { get; set; }
+
+        [Required]
         public bool reemplazar_informacion { get; set; }
+
+        [Required]
         public bool usar_cedula_real { get; set; }
+
         public string lugar_firma { get; set; } = string.Empty;
+
+        [Required]
         public bool imprimir_contrato { get; set; }
+
+        [Required]
         public bool imprimir_nombres_cedula { get; set; }
     }
 
