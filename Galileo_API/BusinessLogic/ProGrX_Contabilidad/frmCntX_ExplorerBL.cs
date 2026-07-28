@@ -145,6 +145,24 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.PlantillaRate_Detalle(codEmpresa, codContabilidad, codPlantilla);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> PlantillasFijas_Obtener(
+            int codEmpresa,
+            int codContabilidad)
+        {
+            return _db.PlantillasFijas_Obtener(codEmpresa, codContabilidad);
+        }
+
+        public ErrorDto<List<CntxPlantillaFijaDetalleDto>> PlantillaFija_Detalle(
+            int codEmpresa,
+            int codContabilidad,
+            int codPlantilla)
+        {
+            return _db.PlantillaFija_Detalle(
+                codEmpresa,
+                codContabilidad,
+                codPlantilla);
+        }
+
         public ErrorDto<List<AreaTrabajoDto>> AreasTrabajo_ObtenerPorPadre(int codEmpresa, int codContabilidad)
         {
             return _db.AreasTrabajo_ObtenerPorPadre(codEmpresa, codContabilidad);
@@ -163,6 +181,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<List<CntxContabilidadDto>> ObtenerContabilidades(int codEmpresa)
         {
             return _db.ObtenerContabilidades(codEmpresa);
+        }
+
+        public ErrorDto<CntxConfiguracionArbolDto> ConfiguracionArbol_Obtener(
+            int codEmpresa,
+            int codContabilidad)
+        {
+            return _db.ConfiguracionArbol_Obtener(codEmpresa, codContabilidad);
         }
 
         public ErrorDto<List<CntxCierreDto>> ObtenerCierres(int codEmpresa, int cod_contabilidad)
