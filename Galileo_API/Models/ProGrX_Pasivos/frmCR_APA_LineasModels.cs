@@ -49,7 +49,7 @@ namespace Galileo_API.Models.ProGrX_Pasivos
 
     public class FrmCrApaLineaDatosDto
     {
-        public int cod_linea { get; set; }
+        public required int cod_linea { get; set; }
         public string cod_acreedor { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -61,18 +61,18 @@ namespace Galileo_API.Models.ProGrX_Pasivos
         public string centro_costo_desc { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
         public string divisa_desc { get; set; } = string.Empty;
-        public decimal tipo_cambio { get; set; }
+        public required decimal tipo_cambio { get; set; }
         public string prorrateo { get; set; } = string.Empty;
         public string prorrateo_desc { get; set; } = string.Empty;
-        public bool activa { get; set; }
-        public bool linea_revolutiva { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_vence { get; set; }
-        public decimal monto_aprobado { get; set; }
-        public decimal tasa { get; set; }
-        public decimal comision { get; set; }
-        public decimal cuota_inicial { get; set; }
-        public int plazo { get; set; }
+        public required bool activa { get; set; }
+        public required bool linea_revolutiva { get; set; }
+        public required DateTime fecha_inicio { get; set; }
+        public required DateTime fecha_vence { get; set; }
+        public required decimal monto_aprobado { get; set; }
+        public required decimal tasa { get; set; }
+        public required decimal comision { get; set; }
+        public required decimal cuota_inicial { get; set; }
+        public required int plazo { get; set; }
         public string notas { get; set; } = string.Empty;
     }
 

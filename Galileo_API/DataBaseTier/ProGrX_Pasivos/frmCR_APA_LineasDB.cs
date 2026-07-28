@@ -5,7 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Pasivos;
 using System.Data;
 using System.Data.Common;
-using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
 {
@@ -88,10 +87,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 parameters.Add("@Estado", (request.estado ?? string.Empty).Trim(), DbType.String);
                 parameters.Add("@Inicio", request.fecha_inicio, DbType.DateTime);
                 parameters.Add("@Vence", request.fecha_vence, DbType.DateTime);
-                var lineas = conn.Query(
+                var lineas = conn.Query<FrmCrApaLineaGridDto>(
                     "spCrd_APA_Acreedor_Lineas_Consulta", parameters,
                     commandType: CommandType.StoredProcedure)
-                    .Select(MapearLineaConsulta)
                     .ToList();
                 return DbHelper.CreateOkResponse(lineas);
             }
@@ -99,99 +97,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
             {
                 return DbHelper.CreateErrorResponse<List<FrmCrApaLineaGridDto>>(ex.Message);
             }
-        }
-
-        /// <summary>Convierte una fila dinámica del procedimiento legado al DTO de consulta.</summary>
-        /// <param name="fila">Fila devuelta por el procedimiento almacenado.</param>
-        /// <returns>DTO normalizado para la tabla de líneas.</returns>
-        private static FrmCrApaLineaGridDto MapearLineaConsulta(dynamic fila)
-        {
-            IDictionary<string, object> valores = (IDictionary<string, object>)fila;
-            return new FrmCrApaLineaGridDto
-            {
-                cod_linea = ValorEntero(valores, 0, "cod_linea"),
-                cod_acreedor = ValorTexto(valores, 1, "cod_acreedor"),
-                acreedor_desc = ValorTexto(valores, 2, "acreedor_desc"),
-                cod_divisa = ValorTexto(valores, 3, "cod_divisa"),
-                codigo = ValorTexto(valores, 4, "codigo"),
-                descripcion = ValorTexto(valores, 5, "descripcion"),
-                estado_desc = ValorTexto(valores, 6, "estado_desc"),
-                revolutiva_desc = ValorTexto(valores, 7, "revolutiva_desc"),
-                tipo_desc = ValorTexto(valores, 8, "tipo_desc"),
-                fecha_inicio = ValorFecha(valores, 9, "fecha_inicio"),
-                fecha_vence = ValorFecha(valores, 10, "fecha_vence"),
-                monto_aprobado = ValorDecimal(valores, 11, "monto_aprobado"),
-                tasa = ValorDecimal(valores, 12, "tasa"),
-                plazo = ValorEntero(valores, 13, "plazo"),
-                cuota_inicial = ValorDecimal(valores, 14, "cuota_inicial"),
-                comision = ValorDecimal(valores, 15, "comision"),
-                unidad_desc = ValorTexto(valores, 16, "unidad_desc"),
-                centro_costo_desc = ValorTexto(valores, 17, "centro_costo_desc"),
-                recurso_desc = ValorTexto(valores, 18, "recurso_desc"),
-                notas = ValorTexto(valores, 19, "notas")
-            };
-        }
-
-        /// <summary>Obtiene un valor por alias de columna o por su posición legado.</summary>
-        /// <param name="fila">Fila con los valores obtenidos.</param>
-        /// <param name="posicion">Posición alternativa de la columna.</param>
-        /// <param name="alias">Nombres posibles de la columna.</param>
-        /// <returns>Valor localizado o <see langword="null"/>.</returns>
-        private static object? ValorFila(IDictionary<string, object> fila, int posicion, params string[] alias)
-        {
-            foreach (string nombre in alias)
-            {
-                var columna = fila.FirstOrDefault(item =>
-                    string.Equals(item.Key, nombre, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(columna.Key))
-                {
-                    return columna.Value is DBNull ? null : columna.Value;
-                }
-            }
-
-            object? valorPosicional = fila.Count > posicion ? fila.ElementAt(posicion).Value : null;
-            return valorPosicional is DBNull ? null : valorPosicional;
-        }
-
-        /// <summary>Obtiene un texto normalizado desde una fila dinámica.</summary>
-        /// <param name="fila">Fila con los valores obtenidos.</param>
-        /// <param name="posicion">Posición alternativa de la columna.</param>
-        /// <param name="alias">Nombres posibles de la columna.</param>
-        /// <returns>Texto recortado o una cadena vacía.</returns>
-        private static string ValorTexto(IDictionary<string, object> fila, int posicion, params string[] alias) =>
-            Convert.ToString(ValorFila(fila, posicion, alias), CultureInfo.InvariantCulture)?.Trim() ?? string.Empty;
-
-        /// <summary>Obtiene un entero desde una fila dinámica.</summary>
-        /// <param name="fila">Fila con los valores obtenidos.</param>
-        /// <param name="posicion">Posición alternativa de la columna.</param>
-        /// <param name="alias">Nombres posibles de la columna.</param>
-        /// <returns>Valor entero o cero.</returns>
-        private static int ValorEntero(IDictionary<string, object> fila, int posicion, params string[] alias)
-        {
-            object? valor = ValorFila(fila, posicion, alias);
-            return valor is null ? 0 : Convert.ToInt32(valor, CultureInfo.InvariantCulture);
-        }
-
-        /// <summary>Obtiene un decimal desde una fila dinámica.</summary>
-        /// <param name="fila">Fila con los valores obtenidos.</param>
-        /// <param name="posicion">Posición alternativa de la columna.</param>
-        /// <param name="alias">Nombres posibles de la columna.</param>
-        /// <returns>Valor decimal o cero.</returns>
-        private static decimal ValorDecimal(IDictionary<string, object> fila, int posicion, params string[] alias)
-        {
-            object? valor = ValorFila(fila, posicion, alias);
-            return valor is null ? 0 : Convert.ToDecimal(valor, CultureInfo.InvariantCulture);
-        }
-
-        /// <summary>Obtiene una fecha opcional desde una fila dinámica.</summary>
-        /// <param name="fila">Fila con los valores obtenidos.</param>
-        /// <param name="posicion">Posición alternativa de la columna.</param>
-        /// <param name="alias">Nombres posibles de la columna.</param>
-        /// <returns>Fecha localizada o <see langword="null"/>.</returns>
-        private static DateTime? ValorFecha(IDictionary<string, object> fila, int posicion, params string[] alias)
-        {
-            object? valor = ValorFila(fila, posicion, alias);
-            return valor is null ? null : Convert.ToDateTime(valor, CultureInfo.InvariantCulture);
         }
 
         /// <summary>Obtiene una línea APA para edición.</summary>
@@ -206,7 +111,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 var result = conn.QueryFirstOrDefault<FrmCrApaLineaDatosDto>(
                     "spCrd_APA_Acreedor_Linea_Load", new { LineaId = cod_linea },
                     commandType: CommandType.StoredProcedure);
-                return DbHelper.CreateOkResponse(result ?? new FrmCrApaLineaDatosDto());
+                return DbHelper.CreateOkResponse(result ?? new FrmCrApaLineaDatosDto
+                {
+                    cod_linea = 0,
+                    tipo_cambio = 0,
+                    activa = false,
+                    linea_revolutiva = false,
+                    fecha_inicio = DateTime.MinValue,
+                    fecha_vence = DateTime.MinValue,
+                    monto_aprobado = 0,
+                    tasa = 0,
+                    comision = 0,
+                    cuota_inicial = 0,
+                    plazo = 0
+                });
             }
             catch (DbException ex)
             {
