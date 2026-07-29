@@ -24,6 +24,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private const string MensajeGuardarError =
             "No fue posible establecer la cuota Bullet.";
 
+        private const string ConsultaOperacionSql = """
+            SELECT
+                R.id_solicitud AS operacion,
+                RTRIM(ISNULL(S.cedula, '')) AS cedula,
+                RTRIM(ISNULL(S.nombre, '')) AS nombre,
+                RTRIM(ISNULL(R.codigo, '')) AS codigo,
+                RTRIM(ISNULL(C.descripcion, '')) AS descripcion,
+                RTRIM(ISNULL(Ofi.descripcion, '')) AS oficina,
+                ISNULL(R.montoapr, 0) AS montoapr,
+                ISNULL(R.saldo, 0) AS saldo,
+                ISNULL(R.interesv, 0) AS interesv,
+                ISNULL(R.[int], 0) AS tasa_o,
+                R.estado AS estado,
+                RTRIM(ISNULL(R.base_calculo, '')) AS base_calculo,
+                ISNULL(
+                    dbo.fxCrdPlanPagoPlzRestante(R.id_solicitud),
+                    0
+                ) AS plazo_restante,
+                ISNULL(
+                    dbo.fxCrdPlanPagoSldPendientePrg(R.id_solicitud),
+                    0
+                ) AS saldo_plan,
+                ISNULL(R.BULLET_CTA, 0) AS bullet_cta,
+                ISNULL(R.BULLET_CTA_AJUSTE, 1) AS bullet_ajuste
+            FROM dbo.Socios AS S
+            INNER JOIN dbo.Reg_creditos AS R
+                ON S.cedula = R.cedula
+            INNER JOIN dbo.catalogo AS C
+                ON R.codigo = C.codigo
+            LEFT JOIN dbo.SIF_Oficinas AS Ofi
+                ON R.cod_oficina_r = Ofi.cod_oficina
+            WHERE R.id_solicitud = @Operacion;
+            """;
+
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
 
@@ -39,8 +73,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <returns></returns>
-        public ErrorDto<CrOperacionCtaBulletData> CrOperacionCtaBullet_Operacion_Obtener(
-                int codEmpresa, int operacion)
+        public ErrorDto<CrOperacionCtaBulletData>
+            CrOperacionCtaBullet_Operacion_Obtener(
+                int codEmpresa,
+                int operacion)
         {
             if (operacion <= 0)
             {
@@ -49,25 +85,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     -2);
             }
 
-            ErrorDto<CrOperacionCtaBulletRow>
-                consulta =
-                    ConsultarOperacion(
-                        codEmpresa,
-                        operacion);
+            ErrorDto<CrOperacionCtaBulletRow?> consulta =
+                ConsultarOperacion(
+                    codEmpresa,
+                    operacion);
 
             if (consulta.Code != 0)
             {
                 return CrearErrorConsulta(
-                    consulta.Description ??
-                        MensajeConsultaError,
+                    consulta.Description ?? MensajeConsultaError,
                     consulta.Code ?? -1);
             }
 
-            CrOperacionCtaBulletRow fila =
-                consulta.Result ??
-                new CrOperacionCtaBulletRow();
-
-            if (fila.operacion <= 0)
+            if (consulta.Result is not { operacion: > 0 } fila)
             {
                 return CrearErrorConsulta(
                     MensajeOperacionNoExiste,
@@ -85,7 +115,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto CrOperacionCtaBullet_Guardar(
-                int codEmpresa, CrOperacionCtaBulletGuardarRequest request)
+            int codEmpresa,
+            CrOperacionCtaBulletGuardarRequest request)
         {
             if (request is null)
             {
@@ -94,26 +125,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     -2);
             }
 
-            ErrorDto? validacionInicial =
-                ValidarRequest(request);
+            ErrorDto? validacion = ValidarRequest(request);
 
-            if (validacionInicial is not null)
+            if (validacion is not null)
             {
-                return validacionInicial;
+                return validacion;
             }
 
-            string usuario =
-                request.usuario.Trim();
+            string usuario = request.usuario.Trim();
 
             var globales =
-                _mProGrxMain
-                    .sbSifParametrosInicializa(
-                        codEmpresa,
-                        usuario);
+                _mProGrxMain.sbSifParametrosInicializa(
+                    codEmpresa,
+                    usuario);
 
-            if (
-                globales.Code != 0 ||
-                globales.Result is null)
+            if (globales.Code != 0 || globales.Result is null)
             {
                 return DbHelper.ErrorResponse(
                     globales.Description ??
@@ -133,19 +159,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 try
                 {
-                    CrOperacionCtaBulletRow?
-                        operacion =
-                            ConsultarOperacion(
-                                connection,
-                                transaction,
-                                request.operacion);
+                    CrOperacionCtaBulletRow? operacion =
+                        ConsultarOperacionEnTransaccion(
+                            connection,
+                            transaction,
+                            request.operacion);
 
-                    if (
-                        operacion is null ||
-                        operacion.operacion <= 0)
+                    if (operacion is not { operacion: > 0 })
                     {
-                        transaction.Rollback();
-
                         return DbHelper.ErrorResponse(
                             MensajeOperacionNoExiste,
                             -2);
@@ -154,14 +175,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CrOperacionCtaBulletData datos =
                         CrearRespuesta(operacion);
 
-                    ErrorDto? validacion =
+                    validacion =
                         ValidarCuota(
                             request,
                             datos);
 
                     if (validacion is not null)
                     {
-                        transaction.Rollback();
                         return validacion;
                     }
 
@@ -170,8 +190,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         transaction,
                         request);
 
-                    if (
-                        globales.Result.SysPlanPagos == 1 &&
+                    if (globales.Result.SysPlanPagos == 1 &&
                         datos.activa)
                     {
                         RegenerarPlanPagos(
@@ -196,13 +215,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     throw;
                 }
             }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(
-                    $"{MensajeGuardarError} {ex.Message}",
-                    -1);
-            }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
+                when (ex is SqlException or InvalidOperationException)
             {
                 return DbHelper.ErrorResponse(
                     $"{MensajeGuardarError} {ex.Message}",
@@ -210,15 +224,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
-        private ErrorDto<CrOperacionCtaBulletRow>
-            ConsultarOperacion(
-                int codEmpresa,
-                int operacion)
+        private ErrorDto<CrOperacionCtaBulletRow?> ConsultarOperacion(
+            int codEmpresa,
+            int operacion)
         {
             return DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
-                ObtenerConsultaOperacion(),
+                ConsultaOperacionSql,
                 new CrOperacionCtaBulletRow(),
                 new
                 {
@@ -227,83 +240,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         private static CrOperacionCtaBulletRow?
-            ConsultarOperacion(
+            ConsultarOperacionEnTransaccion(
                 SqlConnection connection,
                 SqlTransaction transaction,
                 int operacion)
         {
-            return connection
-                .QueryFirstOrDefault<
-                    CrOperacionCtaBulletRow>(
-                    ObtenerConsultaOperacion(),
-                    new
-                    {
-                        Operacion = operacion
-                    },
-                    transaction);
+            return connection.QueryFirstOrDefault<CrOperacionCtaBulletRow>(
+                ConsultaOperacionSql,
+                new
+                {
+                    Operacion = operacion
+                },
+                transaction);
         }
 
-        private static string
-            ObtenerConsultaOperacion()
+        private static CrOperacionCtaBulletData CrearRespuesta(
+            CrOperacionCtaBulletRow fila)
         {
-            return """
-                SELECT
-                    R.id_solicitud AS operacion,
-                    RTRIM(ISNULL(S.cedula, ''))
-                        AS cedula,
-                    RTRIM(ISNULL(S.nombre, ''))
-                        AS nombre,
-                    RTRIM(ISNULL(R.codigo, ''))
-                        AS codigo,
-                    RTRIM(ISNULL(C.descripcion, ''))
-                        AS descripcion,
-                    RTRIM(ISNULL(Ofi.descripcion, ''))
-                        AS oficina,
-                    ISNULL(R.montoapr, 0)
-                        AS montoapr,
-                    ISNULL(R.saldo, 0)
-                        AS saldo,
-                    ISNULL(R.interesv, 0)
-                        AS interesv,
-                    ISNULL(R.[int], 0)
-                        AS tasa_o,
-                    R.estado AS estado,
-                    RTRIM(ISNULL(R.base_calculo, ''))
-                        AS base_calculo,
-                    ISNULL(
-                        dbo.fxCrdPlanPagoPlzRestante(
-                            R.id_solicitud
-                        ),
-                        0
-                    ) AS plazo_restante,
-                    ISNULL(
-                        dbo.fxCrdPlanPagoSldPendientePrg(
-                            R.id_solicitud
-                        ),
-                        0
-                    ) AS saldo_plan,
-                    ISNULL(R.BULLET_CTA, 0)
-                        AS bullet_cta,
-                    ISNULL(R.BULLET_CTA_AJUSTE, 1)
-                        AS bullet_ajuste
-                FROM dbo.Socios AS S
-                INNER JOIN dbo.Reg_creditos AS R
-                    ON S.cedula = R.cedula
-                INNER JOIN dbo.catalogo AS C
-                    ON R.codigo = C.codigo
-                LEFT JOIN dbo.SIF_Oficinas AS Ofi
-                    ON R.cod_oficina_r =
-                       Ofi.cod_oficina
-                WHERE R.id_solicitud = @Operacion;
-                """;
-        }
-
-        private static CrOperacionCtaBulletData
-            CrearRespuesta(
-                CrOperacionCtaBulletRow fila)
-        {
-            bool activa =
-                fila.estado is not null;
+            bool activa = fila.estado is not null;
 
             decimal saldoBase =
                 activa
@@ -327,14 +281,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 monto = fila.montoapr,
                 saldo_real = fila.saldo,
                 saldo_base = saldoBase,
-                plazo_restante =
-                    fila.plazo_restante,
+                plazo_restante = fila.plazo_restante,
                 tasa_actual = fila.interesv,
                 tasa_original = fila.tasa_o,
-                cuota_bullet_actual =
-                    fila.bullet_cta,
-                ajuste_actual =
-                    fila.bullet_ajuste,
+                cuota_bullet_actual = fila.bullet_cta,
+                ajuste_actual = fila.bullet_ajuste,
                 cuota_bullet = cuotaMinima,
                 ajuste = fila.bullet_ajuste,
                 cuota_minima = cuotaMinima,
@@ -348,10 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string baseCalculo)
         {
             int dias =
-                string.Equals(
-                    baseCalculo.Trim(),
-                    "04",
-                    StringComparison.Ordinal)
+                baseCalculo.Trim() == "04"
                     ? 31
                     : 30;
 
@@ -367,9 +315,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 MidpointRounding.ToEven);
         }
 
-        private static ErrorDto?
-            ValidarRequest(
-                CrOperacionCtaBulletGuardarRequest request)
+        private static ErrorDto? ValidarRequest(
+            CrOperacionCtaBulletGuardarRequest request)
         {
             if (request.operacion <= 0)
             {
@@ -378,9 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     -2);
             }
 
-            if (
-                string.IsNullOrWhiteSpace(
-                    request.usuario))
+            if (string.IsNullOrWhiteSpace(request.usuario))
             {
                 return DbHelper.ErrorResponse(
                     MensajeUsuarioRequerido,
@@ -390,32 +335,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return null;
         }
 
-        private static ErrorDto?
-            ValidarCuota(
-                CrOperacionCtaBulletGuardarRequest request,
-                CrOperacionCtaBulletData datos)
+        private static ErrorDto? ValidarCuota(
+            CrOperacionCtaBulletGuardarRequest request,
+            CrOperacionCtaBulletData datos)
         {
             List<string> errores = [];
 
-            if (
-                request.ajuste >
-                datos.plazo_restante)
+            if (request.ajuste > datos.plazo_restante)
             {
                 errores.Add(
                     "El periodo de ajuste es mayor que el plazo restante.");
             }
 
-            if (
-                request.cuota_bullet <
-                datos.cuota_minima)
+            if (request.cuota_bullet < datos.cuota_minima)
             {
                 errores.Add(
                     "La cuota Bullet es menor que la cuota minima aplicable.");
             }
 
-            if (
-                request.cuota_bullet >
-                datos.saldo_base)
+            if (request.cuota_bullet > datos.saldo_base)
             {
                 errores.Add(
                     "La cuota Bullet es mayor que el saldo base.");
@@ -456,12 +394,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     query,
                     new
                     {
-                        CuotaBullet =
-                            request.cuota_bullet,
-                        Ajuste =
-                            request.ajuste,
-                        Operacion =
-                            request.operacion
+                        CuotaBullet = request.cuota_bullet,
+                        Ajuste = request.ajuste,
+                        Operacion = request.operacion
                     },
                     transaction);
 
@@ -523,11 +458,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 );
                 """;
 
-            string detalle =
-                CrearDetalleBitacora(
-                    operacion,
-                    request);
-
             connection.Execute(
                 query,
                 new
@@ -536,9 +466,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         request.usuario
                             .Trim()
                             .ToUpperInvariant(),
-                    Detalle = detalle,
-                    Operacion =
-                        request.operacion,
+                    Detalle =
+                        CrearDetalleBitacora(
+                            operacion,
+                            request),
+                    Operacion = request.operacion,
                     Codigo =
                         operacion.codigo
                             .Trim()
