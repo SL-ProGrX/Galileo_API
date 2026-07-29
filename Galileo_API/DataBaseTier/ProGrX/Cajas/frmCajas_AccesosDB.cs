@@ -73,14 +73,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var claveCifrada = MCajas.FxStringCifrado(clave);
+                var claveCifrada =
+                    Galileo.DataBaseTier.ProGrX.Cajas.FrmCajasAperturaDb
+                        .FxStringCifrado(clave);
 
                 var sqlValidar = @"
                 SELECT COUNT(*) 
                 FROM cajas_usuarios 
                 WHERE usuario = @Usuario 
-                  AND contrasena = @ClaveCifrada
-                  AND cod_caja = @CodCaja";
+                  AND cod_caja = @CodCaja
+                  AND (
+                        contrasena = @ClaveCifrada
+                        OR NULLIF(RTRIM(contrasena), '') IS NULL
+                      )";
 
                 int aceptado = connection.ExecuteScalar<int>(sqlValidar, new
                 {

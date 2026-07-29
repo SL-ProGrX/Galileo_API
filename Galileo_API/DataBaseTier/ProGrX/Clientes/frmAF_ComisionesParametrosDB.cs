@@ -186,7 +186,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                         }
                         break;
                     case "20": //Tesoreria Centro de Costo
-                        string vUnidad = _mAfi.fxgAFIParametroComision(CodEmpresa, "19");
+                        string vUnidad = _mAfi.fxgAFIParametroComision_Obtener(CodEmpresa, "19");
                         if (!_mFun.fxgTESValidaDatos(CodEmpresa, Contabilidad, "CC", NormalizarTexto(param.valor), vUnidad))
                         {
                             vMensaje = " - C&oacute;digo de Centro de Costo no existe o se encuentra desactivado, o no ha sido asignado a esta unidad: " + vUnidad + "...!";
@@ -227,7 +227,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 response = NormalizarTexto(Parametro) switch
                 {
                     "19" => _mFun.sbgTESBusqueda(CodEmpresa, Contabilidad, "UNIDAD"),
-                    "20" => _mFun.sbgTESBusqueda(CodEmpresa, Contabilidad, "CC", _mAfi.fxgAFIParametroComision(CodEmpresa, "19")),
+                    "20" => _mFun.sbgTESBusqueda(CodEmpresa, Contabilidad, "CC", _mAfi.fxgAFIParametroComision_Obtener(CodEmpresa, "19")),
                     "21" => _mFun.sbgTESBusqueda(CodEmpresa, Contabilidad, "CONCEPTO"),
                     _ => response
                 };

@@ -151,7 +151,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrArregloPagoCajaContexto ctx,
             string cedula)
         {
-            if (_mAfilicacion.fxgCongelamiento(codEmpresa, cedula, "per_abono_cajas"))
+            if (_mAfilicacion.fxgCongelamiento_Obtener(codEmpresa, cedula, "per_abono_cajas"))
             {
                 return DbHelper.ErrorResponse(
                     "Esta persona se encuentra congelada, no puede realizar movimientos en cajas. Verifique.",
