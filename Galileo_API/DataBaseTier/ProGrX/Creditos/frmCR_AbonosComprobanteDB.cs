@@ -474,19 +474,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     tx) ?? string.Empty;
             }
 
-            var columna = tipoDocumento switch
-            {
-                "RE" => "CS_RE_CUENTA",
-                "DP" => "CS_DP_CUENTA",
-                "NC" => "CS_NC_CUENTA",
-                _ => string.Empty
-            };
-
-            return string.IsNullOrEmpty(columna)
-                ? string.Empty
-                : conn.QueryFirstOrDefault<string>(
-                    $"select rtrim(isnull({columna}, '')) from ase_consecutivos;",
-                    transaction: tx) ?? string.Empty;
+            return conn.QueryFirstOrDefault<string>(@"
+                select rtrim(isnull(
+                    case @TipoDocumento
+                        when 'RE' then CS_RE_CUENTA
+                        when 'DP' then CS_DP_CUENTA
+                        when 'NC' then CS_NC_CUENTA
+                        else ''
+                    end,
+                    ''))
+                from ase_consecutivos;",
+                new { TipoDocumento = tipoDocumento },
+                tx) ?? string.Empty;
         }
 
         /// <summary>Resuelve y valida la cuenta contable que utilizará el comprobante.</summary>
@@ -588,7 +587,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>Agrupa los datos necesarios para registrar el documento SIF.</summary>
         private sealed class DocumentoRegistroContexto
         {
-            public CrAbonosComprobanteAplicarRequest Request { get; init; } = null!;
+            public CrAbonosComprobanteAplicarRequest Request { get; init; }
             public CrAbonosComprobanteOperacionData Operacion { get; init; } = new();
             public CrAbonosComprobanteMovimientoData PrimerMovimiento { get; init; } = new();
             public CrAbonosComprobanteMovimientoData UltimoMovimiento { get; init; } = new();
@@ -602,9 +601,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>Agrupa la conexión y los datos comunes de los asientos del comprobante.</summary>
         private sealed class AsientoRegistroContexto
         {
-            public SqlConnection Conn { get; init; } = null!;
-            public SqlTransaction Tx { get; init; } = null!;
-            public CrAbonosComprobanteAplicarRequest Request { get; init; } = null!;
+            public SqlConnection Conn { get; init; }
+            public SqlTransaction Tx { get; init; }
+            public CrAbonosComprobanteAplicarRequest Request { get; init; }
             public CrAbonosComprobanteOperacionCtasData Cuentas { get; init; } = new();
             public int Enlace { get; init; }
             public string Deposito { get; init; } = string.Empty;

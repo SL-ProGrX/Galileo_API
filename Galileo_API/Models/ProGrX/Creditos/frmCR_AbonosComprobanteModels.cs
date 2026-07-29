@@ -1,5 +1,3 @@
-using Galileo.Models;
-
 namespace Galileo_API.Models.ProGrX.Creditos
 {
     public class CrAbonosComprobanteOperacionData
@@ -101,7 +99,4 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string codigo { get; set; } = string.Empty;
     }
 
-    public class CrAbonosComprobanteTipoDocumentoData : DropDownListaGenericaModel
-    {
-    }
 }
