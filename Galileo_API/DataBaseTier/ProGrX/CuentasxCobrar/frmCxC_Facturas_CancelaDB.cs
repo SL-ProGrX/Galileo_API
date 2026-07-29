@@ -158,7 +158,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var dto = request ?? new CxCFacturasCancelaFacturaRequestDto();
+                var dto = request ?? new CxCFacturasCancelaFacturaRequestDto
+                {
+                    Operacion = 0
+                };
 
                 conn.Execute(
                     "spCxC_Operacion_Factura_Cancela",

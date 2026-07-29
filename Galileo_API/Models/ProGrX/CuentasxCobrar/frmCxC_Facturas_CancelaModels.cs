@@ -14,9 +14,9 @@
 
     public class CxCFacturasCancelaFacturaRequestDto
     {
-        public int Operacion { get; set; }
+        public required int Operacion { get; set; }
         public string Factura { get; set; } = string.Empty;
-        public decimal Abono { get; set; }
+        public decimal? Abono { get; set; }
         public string Tipo_Documento { get; set; } = string.Empty;
         public string Numero_Documento { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
@@ -27,7 +27,7 @@
         public string Tipo_Documento { get; set; } = string.Empty;
         public string Numero_Documento { get; set; } = string.Empty;
         public string Caja { get; set; } = string.Empty;
-        public int Apertura { get; set; }
+        public int? Apertura { get; set; }
         public string Tiquete { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
