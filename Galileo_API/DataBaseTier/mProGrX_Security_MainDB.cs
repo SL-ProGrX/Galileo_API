@@ -24,8 +24,6 @@ namespace Galileo.DataBaseTier
                 var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
 
-
-
                 // Normalizar / truncar strings
                 var detalle = Trunc(bitacora.strDetalleMovimiento, 500);
                 var usuario = Trunc(bitacora.usuario, 100);              // ajusta si tu SP soporta más
