@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Microsoft.Data.SqlClient;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -15,6 +16,37 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         }
 
 
+        private static DateTime ConvertirFecha(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                throw new ArgumentException(
+                    "La fecha no puede estar vacía.",
+                    nameof(valor));
+            }
+
+            string[] formatosPermitidos =
+            {
+        "dd/MM/yyyy",
+        "yyyy/MM/dd",
+        "dd-MM-yyyy",
+        "yyyy-MM-dd"
+    };
+
+            if (DateTime.TryParseExact(
+                valor.Trim(),
+                formatosPermitidos,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out DateTime fecha))
+            {
+                return fecha;
+            }
+
+            throw new FormatException(
+                $"La fecha '{valor}' no es válida. " +
+                "Formatos permitidos: dd/MM/yyyy, yyyy/MM/dd, dd-MM-yyyy o yyyy-MM-dd.");
+        }
         public ErrorDto PGX_UtilMigracion_Aplicar(int CodEmpresa, string usuario, List<PgxMigracionData> file)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -34,19 +66,29 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 foreach (var row in file)
                 {
-
+               
+                    DateTime fechaFormaliza = ConvertirFecha(row.formaliza);
 
                     var query = @"insert reg_creditos
-                                        (codigo,id_comite,cedula,montosol,montoapr,monto_girado
-                                        ,saldo,amortiza,interesc,saldo_mes,cuota,int,interesv,plazo,userrec,userres
-                                        ,userfor,usertesoreria,tesoreria,fechasol,fechares,fechaforp,fechaforf
-                                        ,fecha_calculo_int,garantia,primer_cuota,tdocumento,ndocumento,pagare
-                                        ,firma_deudor,premio,observacion,estado,prideduc,fecult,estadosol,documento_referido,cod_destino
-                                  values(@cod,@Comite,@pCedula,@pMonto,@pMonto,@pMonto,
-                                         @pSaldo,@pAmortiza,0,@pSaldo,@pCuota,@pTasa,@pTasa,@pPlazo,@user,@user,
-                                         @user,@user,@pFormaliza,@pFormaliza,getdate(),@pFormaliza,@pFormaliza,
-                                         @pFormaliza,@Garantia,'N','OT',@pReferencia,0
-                                         1,0,@Observaciones,'A',@pPriDeduc,@pFecUlt,'F',@pReferencia,Null)";
+                                         (
+                                        codigo, id_comite, cedula, montosol, montoapr, monto_girado,
+                                        saldo, amortiza, interesc, saldo_mes, cuota, [int], interesv,
+                                        plazo, userrec, userres, userfor, usertesoreria, tesoreria,
+                                        fechasol, fechares, fechaforp, fechaforf, fecha_calculo_int,
+                                        garantia, primer_cuota, tdocumento, ndocumento, pagare,
+                                        firma_deudor, premio, observacion, estado, prideduc, fecult,
+                                        estadosol, documento_referido, cod_destino
+                                    )
+                                    VALUES
+                                    (
+                                        @cod, @Comite, @pCedula, @pMonto, @pMonto, @pMonto,
+                                        @pSaldo, @pAmortiza, 0, @pSaldo, @pCuota, @pTasa, @pTasa,
+                                        @pPlazo, @user, @user, @user, @user, @pFormaliza,
+                                        @pFormaliza, GETDATE(), @pFormaliza, @pFormaliza, @pFormaliza,
+                                        @Garantia, 'N', 'OT', @pReferencia, 0,
+                                        1, 0, @Observaciones, 'A', @pPriDeduc, @pFecUlt,
+                                        'F', @pReferencia, NULL
+                                    );";
 
                     connection.Execute(query, new
                     {
@@ -60,7 +102,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         pTasa = row.tasa,
                         pPlazo = row.plazo,
                         user = usuario,
-                        pFormaliza = row.formaliza, //.ToString("yyyy/MM/dd"),
+                        pFormaliza = fechaFormaliza,  
                         Garantia = vGarantia,
                         pReferencia = row.operacion,
                         Observaciones = vObservaciones,
