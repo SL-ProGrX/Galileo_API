@@ -208,31 +208,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         resultado);
                 }
 
-                var cuentaDocumento = ObtenerCuentaDocumento(
+                var validacionCuenta = ResolverCuentaDocumento(
+                    codEmpresa,
                     conn,
                     tx,
                     globalesResponse.Result.SysDocVersion,
-                    request.tipo_documento);
+                    request,
+                    resultado,
+                    out var cuentaDocumento);
 
-                if (!string.IsNullOrWhiteSpace(request.cuenta_documento))
+                if (validacionCuenta is not null)
                 {
-                    if (!_mCntLinkDb.fxgCntCuentaValida(codEmpresa, request.cuenta_documento))
-                    {
-                        return DbHelper.CreateErrorResponse(
-                            "La cuenta contable indicada no es válida o no acepta movimientos.",
-                            -2,
-                            resultado);
-                    }
-
-                    cuentaDocumento = request.cuenta_documento;
-                }
-
-                if (string.IsNullOrWhiteSpace(cuentaDocumento))
-                {
-                    return DbHelper.CreateErrorResponse(
-                        "No se puede realizar el movimiento porque no se especific&oacute; una cuenta contable v&aacute;lida para esta operaci&oacute;n.",
-                        -2,
-                        resultado);
+                    return validacionCuenta;
                 }
 
                 var tipoAfectacion = globalesResponse.Result.SysDocVersion == 1
@@ -309,34 +296,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 InsertarDocumento(
                     conn,
                     tx,
-                    request,
-                    operacion,
-                    primerMovimiento,
-                    ultimoMovimiento,
-                    afectacion,
-                    proximoPago,
-                    oficina,
-                    concepto,
-                    montoTotal);
+                    new DocumentoRegistroContexto
+                    {
+                        Request = request,
+                        Operacion = operacion,
+                        PrimerMovimiento = primerMovimiento,
+                        UltimoMovimiento = ultimoMovimiento,
+                        Afectacion = afectacion,
+                        ProximoPago = proximoPago,
+                        Oficina = oficina,
+                        Concepto = concepto,
+                        MontoTotal = montoTotal
+                    });
 
-                RegistrarAsiento(
-                    conn, tx, request, cuentas, afectacion.IntCor, cuentas.ctaintc,
-                    "C", globalesResponse.Result.GEnlace, request.referencia_documento);
-                RegistrarAsiento(
-                    conn, tx, request, cuentas, afectacion.IntMor, cuentas.ctaintm,
-                    "C", globalesResponse.Result.GEnlace, request.referencia_documento);
-                RegistrarCargos(
-                    conn, tx, request, cuentas, afectacion.Cargos,
-                    globalesResponse.Result.GEnlace, request.referencia_documento);
-                RegistrarPoliza(
-                    conn, tx, request, cuentas, afectacion.Polizas,
-                    globalesResponse.Result.GEnlace, request.referencia_documento);
-                RegistrarAsiento(
-                    conn, tx, request, cuentas, afectacion.Principal, cuentas.ctaamortiza,
-                    "C", globalesResponse.Result.GEnlace, request.referencia_documento);
-                RegistrarAsiento(
-                    conn, tx, request, cuentas, montoTotal, cuentaDocumento,
-                    "D", globalesResponse.Result.GEnlace, request.referencia_documento);
+                var asientoContexto = new AsientoRegistroContexto
+                {
+                    Conn = conn,
+                    Tx = tx,
+                    Request = request,
+                    Cuentas = cuentas,
+                    Enlace = globalesResponse.Result.GEnlace,
+                    Deposito = request.referencia_documento
+                };
+
+                RegistrarAsiento(asientoContexto, afectacion.IntCor, cuentas.ctaintc, "C");
+                RegistrarAsiento(asientoContexto, afectacion.IntMor, cuentas.ctaintm, "C");
+                RegistrarCargos(asientoContexto, afectacion.Cargos);
+                RegistrarPoliza(asientoContexto, afectacion.Polizas);
+                RegistrarAsiento(asientoContexto, afectacion.Principal, cuentas.ctaamortiza, "C");
+                RegistrarAsiento(asientoContexto, montoTotal, cuentaDocumento, "D");
 
                 tx.Commit();
 
@@ -349,15 +337,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     request.usuario,
                     pFolder: "Creditos");
 
-                resultado.tipo_documento = request.tipo_documento;
-                resultado.num_documento = request.num_documento;
-                resultado.monto_total = montoTotal;
-                resultado.reporte_resultado = impresion.Code == -1
-                    ? null
-                    : impresion.Result?.ToString();
-                resultado.mensaje = impresion.Code == -1
-                    ? $"Comprobante de abono realizado {request.tipo_documento} #{request.num_documento}, pero no fue posible generar el recibo: {impresion.Description}"
-                    : $"Comprobante de Abono Realizado {request.tipo_documento} #{request.num_documento}";
+                CompletarResultado(resultado, request, montoTotal, impresion);
 
                 return DbHelper.CreateOkResponse(resultado);
             }
@@ -509,6 +489,73 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     transaction: tx) ?? string.Empty;
         }
 
+        /// <summary>Resuelve y valida la cuenta contable que utilizará el comprobante.</summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="conn">Conexión abierta de la empresa.</param>
+        /// <param name="tx">Transacción activa.</param>
+        /// <param name="sysDocVersion">Versión del sistema de documentos.</param>
+        /// <param name="request">Solicitud del comprobante.</param>
+        /// <param name="resultado">Resultado vacío usado en una respuesta de error.</param>
+        /// <param name="cuentaDocumento">Cuenta contable resuelta.</param>
+        /// <returns>Error funcional o <see langword="null"/> cuando la cuenta es válida.</returns>
+        private ErrorDto<CrAbonosComprobanteAplicarResultadoData>? ResolverCuentaDocumento(
+            int codEmpresa,
+            SqlConnection conn,
+            SqlTransaction tx,
+            int sysDocVersion,
+            CrAbonosComprobanteAplicarRequest request,
+            CrAbonosComprobanteAplicarResultadoData resultado,
+            out string cuentaDocumento)
+        {
+            cuentaDocumento = ObtenerCuentaDocumento(
+                conn,
+                tx,
+                sysDocVersion,
+                request.tipo_documento);
+
+            if (!string.IsNullOrWhiteSpace(request.cuenta_documento))
+            {
+                if (!_mCntLinkDb.fxgCntCuentaValida(codEmpresa, request.cuenta_documento))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La cuenta contable indicada no es válida o no acepta movimientos.",
+                        -2,
+                        resultado);
+                }
+
+                cuentaDocumento = request.cuenta_documento;
+            }
+
+            return string.IsNullOrWhiteSpace(cuentaDocumento)
+                ? DbHelper.CreateErrorResponse(
+                    "No se puede realizar el movimiento porque no se especificó una cuenta contable válida para esta operación.",
+                    -2,
+                    resultado)
+                : null;
+        }
+
+        /// <summary>Completa la respuesta final con el resultado del comprobante y su impresión.</summary>
+        /// <param name="resultado">Respuesta que se devolverá al cliente.</param>
+        /// <param name="request">Solicitud del comprobante.</param>
+        /// <param name="montoTotal">Monto total reconstruido.</param>
+        /// <param name="impresion">Resultado producido por el generador de recibos.</param>
+        private static void CompletarResultado(
+            CrAbonosComprobanteAplicarResultadoData resultado,
+            CrAbonosComprobanteAplicarRequest request,
+            decimal montoTotal,
+            ErrorDto<object> impresion)
+        {
+            resultado.tipo_documento = request.tipo_documento;
+            resultado.num_documento = request.num_documento;
+            resultado.monto_total = montoTotal;
+            resultado.reporte_resultado = impresion.Code == -1
+                ? null
+                : impresion.Result?.ToString();
+            resultado.mensaje = impresion.Code == -1
+                ? $"Comprobante de abono realizado {request.tipo_documento} #{request.num_documento}, pero no fue posible generar el recibo: {impresion.Description}"
+                : $"Comprobante de Abono Realizado {request.tipo_documento} #{request.num_documento}";
+        }
+
         /// <summary>Convierte el tipo al número utilizado por el esquema documental anterior.</summary>
         /// <param name="tipoDocumento">Tipo de documento SIF.</param>
         /// <returns>Número equivalente del documento.</returns>
@@ -538,31 +585,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>Agrupa los datos necesarios para registrar el documento SIF.</summary>
+        private sealed class DocumentoRegistroContexto
+        {
+            public CrAbonosComprobanteAplicarRequest Request { get; init; } = null!;
+            public CrAbonosComprobanteOperacionData Operacion { get; init; } = new();
+            public CrAbonosComprobanteMovimientoData PrimerMovimiento { get; init; } = new();
+            public CrAbonosComprobanteMovimientoData UltimoMovimiento { get; init; } = new();
+            public CrAbonosComprobanteAfectacionData Afectacion { get; init; } = new();
+            public CrAbonosComprobanteProximoPagoData ProximoPago { get; init; } = new();
+            public string Oficina { get; init; } = string.Empty;
+            public string Concepto { get; init; } = string.Empty;
+            public decimal MontoTotal { get; init; }
+        }
+
+        /// <summary>Agrupa la conexión y los datos comunes de los asientos del comprobante.</summary>
+        private sealed class AsientoRegistroContexto
+        {
+            public SqlConnection Conn { get; init; } = null!;
+            public SqlTransaction Tx { get; init; } = null!;
+            public CrAbonosComprobanteAplicarRequest Request { get; init; } = null!;
+            public CrAbonosComprobanteOperacionCtasData Cuentas { get; init; } = new();
+            public int Enlace { get; init; }
+            public string Deposito { get; init; } = string.Empty;
+        }
+
         /// <summary>Registra el encabezado y las líneas del comprobante SIF.</summary>
         /// <param name="conn">Conexión abierta de la empresa.</param>
         /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Solicitud del comprobante.</param>
-        /// <param name="operacion">Datos de la operación.</param>
-        /// <param name="primero">Primer movimiento del documento.</param>
-        /// <param name="ultimo">Último movimiento del documento.</param>
-        /// <param name="afectacion">Distribución monetaria del abono.</param>
-        /// <param name="proximoPago">Información del próximo pago.</param>
-        /// <param name="oficina">Oficina que registra el documento.</param>
-        /// <param name="concepto">Concepto contable.</param>
-        /// <param name="montoTotal">Monto total del comprobante.</param>
+        /// <param name="contexto">Datos agrupados requeridos para registrar el documento.</param>
         private static void InsertarDocumento(
             SqlConnection conn,
             SqlTransaction tx,
-            CrAbonosComprobanteAplicarRequest request,
-            CrAbonosComprobanteOperacionData operacion,
-            CrAbonosComprobanteMovimientoData primero,
-            CrAbonosComprobanteMovimientoData ultimo,
-            CrAbonosComprobanteAfectacionData afectacion,
-            CrAbonosComprobanteProximoPagoData proximoPago,
-            string oficina,
-            string concepto,
-            decimal montoTotal)
+            DocumentoRegistroContexto contexto)
         {
+            var request = contexto.Request;
+            var operacion = contexto.Operacion;
+            var primero = contexto.PrimerMovimiento;
+            var ultimo = contexto.UltimoMovimiento;
+            var afectacion = contexto.Afectacion;
+            var proximoPago = contexto.ProximoPago;
+
             var linea9 = proximoPago.fecha_pago.HasValue
                 ? $"Prox.Pago..:{proximoPago.fecha_pago:dd/MM/yyyy} Cta.({proximoPago.num_cuota}) {proximoPago.cuota:N2}"
                 : "Prox.Pago..: >> <<";
@@ -593,12 +656,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     operacion.cedula,
                     operacion.nombre,
                     Concepto = string.IsNullOrWhiteSpace(primero.cod_concepto)
-                        ? concepto
+                        ? contexto.Concepto
                         : primero.cod_concepto,
-                    Monto = montoTotal,
+                    Monto = contexto.MontoTotal,
                     Operacion = request.operacion.ToString(),
                     operacion.codigo,
-                    Oficina = oficina,
+                    Oficina = contexto.Oficina,
                     Linea1 = $"Saldo Anterior    {primero.saldo_anterior:N2}",
                     Linea2 = $"Interes Corriente {afectacion.IntCor:N2}",
                     Linea3 = $"Interes Atrasado  {afectacion.IntMor:N2}",
@@ -617,83 +680,63 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>Registra una línea de asiento del comprobante.</summary>
-        /// <param name="conn">Conexión abierta de la empresa.</param>
-        /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Solicitud del comprobante.</param>
-        /// <param name="cuentas">Cuentas asociadas con la operación.</param>
+        /// <param name="contexto">Conexión y datos comunes del asiento.</param>
         /// <param name="monto">Monto de la línea.</param>
         /// <param name="cuenta">Cuenta contable.</param>
         /// <param name="tipo">Naturaleza débito o crédito.</param>
-        /// <param name="enlace">Contabilidad de enlace.</param>
-        /// <param name="deposito">Referencia del depósito.</param>
         private static void RegistrarAsiento(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAbonosComprobanteAplicarRequest request,
-            CrAbonosComprobanteOperacionCtasData cuentas,
+            AsientoRegistroContexto contexto,
             decimal monto,
             string cuenta,
-            string tipo,
-            int enlace,
-            string deposito)
+            string tipo)
         {
             if (monto <= 0 || string.IsNullOrWhiteSpace(cuenta))
             {
                 return;
             }
 
-            conn.Execute(@"
+            contexto.Conn.Execute(@"
                 exec spSIFDocsAsiento
                     @TipoDocumento, @NumDocumento, @Monto, @Tipo, @Divisa, 1,
                     @Enlace, @Unidad, @CentroCosto, @Cuenta, @Operacion, @Codigo, @Deposito;",
                 new
                 {
-                    TipoDocumento = request.tipo_documento,
-                    NumDocumento = request.num_documento,
+                    TipoDocumento = contexto.Request.tipo_documento,
+                    NumDocumento = contexto.Request.num_documento,
                     Monto = monto,
                     Tipo = tipo,
-                    Divisa = cuentas.cod_Divisa,
-                    Enlace = enlace,
-                    Unidad = cuentas.cod_unidad,
-                    CentroCosto = cuentas.cod_centro_costo,
+                    Divisa = contexto.Cuentas.cod_Divisa,
+                    Enlace = contexto.Enlace,
+                    Unidad = contexto.Cuentas.cod_unidad,
+                    CentroCosto = contexto.Cuentas.cod_centro_costo,
                     Cuenta = cuenta,
-                    Operacion = cuentas.id_solicitud,
-                    Codigo = cuentas.Codigo,
-                    Deposito = deposito
+                    Operacion = contexto.Cuentas.id_solicitud,
+                    Codigo = contexto.Cuentas.Codigo,
+                    Deposito = contexto.Deposito
                 },
-                tx);
+                contexto.Tx);
         }
 
         /// <summary>Registra los asientos correspondientes a cargos del abono.</summary>
-        /// <param name="conn">Conexión abierta de la empresa.</param>
-        /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Solicitud del comprobante.</param>
-        /// <param name="cuentas">Cuentas asociadas con la operación.</param>
+        /// <param name="contexto">Conexión y datos comunes de los asientos.</param>
         /// <param name="montoCargos">Monto total de cargos.</param>
-        /// <param name="enlace">Contabilidad de enlace.</param>
-        /// <param name="deposito">Referencia del depósito.</param>
         private static void RegistrarCargos(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAbonosComprobanteAplicarRequest request,
-            CrAbonosComprobanteOperacionCtasData cuentas,
-            decimal montoCargos,
-            int enlace,
-            string deposito)
+            AsientoRegistroContexto contexto,
+            decimal montoCargos)
         {
             if (montoCargos <= 0)
             {
                 return;
             }
 
-            var cargos = conn.Query<CrAbonosComprobanteCargoData>(
+            var cargos = contexto.Conn.Query<CrAbonosComprobanteCargoData>(
                 "exec spCrdDocumentoAfectacionCargos @TipoDocumento, @NumDocumento",
                 new
                 {
-                    TipoDocumento = request.tipo_documento,
-                    NumDocumento = request.num_documento
+                    TipoDocumento = contexto.Request.tipo_documento,
+                    NumDocumento = contexto.Request.num_documento
                 },
-                tx);
+                contexto.Tx);
 
             foreach (var cargo in cargos)
             {
@@ -703,65 +746,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     continue;
                 }
 
-                conn.Execute(@"
+                contexto.Conn.Execute(@"
                     exec spSIFDocsAsiento
                         @TipoDocumento, @NumDocumento, @Monto, 'C', @Divisa, 1,
                         @Enlace, @Unidad, @CentroCosto, @Cuenta, @Operacion, @Codigo, @Deposito;",
                     new
                     {
-                        TipoDocumento = request.tipo_documento,
-                        NumDocumento = request.num_documento,
+                        TipoDocumento = contexto.Request.tipo_documento,
+                        NumDocumento = contexto.Request.num_documento,
                         Monto = monto,
-                        Divisa = cuentas.cod_Divisa,
-                        Enlace = enlace,
+                        Divisa = contexto.Cuentas.cod_Divisa,
+                        Enlace = contexto.Enlace,
                         Unidad = cargo.cod_unidad,
                         CentroCosto = cargo.cod_centro_costo,
                         Cuenta = cargo.cod_cuenta,
                         Operacion = cargo.id_solicitud,
                         Codigo = cargo.codigo,
-                        Deposito = deposito
+                        Deposito = contexto.Deposito
                     },
-                    tx);
+                    contexto.Tx);
             }
         }
 
         /// <summary>Registra el asiento correspondiente a la póliza del abono.</summary>
-        /// <param name="conn">Conexión abierta de la empresa.</param>
-        /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Solicitud del comprobante.</param>
-        /// <param name="cuentas">Cuentas asociadas con la operación.</param>
+        /// <param name="contexto">Conexión y datos comunes de los asientos.</param>
         /// <param name="montoPoliza">Monto de póliza aplicado.</param>
-        /// <param name="enlace">Contabilidad de enlace.</param>
-        /// <param name="deposito">Referencia del depósito.</param>
         private static void RegistrarPoliza(
-            SqlConnection conn,
-            SqlTransaction tx,
-            CrAbonosComprobanteAplicarRequest request,
-            CrAbonosComprobanteOperacionCtasData cuentas,
-            decimal montoPoliza,
-            int enlace,
-            string deposito)
+            AsientoRegistroContexto contexto,
+            decimal montoPoliza)
         {
             if (montoPoliza <= 0)
             {
                 return;
             }
 
-            var cuentaPoliza = conn.QueryFirstOrDefault<string>(
+            var cuentaPoliza = contexto.Conn.QueryFirstOrDefault<string>(
                 "select rtrim(isnull(dbo.fxCrdOperacionCtaContaPolizas(@Operacion), ''));",
-                new { Operacion = cuentas.id_solicitud },
-                tx) ?? string.Empty;
+                new { Operacion = contexto.Cuentas.id_solicitud },
+                contexto.Tx) ?? string.Empty;
 
-            RegistrarAsiento(
-                conn,
-                tx,
-                request,
-                cuentas,
-                montoPoliza,
-                cuentaPoliza,
-                "C",
-                enlace,
-                deposito);
+            RegistrarAsiento(contexto, montoPoliza, cuentaPoliza, "C");
         }
     }
 }

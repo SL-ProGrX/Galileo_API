@@ -29,8 +29,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrAbonosComprobanteAplicarRequest
     {
-        public int operacion { get; set; }
-        public int tipo_abono { get; set; }
+        public required int operacion { get; set; }
+        public required int tipo_abono { get; set; }
         public string tipo_documento { get; set; } = string.Empty;
         public string num_documento { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
