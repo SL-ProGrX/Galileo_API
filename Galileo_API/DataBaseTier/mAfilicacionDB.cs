@@ -1489,8 +1489,7 @@ namespace Galileo.DataBaseTier
         }
 
         private static DateTime ConvertirPeriodoFecha(
-            int? periodo,
-            string nombreCampo)
+            int? periodo, string nombreCampo)
         {
             if (!periodo.HasValue)
             {
@@ -1498,15 +1497,10 @@ namespace Galileo.DataBaseTier
                     $"El campo {nombreCampo} no contiene un periodo valido.");
             }
 
-            int anio =
-                periodo.Value / 100;
+            int anio = periodo.Value / 100;
+            int mes = periodo.Value % 100;
 
-            int mes =
-                periodo.Value % 100;
-
-            if (
-                anio < 1 ||
-                mes is < 1 or > 12)
+            if (anio < 1 || mes is < 1 or > 12)
             {
                 throw new InvalidOperationException(
                     $"El campo {nombreCampo} no contiene un periodo valido.");
@@ -1515,7 +1509,11 @@ namespace Galileo.DataBaseTier
             return new DateTime(
                 anio,
                 mes,
-                1);
+                1,
+                0,
+                0,
+                0,
+                DateTimeKind.Unspecified);
         }
 
         private string ObtenerTexto(
