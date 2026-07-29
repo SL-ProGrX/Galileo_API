@@ -139,11 +139,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         public ErrorDto<ArchivoDescargaDto> SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -166,8 +162,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 {
                     return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
                         "No se encontraron datos para generar el archivo.",
-                        -1,
-                        null);
+                        -1 );
                 }
 
                 var contenidoXml = CrearContenidoXml(registros);
@@ -182,16 +177,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 return DbHelper.CreateOkResponse(archivo);
             }
-            catch (Exception ex)
+            catch (Exception )
             {
                 return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
                  "Ocurrió un error al generar el archivo de facilidades crediticias.",
-                 -1,
-                 null);
+                 -1 );
             }
         
 
         }
+        /// <summary>
+        ///  Crea el contenido del archivo XML a partir de los registros obtenidos de la base de datos.
+        /// </summary>
+        /// <param name="lineas"></param>
+        /// <returns></returns>
         private static string CrearContenidoXml( IEnumerable<SugefFacilidadesXmlRegistro> lineas)
         {
             var contenido = new StringBuilder();
@@ -203,6 +202,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             return contenido.ToString();
         }
+
+        /// <summary>
+        /// Limpia el nombre del archivo eliminando caracteres inválidos para nombres de archivo.
+        /// </summary>
+        /// <param name="valor"></param>
+        /// <returns></returns>
         private static string LimpiarNombreArchivo(string valor)
         {
             var caracteresInvalidos = Path.GetInvalidFileNameChars();
