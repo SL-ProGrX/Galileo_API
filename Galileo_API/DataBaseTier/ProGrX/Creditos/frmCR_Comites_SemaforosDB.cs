@@ -321,7 +321,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             request.email = (request.email ?? string.Empty).Trim();
 
-            if (!MAfilicacionDB.fxEmail_Valida(request.email))
+            if (!MAfilicacionDB.fxEmail_Validar(request.email))
                 return DbHelper.ErrorResponse("Correo inválido.");
 
             return ValidacionOk();

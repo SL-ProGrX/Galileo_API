@@ -760,7 +760,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                if (_mAfilicacion.fxgCongelamiento(codEmpresa, request.cedula, "per_abono_cajas"))
+                if (_mAfilicacion.fxgCongelamiento_Obtener(codEmpresa, request.cedula, "per_abono_cajas"))
                     return "- Esta Persona se encuentra CONGELADA, verifique...";
 
                 return string.Empty;

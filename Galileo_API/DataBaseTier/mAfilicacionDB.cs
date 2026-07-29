@@ -27,7 +27,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pCodigo"></param>
         /// <returns></returns>
-        public string fxgAFIParametro(
+        public string fxgAFIParametro_Obtener(
             int CodEmpresa,
             string pCodigo)
         {
@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pCodigo"></param>
         /// <returns></returns>
-        public string fxgAFIParametroComision(
+        public string fxgAFIParametroComision_Obtener(
             int CodEmpresa,
             string pCodigo)
         {
@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="strCedula"></param>
         /// <returns></returns>
-        public string fxNombre(
+        public string fxNombre_Obtener(
             int CodEmpresa,
             string strCedula)
         {
@@ -106,7 +106,7 @@ namespace Galileo.DataBaseTier
         /// <param name="vCedula"></param>
         /// <param name="vParametro"></param>
         /// <returns></returns>
-        public bool fxgCongelamiento(
+        public bool fxgCongelamiento_Obtener(
             int CodEmpresa,
             string vCedula,
             string vParametro)
@@ -175,7 +175,7 @@ namespace Galileo.DataBaseTier
         /// <param name="pDetalle"></param>
         /// <param name="pCedula"></param>
         /// <param name="usuario"></param>
-        public void sbgAFIBitacora(
+        public void sbgAFIBitacora_Registrar(
             int CodEmpresa,
             string pMovimiento,
             string pDetalle,
@@ -215,7 +215,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="parentesco"></param>
         /// <returns></returns>
-        public static string fxParentesco(
+        public static string fxParentesco_Obtener(
             string parentesco)
         {
             return (parentesco ?? string.Empty)
@@ -260,7 +260,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="correo"></param>
         /// <returns></returns>
-        public static bool fxEmail_Valida(
+        public static bool fxEmail_Validar(
             string correo)
         {
             correo =
@@ -300,7 +300,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool fxDireccion_Valida(
+        public static bool fxDireccion_Validar(
             MAfilicacionDireccionValidarRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -707,7 +707,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto sbReIngreso(
+        public ErrorDto sbReIngreso_Registrar(
             int CodEmpresa,
             MAfilicacionReIngresoRequest request)
         {
@@ -936,7 +936,7 @@ namespace Galileo.DataBaseTier
         /// <param name="vCedula"></param>
         /// <param name="vSube"></param>
         /// <returns></returns>
-        public ErrorDto sbSubirBajarTasa(
+        public ErrorDto sbSubirBajarTasa_Registrar(
             int CodEmpresa,
             string vCedula,
             bool vSube = true)
@@ -987,7 +987,7 @@ namespace Galileo.DataBaseTier
         /// <param name="vLiq"></param>
         /// <param name="sysPlanPagos"></param>
         /// <returns></returns>
-        public ErrorDto sbSubirBajarTasav2(
+        public ErrorDto sbSubirBajarTasav2_Registrar(
             int CodEmpresa,
             long vLiq,
             bool sysPlanPagos)
