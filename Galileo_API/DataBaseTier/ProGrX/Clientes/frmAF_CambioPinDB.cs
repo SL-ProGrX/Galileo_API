@@ -36,7 +36,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
         {
             try
             {
-                var mTipo = _mAfilicacionDB.fxgAFIParametro(CodEmpresa, pCodigo);
+                var mTipo = _mAfilicacionDB.fxgAFIParametro_Obtener(CodEmpresa, pCodigo);
                 return DbHelper.CreateOkResponse(mTipo);
             }
             catch (Exception ex)
@@ -225,7 +225,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Clientes
                 var detalleBitacora = $"Ticket: {ticketFormateado} PIN AutoGestión Renovado (Tipo:{model.tipo})";
 
                 // En VB6: sbgAFIBitacora("28", vDetalle, cedula)
-                _mAfilicacionDB.sbgAFIBitacora(CodEmpresa, "28", detalleBitacora, model.cedula.Trim(), model.usuario);
+                _mAfilicacionDB.sbgAFIBitacora_Registrar(CodEmpresa, "28", detalleBitacora, model.cedula.Trim(), model.usuario);
 
                 // 4) Notifica por correo si tipo == "E"
                 if (model.tipo == "E")

@@ -396,7 +396,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     id_solicitud = GetInt(d, "id_solicitud"),
                     codigo = GetStr(d, CODIGO),
                     cedula = cedula,
-                    nombre = string.IsNullOrWhiteSpace(cedula) ? "" : (_mAfiliacion.fxNombre(CodEmpresa, cedula) ?? ""),
+                    nombre = string.IsNullOrWhiteSpace(cedula) ? "" : (_mAfiliacion.fxNombre_Obtener(CodEmpresa, cedula) ?? ""),
                     cuota = GetInt(d, CUOTA),
                     intc = GetDec(d, "intc"),
                     intm = GetDec(d, "intm"),

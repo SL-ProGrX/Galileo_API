@@ -536,7 +536,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             if (req.diferencia < 0 && (req.saldo_nuevo + req.diferencia) < 0)
                 mensajes.Add("La diferencia supera el saldo!, verifique...");
 
-            if (_mAfiliacion.fxgCongelamiento(codempresa, req.cedula, "per_abono_cajas"))
+            if (_mAfiliacion.fxgCongelamiento_Obtener(codempresa, req.cedula, "per_abono_cajas"))
                 mensajes.Add("Esta Persona se encuentra CONGELADA, verifique...");
 
             if (req.operacionid == 0)
