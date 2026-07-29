@@ -79,8 +79,8 @@ namespace Galileo.DataBaseTier
             {
                 var respuesta = CrearListaVacia();
                 var parametros = new DynamicParameters();
-                var totalQuery = "SELECT COUNT(*) FROM pv_Departamentos";
-                respuesta.Total = connection.QueryFirstOrDefault<int>(totalQuery);
+                var totalQuery = new System.Text.StringBuilder(
+                    "SELECT COUNT(*) FROM pv_Departamentos");
 
                 var detalleQuery = new System.Text.StringBuilder(@"SELECT COD_departamento,
                                                                          descripcion,
@@ -89,9 +89,14 @@ namespace Galileo.DataBaseTier
 
                 if (!string.IsNullOrWhiteSpace(filtro))
                 {
+                    totalQuery.Append(" WHERE COD_departamento LIKE @Filtro OR DESCRIPCION LIKE @Filtro");
                     detalleQuery.Append(" WHERE COD_departamento LIKE @Filtro OR DESCRIPCION LIKE @Filtro");
                     parametros.Add("Filtro", $"%{filtro.Trim()}%");
                 }
+
+                respuesta.Total = connection.QueryFirstOrDefault<int>(
+                    totalQuery.ToString(),
+                    parametros);
 
                 detalleQuery.Append(" ORDER BY COD_departamento");
 
