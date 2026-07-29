@@ -31,6 +31,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
+        /// Obtiene los conceptos de retención activos para Carga de Saldos a Favor.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Conceptos de retención activos ordenados por descripción.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
+        {
+            const string query = @"
+                select
+                    rtrim(RETENCION_CODIGO) as item,
+                    rtrim(DESCRIPCION) as descripcion
+                from FND_RETENCION_CONCEPTOS
+                where ACTIVO = 1
+                order by DESCRIPCION";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                query);
+        }
+
+        /// <summary>
         /// Obtiene las entidades pagadoras activas ordenadas por código o descripción.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>

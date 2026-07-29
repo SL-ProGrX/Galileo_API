@@ -268,6 +268,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     }
                 }
 
+                conn.Execute("spTES_W_BancosCargado_SinpeConciliar",commandType: CommandType.StoredProcedure, commandTimeout: 0);
+
                 response.Description = sb.ToString();
 
                 if (response.Description.Length > 0)

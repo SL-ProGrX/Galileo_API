@@ -199,6 +199,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         /// <summary>
+        /// Importa los movimientos pendientes de Tesorería al periodo de conciliación.
+        /// </summary>
+        public ErrorDto TES_ConciliacionResumen_TesMov_Importar(
+            int CodEmpresa,
+            TesConciliaFiltros filtro)
+        {
+            return Exec(
+                CodEmpresa,
+                conn => GuardPeriodoAbierto(
+                    filtro.periodoEstado,
+                    () =>
+                    {
+                        const string procedimiento =
+                            "spTES_W_Conciliacion_TesMov_Importar";
+
+                        var registrosImportados = conn.QuerySingle<int>(
+                            procedimiento,
+                            new
+                            {
+                                BancoId = filtro.banco,
+                                Anio = filtro.ahno,
+                                Mes = filtro.mes,
+                                Usuario = filtro.usuario
+                            },
+                            commandType: CommandType.StoredProcedure,
+                            commandTimeout: 300);
+
+                        if (registrosImportados > 0)
+                        {
+                            spTesConciliaPeriodoActualiza(
+                                CodEmpresa,
+                                filtro.banco,
+                                filtro.ahno,
+                                filtro.mes,
+                                filtro.usuario);
+                        }
+
+                        var mensaje = registrosImportados == 1
+                            ? "Se importó 1 movimiento de Tesorería."
+                            : $"Se importaron {registrosImportados} movimientos de Tesorería.";
+
+                        return DbHelper.OkResponse(mensaje);
+                    }),
+                "Error al importar los movimientos de Tesorería.");
+        }
+
+        /// <summary>
         /// Cierra un periodo de conciliación bancaria para una empresa, banco, año y mes específicos.
         /// </summary>
         public ErrorDto TES_ConciliacionResumenPeriodo_Cerrar(int CodEmpresa, TesConciliaFiltros filtro)

@@ -57,6 +57,12 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _BL.TES_ConciliacionResumenArchivo_Cargar(CodEmpresa, filtro, file);
         }
 
+        [HttpPost("TES_ConciliacionResumen_TesMov_Importar")]
+        public ErrorDto TES_ConciliacionResumen_TesMov_Importar(int CodEmpresa, TesConciliaFiltros filtro)
+        {
+            return _BL.TES_ConciliacionResumen_TesMov_Importar(CodEmpresa, filtro);
+        }
+
         [HttpPost("TES_ConciliacionResumenPeriodo_Cerrar")]
         public ErrorDto TES_ConciliacionResumenPeriodo_Cerrar(int CodEmpresa, TesConciliaFiltros filtro)
         {
