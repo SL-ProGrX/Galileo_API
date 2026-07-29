@@ -39,9 +39,16 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpPost("SUGEFInformesArchivos_Archivo")]
-        public ErrorDto SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
+        public IActionResult SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
         {
-            return _bl.SUGEFInformesArchivos_Archivo(CodEmpresa, Usuario, Corte);
+            var resultado = _bl.SUGEFInformesArchivos_Archivo(CodEmpresa, Usuario, Corte);
+
+            ArchivoDescargaDto archivo = resultado.Result;
+
+            return File(
+                archivo.Contenido,
+                archivo.ContentType,
+                archivo.NombreArchivo);
         }
     }
 }

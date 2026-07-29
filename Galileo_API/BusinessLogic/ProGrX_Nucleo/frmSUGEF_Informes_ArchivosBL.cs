@@ -24,7 +24,7 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             return _db.SUGEFInformesArchivos_Corte_Procesar(CodEmpresa, Usuario, Corte, Descripcion, RngInicio, RngCorte);
         }
 
-        public ErrorDto SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
+        public ErrorDto<ArchivoDescargaDto> SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
         {
             return _db.SUGEFInformesArchivos_Archivo(CodEmpresa, Usuario, Corte);
         }

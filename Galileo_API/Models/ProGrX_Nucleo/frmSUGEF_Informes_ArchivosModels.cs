@@ -52,4 +52,11 @@
         public int? sortOrder { get; set; } = 0; //0: sin orden, 1: ascendente, 2: descendente
         public string? sortField { get; set; } //campo por el cual se ordena
     }
+
+    public sealed class ArchivoDescargaDto
+    {
+        public byte[] Contenido { get; set; } = [];
+        public string NombreArchivo { get; set; } = string.Empty;
+        public string ContentType { get; set; } = "application/octet-stream";
+    }
 }
