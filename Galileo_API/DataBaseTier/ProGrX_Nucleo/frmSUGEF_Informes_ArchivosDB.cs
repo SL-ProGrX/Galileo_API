@@ -1,7 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -134,7 +136,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="Usuario"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDto SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
+        public ErrorDto<ArchivoDescargaDto> SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -146,19 +148,74 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
                 var query = $@"exec spSUGEF_Facilidades_Crediticias_Archivo @Corte,@Usuario";
-                connection.Execute(query, new
+               var registros = connection.Query<SugefFacilidadesXmlRegistro>(
+                query,
+                new
                 {
-                    Corte,
-                    Usuario
-                });
+                      Corte,
+                    Usuario = Usuario.Trim()
+                },
+                commandType: CommandType.Text,
+                commandTimeout: 0)
+            .Where(xml => !string.IsNullOrWhiteSpace(xml.XML_TEXT))
+            .OrderBy(x => x.IdLinea)
+            .ToList();
+
+
+                if (registros.Count == 0)
+                {
+                    return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
+                        "No se encontraron datos para generar el archivo.",
+                        -1,
+                        null);
+                }
+
+                var contenidoXml = CrearContenidoXml(registros);
+                var nombreCorte = LimpiarNombreArchivo(Corte.ToString("yyyyMMdd"));
+
+                var archivo = new ArchivoDescargaDto
+                {
+                    Contenido = Encoding.UTF8.GetBytes(contenidoXml),
+                    NombreArchivo = $"Facilidades_Crediticia_{nombreCorte}.xml",
+                    ContentType = "application/xml"
+                };
+
+                return DbHelper.CreateOkResponse(archivo);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
+                 "Ocurrió un error al generar el archivo de facilidades crediticias.",
+                 -1,
+                 null);
             }
-            return result;
+        
 
+        }
+        private static string CrearContenidoXml( IEnumerable<SugefFacilidadesXmlRegistro> lineas)
+        {
+            var contenido = new StringBuilder();
+
+            foreach (var linea in lineas)
+            {
+                contenido.AppendLine(linea.XML_TEXT);
+            }
+
+            return contenido.ToString();
+        }
+        private static string LimpiarNombreArchivo(string valor)
+        {
+            var caracteresInvalidos = Path.GetInvalidFileNameChars();
+
+            return new string(
+                valor.Where(caracter => !caracteresInvalidos.Contains(caracter))
+                     .ToArray());
+        }
+        public sealed class SugefFacilidadesXmlRegistro
+        {
+            public int IdLinea { get; set; }
+
+            public string XML_TEXT { get; set; } = string.Empty;
         }
 
     }
