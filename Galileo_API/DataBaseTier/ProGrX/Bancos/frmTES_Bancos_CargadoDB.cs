@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
-    public class FrmTesBancosCargadoDB
+    public partial class FrmTesBancosCargadoDB
     {
         private readonly PortalDB _portalDB;
         private readonly MTesoreria _mTesoreria;

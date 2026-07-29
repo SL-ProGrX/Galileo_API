@@ -95,6 +95,42 @@ namespace Galileo_API.BusinessLogic
             return _Db.TES_BancosCargado_ReclasificaConcepto(CodEmpresa, data);
         }
 
+        /// <summary>
+        /// Obtiene los depósitos para el tab Revisión de Movimientos.
+        /// </summary>
+        public ErrorDto<List<TesBancosCargadoRevMovDto>>
+            TES_BancosCargado_RevMov_Obtener(
+                int CodEmpresa,
+                TesBancosCargadoRevMovRequest request)
+        {
+            return _Db.TES_BancosCargado_RevMov_Obtener(CodEmpresa, request);
+        }
+
+        /// <summary>
+        /// Obtiene los movimientos bancarios candidatos para conciliación.
+        /// </summary>
+        public ErrorDto<List<TesBancosCargadoRevMovConciliaDto>>
+            TES_BancosCargado_RevMovConcilia_Obtener(
+                int CodEmpresa,
+                TesBancosCargadoRevMovConciliaRequest request)
+        {
+            return _Db.TES_BancosCargado_RevMovConcilia_Obtener(
+                CodEmpresa,
+                request);
+        }
+
+        /// <summary>
+        /// Solicita la conciliación de solicitudes con una solicitud destino.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
+            int CodEmpresa,
+            TesBancosCargadoRevMovConciliaAplicarRequest request)
+        {
+            return _Db.TES_BancosCargado_RevMovConcilia_Aplicar(
+                CodEmpresa,
+                request);
+        }
+
     }
 }
 

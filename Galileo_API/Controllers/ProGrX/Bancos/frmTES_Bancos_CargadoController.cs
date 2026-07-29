@@ -98,6 +98,34 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         {
             return _bl.TES_BancosCargado_ReclasificaConcepto(CodEmpresa, data);
         }
+
+        [HttpGet("TES_BancosCargado_RevMov_Obtener")]
+        public ErrorDto<List<TesBancosCargadoRevMovDto>>
+            TES_BancosCargado_RevMov_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesBancosCargadoRevMovRequest request)
+        {
+            return _bl.TES_BancosCargado_RevMov_Obtener(CodEmpresa, request);
+        }
+
+        [HttpGet("TES_BancosCargado_RevMovConcilia_Obtener")]
+        public ErrorDto<List<TesBancosCargadoRevMovConciliaDto>>
+            TES_BancosCargado_RevMovConcilia_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesBancosCargadoRevMovConciliaRequest request)
+        {
+            return _bl.TES_BancosCargado_RevMovConcilia_Obtener(
+                CodEmpresa,
+                request);
+        }
+
+        [HttpPost("TES_BancosCargado_RevMovConcilia_Aplicar")]
+        public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
+            int CodEmpresa,
+            [FromBody] TesBancosCargadoRevMovConciliaAplicarRequest request)
+        {
+            return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, request);
+        }
     }
 }
 
