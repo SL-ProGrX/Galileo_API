@@ -12,6 +12,7 @@ namespace Galileo.DataBaseTier
     public class MAfilicacionDB
     {
         private const decimal AjusteTasa = 3m;
+        private const string OtroDescripcion = "Otro...";
 
         private readonly PortalDB _portalDB;
 
@@ -215,11 +216,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="parentesco"></param>
         /// <returns></returns>
-        public static string fxParentesco_Obtener(
-            string parentesco)
+        public static string fxParentesco_Obtener(string parentesco)
         {
-            return (parentesco ?? string.Empty)
-                .Trim() switch
+            return (parentesco ?? string.Empty).Trim() switch
             {
                 "E" => "Esposo(a)",
                 "H" => "Hijo(a)",
@@ -235,7 +234,7 @@ namespace Galileo.DataBaseTier
                 "K" => "Padrastro",
                 "N" => "Nieto(a)",
                 "L" => "Hermanastro(a)",
-                "O" => "Otro...",
+                "O" => OtroDescripcion,
                 "Esposo(a)" => "E",
                 "Hijo(a)" => "H",
                 "Hermano(a)" => "R",
@@ -250,8 +249,8 @@ namespace Galileo.DataBaseTier
                 "Padrastro" => "K",
                 "Nieto(a)" => "N",
                 "Hermanastro(a)" => "L",
-                "Otro..." => "O",
-                _ => "Otro..."
+                OtroDescripcion => "O",
+                _ => OtroDescripcion
             };
         }
 
@@ -642,7 +641,7 @@ namespace Galileo.DataBaseTier
                 2 => "Trabajo",
                 3 => "Celular",
                 4 => "Beeper",
-                _ => "Otro..."
+                _ => OtroDescripcion
             };
         }
 
