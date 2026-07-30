@@ -199,13 +199,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                             request.operacion);
                     }
 
-                    RegistrarBitacora(
-                        connection,
-                        transaction,
-                        request,
-                        operacion);
-
                     transaction.Commit();
+
+                    MCredito.SbBitacoraCredito(
+                        _portalDb,
+                        codEmpresa,
+                        new MCredito.CrBitacoraCreditoRequest
+                        {
+                            usuario = request.usuario,
+                            tipo = "C",
+                            movimiento = "22",
+                            detalle = CrearDetalleBitacora(
+                                operacion,
+                                request),
+                            operacion = request.operacion,
+                            codigo = operacion.codigo,
+                            notas = string.Empty
+                        });
 
                     return DbHelper.CreateOkResponse();
                 }
@@ -419,58 +429,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new
                 {
                     Operacion = operacion
-                },
-                transaction);
-        }
-
-        private static void RegistrarBitacora(
-            SqlConnection connection,
-            SqlTransaction transaction,
-            CrOperacionCtaBulletGuardarRequest request,
-            CrOperacionCtaBulletRow operacion)
-        {
-            const string query = """
-                INSERT INTO dbo.credito_subit
-                (
-                    usuario,
-                    tipo,
-                    fecha,
-                    movimiento,
-                    detalle,
-                    id_solicitud,
-                    codigo,
-                    notas
-                )
-                VALUES
-                (
-                    @Usuario,
-                    'C',
-                    GETDATE(),
-                    '22',
-                    @Detalle,
-                    @Operacion,
-                    @Codigo,
-                    ''
-                );
-                """;
-
-            connection.Execute(
-                query,
-                new
-                {
-                    Usuario =
-                        request.usuario
-                            .Trim()
-                            .ToUpperInvariant(),
-                    Detalle =
-                        CrearDetalleBitacora(
-                            operacion,
-                            request),
-                    Operacion = request.operacion,
-                    Codigo =
-                        operacion.codigo
-                            .Trim()
-                            .ToUpperInvariant()
                 },
                 transaction);
         }
