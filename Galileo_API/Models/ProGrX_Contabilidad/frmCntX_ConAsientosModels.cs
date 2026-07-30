@@ -13,6 +13,14 @@
 
     }
 
+    public class CntxConAsientoDto
+    {
+        public DateTime? fecha { get; set; }
+        public string? descripcion { get; set; }
+        public string? aplicado { get; set; }
+        public List<CntxConAsientoDetalleDto> detalle { get; set; } = new();
+    }
+
     public class CntxConAsientoGuardarDto
     {
         public int? cod_empresa { get; set; }

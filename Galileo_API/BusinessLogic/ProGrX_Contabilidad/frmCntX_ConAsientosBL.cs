@@ -46,6 +46,22 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             );
         }
 
+        public ErrorDto<CntxConAsientoDto?> Asiento_Obtener(
+            int codEmpresa,
+            int codConsolida,
+            string codAsiento)
+        {
+            return _db.Asiento_Obtener(codEmpresa, codConsolida, codAsiento);
+        }
+
+        public ErrorDto<DropDownListaGenericaModel?> Cuenta_Validar(
+            int codEmpresa,
+            int codConsolida,
+            string codCuenta)
+        {
+            return _db.Cuenta_Validar(codEmpresa, codConsolida, codCuenta);
+        }
+
         public ErrorDto<bool> GuardarAsiento(CntxConAsientoGuardarDto request)
         {
             return _db.GuardarAsiento(request);

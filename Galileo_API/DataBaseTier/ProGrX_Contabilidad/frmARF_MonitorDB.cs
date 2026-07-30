@@ -1,11 +1,7 @@
-﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Activos;
-using Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
-using System.Data;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
@@ -20,90 +16,102 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Busca en el monitor de arrendamientos financieros
+        /// Busca las operaciones del monitor de arrendamientos financieros.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ArfMonitorTablaDto>> Buscar(int codEmpresa,ArfMonitorFiltroDto filtros)
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <param name="filtros">Filtros seleccionados en el monitor.</param>
+        /// <returns>Operaciones que cumplen los filtros solicitados.</returns>
+        public ErrorDto<List<ArfMonitorTablaDto>> Buscar(
+            int codEmpresa,
+            ArfMonitorFiltroDto filtros
+        )
         {
-            var response = new ErrorDto<List<ArfMonitorTablaDto>>();
+            var sql = new StringBuilder();
+            var where = new StringBuilder();
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
+            ConstruirSelect(sql, filtros);
+            ConstruirFiltros(where, filtros);
 
-                var sql = new StringBuilder();
-                var where = new StringBuilder();
+            if (where.Length > 0)
+                sql.Append(" WHERE ").Append(where);
 
-                ConstruirSelect(sql, filtros);
-                ConstruirFiltros(where, filtros);
-
-                if (where.Length > 0)
-                {
-                    sql.Append(" WHERE ").Append(where);
-                }
-
-                response.Result = cn.Query<ArfMonitorTablaDto>(
-                    sql.ToString(),
-                    ObtenerParametros(filtros)
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<ArfMonitorTablaDto>(
+                _portalDB,
+                codEmpresa,
+                sql.ToString(),
+                ObtenerParametros(filtros)
+            );
         }
 
-        private static void ConstruirSelect(StringBuilder sql, ArfMonitorFiltroDto filtros)
+        /// <summary>
+        /// Define la vista de consulta según el tipo de fecha solicitado.
+        /// </summary>
+        /// <param name="sql">Constructor de la sentencia SQL.</param>
+        /// <param name="filtros">Filtros seleccionados en el monitor.</param>
+        private static void ConstruirSelect(
+            StringBuilder sql,
+            ArfMonitorFiltroDto filtros
+        )
+        {
+            sql.Append(
+                filtros.tipo_fecha == "Cierre"
+                    ? "SELECT * FROM vARF_Cierre_Operacion_Consulta "
+                    : "SELECT * FROM vARF_Operacion_Consulta "
+            );
+        }
+
+        /// <summary>
+        /// Construye los filtros SQL comunes y los específicos del tipo de fecha.
+        /// </summary>
+        /// <param name="where">Constructor de la cláusula WHERE.</param>
+        /// <param name="filtros">Filtros seleccionados en el monitor.</param>
+        private static void ConstruirFiltros(
+            StringBuilder where,
+            ArfMonitorFiltroDto filtros
+        )
         {
             if (filtros.tipo_fecha == "Cierre")
-            {
-                sql.Append("SELECT * FROM vARF_Cierre_Operacion_Consulta ");
-            }
+                AgregarFiltro(where, "CORTE = @corte", filtros.corte);
             else
-            {
-                sql.Append("SELECT * FROM vARF_Operacion_Consulta ");
-            }
-        }
+                AgregarFiltroFecha(where, filtros);
 
-
-        private static void ConstruirFiltros(StringBuilder where, ArfMonitorFiltroDto filtros)
-        {
-            if (filtros.tipo_fecha == "Cierre")
-            {
-                where.Append(" CORTE = @corte ");
-                return;
-            }
-
-            AgregarFiltroFecha(where, filtros);
             AgregarFiltro(where, "COD_LOCAL = @cod_unidad", filtros.cod_unidad);
-            AgregarFiltro(where, "COD_ACREEDOR = @cod_arrendador", filtros.cod_arrendador);
+            AgregarFiltro(
+                where,
+                "COD_ACREEDOR = @cod_arrendador",
+                filtros.cod_arrendador
+            );
         }
 
-        private static void AgregarFiltroFecha(StringBuilder where, ArfMonitorFiltroDto filtros)
+        /// <summary>
+        /// Agrega el rango de fechas cuando está habilitado para la consulta.
+        /// </summary>
+        /// <param name="where">Constructor de la cláusula WHERE.</param>
+        /// <param name="filtros">Filtros seleccionados en el monitor.</param>
+        private static void AgregarFiltroFecha(
+            StringBuilder where,
+            ArfMonitorFiltroDto filtros
+        )
         {
             if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
                 return;
-
 
             if (filtros.usar_fechas == true)
                 return;
 
             string campoFecha = ObtenerCampoFecha(filtros.tipo_fecha);
-
-            where.Append($@"
-                            {campoFecha} BETWEEN
-                            @fechaInicio AND @fechaCorte
-                        ");
+            AgregarCondicion(
+                where,
+                $"{campoFecha} BETWEEN @fechaInicio AND @fechaCorte"
+            );
         }
 
-        private static string ObtenerCampoFecha(string tipoFecha)
+        /// <summary>
+        /// Obtiene el campo de fecha correspondiente a la selección del usuario.
+        /// </summary>
+        /// <param name="tipoFecha">Tipo de fecha seleccionado.</param>
+        /// <returns>Nombre del campo SQL que se filtrará.</returns>
+        private static string ObtenerCampoFecha(string? tipoFecha)
         {
             return tipoFecha switch
             {
@@ -115,19 +123,46 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-        private static void AgregarFiltro(StringBuilder where,string condicion,string valor)
+        /// <summary>
+        /// Agrega una condición solamente cuando el valor del filtro está informado.
+        /// </summary>
+        /// <param name="where">Constructor de la cláusula WHERE.</param>
+        /// <param name="condicion">Condición SQL parametrizada.</param>
+        /// <param name="valor">Valor utilizado para determinar si aplica el filtro.</param>
+        private static void AgregarFiltro(
+            StringBuilder where,
+            string condicion,
+            string? valor
+        )
         {
-            if (string.IsNullOrEmpty(valor))
+            if (string.IsNullOrWhiteSpace(valor))
                 return;
 
+            AgregarCondicion(where, condicion);
+        }
+
+        /// <summary>
+        /// Agrega una condición a la cláusula WHERE respetando los conectores AND.
+        /// </summary>
+        /// <param name="where">Constructor de la cláusula WHERE.</param>
+        /// <param name="condicion">Condición SQL que se agregará.</param>
+        private static void AgregarCondicion(
+            StringBuilder where,
+            string condicion
+        )
+        {
             if (where.Length > 0)
                 where.Append(" AND ");
 
             where.Append(condicion);
         }
 
-
-        private object ObtenerParametros(ArfMonitorFiltroDto filtros)
+        /// <summary>
+        /// Construye los parámetros utilizados por la consulta principal.
+        /// </summary>
+        /// <param name="filtros">Filtros seleccionados en el monitor.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object ObtenerParametros(ArfMonitorFiltroDto filtros)
         {
             return new
             {
@@ -139,89 +174,76 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-
-
         /// <summary>
-        /// Busca unidades
+        /// Busca las unidades disponibles para el filtro del monitor.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Buscar(int codEmpresa)
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <returns>Lista de unidades disponibles.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Buscar(
+            int codEmpresa
+        )
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            const string sql = @"
+                SELECT
+                    RTRIM(COD_LOCAL) AS item,
+                    descripcion
+                FROM ARF_UNIDADES
+                ORDER BY COD_LOCAL;
+            ";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
-
-                var sql = @"
-                    SELECT
-                        RTRIM(COD_LOCAL) AS item,
-                        descripcion
-                    FROM ARF_UNIDADES
-                    ORDER BY COD_LOCAL;
-                ";
-
-                response.Result = cn
-                    .Query<DropDownListaGenericaModel>(sql)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                codEmpresa,
+                sql
+            );
         }
 
-
         /// <summary>
-        /// Busca arrendadores
+        /// Busca los arrendadores disponibles para el filtro del monitor.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Arrendadores_Buscar(int codEmpresa)
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <returns>Lista de arrendadores disponibles.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Arrendadores_Buscar(
+            int codEmpresa
+        )
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            const string sql = @"
+                SELECT
+                    RTRIM(COD_ACREEDOR) AS item,
+                    RTRIM(Descripcion) AS descripcion
+                FROM ARF_ACREEDORES
+                ORDER BY COD_ACREEDOR;
+            ";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
-
-                var sql = @"
-                    SELECT
-                        RTRIM(COD_ACREEDOR) AS item,
-                        RTRIM(Descripcion) AS descripcion
-                    FROM ARF_ACREEDORES
-                    ORDER BY COD_ACREEDOR;
-                ";
-
-                response.Result = cn
-                    .Query<DropDownListaGenericaModel>(sql)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                codEmpresa,
+                sql
+            );
         }
 
+        /// <summary>
+        /// Busca los cierres disponibles para consultar el auxiliar histórico.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <returns>Fechas de cierre ordenadas de la más reciente a la más antigua.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Cierres_Buscar(
+            int codEmpresa
+        )
+        {
+            const string sql = @"
+                SELECT
+                    CONVERT(varchar(19), Corte, 120) AS item,
+                    CONVERT(varchar(10), Corte, 23) AS descripcion
+                FROM ARF_CIERRES
+                ORDER BY Corte DESC;
+            ";
 
-
-
-
-
-
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                codEmpresa,
+                sql
+            );
+        }
     }
-
-
 }
-

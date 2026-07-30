@@ -240,8 +240,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 FROM con_asientos_detalle A
                 INNER JOIN cuentas B
                     ON A.cod_cuenta = B.cod_cuenta
-                WHERE A.cod_consolida = @codConsolida
-                AND A.cod_asiento = @codAsiento
+                WHERE A.cod_consolida = @cod_consolida
+                AND A.cod_asiento = @cod_asiento
+                AND B.COD_CONTABILIDAD = (
+                    SELECT COD_CONTABILIDAD
+                    FROM CNTX_CONSOLIDA_DEFINICION
+                    WHERE COD_CONSOLIDA = @cod_consolida
+                )
                 ORDER BY A.linea";
 
             return DbHelper.ExecuteListQuery<CntxConAsientoDetalleDto>(
@@ -257,6 +262,86 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Obtiene la cabecera y el detalle de un asiento consolidado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codConsolida">Código de la consolidación.</param>
+        /// <param name="codAsiento">Número del asiento.</param>
+        /// <returns>Cabecera y líneas del asiento solicitado.</returns>
+        public ErrorDto<CntxConAsientoDto?> Asiento_Obtener(
+            int codEmpresa,
+            int codConsolida,
+            string codAsiento)
+        {
+            const string sqlCabecera = @"
+                SELECT fecha, RTRIM(descripcion) AS descripcion, aplicado
+                FROM con_asientos
+                WHERE cod_consolida = @codConsolida
+                  AND cod_asiento = @codAsiento";
+
+            var cabecera = DbHelper.ExecuteSingleQuery<CntxConAsientoDto>(
+                _portalDb,
+                codEmpresa,
+                sqlCabecera,
+                null,
+                new { codConsolida, codAsiento }
+            );
+
+            if (cabecera.Code == -1 || cabecera.Result == null)
+                return cabecera;
+
+            var detalle = AsientoDetalle_Obtener(
+                codEmpresa,
+                0,
+                codConsolida,
+                codAsiento
+            );
+
+            if (detalle.Code == -1)
+            {
+                return new ErrorDto<CntxConAsientoDto?>
+                {
+                    Code = -1,
+                    Description = detalle.Description
+                };
+            }
+
+            cabecera.Result.detalle = detalle.Result ?? new();
+            return cabecera;
+        }
+
+        /// <summary>
+        /// Valida que una cuenta pertenezca a la contabilidad de la consolidación y acepte movimientos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codConsolida">Código de la consolidación.</param>
+        /// <param name="codCuenta">Código de la cuenta digitada.</param>
+        /// <returns>Cuenta y descripción cuando la cuenta es válida; nulo en caso contrario.</returns>
+        public ErrorDto<DropDownListaGenericaModel?> Cuenta_Validar(
+            int codEmpresa,
+            int codConsolida,
+            string codCuenta)
+        {
+            const string sql = @"
+                SELECT RTRIM(C.cod_cuenta) AS item,
+                       RTRIM(C.descripcion) AS descripcion
+                FROM cuentas C
+                INNER JOIN CNTX_CONSOLIDA_DEFINICION D
+                    ON D.COD_CONTABILIDAD = C.COD_CONTABILIDAD
+                WHERE D.COD_CONSOLIDA = @codConsolida
+                  AND C.cod_cuenta = @codCuenta
+                  AND C.acepta_movimientos = 'S'";
+
+            return DbHelper.ExecuteSingleQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                new { codConsolida, codCuenta }
+            );
+        }
+
+        /// <summary>
         /// Guarda el asiento
         /// </summary>
         /// <param name="request"></param>
@@ -268,6 +353,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 if (request.es_edicion == true)
                 {
+                    const string validaAplicado = @"
+                        SELECT aplicado
+                        FROM con_asientos
+                        WHERE cod_consolida = @cod_consolida
+                          AND cod_asiento = @cod_asiento";
+
+                    var aplicado = cn.QueryFirstOrDefault<string>(
+                        validaAplicado,
+                        request,
+                        trx
+                    );
+
+                    if (aplicado == "S")
+                        throw new InvalidOperationException(
+                            "Este asiento ya fue aplicado y no se puede modificar"
+                        );
+
                     const string update = @"
                         UPDATE con_asientos
                         SET descripcion = @descripcion,
@@ -308,6 +410,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 {
                     if (string.IsNullOrWhiteSpace(d.cod_cuenta))
                         continue;
+
+                    const string validaCuenta = @"
+                        SELECT COUNT(1)
+                        FROM cuentas C
+                        INNER JOIN CNTX_CONSOLIDA_DEFINICION D
+                            ON D.COD_CONTABILIDAD = C.COD_CONTABILIDAD
+                        WHERE D.COD_CONSOLIDA = @cod_consolida
+                          AND C.cod_cuenta = @cod_cuenta
+                          AND C.acepta_movimientos = 'S'";
+
+                    var cuentaValida = cn.ExecuteScalar<int>(
+                        validaCuenta,
+                        new { request.cod_consolida, d.cod_cuenta },
+                        trx
+                    ) > 0;
+
+                    if (!cuentaValida)
+                        throw new InvalidOperationException(
+                            $"La cuenta {d.cod_cuenta} no existe o no acepta movimientos"
+                        );
 
                     cn.Execute(insertDetalle, new
                     {

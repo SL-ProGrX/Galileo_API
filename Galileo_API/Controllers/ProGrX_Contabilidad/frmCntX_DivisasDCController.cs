@@ -20,25 +20,25 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpGet("ObtenerDivisas")]
-        public ErrorDto<List<DivisaDto>> ObtenerDivisas(int codEmpresa)
+        public ErrorDto<List<DivisaDto>> ObtenerDivisas(int codEmpresa, int codContabilidad)
         {
-            return _bl.ObtenerDivisas(codEmpresa);
+            return _bl.ObtenerDivisas(codEmpresa, codContabilidad);
         }
 
         [Authorize]
         [HttpGet("ObtenerTiposCambio")]
-        public ErrorDto<List<TipoCambioDto>> ObtenerTiposCambio(int codEmpresa,int periodoAnio,int periodoMes,string codDivisa)
+        public ErrorDto<List<TipoCambioDto>> ObtenerTiposCambio(int codEmpresa, int codContabilidad, int periodoAnio,int periodoMes,string codDivisa)
         {
-            return _bl.ObtenerTiposCambio(codEmpresa,periodoAnio,periodoMes,codDivisa
+            return _bl.ObtenerTiposCambio(codEmpresa,codContabilidad,periodoAnio,periodoMes,codDivisa
             );
         }
 
         [Authorize]
         [HttpPost("Procesar")]
-        public ErrorDto Procesar(int codEmpresa,int periodoAnio, int periodoMes,string usuario,
+        public ErrorDto Procesar(int codEmpresa, int codContabilidad, int periodoAnio, int periodoMes,string usuario,
             ProcesarDiferencialRequestDto request)
         {
-            return _bl.Procesar(codEmpresa,periodoAnio,periodoMes,request,usuario
+            return _bl.Procesar(codEmpresa,codContabilidad,periodoAnio,periodoMes,request,usuario
             );
         }
     }
