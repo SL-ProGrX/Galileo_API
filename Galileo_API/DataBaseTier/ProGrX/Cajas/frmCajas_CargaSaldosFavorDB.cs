@@ -31,6 +31,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
+        /// Obtiene los conceptos de retención activos para Carga de Saldos a Favor.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Conceptos de retención activos ordenados por descripción.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
+        {
+            const string query = @"
+                select
+                    rtrim(RETENCION_CODIGO) as item,
+                    rtrim(DESCRIPCION) as descripcion
+                from FND_RETENCION_CONCEPTOS
+                where ACTIVO = 1
+                order by DESCRIPCION";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                query);
+        }
+
+        /// <summary>
         /// Obtiene las entidades pagadoras activas ordenadas por código o descripción.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
@@ -117,11 +138,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             AddLike(where, parameters, param.Cedula, "Cedula");
             AddLike(where, parameters, param.Nombre, "Nombre", "ISNULL(Nombre,'')");
-            AddEquals(where, parameters, param.DocTipo, "Doc_Tipo");
+            if(param.DocTipo != "TODOS")
+            {
+                AddEquals(where, parameters, param.DocTipo, "Doc_Tipo");
+            }
+            
             AddLike(where, parameters, param.DocNumero, "DocNumero", "Doc_Numero");
             AddLike(where, parameters, param.Usuario, "Usuario", "Registro_Usuario");
-            AddEquals(where, parameters, param.CodEntidadPago, "COD_ENTIDAD_PAGO");
-            AddEquals(where, parameters, param.CodOrigenRecursos, "COD_ORIGEN_RECURSOS");
+            if (param.CodEntidadPago  != "TODOS")
+            {
+                AddEquals(where, parameters, param.CodEntidadPago, "COD_ENTIDAD_PAGO");
+            }
+
+            if (param.CodOrigenRecursos  != "TODOS")
+            {
+                AddEquals(where, parameters, param.CodOrigenRecursos, "COD_ORIGEN_RECURSOS");
+            }
+
+
+           
+            
 
             if (param.SoloConOrigenRecursos == true)
                 where.Append(" AND COD_ORIGEN_RECURSOS IS NOT NULL");
