@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
-    public class FrmTesBancosCargadoDB
+    public partial class FrmTesBancosCargadoDB
     {
         private readonly PortalDB _portalDB;
         private readonly MTesoreria _mTesoreria;
@@ -267,6 +267,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         sb.AppendLine($"Documento Repetido: [{row.documento}]");
                     }
                 }
+
+                conn.Execute("spTES_W_BancosCargado_SinpeConciliar",commandType: CommandType.StoredProcedure, commandTimeout: 0);
 
                 response.Description = sb.ToString();
 

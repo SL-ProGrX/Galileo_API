@@ -127,7 +127,7 @@
         public int? Carga_Lote { get; set; }
         public string? Cod_Origen_Recursos { get; set; } = string.Empty;
         public string? Cod_Entidad_Pago { get; set; } = string.Empty;
-        public int? Id_Servicio { get; set; }
+        public string? Id_Servicio { get; set; }
         public string? Cuenta_Iban_Origen { get; set; } = string.Empty;
         public string? Cedula_Origen { get; set; } = string.Empty;
         public string? Nombre_Origen { get; set; } = string.Empty;
