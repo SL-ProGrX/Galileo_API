@@ -400,7 +400,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (totalDebitos != totalCreditos)
                 throw new InvalidOperationException("El asiento no se encuentra balanceado.");
 
-            foreach (var detalle in modelo.detalle)
+            ValidarDetalles(cn, transaction, header.cod_contabilidad, modelo.detalle);
+        }
+
+        /// <summary>
+        /// Valida los importes y las cuentas contables de las líneas de la plantilla.
+        /// </summary>
+        /// <param name="cn">Conexión abierta a la empresa.</param>
+        /// <param name="transaction">Transacción activa de la operación.</param>
+        /// <param name="codContabilidad">Código de la contabilidad de la plantilla.</param>
+        /// <param name="detalles">Líneas de detalle que se desean guardar.</param>
+        private static void ValidarDetalles(
+            SqlConnection cn,
+            SqlTransaction transaction,
+            int? codContabilidad,
+            IEnumerable<CntxPlantillaDetalleDto> detalles)
+        {
+            foreach (var detalle in detalles)
             {
                 if ((detalle.debitos ?? 0) > 0 && (detalle.creditos ?? 0) > 0)
                     throw new InvalidOperationException("Una línea no puede tener débito y crédito al mismo tiempo.");
@@ -413,7 +429,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         AND acepta_movimientos = 1",
                     new
                     {
-                        header.cod_contabilidad,
+                        cod_contabilidad = codContabilidad,
                         detalle.cod_cuenta
                     },
                     transaction);

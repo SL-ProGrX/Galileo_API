@@ -88,9 +88,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codContabilidad">Código de la contabilidad activa.</param>
         /// <param name="anio">Año del período contable.</param>
         /// <param name="mes">Mes del período contable.</param>
-        /// <param name="codDivisa">Código de la divisa.</param>
-        /// <param name="tcCompra">Tipo de cambio de compra.</param>
-        /// <param name="tcVenta">Tipo de cambio de venta.</param>
+        /// <param name="request">Datos de la divisa y los tipos de cambio de compra y venta.</param>
         /// <param name="usuario">Usuario que ejecuta el proceso.</param>
         /// <returns>Resultado del proceso.</returns>
         public ErrorDto Procesar(
@@ -98,11 +96,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             int codContabilidad,
             int anio,
             int mes,
-            string? codDivisa,
-            decimal? tcCompra,
-            decimal? tcVenta,
+            ProcesarDiferencialRequestDto request,
             string usuario)
         {
+            var codDivisa = request.codDivisa;
+            var tcCompra = request.tcCompra;
+            var tcVenta = request.tcVenta;
+
             if (string.IsNullOrWhiteSpace(codDivisa) || tcCompra is null || tcVenta is null)
             {
                 return new ErrorDto

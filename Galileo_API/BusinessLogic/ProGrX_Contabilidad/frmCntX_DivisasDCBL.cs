@@ -25,7 +25,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 
         public ErrorDto Procesar(int codEmpresa, int codContabilidad, int anio,int mes,ProcesarDiferencialRequestDto request,string usuario)
         {
-            return _db.Procesar(codEmpresa,codContabilidad,anio,mes,request.codDivisa,request.tcCompra,request.tcVenta,usuario
+            return _db.Procesar(codEmpresa,codContabilidad,anio,mes,request,usuario
             );
         }
     }
