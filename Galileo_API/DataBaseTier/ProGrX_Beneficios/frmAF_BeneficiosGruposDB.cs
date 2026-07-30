@@ -1,6 +1,8 @@
 using Dapper;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -28,37 +30,118 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private PortalDB CreatePortalDb() => new(_config);
 
+        // ==========================
+        // Cuerpos SQL constantes
+        // ==========================
+
+        private const string SqlGruposSelect = @"
+SELECT cod_grupo, descripcion, Cod_Categoria AS cod_categoria, monto, estado,
+       User_Registra AS user_registra, Fecha AS fecha
+FROM AFI_BENE_GRUPOS
+";
+
+        private const string SqlGruposWhere = @"
+WHERE (@filtro IS NULL)
+   OR (cod_grupo LIKE @like)
+   OR (descripcion LIKE @like)
+   OR (Cod_Categoria LIKE @like)
+";
+
+        private const string SqlGruposCount = @"
+SELECT COUNT(1)
+FROM AFI_BENE_GRUPOS
+" + SqlGruposWhere;
+
         /// <summary>
-        /// Obtiene la lista de grupos de beneficios con paginación y filtro.
+        /// Obtiene la lista de grupos de beneficios con paginación, filtro y ordenamiento.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="pagina">Offset de paginación.</param>
-        /// <param name="paginacion">Cantidad de registros por página.</param>
-        /// <param name="filtro">Filtro por código, descripción o categoría.</param>
-        /// <returns>Lista de grupos y total.</returns>
-        public ErrorDto<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        /// <param name="filtros">Filtros de carga perezosa (página, paginación, filtro y orden).</param>
+        /// <returns>Lista de grupos y total de registros.</returns>
+        public ErrorDto<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, FiltrosLazyLoadData filtros)
         {
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
-                var response = new AfiBeneGruposLista();
-
-                const string sqlCount = "SELECT COUNT(*) FROM AFI_BENE_GRUPOS";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
-
-                var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
-                var offset = pagina ?? 0;
-                var fetch = paginacion ?? 10;
-
-                const string sql = @"SELECT cod_grupo, descripcion, Cod_Categoria AS cod_categoria, monto, estado,
-                                            User_Registra AS user_registra, Fecha AS fecha
-                                     FROM AFI_BENE_GRUPOS
-                                     WHERE (@like IS NULL OR cod_grupo LIKE @like OR descripcion LIKE @like OR Cod_Categoria LIKE @like)
-                                     ORDER BY cod_grupo
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-                response.beneficios = connection.Query<AfiBeneGrupos>(sql, new { like, offset, fetch }).ToList();
-                return response;
+                var lista = QueryGrupos(connection, filtros, true, out var total);
+                return new AfiBeneGruposLista { total = total, beneficios = lista };
             });
+        }
+
+        // ==========================
+        // Helpers privados de consulta
+        // ==========================
+
+        /// <summary>
+        /// Consulta los grupos aplicando filtro, orden y, opcionalmente, paginación.
+        /// </summary>
+        /// <param name="connection">Conexión abierta.</param>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <param name="usarPaginacion">Indica si se aplica OFFSET/FETCH.</param>
+        /// <param name="total">Total de registros que cumplen el filtro.</param>
+        /// <returns>Lista de grupos.</returns>
+        private static List<AfiBeneGrupos> QueryGrupos(
+            SqlConnection connection,
+            FiltrosLazyLoadData filtros,
+            bool usarPaginacion,
+            out int total)
+        {
+            var (filtro, like) = BuildFiltroLike(filtros);
+            var (sortField, sortOrder) = ResolveSort(filtros);
+
+            total = connection.QuerySingle<int>(SqlGruposCount, new { filtro, like });
+
+            var sqlList = SqlGruposSelect + SqlGruposWhere + $"\nORDER BY {sortField} {sortOrder}";
+
+            var offset = filtros?.pagina ?? 0;
+            var fetch = filtros?.paginacion ?? 0;
+
+            if (usarPaginacion && fetch > 0)
+            {
+                sqlList += "\nOFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+            }
+            else
+            {
+                sqlList += ";";
+            }
+
+            return connection.Query<AfiBeneGrupos>(sqlList, new { filtro, like, offset, fetch }).ToList();
+        }
+
+        /// <summary>
+        /// Construye el texto de filtro y su patrón LIKE. Devuelve nulos cuando no hay filtro.
+        /// </summary>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <returns>Tupla con el filtro normalizado y su patrón LIKE.</returns>
+        private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
+        {
+            var texto = filtros?.filtro?.Trim();
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                return (null, null);
+            }
+
+            return (texto, $"%{texto}%");
+        }
+
+        /// <summary>
+        /// Resuelve el campo y la dirección de ordenamiento usando una lista blanca de columnas.
+        /// </summary>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
+        private static (string sortField, string sortOrder) ResolveSort(FiltrosLazyLoadData filtros)
+        {
+            // ORDER BY seguro (whitelist), nunca se concatena texto recibido del usuario.
+            var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "descripcion" => "descripcion",
+                "cod_categoria" => "Cod_Categoria",
+                "monto" => "monto",
+                "estado" => "estado",
+                _ => "cod_grupo"
+            };
+
+            var sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+            return (sortField, sortOrder);
         }
 
         /// <summary>
@@ -130,19 +213,15 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Exporta la lista completa de grupos de beneficios.
+        /// Exporta la lista de grupos de beneficios aplicando el filtro vigente, sin paginar.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <returns>Lista de grupos.</returns>
-        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente)
+        /// <param name="filtros">Filtros de carga perezosa; se ignora la paginación.</param>
+        /// <returns>Lista de grupos sin paginar.</returns>
+        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente, FiltrosLazyLoadData filtros)
         {
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                const string sql = @"SELECT cod_grupo, descripcion, Cod_Categoria AS cod_categoria, monto, estado,
-                                            User_Registra AS user_registra, Fecha AS fecha
-                                     FROM AFI_BENE_GRUPOS ORDER BY cod_grupo";
-                return connection.Query<AfiBeneGrupos>(sql).ToList();
-            });
+                QueryGrupos(connection, filtros, false, out _));
         }
     }
 }
