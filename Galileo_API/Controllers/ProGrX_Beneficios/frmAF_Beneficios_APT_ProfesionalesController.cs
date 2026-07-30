@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Beneficios;
@@ -35,6 +36,11 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         [HttpGet("AfBeneAptPro_Exportar")]
         public ErrorDto<List<BeneAptProfesionalesData>> AfBeneAptPro_Exportar(int CodCliente, string? filtros)
             => _bl.AfBeneAptPro_Exportar(CodCliente, filtros);
+
+        /// <summary>Lista de usuarios activos para asignar al profesional.</summary>
+        [HttpGet("AfBeneAptProUsuarios_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AfBeneAptProUsuarios_Obtener(int CodCliente)
+            => _bl.AfBeneAptProUsuarios_Obtener(CodCliente);
 
         /// <summary>Inserta un profesional (o actualiza si existe).</summary>
         [HttpPost("AfBeneAptPro_Insertar")]

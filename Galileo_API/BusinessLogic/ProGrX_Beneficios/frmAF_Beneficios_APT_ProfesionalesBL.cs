@@ -50,6 +50,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros) ?? new FiltrosLazyLoadData();
         }
 
+        /// <summary>Lista de usuarios activos para asignar al profesional.</summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        public ErrorDto<List<DropDownListaGenericaModel>> AfBeneAptProUsuarios_Obtener(int CodCliente)
+            => _db.AfBeneAptProUsuarios_Obtener(CodCliente);
+
         /// <summary>Inserta un profesional (o actualiza si existe).</summary>
         public ErrorDto AfBeneAptPro_Insertar(int CodCliente, BeneAptProfesionalesData profesional)
             => _db.AfBeneAptPro_Insertar(CodCliente, profesional);
