@@ -15,12 +15,8 @@ namespace Galileo.Models.AF
         [System.Text.Json.Serialization.JsonRequired]
         public bool requerido { get; set; }
         public string? registro_usuario { get; set; }
-    }
 
-    public class AfiRequerimientoFiltros
-    {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
+        /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        public bool isNew { get; set; }
     }
 }

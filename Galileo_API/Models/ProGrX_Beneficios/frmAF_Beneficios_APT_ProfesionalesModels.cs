@@ -19,12 +19,8 @@ namespace Galileo.Models.AF
         public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
-    }
-    
-    public class AfiAptProFiltros
-    {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
+
+        /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        public bool isNew { get; set; }
     }
 }

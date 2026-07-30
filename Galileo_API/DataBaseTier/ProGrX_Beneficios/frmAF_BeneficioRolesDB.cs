@@ -213,7 +213,8 @@ SELECT U.nombre, U.descripcion, A.usuario,
                 _ => "cod_grupo"
             };
 
-            var sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+            // Convención de PrimeNG: -1 descendente, 1 ascendente (ASC por defecto).
+            var sortOrder = filtros?.sortOrder == -1 ? "DESC" : "ASC";
             return (sortField, sortOrder);
         }
 
@@ -240,7 +241,8 @@ SELECT U.nombre, U.descripcion, A.usuario,
                 _ => "U.nombre"
             };
 
-            var sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+            // Convención de PrimeNG: -1 descendente, 1 ascendente (ASC por defecto).
+            var sortOrder = filtros?.sortOrder == -1 ? "DESC" : "ASC";
             return (sortField, sortOrder);
         }
 

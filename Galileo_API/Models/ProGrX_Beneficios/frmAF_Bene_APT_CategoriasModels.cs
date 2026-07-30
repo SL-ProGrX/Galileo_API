@@ -12,11 +12,14 @@ namespace Galileo.Models.AF
         public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
+
+        /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        public bool isNew { get; set; }
     }
 
     public class AptCategoriasDataLista
     {
-        public int Total { get; set; }
-        public List<AptCategorias> Lista { get; set; } = new List<AptCategorias>();
+        public int total { get; set; }
+        public List<AptCategorias> lista { get; set; } = new List<AptCategorias>();
     }
 }

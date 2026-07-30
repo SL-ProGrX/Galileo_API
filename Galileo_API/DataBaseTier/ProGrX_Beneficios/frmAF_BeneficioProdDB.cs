@@ -147,7 +147,8 @@ FROM afi_bene_productos
                 _ => "cod_producto"
             };
 
-            var sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+            // Convención de PrimeNG: -1 descendente, 1 ascendente (ASC por defecto).
+            var sortOrder = filtros?.sortOrder == -1 ? "DESC" : "ASC";
             return (sortField, sortOrder);
         }
 

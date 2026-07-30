@@ -11,6 +11,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
     /// </summary>
     [Route("api/frmAF_Beneficios_APT_Profesionales")]
     [ApiController]
+    [Authorize]
     public class FrmAfBeneficiosAptProfesionalesController : ControllerBase
     {
         private readonly FrmAfBeneficiosAptProfesionalesBL _bl;
@@ -25,26 +26,27 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             _bl = new FrmAfBeneficiosAptProfesionalesBL(config);
         }
 
-        /// <summary>Lista de profesionales apremiantes.</summary>
-        [Authorize]
+        /// <summary>Lista de profesionales con paginación, filtro y ordenamiento.</summary>
         [HttpGet("AfBeneAptPro_Obtener")]
-        public ErrorDto<BeneAptProfesionalesDataLista> AfBeneAptPro_Obtener(int CodCliente, string filtros)
+        public ErrorDto<BeneAptProfesionalesDataLista> AfBeneAptPro_Obtener(int CodCliente, string? filtros)
             => _bl.AfBeneAptPro_Obtener(CodCliente, filtros);
 
+        /// <summary>Exporta la lista de profesionales aplicando el filtro vigente, sin paginar.</summary>
+        [HttpGet("AfBeneAptPro_Exportar")]
+        public ErrorDto<List<BeneAptProfesionalesData>> AfBeneAptPro_Exportar(int CodCliente, string? filtros)
+            => _bl.AfBeneAptPro_Exportar(CodCliente, filtros);
+
         /// <summary>Inserta un profesional (o actualiza si existe).</summary>
-        [Authorize]
         [HttpPost("AfBeneAptPro_Insertar")]
         public ErrorDto AfBeneAptPro_Insertar(int CodCliente, [FromBody] BeneAptProfesionalesData profesional)
             => _bl.AfBeneAptPro_Insertar(CodCliente, profesional);
 
         /// <summary>Actualiza un profesional.</summary>
-        [Authorize]
         [HttpPut("AfBeneAptPro_Actualizar")]
         public ErrorDto AfBeneAptPro_Actualizar(int CodCliente, [FromBody] BeneAptProfesionalesData profesional)
             => _bl.AfBeneAptPro_Actualizar(CodCliente, profesional);
 
         /// <summary>Elimina un profesional.</summary>
-        [Authorize]
         [HttpDelete("AfBeneAptPro_Eliminar")]
         public ErrorDto AfBeneAptPro_Eliminar(int CodCliente, int id_profesional)
             => _bl.AfBeneAptPro_Eliminar(CodCliente, id_profesional);

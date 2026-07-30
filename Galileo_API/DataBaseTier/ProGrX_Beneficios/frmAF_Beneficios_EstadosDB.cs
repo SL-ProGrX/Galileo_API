@@ -1,6 +1,8 @@
 using Dapper;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -25,37 +27,130 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private PortalDB CreatePortalDb() => new(_config);
 
+        // ==========================
+        // Cuerpos SQL constantes
+        // ==========================
+
+        private const string SqlEstadosSelect = @"
+SELECT cod_estado, descripcion, activo, orden, p_inicia, p_finaliza,
+       registro_fecha, registro_usuario, modifica_fecha, modifica_usuario, proceso
+FROM AFI_BENE_ESTADOS
+";
+
+        private const string SqlEstadosWhere = @"
+WHERE (@filtro IS NULL)
+   OR (COD_ESTADO LIKE @like)
+   OR (DESCRIPCION LIKE @like)
+";
+
+        private const string SqlEstadosCount = @"
+SELECT COUNT(1)
+FROM AFI_BENE_ESTADOS
+" + SqlEstadosWhere;
+
         /// <summary>
-        /// Obtiene la lista de estados de beneficios con paginación y filtro.
+        /// Obtiene la lista de estados de beneficios con paginación, filtro y ordenamiento.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="pagina">Offset de paginación.</param>
-        /// <param name="paginacion">Cantidad de registros por página.</param>
-        /// <param name="filtro">Filtro de búsqueda por código o descripción.</param>
-        /// <returns>Lista de estados y total.</returns>
-        public ErrorDto<BeneEstadoDataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        /// <param name="filtros">Filtros de carga perezosa (página, paginación, filtro y orden).</param>
+        /// <returns>Lista de estados y total de registros.</returns>
+        public ErrorDto<BeneEstadoDataLista> BeneficiosEstados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var response = new BeneEstadoDataLista();
-
-                const string sqlCount = "SELECT COUNT(*) FROM AFI_BENE_ESTADOS";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
-
-                var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
-                var offset = pagina ?? 0;
-                var fetch = paginacion ?? 10;
-
-                const string sql = @"SELECT cod_estado, descripcion, activo, orden, p_inicia, p_finaliza,
-                                            registro_fecha, registro_usuario, modifica_fecha, modifica_usuario, proceso
-                                     FROM AFI_BENE_ESTADOS
-                                     WHERE (@like IS NULL OR COD_ESTADO LIKE @like OR DESCRIPCION LIKE @like)
-                                     ORDER BY COD_ESTADO
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-                response.Lista = connection.Query<BeneEstado>(sql, new { like, offset, fetch }).ToList();
-                return response;
+                var lista = QueryEstados(connection, filtros, true, out var total);
+                return new BeneEstadoDataLista { total = total, lista = lista };
             });
+        }
+
+        /// <summary>
+        /// Exporta la lista de estados aplicando el filtro vigente, sin paginar.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa; se ignora la paginación.</param>
+        /// <returns>Lista de estados sin paginar.</returns>
+        public ErrorDto<List<BeneEstado>> BeneficiosEstados_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                QueryEstados(connection, filtros, false, out _));
+        }
+
+        // ==========================
+        // Helpers privados de consulta
+        // ==========================
+
+        /// <summary>
+        /// Consulta los estados aplicando filtro, orden y, opcionalmente, paginación.
+        /// </summary>
+        /// <param name="connection">Conexión abierta.</param>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <param name="usarPaginacion">Indica si se aplica OFFSET/FETCH.</param>
+        /// <param name="total">Total de registros que cumplen el filtro.</param>
+        /// <returns>Lista de estados.</returns>
+        private static List<BeneEstado> QueryEstados(
+            SqlConnection connection,
+            FiltrosLazyLoadData filtros,
+            bool usarPaginacion,
+            out int total)
+        {
+            var (filtro, like) = BuildFiltroLike(filtros);
+            var (sortField, sortOrder) = ResolveSort(filtros);
+
+            total = connection.QuerySingle<int>(SqlEstadosCount, new { filtro, like });
+
+            var sqlList = SqlEstadosSelect + SqlEstadosWhere + $"\nORDER BY {sortField} {sortOrder}";
+
+            var offset = filtros?.pagina ?? 0;
+            var fetch = filtros?.paginacion ?? 0;
+
+            if (usarPaginacion && fetch > 0)
+            {
+                sqlList += "\nOFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+            }
+            else
+            {
+                sqlList += ";";
+            }
+
+            return connection.Query<BeneEstado>(sqlList, new { filtro, like, offset, fetch }).ToList();
+        }
+
+        /// <summary>
+        /// Construye el texto de filtro y su patrón LIKE. Devuelve nulos cuando no hay filtro.
+        /// </summary>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <returns>Tupla con el filtro normalizado y su patrón LIKE.</returns>
+        private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
+        {
+            var texto = filtros?.filtro?.Trim();
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                return (null, null);
+            }
+
+            return (texto, $"%{texto}%");
+        }
+
+        /// <summary>
+        /// Resuelve el campo y la dirección de ordenamiento usando una lista blanca de columnas.
+        /// </summary>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
+        private static (string sortField, string sortOrder) ResolveSort(FiltrosLazyLoadData filtros)
+        {
+            // ORDER BY seguro (whitelist), nunca se concatena texto recibido del usuario.
+            var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "descripcion" => "DESCRIPCION",
+                "orden" => "ORDEN",
+                "proceso" => "PROCESO",
+                "activo" => "ACTIVO",
+                _ => "COD_ESTADO"
+            };
+
+            // Convención de PrimeNG: -1 descendente, 1 ascendente (ASC por defecto).
+            var sortOrder = filtros?.sortOrder == -1 ? "DESC" : "ASC";
+            return (sortField, sortOrder);
         }
 
         /// <summary>

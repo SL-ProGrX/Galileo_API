@@ -16,11 +16,14 @@ namespace Galileo.Models.AF
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
         public string proceso { get; set; } = string.Empty;
+
+        /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        public bool isNew { get; set; }
     }
 
     public class BeneEstadoDataLista
     {
-        public int Total { get; set; }
-        public List<BeneEstado> Lista { get; set; } = new List<BeneEstado>();
+        public int total { get; set; }
+        public List<BeneEstado> lista { get; set; } = new List<BeneEstado>();
     }
 }
