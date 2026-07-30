@@ -65,7 +65,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     Modulo = 10
                 });
 
-                _mAfilicacionDB.sbgAFIBitacora(
+                _mAfilicacionDB.sbgAFIBitacora_Registrar(
                     codEmpresa,
                     "29",
                     $"Id.: {cedulaNormalizada} - {persona.nombre?.Trim()}",

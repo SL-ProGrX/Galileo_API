@@ -761,7 +761,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             foreach (var item in resp.Result ?? new List<CrPolizasRegistroBeneficiarioItem>())
             {
-                item.parentesco = MAfilicacionDB.fxParentesco(item.parentesco);
+                item.parentesco = MAfilicacionDB.fxParentesco_Obtener(item.parentesco);
             }
 
             return DbHelper.CreateOkResponse(resp.Result ?? new List<CrPolizasRegistroBeneficiarioItem>());

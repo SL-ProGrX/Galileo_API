@@ -213,7 +213,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     return DbHelper.CreateErrorResponse(MensajeOperacionNoEncontrada, -2, resultado);
                 }
 
-                if (_mAfiliacionDb.fxgCongelamiento(codEmpresa, operacion.cedula, "per_abono_cajas"))
+                if (_mAfiliacionDb.fxgCongelamiento_Obtener(codEmpresa, operacion.cedula, "per_abono_cajas"))
                 {
                     return DbHelper.CreateErrorResponse(
                         "Esta persona se encuentra congelada, verifique.",
