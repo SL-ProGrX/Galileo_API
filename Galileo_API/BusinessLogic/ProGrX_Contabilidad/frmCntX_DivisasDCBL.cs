@@ -13,19 +13,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmCntXDivisasDCcB(config);
         }
 
-        public ErrorDto<List<DivisaDto>> ObtenerDivisas(int codEmpresa)
+        public ErrorDto<List<DivisaDto>> ObtenerDivisas(int codEmpresa, int codContabilidad)
         {
-            return _db.ObtenerDivisas(codEmpresa);
+            return _db.ObtenerDivisas(codEmpresa, codContabilidad);
         }
 
-        public ErrorDto<List<TipoCambioDto>> ObtenerTiposCambio(int codEmpresa,int anio,int mes,string codDivisa)
+        public ErrorDto<List<TipoCambioDto>> ObtenerTiposCambio(int codEmpresa, int codContabilidad, int anio,int mes,string codDivisa)
         {
-            return _db.ObtenerTiposCambio(codEmpresa, anio, mes, codDivisa);
+            return _db.ObtenerTiposCambio(codEmpresa, codContabilidad, anio, mes, codDivisa);
         }
 
-        public ErrorDto Procesar(int codEmpresa,int anio,int mes,ProcesarDiferencialRequestDto request,string usuario)
+        public ErrorDto Procesar(int codEmpresa, int codContabilidad, int anio,int mes,ProcesarDiferencialRequestDto request,string usuario)
         {
-            return _db.Procesar(codEmpresa,anio,mes,request.codDivisa,request.tcCompra,request.tcVenta,usuario
+            return _db.Procesar(codEmpresa,codContabilidad,anio,mes,request,usuario
             );
         }
     }

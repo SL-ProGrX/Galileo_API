@@ -9,7 +9,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmArfOperacionesDb
+    public partial class FrmArfOperacionesDb
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _mSecurityMainDb;
@@ -257,6 +257,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
+        /// <summary>
+        /// Obtiene el estado actual de una operación dentro de la transacción activa.
+        /// </summary>
+        /// <param name="cn">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="tx">Transacción asociada a la operación de guardado.</param>
+        /// <param name="operacion">Número de operación; puede ser nulo para registros nuevos.</param>
+        /// <returns>Estado actual de la operación o pendiente cuando aún no existe.</returns>
         private string ObtenerEstadoActual(SqlConnection cn, SqlTransaction tx, int? operacion)
         {
             if (!operacion.HasValue || operacion.Value <= 0)
@@ -271,79 +278,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                    ?? "P";
         }
 
-        private static void ValidarGuardarRequest(ArfOperacionGuardarRequestDto request, string estadoActual)
-        {
-            ValidarCamposObligatorios(request);
-            ValidarRangosPrincipales(request);
-            ValidarIncrementos(request);
-            ValidarFechas(request);
-            ValidarEstadoEditable(estadoActual);
-        }
-
-        private static void ValidarCamposObligatorios(ArfOperacionGuardarRequestDto request)
-        {
-            if (request.cod_acreedor.GetValueOrDefault() <= 0)
-                throw new ArgumentException("No se ha especificado un Arrendador.", nameof(request));
-
-            if (string.IsNullOrWhiteSpace(request.cod_local))
-                throw new ArgumentException("No se ha especificado una Unidad/Local.", nameof(request));
-        }
-
-        private static void ValidarRangosPrincipales(ArfOperacionGuardarRequestDto request)
-        {
-            if (request.cuota.GetValueOrDefault() <= 0)
-                throw new ArgumentOutOfRangeException(nameof(request), "El Monto no es válido.");
-
-            if (!EstaEntreCeroYCien(request.tasa_descuento))
-                throw new ArgumentOutOfRangeException(nameof(request), "La Tasa Descuento no es válida.");
-
-            if (!EstaEntreCeroYCien(request.tasa_interes))
-                throw new ArgumentOutOfRangeException(nameof(request), "La Tasa de Interés no es válida.");
-
-            if (request.plazo.GetValueOrDefault() <= 0)
-                throw new ArgumentOutOfRangeException(nameof(request), "El Plazo no es válido.");
-
-            if (request.deposito_garantia_monto.GetValueOrDefault() < 0)
-                throw new ArgumentOutOfRangeException(nameof(request), "El dato del depósito de garantía no es válido.");
-        }
-
-        private static void ValidarIncrementos(ArfOperacionGuardarRequestDto request)
-        {
-            if (string.Equals(request.incremento_tipo, "P", StringComparison.OrdinalIgnoreCase) &&
-                !EstaEntreCeroYCien(request.incremento_valor))
-            {
-                throw new ArgumentOutOfRangeException(nameof(request), "El Porcentaje de Incremento Anual no es válido.");
-            }
-
-            if (string.Equals(request.incremento_tipo, "M", StringComparison.OrdinalIgnoreCase) &&
-                request.incremento_valor.GetValueOrDefault() < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(request), "El Monto del Incremento Anual no es válido.");
-            }
-        }
-
-        private static void ValidarFechas(ArfOperacionGuardarRequestDto request)
-        {
-            if (request.fecha_inicio >= request.fecha_finaliza)
-                throw new ArgumentException("Rango de Fechas Erróneo, verificar.", nameof(request));
-        }
-
-        private static void ValidarEstadoEditable(string estadoActual)
-        {
-            var esRecibida = string.Equals(estadoActual, "R", StringComparison.OrdinalIgnoreCase);
-            var esPendiente = string.Equals(estadoActual, "P", StringComparison.OrdinalIgnoreCase);
-
-            if (!esRecibida && !esPendiente)
-            {
-                throw new InvalidOperationException("Esta Operación no puede ser modificada porque no se encuentra en estado de recibido.");
-            }
-        }
-
-        private static bool EstaEntreCeroYCien(decimal? valor)
-        {
-            return valor.HasValue && valor.Value >= 0 && valor.Value <= 100;
-        }
-
+        /// <summary>
+        /// Coordina la inserción o actualización de una operación.
+        /// </summary>
+        /// <param name="cn">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="tx">Transacción activa del proceso.</param>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Datos de la operación.</param>
+        /// <param name="notas">Notas normalizadas de la operación.</param>
+        /// <param name="esNuevo">Indica si se debe insertar un registro nuevo.</param>
+        /// <returns>Número de la operación insertada o actualizada.</returns>
         private int GuardarOperacion(
             SqlConnection cn,
             SqlTransaction tx,
@@ -360,6 +304,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return ActualizarOperacion(cn, tx, codEmpresa, request, notas);
         }
 
+        /// <summary>
+        /// Inserta una operación de arrendamiento y registra su bitácora.
+        /// </summary>
+        /// <param name="cn">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="tx">Transacción activa del proceso.</param>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Datos de la operación.</param>
+        /// <param name="notas">Notas normalizadas de la operación.</param>
+        /// <returns>Número generado para la operación.</returns>
         private int InsertarOperacion(
             SqlConnection cn,
             SqlTransaction tx,
@@ -398,6 +351,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return operacion;
         }
 
+        /// <summary>
+        /// Actualiza una operación de arrendamiento y registra su bitácora.
+        /// </summary>
+        /// <param name="cn">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="tx">Transacción activa del proceso.</param>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Datos de la operación.</param>
+        /// <param name="notas">Notas normalizadas de la operación.</param>
+        /// <returns>Número de la operación actualizada.</returns>
         private int ActualizarOperacion(
             SqlConnection cn,
             SqlTransaction tx,
@@ -451,6 +413,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return operacion;
         }
 
+        /// <summary>
+        /// Construye los parámetros utilizados para insertar o actualizar la operación.
+        /// </summary>
+        /// <param name="request">Datos de la operación.</param>
+        /// <param name="notas">Notas normalizadas de la operación.</param>
+        /// <param name="operacion">Número de operación para una actualización.</param>
+        /// <returns>Objeto con los parámetros requeridos por Dapper.</returns>
         private static object CrearParametrosGuardar(
             ArfOperacionGuardarRequestDto request,
             string notas,
@@ -811,6 +780,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
+        /// <summary>
+        /// Registra en bitácora el movimiento realizado sobre la operación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario que ejecutó el movimiento.</param>
+        /// <param name="movimiento">Tipo de movimiento registrado.</param>
+        /// <param name="detalleMovimiento">Descripción del movimiento.</param>
         private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalleMovimiento)
         {
             _mSecurityMainDb.Bitacora(new BitacoraInsertarDto
@@ -823,6 +799,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
+        /// <summary>
+        /// Ejecuta un proceso almacenado de la operación y normaliza su respuesta.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="sql">Sentencia o procedimiento que se desea ejecutar.</param>
+        /// <param name="parametros">Parámetros requeridos por el proceso.</param>
+        /// <param name="usuario">Usuario que ejecutó el proceso.</param>
+        /// <param name="movimiento">Tipo de movimiento para la bitácora.</param>
+        /// <param name="detalleMovimiento">Descripción del movimiento.</param>
+        /// <param name="mensajeExito">Mensaje devuelto cuando el proceso finaliza correctamente.</param>
+        /// <param name="mensajeSinCambios">Mensaje devuelto cuando el proceso no produce cambios.</param>
+        /// <returns>Resultado normalizado de éxito o error.</returns>
         private ErrorDto EjecutarProcesoOperacion(
             int codEmpresa,
             string sql,
