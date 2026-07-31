@@ -405,6 +405,41 @@ namespace Galileo.DataBaseTier
             return resp.Result;
         }
 
+        /// <summary>
+        /// Obtiene la informacion disponible para creditos sobre excedentes.
+        /// </summary>
+        /// <param name="portalDb"></param>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
+        public static CrExcedenteDisponibleData? fxExcedenteDisponible(
+            PortalDB portalDb,
+            int codEmpresa,
+            string cedula)
+        {
+            cedula = (cedula ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return null;
+            }
+
+            const string sql =
+                "exec spVoxExcedenteCredito @Cedula;";
+
+            return DbHelper
+                .ExecuteListQuery<CrExcedenteDisponibleData>(
+                    portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        Cedula = cedula
+                    })
+                .Result?
+                .FirstOrDefault();
+        }
+
         public sealed class CrOperacionTagRegistrarRequest
         {
             public long operacion { get; set; }
@@ -425,6 +460,30 @@ namespace Galileo.DataBaseTier
             public int operacion { get; set; }
             public string codigo { get; set; } = string.Empty;
             public string notas { get; set; } = string.Empty;
+        }
+
+        public sealed class CrExcedenteDisponibleData
+        {
+            public decimal saldos { get; set; } = 0;
+            public decimal @base { get; set; } = 0;
+            public decimal? bruto { get; set; }
+            public decimal? capitalizacion { get; set; }
+            public decimal? renta { get; set; }
+            public decimal? capIndividual { get; set; }
+            public decimal? neto { get; set; }
+            public decimal? porCapGen { get; set; }
+            public decimal? porRenta { get; set; }
+            public decimal? porCapInd { get; set; }
+            public decimal? porAcumulado { get; set; }
+            public decimal? tasa { get; set; }
+            public short? dias { get; set; }
+            public decimal? intereses { get; set; }
+            public decimal? giro_Maximo { get; set; }
+            public string? nombre { get; set; }
+            public DateTime? periodo_De { get; set; }
+            public DateTime? periodo_Hasta { get; set; }
+            public short? mes_Aplicado { get; set; }
+            public decimal? polizaFactor { get; set; }
         }
     }
 }
