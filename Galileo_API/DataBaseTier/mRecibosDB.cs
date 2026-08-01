@@ -132,7 +132,21 @@ namespace Galileo_API.DataBaseTier
         }
 
 
-        public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
+        /// <summary>Genera el recibo usando la versión documental configurada.</summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="pDocumento">Número del documento.</param>
+        /// <param name="pTipo">Tipo de documento.</param>
+        /// <param name="Usuario">Usuario que solicita el reporte.</param>
+        /// <param name="pReImprime">Indica si corresponde a una reimpresión.</param>
+        /// <param name="pFolder">Carpeta lógica donde se encuentran los RDL.</param>
+        /// <returns>Archivo generado o información del error.</returns>
+        public ErrorDto<object> sbImprimeRecibo(
+            int CodEmpresa,
+            string pDocumento,
+            string pTipo,
+            string Usuario,
+            bool pReImprime = false,
+            string pFolder = "Sys")
         {
                 var response = CreateOkObjectResponse();
 
@@ -142,8 +156,8 @@ namespace Galileo_API.DataBaseTier
                     int SysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
 
                     response = SysDocVersion == 1
-                        ? sbImprimev1(CodEmpresa, pDocumento, pTipo, pReImprime)
-                        : sbImprimev2(CodEmpresa, pTipo, pDocumento, Usuario, pReImprime);
+                        ? sbImprimev1(CodEmpresa, pDocumento, pTipo, pReImprime, pFolder)
+                        : sbImprimev2(CodEmpresa, pTipo, pDocumento, Usuario, pReImprime, pFolder);
                 }
                 catch (Exception ex)
                 {
@@ -153,7 +167,19 @@ namespace Galileo_API.DataBaseTier
                 return response;
         }
 
-        public ErrorDto<object> sbImprimev1(int CodEmpresa, string pDocumento, string pTipo, bool pReImprime = false)
+        /// <summary>Genera un recibo con el esquema documental versión 1.</summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="pDocumento">Número del documento.</param>
+        /// <param name="pTipo">Tipo de documento.</param>
+        /// <param name="pReImprime">Indica si corresponde a una reimpresión.</param>
+        /// <param name="pFolder">Carpeta lógica donde se encuentran los RDL.</param>
+        /// <returns>Archivo generado o información del error.</returns>
+        public ErrorDto<object> sbImprimev1(
+            int CodEmpresa,
+            string pDocumento,
+            string pTipo,
+            bool pReImprime = false,
+            string pFolder = "Sys")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = CreateOkObjectResponse();
@@ -179,7 +205,7 @@ namespace Galileo_API.DataBaseTier
                     {
                         codEmpresa = CodEmpresa,
                         cod_reporte = "P",
-                        folder = "Sys"
+                        folder = pFolder
                     };
 
                     string selectionFormula = $" where ASE_DOCUMENTOS.ID_DOCUMENTO = {pDocumento} AND ASE_DOCUMENTOS.TIPO = '{pTipo}'";
@@ -221,7 +247,21 @@ namespace Galileo_API.DataBaseTier
             return response;
         }
 
-        public ErrorDto<object> sbImprimev2(int CodEmpresa, string pTipo, string pTransaccion, string Usuario, bool pReImprime = false)
+        /// <summary>Genera un recibo con el esquema documental versión 2.</summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="pTipo">Tipo de documento.</param>
+        /// <param name="pTransaccion">Número de transacción.</param>
+        /// <param name="Usuario">Usuario que solicita el reporte.</param>
+        /// <param name="pReImprime">Indica si corresponde a una reimpresión.</param>
+        /// <param name="pFolder">Carpeta lógica donde se encuentran los RDL.</param>
+        /// <returns>Archivo generado o información del error.</returns>
+        public ErrorDto<object> sbImprimev2(
+            int CodEmpresa,
+            string pTipo,
+            string pTransaccion,
+            string Usuario,
+            bool pReImprime = false,
+            string pFolder = "Sys")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = CreateOkObjectResponse();
@@ -251,7 +291,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     codEmpresa = CodEmpresa,
                     cod_reporte = "P",
-                    folder = "Sys",
+                    folder = pFolder,
                     nombreReporte = vArchivo,
                     parametros = BuildReportParams(vFlat, pTransaccion, pTipo, empresaNombre, empresaCedJur, Usuario)
                 };

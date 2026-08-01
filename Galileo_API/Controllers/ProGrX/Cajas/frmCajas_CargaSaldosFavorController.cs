@@ -26,6 +26,13 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [HttpGet("Cajas_CargaSaldosFavor_Retenciones_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
+        {
+            return _bl.Cajas_CargaSaldosFavor_Retenciones_Obtener(codEmpresa);
+        }
+
+        [Authorize]
         [HttpGet("CargaSaldosFavor_EntidadesPagadoras_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CargaSaldosFavor_EntidadesPagadoras_Obtener(int codEmpresa, bool ordenPorDescripcion = false)
         {
