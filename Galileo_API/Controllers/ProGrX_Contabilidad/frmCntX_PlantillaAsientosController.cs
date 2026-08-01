@@ -20,9 +20,9 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpGet("Consultar")]
-        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
+        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codContabilidad, int codPlantilla)
         {
-            return _bl.Consultar(codEmpresa, codPlantilla);
+            return _bl.Consultar(codEmpresa, codContabilidad, codPlantilla);
         }
 
         [Authorize]
@@ -41,23 +41,23 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpDelete("Borrar")]
-        public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
+        public ErrorDto<int> Borrar(int codEmpresa, int codContabilidad, int codPlantilla)
         {
-            return _bl.Borrar(codEmpresa, codPlantilla);
+            return _bl.Borrar(codEmpresa, codContabilidad, codPlantilla);
         }
 
         [Authorize]
         [HttpGet("Scroll")]
-        public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
+        public ErrorDto<int?> Scroll(int codEmpresa, int codContabilidad, int? codigoActual, int direccion)
         {
-            return _bl.Scroll(codEmpresa, codigoActual, direccion);
+            return _bl.Scroll(codEmpresa, codContabilidad, codigoActual, direccion);
         }
 
         [Authorize]
         [HttpGet("BuscarPlantillas")]
-        public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa)
+        public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa, int codContabilidad)
         {
-            return _bl.BuscarPlantillas(codEmpresa);
+            return _bl.BuscarPlantillas(codEmpresa, codContabilidad);
         }
 
         [Authorize]

@@ -209,9 +209,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn =
+                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+
             var result = new ErrorDto<List<SysIvaParametrosData>>
             {
                 Code = 0,
@@ -224,52 +226,144 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(stringConn);
                 connection.Open();
 
-                connection.Execute("dbo.spSys_IVA_Parametros", commandType: CommandType.StoredProcedure, commandTimeout: 60);
+                connection.Execute(
+                    "dbo.spSys_IVA_Parametros",
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 60);
 
                 var p = new DynamicParameters();
 
                 var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? queryLike = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+                string? queryLike =
+                    string.IsNullOrWhiteSpace(raw)
+                        ? null
+                        : $"%{raw}%";
+
                 p.Add("@query", queryLike);
 
                 const string query = @"
-                SELECT
-                    p.cod_parametro    AS codParametro,
-                    p.descripcion      AS descripcion,
-                    p.valor            AS valor,
-                    p.tipo             AS tipo,
-                    p.visible          AS visible,
-                    p.notas            AS notas,
-                    p.registro_usuario AS registroUsuario,
-                    p.registro_fecha   AS registroFecha,
-                    p.modifica_usuario AS modificaUsuario,
-                    p.modifica_fecha   AS modificaFecha,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN cta.Cod_Cuenta_Mask ELSE NULL END AS valorMask,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN cta.CuentaNombre   ELSE NULL END AS cuentaDescripcion
-               FROM SYS_IVA_PARAMETROS p
-                OUTER APPLY (
-                    SELECT TOP 1
-                           Cod_Cuenta_Mask,
-                           COALESCE(NULLIF(Descripcion_Alterna,''), Descripcion) AS CuentaNombre
-                    FROM vCNTX_CUENTAS_LOCAL c
-                    WHERE p.tipo IN ('CTA','cta')
-                      AND p.valor IS NOT NULL
-                      AND p.valor <> ''
-                      AND PATINDEX('%[^0-9]%', p.valor) = 0   -- solo dígitos
-                      AND c.COD_CUENTA = CONVERT(BIGINT, p.valor)
-                ) cta
-                WHERE (@query IS NULL OR (
-                       p.cod_parametro      LIKE @query
-                    OR p.descripcion        LIKE @query
-                    OR p.valor              LIKE @query
-                    OR p.tipo               LIKE @query
-                    OR cta.Cod_Cuenta_Mask  LIKE @query
-                ))
-                ORDER BY p.cod_parametro";
+            SELECT
+                p.cod_parametro    AS codParametro,
+                p.descripcion      AS descripcion,
+                p.valor            AS valor,
+                p.tipo             AS tipo,
+                p.visible          AS visible,
+                p.notas            AS notas,
+                p.registro_usuario AS registroUsuario,
+                p.registro_fecha   AS registroFecha,
+                p.modifica_usuario AS modificaUsuario,
+                p.modifica_fecha   AS modificaFecha,
 
-                result.Result = connection.Query<SysIvaParametrosData>(query, p).ToList();
+                CASE
+                    WHEN UPPER(p.tipo) = 'CTA'
+                    THEN COALESCE(
+                        cta.Cod_Cuenta_Mask,
+                        m.mask10
+                    )
+                    ELSE NULL
+                END AS valorMask,
+
+                CASE
+                    WHEN UPPER(p.tipo) = 'CTA'
+                    THEN cta.CuentaNombre
+                    ELSE NULL
+                END AS cuentaDescripcion
+
+            FROM SYS_IVA_PARAMETROS p
+
+            OUTER APPLY (
+                SELECT valorDigits =
+                    REPLACE(
+                        REPLACE(
+                            REPLACE(
+                                LTRIM(RTRIM(p.valor)),
+                                '-',
+                                ''
+                            ),
+                            ' ',
+                            ''
+                        ),
+                        '.',
+                        ''
+                    )
+            ) nd
+
+            OUTER APPLY (
+                SELECT valor10 =
+                    CASE
+                        WHEN UPPER(p.tipo) = 'CTA'
+                             AND nd.valorDigits IS NOT NULL
+                             AND nd.valorDigits <> ''
+                             AND PATINDEX(
+                                 '%[^0-9]%',
+                                 nd.valorDigits
+                             ) = 0
+                        THEN
+                            CASE
+                                WHEN LEN(nd.valorDigits) >= 10
+                                THEN LEFT(nd.valorDigits, 10)
+                                ELSE nd.valorDigits
+                                     + REPLICATE(
+                                         '0',
+                                         10 - LEN(nd.valorDigits)
+                                     )
+                            END
+                        ELSE NULL
+                    END
+            ) v
+
+            OUTER APPLY (
+                SELECT mask10 =
+                    CASE
+                        WHEN v.valor10 IS NULL
+                        THEN NULL
+                        ELSE
+                            SUBSTRING(v.valor10, 1, 1) + '-' +
+                            SUBSTRING(v.valor10, 2, 1) + '-' +
+                            SUBSTRING(v.valor10, 3, 1) + '-' +
+                            SUBSTRING(v.valor10, 4, 2) + '-' +
+                            SUBSTRING(v.valor10, 6, 1) + '-' +
+                            SUBSTRING(v.valor10, 7, 2) + '-' +
+                            SUBSTRING(v.valor10, 9, 2)
+                    END
+            ) m
+
+            OUTER APPLY (
+                SELECT TOP 1
+                    c.Cod_Cuenta_Mask,
+                    COALESCE(
+                        NULLIF(c.Descripcion_Alterna, ''),
+                        c.Descripcion
+                    ) AS CuentaNombre
+                FROM vCNTX_CUENTAS_LOCAL c
+                WHERE m.mask10 IS NOT NULL
+                  AND c.Cod_Cuenta_Mask = m.mask10
+                ORDER BY c.COD_CONTABILIDAD
+            ) cta
+
+            WHERE (
+                @query IS NULL
+                OR p.cod_parametro LIKE @query
+                OR p.descripcion LIKE @query
+                OR p.valor LIKE @query
+                OR p.tipo LIKE @query
+                OR cta.Cod_Cuenta_Mask LIKE @query
+                OR m.mask10 LIKE @query
+            )
+
+            ORDER BY p.cod_parametro;";
+
+                result.Result = connection
+                    .Query<SysIvaParametrosData>(query, p)
+                    .ToList();
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+            catch (InvalidOperationException ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
@@ -278,8 +372,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             return result;
         }
-        
-        
+
+
         /// <summary>
         /// Actualiza el valor de un parámetro IVA (UPDATE + Bitácora) validando según tipo (DEC, NUM, POR, CTA, CHR, PSN, DTS).
         /// </summary>

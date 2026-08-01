@@ -14,9 +14,9 @@ namespace Galileo.BusinessLogic.ProGrX_Activos_Fijos
             _db = new FrmActivosPolizasReportesDB(config);
         }
         
-        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string jfiltros)
+        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string jfiltros, string? tipoPoliza)
         {
-            return _db.Activos_PolizasReportesLista_Obtener(CodEmpresa, jfiltros);
+            return _db.Activos_PolizasReportesLista_Obtener(CodEmpresa, jfiltros, tipoPoliza);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_PolizasReportes_Tipos_Lista_Obtener(int CodEmpresa)

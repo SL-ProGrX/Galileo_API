@@ -22,9 +22,9 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
 
         [HttpGet("Activos_PolizasReportesLista_Obtener")]
         [Authorize]
-        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string filtros,string? tipoPoliza)
         {
-            return _bl.Activos_PolizasReportesLista_Obtener(CodEmpresa, filtros);
+            return _bl.Activos_PolizasReportesLista_Obtener(CodEmpresa, filtros, tipoPoliza);
         }
 
         [HttpGet("Activos_PolizasReportes_Tipos_Lista_Obtener")]

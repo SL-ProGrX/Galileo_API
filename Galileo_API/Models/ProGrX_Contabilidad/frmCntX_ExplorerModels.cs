@@ -94,6 +94,7 @@
         public class CntxCuentaDto
         {
             public string? cod_cuenta { get; set; } = string.Empty;
+            public string? cod_cuenta_mask { get; set; } = string.Empty;
             public string? descripcion { get; set; } = string.Empty;
             public bool? es_mayor { get; set; }
 

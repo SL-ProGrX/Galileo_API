@@ -23,5 +23,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         {
             return _db.Contabilidades_Buscar(codEmpresa, tipo);
         }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Buscar(
+            int codEmpresa,
+            string tipo,
+            int codigo)
+        {
+            return _db.Cuentas_Buscar(codEmpresa, tipo, codigo);
+        }
     }
 }
