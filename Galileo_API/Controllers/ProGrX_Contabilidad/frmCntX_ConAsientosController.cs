@@ -67,6 +67,24 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             );
         }
 
+        [HttpGet("Asiento_Obtener")]
+        public ErrorDto<CntxConAsientoDto?> Asiento_Obtener(
+            int codEmpresa,
+            int codConsolida,
+            string codAsiento)
+        {
+            return _bl.Asiento_Obtener(codEmpresa, codConsolida, codAsiento);
+        }
+
+        [HttpGet("Cuenta_Validar")]
+        public ErrorDto<DropDownListaGenericaModel?> Cuenta_Validar(
+            int codEmpresa,
+            int codConsolida,
+            string codCuenta)
+        {
+            return _bl.Cuenta_Validar(codEmpresa, codConsolida, codCuenta);
+        }
+
 
         [HttpPost("GuardarAsiento")]
         public ErrorDto<bool> GuardarAsiento(CntxConAsientoGuardarDto request)

@@ -53,6 +53,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _Db.TES_ConciliacionResumenArchivo_Cargar(CodEmpresa, vFiltro, file);
         }
 
+        public ErrorDto TES_ConciliacionResumen_TesMov_Importar(int CodEmpresa, TesConciliaFiltros filtro)
+        {
+            return _Db.TES_ConciliacionResumen_TesMov_Importar(CodEmpresa, filtro);
+        }
+
         public ErrorDto TES_ConciliacionResumenPeriodo_Cerrar(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _Db.TES_ConciliacionResumenPeriodo_Cerrar(CodEmpresa, filtro);

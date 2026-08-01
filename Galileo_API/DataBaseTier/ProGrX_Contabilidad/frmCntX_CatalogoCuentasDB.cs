@@ -8,7 +8,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmCntXCatalogoCuentasDB
+    public partial class FrmCntXCatalogoCuentasDB
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _dbBitacora;
@@ -40,8 +40,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las divisas del catálogo de cuentas.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoDivisas(int codEmpresa, int codContabilidad)
         {
@@ -56,8 +56,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene las unidades de negocio.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoUnidades(int codEmpresa, int codContabilidad)
         {
@@ -72,8 +72,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los centros de costo activos.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCosto(int codEmpresa, int codContabilidad)
         {
@@ -89,9 +89,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene los centros de costo disponibles para una unidad.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="codUnidad"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="codUnidad">Código de la unidad seleccionada.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoCentrosCostoPorUnidad(int codEmpresa, int codContabilidad, string codUnidad)
         {
@@ -113,9 +113,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene una cuenta exacta por código para llenar descripciones al salir del campo.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="cuenta"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="cuenta">Código de la cuenta contable.</param>
         /// <returns></returns>
         public ErrorDto<CntXCatalogoCuentaLookupDto> CntXCatalogoCuentaObtener(int codEmpresa, int codContabilidad, string cuenta)
         {
@@ -131,10 +131,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Obtiene los tipos de cuenta del catÃ¡logo contable.
+        /// Obtiene los tipos de cuenta del catálogo contable.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCatalogoTiposCuenta(int codEmpresa, int codContabilidad)
         {
@@ -150,8 +150,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Consulta el catálogo principal de cuentas.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="filtro"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="filtro">Filtros de consulta del catálogo.</param>
         /// <returns></returns>
         public ErrorDto<List<CntXCatalogoCuentaDto>> CntXCatalogoConsulta(int codEmpresa, CntXCatalogoCuentasFiltroRequest filtro)
         {
@@ -235,9 +235,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene el detalle adicional de una cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="cuenta"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="cuenta">Código de la cuenta contable.</param>
         /// <returns></returns>
         public ErrorDto<CntXCatalogoCuentaDetalleResponse> CntXCatalogoDetalle(int codEmpresa, int codContabilidad, string cuenta)
         {
@@ -286,8 +286,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Guarda la información adicional de una cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoDetalleGuardar(int codEmpresa, CntXCatalogoCuentaDetalleGuardarRequest request)
         {
@@ -320,8 +320,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Actualiza un indicador de cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoCuentaEstadoGuardar(int codEmpresa, CntXCatalogoCuentaEstadoRequest request)
         {
@@ -460,10 +460,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Registra o modifica una cuenta del catÃ¡logo contable usando el procedimiento original.
+        /// Registra o modifica una cuenta del catálogo contable usando el procedimiento original.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<CntXCatalogoCuentaGuardarResponse> CntXCatalogoCuentaGuardar(int codEmpresa, CntXCatalogoCuentaGuardarRequest request)
         {
@@ -534,7 +534,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (string.IsNullOrWhiteSpace(request.Descripcion))
             {
-                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>("La descripciÃ³n es requerida.");
+                return DbHelper.CreateErrorResponse<CntXCatalogoCuentaGuardarResponse>("La descripción es requerida.");
             }
 
             if (string.IsNullOrWhiteSpace(request.CodDivisa))
@@ -595,8 +595,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina una cuenta del catálogo contable y sus cuentas hijas inmediatas.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoCuentaEliminar(int codEmpresa, CntXCatalogoCuentaEliminarRequest request)
         {
@@ -670,8 +670,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Ejecuta el mapeo de cuentas.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoMapeo(int codEmpresa, CntXCatalogoMapeoRequest request)
         {
@@ -695,8 +695,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Ejecuta la baja de nivel de una cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<CntXCatalogoBajaNivelDto> CntXCatalogoBajaNivel(int codEmpresa, CntXCatalogoBajaNivelRequest request)
         {
@@ -718,10 +718,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Actualiza el formato/mÃ¡scara de las cuentas del catÃ¡logo contable.
+        /// Actualiza el formato/máscara de las cuentas del catálogo contable.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoFormatoActualizar(int codEmpresa, CntXCatalogoFormatoRequest request)
         {
@@ -749,8 +749,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Reestructura los movimientos por cuenta y revisa el balance del periodo indicado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoRevision(int codEmpresa, CntXCatalogoRevisionRequest request)
         {
@@ -785,7 +785,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"RevisiÃ³n CatÃ¡logo Cuentas: {request.PeriodoAnio}/{request.PeriodoMes}", MovimientoAplicarWeb);
+                RegistrarBitacora(codEmpresa, request.Usuario, $"Revisión Catálogo Cuentas: {request.PeriodoAnio}/{request.PeriodoMes}", MovimientoAplicarWeb);
             }
 
             return result;
@@ -794,8 +794,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Guarda una traducción de cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoTraduccionGuardar(int codEmpresa, CntXCatalogoTraduccionGuardarRequest request)
         {
@@ -839,8 +839,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Elimina una traducción de cuenta.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de la empresa usado para resolver la conexión.</param>
+        /// <param name="request">Datos requeridos por la operación.</param>
         /// <returns></returns>
         public ErrorDto<bool> CntXCatalogoTraduccionEliminar(int codEmpresa, CntXCatalogoTraduccionGuardarRequest request)
         {
@@ -860,76 +860,5 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return result;
         }
 
-        /// <summary>
-        /// Guarda una prorrata de cuenta.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> CntXCatalogoProrrataGuardar(int codEmpresa, CntXCatalogoProrrataGuardarRequest request)
-        {
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                const string sqlExiste = @"
-                    select count(1)
-                    from CNTX_CUENTAS_PRORRATA
-                    where cod_contabilidad = @CodContabilidad
-                      and cod_cuenta = @Cuenta
-                      and cod_unidad = @CodUnidad
-                      and cod_centro_costo = @CodCentroCosto";
-
-                int existe = conn.ExecuteScalar<int>(sqlExiste, request);
-
-                if (existe == 0)
-                {
-                    const string sqlInsert = @"
-                        insert into CNTX_CUENTAS_PRORRATA
-                            (cod_contabilidad, cod_cuenta, cod_unidad, cod_centro_costo, porcentaje, registro_usuario, registro_fecha)
-                        values
-                            (@CodContabilidad, @Cuenta, @CodUnidad, @CodCentroCosto, @Porcentaje, @Usuario, dbo.MyGetdate())";
-                    conn.Execute(sqlInsert, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoRegistraWeb);
-                }
-                else
-                {
-                    const string sqlUpdate = @"
-                        update CNTX_CUENTAS_PRORRATA
-                        set porcentaje = @Porcentaje
-                        where cod_contabilidad = @CodContabilidad
-                          and cod_cuenta = @Cuenta
-                          and cod_unidad = @CodUnidad
-                          and cod_centro_costo = @CodCentroCosto";
-                    conn.Execute(sqlUpdate, request);
-                    RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoModificaWeb);
-                }
-
-                return true;
-            });
-        }
-
-        /// <summary>
-        /// Elimina una prorrata de cuenta.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> CntXCatalogoProrrataEliminar(int codEmpresa, CntXCatalogoProrrataGuardarRequest request)
-        {
-            const string sql = @"
-                delete CNTX_CUENTAS_PRORRATA
-                where cod_contabilidad = @CodContabilidad
-                  and cod_cuenta = @Cuenta
-                  and cod_unidad = @CodUnidad
-                  and cod_centro_costo = @CodCentroCosto";
-
-            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn => conn.Execute(sql, request) > 0);
-
-            if (result.Code == 0)
-            {
-                RegistrarBitacora(codEmpresa, request.Usuario, $"Cta. Prorrateo: Conta.{request.CodContabilidad}, Cta: {request.Cuenta}, Unidad: {request.CodUnidad}, Centro: {request.CodCentroCosto}", MovimientoEliminaWeb);
-            }
-
-            return result;
-        }
     }
 }

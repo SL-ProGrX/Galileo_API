@@ -29,6 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var sql = @"
             SELECT  
                 cod_cuenta,
+                cod_cuenta_mask,
                 descripcion,
                 CASE 
                     WHEN acepta_movimientos = 0 THEN 1
@@ -179,6 +180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var sql = @"SELECT  
                             cod_cuenta,
+                            cod_cuenta_mask,
                             descripcion,
 
                             CASE 

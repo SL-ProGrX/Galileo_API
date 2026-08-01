@@ -19,6 +19,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CargaSaldosFavor_Tipos_Obtener(codEmpresa);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
+        {
+            return _db.Cajas_CargaSaldosFavor_Retenciones_Obtener(codEmpresa);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> CargaSaldosFavor_EntidadesPagadoras_Obtener(int codEmpresa, bool ordenPorDescripcion)
         {
             return _db.CargaSaldosFavor_EntidadesPagadoras_Obtener(codEmpresa, ordenPorDescripcion);

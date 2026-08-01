@@ -351,7 +351,7 @@ where R.estado in('A','C')
 
         private bool PersonaCongelada(int codEmpresa, string cedula)
         {
-            return _mAfiliacion.fxgCongelamiento(codEmpresa, cedula, "per_abono_cajas");
+            return _mAfiliacion.fxgCongelamiento_Obtener(codEmpresa, cedula, "per_abono_cajas");
         }
 
         private static bool OperacionPermiteAnulacion(SqlConnection conn, SqlTransaction tx, string codigo)

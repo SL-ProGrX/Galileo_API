@@ -169,7 +169,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var result = new CrSolicitudesFiadoresSocioDto
                 {
                     cedula = cedula,
-                    nombre = Clean(_mAfiliacion.fxNombre(CodEmpresa, cedula))
+                    nombre = Clean(_mAfiliacion.fxNombre_Obtener(CodEmpresa, cedula))
                 };
 
                 result.cod_institucion = ObtenerInstitucionSocio(conn, cedula);

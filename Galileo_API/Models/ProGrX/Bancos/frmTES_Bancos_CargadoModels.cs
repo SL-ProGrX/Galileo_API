@@ -117,4 +117,108 @@
         public string CodUnidad      { get; set; } = string.Empty;
         public string CodCentroCosto { get; set; } = string.Empty;
     }
+
+    public class TesBancosCargadoRevMovRequest
+    {
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaInicio { get; set; }
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaFin { get; set; }
+
+        public string? NDocumento { get; set; }
+        public int? IdBanco { get; set; }
+        public string? Tipo { get; set; }
+        public string? Estados { get; set; }
+        public string? EstadoSocio { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovDto
+    {
+        public long nsolicitud { get; set; }
+        public string? ndocumento { get; set; }
+        public DateTime? fecha_documento { get; set; }
+        public decimal monto { get; set; }
+        public string? descripcion { get; set; }
+        public string? user_solicita { get; set; }
+        public int id_banco { get; set; }
+        public string? banco { get; set; }
+        public string? codigo { get; set; }
+        public string? tipo { get; set; }
+        public string? estadoactual { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovConciliaRequest
+    {
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaInicio { get; set; }
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaFin { get; set; }
+
+        public string? Banco { get; set; }
+        public string? Concepto { get; set; }
+        public string? TipoMov { get; set; }
+        public string? Documento { get; set; }
+        public decimal? MontoDesde { get; set; }
+        public decimal? MontoHasta { get; set; }
+        public string? Estado { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovConciliaDto
+    {
+        public int? id_linea { get; set; }
+        public string? id_banco { get; set; }
+        public DateTime? fecha { get; set; }
+        public string? documento { get; set; }
+        public decimal importe { get; set; }
+        public string? descripcion { get; set; }
+        public decimal debito { get; set; }
+        public decimal credito { get; set; }
+        public string? concepto { get; set; }
+        public string? movimiento { get; set; }
+        public string? referencia_adicional { get; set; }
+        public string? estado { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovSolicitudAplicarRequest
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public long NumeroSolicitud { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public int IdBanco { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal Monto { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovDestinoAplicarRequest
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public long IdLinea { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public string? Documento { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal Importe { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public string? TipoMovimiento { get; set; }
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public string? IdBanco { get; set; }
+    }
+
+    public class TesBancosCargadoRevMovConciliaAplicarRequest
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public List<TesBancosCargadoRevMovSolicitudAplicarRequest>
+            Solicitudes { get; set; } = new();
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public TesBancosCargadoRevMovDestinoAplicarRequest
+            MovimientoDestino { get; set; } = new();
+    }
 }
