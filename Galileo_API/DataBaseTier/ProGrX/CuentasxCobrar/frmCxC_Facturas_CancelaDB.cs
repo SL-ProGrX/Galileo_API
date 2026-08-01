@@ -209,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     Result = true
                 };
             }
-            catch (Exception ex)
+            catch (System.Data.Common.DbException ex)
             {
                 return new ErrorDto<bool>
                 {
