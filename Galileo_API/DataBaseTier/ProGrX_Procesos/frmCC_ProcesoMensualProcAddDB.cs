@@ -203,7 +203,7 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto CC_PlanillaProcesosComplementarios_Guardar(int CodEmpresa, string usuario, CcPlanillaProcesosComplementariosData data)
+        public ErrorDto CC_PlanillaProcesosComplementarios_Guardar(int CodEmpresa,string usuario, CcPlanillaProcesosComplementariosData data)
         {
             if (data is null)
             {
@@ -218,50 +218,83 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
                 return DbHelper.ErrorResponse("Transacción es requerida.", -2);
             }
 
-            if (string.IsNullOrWhiteSpace(ejecucionTipo))
+            if (data.isNew && string.IsNullOrWhiteSpace(ejecucionTipo))
             {
-                return DbHelper.ErrorResponse("Tipo de ejecución es requerido.", -2);
+                return DbHelper.ErrorResponse(
+                    "Tipo de ejecución es requerido.",
+                    -2);
             }
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            if (!data.isNew && data.proc_num <= 0)
             {
-                var existe = connection.QueryFirstOrDefault<int>(
-                    @"SELECT ISNULL(COUNT(1),0)
-                      FROM prm_procesos_add
-                      WHERE transaccion = @transaccion
-                        AND proc_num = @proc_num
-                        AND ejecucion_tipo = @ejecucion_tipo;",
-                    new
-                    {
-                        transaccion,
-                        proc_num = data.proc_num,
-                        ejecucion_tipo = ejecucionTipo
-                    });
+                return DbHelper.ErrorResponse(
+                    "El número de proceso es requerido.",
+                    -2);
+            }
 
-                if (data.isNew)
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
+                CodEmpresa,
+                connection =>
                 {
-                    if (existe > 0)
+                    var existe = connection.QueryFirstOrDefault<int>(
+                        @"SELECT COUNT(1)
+                  FROM prm_procesos_add
+                  WHERE RTRIM(ISNULL(transaccion, '')) = @transaccion
+                    AND proc_num = @proc_num
+                    AND RTRIM(ISNULL(ejecucion_tipo, '')) = @ejecucion_tipo;",
+                        new
+                        {
+                            transaccion,
+                            proc_num = data.proc_num,
+                            ejecucion_tipo = ejecucionTipo
+                        });
+
+                    if (data.isNew)
                     {
-                        return DbHelper.ErrorResponse("El registro ya existe.", -2);
+                        if (existe > 0)
+                        {
+                            return DbHelper.ErrorResponse(
+                                "El registro ya existe.",
+                                -2);
+                        }
+
+                        data.proc_num = connection.QueryFirstOrDefault<int>(
+                            @"SELECT ISNULL(MAX(proc_num), 0) + 1
+                      FROM prm_procesos_add
+                      WHERE RTRIM(ISNULL(transaccion, '')) = @transaccion;",
+                            new
+                            {
+                                transaccion
+                            });
+
+                        return CC_PlanillaProcesosComplementarios_Insertar(
+                            connection,
+                            CodEmpresa,
+                            usuario,
+                            data);
                     }
 
-                    data.proc_num = connection.QueryFirstOrDefault<int>(
-                        @"SELECT ISNULL(MAX(proc_num),0) + 1
-                          FROM prm_procesos_add
-                          WHERE transaccion = @transaccion;",
-                        new { transaccion });
+                    if (existe == 0)
+                    {
+                        return DbHelper.ErrorResponse(
+                            "El registro no existe.",
+                            -2);
+                    }
 
-                    return CC_PlanillaProcesosComplementarios_Insertar(connection, CodEmpresa, usuario, data);
-                }
-
-                return existe == 0
-                    ? DbHelper.ErrorResponse("El registro no existe.", -2)
-                    : CC_PlanillaProcesosComplementarios_Actualizar(connection, CodEmpresa, usuario, data);
-            });
+                    return CC_PlanillaProcesosComplementarios_Actualizar(
+                        connection,
+                        CodEmpresa,
+                        usuario,
+                        data);
+                });
 
             return result.Code == 0 && result.Result is not null
                 ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar proceso complementario.", result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description
+                        ?? "Error al guardar proceso complementario.",
+                    result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
@@ -342,38 +375,53 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
         /// <param name="ejecucion_tipo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto CC_PlanillaProcesosComplementarios_Eliminar(int CodEmpresa, string transaccion, int proc_num, string ejecucion_tipo, string usuario)
+        public ErrorDto CC_PlanillaProcesosComplementarios_Eliminar(int CodEmpresa,string transaccion, int proc_num,string ejecucion_tipo,string usuario)
         {
+            var transaccionNormalizada =
+                (transaccion ?? string.Empty).Trim();
+
+            var ejecucionTipoNormalizado =
+                (ejecucion_tipo ?? string.Empty).Trim();
+
             var result = DbHelper.ExecuteNonQueryWithResult(
                 CreatePortalDb(),
                 CodEmpresa,
                 @"DELETE FROM prm_procesos_add
-                      WHERE transaccion = @transaccion
-                        AND proc_num = @proc_num
-                        AND ejecucion_tipo = @ejecucion_tipo;",
+          WHERE RTRIM(ISNULL(transaccion, '')) = @transaccion
+            AND proc_num = @proc_num
+            AND RTRIM(ISNULL(ejecucion_tipo, '')) = @ejecucion_tipo;",
                 new
                 {
-                    transaccion = (transaccion ?? string.Empty).Trim(),
+                    transaccion = transaccionNormalizada,
                     proc_num,
-                    ejecucion_tipo = (ejecucion_tipo ?? string.Empty).Trim()
+                    ejecucion_tipo = ejecucionTipoNormalizado
                 });
 
             if (result.Code != 0)
             {
-                return DbHelper.ErrorResponse(result.Description ?? "Error al eliminar proceso complementario.", result.Code.GetValueOrDefault(-1));
+                return DbHelper.ErrorResponse(
+                    result.Description
+                        ?? "Error al eliminar proceso complementario.",
+                    result.Code.GetValueOrDefault(-1));
             }
 
-            if (result.Result > 0)
+            if (result.Result <= 0)
             {
-                RegistrarBitacora(CodEmpresa, usuario, $"Planilla Proc.Add.: Tra: {(transaccion ?? string.Empty).Trim()} Tipo: {(ejecucion_tipo ?? string.Empty).Trim()} Id: {proc_num}", "Elimina - WEB");
-                return DbHelper.OkResponse("Ok");
+                return new ErrorDto
+                {
+                    Code = 1,
+                    Description = "No se encontró el registro"
+                };
             }
 
-            return new ErrorDto
-            {
-                Code = 1,
-                Description = "No se encontró el registro"
-            };
+            RegistrarBitacora(
+                CodEmpresa,
+                usuario,
+                $"Planilla Proc.Add.: Tra: {transaccionNormalizada} " +
+                $"Tipo: {ejecucionTipoNormalizado} Id: {proc_num}",
+                "Elimina - WEB");
+
+            return DbHelper.OkResponse("Ok");
         }
 
         /// <summary>

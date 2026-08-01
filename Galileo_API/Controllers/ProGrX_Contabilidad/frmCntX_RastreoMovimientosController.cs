@@ -31,5 +31,15 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         {
             return _bl.Contabilidades_Buscar(codEmpresa, tipo);
         }
+
+        [Authorize]
+        [HttpGet("Cuentas_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cuentas_Buscar(
+            int codEmpresa,
+            string tipo,
+            int codigo)
+        {
+            return _bl.Cuentas_Buscar(codEmpresa, tipo, codigo);
+        }
     }
 }
