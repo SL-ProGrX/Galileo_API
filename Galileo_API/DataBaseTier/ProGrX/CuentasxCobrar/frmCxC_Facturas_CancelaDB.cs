@@ -1,6 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.DataBaseTier;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Dapper;
 
@@ -9,10 +10,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
     public class FrmCxCFacturasCancelaDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
+        private readonly MRecibos _mRecibos;
+        private const int ModuloCxC = 31;
+        private const string MovRegistraWeb = "Registra - Web";
 
         public FrmCxCFacturasCancelaDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
+            _mRecibos = new MRecibos(config);
+        }
+
+        private void LogBitacora(int empresaId, string usuario, string detalleMovimiento, string movimiento)
+        {
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = empresaId,
+                Usuario = usuario,
+                DetalleMovimiento = detalleMovimiento,
+                Movimiento = movimiento,
+                Modulo = ModuloCxC
+            });
         }
 
         /// <summary>
@@ -148,21 +167,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         /// <summary>
         /// Registra la cancelación de una factura en CxC.
+        /// Si Numero_Documento viene vacío, genera el consecutivo (mismo criterio VB / Cancela Pagador).
+        /// Description retorna el número de documento utilizado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto<bool> CxCFacturasCancelaFactura_Registrar(
             int codEmpresa,
             CxCFacturasCancelaFacturaRequestDto request)
         {
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            try
             {
                 var dto = request ?? new CxCFacturasCancelaFacturaRequestDto
                 {
                     Operacion = 0
                 };
 
+                var tipoDoc = (dto.Tipo_Documento ?? string.Empty).Trim();
+                var numDoc = (dto.Numero_Documento ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(numDoc))
+                {
+                    numDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, tipoDoc).ToString();
+                }
+
+                using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Execute(
                     "spCxC_Operacion_Factura_Cancela",
                     new
@@ -170,14 +196,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         dto.Operacion,
                         Factura = (dto.Factura ?? string.Empty).Trim(),
                         dto.Abono,
-                        TipoDoc = (dto.Tipo_Documento ?? string.Empty).Trim(),
-                        NumDoc = (dto.Numero_Documento ?? string.Empty).Trim(),
+                        TipoDoc = tipoDoc,
+                        NumDoc = numDoc,
                         Usuario = (dto.Usuario ?? string.Empty).Trim()
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
-                return true;
-            });
+                return new ErrorDto<bool>
+                {
+                    Code = 0,
+                    Description = numDoc,
+                    Result = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = false
+                };
+            }
         }
 
         /// <summary>
@@ -201,11 +241,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         TipoDoc = (dto.Tipo_Documento ?? string.Empty).Trim(),
                         NumDoc = (dto.Numero_Documento ?? string.Empty).Trim(),
                         Caja = (dto.Caja ?? string.Empty).Trim(),
-                        Apertura = dto.Apertura,
+                        dto.Apertura,
                         Ticket = (dto.Tiquete ?? string.Empty).Trim(),
                         Usuario = (dto.Usuario ?? string.Empty).Trim()
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
+
+                LogBitacora(
+                    codEmpresa,
+                    (dto.Usuario ?? string.Empty).Trim(),
+                    "Registra Cancelación de Facturas> Cliente Id: " + (dto.Cliente_Id ?? string.Empty).Trim(),
+                    MovRegistraWeb);
 
                 return true;
             });
