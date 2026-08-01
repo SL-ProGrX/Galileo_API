@@ -27,20 +27,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<ActivoLiteLista> Activos_CambioVU_ActivoLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivoLiteLista> Activos_CambioVU_ActivoLista_Obtener(
+     int CodEmpresa,
+     string filtros)
         {
             var res = new ErrorDto<ActivoLiteLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new ActivoLiteLista { total = 0, lista = new List<ActivoLite>() }
+                Result = new ActivoLiteLista
+                {
+                    total = 0,
+                    lista = new List<ActivoLite>()
+                }
             };
 
             ActivosCambioVUFiltros? vfiltro;
+
             try
             {
-                vfiltro = JsonConvert.DeserializeObject<ActivosCambioVUFiltros>(filtros ?? "{}")
-                          ?? new ActivosCambioVUFiltros();
+                vfiltro =
+                    JsonConvert.DeserializeObject<ActivosCambioVUFiltros>(
+                        filtros ?? "{}")
+                    ?? new ActivosCambioVUFiltros();
             }
             catch
             {
@@ -51,7 +60,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                // Normalizamos filtros a parámetros (null si vienen vacíos)
                 var p = new DynamicParameters();
 
                 string? g = string.IsNullOrWhiteSpace(vfiltro.filtro)
@@ -75,92 +83,151 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@alterna", alterna, DbType.String);
                 p.Add("@nombre", nombre, DbType.String);
 
-                // Sort seguro: usamos CASE en el ORDER BY, sin concatenar nombres de columnas
-                string sortField = (vfiltro.sortField ?? "placa").Trim().ToLowerInvariant();
-                int sortOrder = vfiltro.sortOrder ?? 0; // 0 = ASC, 1 = DESC
+                string sortField =
+                    (vfiltro.sortField ?? "placa")
+                    .Trim()
+                    .ToLowerInvariant();
+
+                int sortOrder = vfiltro.sortOrder ?? 0;
+
                 p.Add("@sortField", sortField, DbType.String);
                 p.Add("@sortOrder", sortOrder, DbType.Int32);
 
-                // Paginación
-                bool usarPaginacion = vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue;
+                bool usarPaginacion =
+                    vfiltro.pagina.HasValue &&
+                    vfiltro.paginacion.GetValueOrDefault() > 0;
+
                 if (usarPaginacion)
                 {
-                    p.Add("@offset", vfiltro.pagina.GetValueOrDefault(), DbType.Int32);
-                    p.Add("@rows", vfiltro.paginacion.GetValueOrDefault(), DbType.Int32);
+                    p.Add(
+                        "@offset",
+                        Math.Max(0, vfiltro.pagina.GetValueOrDefault()),
+                        DbType.Int32);
+
+                    p.Add(
+                        "@rows",
+                        vfiltro.paginacion.GetValueOrDefault(),
+                        DbType.Int32);
                 }
 
                 const string selectBase = @"
-                    SELECT
-                        A.NUM_PLACA     AS numPlaca,
-                        A.PLACA_ALTERNA AS placaAlterna,
-                        A.NOMBRE        AS nombre
-                    FROM ACTIVOS_PRINCIPAL A
-                ";
+            SELECT
+                A.NUM_PLACA     AS numPlaca,
+                A.PLACA_ALTERNA AS placaAlterna,
+                A.NOMBRE        AS nombre
+            FROM ACTIVOS_PRINCIPAL A
+        ";
 
-                // WHERE totalmente estático. La activación depende de que el parámetro sea NULL o no.
                 const string whereSql = @"
-                    WHERE 1 = 1
-                      AND (
-                            @g IS NULL
-                            OR UPPER(A.NUM_PLACA)     LIKE @g
-                            OR UPPER(A.PLACA_ALTERNA) LIKE @g
-                            OR UPPER(A.NOMBRE)        LIKE @g
-                          )
-                      AND (
-                            @placa IS NULL
-                            OR UPPER(A.NUM_PLACA) LIKE @placa
-                          )
-                      AND (
-                            @alterna IS NULL
-                            OR UPPER(A.PLACA_ALTERNA) LIKE @alterna
-                          )
-                      AND (
-                            @nombre IS NULL
-                            OR UPPER(A.NOMBRE) LIKE @nombre
-                          )
-                ";
+            WHERE 1 = 1
+              AND (
+                    @g IS NULL
+                    OR UPPER(A.NUM_PLACA)     LIKE @g
+                    OR UPPER(A.PLACA_ALTERNA) LIKE @g
+                    OR UPPER(A.NOMBRE)        LIKE @g
+                  )
+              AND (
+                    @placa IS NULL
+                    OR UPPER(A.NUM_PLACA) LIKE @placa
+                  )
+              AND (
+                    @alterna IS NULL
+                    OR UPPER(A.PLACA_ALTERNA) LIKE @alterna
+                  )
+              AND (
+                    @nombre IS NULL
+                    OR UPPER(A.NOMBRE) LIKE @nombre
+                  )
+        ";
 
-                // ORDER BY estático, usando CASE sobre parámetros @sortField y @sortOrder
                 const string orderSql = @"
-                    ORDER BY
-                        CASE 
-                            WHEN @sortOrder = 0 AND @sortField = 'placa'   THEN A.NUM_PLACA
-                            WHEN @sortOrder = 0 AND @sortField = 'alterna' THEN A.PLACA_ALTERNA
-                            WHEN @sortOrder = 0 AND @sortField = 'nombre'  THEN A.NOMBRE
-                        END ASC,
-                        CASE 
-                            WHEN @sortOrder = 1 AND @sortField = 'placa'   THEN A.NUM_PLACA
-                            WHEN @sortOrder = 1 AND @sortField = 'alterna' THEN A.PLACA_ALTERNA
-                            WHEN @sortOrder = 1 AND @sortField = 'nombre'  THEN A.NOMBRE
-                        END DESC
-                ";
+            ORDER BY
+                CASE
+                    WHEN @sortOrder = 0
+                     AND @sortField = 'placa'
+                    THEN A.NUM_PLACA
+
+                    WHEN @sortOrder = 0
+                     AND @sortField = 'alterna'
+                    THEN A.PLACA_ALTERNA
+
+                    WHEN @sortOrder = 0
+                     AND @sortField = 'nombre'
+                    THEN A.NOMBRE
+                END ASC,
+
+                CASE
+                    WHEN @sortOrder = 1
+                     AND @sortField = 'placa'
+                    THEN A.NUM_PLACA
+
+                    WHEN @sortOrder = 1
+                     AND @sortField = 'alterna'
+                    THEN A.PLACA_ALTERNA
+
+                    WHEN @sortOrder = 1
+                     AND @sortField = 'nombre'
+                    THEN A.NOMBRE
+                END DESC
+        ";
 
                 const string pagingSql = @"
-                    OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY
-                ";
+            OFFSET @offset ROWS
+            FETCH NEXT @rows ROWS ONLY
+        ";
 
-                // COUNT: mismo WHERE, sin ORDER/PAGING
-                string countSql = "SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL A " + whereSql;
-                res.Result.total = cn.ExecuteScalar<int>(countSql, p, commandTimeout: 60);
+                string countSql =
+                    "SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL A "
+                    + whereSql;
 
-                // DATA: SELECT + WHERE + ORDER [+ PAGING]
-                string dataSql = selectBase + whereSql + orderSql;
+                res.Result.total = cn.ExecuteScalar<int>(
+                    countSql,
+                    p,
+                    commandTimeout: 60);
+
+                string dataSql =
+                    selectBase
+                    + whereSql
+                    + orderSql;
+
                 if (usarPaginacion)
                 {
                     dataSql += pagingSql;
                 }
 
-                res.Result.lista = cn.Query<ActivoLite>(dataSql, p, commandTimeout: 60).ToList();
+                res.Result.lista = cn
+                    .Query<ActivoLite>(
+                        dataSql,
+                        p,
+                        commandTimeout: 60)
+                    .ToList();
 
                 return res;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return new ErrorDto<ActivoLiteLista>
                 {
                     Code = -1,
                     Description = ex.Message,
-                    Result = new ActivoLiteLista { total = 0, lista = null }
+                    Result = new ActivoLiteLista
+                    {
+                        total = 0,
+                        lista = null
+                    }
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new ErrorDto<ActivoLiteLista>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = new ActivoLiteLista
+                    {
+                        total = 0,
+                        lista = null
+                    }
                 };
             }
         }
