@@ -40,21 +40,45 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
-            var garantiaResp = ObtenerGarantiaAhorro(codEmpresa, cedula);
-            if (garantiaResp.Code < 0)
-                return garantiaResp;
+            ErrorDto<CrCalculoOperacionPantallaData> garantiaResp = 
+                ObtenerGarantiaAhorro(codEmpresa, cedula);
 
-            var refundicionesResp = ObtenerRefundiciones(codEmpresa, cedula);
+            if (garantiaResp.Code < 0)
+            {
+                return garantiaResp;
+            }
+
+            if (garantiaResp.Result is not
+                CrCalculoOperacionPantallaData pantalla)
+            {
+                return new ErrorDto<CrCalculoOperacionPantallaData>
+                {
+                    Code = -1,
+                    Description =
+                        garantiaResp.Description ??
+                        "No se obtuvo la informacion del socio."
+                };
+            }
+
+            ErrorDto<List<CrCalculoOperacionRefundicionData>>
+                refundicionesResp =
+                    ObtenerRefundiciones(
+                        codEmpresa,
+                        cedula);
+
             if (refundicionesResp.Code < 0)
             {
                 return new ErrorDto<CrCalculoOperacionPantallaData>
                 {
                     Code = refundicionesResp.Code,
-                    Description = refundicionesResp.Description
+                    Description =
+                        refundicionesResp.Description ??
+                        "No fue posible obtener las refundiciones."
                 };
             }
 
-            garantiaResp.Result.refundiciones = refundicionesResp.Result;
+            pantalla.refundiciones =
+                refundicionesResp.Result ?? [];
 
             return garantiaResp;
         }
@@ -92,31 +116,74 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
-            var lineaResp = ObtenerLinea(codEmpresa, codigo);
+            ErrorDto<LineaCodigoQueryDto> lineaResp =
+                ObtenerLinea(
+                    codEmpresa,
+                    codigo);
+
             if (lineaResp.Code < 0)
             {
                 return new ErrorDto<CrCalculoOperacionCodigoData>
                 {
                     Code = lineaResp.Code,
-                    Description = lineaResp.Description
+                    Description =
+                        lineaResp.Description ??
+                        "No fue posible obtener la linea."
                 };
             }
 
-            var cargosResp = ObtenerCargosAutomaticos(codEmpresa, codigo);
+            if (lineaResp.Result is not LineaCodigoQueryDto linea)
+            {
+                return new ErrorDto<CrCalculoOperacionCodigoData>
+                {
+                    Code = -1,
+                    Description =
+                        lineaResp.Description ??
+                        "No se encontro la informacion de la linea."
+                };
+            }
+
+            ErrorDto<List<CrCalculoOperacionCargoData>> cargosResp =
+                ObtenerCargosAutomaticos(
+                    codEmpresa,
+                    codigo);
+
             if (cargosResp.Code < 0)
             {
                 return new ErrorDto<CrCalculoOperacionCodigoData>
                 {
                     Code = cargosResp.Code,
-                    Description = cargosResp.Description
+                    Description =
+                        cargosResp.Description ??
+                        "No fue posible obtener los cargos automaticos."
                 };
             }
 
-            var codigoTipo = ObtenerTipoCodigo(codEmpresa, codigo);
-            var dias = ObtenerDiasInteres(codEmpresa, lineaResp.Result);
-            var frecuenciaPago = lineaResp.Result.base_calculo == "06" ? "Q" : "M";
-            var montoSolicitado = ObtenerMontoSolicitadoInicial(codEmpresa, cedula, codigoTipo);
-            var rangoMaximo = FxRangoMaximo(codEmpresa, codigo);
+            int codigoTipo =
+                ObtenerTipoCodigo(
+                    codEmpresa,
+                    codigo);
+
+            int dias =
+                ObtenerDiasInteres(
+                    codEmpresa,
+                    linea);
+
+            string frecuenciaPago =
+                linea.base_calculo == "06"
+                    ? "Q"
+                    : "M";
+
+            decimal montoSolicitado =
+                ObtenerMontoSolicitadoInicial(
+                    codEmpresa,
+                    cedula,
+                    codigoTipo);
+
+            decimal rangoMaximo =
+                FxRangoMaximo(
+                    codEmpresa,
+                    codigo);
 
             return new ErrorDto<CrCalculoOperacionCodigoData>
             {
@@ -127,17 +194,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     {
                         cedula = cedula,
                         codigo = codigo,
-                        descripcion = lineaResp.Result.descripcion,
-                        base_calculo = lineaResp.Result.base_calculo,
+                        descripcion = linea.descripcion,
+                        base_calculo = linea.base_calculo,
                         frecuencia_pago = frecuenciaPago,
                         dias = dias,
                         codigo_tipo = codigoTipo,
                         monto_solicitado = montoSolicitado,
                         rango_maximo = rangoMaximo,
-                        refunde = lineaResp.Result.refunde,
-                        operaciones_activas = lineaResp.Result.operaciones_activas
+                        refunde = linea.refunde,
+                        operaciones_activas =
+                            linea.operaciones_activas
                     },
-                    cargos = cargosResp.Result ?? new List<CrCalculoOperacionCargoData>()
+                    cargos =
+                        cargosResp.Result ?? []
                 }
             };
         }
@@ -223,15 +292,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 });
             }
 
-            var excedente = ObtenerDisponibleExcedente(codEmpresa, cedula);
+            MCredito.CrExcedenteDisponibleData? excedente =
+                MCredito.fxExcedenteDisponible(
+                    _portalDb,
+                    codEmpresa,
+                    cedula);
+
             if (excedente != null)
             {
                 list.Add(new CrCalculoOperacionDisponibleData
                 {
                     garantia = "Excedentes",
-                    monto = excedente.base_credito,
+                    monto = excedente.@base,
                     saldo = excedente.saldos,
-                    disponible = excedente.base_credito - excedente.saldos
+                    disponible = excedente.@base - excedente.saldos
                 });
             }
 
@@ -524,7 +598,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return codigoTipo switch
             {
-                1 => ObtenerExcedenteDisponible(codEmpresa, cedula),
+                1 => MCredito.fxExcedenteDisponible(
+                    _portalDb, codEmpresa, cedula)?.@base ?? 0m,
                 3 => ObtenerDisponibleFondos(codEmpresa, cedula, string.Empty, 0),
                 _ => 0m
             };
@@ -562,18 +637,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return (excedenteResp.Result ?? string.Empty).Trim()
                 .Equals(codigo, StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Obtiene el disponible base de excedentes.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        private decimal ObtenerExcedenteDisponible(int codEmpresa, string cedula)
-        {
-            var item = ObtenerDisponibleExcedente(codEmpresa, cedula);
-            return item?.base_credito ?? 0;
         }
 
         /// <summary>
@@ -676,23 +739,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new { Cedula = cedula }).Result?.FirstOrDefault();
         }
 
-        /// <summary>
-        /// Obtiene disponible de excedentes.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
-        private DisponibleExcedenteQueryDto? ObtenerDisponibleExcedente(int codEmpresa, string cedula)
-        {
-            const string sql = @"exec spVoxExcedenteCredito @Cedula;";
-
-            return DbHelper.ExecuteListQuery<DisponibleExcedenteQueryDto>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new { Cedula = cedula }).Result?.FirstOrDefault();
-        }
-
         private static string LimpiarTexto(string valor)
             => (valor ?? string.Empty).Trim();
 
@@ -737,12 +783,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private sealed class DisponibleBaseQueryDto
         {
             public decimal disponible { get; set; } = 0;
-            public decimal saldos { get; set; } = 0;
-        }
-
-        private sealed class DisponibleExcedenteQueryDto
-        {
-            public decimal base_credito { get; set; } = 0;
             public decimal saldos { get; set; } = 0;
         }
 
