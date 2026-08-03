@@ -428,9 +428,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// </summary>
         private static int ObtenerReferencia(int operacion, bool siguiente)
         {
-            return operacion > 0
-                ? operacion
-                : (siguiente ? 0 : int.MaxValue);
+            if (operacion > 0)
+            {
+                return operacion;
+            }
+
+            return siguiente ? 0 : int.MaxValue;
         }
     }
 }
