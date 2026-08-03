@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
@@ -49,6 +50,71 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb,
                 codEmpresa,
                 query);
+        }
+
+        /// <summary>
+        /// Envía al proceso de retención los depósitos seleccionados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Depósitos, código de retención y usuario.</param>
+        /// <returns>Cantidad de depósitos recibidos por el procedimiento.</returns>
+        public ErrorDto<int> Cajas_CargaSaldosFavor_Retencion_Aplicar(
+            int codEmpresa,
+            CajasCargaSaldosFavorRetencionRequest request)
+        {
+            if (request.DepositoIds is not { Count: > 0 } ||
+                request.DepositoIds.Any(id => id <= 0))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "Debe enviar al menos un depósito válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.RetencionCodigo) ||
+                request.RetencionCodigo.Equals(
+                    "X",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "El código de retención es requerido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Usuario))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "El usuario es requerido.");
+            }
+
+            var depositosXml = ConstruirDepositosRetencionXml(
+                request.DepositoIds);
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QuerySingle<int>(
+                    "spCajas_W_CargaSaldosFavor_Retencion_Aplicar",
+                    new
+                    {
+                        DepositosXml = depositosXml,
+                        RetencionCodigo = request.RetencionCodigo.Trim(),
+                        Usuario = request.Usuario.Trim()
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure));
+        }
+
+        /// <summary>
+        /// Construye el XML de depósitos utilizado por el proceso de retención.
+        /// </summary>
+        private static string ConstruirDepositosRetencionXml(
+            IEnumerable<long> depositoIds)
+        {
+            var documento = new XElement(
+                "depositos",
+                depositoIds
+                    .Distinct()
+                    .Select(id =>
+                        new XElement(
+                            "deposito",
+                            new XAttribute("id", id))));
+
+            return documento.ToString(SaveOptions.DisableFormatting);
         }
 
         /// <summary>
