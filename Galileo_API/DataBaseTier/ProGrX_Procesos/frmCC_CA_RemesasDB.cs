@@ -14,12 +14,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
     public class FrmCcCaRemesasDB
     {
         private readonly PortalDB _portalDB;
-        private readonly IConfiguration _config;
         private readonly MRecibos _mRecibos;
 
         public FrmCcCaRemesasDB(IConfiguration config)
         {
-            _config = config;
             _portalDB = new PortalDB(config);
             _mRecibos = new MRecibos(config);
         }
