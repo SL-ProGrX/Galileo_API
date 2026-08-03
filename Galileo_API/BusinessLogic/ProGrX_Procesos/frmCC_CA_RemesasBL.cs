@@ -162,5 +162,53 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
 
             return _db.CcCaRemesas_Recibe_Aplica(codEmpresa, request);
         }
+
+
+        /// <summary>
+        /// Crea el comprobante y asiento contable de la aplicación de una remesa.
+        /// </summary>
+        public ErrorDto<bool> CcCaRemesas_Recibe_Asiento(
+            int codEmpresa,
+            CcCaRemesasRecibeAsientoRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<bool>(CcCaRemesaCOnstantes.vRequestRequerido);
+
+            if (string.IsNullOrWhiteSpace(request.tipo_documento))
+                return DbHelper.CreateErrorResponse<bool>("El tipo de documento es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.numero_documento))
+                return DbHelper.CreateErrorResponse<bool>("El número de documento es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+                return DbHelper.CreateErrorResponse<bool>("El usuario es requerido.");
+
+            if (request.numero_generacion <= 0)
+                return DbHelper.CreateErrorResponse<bool>("El número de generación es requerido.");
+
+            return _db.CcCaRemesas_Recibe_Asiento(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Genera y retorna el recibo en PDF de un documento de la remesa.
+        /// </summary>
+        public ErrorDto<object> CcCaRemesas_Recibe_ImprimeRecibo(
+            int codEmpresa,
+            CcCaRemesasRecibeImprimeReciboRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<object>(CcCaRemesaCOnstantes.vRequestRequerido);
+
+            if (string.IsNullOrWhiteSpace(request.numero_documento))
+                return DbHelper.CreateErrorResponse<object>("El número de documento es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.tipo_documento))
+                return DbHelper.CreateErrorResponse<object>("El tipo de documento es requerido.");
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+                return DbHelper.CreateErrorResponse<object>("El usuario es requerido.");
+
+            return _db.CcCaRemesas_Recibe_ImprimeRecibo(codEmpresa, request);
+        }
     }
 }
