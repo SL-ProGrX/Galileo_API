@@ -18,8 +18,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class CrSeguimientoRegTagConsultaRequest
     {
         public string tag_codigo { get; set; } = string.Empty;
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_fin { get; set; }
+        public required DateTime fecha_inicio { get; set; }
+        public required DateTime fecha_fin { get; set; }
         public string estado { get; set; } = "Todos";
     }
 
@@ -33,7 +33,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrSeguimientoRegTagOperacionAplicarDto
     {
-        public long id_solicitud { get; set; }
+        public required long id_solicitud { get; set; }
         public string codigo { get; set; } = string.Empty;
     }
 }
