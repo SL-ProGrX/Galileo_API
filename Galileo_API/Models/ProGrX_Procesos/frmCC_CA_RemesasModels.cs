@@ -122,5 +122,7 @@ namespace Galileo_API.Models.ProGrX_Procesos
     public static class CcCaRemesaCOnstantes
     {
         public const string vRequestRequerido = "El request es requerido.";
+        public const string vNumeroGeneracionRequerido = "El número de generación es requerido.";
+        public const string vUsuarioRequerido = "El usuario es requerido.";
     }
 }
