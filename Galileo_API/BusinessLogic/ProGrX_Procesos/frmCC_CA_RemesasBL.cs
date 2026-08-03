@@ -106,10 +106,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
                 return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vRequestRequerido, -2);
 
             if (request.numero_generacion <= 0)
-                return DbHelper.ErrorResponse("El número de generación es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vNumeroGeneracionRequerido, -2);
 
             if (string.IsNullOrWhiteSpace(request.usuario))
-                return DbHelper.ErrorResponse("El usuario es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vUsuarioRequerido, -2);
 
             if (request.autorizaciones == null || request.autorizaciones.Count == 0)
                 return DbHelper.ErrorResponse("Debe indicar autorizaciones para procesar.", -2);
@@ -123,10 +123,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
             string usuario)
         {
             if (numeroGeneracion <= 0)
-                return DbHelper.ErrorResponse("El número de generación es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vNumeroGeneracionRequerido, -2);
 
             if (string.IsNullOrWhiteSpace(usuario))
-                return DbHelper.ErrorResponse("El usuario es requerido.", -2);
+                return DbHelper.ErrorResponse(CcCaRemesaCOnstantes.vUsuarioRequerido, -2);
 
             return _db.CcCaRemesas_Recibe_Cierra(codEmpresa, numeroGeneracion, usuario);
         }
@@ -142,11 +142,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
 
             if (request.numero_generacion <= 0)
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
-                    "El número de generación es requerido.");
+                    CcCaRemesaCOnstantes.vNumeroGeneracionRequerido);
 
             if (string.IsNullOrWhiteSpace(request.usuario))
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
-                    "El usuario es requerido.");
+                    CcCaRemesaCOnstantes.vUsuarioRequerido);
 
             if (string.IsNullOrWhiteSpace(request.tipo_documento))
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(
@@ -181,10 +181,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
                 return DbHelper.CreateErrorResponse<bool>("El número de documento es requerido.");
 
             if (string.IsNullOrWhiteSpace(request.usuario))
-                return DbHelper.CreateErrorResponse<bool>("El usuario es requerido.");
+                return DbHelper.CreateErrorResponse<bool>(CcCaRemesaCOnstantes.vUsuarioRequerido);
 
             if (request.numero_generacion <= 0)
-                return DbHelper.CreateErrorResponse<bool>("El número de generación es requerido.");
+                return DbHelper.CreateErrorResponse<bool>(CcCaRemesaCOnstantes.vNumeroGeneracionRequerido);
 
             return _db.CcCaRemesas_Recibe_Asiento(codEmpresa, request);
         }
@@ -206,7 +206,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
                 return DbHelper.CreateErrorResponse<object>("El tipo de documento es requerido.");
 
             if (string.IsNullOrWhiteSpace(request.usuario))
-                return DbHelper.CreateErrorResponse<object>("El usuario es requerido.");
+                return DbHelper.CreateErrorResponse<object>(CcCaRemesaCOnstantes.vUsuarioRequerido);
 
             return _db.CcCaRemesas_Recibe_ImprimeRecibo(codEmpresa, request);
         }
