@@ -10,16 +10,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public sealed class FrmCrOperacionCtaBulletDb
     {
         private const string MensajeOperacionRequerida =
-            "Debe indicar la operacion.";
+            "Debe indicar la operaci&oacute;n.";
 
         private const string MensajeOperacionNoExiste =
-            "No se encontro la operacion indicada.";
+            "No se encontr&oacute; la operaci&oacute;n indicada.";
 
         private const string MensajeUsuarioRequerido =
             "Debe indicar el usuario.";
 
         private const string MensajeConsultaError =
-            "No fue posible consultar la informacion de la operacion.";
+            "No fue posible consultar la informaci&oacute;n de la operaci&oacute;n.";
 
         private const string MensajeGuardarError =
             "No fue posible establecer la cuota Bullet.";
@@ -143,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.ErrorResponse(
                     globales.Description ??
-                        "No fue posible obtener los parametros globales.",
+                        "No fue posible obtener los par&aacute;metros globales.",
                     globales.Code ?? -1);
             }
 
@@ -199,13 +199,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                             request.operacion);
                     }
 
-                    RegistrarBitacora(
-                        connection,
-                        transaction,
-                        request,
-                        operacion);
-
                     transaction.Commit();
+
+                    MCredito.SbBitacoraCredito(
+                        _portalDb,
+                        codEmpresa,
+                        new MCredito.CrBitacoraCreditoRequest
+                        {
+                            usuario = request.usuario,
+                            tipo = "C",
+                            movimiento = "22",
+                            detalle = CrearDetalleBitacora(
+                                operacion,
+                                request),
+                            operacion = request.operacion,
+                            codigo = operacion.codigo,
+                            notas = string.Empty
+                        });
 
                     return DbHelper.CreateOkResponse();
                 }
@@ -350,7 +360,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (request.cuota_bullet < datos.cuota_minima)
             {
                 errores.Add(
-                    "La cuota Bullet es menor que la cuota minima aplicable.");
+                    "La cuota Bullet es menor que la cuota m&iacute;nima aplicable.");
             }
 
             if (request.cuota_bullet > datos.saldo_base)
@@ -381,7 +391,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrOperacionCtaBulletGuardarRequest request)
         {
             const string query = """
-                UPDATE dbo.reg_creditos
+                UPDATE reg_creditos
                 SET
                     BULLET_IND = 1,
                     BULLET_CTA = @CuotaBullet,
@@ -412,69 +422,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             SqlTransaction transaction,
             int operacion)
         {
-            const string query = """
-                EXEC dbo.spCrdPlanPagos
-                     @Operacion,
-                     1;
-                """;
+            const string query = "EXEC spCrdPlanPagos @Operacion, 1;";
 
             connection.Execute(
                 query,
                 new
                 {
                     Operacion = operacion
-                },
-                transaction);
-        }
-
-        private static void RegistrarBitacora(
-            SqlConnection connection,
-            SqlTransaction transaction,
-            CrOperacionCtaBulletGuardarRequest request,
-            CrOperacionCtaBulletRow operacion)
-        {
-            const string query = """
-                INSERT INTO dbo.credito_subit
-                (
-                    usuario,
-                    tipo,
-                    fecha,
-                    movimiento,
-                    detalle,
-                    id_solicitud,
-                    codigo,
-                    notas
-                )
-                VALUES
-                (
-                    @Usuario,
-                    'C',
-                    GETDATE(),
-                    '22',
-                    @Detalle,
-                    @Operacion,
-                    @Codigo,
-                    ''
-                );
-                """;
-
-            connection.Execute(
-                query,
-                new
-                {
-                    Usuario =
-                        request.usuario
-                            .Trim()
-                            .ToUpperInvariant(),
-                    Detalle =
-                        CrearDetalleBitacora(
-                            operacion,
-                            request),
-                    Operacion = request.operacion,
-                    Codigo =
-                        operacion.codigo
-                            .Trim()
-                            .ToUpperInvariant()
                 },
                 transaction);
         }

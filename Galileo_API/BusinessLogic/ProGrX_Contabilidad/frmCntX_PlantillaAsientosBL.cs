@@ -14,9 +14,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmCntXPlantillaAsientosDb(config);
         }
 
-        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codPlantilla)
+        public ErrorDto<CntxPlantillaResponseDto> Consultar(int codEmpresa, int codContabilidad, int codPlantilla)
         {
-            return _db.Consultar(codEmpresa, codPlantilla);
+            return _db.Consultar(codEmpresa, codContabilidad, codPlantilla);
         }
 
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
@@ -29,14 +29,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Actualizar(codEmpresa, modelo);
         }
 
-        public ErrorDto<int> Borrar(int codEmpresa, int codPlantilla)
+        public ErrorDto<int> Borrar(int codEmpresa, int codContabilidad, int codPlantilla)
         {
-            return _db.Borrar(codEmpresa, codPlantilla);
+            return _db.Borrar(codEmpresa, codContabilidad, codPlantilla);
         }
 
-        public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
+        public ErrorDto<int?> Scroll(int codEmpresa, int codContabilidad, int? codigoActual, int direccion)
         {
-            return _db.Scroll(codEmpresa, codigoActual, direccion);
+            return _db.Scroll(codEmpresa, codContabilidad, codigoActual, direccion);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Cntx_TiposAsientos_Buscar(int codEmpresa, int cod_contabilidad)
@@ -44,9 +44,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Cntx_TiposAsientos_Buscar(codEmpresa, cod_contabilidad);
         }
 
-        public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa)
+        public ErrorDto<List<CntxPlantillaDto>> BuscarPlantillas(int codEmpresa, int codContabilidad)
         {
-            return _db.BuscarPlantillas(codEmpresa);
+            return _db.BuscarPlantillas(codEmpresa, codContabilidad);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa, int cod_contabilidad)
