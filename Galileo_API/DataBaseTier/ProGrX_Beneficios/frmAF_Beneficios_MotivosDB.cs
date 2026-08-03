@@ -9,23 +9,15 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     /// <summary>
     /// Acceso a datos del catálogo de Motivos de Beneficios (frmAF_Beneficios_Motivos).
     /// </summary>
-    public partial class FrmAfBeneficiosMotivosDB
+    public partial class FrmAfBeneficiosMotivosDB : BeneficiosCatalogoDbBase
     {
-        private readonly IConfiguration _config;
-
         /// <summary>
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmAfBeneficiosMotivosDB(IConfiguration config)
+        public FrmAfBeneficiosMotivosDB(IConfiguration config) : base(config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
-
-        /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
-        /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
 
         // ==========================
         // Cuerpos SQL constantes
@@ -103,32 +95,9 @@ FROM AFI_BENE_MOTIVOS
             var offset = filtros?.pagina ?? 0;
             var fetch = filtros?.paginacion ?? 0;
 
-            if (usarPaginacion && fetch > 0)
-            {
-                sqlList += "\nOFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
-            }
-            else
-            {
-                sqlList += ";";
-            }
+            sqlList = AplicarPaginacion(sqlList, usarPaginacion, fetch);
 
             return connection.Query<BeneMotivos>(sqlList, new { filtro, like, offset, fetch }).ToList();
-        }
-
-        /// <summary>
-        /// Construye el texto de filtro y su patrón LIKE. Devuelve nulos cuando no hay filtro.
-        /// </summary>
-        /// <param name="filtros">Filtros de carga perezosa.</param>
-        /// <returns>Tupla con el filtro normalizado y su patrón LIKE.</returns>
-        private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
-        {
-            var texto = filtros?.filtro?.Trim();
-            if (string.IsNullOrWhiteSpace(texto))
-            {
-                return (null, null);
-            }
-
-            return (texto, $"%{texto}%");
         }
 
         /// <summary>
