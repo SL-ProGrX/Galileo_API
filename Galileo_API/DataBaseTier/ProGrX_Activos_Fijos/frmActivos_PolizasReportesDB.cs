@@ -16,89 +16,88 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Obtener lista de pólizas (paginada y con filtro).
+        /// Obtener lista de pólizas paginada, con filtro general y tipo de póliza opcional.
         /// </summary>
-        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener( int CodEmpresa,string filtros)
+        public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(
+            int CodEmpresa,
+            string filtros,
+            string? tipoPoliza)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosPolizasFiltros>(filtros);
 
             var response = new ErrorDto<ActivosPolizasReportesLista>
             {
                 Code = 0,
-                Result = new ActivosPolizasReportesLista()
+                Description = "Ok",
+                Result = new ActivosPolizasReportesLista
+                {
+                    total = 0,
+                    lista = new List<ActivosPolizasReportesData>()
+                }
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
                 int pagina = vfiltro?.pagina ?? 0;
                 int paginacion = vfiltro?.paginacion ?? 50;
 
-                p.Add("@offset", pagina);
-                p.Add("@rows", paginacion);
-
                 string? filtroLike = null;
 
-                if (vfiltro?.filtro is string textoFiltro &&
-                    !string.IsNullOrWhiteSpace(textoFiltro))
+                if (!string.IsNullOrWhiteSpace(vfiltro?.filtro))
                 {
-                    filtroLike = $"%{textoFiltro.Trim()}%";
+                    filtroLike = $"%{vfiltro.filtro.Trim()}%";
                 }
 
-                bool tieneFiltro = filtroLike is not null;
+                string? tipoPolizaFiltro = string.IsNullOrWhiteSpace(tipoPoliza)
+                    ? null
+                    : tipoPoliza.Trim();
 
-                if (tieneFiltro)
-                {
-                    p.Add("@filtro", filtroLike);
-                }
+                var parametros = new DynamicParameters();
+                parametros.Add("@offset", pagina);
+                parametros.Add("@rows", paginacion);
+                parametros.Add("@filtro", filtroLike);
+                parametros.Add("@tipoPoliza", tipoPolizaFiltro);
 
-                const string baseCountSql = @"
-                    SELECT COUNT(*)
-                    FROM ACTIVOS_POLIZAS";
+                const string whereBlock = @"
+            WHERE
+                (
+                    @tipoPoliza IS NULL
+                    OR TIPO_POLIZA = @tipoPoliza
+                )
+                AND
+                (
+                    @filtro IS NULL
+                    OR COD_POLIZA             LIKE @filtro
+                    OR DESCRIPCION            LIKE @filtro
+                    OR ISNULL(NUM_POLIZA, '') LIKE @filtro
+                    OR ISNULL(DOCUMENTO, '')  LIKE @filtro
+                )";
 
-                                    const string baseDataSql = @"
-                    SELECT
-                        COD_POLIZA  AS cod_poliza,
-                        DESCRIPCION AS descripcion
-                    FROM ACTIVOS_POLIZAS";
+                string countSql = $@"
+            SELECT COUNT(*)
+            FROM ACTIVOS_POLIZAS
+            {whereBlock};";
 
-                                    const string whereBlock = @"
-                    WHERE (
-                           COD_POLIZA             LIKE @filtro
-                        OR DESCRIPCION            LIKE @filtro
-                        OR ISNULL(NUM_POLIZA, '') LIKE @filtro
-                        OR ISNULL(DOCUMENTO, '')  LIKE @filtro
-                    )";
+                string dataSql = $@"
+            SELECT
+                COD_POLIZA  AS cod_poliza,
+                DESCRIPCION AS descripcion
+            FROM ACTIVOS_POLIZAS
+            {whereBlock}
+            ORDER BY COD_POLIZA
+            OFFSET @offset ROWS
+            FETCH NEXT @rows ROWS ONLY;";
 
-                string countSql;
-                string dataSql;
-
-                if (tieneFiltro)
-                {
-                    countSql = baseCountSql + whereBlock + ";";
-
-                    dataSql = baseDataSql + whereBlock + @"
-                    ORDER BY COD_POLIZA
-                    OFFSET @offset ROWS
-                    FETCH NEXT @rows ROWS ONLY;";
-                }
-                else
-                {
-                    countSql = baseCountSql + ";";
-
-                    dataSql = baseDataSql + @"
-                    ORDER BY COD_POLIZA
-                    OFFSET @offset ROWS
-                    FETCH NEXT @rows ROWS ONLY;";
-                }
-
-                response.Result.total =
-                    connection.QueryFirstOrDefault<int>(countSql, p);
+                response.Result.total = connection.QueryFirstOrDefault<int>(
+                    countSql,
+                    parametros);
 
                 response.Result.lista = connection
-                    .Query<ActivosPolizasReportesData>(dataSql, p)
+                    .Query<ActivosPolizasReportesData>(
+                        dataSql,
+                        parametros)
                     .ToList();
             }
             catch (Exception ex)
@@ -106,7 +105,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result.total = 0;
-                response.Result.lista = [];
+                response.Result.lista = new List<ActivosPolizasReportesData>();
             }
 
             return response;
