@@ -232,4 +232,26 @@
         public string RetencionCodigo { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
+
+    public class CajasTransacSFLiqTipoSaldoResult
+    {
+        public string? item { get; set; } = string.Empty;
+        public string? descripcion { get; set; } = string.Empty;
+    }
+
+    public class CajasTransacSFLiqLiquidarParams
+    {
+        public int? CodEmpresa { get; set; }
+        public int Linea { get; set; } = 0;
+        public string Metodo { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+        public string Caja { get; set; } = string.Empty;
+        public int Apertura { get; set; } = 0;
+    }
+
+    public class CajasTransacSFLiqLiquidarResult
+    {
+        public long NumDoc { get; set; } = 0;
+        public string TipoDoc { get; set; } = string.Empty;
+    }
 }

@@ -13,18 +13,23 @@ namespace Galileo.Models.AF
     public class AfiAsignacionRequest
     {
         /// <summary>Tipo de asignación: 0 Estados, 1 Requisitos, 2 Motivos, 3 Accesos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public int asigna { get; set; }
 
         /// <summary>Código del grupo al que pertenece la asignación.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public string grupo { get; set; } = string.Empty;
 
         /// <summary>Valor asignado (estado, requisito, motivo o rol según el tipo).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public string valor { get; set; } = string.Empty;
 
         /// <summary>Usuario que realiza el movimiento.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public string usuario { get; set; } = string.Empty;
 
         /// <summary>Movimiento a aplicar: 'A' agrega, 'E' elimina.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public string mov { get; set; } = string.Empty;
     }
 

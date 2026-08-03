@@ -152,5 +152,28 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         {
             return _bl.Cajas_SaldoFavorLiquidacion(param);
         }
+
+        /// <summary>
+        /// Obtiene los tipos de saldo a favor disponibles para liquidar de un cliente.
+        /// </summary>
+        [Authorize]
+        [HttpGet("Cajas_TransacSFLiq_TiposSaldo_Obtener")]
+        public ErrorDto<List<CajasTransacSFLiqTipoSaldoResult>> Cajas_TransacSFLiq_TiposSaldo_Obtener(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _bl.Cajas_TransacSFLiq_TiposSaldo_Obtener(CodEmpresa, cedula);
+        }
+
+        /// <summary>
+        /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
+        /// </summary>
+        [Authorize]
+        [HttpPost("Cajas_TransacSFLiq_Liquidar")]
+        public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
+            [FromBody] CajasTransacSFLiqLiquidarParams request)
+        {
+            return _bl.Cajas_TransacSFLiq_Liquidar(request);
+        }
     }
 }

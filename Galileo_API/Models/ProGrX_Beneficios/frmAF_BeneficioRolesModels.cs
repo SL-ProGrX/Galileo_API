@@ -8,10 +8,12 @@ namespace Galileo.Models.AF
 
     public class BeneficioGrupoData
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public string cod_grupo { get; set; } = string.Empty;
         public string? descripcion { get; set; }
 
         /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public bool isNew { get; set; }
     }
 

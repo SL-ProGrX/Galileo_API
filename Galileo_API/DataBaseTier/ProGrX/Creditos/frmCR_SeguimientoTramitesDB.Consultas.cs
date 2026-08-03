@@ -251,10 +251,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "A",
                 StringComparison.OrdinalIgnoreCase);
 
-            // El VB6 parte de 0 hacia adelante y del tope hacia atrás cuando no hay operación.
-            int referencia = operacion > 0
-                ? operacion
-                : (siguiente ? 0 : int.MaxValue);
+            int referencia = ObtenerReferencia(operacion, siguiente);
 
             string sql = siguiente
                 ? """
@@ -370,7 +367,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 inner join catalogo_asignaGrp A on G.cod_grupo = A.cod_grupo
                 where G.estado = 1 and A.codigo = @Codigo;
 
-                exec spSys_Cuentas_Bancarias @Cedula, @BancoId, 1;
+                exec spSys_Cuentas_Bancarias @Identificacion, @BancoId, 1;
 
                 select convert(varchar(20), COD_DEDUCTORA) as idx, rtrim(DESCRIPCION) as itmx
                 from vAFI_Deductoras
@@ -393,6 +390,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 Codigo = operacion.codigo,
                 Cedula = operacion.cedula,
+                Identificacion = operacion.cedula,
                 BancoId = operacion.cod_banco,
                 InstitucionId = operacion.cod_institucion,
                 Destino = operacion.cod_destino,
@@ -422,6 +420,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 operacion.estadosol,
                 "N",
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Obtiene la referencia de operación para navegación.
+        /// El VB6 parte de 0 hacia adelante y del tope hacia atrás cuando no hay operación.
+        /// </summary>
+        private static int ObtenerReferencia(int operacion, bool siguiente)
+        {
+            return operacion > 0
+                ? operacion
+                : (siguiente ? 0 : int.MaxValue);
         }
     }
 }

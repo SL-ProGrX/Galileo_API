@@ -2,6 +2,7 @@ namespace Galileo.Models.AF
 {
     public class BeneMotivos
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public string cod_motivo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonRequired]
@@ -12,6 +13,7 @@ namespace Galileo.Models.AF
         public string? modifica_usuario { get; set; }
 
         /// <summary>Indica que la fila es nueva en la tabla de Angular; no persiste en base de datos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public bool isNew { get; set; }
     }
 

@@ -189,7 +189,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     1,
                     23,
                     59,
-                    59);
+                    59,
+                    DateTimeKind.Unspecified);
 
             if (fechaCorte < fechaInicio)
             {

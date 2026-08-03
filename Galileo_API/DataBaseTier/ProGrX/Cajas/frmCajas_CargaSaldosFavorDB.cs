@@ -551,5 +551,81 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 return true;
             });
         }
+
+
+        /// <summary>
+        /// Obtiene los tipos de saldo a favor disponibles para liquidar de un cliente.
+        /// Equivalente a spCajas_SF_Liquidables (consulta de tipos) del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="cedula">Cédula del cliente.</param>
+        /// <returns>Lista de tipos de documento con saldo positivo.</returns>
+        public ErrorDto<List<CajasTransacSFLiqTipoSaldoResult>> Cajas_TransacSFLiq_TiposSaldo_Obtener(
+            int codEmpresa,
+            string cedula)
+        {
+            const string sql = @"
+                SELECT
+                    RTRIM(T.DOC_TIPO) AS item,
+                    RTRIM(T.DESCRIPCION) AS descripcion
+                FROM CAJAS_SALDO_FAVOR C
+                INNER JOIN CAJAS_SALDOS_FAVOR_TIPOS T ON C.DOC_TIPO = T.DOC_TIPO
+                WHERE C.SALDO > 0
+                  AND C.CEDULA = @Cedula
+                GROUP BY T.DOC_TIPO, T.DESCRIPCION
+                ORDER BY T.DOC_TIPO;";
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var result = conn.Query<CajasTransacSFLiqTipoSaldoResult>(
+                    sql,
+                    new { Cedula = cedula })
+                    .ToList();
+
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
+        /// Equivalente a spCajas_SaldoFavorLiquidacion* del VB6, con retorno de NumDoc/TipoDoc.
+        /// </summary>
+        /// <param name="param">Parámetros de liquidación.</param>
+        /// <returns>NumDoc y TipoDoc generados (para impresión de recibo en efectivo).</returns>
+        public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
+            CajasTransacSFLiqLiquidarParams param)
+        {
+            return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
+            {
+                string spName = param.Metodo switch
+                {
+                    "T" => "spCajas_SaldoFavorLiquidacionTesoreria",
+                    "F" => "spCajas_SaldoFavorLiquidacionFondos",
+                    "E" => "spCajas_SaldoFavorLiquidacionRC_Efectivo",
+                    _ => throw new ArgumentException("Método de liquidación no válido")
+                };
+
+                var spParams = new
+                {
+                    Linea = param.Linea,
+                    Usuario = param.Usuario.Trim(),
+                    Caja = param.Caja.Trim(),
+                    Apertura = param.Apertura
+                };
+
+                var row = conn.QueryFirstOrDefault<dynamic>(
+                    spName,
+                    spParams,
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                var result = new CajasTransacSFLiqLiquidarResult
+                {
+                    NumDoc = row != null ? Convert.ToInt64(row.NumDoc ?? 0) : 0,
+                    TipoDoc = row?.TipoDoc?.ToString() ?? string.Empty
+                };
+
+                return result;
+            });
+        }
     }
 }

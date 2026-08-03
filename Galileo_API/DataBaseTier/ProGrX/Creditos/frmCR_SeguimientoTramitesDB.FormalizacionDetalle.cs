@@ -8,6 +8,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrSeguimientoTramitesDb
     {
+        private const string ERROR_OPERACION_REQUERIDA = "Debe indicar la operación.";
         /// <summary>
         /// Obtiene las operaciones a refundir de la sección CRD del lsw de formalización.
         /// </summary>
@@ -205,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacion <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operación.",
+                    ERROR_OPERACION_REQUERIDA,
                     -2,
                     new CrSeguimientoTramitesFormalizacionImpactoLiquidezData());
             }
@@ -232,7 +233,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (operacion <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar la operación.",
+                    ERROR_OPERACION_REQUERIDA,
                     -2,
                     new List<CrSeguimientoTramitesFormalizacionFirmaItem>());
             }
@@ -253,7 +254,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (request is null || request.operacion <= 0)
             {
-                return DbHelper.ErrorResponse("Debe indicar la operación.", -2);
+                return DbHelper.ErrorResponse(ERROR_OPERACION_REQUERIDA, -2);
             }
 
             bool esDeudor = string.Equals(
