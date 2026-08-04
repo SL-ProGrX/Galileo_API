@@ -29,6 +29,7 @@
         public string Caja { get; set; } = string.Empty;
         public int? Apertura { get; set; }
         public string Tiquete { get; set; } = string.Empty;
+        public string Cliente_Id { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
 }
