@@ -54,8 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 const string query = """
             EXEC spCrd_Comisiones_Pago_ConsultaBancos;
             """;
-                v
-
+          
                 return connection
                     .Query<BancoDropDownDbModel>(query)
                     .Select(item => new DropDownListaGenericaModel
