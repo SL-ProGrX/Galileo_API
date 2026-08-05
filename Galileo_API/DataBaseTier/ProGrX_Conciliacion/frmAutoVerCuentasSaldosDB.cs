@@ -375,6 +375,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 int codEmpresa,
                 AutoVerCuentasSaldosAnaliticoQuery? request)
         {
+
+            if (request is null)
+            {
+                return CrearErrorLista<AutoVerCuentasSaldosAnaliticoData>(
+                    "La solicitud no puede ser nula.");
+            }
+
             var validacion =
                 ValidarCuentaPeriodo(
                     codEmpresa,
