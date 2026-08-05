@@ -517,33 +517,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 });
         }
 
-        private ErrorDto<AutoVerCuentasSaldosPeriodoData?>
-            Conciliacion_AutoVerCuentasSaldos_Periodo_Obtener(
-                int codEmpresa,
-                int idPerHistorico)
-        {
-            const string sql = """
-                SELECT TOP 1
-                    id_per_historico,
-                    anio,
-                    mes
-                FROM ase_per_historico
-                WHERE id_per_historico = @id_per_historico;
-                """;
-
-            return DbHelper
-                .ExecuteSingleQuery<AutoVerCuentasSaldosPeriodoData>(
-                    _portalDb,
-                    codEmpresa,
-                    sql,
-                    null,
-                    new
-                    {
-                        id_per_historico =
-                            idPerHistorico
-                    });
-        }
-
         private (
             bool valido,
             string cuenta,
