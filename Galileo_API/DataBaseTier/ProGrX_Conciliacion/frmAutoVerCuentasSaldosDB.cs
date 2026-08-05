@@ -8,6 +8,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
 {
     public sealed class FrmAutoVerCuentasSaldosDB
     {
+        private const string PeriodoInvalidoMensaje =
+            "El año y mes indicados no son válidos.";
+
         private const string ResumenSelect = """
             SELECT
                 anio,
@@ -31,7 +34,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         private readonly PortalDB _portalDb;
         private readonly MCntLinkDB _cntLinkDb;
 
-        public FrmAutoVerCuentasSaldosDB(IConfiguration config)
+        public FrmAutoVerCuentasSaldosDB(
+            IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _cntLinkDb = new MCntLinkDB(config);
@@ -40,8 +44,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         /// <summary>
         /// Obtiene los últimos 36 periodos históricos disponibles.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <returns>Lista de periodos históricos.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosPeriodoData>>
             Conciliacion_AutoVerCuentasSaldos_Periodos_Obtener(
                 int codEmpresa)
@@ -55,18 +59,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 ORDER BY anio DESC, mes DESC;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosPeriodoData>(
-                _portalDb,
-                codEmpresa,
-                sql);
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosPeriodoData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql);
         }
 
         /// <summary>
         /// Obtiene el resumen comparativo por periodo y auxiliar.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo y auxiliar seleccionado.</param>
-        /// <returns>Resumen comparativo de cuentas.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosResumenData>>
             Conciliacion_AutoVerCuentasSaldos_Resumen_Obtener(
                 int codEmpresa,
@@ -75,12 +80,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             if (!PeriodoEsValido(request))
             {
                 return CrearErrorLista<AutoVerCuentasSaldosResumenData>(
-                    "El año y mes indicados no son válidos.");
+                    PeriodoInvalidoMensaje);
             }
 
             var sqlResumen =
                 ObtenerSqlResumen(
-                    request!.auxiliar);
+                    request.auxiliar);
 
             if (sqlResumen is null)
             {
@@ -103,10 +108,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         /// <summary>
         /// Obtiene la tendencia contable de la cuenta seleccionada.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo y cuenta seleccionada.</param>
-        /// <param name="auxiliar">Auxiliar seleccionado.</param>
-        /// <returns>Tendencia histórica de la cuenta.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <param name="auxiliar"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosTendenciaData>>
             Conciliacion_AutoVerCuentasSaldos_Tendencia_Obtener(
                 int codEmpresa,
@@ -124,7 +129,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     validacion.mensaje);
             }
 
-            var tendencia = NormalizarAuxiliar(auxiliar);
+            var tendencia =
+                NormalizarAuxiliar(auxiliar);
 
             if (tendencia is null)
             {
@@ -140,25 +146,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     @tendencia;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosTendenciaData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new
-                {
-                    request!.anio,
-                    request.mes,
-                    cuenta = validacion.cuenta,
-                    tendencia
-                });
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosTendenciaData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        request.anio,
+                        request.mes,
+                        cuenta =
+                            validacion.cuenta,
+                        tendencia
+                    });
         }
 
         /// <summary>
         /// Obtiene las asignaciones relacionadas con la cuenta seleccionada.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo y cuenta seleccionada.</param>
-        /// <returns>Lista de asignaciones.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosAsignacionData>>
             Conciliacion_AutoVerCuentasSaldos_Asignacion_Obtener(
                 int codEmpresa,
@@ -182,24 +190,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     @cuenta;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosAsignacionData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new
-                {
-                    request!.anio,
-                    request.mes,
-                    cuenta = validacion.cuenta
-                });
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosAsignacionData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        request.anio,
+                        request.mes,
+                        cuenta =
+                            validacion.cuenta
+                    });
         }
 
         /// <summary>
         /// Obtiene las formas de pago del periodo seleccionado.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Año y mes seleccionados.</param>
-        /// <returns>Lista de formas de pago.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosFormaPagoData>>
             Conciliacion_AutoVerCuentasSaldos_FormaPago_Obtener(
                 int codEmpresa,
@@ -208,7 +218,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             if (!PeriodoEsValido(request))
             {
                 return CrearErrorLista<AutoVerCuentasSaldosFormaPagoData>(
-                    "El año y mes indicados no son válidos.");
+                    PeriodoInvalidoMensaje);
             }
 
             const string sql = """
@@ -217,23 +227,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     @mes;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosFormaPagoData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new
-                {
-                    request!.anio,
-                    request.mes
-                });
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosFormaPagoData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        request.anio,
+                        request.mes
+                    });
         }
 
         /// <summary>
         /// Obtiene los valores para comparar el auxiliar y la contabilidad.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo y cuenta seleccionada.</param>
-        /// <returns>Valores contables y del auxiliar.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosRevisionContableData>>
             Conciliacion_AutoVerCuentasSaldos_RevisionContable_Obtener(
                 int codEmpresa,
@@ -246,8 +257,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
 
             if (!validacion.valido)
             {
-                return CrearErrorLista<AutoVerCuentasSaldosRevisionContableData>(
-                    validacion.mensaje);
+                return CrearErrorLista<
+                    AutoVerCuentasSaldosRevisionContableData>(
+                        validacion.mensaje);
             }
 
             const string sql = """
@@ -258,24 +270,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 """;
 
             return DbHelper
-                .ExecuteListQuery<AutoVerCuentasSaldosRevisionContableData>(
-                    _portalDb,
-                    codEmpresa,
-                    sql,
-                    new
-                    {
-                        request!.anio,
-                        request.mes,
-                        cuenta = validacion.cuenta
-                    });
+                .ExecuteListQuery<
+                    AutoVerCuentasSaldosRevisionContableData>(
+                        _portalDb,
+                        codEmpresa,
+                        sql,
+                        new
+                        {
+                            request.anio,
+                            request.mes,
+                            cuenta =
+                                validacion.cuenta
+                        });
         }
 
         /// <summary>
         /// Obtiene los movimientos auxiliares no contabilizados.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo y cuenta seleccionada.</param>
-        /// <returns>Movimientos no contabilizados.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosNoContabilizadoData>>
             Conciliacion_AutoVerCuentasSaldos_NoContabilizados_Obtener(
                 int codEmpresa,
@@ -288,8 +302,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
 
             if (!validacion.valido)
             {
-                return CrearErrorLista<AutoVerCuentasSaldosNoContabilizadoData>(
-                    validacion.mensaje);
+                return CrearErrorLista<
+                    AutoVerCuentasSaldosNoContabilizadoData>(
+                        validacion.mensaje);
             }
 
             const string sql = """
@@ -300,24 +315,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 """;
 
             return DbHelper
-                .ExecuteListQuery<AutoVerCuentasSaldosNoContabilizadoData>(
-                    _portalDb,
-                    codEmpresa,
-                    sql,
-                    new
-                    {
-                        request!.anio,
-                        request.mes,
-                        cuenta = validacion.cuenta
-                    });
+                .ExecuteListQuery<
+                    AutoVerCuentasSaldosNoContabilizadoData>(
+                        _portalDb,
+                        codEmpresa,
+                        sql,
+                        new
+                        {
+                            request.anio,
+                            request.mes,
+                            cuenta =
+                                validacion.cuenta
+                        });
         }
 
         /// <summary>
         /// Obtiene las operaciones con cambios contables en el periodo.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Año y mes seleccionados.</param>
-        /// <returns>Operaciones con cambio de cuenta.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosCambioData>>
             Conciliacion_AutoVerCuentasSaldos_Cambios_Obtener(
                 int codEmpresa,
@@ -326,7 +343,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             if (!PeriodoEsValido(request))
             {
                 return CrearErrorLista<AutoVerCuentasSaldosCambioData>(
-                    "El año y mes indicados no son válidos.");
+                    PeriodoInvalidoMensaje);
             }
 
             const string sql = """
@@ -335,23 +352,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     @mes;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosCambioData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new
-                {
-                    request!.anio,
-                    request.mes
-                });
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosCambioData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        request.anio,
+                        request.mes
+                    });
         }
 
         /// <summary>
         /// Obtiene el analítico de contabilidad o del auxiliar.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Periodo, cuenta y origen seleccionados.</param>
-        /// <returns>Movimientos analíticos.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosAnaliticoData>>
             Conciliacion_AutoVerCuentasSaldos_Analitico_Obtener(
                 int codEmpresa,
@@ -373,24 +391,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     .Trim()
                     .ToUpperInvariant();
 
-            var sql = origen switch
-            {
-                "C" => """
-                    EXEC spSys_Aux_Cta_Analitico
-                        @anio,
-                        @mes,
-                        @cuenta;
-                    """,
+            var sql =
+                origen switch
+                {
+                    "C" => """
+                        EXEC spSys_Aux_Cta_Analitico
+                            @anio,
+                            @mes,
+                            @cuenta;
+                        """,
 
-                "A" => """
-                    EXEC spSys_Aux_Cta_Analitico_Aux
-                        @anio,
-                        @mes,
-                        @cuenta;
-                    """,
+                    "A" => """
+                        EXEC spSys_Aux_Cta_Analitico_Aux
+                            @anio,
+                            @mes,
+                            @cuenta;
+                        """,
 
-                _ => null
-            };
+                    _ => null
+                };
 
             if (sql is null)
             {
@@ -398,26 +417,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     "El origen debe ser C para Contabilidad o A para Auxiliar.");
             }
 
-            return DbHelper.ExecuteListQuery<AutoVerCuentasSaldosAnaliticoData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new
-                {
-                    request!.anio,
-                    request.mes,
-                    cuenta = validacion.cuenta
-                });
+            return DbHelper
+                .ExecuteListQuery<AutoVerCuentasSaldosAnaliticoData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    new
+                    {
+                        request.anio,
+                        request.mes,
+                        cuenta =
+                            validacion.cuenta
+                    });
         }
 
         /// <summary>
         /// Obtiene y combina los movimientos de contabilidad y auxiliar.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">
-        /// Periodo, cuenta y tipo de movimiento seleccionado.
-        /// </param>
-        /// <returns>Movimientos conciliados.</returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<AutoVerCuentasSaldosConciliaData>>
             Conciliacion_AutoVerCuentasSaldos_ConciliaMovimientos_Obtener(
                 int codEmpresa,
@@ -468,20 +487,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 {
                     var parameters = new
                     {
-                        request!.anio,
+                        request.anio,
                         request.mes,
-                        cuenta = validacion.cuenta,
-                        tipo_movimiento = tipoMovimiento
+                        cuenta =
+                            validacion.cuenta,
+                        tipo_movimiento =
+                            tipoMovimiento
                     };
 
                     var contabilidad =
-                        connection.Query<AutoVerConciliaSpData>(
+                        connection
+                            .Query<AutoVerConciliaSpData>(
                                 sqlContabilidad,
                                 parameters)
                             .ToList();
 
                     var auxiliar =
-                        connection.Query<AutoVerConciliaSpData>(
+                        connection
+                            .Query<AutoVerConciliaSpData>(
                                 sqlAuxiliar,
                                 parameters)
                             .ToList();
@@ -508,15 +531,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 WHERE id_per_historico = @id_per_historico;
                 """;
 
-            return DbHelper.ExecuteSingleQuery<AutoVerCuentasSaldosPeriodoData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                null,
-                new
-                {
-                    id_per_historico = idPerHistorico
-                });
+            return DbHelper
+                .ExecuteSingleQuery<AutoVerCuentasSaldosPeriodoData>(
+                    _portalDb,
+                    codEmpresa,
+                    sql,
+                    null,
+                    new
+                    {
+                        id_per_historico =
+                            idPerHistorico
+                    });
         }
 
         private (
@@ -532,10 +557,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 return (
                     false,
                     string.Empty,
-                    "El año y mes indicados no son válidos.");
+                    PeriodoInvalidoMensaje);
             }
 
-            if (string.IsNullOrWhiteSpace(request!.cuenta))
+            if (string.IsNullOrWhiteSpace(
+                    request.cuenta))
             {
                 return (
                     false,
@@ -579,15 +605,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 .Trim()
                 .ToUpperInvariant() switch
             {
-                "CREDITOS" => "Creditos",
-                "CREDITOS_CA" => "Creditos_CA",
-                "CREDITOS_RC" => "Creditos_RC",
-                "PRODUCTO" => "Producto",
-                "PRODUCTOSUSPENSO" => "ProductoSuspenso",
-                "FONDOS" => "Fondos",
-                "PATRIMONIO" => "Patrimonio",
-                "ACTIVOS" => "Activos",
-                "INVERSIONES" => "Inversiones",
+                "CREDITOS" =>
+                    "Creditos",
+
+                "CREDITOS_CA" =>
+                    "Creditos_CA",
+
+                "CREDITOS_RC" =>
+                    "Creditos_RC",
+
+                "PRODUCTO" =>
+                    "Producto",
+
+                "PRODUCTOSUSPENSO" =>
+                    "ProductoSuspenso",
+
+                "FONDOS" =>
+                    "Fondos",
+
+                "PATRIMONIO" =>
+                    "Patrimonio",
+
+                "ACTIVOS" =>
+                    "Activos",
+
+                "INVERSIONES" =>
+                    "Inversiones",
+
                 _ => null
             };
         }
@@ -642,8 +686,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         {
             /*
              * La vista no proviene directamente del request.
-             * Se obtiene exclusivamente de la lista blanca definida
-             * en ObtenerSqlResumen.
+             * Se obtiene exclusivamente de la lista blanca
+             * definida en ObtenerSqlResumen.
              */
             return string.Concat(
                 ResumenSelect,
@@ -670,7 +714,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 new List<AutoVerCuentasSaldosConciliaData>(
                     cantidad);
 
-            for (var index = 0; index < cantidad; index++)
+            for (
+                var index = 0;
+                index < cantidad;
+                index++)
             {
                 var movimientoContable =
                     index < contabilidad.Count
@@ -683,31 +730,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                         : null;
 
                 var montoContable =
-                    movimientoContable?.monto ?? 0;
+                    movimientoContable?.monto ??
+                    0;
 
                 var montoAuxiliar =
-                    movimientoAuxiliar?.monto ?? 0;
+                    movimientoAuxiliar?.monto ??
+                    0;
 
                 resultado.Add(
                     new AutoVerCuentasSaldosConciliaData
                     {
                         cod_cuenta_mask =
-                            movimientoContable?.cod_cuenta_mask ??
+                            movimientoContable
+                                ?.cod_cuenta_mask ??
                             cuenta,
 
                         tipo_movimiento =
                             tipoMovimiento,
 
                         tipo_asiento_contable =
-                            movimientoContable?.tipo_asiento ??
+                            movimientoContable
+                                ?.tipo_asiento ??
                             string.Empty,
 
                         num_asiento_contable =
-                            movimientoContable?.num_asiento ??
+                            movimientoContable
+                                ?.num_asiento ??
                             string.Empty,
 
                         fecha_asiento_contable =
-                            movimientoContable?.fecha_asiento,
+                            movimientoContable
+                                ?.fecha_asiento,
 
                         monto_contable =
                             montoContable,
@@ -720,15 +773,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                             montoAuxiliar,
 
                         tipo_asiento_auxiliar =
-                            movimientoAuxiliar?.tipo_asiento ??
+                            movimientoAuxiliar
+                                ?.tipo_asiento ??
                             string.Empty,
 
                         num_asiento_auxiliar =
-                            movimientoAuxiliar?.num_asiento ??
+                            movimientoAuxiliar
+                                ?.num_asiento ??
                             string.Empty,
 
                         fecha_asiento_auxiliar =
-                            movimientoAuxiliar?.fecha_asiento
+                            movimientoAuxiliar
+                                ?.fecha_asiento
                     });
             }
 
@@ -739,20 +795,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             CrearErrorLista<T>(
                 string mensaje)
         {
-            return DbHelper.CreateErrorResponse<List<T>>(
-                mensaje,
-                result: []);
+            return DbHelper
+                .CreateErrorResponse<List<T>>(
+                    mensaje,
+                    result: []);
         }
 
         private sealed class AutoVerConciliaSpData
         {
-            public string cod_cuenta_mask { get; set; } = string.Empty;
+            public string cod_cuenta_mask { get; set; } =
+                string.Empty;
 
-            public string tipo_asiento { get; set; } = string.Empty;
+            public string tipo_asiento { get; set; } =
+                string.Empty;
 
-            public string num_asiento { get; set; } = string.Empty;
+            public string num_asiento { get; set; } =
+                string.Empty;
 
-            public DateTime? fecha_asiento { get; set; }
+            public DateTime? fecha_asiento { get; set; } =
+                null;
 
             public decimal monto { get; set; } = 0;
         }
