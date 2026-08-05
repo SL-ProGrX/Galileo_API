@@ -7,6 +7,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrCorreccionCreditosDb
     {
+        private const string EditorNumero = "numero";
+        private const string EditorLista = "lista";
+
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
         private readonly MRecibos _mRecibos;
@@ -226,18 +229,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var movimientos = new List<CrCorreccionCreditosMovimiento>();
             if (!operacion.retencion)
             {
-                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 0, "Cambio de Plazo", "numero");
+                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 0, "Cambio de Plazo", EditorNumero);
                 CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 1, "Cambio de Tasa", "tasa");
             }
 
             CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 2, "Cambio de Línea", "texto");
             if (!operacion.sys_plan_pagos && (!operacion.retencion || operacion.plazo < 900))
-                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 3, "Cambio de Monto", "numero");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 4, "Cambio de Cuota", "numero");
+                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 3, "Cambio de Monto", EditorNumero);
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 4, "Cambio de Cuota", EditorNumero);
             if (!operacion.retencion || !operacion.sys_plan_pagos)
                 CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 5, "Elimina Cuotas en Mora", "seleccion");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 6, "Cambio de último abono", "numero");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 7, "Cambio Primer Deducción", "numero");
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 6, "Cambio de último abono", EditorNumero);
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 7, "Cambio Primer Deducción", EditorNumero);
 
             if (!operacion.retencion)
             {
@@ -245,20 +248,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 10, "Elimina Intereses Moratorios", "accion");
             }
 
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 11, "Cambio de Garantía", "lista");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 12, "Cambio de Destino", "lista");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 13, "Cambio de Recurso", "lista");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 14, "Cambio de Día de Pago", "lista");
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 11, "Cambio de Garantía", EditorLista);
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 12, "Cambio de Destino", EditorLista);
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 13, "Cambio de Recurso", EditorLista);
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 14, "Cambio de Día de Pago", EditorLista);
             if (!operacion.retencion)
                 CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 15, "Elimina Cargos Registrados", "seleccion");
-            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 16, "Cambio de Oficina", "lista");
+            CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 16, "Cambio de Oficina", EditorLista);
 
             if (!operacion.retencion && operacion.base_calculo == "04")
                 CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 17, "Ajuste de Cuota Bullet/Ballon", "modal");
             if (!operacion.retencion)
             {
-                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 18, "Cambio de Actividad", "lista");
-                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 19, "Cambio de Ejecutivo", "lista");
+                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 18, "Cambio de Actividad", EditorLista);
+                CR_CorreccionCreditos_Movimiento_Agregar(movimientos, 19, "Cambio de Ejecutivo", EditorLista);
             }
 
             return movimientos;

@@ -71,15 +71,15 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrCorreccionCreditosAplicarRequest
     {
-        public int operacion { get; set; }
-        public int movimiento { get; set; }
+        public required int operacion { get; set; }
+        public required int movimiento { get; set; }
         public string valor { get; set; } = string.Empty;
         public decimal? valor_numerico { get; set; }
         public decimal? tasa { get; set; }
         public decimal? tbp_puntos_add { get; set; }
-        public bool tasa_indizada_tbp { get; set; }
-        public bool aplica_puntos_renuncia { get; set; }
-        public bool ajustar_primer_deduccion { get; set; }
+        public required bool tasa_indizada_tbp { get; set; }
+        public required bool aplica_puntos_renuncia { get; set; }
+        public required bool ajustar_primer_deduccion { get; set; }
         public string notas { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
         public List<int> seleccionados { get; set; } = [];
@@ -87,14 +87,14 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrCorreccionCreditosAnularRequest
     {
-        public int operacion { get; set; }
+        public required int operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
     }
 
     public class CrCorreccionCreditosExcluirRequest
     {
-        public int operacion { get; set; }
+        public required int operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
     }

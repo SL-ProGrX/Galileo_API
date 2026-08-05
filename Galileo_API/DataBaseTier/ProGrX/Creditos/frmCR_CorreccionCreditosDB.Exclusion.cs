@@ -45,15 +45,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var resultado = operacionResponse.Result.retencion
                     ? CR_CorreccionCreditos_Retencion_Excluir(conn, tx, request)
                     : CR_CorreccionCreditos_Credito_Excluir(
-                        codEmpresa,
-                        conn,
-                        tx,
-                        request,
-                        operacionResponse.Result,
-                        globales.Result.SysPlanPagos,
-                        globales.Result.GEnlace,
-                        globales.Result.GOficinaTitular,
-                        globales.Result.GlngFechaCR);
+                        new CrCorreccionCreditosExclusionContext
+                        {
+                            CodEmpresa = codEmpresa,
+                            Conn = conn,
+                            Tx = tx,
+                            Request = request,
+                            Operacion = operacionResponse.Result,
+                            SysPlanPagos = globales.Result.SysPlanPagos,
+                            Enlace = globales.Result.GEnlace,
+                            OficinaTitular = globales.Result.GOficinaTitular,
+                            FechaCredito = globales.Result.GlngFechaCR
+                        });
                 tx.Commit();
 
                 MCredito.SbBitacoraCredito(_portalDb, codEmpresa, new MCredito.CrBitacoraCreditoRequest
@@ -80,65 +83,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>Excluye un crédito ordinario y genera su nota de crédito.</summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="conn">Conexión abierta.</param>
-        /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Datos de exclusión.</param>
-        /// <param name="operacion">Datos actuales de la operación.</param>
-        /// <param name="sysPlanPagos">Indicador de planes de pago.</param>
-        /// <param name="enlace">Enlace contable.</param>
-        /// <param name="oficinaTitular">Oficina titular.</param>
-        /// <param name="fechaCredito">Proceso vigente de crédito.</param>
+        /// <param name="contexto">Contexto transaccional y funcional de la exclusión.</param>
         /// <returns>Resultado con la nota de crédito.</returns>
         private CrCorreccionCreditosResultado CR_CorreccionCreditos_Credito_Excluir(
-            int codEmpresa,
-            IDbConnection conn,
-            IDbTransaction tx,
-            CrCorreccionCreditosExcluirRequest request,
-            CrCorreccionCreditosOperacionBase operacion,
-            int sysPlanPagos,
-            int enlace,
-            string oficinaTitular,
-            decimal fechaCredito)
+            CrCorreccionCreditosExclusionContext contexto)
         {
+            var conn = contexto.Conn;
+            var tx = contexto.Tx;
+            var request = contexto.Request;
+            var operacion = contexto.Operacion;
             const string tipoDocumento = "NC";
-            var cuentaDocumento = _mRecibos.FxDocumentoCuenta(codEmpresa, tipoDocumento);
+            var cuentaDocumento = _mRecibos.FxDocumentoCuenta(contexto.CodEmpresa, tipoDocumento);
             if (string.IsNullOrWhiteSpace(cuentaDocumento))
                 throw new InvalidOperationException(
                     "No se puede excluir la operación porque no existe una cuenta contable válida.");
 
-            var numeroDocumento = _mRecibos.FxDocumentoConsecutivo(codEmpresa, tipoDocumento);
+            var numeroDocumento = _mRecibos.FxDocumentoConsecutivo(contexto.CodEmpresa, tipoDocumento);
             var cuentas = CR_CorreccionCreditos_OperacionCuentas_Obtener(conn, tx, request.operacion);
             var aplicarRequest = new CrCorreccionCreditosAplicarRequest
             {
                 operacion = request.operacion,
+                movimiento = default,
+                tasa_indizada_tbp = default,
+                aplica_puntos_renuncia = default,
+                ajustar_primer_deduccion = default,
                 usuario = request.usuario,
                 notas = request.notas
             };
             CR_CorreccionCreditos_Documento_Insertar(
                 conn,
                 tx,
-                aplicarRequest,
-                operacion,
-                tipoDocumento,
-                numeroDocumento,
-                cuentas.saldo,
-                oficinaTitular,
-                "CRD011",
-                $"Saldo Anterior {cuentas.saldo:N2}",
-                "Interés Corriente 0.00",
-                "Interés Moratorio 0.00",
-                $"Amortización {cuentas.saldo:N2}",
-                $"Divisa: {cuentas.cod_Divisa} / Tipo Cambio: {cuentas.TipoCambio}",
-                "EXCLUYE");
+                new CrCorreccionCreditosDocumentoData
+                {
+                    Request = aplicarRequest,
+                    Operacion = operacion,
+                    TipoDocumento = tipoDocumento,
+                    NumeroDocumento = numeroDocumento,
+                    Monto = cuentas.saldo,
+                    OficinaTitular = contexto.OficinaTitular,
+                    Concepto = "CRD011",
+                    Linea1 = $"Saldo Anterior {cuentas.saldo:N2}",
+                    Linea2 = "Interés Corriente 0.00",
+                    Linea3 = "Interés Moratorio 0.00",
+                    Linea4 = $"Amortización {cuentas.saldo:N2}",
+                    Linea7 = $"Divisa: {cuentas.cod_Divisa} / Tipo Cambio: {cuentas.TipoCambio}",
+                    Linea10 = "EXCLUYE"
+                });
             CR_CorreccionCreditos_Asiento_Insertar(
-                conn, tx, cuentas, tipoDocumento, numeroDocumento, cuentas.saldo,
-                "C", cuentas.ctaamortiza, enlace, cuentas.cod_unidad, cuentas.cod_centro_costo);
+                conn, tx, new CrCorreccionCreditosAsientoData
+                {
+                    Cuentas = cuentas, TipoDocumento = tipoDocumento, NumeroDocumento = numeroDocumento,
+                    Monto = cuentas.saldo, DebeHaber = "C", Cuenta = cuentas.ctaamortiza,
+                    Enlace = contexto.Enlace, Unidad = cuentas.cod_unidad, CentroCosto = cuentas.cod_centro_costo
+                });
             CR_CorreccionCreditos_Asiento_Insertar(
-                conn, tx, cuentas, tipoDocumento, numeroDocumento, cuentas.saldo,
-                "D", cuentaDocumento, enlace, cuentas.cod_unidad, cuentas.cod_centro_costo);
+                conn, tx, new CrCorreccionCreditosAsientoData
+                {
+                    Cuentas = cuentas, TipoDocumento = tipoDocumento, NumeroDocumento = numeroDocumento,
+                    Monto = cuentas.saldo, DebeHaber = "D", Cuenta = cuentaDocumento,
+                    Enlace = contexto.Enlace, Unidad = cuentas.cod_unidad, CentroCosto = cuentas.cod_centro_costo
+                });
 
-            if (sysPlanPagos == 1)
+            if (contexto.SysPlanPagos == 1)
             {
                 conn.Execute(@"
                     exec spCrdPlanPagoAbonoEC @Operacion,'CRD011',@Usuario,'NC',
@@ -175,7 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         Codigo = operacion.codigo,
                         Operacion = request.operacion,
                         Saldo = cuentas.saldo,
-                        FechaCredito = fechaCredito,
+                        FechaCredito = contexto.FechaCredito,
                         Documento = numeroDocumento,
                         Usuario = request.usuario
                     }, tx);
@@ -220,5 +226,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 mensaje,
                 -2,
                 new CrCorreccionCreditosResultado());
+
+        private sealed class CrCorreccionCreditosExclusionContext
+        {
+            public required int CodEmpresa { get; init; }
+            public required IDbConnection Conn { get; init; }
+            public required IDbTransaction Tx { get; init; }
+            public required CrCorreccionCreditosExcluirRequest Request { get; init; }
+            public required CrCorreccionCreditosOperacionBase Operacion { get; init; }
+            public required int SysPlanPagos { get; init; }
+            public required int Enlace { get; init; }
+            public required string OficinaTitular { get; init; }
+            public required decimal FechaCredito { get; init; }
+        }
     }
 }

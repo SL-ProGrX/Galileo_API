@@ -40,17 +40,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 conn.Open();
                 using var tx = conn.BeginTransaction();
 
-                var resultado = CR_CorreccionCreditos_Cambio_Ejecutar(
-                    codEmpresa,
-                    conn,
-                    tx,
-                    request,
-                    operacionResponse.Result,
-                    globalesResponse.Result.SysPlanPagos,
-                    globalesResponse.Result.GlngFechaCR,
-                    globalesResponse.Result.SysDocVersion,
-                    globalesResponse.Result.GEnlace,
-                    globalesResponse.Result.GOficinaTitular);
+                var contexto = new CrCorreccionCreditosCambioContext
+                {
+                    CodEmpresa = codEmpresa,
+                    Conn = conn,
+                    Tx = tx,
+                    Request = request,
+                    Operacion = operacionResponse.Result,
+                    SysPlanPagos = globalesResponse.Result.SysPlanPagos,
+                    FechaCredito = globalesResponse.Result.GlngFechaCR,
+                    SysDocVersion = globalesResponse.Result.SysDocVersion,
+                    Enlace = globalesResponse.Result.GEnlace,
+                    OficinaTitular = globalesResponse.Result.GOficinaTitular
+                };
+                var resultado = CR_CorreccionCreditos_Cambio_Ejecutar(contexto);
 
                 tx.Commit();
                 CR_CorreccionCreditos_Bitacora_Registrar(codEmpresa, request, operacionResponse.Result);
@@ -68,47 +71,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>Distribuye la solicitud hacia el proceso específico del movimiento.</summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="conn">Conexión abierta.</param>
-        /// <param name="tx">Transacción activa.</param>
-        /// <param name="request">Datos del cambio.</param>
-        /// <param name="operacion">Datos actuales de la operación.</param>
-        /// <param name="sysPlanPagos">Indicador del esquema de planes.</param>
-        /// <param name="fechaCredito">Proceso vigente de crédito.</param>
-        /// <param name="sysDocVersion">Versión documental.</param>
-        /// <param name="enlace">Enlace contable.</param>
-        /// <param name="oficinaTitular">Oficina titular.</param>
+        /// <param name="contexto">Contexto transaccional y funcional del cambio.</param>
         /// <returns>Resultado del movimiento aplicado.</returns>
         private CrCorreccionCreditosResultado CR_CorreccionCreditos_Cambio_Ejecutar(
-            int codEmpresa,
-            IDbConnection conn,
-            IDbTransaction tx,
-            CrCorreccionCreditosAplicarRequest request,
-            CrCorreccionCreditosOperacionBase operacion,
-            int sysPlanPagos,
-            decimal fechaCredito,
-            int sysDocVersion,
-            int enlace,
-            string oficinaTitular)
+            CrCorreccionCreditosCambioContext contexto)
         {
+            var request = contexto.Request;
             return request.movimiento switch
             {
-                0 => CR_CorreccionCreditos_Plazo_Aplicar(conn, tx, request, operacion, sysPlanPagos, fechaCredito),
-                1 => CR_CorreccionCreditos_Tasa_Aplicar(conn, tx, request, operacion, sysPlanPagos),
-                2 => CR_CorreccionCreditos_Linea_Aplicar(conn, tx, request),
-                3 => CR_CorreccionCreditos_Monto_Aplicar(
-                    codEmpresa, conn, tx, request, operacion, sysPlanPagos,
-                    fechaCredito, sysDocVersion, enlace, oficinaTitular),
-                4 => CR_CorreccionCreditos_Cuota_Aplicar(conn, tx, request, operacion, sysPlanPagos),
-                5 => CR_CorreccionCreditos_Mora_Eliminar(conn, tx, request, sysPlanPagos),
-                6 => CR_CorreccionCreditos_UltimoAbono_Aplicar(conn, tx, request, sysPlanPagos),
-                7 => CR_CorreccionCreditos_PrimeraDeduccion_Aplicar(conn, tx, request, sysPlanPagos),
-                10 => CR_CorreccionCreditos_InteresesMoratorios_Eliminar(conn, tx, request, sysPlanPagos),
-                11 or 12 or 13 or 14 or 18 or 19 => CR_CorreccionCreditos_Catalogo_Aplicar(conn, tx, request, sysPlanPagos),
-                15 => CR_CorreccionCreditos_Cargos_Eliminar(conn, tx, request, sysPlanPagos),
-                16 => CR_CorreccionCreditos_Oficina_Aplicar(
-                    codEmpresa, conn, tx, request, operacion,
-                    sysDocVersion, enlace, oficinaTitular),
+                0 => CR_CorreccionCreditos_Plazo_Aplicar(contexto.Conn, contexto.Tx, request, contexto.Operacion, contexto.SysPlanPagos, contexto.FechaCredito),
+                1 => CR_CorreccionCreditos_Tasa_Aplicar(contexto.Conn, contexto.Tx, request, contexto.Operacion, contexto.SysPlanPagos),
+                2 => CR_CorreccionCreditos_Linea_Aplicar(contexto.Conn, contexto.Tx, request),
+                3 => CR_CorreccionCreditos_Monto_Aplicar(contexto),
+                4 => CR_CorreccionCreditos_Cuota_Aplicar(contexto.Conn, contexto.Tx, request, contexto.Operacion, contexto.SysPlanPagos),
+                5 => CR_CorreccionCreditos_Mora_Eliminar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                6 => CR_CorreccionCreditos_UltimoAbono_Aplicar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                7 => CR_CorreccionCreditos_PrimeraDeduccion_Aplicar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                10 => CR_CorreccionCreditos_InteresesMoratorios_Eliminar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                11 or 12 or 13 or 14 or 18 or 19 => CR_CorreccionCreditos_Catalogo_Aplicar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                15 => CR_CorreccionCreditos_Cargos_Eliminar(contexto.Conn, contexto.Tx, request, contexto.SysPlanPagos),
+                16 => CR_CorreccionCreditos_Oficina_Aplicar(contexto),
                 _ => throw new InvalidOperationException("El movimiento seleccionado no se puede aplicar desde este formulario.")
             };
         }
@@ -601,9 +583,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="request">Datos del cambio.</param>
         /// <returns>Valor normalizado.</returns>
         private static string CR_CorreccionCreditos_Bitacora_Valor(CrCorreccionCreditosAplicarRequest request)
-            => !string.IsNullOrWhiteSpace(request.valor)
-                ? request.valor
-                : Convert.ToString(request.movimiento == 1 ? request.tasa : request.valor_numerico) ?? string.Empty;
+        {
+            if (!string.IsNullOrWhiteSpace(request.valor))
+                return request.valor;
+
+            var valorNumerico = request.movimiento == 1
+                ? request.tasa
+                : request.valor_numerico;
+            return Convert.ToString(valorNumerico) ?? string.Empty;
+        }
 
         /// <summary>Limita un texto al tamaño permitido.</summary>
         /// <param name="valor">Texto original.</param>
@@ -630,7 +618,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrCorreccionCreditosOperacionBase
         {
-            public int id_solicitud { get; set; }
+            public int id_solicitud { get; set; } = default;
             public string codigo { get; set; } = string.Empty;
             public string cedula { get; set; } = string.Empty;
             public string nombre { get; set; } = string.Empty;
@@ -638,19 +626,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public string opex_descripcion { get; set; } = string.Empty;
             public string cod_oficina_r { get; set; } = string.Empty;
             public string oficina_descripcion { get; set; } = string.Empty;
-            public decimal montoapr { get; set; }
-            public decimal amortiza { get; set; }
-            public decimal saldo { get; set; }
-            public int plazo { get; set; }
-            public int plazo_restante { get; set; }
-            public decimal interes { get; set; }
-            public bool retencion { get; set; }
+            public decimal montoapr { get; set; } = default;
+            public decimal amortiza { get; set; } = default;
+            public decimal saldo { get; set; } = default;
+            public int plazo { get; set; } = default;
+            public int plazo_restante { get; set; } = default;
+            public decimal interes { get; set; } = default;
+            public bool retencion { get; set; } = default;
         }
 
         private sealed class CrCorreccionCreditosDocumento
         {
             public string TipoDoc { get; set; } = string.Empty;
-            public int NumDoc { get; set; }
+            public int NumDoc { get; set; } = default;
+        }
+
+        private sealed class CrCorreccionCreditosCambioContext
+        {
+            public required int CodEmpresa { get; init; }
+            public required IDbConnection Conn { get; init; }
+            public required IDbTransaction Tx { get; init; }
+            public required CrCorreccionCreditosAplicarRequest Request { get; init; }
+            public required CrCorreccionCreditosOperacionBase Operacion { get; init; }
+            public required int SysPlanPagos { get; init; }
+            public required decimal FechaCredito { get; init; }
+            public required int SysDocVersion { get; init; }
+            public required int Enlace { get; init; }
+            public required string OficinaTitular { get; init; }
         }
     }
 }

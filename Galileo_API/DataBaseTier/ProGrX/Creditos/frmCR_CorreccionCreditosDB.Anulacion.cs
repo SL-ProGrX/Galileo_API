@@ -216,16 +216,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrCorreccionCreditosDatosAnulacion
         {
-            public DateTime fechaforp { get; set; }
+            public DateTime fechaforp { get; set; } = default;
             public string codigo { get; set; } = string.Empty;
-            public decimal montoapr { get; set; }
-            public bool retencion { get; set; }
+            public decimal montoapr { get; set; } = default;
+            public bool retencion { get; set; } = default;
         }
 
         private sealed class CrCorreccionCreditosRefundicion
         {
-            public int id_solicitud { get; set; }
-            public int consec { get; set; }
+            public int id_solicitud { get; set; } = default;
+            public int consec { get; set; } = default;
         }
 
         private sealed class CrCorreccionCreditosAnulacionSp
