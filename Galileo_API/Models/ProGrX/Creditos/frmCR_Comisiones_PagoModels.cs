@@ -16,17 +16,17 @@
         }
         public class CrdComisionesPagoRemesaModel
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
             public DateTime Fecha { get; set; }
             public string Estado { get; set; } = string.Empty;
             public string EstadoDescripcion { get; set; } = string.Empty;
-            public DateTime FechaInicio { get; set; }
-            public DateTime FechaCorte { get; set; }
+            public DateTime? FechaInicio { get; set; }
+            public DateTime? FechaCorte { get; set; }
             public string Notas { get; set; } = string.Empty;
             public string CodComision { get; set; } = string.Empty;
             public string ComisionDescripcion { get; set; } = string.Empty;
-            public int TesBanco { get; set; }
+            public int TesBanco { get; set; } = 0;
             public string BancoDescripcion { get; set; } = string.Empty;
             public string TesTipo { get; set; } = string.Empty;
         }
@@ -45,20 +45,20 @@
 
         public class CrdComisionesPagoRemesaGuardarResponse
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public bool EsNueva { get; set; }
             public string Mensaje { get; set; } = string.Empty;
         }
 
         public class CrdComisionesPagoRemesaEliminarRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
         }
 
         public class CrdComisionesPagoRemesaSelectorModel
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
             public DateTime Fecha { get; set; }
             public DateTime FechaInicio { get; set; }
@@ -69,7 +69,7 @@
         //Modelos para carga
         public class CrdComisionesPagoPendientesRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string? CodOficina { get; set; }
         }
 
@@ -96,7 +96,7 @@
 
         public class CrdComisionesPagoCargaRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public List<int> Solicitudes { get; set; } = new List<int>();
             public string Usuario { get; set; } = string.Empty;
         }
@@ -110,7 +110,7 @@
 
         public class CrdComisionesPagoCerrarRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
         }
         //Modelos para traslado
@@ -130,7 +130,7 @@
 
         public class CrdComisionesPagoTrasladarRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public List<string> Ejecutivos { get; set; } = [];
             public string Usuario { get; set; } = string.Empty;
             public string Aplicacion { get; set; } = "ProGrX";
@@ -139,7 +139,7 @@
         //Modelos para reportes
         public class CrdComisionesPagoReporteRequest
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public bool Detallado { get; set; }
             public bool Agrupado { get; set; }
             public string Usuario { get; set; } = string.Empty;
@@ -147,7 +147,7 @@
 
         public class CrdComisionesPagoReporteModel
         {
-            public int CodRemesa { get; set; }
+            public int CodRemesa { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
             public string Estado { get; set; } = string.Empty;
             public DateTime FechaInicio { get; set; }

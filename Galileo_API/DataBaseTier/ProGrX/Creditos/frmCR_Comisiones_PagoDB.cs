@@ -431,7 +431,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var parametros = new
             {
-                CodRemesa = request.CodRemesa!.Value,
+                CodRemesa = request.CodRemesa,
                 request.Usuario,
                 FechaInicio = request.FechaInicio.Date,
                 FechaCorte = request.FechaCorte.Date,
