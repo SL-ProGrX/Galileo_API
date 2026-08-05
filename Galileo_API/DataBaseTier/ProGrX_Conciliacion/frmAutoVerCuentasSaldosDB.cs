@@ -9,7 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
     public sealed class FrmAutoVerCuentasSaldosDB
     {
         private const string PeriodoInvalidoMensaje =
-            "El año y mes indicados no son válidos.";
+            "El a&ntilde;o y mes indicados no son v&aacute;lidos.";
 
         private const string ResumenSelect = """
             SELECT
@@ -42,7 +42,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         }
 
         /// <summary>
-        /// Obtiene los últimos 36 periodos históricos disponibles.
+        /// Obtiene los ultimos 36 periodos historicos disponibles.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
@@ -90,7 +90,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             if (sqlResumen is null)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosResumenData>(
-                    "El auxiliar indicado no es válido.");
+                    "El auxiliar indicado no es v&aacute;lido.");
             }
 
             return DbHelper
@@ -135,7 +135,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             if (tendencia is null)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosTendenciaData>(
-                    "El auxiliar indicado no es válido.");
+                    "El auxiliar indicado no es v&aacute;lido.");
             }
 
             const string sql = """
@@ -365,7 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         }
 
         /// <summary>
-        /// Obtiene el analítico de contabilidad o del auxiliar.
+        /// Obtiene el analitico de contabilidad o del auxiliar.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -561,7 +561,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 return (
                     false,
                     string.Empty,
-                    "La cuenta indicada no es válida.");
+                    "La cuenta indicada no es v&aacute;lida.");
             }
 
             return (
@@ -778,6 +778,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             return DbHelper
                 .CreateErrorResponse<List<T>>(
                     mensaje,
+                    -2,
                     result: []);
         }
 
