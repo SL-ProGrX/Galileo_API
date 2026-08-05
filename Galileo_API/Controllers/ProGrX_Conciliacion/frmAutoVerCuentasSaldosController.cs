@@ -88,12 +88,12 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
         public ErrorDto<List<AutoVerCuentasSaldosRevisionContableData>>
             Conciliacion_AutoVerCuentasSaldos_RevisionContable_Obtener(
                 int codEmpresa,
-                string Request)
+                string request)
         {
             return _bl
                 .Conciliacion_AutoVerCuentasSaldos_RevisionContable_Obtener(
                     codEmpresa,
-                    Request);
+                    request);
         }
 
         [HttpGet(
