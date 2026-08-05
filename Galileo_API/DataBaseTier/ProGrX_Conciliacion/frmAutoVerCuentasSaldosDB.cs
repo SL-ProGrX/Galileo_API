@@ -394,9 +394,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
             }
 
             var origen =
-                request?.origen?
-                    .Trim()
-                    .ToUpperInvariant();
+                request.origen
+                .Trim()
+                .ToUpperInvariant();
 
             var sql =
                 origen switch
