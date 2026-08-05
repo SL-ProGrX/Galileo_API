@@ -34,11 +34,11 @@
         public class CrdComisionesPagoRemesaGuardarRequest
         {
             public int? CodRemesa { get; set; }
-            public DateTime FechaInicio { get; set; }
-            public DateTime FechaCorte { get; set; }
+            public DateTime? FechaInicio { get; set; }
+            public DateTime? FechaCorte { get; set; }
             public string Notas { get; set; } = string.Empty;
             public string CodComision { get; set; } = string.Empty;
-            public int TesBanco { get; set; }
+            public int TesBanco { get; set; } = 0;
             public string TesTipo { get; set; } = string.Empty;
             public string Usuario { get; set; } = string.Empty;
         }

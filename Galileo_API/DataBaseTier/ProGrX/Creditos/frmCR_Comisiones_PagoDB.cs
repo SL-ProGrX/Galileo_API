@@ -309,7 +309,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private static string? ValidarRemesaGuardar(CrdComisionesPagoRemesaGuardarRequest request)
         {
-            if (request.FechaCorte.Date < request.FechaInicio.Date)
+            if (request.FechaCorte?.Date < request.FechaInicio?.Date)
             {
                 return "La fecha de corte no puede ser menor que la fecha de inicio.";
             }
@@ -387,8 +387,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 request.Usuario,
                 Estado = CrdComisionesPagoEstados.Abierta,
-                FechaInicio = request.FechaInicio.Date,
-                FechaCorte = request.FechaCorte.Date,
+                FechaInicio = request.FechaInicio?.Date,
+                FechaCorte = request.FechaCorte?.Date,
                 Notas = request.Notas.Trim(),
                 CodComision = request.CodComision.Trim(),
                 request.TesBanco,
@@ -433,8 +433,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 CodRemesa = request.CodRemesa,
                 request.Usuario,
-                FechaInicio = request.FechaInicio.Date,
-                FechaCorte = request.FechaCorte.Date,
+                FechaInicio = request.FechaInicio?.Date,
+                FechaCorte = request.FechaCorte?.Date,
                 Notas = request.Notas.Trim(),
                 CodComision = request.CodComision.Trim(),
                 request.TesBanco,
