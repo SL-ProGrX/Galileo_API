@@ -13,9 +13,9 @@ namespace Galileo.BusinessLogic
             _db = new FrmCajasDetallePagoDB(config);
         }
 
-        public ErrorDto<decimal> ObtenerTipoCambio(int codEmpresa, string codDivisa)
+        public ErrorDto<decimal> ObtenerTipoCambio(int codEmpresa, int enlace, string codDivisa)
         {
-            return _db.Cajas_TipoCambio(codEmpresa, codDivisa);
+            return _db.Cajas_TipoCambio(codEmpresa, enlace, codDivisa);
         }
 
         public ErrorDto Cajas_DesglocePago_Eliminar(int codEmpresa, string codCaja, int codApertura, string ticket, int linea)
@@ -80,9 +80,14 @@ namespace Galileo.BusinessLogic
             return _db.Cajas_FormasPago_Obtener(CodEmpresa, codCaja);
         }
 
-        public ErrorDto<List<CajasTiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
+        public ErrorDto<List<CajasTiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, int enlace, string codCaja, string tiquete, int apertura)
         {
-            return _db.Cajas_Tiquete_Obtener(CodEmpresa, codCaja, tiquete, apertura);
+            return _db.Cajas_Tiquete_Obtener(CodEmpresa, enlace, codCaja, tiquete, apertura);
+        }
+
+        public ErrorDto<bool> Cajas_ReciboDigital(int CodEmpresa, string codCaja, int apertura, string tiquete)
+        {
+            return _db.Cajas_ReciboDigital(CodEmpresa, codCaja, apertura, tiquete);
         }
     }
 }

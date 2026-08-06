@@ -1,11 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models;
-using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security; 
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
@@ -19,22 +15,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Consulta Persona
+        /// Consulta los datos generales de una persona por cédula o número de operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula o número de operación ingresado por el usuario.</param>
+        /// <returns>Persona encontrada o null cuando no existe.</returns>
         public ErrorDto<CxCPersonaDto?> ConsultarPersona(int codEmpresa, string cedula)
-        {
-            var response = new ErrorDto<CxCPersonaDto?>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.QueryFirstOrDefault<CxCPersonaDto>(
-                    @"SELECT 
+            => DbHelper.ExecuteSingleQuery<CxCPersonaDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT
                         P.cedula,
                         P.nombre,
                         C.descripcion AS categoria_desc,
@@ -46,131 +36,110 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         ON P.cod_categoria = C.cod_categoria
                       LEFT JOIN vCxC_C_Persona_Facturas_Anio Fa 
                         ON P.cedula = Fa.cedula
-                      WHERE P.cedula = @cedula",
-                    new { cedula }
-                );
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+                      WHERE P.cedula = @cedula
+                         OR P.cedula = (
+                            SELECT TOP (1) Cta.cedula
+                            FROM CxC_Cuentas Cta
+                            WHERE CONVERT(VARCHAR(30), Cta.operacion) = LTRIM(RTRIM(@cedula))
+                         )",
+                defaultValue: null,
+                parameters: new { cedula });
 
         /// <summary>
-        /// Consulta cuentas
+        /// Consulta las cuentas de una persona filtradas por estado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <param name="estado">Estado de la operación: activa, cancelada o en trámite.</param>
+        /// <returns>Lista de cuentas asociadas a la persona.</returns>
         public ErrorDto<List<CxCCuentaDto>> ConsultarCuentas(int codEmpresa, string cedula, string estado)
-        {
-            var response = new ErrorDto<List<CxCCuentaDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CxCCuentaDto>(
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn => cn.Query<CxCCuentaDto>(
                     "spCxC_PersonasCuentas",
-                    new { cedula, estado},
+                    new { cedula, estado },
                     commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+                ).ToList());
 
 
         /// <summary>
-        /// Consulta solicitudes
+        /// Consulta las solicitudes asociadas a una persona.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <returns>Lista de solicitudes.</returns>
         public ErrorDto<List<CxCSolicitudDto>> ConsultarSolicitudes(int codEmpresa, string cedula)
-            => EjecutarSP<List<CxCSolicitudDto>>(codEmpresa, "spSIFEstadoSolicitud", new { cedula });
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn => cn.Query<CxCSolicitudDto>(
+                    "spSIFEstadoSolicitud",
+                    new { cedula },
+                    commandType: System.Data.CommandType.StoredProcedure).ToList());
 
         /// <summary>
-        /// Consulta Preanalisis
+        /// Consulta los preanálisis asociados a una persona.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <returns>Lista de preanálisis.</returns>
         public ErrorDto<List<CxCPreAnalisisDto>> ConsultarPreAnalisis(int codEmpresa, string cedula)
-            => EjecutarSP<List<CxCPreAnalisisDto>>(codEmpresa, "spSIFEstadoPreAnalisis", new { cedula });
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn => cn.Query<CxCPreAnalisisDto>(
+                    "spSIFEstadoPreAnalisis",
+                    new { cedula },
+                    commandType: System.Data.CommandType.StoredProcedure).ToList());
 
         /// <summary>
-        /// Consulta incobrables
+        /// Consulta las operaciones incobrables asociadas a una persona.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <returns>Lista de operaciones incobrables.</returns>
         public ErrorDto<List<CxCIncobrableDto>> ConsultarIncobrables(int codEmpresa, string cedula)
-            => EjecutarSP<List<CxCIncobrableDto>>(codEmpresa, "spSIFEstadoIncobrable", new { cedula });
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn => cn.Query<CxCIncobrableDto>(
+                    "spSIFEstadoIncobrable",
+                    new { cedula },
+                    commandType: System.Data.CommandType.StoredProcedure).ToList());
 
         /// <summary>
-        /// Consulta deseembolsos
+        /// Consulta los desembolsos asociados a una persona.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <returns>Lista de desembolsos con sus referencias de Tesorería.</returns>
         public ErrorDto<List<CxCDesembolsoDto>> ConsultarDesembolsos(int codEmpresa, string cedula)
-        {
-            var response = new ErrorDto<List<CxCDesembolsoDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CxCDesembolsoDto>(
-                    @"SELECT Ct.OPERACION, Cg.MONTO, Td.ESTADO, Td.FECHA_EMISION,
-                             Td.TIPO, Cg.Id_Giro, Tb.DESCRIPCION AS banco_desc,
+            => DbHelper.ExecuteListQuery<CxCDesembolsoDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT Ct.OPERACION, Cg.MONTO, Td.ESTADO, Td.FECHA_EMISION,
+                             Td.TIPO, Cg.Id_Giro, Cg.TESORERIA_SOLICITUD,
+                             Cg.TESORERIA_REMESA, Tb.DESCRIPCION AS banco_desc,
                              Td.BENEFICIARIO, Td.NDOCUMENTO
                       FROM CXC_CUENTAS Ct
                       INNER JOIN CXC_CUENTAS_GIROS Cg ON Ct.OPERACION = Cg.OPERACION
                       INNER JOIN TES_TRANSACCIONES Td ON Cg.TESORERIA_SOLICITUD = Td.NSOLICITUD
                       INNER JOIN TES_BANCOS Tb ON Td.ID_BANCO = Tb.ID_BANCO
                       WHERE Ct.CEDULA = @cedula",
-                    new { cedula }
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+                new { cedula });
 
         /// <summary>
-        /// Consulta mensajes
+        /// Consulta los mensajes vigentes de una persona.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="cedula"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cedula">Cédula de la persona consultada.</param>
+        /// <returns>Lista de mensajes que no han vencido.</returns>
         public ErrorDto<List<CxCMensajeDto>> ConsultarMensajes(int codEmpresa, string cedula)
-        {
-            var response = new ErrorDto<List<CxCMensajeDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CxCMensajeDto>(
-                    @"SELECT 
+            => DbHelper.ExecuteListQuery<CxCMensajeDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT
                 fecha,
                 cedula,
                 usuario,
@@ -179,111 +148,55 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               FROM CxC_Personas_Mensajes
               WHERE cedula = @cedula
               AND DATEDIFF(DAY, dbo.MyGetdate(), vencimiento) >= 0",
-                    new { cedula }
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+                new { cedula });
 
         /// <summary>
-        /// Guarda mensajes
+        /// Registra un mensaje para la persona consultada.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="dto">Datos del mensaje que se registrará.</param>
+        /// <returns>True cuando el procedimiento registra el mensaje.</returns>
         public ErrorDto<bool> GuardarMensaje(int codEmpresa, CxCMensajeAddDto dto)
-            => EjecutarNonQuery(codEmpresa, "CxC_Personas_Mensajes_Insert", dto);
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn =>
+                {
+                    cn.Execute(
+                        "CxC_Personas_Mensajes_Insert",
+                        dto,
+                        commandType: System.Data.CommandType.StoredProcedure);
+                    return true;
+                });
 
         /// <summary>
-        /// Elimina mensajes
+        /// Elimina un mensaje previamente registrado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="dto">Llave del mensaje que se eliminará.</param>
+        /// <returns>True cuando el procedimiento elimina el mensaje.</returns>
         public ErrorDto<bool> EliminarMensaje(int codEmpresa, CxCMensajeDeleteDto dto)
-            => EjecutarNonQuery(codEmpresa, "CxC_Personas_Mensajes_Delete", dto);
-
-        /// <summary>
-        /// Ejecuta SP
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sp"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
-        private ErrorDto<T> EjecutarSP<T>(int codEmpresa, string sp, object param)
-        {
-            var response = new ErrorDto<T>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<T>(
-                    sp,
-                    param,
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Ejecuta NonQuery
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sp"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
-        private ErrorDto<bool> EjecutarNonQuery(int codEmpresa, string sp, object param)
-        {
-            var response = new ErrorDto<bool>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                cn.Execute(sp, param, commandType: System.Data.CommandType.StoredProcedure);
-                response.Result = true;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+            => DbHelper.WithConn(
+                _portalDB,
+                codEmpresa,
+                cn =>
+                {
+                    cn.Execute(
+                        "CxC_Personas_Mensajes_Delete",
+                        dto,
+                        commandType: System.Data.CommandType.StoredProcedure);
+                    return true;
+                });
     
         /// <summary>
-        /// Consulta Facturas
+        /// Consulta las facturas aplicando los filtros seleccionados.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
-         public ErrorDto<List<CxCFacturaDto>> ConsultarFacturas(int codEmpresa,CxCFacturaFiltroDto filtro)
-        {
-            var response = new ErrorDto<List<CxCFacturaDto>>();
-
-            try
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="filtro">Cédula, operación, factura, estado y rango de fechas.</param>
+        /// <returns>Lista de facturas que cumplen los filtros.</returns>
+        public ErrorDto<List<CxCFacturaDto>> ConsultarFacturas(int codEmpresa, CxCFacturaFiltroDto filtro)
+            => DbHelper.WithConn(_portalDB, codEmpresa, cn =>
             {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
                 var sql = @"
             SELECT 
                 Operacion        AS operacion,
@@ -344,46 +257,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     sql += " AND factura_estado = @estado";
                 }
 
-                response.Result = cn.Query<CxCFacturaDto>(
+                return cn.Query<CxCFacturaDto>(
                     sql,
                     new
                     {
                         filtro.cedula,
-                        filtro.cod_factura,
+                        cod_factura = filtro.cod_factura ?? string.Empty,
                         filtro.operacion,
-                        filtro.fecha_inicio,
-                        filtro.fecha_corte,
+                        fecha_inicio = filtro.fecha_inicio?.Date,
+                        fecha_corte = filtro.fecha_corte?.Date.AddDays(1).AddTicks(-1),
                         filtro.estado
-                    }
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
+                    }).ToList();
+            });
 
         /// <summary>
-        /// Consutla facturas por giro
+        /// Consulta las facturas asociadas a un giro de desembolso.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <param name="idGiro"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CxCDesembolsoFacturaDto>> ConsultarFacturasPorGiro(int codEmpresa,int operacion,int idGiro)
-        {
-            var response = new ErrorDto<List<CxCDesembolsoFacturaDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                response.Result = cn.Query<CxCDesembolsoFacturaDto>(
-                    @"SELECT 
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de operación de CxC.</param>
+        /// <param name="idGiro">Identificador del giro seleccionado.</param>
+        /// <returns>Lista de facturas asociadas al giro.</returns>
+        public ErrorDto<List<CxCDesembolsoFacturaDto>> ConsultarFacturasPorGiro(int codEmpresa, int operacion, int idGiro)
+            => DbHelper.ExecuteListQuery<CxCDesembolsoFacturaDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT
                 OPERACION       AS operacion,
                 COD_FACTURA     AS cod_factura,
                 MONTO           AS monto,
@@ -395,17 +293,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
               FROM CXC_CUENTAS_FACTURAS
               WHERE OPERACION = @operacion
               AND @idGiro IN (ID_GIRO, ID_GIRO_PENDIENTE)",
-                    new { operacion, idGiro }
-                ).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+                new { operacion, idGiro });
 
-            return response;
-        }
+        /// <summary>
+        /// Consulta los estados de factura configurados en la empresa.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Estados disponibles para el filtro de facturas.</returns>
+        public ErrorDto<List<CxCFacturaEstadoDto>> ConsultarEstadosFactura(int codEmpresa)
+            => DbHelper.ExecuteListQuery<CxCFacturaEstadoDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT FACTURA_ESTADO AS value,
+                         DESCRIPCION AS label
+                  FROM CXC_FACTURAS_ESTADOS
+                  ORDER BY DESCRIPCION");
     }
 }
 
