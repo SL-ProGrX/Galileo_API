@@ -33,6 +33,15 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [HttpPost("Cajas_CargaSaldosFavor_Retencion_Aplicar")]
+        public ErrorDto<int> Cajas_CargaSaldosFavor_Retencion_Aplicar(
+            int codEmpresa,
+            [FromBody] CajasCargaSaldosFavorRetencionRequest request)
+        {
+            return _bl.Cajas_CargaSaldosFavor_Retencion_Aplicar(codEmpresa, request);
+        }
+
+        [Authorize]
         [HttpGet("CargaSaldosFavor_EntidadesPagadoras_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CargaSaldosFavor_EntidadesPagadoras_Obtener(int codEmpresa, bool ordenPorDescripcion = false)
         {
@@ -142,6 +151,29 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public ErrorDto<bool> Cajas_SaldoFavorLiquidacion([FromBody] CajasSaldoFavorLiquidacionParams param)
         {
             return _bl.Cajas_SaldoFavorLiquidacion(param);
+        }
+
+        /// <summary>
+        /// Obtiene los tipos de saldo a favor disponibles para liquidar de un cliente.
+        /// </summary>
+        [Authorize]
+        [HttpGet("Cajas_TransacSFLiq_TiposSaldo_Obtener")]
+        public ErrorDto<List<CajasTransacSFLiqTipoSaldoResult>> Cajas_TransacSFLiq_TiposSaldo_Obtener(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _bl.Cajas_TransacSFLiq_TiposSaldo_Obtener(CodEmpresa, cedula);
+        }
+
+        /// <summary>
+        /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
+        /// </summary>
+        [Authorize]
+        [HttpPost("Cajas_TransacSFLiq_Liquidar")]
+        public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
+            [FromBody] CajasTransacSFLiqLiquidarParams request)
+        {
+            return _bl.Cajas_TransacSFLiq_Liquidar(request);
         }
     }
 }

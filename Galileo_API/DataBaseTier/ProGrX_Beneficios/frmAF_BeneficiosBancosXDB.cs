@@ -1,74 +1,77 @@
 using Dapper;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
-using Newtonsoft.Json;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     /// <summary>
     /// Acceso a datos de la configuración de Bancos habilitados para Beneficios (frmAF_BeneficiosBancosX).
     /// </summary>
-    public partial class FrmAfBeneficiosBancosXdb
+    public partial class FrmAfBeneficiosBancosXdb : BeneficiosCatalogoDbBase
     {
-        private readonly IConfiguration _config;
-
         /// <summary>
         /// Inicializa el acceso a datos con la configuración inyectada.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmAfBeneficiosBancosXdb(IConfiguration config)
+        public FrmAfBeneficiosBancosXdb(IConfiguration config) : base(config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
-        /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
-        /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
+        // ==========================
+        // Cuerpos SQL constantes
+        // ==========================
+
+        private const string SqlBancosFrom = @"
+FROM afi_bene_Bancos_X X
+INNER JOIN Tes_Bancos B ON X.id_banco = B.id_Banco
+WHERE (@filtro IS NULL)
+   OR (X.id_banco LIKE @like)
+   OR (B.descripcion LIKE @like)
+";
+
+        private const string SqlBancosCount = "SELECT COUNT(1) " + SqlBancosFrom;
+
+        private const string SqlBancosSelect =
+            "SELECT X.id_banco, B.descripcion, X.cheque, X.transferencia " + SqlBancosFrom;
 
         /// <summary>
-        /// Obtiene la lista de bancos habilitados para beneficios con paginación y filtro.
+        /// Obtiene la lista de bancos habilitados para beneficios con paginación, filtro y ordenamiento.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="filtros">JSON con filtro de búsqueda y paginación.</param>
-        /// <returns>Lista de bancos y total.</returns>
-        public ErrorDto<AfBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
+        /// <param name="filtros">Filtros de carga perezosa (página, paginación, filtro y orden).</param>
+        /// <returns>Lista de bancos y total de registros.</returns>
+        public ErrorDto<AfBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, FiltrosLazyLoadData filtros)
         {
-            // Inicializa registros faltantes antes de consultar.
+            // Inicializa los bancos faltantes antes de consultar, igual que el proceso original.
             BeneficiosBancosX_Existe(CodCliente);
-
-            var filtro = JsonConvert.DeserializeObject<AfBeneficioBancosfiltros>(filtros) ?? new AfBeneficioBancosfiltros();
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
-                var response = new AfBeneficiosBancosDataLista();
-
-                const string sqlCount = @"SELECT COUNT(*)
-                                          FROM afi_bene_Bancos_X X
-                                          INNER JOIN Tes_Bancos B ON X.id_banco = B.id_Banco";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
-
-                var like = string.IsNullOrWhiteSpace(filtro.filtro) ? null : $"%{filtro.filtro}%";
-                var offset = filtro.pagina ?? 0;
-                var fetch = filtro.paginacion ?? 10;
-
-                const string sql = @"SELECT X.id_banco, B.descripcion, X.cheque, X.transferencia
-                                     FROM afi_bene_Bancos_X X
-                                     INNER JOIN Tes_Bancos B ON X.id_banco = B.id_Banco
-                                     WHERE (@like IS NULL OR X.id_banco LIKE @like OR B.descripcion LIKE @like)
-                                     ORDER BY B.id_banco
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-                response.bancosX = connection.Query<AfBeneficiosBancosData>(sql, new { like, offset, fetch }).ToList();
-                return response;
+                var lista = QueryBancos(connection, filtros, true, out var total);
+                return new AfBeneficiosBancosDataLista { total = total, bancosX = lista };
             });
 
             if (result.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<AfBeneficiosBancosDataLista>("BeneficiosBancosX_Obtener - " + result.Description);
+                return DbHelper.CreateErrorResponse<AfBeneficiosBancosDataLista>(
+                    "BeneficiosBancosX_Obtener - " + result.Description);
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Exporta la lista de bancos aplicando el filtro vigente, sin paginar.
+        /// </summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa; se ignora la paginación.</param>
+        /// <returns>Lista de bancos sin paginar.</returns>
+        public ErrorDto<List<AfBeneficiosBancosData>> BeneficiosBancosX_Exportar(int CodCliente, FiltrosLazyLoadData filtros)
+        {
+            return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+                QueryBancos(connection, filtros, false, out _));
         }
 
         /// <summary>
@@ -97,10 +100,65 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             if (result.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<AfBeneficiosBancosData>("BeneficiosBancosX_Actualizar - " + result.Description);
+                return DbHelper.CreateErrorResponse<AfBeneficiosBancosData>(
+                    "BeneficiosBancosX_Actualizar - " + result.Description);
             }
 
             return result;
+        }
+
+        // ==========================
+        // Helpers privados
+        // ==========================
+
+        /// <summary>
+        /// Consulta los bancos aplicando filtro, orden y, opcionalmente, paginación.
+        /// </summary>
+        /// <param name="connection">Conexión abierta.</param>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <param name="usarPaginacion">Indica si se aplica OFFSET/FETCH.</param>
+        /// <param name="total">Total de registros que cumplen el filtro.</param>
+        /// <returns>Lista de bancos.</returns>
+        private static List<AfBeneficiosBancosData> QueryBancos(
+            SqlConnection connection,
+            FiltrosLazyLoadData filtros,
+            bool usarPaginacion,
+            out int total)
+        {
+            var (filtro, like) = BuildFiltroLike(filtros);
+            var (sortField, sortOrder) = ResolveSort(filtros);
+
+            total = connection.QuerySingle<int>(SqlBancosCount, new { filtro, like });
+
+            var sqlList = SqlBancosSelect + $"\nORDER BY {sortField} {sortOrder}";
+
+            var offset = filtros?.pagina ?? 0;
+            var fetch = filtros?.paginacion ?? 0;
+
+            sqlList = AplicarPaginacion(sqlList, usarPaginacion, fetch);
+
+            return connection.Query<AfBeneficiosBancosData>(sqlList, new { filtro, like, offset, fetch }).ToList();
+        }
+
+        /// <summary>
+        /// Resuelve el campo y la dirección de ordenamiento usando una lista blanca de columnas.
+        /// </summary>
+        /// <param name="filtros">Filtros de carga perezosa.</param>
+        /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
+        private static (string sortField, string sortOrder) ResolveSort(FiltrosLazyLoadData filtros)
+        {
+            // ORDER BY seguro (whitelist), nunca se concatena texto recibido del usuario.
+            var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "descripcion" => "B.descripcion",
+                "cheque" => "X.cheque",
+                "transferencia" => "X.transferencia",
+                _ => "B.id_banco"
+            };
+
+            // Convención de PrimeNG: -1 descendente, 1 ascendente (ASC por defecto).
+            var sortOrder = filtros?.sortOrder == -1 ? "DESC" : "ASC";
+            return (sortField, sortOrder);
         }
 
         /// <summary>

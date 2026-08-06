@@ -1,6 +1,8 @@
 using Galileo.DataBaseTier.ProGrX_Beneficios;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
 {
@@ -21,9 +23,32 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             _db = new FrmAfBeneAptCategoriasDB(config);
         }
 
-        /// <summary>Lista de categorías apremiantes.</summary>
-        public ErrorDto<AptCategoriasDataLista> CategoriasApremiante_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
-            => _db.CategoriasApremiante_Obtener(CodEmpresa, pagina, paginacion, filtro);
+        /// <summary>Lista de categorías apremiantes con paginación, filtro y ordenamiento.</summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa serializados en JSON.</param>
+        public ErrorDto<AptCategoriasDataLista> CategoriasApremiante_Obtener(int CodEmpresa, string? filtros)
+            => _db.CategoriasApremiante_Obtener(CodEmpresa, DeserializarFiltros(filtros));
+
+        /// <summary>Exporta la lista de categorías aplicando el filtro vigente, sin paginar.</summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa serializados en JSON.</param>
+        public ErrorDto<List<AptCategorias>> CategoriasApremiante_Exportar(int CodEmpresa, string? filtros)
+            => _db.CategoriasApremiante_Exportar(CodEmpresa, DeserializarFiltros(filtros));
+
+        /// <summary>
+        /// Convierte el JSON de filtros recibido desde Angular en el modelo de carga perezosa.
+        /// </summary>
+        /// <param name="filtros">Filtros serializados en JSON.</param>
+        /// <returns>Filtros deserializados; instancia vacía si el JSON viene nulo o inválido.</returns>
+        private static FiltrosLazyLoadData DeserializarFiltros(string? filtros)
+        {
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return new FiltrosLazyLoadData();
+            }
+
+            return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros) ?? new FiltrosLazyLoadData();
+        }
 
         /// <summary>Inserta una categoría apremiante.</summary>
         public ErrorDto CategoriasApremiante_Agregar(int CodEmpresa, AptCategorias request)

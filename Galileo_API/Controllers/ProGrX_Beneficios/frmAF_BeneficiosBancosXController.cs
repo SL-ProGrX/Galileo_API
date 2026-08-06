@@ -11,6 +11,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
     /// </summary>
     [Route("api/frmAF_BeneficiosBancosX")]
     [ApiController]
+    [Authorize]
     public class FrmAfBeneficiosBancosXController : ControllerBase
     {
         private readonly FrmAfBeneficiosBancosXbl _bl;
@@ -25,14 +26,17 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             _bl = new FrmAfBeneficiosBancosXbl(config);
         }
 
-        /// <summary>Lista de bancos habilitados para beneficios.</summary>
-        [Authorize]
+        /// <summary>Lista de bancos habilitados para beneficios con paginación, filtro y ordenamiento.</summary>
         [HttpGet("BeneficiosBancosX_Obtener")]
-        public ErrorDto<AfBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
+        public ErrorDto<AfBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string? filtros)
             => _bl.BeneficiosBancosX_Obtener(CodCliente, filtros);
 
+        /// <summary>Exporta la lista de bancos aplicando el filtro vigente, sin paginar.</summary>
+        [HttpGet("BeneficiosBancosX_Exportar")]
+        public ErrorDto<List<AfBeneficiosBancosData>> BeneficiosBancosX_Exportar(int CodCliente, string? filtros)
+            => _bl.BeneficiosBancosX_Exportar(CodCliente, filtros);
+
         /// <summary>Actualiza la configuración de un banco (cheque/transferencia).</summary>
-        [Authorize]
         [HttpPut("BeneficiosBancosX_Actualizar")]
         public ErrorDto<AfBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, [FromBody] AfBeneficiosBancosData data)
             => _bl.BeneficiosBancosX_Actualizar(CodCliente, data);
