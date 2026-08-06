@@ -15,6 +15,8 @@
         public long? operacion { get; set; }
         public string? cod_concepto { get; set; }
         public string? concepto_desc { get; set; }
+        public DateTime? activa_fecha { get; set; }
+        public string? activa_usuario { get; set; }
         public string? num_documento { get; set; }
         public DateTime? fecha_pago { get; set; }
         public decimal? monto { get; set; }
@@ -111,6 +113,8 @@
         public DateTime? fecha_emision { get; set; }
         public string? tipo { get; set; }
         public int? id_giro { get; set; }
+        public long? tesoreria_solicitud { get; set; }
+        public long? tesoreria_remesa { get; set; }
         public string? banco_desc { get; set; }
         public string? beneficiario { get; set; }
         public string? ndocumento { get; set; }
@@ -150,6 +154,12 @@
         public string? cod_divisa { get; set; }
         public decimal tipo_cambio { get; set; }
         public int operacion_origen { get; set; }
+    }
+
+    public class CxCFacturaEstadoDto
+    {
+        public string value { get; set; } = string.Empty;
+        public string label { get; set; } = string.Empty;
     }
 
 }

@@ -49,6 +49,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return _db.Cr_PolizasSicama_Beneficiarios_Lista(CodEmpresa, Usuario, poliza);
         }
 
+        /// <summary>
+        /// Genera el corte SICAMA para la fecha indicada.
+        /// </summary>
+        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario)
+        {
+            return _db.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario);
+        }
+
         public ErrorDto Cr_FndPlanillaDirecta_Sube(
            int CodEmpresa,
            string Usuario,

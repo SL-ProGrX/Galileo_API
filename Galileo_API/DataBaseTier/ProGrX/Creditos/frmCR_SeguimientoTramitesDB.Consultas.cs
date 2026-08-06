@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Creditos;
 
@@ -155,6 +156,136 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return response;
         }
 
+        /// <summary>
+        /// Buscador paginado de operaciones, equivalente a sbBusqueda(0) del formulario VB6:
+        /// id_solicitud, codigo, cedula, montoapr y saldo de reg_creditos.
+        /// </summary>
+        public ErrorDto<CrSeguimientoTramitesOperacionBusquedaLista>
+            Cr_SeguimientoTramites_Operaciones_Buscar(
+                int codEmpresa,
+                FiltrosLazyLoadData? filtros)
+        {
+            var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["id_solicitud"] = 1,
+                ["codigo"] = 2,
+                ["cedula"] = 3,
+                ["montoapr"] = 4,
+                ["saldo"] = 5
+            };
+
+            LazyLoadSpec lazy = LazyLoadHelper.Build(filtros, sortMap, "id_solicitud");
+
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                conn => Cr_SeguimientoTramites_Operaciones_Buscar_Cargar(conn, lazy));
+        }
+
+        private static CrSeguimientoTramitesOperacionBusquedaLista
+            Cr_SeguimientoTramites_Operaciones_Buscar_Cargar(
+                IDbConnection conn,
+                LazyLoadSpec lazy)
+        {
+            const string filtroSql = """
+                    @hasFilter = 0
+                 OR convert(varchar(20), R.id_solicitud) like @filtro
+                 OR R.codigo like @filtro
+                 OR R.cedula like @filtro
+                """;
+
+            string sqlCount = $"""
+                select count(1)
+                from reg_creditos R
+                where ({filtroSql});
+                """;
+
+            string sqlData = $"""
+                with base as (
+                    select
+                        R.id_solicitud,
+                        rtrim(isnull(R.codigo, '')) as codigo,
+                        rtrim(isnull(R.cedula, '')) as cedula,
+                        isnull(R.montoapr, 0) as montoapr,
+                        isnull(R.saldo, 0) as saldo
+                    from reg_creditos R
+                    where ({filtroSql})
+                )
+                select id_solicitud, codigo, cedula, montoapr, saldo
+                from base t
+                order by
+                    case when @sortCode = 1 and @isAsc = 1 then t.id_solicitud end asc,
+                    case when @sortCode = 1 and @isAsc = 0 then t.id_solicitud end desc,
+                    case when @sortCode = 2 and @isAsc = 1 then t.codigo end asc,
+                    case when @sortCode = 2 and @isAsc = 0 then t.codigo end desc,
+                    case when @sortCode = 3 and @isAsc = 1 then t.cedula end asc,
+                    case when @sortCode = 3 and @isAsc = 0 then t.cedula end desc,
+                    case when @sortCode = 4 and @isAsc = 1 then t.montoapr end asc,
+                    case when @sortCode = 4 and @isAsc = 0 then t.montoapr end desc,
+                    case when @sortCode = 5 and @isAsc = 1 then t.saldo end asc,
+                    case when @sortCode = 5 and @isAsc = 0 then t.saldo end desc,
+                    t.id_solicitud asc
+                offset @offset rows fetch next @pageSize rows only;
+                """;
+
+            return new CrSeguimientoTramitesOperacionBusquedaLista
+            {
+                total = conn.ExecuteScalar<int>(sqlCount, lazy.Params),
+                lista = conn.Query<CrSeguimientoTramitesOperacionBusquedaItem>(
+                    sqlData,
+                    lazy.Params).ToList()
+            };
+        }
+
+        /// <summary>
+        /// Obtiene la operación anterior o siguiente respecto de la actual, equivalente a
+        /// FlatScrollBar_Change del formulario VB6. Devuelve 0 cuando no hay más.
+        /// </summary>
+        public ErrorDto<int> Cr_SeguimientoTramites_Operacion_Navegar(
+            int codEmpresa,
+            int operacion,
+            string direccion)
+        {
+            bool siguiente = !string.Equals(
+                (direccion ?? string.Empty).Trim(),
+                "A",
+                StringComparison.OrdinalIgnoreCase);
+
+            int referencia = ObtenerReferencia(operacion, siguiente);
+
+            string sql = siguiente
+                ? """
+                    select top 1 R.id_solicitud
+                    from reg_creditos R
+                    inner join Catalogo C on R.codigo = C.codigo
+                    where C.Retencion = 'N' and C.poliza = 'N'
+                      and R.id_solicitud > @Operacion
+                    order by R.id_solicitud asc;
+                    """
+                : """
+                    select top 1 R.id_solicitud
+                    from reg_creditos R
+                    inner join Catalogo C on R.codigo = C.codigo
+                    where C.Retencion = 'N' and C.poliza = 'N'
+                      and R.id_solicitud < @Operacion
+                    order by R.id_solicitud desc;
+                    """;
+
+            var response = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                0,
+                new { Operacion = referencia });
+
+            return response.Code != 0
+                ? DbHelper.CreateErrorResponse(
+                    response.Description ?? "No fue posible navegar entre operaciones.",
+                    response.Code.GetValueOrDefault(-1),
+                    0)
+                : DbHelper.CreateOkResponse(response.Result);
+        }
+
         private static CrSeguimientoTramitesInicializarData Cr_SeguimientoTramites_Catalogos_Cargar(
             IDbConnection conn,
             string usuario)
@@ -236,19 +367,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 inner join catalogo_asignaGrp A on G.cod_grupo = A.cod_grupo
                 where G.estado = 1 and A.codigo = @Codigo;
 
-                exec spSys_Cuentas_Bancarias @Cedula, @BancoId, 1;
+                exec spSys_Cuentas_Bancarias @Identificacion, @BancoId, 1;
 
                 select convert(varchar(20), COD_DEDUCTORA) as idx, rtrim(DESCRIPCION) as itmx
                 from vAFI_Deductoras
                 where cod_institucion = @InstitucionId
-                order by DESCRIPCION;";
+                order by DESCRIPCION;
+
+                select isnull(max(convert(int, envio_Tesoreria)), 0)
+                from catalogo_destinos
+                where cod_destino = @Destino;
+
+                select rtrim(isnull(max(FORMULARIO), ''))
+                from CRD_GARANTIA_TIPOS
+                where Garantia = @Garantia;
+
+                select rtrim(isnull(max(cod_preAnalisis), ''))
+                from CRD_PREA_PREANALISIS
+                where id_solicitud = @Operacion;";
 
             var parameters = new
             {
                 Codigo = operacion.codigo,
                 Cedula = operacion.cedula,
+                Identificacion = operacion.cedula,
                 BancoId = operacion.cod_banco,
-                InstitucionId = operacion.cod_institucion
+                InstitucionId = operacion.cod_institucion,
+                Destino = operacion.cod_destino,
+                Garantia = operacion.garantia,
+                Operacion = operacion.id_solicitud
             };
 
             using SqlMapper.GridReader grid = conn.QueryMultiple(sql, parameters);
@@ -257,6 +404,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             operacion.recursos = Cr_SeguimientoTramites_Opciones_Mapear(grid.Read<CrSeguimientoTramitesOpcionRaw>());
             operacion.cuentas_bancarias = Cr_SeguimientoTramites_Opciones_Mapear(grid.Read<CrSeguimientoTramitesOpcionRaw>());
             operacion.deductoras = Cr_SeguimientoTramites_Opciones_Mapear(grid.Read<CrSeguimientoTramitesOpcionRaw>());
+            // fxEnvioTesoreria del VB6.
+            operacion.envio_tesoreria = grid.ReadFirstOrDefault<int>() == 1;
+            // fxGarantiaForm del VB6: F02 fiadores, F03 hipotecaria, F07 prendas.
+            operacion.formulario_garantia = grid.ReadFirstOrDefault<string>() ?? string.Empty;
+            // Expediente de preanálisis asociado, si la operación ya tiene estudio.
+            operacion.cod_preanalisis = grid.ReadFirstOrDefault<string>() ?? string.Empty;
             operacion.estados = Cr_SeguimientoTramites_Estados_Crear(operacion.estadosol);
             operacion.estado_tooltip = Cr_SeguimientoTramites_EstadoTooltip_Crear(operacion);
             operacion.tasa_tooltip = $"Pts Bonificación: {operacion.tasa_pts_bono}";
@@ -267,6 +420,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 operacion.estadosol,
                 "N",
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Obtiene la referencia de operación para navegación.
+        /// El VB6 parte de 0 hacia adelante y del tope hacia atrás cuando no hay operación.
+        /// </summary>
+        private static int ObtenerReferencia(int operacion, bool siguiente)
+        {
+            if (operacion > 0)
+            {
+                return operacion;
+            }
+
+            return siguiente ? 0 : int.MaxValue;
         }
     }
 }
