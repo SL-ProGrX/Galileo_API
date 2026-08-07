@@ -59,7 +59,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene los catálogos, la fecha del servidor y la configuración
+        /// Obtiene los catalogos, la fecha del servidor y la configuracion
         /// empresarial necesaria para el formulario.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene la información básica de una persona y valida el acceso
+        /// Obtiene la informacion basica de una persona y valida el acceso
         /// restringido a su expediente.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -189,7 +189,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene los departamentos correspondientes a una institución.
+        /// Obtiene los departamentos correspondientes a una institucion.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codInstitucion"></param>
@@ -222,7 +222,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene las secciones correspondientes a una institución y
+        /// Obtiene las secciones correspondientes a una institucion y
         /// departamento.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -277,8 +277,8 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Envía un estado de cuenta individual por correo electrónico.
-        /// MProGrxMain registra internamente la bitácora del envío.
+        /// Envia un estado de cuenta individual por correo electronico.
+        /// MProGrxMain registra internamente la bitacora del envio.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -315,7 +315,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Ejecuta el envío masivo de estados de cuenta por correo.
+        /// Ejecuta el envio masivo de estados de cuenta por correo.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
@@ -412,7 +412,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Registra la bitácora correspondiente a la generación local
+        /// Registra la bitacora correspondiente a la generacion local
         /// de un estado de cuenta o reporte de excedentes.
         /// </summary>
         /// <param name="codEmpresa"></param>
