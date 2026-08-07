@@ -126,29 +126,6 @@ namespace Galileo.Models.GEN
         public DateTime? fecha_corte { get; set; }
     }
 
-    public class CcEstadoCuentaReporteRegistroRequest
-    {
-        public string usuario { get; set; } =
-            string.Empty;
-
-        public string cedula { get; set; } =
-            string.Empty;
-    }
-
-    public class CcEstadoCuentaExcedentesRegistroRequest
-    {
-        public string usuario { get; set; } =
-            string.Empty;
-
-        public string cedula { get; set; } =
-            string.Empty;
-
-        public int id_periodo { get; set; } = 0;
-
-        public string periodo_descripcion { get; set; } =
-            string.Empty;
-    }
-
     internal class CcEstadoCuentaPeriodoData
     {
         public object? idx { get; set; }
