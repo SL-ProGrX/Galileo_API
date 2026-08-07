@@ -177,6 +177,6 @@ namespace Galileo.Models.GEN
 
         public int id_periodo { get; set; } = 0;
 
-        public bool por_segmentos { get; set; }
+        public bool por_segmentos { get; set; } = false;
     }
 }
