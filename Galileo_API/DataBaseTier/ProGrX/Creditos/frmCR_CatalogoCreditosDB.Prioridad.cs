@@ -9,8 +9,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene las prioridades de deduccion por linea de credito.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Lista de líneas de crédito con su prioridad de deducción.</returns>
         public ErrorDto<List<CrCatalogoCreditoPrioridadData>> CrCatalogoCreditos_Prioridad_Obtener(int codEmpresa)
         {
             const string query = @"
@@ -34,9 +34,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Guarda la prioridad de deduccion de una linea de credito.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Código de línea, prioridad y usuario que realiza la modificación.</param>
+        /// <returns>Resultado de la actualización y registro en bitácora.</returns>
         public ErrorDto CrCatalogoCreditos_Prioridad_Guardar(int codEmpresa, CrCatalogoCreditoPrioridadGuardarRequest request)
         {
             request.codigo = request.codigo?.Trim().ToUpperInvariant() ?? string.Empty;

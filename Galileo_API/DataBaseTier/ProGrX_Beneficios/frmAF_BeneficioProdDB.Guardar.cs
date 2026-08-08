@@ -14,7 +14,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <param name="producto">Datos del producto.</param>
         /// <param name="usuario">Usuario que realiza la operación.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Producto_Guardar(int CodCliente, ProductoData producto, string usuario)
+        public ErrorDto AfiBeneficioProd_Producto_Guardar(int CodCliente, ProductoData producto, string usuario)
         {
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
@@ -86,7 +86,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <param name="CodCliente">Código de empresa.</param>
         /// <param name="cod_producto">Código del producto a eliminar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Producto_Eliminar(int CodCliente, string cod_producto)
+        public ErrorDto AfiBeneficioProd_Producto_Eliminar(int CodCliente, string cod_producto)
         {
             const string sql = "DELETE FROM afi_bene_productos WHERE cod_producto = @cod_producto";
 

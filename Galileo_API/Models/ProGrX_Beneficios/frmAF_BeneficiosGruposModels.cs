@@ -2,8 +2,35 @@ namespace Galileo.Models.AF
 {
     public class AfiBeneGruposLista
     {
-        public int Total { get; set; }
+        public int total { get; set; }
         public List<AfiBeneGrupos> beneficios { get; set; } = new List<AfiBeneGrupos>();
+    }
+
+    /// <summary>
+    /// Datos de negocio para registrar o retirar una asignación de grupo
+    /// (estados, requisitos, motivos o accesos).
+    /// </summary>
+    public class AfiAsignacionRequest
+    {
+        /// <summary>Tipo de asignación: 0 Estados, 1 Requisitos, 2 Motivos, 3 Accesos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public int asigna { get; set; }
+
+        /// <summary>Código del grupo al que pertenece la asignación.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public string grupo { get; set; } = string.Empty;
+
+        /// <summary>Valor asignado (estado, requisito, motivo o rol según el tipo).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public string valor { get; set; } = string.Empty;
+
+        /// <summary>Usuario que realiza el movimiento.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public string usuario { get; set; } = string.Empty;
+
+        /// <summary>Movimiento a aplicar: 'A' agrega, 'E' elimina.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public string mov { get; set; } = string.Empty;
     }
 
     public class AfiBeneGrupos

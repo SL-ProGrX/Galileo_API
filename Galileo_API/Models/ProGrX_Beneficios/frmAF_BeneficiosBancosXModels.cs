@@ -2,7 +2,7 @@ namespace Galileo.Models.AF
 {
     public class AfBeneficiosBancosDataLista
     {
-        public int Total { get; set; }
+        public int total { get; set; }
         public List<AfBeneficiosBancosData> bancosX { get; set; } = new List<AfBeneficiosBancosData>();
     }
 
@@ -14,12 +14,5 @@ namespace Galileo.Models.AF
         public bool cheque { get; set; }
         [System.Text.Json.Serialization.JsonRequired]
         public bool transferencia { get; set; }
-    }
-
-    public class AfBeneficioBancosfiltros
-    {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
     }
 }

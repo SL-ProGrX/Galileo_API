@@ -11,6 +11,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
     /// </summary>
     [Route("api/frmAF_Beneficios_Estados")]
     [ApiController]
+    [Authorize]
     public class FrmAfBeneficiosEstadosController : ControllerBase
     {
         private readonly FrmAfBeneficiosEstadosBL _bl;
@@ -25,26 +26,27 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             _bl = new FrmAfBeneficiosEstadosBL(config);
         }
 
-        /// <summary>Lista de estados de beneficios.</summary>
-        [Authorize]
+        /// <summary>Lista de estados de beneficios con paginación, filtro y ordenamiento.</summary>
         [HttpGet("BeneficiosEstados_Obtener")]
-        public ErrorDto<BeneEstadoDataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
-            => _bl.BeneficiosEstados_Obtener(CodEmpresa, pagina, paginacion, filtro);
+        public ErrorDto<BeneEstadoDataLista> BeneficiosEstados_Obtener(int CodEmpresa, string? filtros)
+            => _bl.BeneficiosEstados_Obtener(CodEmpresa, filtros);
+
+        /// <summary>Exporta la lista de estados aplicando el filtro vigente, sin paginar.</summary>
+        [HttpGet("BeneficiosEstados_Exportar")]
+        public ErrorDto<List<BeneEstado>> BeneficiosEstados_Exportar(int CodEmpresa, string? filtros)
+            => _bl.BeneficiosEstados_Exportar(CodEmpresa, filtros);
 
         /// <summary>Inserta un estado de beneficio.</summary>
-        [Authorize]
         [HttpPost("BeneficiosEstados_Agregar")]
         public ErrorDto BeneficiosEstados_Agregar(int CodEmpresa, [FromBody] BeneEstado request)
             => _bl.BeneficiosEstados_Agregar(CodEmpresa, request);
 
         /// <summary>Actualiza un estado de beneficio.</summary>
-        [Authorize]
         [HttpPut("BeneficiosEstados_Actualizar")]
         public ErrorDto BeneficiosEstados_Actualizar(int CodEmpresa, [FromBody] BeneEstado request)
             => _bl.BeneficiosEstados_Actualizar(CodEmpresa, request);
 
         /// <summary>Elimina un estado de beneficio.</summary>
-        [Authorize]
         [HttpDelete("BeneficiosEstados_Eliminar")]
         public ErrorDto BeneficiosEstados_Eliminar(int CodEmpresa, string id)
             => _bl.BeneficiosEstados_Eliminar(CodEmpresa, id);

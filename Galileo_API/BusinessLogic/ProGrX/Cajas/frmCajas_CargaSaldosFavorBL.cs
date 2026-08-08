@@ -1,4 +1,5 @@
-﻿using Galileo.Models;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
 using Galileo_API.Models.ProGrX.Cajas;
@@ -22,6 +23,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
         {
             return _db.Cajas_CargaSaldosFavor_Retenciones_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<int> Cajas_CargaSaldosFavor_Retencion_Aplicar(
+            int codEmpresa,
+            CajasCargaSaldosFavorRetencionRequest request)
+        {
+            return _db.Cajas_CargaSaldosFavor_Retencion_Aplicar(codEmpresa, request);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> CargaSaldosFavor_EntidadesPagadoras_Obtener(int codEmpresa, bool ordenPorDescripcion)
@@ -102,6 +110,54 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public ErrorDto<bool> Cajas_SaldoFavorLiquidacion(CajasSaldoFavorLiquidacionParams param)
         {
             return _db.Cajas_SaldoFavorLiquidacion(param);
+        }
+
+
+        /// <summary>
+        /// Obtiene los tipos de saldo a favor disponibles para liquidar de un cliente.
+        /// </summary>
+        public ErrorDto<List<CajasTransacSFLiqTipoSaldoResult>> Cajas_TransacSFLiq_TiposSaldo_Obtener(
+            int codEmpresa,
+            string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+                return DbHelper.CreateErrorResponse<List<CajasTransacSFLiqTipoSaldoResult>>(
+                    "La cédula del cliente es requerida.");
+
+            return _db.Cajas_TransacSFLiq_TiposSaldo_Obtener(codEmpresa, cedula);
+        }
+
+        /// <summary>
+        /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
+        /// </summary>
+        public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
+            CajasTransacSFLiqLiquidarParams param)
+        {
+            if (param == null)
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "El request es requerido.");
+
+            if (param.Linea <= 0)
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "El ID del saldo a favor es requerido.");
+
+            if (string.IsNullOrWhiteSpace(param.Metodo))
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "El método de liquidación es requerido.");
+
+            if (string.IsNullOrWhiteSpace(param.Usuario))
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "El usuario es requerido.");
+
+            if (string.IsNullOrWhiteSpace(param.Caja))
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "La caja es requerida.");
+
+            if (param.Apertura <= 0)
+                return DbHelper.CreateErrorResponse<CajasTransacSFLiqLiquidarResult>(
+                    "La apertura de caja es requerida.");
+
+            return _db.Cajas_TransacSFLiq_Liquidar(param);
         }
     }
 }
