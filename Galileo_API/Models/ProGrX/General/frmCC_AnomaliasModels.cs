@@ -2,7 +2,7 @@
 {
     public class CcAnomaliaFiltroDto
     {
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
         public string? Linea { get; set; }
         public string? Destino { get; set; }
         public int? Institucion { get; set; }
@@ -10,7 +10,7 @@
 
     public class CcAnomaliaCtaDerivadaFiltroDto
     {
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
     }
 
     public class CcAnomaliaCreditoItemDto

@@ -299,8 +299,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
             return new
             {
                 Monto = filtro?.Monto ?? 0m,
-                Linea = string.IsNullOrWhiteSpace(filtro?.Linea) ? null : filtro!.Linea.Trim(),
-                Destino = string.IsNullOrWhiteSpace(filtro?.Destino) ? null : filtro!.Destino.Trim(),
+                Linea = string.IsNullOrWhiteSpace(filtro?.Linea) ? null : filtro.Linea.Trim(),
+                Destino = string.IsNullOrWhiteSpace(filtro?.Destino) ? null : filtro.Destino.Trim(),
                 filtro?.Institucion
             };
         }
