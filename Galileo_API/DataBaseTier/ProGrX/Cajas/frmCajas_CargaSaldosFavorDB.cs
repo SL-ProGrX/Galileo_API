@@ -183,7 +183,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 sqlBuilder.Append(whereClause);
                 sqlBuilder.Append(" ORDER BY REGISTRO_FECHA DESC");
                 var sql = sqlBuilder.ToString();
-                return conn.Query<CajasSaldosFavorConsultaResult>(sql, parameters).ToList();
+                var resultado = conn.Query<CajasSaldosFavorConsultaResult>(sql, parameters).ToList();
+
+                // Los saldos retenidos no tienen Nombre real (la vista lo trae NULL); se muestra "Retenido".
+                if (param.SoloRetenidos == true)
+                {
+                    foreach (var fila in resultado)
+                        fila.Nombre = "Retenido";
+                }
+
+                return resultado;
             });
         }
 
@@ -192,8 +201,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var where = new StringBuilder();
             var parameters = new DynamicParameters();
 
-            if (param.SaldoMayorCero.HasValue)
-                where.Append(param.SaldoMayorCero.Value ? " AND Saldo > 0" : " AND Saldo <= 0");
+            // Saldos Retenidos: registros sin Nombre (no identificados a un socio) y Saldo = 0.
+            // Reemplaza el filtro normal de saldo/nombre; las demás condiciones (fechas, tipo doc,
+            // entidad pagadora, origen de recursos, monto) se siguen aplicando si vienen informadas.
+            if (param.SoloRetenidos == true)
+            {
+                where.Append(" AND NOTAS = 'Retenido'");
+            }
+            else
+            {
+                // Comportamiento normal: nunca se muestran los saldos retenidos (sin nombre).
+                where.Append(" AND Nombre IS NOT NULL");
+
+                if (param.SaldoMayorCero.HasValue)
+                    where.Append(param.SaldoMayorCero.Value ? " AND Saldo > 0" : " AND Saldo <= 0");
+
+                AddLike(where, parameters, param.Cedula, "Cedula");
+                AddLike(where, parameters, param.Nombre, "Nombre", "ISNULL(Nombre,'')");
+            }
 
             if (param.FiltrarFechas == true && param.FechaDesde.HasValue && param.FechaHasta.HasValue)
             {
@@ -202,8 +227,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 parameters.Add("FechaHasta", param.FechaHasta.Value.Date.AddHours(23).AddMinutes(59).AddSeconds(59));
             }
 
-            AddLike(where, parameters, param.Cedula, "Cedula");
-            AddLike(where, parameters, param.Nombre, "Nombre", "ISNULL(Nombre,'')");
             if(param.DocTipo != "TODOS")
             {
                 AddEquals(where, parameters, param.DocTipo, "Doc_Tipo");
@@ -485,22 +508,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns></returns>
         public ErrorDto<bool> Cajas_IdentificaTesDepositos_Full(CajasIdentificaTesDepositosFullParams param)
         {
-            return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
+            var resp = new ErrorDto<bool> { Result = true };
+
+            try
             {
-                var parameters = new
+                return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
                 {
-                    param.IdBanco,
-                    param.Documento,
-                    param.Cedula,
-                    param.Nombre,
-                    param.Usuario,
-                    param.CodEntidadPago,
-                    param.CodOrigenRecursos,
-                    param.DepositoId
-                };
-                conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return true;
-            });
+                    var parameters = new
+                    {
+                        Banco = param.IdBanco,
+                        Documento = param.Documento,
+                        Cedula = param.Cedula,
+                        Nombre = param.Nombre,
+                        Usuario = param.Usuario,
+                        CodPagador = param.CodEntidadPago,
+                        CodOrigenRecuros = param.CodOrigenRecursos,
+                        TramiteId = param.DepositoId
+                    };
+                    var result = conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = false;
+                return resp;
+            }
         }
 
         /// <summary>
@@ -530,26 +565,54 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns></returns>
         public ErrorDto<bool> Cajas_SaldoFavorLiquidacion(CajasSaldoFavorLiquidacionParams param)
         {
-            return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
+            var resp = new ErrorDto<bool> { Result = true };
+
+            if (string.IsNullOrWhiteSpace(param.Metodo))
             {
-                string spName = param.Metodo switch
-                {
-                    "T" => "spCajas_SaldoFavorLiquidacionTesoreria",
-                    "F" => "spCajas_SaldoFavorLiquidacionFondos",
-                    "E" => "spCajas_SaldoFavorLiquidacionExclusion",
-                    "C" => "spCajas_SaldoFavorLiquidacionRC_Efectivo",
-                    _ => throw new ArgumentException("Método no válido")
-                };
+                resp.Code = -1;
+                resp.Description = "El método de liquidación es requerido.";
+                resp.Result = false;
+                return resp;
+            }
 
-                var parameters = new
-                {
-                    param.Linea,
-                    param.Usuario
-                };
+            string spName = param.Metodo.Trim().ToUpper() switch
+            {
+                "T" => "spCajas_SaldoFavorLiquidacionTesoreria",
+                "F" => "spCajas_SaldoFavorLiquidacionFondos",
+                "E" => "spCajas_SaldoFavorLiquidacionExclusion",
+                "C" => "spCajas_SaldoFavorLiquidacionRC_Efectivo",
+                _ => string.Empty
+            };
 
-                conn.Execute(spName, parameters, commandType: System.Data.CommandType.StoredProcedure);
-                return true;
-            });
+            if (string.IsNullOrEmpty(spName))
+            {
+                resp.Code = -1;
+                resp.Description = $"Método de liquidación no válido: '{param.Metodo}'. Valores permitidos: T, F, E, C.";
+                resp.Result = false;
+                return resp;
+            }
+
+            try
+            {
+                return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
+                {
+                    var parameters = new
+                    {
+                        IdSaldoFavor = param.Linea,
+                        Usuario = param.Usuario
+                    };
+
+                    conn.Execute(spName, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = false;
+                return resp;
+            }
         }
 
 
