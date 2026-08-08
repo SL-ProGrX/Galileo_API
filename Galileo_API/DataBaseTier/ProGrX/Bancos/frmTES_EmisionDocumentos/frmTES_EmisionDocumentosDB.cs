@@ -1022,7 +1022,7 @@ SET Estado = 'I',
 
         private static void NormalizarFiltroFechas(TesEmisionDocFiltros filtro)
         {
-            if (!string.Equals(filtro.usuario, nFechas, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
             {
                 filtro.fecha_inicio = null;
                 filtro.fecha_corte = null;
