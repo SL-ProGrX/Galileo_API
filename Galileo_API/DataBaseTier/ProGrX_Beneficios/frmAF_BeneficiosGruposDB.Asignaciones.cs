@@ -47,30 +47,26 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Registra una asignación de grupo según el tipo (estados, requisitos, motivos o accesos).
+        /// Registra o retira una asignación de grupo según el tipo (estados, requisitos, motivos o accesos).
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="asigna">Tipo de asignación (0-3).</param>
-        /// <param name="grupo">Código del grupo.</param>
-        /// <param name="valor">Valor a asignar.</param>
-        /// <param name="usuario">Usuario que registra.</param>
-        /// <param name="mov">Tipo de movimiento.</param>
+        /// <param name="request">Datos de la asignación (tipo, grupo, valor, usuario y movimiento).</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AfiAsignaciones_Actualizar(int CodCliente, int asigna, string grupo, string valor, string usuario, string mov)
+        public ErrorDto AfiAsignaciones_Actualizar(int CodCliente, AfiAsignacionRequest request)
         {
-            if (asigna < 0 || asigna >= SpAsignaAdd.Length)
+            if (request == null || request.asigna < 0 || request.asigna >= SpAsignaAdd.Length)
             {
                 return DbHelper.ErrorResponse("Tipo de asignación inválido");
             }
 
-            var (sp, campo) = SpAsignaAdd[asigna];
+            var (sp, campo) = SpAsignaAdd[request.asigna];
 
             var parametros = new Dictionary<string, object>
             {
-                { "GrupoId", grupo },
-                { campo, valor },
-                { "Usuario", usuario },
-                { "Mov", mov }
+                { "GrupoId", request.grupo },
+                { campo, request.valor },
+                { "Usuario", request.usuario },
+                { "Mov", request.mov }
             };
 
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);

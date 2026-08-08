@@ -18,9 +18,9 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpGet("Cajas_TipoCambio")]
-        public ErrorDto<decimal> Cajas_TipoCambio(int CodEmpresa, string Divisa)
+        public ErrorDto<decimal> Cajas_TipoCambio(int CodEmpresa, int Enlace, string Divisa)
         {
-            return _bl.ObtenerTipoCambio(CodEmpresa, Divisa);
+            return _bl.ObtenerTipoCambio(CodEmpresa, Enlace, Divisa);
         }
 
         [Authorize]
@@ -109,9 +109,16 @@ namespace Galileo.Controllers
 
         [Authorize]
         [HttpGet("Cajas_Tiquete_Obtener")]
-        public ErrorDto<List<CajasTiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
+        public ErrorDto<List<CajasTiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, int Enlace, string codCaja, string tiquete, int apertura)
         {
-            return _bl.Cajas_Tiquete_Obtener(CodEmpresa, codCaja, tiquete, apertura);
+            return _bl.Cajas_Tiquete_Obtener(CodEmpresa, Enlace, codCaja, tiquete, apertura);
+        }
+
+        [Authorize]
+        [HttpGet("Cajas_ReciboDigital")]
+        public ErrorDto<bool> Cajas_ReciboDigital(int CodEmpresa, string codCaja, int apertura, string tiquete)
+        {
+            return _bl.Cajas_ReciboDigital(CodEmpresa, codCaja, apertura, tiquete);
         }
     }
 }

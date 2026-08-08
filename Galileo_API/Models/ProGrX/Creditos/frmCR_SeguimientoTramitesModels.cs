@@ -42,6 +42,24 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string proceso_descripcion { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Columnas del buscador de operaciones de sbBusqueda(0) del formulario VB6.
+    /// </summary>
+    public class CrSeguimientoTramitesOperacionBusquedaItem
+    {
+        public int id_solicitud { get; set; }
+        public string codigo { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public decimal montoapr { get; set; }
+        public decimal saldo { get; set; }
+    }
+
+    public class CrSeguimientoTramitesOperacionBusquedaLista
+    {
+        public int total { get; set; }
+        public List<CrSeguimientoTramitesOperacionBusquedaItem> lista { get; set; } = new();
+    }
+
     public class CrSeguimientoTramitesOperacionData
     {
         public int id_solicitud { get; set; }
@@ -124,6 +142,12 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string tasa_tooltip { get; set; } = string.Empty;
         public string seccion_inicial { get; set; } = "0-0";
         public bool permite_formalizar { get; set; }
+        /// <summary>fxEnvioTesoreria del VB6, según el destino de la operación.</summary>
+        public bool envio_tesoreria { get; set; }
+        /// <summary>fxGarantiaForm del VB6: F02 fiadores, F03 hipotecaria, F07 prendas.</summary>
+        public string formulario_garantia { get; set; } = string.Empty;
+        /// <summary>Expediente de preanálisis asociado a la operación, si existe.</summary>
+        public string cod_preanalisis { get; set; } = string.Empty;
         public List<CrSeguimientoTramitesOpcionItem> estados { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> destinos { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> garantias { get; set; } = new();

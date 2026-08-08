@@ -93,6 +93,13 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.ConsultarFacturasPorGiro(codEmpresa, operacion, idGiro);
         }
+
+        [Authorize]
+        [HttpGet("ConsultarEstadosFactura")]
+        public ErrorDto<List<CxCFacturaEstadoDto>> ConsultarEstadosFactura(int codEmpresa)
+        {
+            return _bl.ConsultarEstadosFactura(codEmpresa);
+        }
     }
 
 }

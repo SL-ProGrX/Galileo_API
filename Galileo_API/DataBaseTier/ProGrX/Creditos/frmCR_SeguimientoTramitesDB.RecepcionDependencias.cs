@@ -110,9 +110,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     "spSys_Cuentas_Bancarias",
                     new
                     {
-                        Cedula = cedula,
+                        Identificacion = cedula,
                         BancoId = bancoId,
-                        Tipo = 1
+                        DivisaCheck = 1
                     },
                     commandType: CommandType.StoredProcedure);
 

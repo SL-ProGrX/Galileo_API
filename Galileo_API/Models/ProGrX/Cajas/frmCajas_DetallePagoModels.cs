@@ -52,6 +52,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class CajasDesglocePagoDto
     {
+        public string? clienteid { get; set; }
         public required int linea { get; set; }
         public string? ticket { get; set; }
         public string? cod_caja { get; set; }
@@ -94,6 +95,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class CajasDesglocePagoRequest
     {
+        public string? clienteid { get; set; }
         public string? cod_caja { get; set; }
         public required int cod_apertura { get; set; }
         public string? ticket { get; set; }
@@ -166,6 +168,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal monto { get; set; }
         public decimal saldo_favor { get; set; }
         public string? divisa { get; set; }
+        public string? cod_divisa { get; set; }
         public decimal tipo_cambio { get; set; }
         public string? num_referencia { get; set; }
         public string? cheque_numero { get; set; }

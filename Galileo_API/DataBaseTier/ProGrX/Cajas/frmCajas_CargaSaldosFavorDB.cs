@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
 using System.Text;
+using System.Xml.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
@@ -49,6 +50,71 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb,
                 codEmpresa,
                 query);
+        }
+
+        /// <summary>
+        /// Envía al proceso de retención los depósitos seleccionados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Depósitos, código de retención y usuario.</param>
+        /// <returns>Cantidad de depósitos recibidos por el procedimiento.</returns>
+        public ErrorDto<int> Cajas_CargaSaldosFavor_Retencion_Aplicar(
+            int codEmpresa,
+            CajasCargaSaldosFavorRetencionRequest request)
+        {
+            if (request.DepositoIds is not { Count: > 0 } ||
+                request.DepositoIds.Any(id => id <= 0))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "Debe enviar al menos un depósito válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.RetencionCodigo) ||
+                request.RetencionCodigo.Equals(
+                    "X",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "El código de retención es requerido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Usuario))
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "El usuario es requerido.");
+            }
+
+            var depositosXml = ConstruirDepositosRetencionXml(
+                request.DepositoIds);
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                conn.QuerySingle<int>(
+                    "spCajas_W_CargaSaldosFavor_Retencion_Aplicar",
+                    new
+                    {
+                        DepositosXml = depositosXml,
+                        RetencionCodigo = request.RetencionCodigo.Trim(),
+                        Usuario = request.Usuario.Trim()
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure));
+        }
+
+        /// <summary>
+        /// Construye el XML de depósitos utilizado por el proceso de retención.
+        /// </summary>
+        private static string ConstruirDepositosRetencionXml(
+            IEnumerable<long> depositoIds)
+        {
+            var documento = new XElement(
+                "depositos",
+                depositoIds
+                    .Distinct()
+                    .Select(id =>
+                        new XElement(
+                            "deposito",
+                            new XAttribute("id", id))));
+
+            return documento.ToString(SaveOptions.DisableFormatting);
         }
 
         /// <summary>
@@ -483,6 +549,82 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 conn.Execute(spName, parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
+            });
+        }
+
+
+        /// <summary>
+        /// Obtiene los tipos de saldo a favor disponibles para liquidar de un cliente.
+        /// Equivalente a spCajas_SF_Liquidables (consulta de tipos) del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="cedula">Cédula del cliente.</param>
+        /// <returns>Lista de tipos de documento con saldo positivo.</returns>
+        public ErrorDto<List<CajasTransacSFLiqTipoSaldoResult>> Cajas_TransacSFLiq_TiposSaldo_Obtener(
+            int codEmpresa,
+            string cedula)
+        {
+            const string sql = @"
+                SELECT
+                    RTRIM(T.DOC_TIPO) AS item,
+                    RTRIM(T.DESCRIPCION) AS descripcion
+                FROM CAJAS_SALDO_FAVOR C
+                INNER JOIN CAJAS_SALDOS_FAVOR_TIPOS T ON C.DOC_TIPO = T.DOC_TIPO
+                WHERE C.SALDO > 0
+                  AND C.CEDULA = @Cedula
+                GROUP BY T.DOC_TIPO, T.DESCRIPCION
+                ORDER BY T.DOC_TIPO;";
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var result = conn.Query<CajasTransacSFLiqTipoSaldoResult>(
+                    sql,
+                    new { Cedula = cedula })
+                    .ToList();
+
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
+        /// Equivalente a spCajas_SaldoFavorLiquidacion* del VB6, con retorno de NumDoc/TipoDoc.
+        /// </summary>
+        /// <param name="param">Parámetros de liquidación.</param>
+        /// <returns>NumDoc y TipoDoc generados (para impresión de recibo en efectivo).</returns>
+        public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
+            CajasTransacSFLiqLiquidarParams param)
+        {
+            return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
+            {
+                string spName = param.Metodo switch
+                {
+                    "T" => "spCajas_SaldoFavorLiquidacionTesoreria",
+                    "F" => "spCajas_SaldoFavorLiquidacionFondos",
+                    "E" => "spCajas_SaldoFavorLiquidacionRC_Efectivo",
+                    _ => throw new ArgumentException("Método de liquidación no válido")
+                };
+
+                var spParams = new
+                {
+                    Linea = param.Linea,
+                    Usuario = param.Usuario.Trim(),
+                    Caja = param.Caja.Trim(),
+                    Apertura = param.Apertura
+                };
+
+                var row = conn.QueryFirstOrDefault<dynamic>(
+                    spName,
+                    spParams,
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                var result = new CajasTransacSFLiqLiquidarResult
+                {
+                    NumDoc = row != null ? Convert.ToInt64(row.NumDoc ?? 0) : 0,
+                    TipoDoc = row?.TipoDoc?.ToString() ?? string.Empty
+                };
+
+                return result;
             });
         }
     }
