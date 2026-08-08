@@ -119,6 +119,51 @@ namespace Galileo_API.Models.ProGrX_Procesos
         public bool reimprimir { get; set; } = false;
     }
 
+    public class CcCaRemesasConsultasRequest
+    {
+        public int? numero_generacion { get; set; }
+        public int? cod_linea { get; set; }
+        public string? cod_entidad { get; set; }
+        public DateTime fecha_inicio { get; set; } = DateTime.MinValue;
+        public DateTime fecha_fin { get; set; } = DateTime.MinValue;
+        public string tipo_cuota { get; set; } = "T";
+        public string estado { get; set; } = "T";
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+    }
+
+    public class CcCaRemesasConsultasData
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public long id_solicitud { get; set; } = 0;
+        public int cod_linea { get; set; } = 0;
+        public string linea_desc { get; set; } = string.Empty;
+        public decimal monto_cuota { get; set; } = 0;
+        public string tipo_desc { get; set; } = string.Empty;
+        public string fecult { get; set; } = string.Empty;
+        public string tarjeta_mask { get; set; } = string.Empty;
+        public string tarjeta_vence { get; set; } = string.Empty;
+        public string tarjeta_tipo { get; set; } = string.Empty;
+        public string estado_desc { get; set; } = string.Empty;
+        public long referencia { get; set; } = 0;
+        public string transaccion { get; set; } = string.Empty;
+        public string fecha_generacion { get; set; } = string.Empty;
+        public decimal recaudado { get; set; } = 0;
+        public string entidad_desc { get; set; } = string.Empty;
+        public string remesa_desc { get; set; } = string.Empty;
+        public string correo { get; set; } = string.Empty;
+        public long numero_generacion { get; set; } = 0;
+    }
+
+    public class CcCaRemesasConsultasResponse
+    {
+        public List<CcCaRemesasConsultasData> detalle { get; set; } = new();
+        public decimal total_compromiso { get; set; } = 0;
+        public decimal total_recaudado { get; set; } = 0;
+        public int total_casos { get; set; } = 0;
+    }
+
     public static class CcCaRemesaCOnstantes
     {
         public const string vRequestRequerido = "El request es requerido.";
