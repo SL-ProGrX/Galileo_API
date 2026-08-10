@@ -77,7 +77,7 @@ namespace Galileo_API.Models.ProGrX.Conciliacion
 
         public string cod_recurso { get; set; } = string.Empty;
         public string recurso_descripcion { get; set; } = string.Empty;
-        public bool usar_reporte_general { get; set; }
+        public bool? usar_reporte_general { get; set; }
     }
     public class CcReportesEstudioAuxiliarGenerarRequest
     {

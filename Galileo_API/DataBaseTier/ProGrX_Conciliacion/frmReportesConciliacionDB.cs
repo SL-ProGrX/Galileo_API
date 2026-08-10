@@ -1271,7 +1271,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
         /// <returns></returns>
         private static ErrorDto<CcReportesEstudioAuxiliarGenerarResult>GenerarCreditoSaldoNegativo(CcReportesEstudioAuxiliarGenerarRequest request,CcReportesEstudioPeriodoData periodo,DateTime fechaServidor,string codigoInforme)
         {
-            bool reporteGeneral = request.credito.usar_reporte_general;
+            bool reporteGeneral = request.credito.usar_reporte_general ?? false;
 
             string nombreReporte = reporteGeneral
                 ? "Sys_AuxCreditoDetalle"
