@@ -27,8 +27,11 @@
 
     public class RemesaRequest
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_remesa { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime fecha_inicio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime fecha_corte { get; set; }
         public string? notas { get; set; }
     }
@@ -49,6 +52,7 @@
 
     public class CargaRequest
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_remesa { get; set; }
         public List<int> operaciones { get; set; } = new();
     }
@@ -93,6 +97,7 @@
 
     public class CambioConceptoRequest
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_desembolso { get; set; }
         public string? concepto { get; set; }
     }

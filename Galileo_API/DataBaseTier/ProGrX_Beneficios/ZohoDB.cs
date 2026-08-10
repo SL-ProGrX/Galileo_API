@@ -3,6 +3,7 @@ using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo_Externo.Models.NewFolder;
 using Microsoft.Data.SqlClient;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -1375,7 +1376,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 tickets.Add(new AfiBeneTicketsDatos
                 {
                     id_zoho = zohoTicket.Id,
-                    fecha_creacion = DateTime.TryParse(zohoTicket.CreatedTime, out var ct) ? ct : DateTime.MinValue,
+                    fecha_creacion = DateTime.TryParse(
+                        zohoTicket.CreatedTime,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind,
+                        out var ct) ? ct : DateTime.MinValue,
                     estado_zoho = zohoTicket.Status,
                     web_url = zohoTicket.WebUrl,
                     categoria = producto,

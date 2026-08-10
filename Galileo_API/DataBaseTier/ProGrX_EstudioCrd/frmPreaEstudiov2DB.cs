@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     encabezado = encabezado ?? new FrmPreaEstudiov2EncabezadoDto(),
                     credito = credito ?? new FrmPreaEstudiov2CreditoDto(),
                     salarios = salarios ?? new FrmPreaEstudiov2SalariosDto(),
-                    catalogos = CargarCatalogos(connection, request.cod_preanalisis?.Trim() ?? string.Empty)
+                    catalogos = CargarCatalogos(connection)
                 };
             }
             catch (Exception ex)
@@ -71,9 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Carga los catálogos (combos) necesarios para el formulario.
         /// </summary>
-        private FrmPreaEstudiov2CatalogosResponse CargarCatalogos(
-            System.Data.IDbConnection connection,
-            string cod_preanalisis)
+        private FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection)
         {
             var catalogos = new FrmPreaEstudiov2CatalogosResponse();
 

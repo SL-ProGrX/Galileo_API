@@ -12,6 +12,7 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int scroll_code { get; set; }
     }
 
@@ -156,23 +157,37 @@
         public string linea { get; set; } = string.Empty;
         public string destino { get; set; } = string.Empty;
         public string garantia { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int fiadores { get; set; }
         public string contrato { get; set; } = string.Empty;
         public string no_op_crm { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal tasa { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int plazo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal cuota { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_construccion { get; set; }
         public string tipo_salario { get; set; } = string.Empty;
         public DateTime? corte_colilla { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_devengado { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_mensual { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_constancia { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_orden_patronal { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal ingreso_privado { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal ingreso_privado_porc { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int componente_adicional_id { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal componente_adicional_porc { get; set; }
         public string notas_cumplimiento { get; set; } = string.Empty;
     }
@@ -210,6 +225,7 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         public string cod_extras { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
     }
 
@@ -236,6 +252,7 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
     }
 
@@ -328,6 +345,7 @@
         public string tipo { get; set; } = string.Empty;
         public string cod_banco { get; set; } = string.Empty;
         public string cuenta { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
         public string concepto { get; set; } = string.Empty;
     }
@@ -448,7 +466,9 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime desde { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public DateTime hasta { get; set; }
     }
 

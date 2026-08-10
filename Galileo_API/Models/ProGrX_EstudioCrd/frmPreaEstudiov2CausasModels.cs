@@ -13,6 +13,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_causa { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string observaciones { get; set; } = string.Empty;
