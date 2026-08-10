@@ -910,7 +910,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<CcReportesEstudioAuxiliarGenerarResult>CC_ReportesEstudio_Auxiliar_Generar(int CodEmpresa, CcReportesEstudioAuxiliarGenerarRequest? request)
+        public ErrorDto<CcReportesEstudioAuxiliarGenerarResult> CC_ReportesEstudio_Auxiliar_Generar(int CodEmpresa,CcReportesEstudioAuxiliarGenerarRequest? request)
         {
             if (request == null)
             {
@@ -923,7 +923,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
             if (!string.IsNullOrWhiteSpace(validacion))
             {
-                return CrearErrorGeneracion(validacion, -2);
+                return CrearErrorGeneracion(
+                    validacion,
+                    -2);
             }
 
             try
@@ -931,15 +933,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 using var connection = DbHelper.OpenConnection(
                     _portalDb,
                     CodEmpresa);
-                if (!request.id_per_historico.HasValue)
-                {
-                    return CrearErrorGeneracion(
-                        "Debe seleccionar un período.",
-                        -2);
-                }
+
+                int idPerHistorico = request.id_per_historico ?? 0;
+
                 var periodo = ObtenerPeriodo(
                     connection,
-                    request.id_per_historico.Value);
+                    idPerHistorico);
 
                 if (periodo == null)
                 {
@@ -979,11 +978,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
             }
             catch (SqlException ex)
             {
-                return CrearErrorGeneracion(ex.Message, -1);
+                return CrearErrorGeneracion(
+                    ex.Message,
+                    -1);
             }
             catch (InvalidOperationException ex)
             {
-                return CrearErrorGeneracion(ex.Message, -1);
+                return CrearErrorGeneracion(
+                    ex.Message,
+                    -1);
             }
         }
 
@@ -1726,76 +1729,76 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
             return string.Empty;
         }
-        private static ErrorDto<CcReportesEstudioEspecialReporteDto> CrearResultadoEspecialReporte(CcReportesEstudioEspecialRequest request, DateTime fechaServidor)
-                {
-                    bool detallado = request.detallado.GetValueOrDefault();
-                    int anio = request.anio.GetValueOrDefault();
-                    int mes = request.mes.GetValueOrDefault();
-                    string usuario = request.usuario_sesion ?? string.Empty;
+        private static ErrorDto<CcReportesEstudioEspecialReporteDto>CrearResultadoEspecialReporte(CcReportesEstudioEspecialRequest request,DateTime fechaServidor)
+        {
+            bool detallado = request.detallado ?? false;
+            int anio = request.anio ?? 0;
+            int mes = request.mes ?? 0;
+            string usuario = request.usuario_sesion ?? string.Empty;
 
-                    string nombreReporte = detallado
-                        ? "Sys_AuxCorteCbrAntiguedadGarantia_Especial_Detalle"
-                        : "Sys_AuxCorteCbrAntiguedadGarantia_Especial";
+            string nombreReporte = detallado
+                ? "Sys_AuxCorteCbrAntiguedadGarantia_Especial_Detalle"
+                : "Sys_AuxCorteCbrAntiguedadGarantia_Especial";
 
-                    string titulo = "Lista de Cartera al Cierre por Garantía";
+            string titulo = "Lista de Cartera al Cierre por Garantía";
 
-                    var parametros = new List<CcReportesEstudioParametroDto>
+            var parametros = new List<CcReportesEstudioParametroDto>
+    {
+        CrearParametro(
+            "Anio",
+            anio),
+
+        CrearParametro(
+            "Mes",
+            mes),
+
+        CrearParametro(
+            "Cartera",
+            ConstruirCarterasEspeciales(request.carteras)),
+
+        CrearParametro(
+            "Detalle",
+            detallado ? 1 : 0),
+
+        CrearParametro(
+            "fxFecha",
+            $"FECHA: {fechaServidor:dd/MM/yyyy}"),
+
+        CrearParametro(
+            "fxEmpresa",
+            null),
+
+        CrearParametro(
+            "fxUsuario",
+            $"USER: {usuario.ToUpperInvariant()}"),
+
+        CrearParametro(
+            "fxTitulo",
+            titulo),
+
+        CrearParametro(
+            "fxSubTitulo",
+            $"Periodo: {anio} - {MConciliacionDB.fxConvierteMES(mes)}"),
+
+        CrearParametro(
+            "Empresa",
+            null)
+    };
+
+            var result = new CcReportesEstudioEspecialReporteDto
             {
-                CrearParametro(
-                    "Anio",
-                    anio),
-
-                CrearParametro(
-                    "Mes",
-                    mes),
-
-                CrearParametro(
-                    "Cartera",
-                    ConstruirCarterasEspeciales(request.carteras)),
-
-                CrearParametro(
-                    "Detalle",
-                    detallado ? 1 : 0),
-
-                CrearParametro(
-                    "fxFecha",
-                    $"FECHA: {fechaServidor:dd/MM/yyyy}"),
-
-                CrearParametro(
-                    "fxEmpresa",
-                    null),
-
-                CrearParametro(
-                    "fxUsuario",
-                    $"USER: {usuario.ToUpperInvariant()}"),
-
-                CrearParametro(
-                    "fxTitulo",
-                    titulo),
-
-                CrearParametro(
-                    "fxSubTitulo",
-                    $"Periodo: {anio} - {MConciliacionDB.fxConvierteMES(mes)}"),
-
-                CrearParametro(
-                    "Empresa",
-                    null)
+                tipo_salida = "REPORTE",
+                nombre_reporte = nombreReporte,
+                folder = "Conciliacion",
+                cod_reporte = "P",
+                titulo_ventana =
+                    "Reportes de Auxiliares: Antigüedad por Garantías",
+                nombre_archivo = nombreReporte,
+                parametros = parametros
             };
 
-                    var result = new CcReportesEstudioEspecialReporteDto
-                    {
-                        tipo_salida = "REPORTE",
-                        nombre_reporte = nombreReporte,
-                        folder = "Conciliacion",
-                        cod_reporte = "P",
-                        titulo_ventana =
-                            "Reportes de Auxiliares: Antigüedad por Garantías",
-                        nombre_archivo = nombreReporte,
-                        parametros = parametros
-                    };
-
-                    return DbHelper.CreateOkResponse(result);
-                }
+            return DbHelper.CreateOkResponse(result);
+        }
         private static ErrorDto<CcReportesEstudioEspecialReporteDto> CrearErrorEspecial(string mensaje, int codigo)
         {
             return DbHelper
@@ -1852,15 +1855,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
             };
         }
 
-        private static string ValidarAuxiliarGenerarRequest(
-            CcReportesEstudioAuxiliarGenerarRequest? request)
+        private static string ValidarAuxiliarGenerarRequest( CcReportesEstudioAuxiliarGenerarRequest? request)
         {
             if (request == null)
             {
                 return "La solicitud del reporte es requerida.";
             }
 
-            if (request.id_per_historico <= 0)
+            if ((request.id_per_historico ?? 0) <= 0)
             {
                 return "Debe seleccionar un período válido.";
             }
@@ -1878,23 +1880,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
             if (string.IsNullOrWhiteSpace(request.codigo_informe))
             {
                 return "Debe seleccionar un informe.";
-            }
-
-            if (string.IsNullOrWhiteSpace(request.codigo_filtro))
-            {
-                return "Debe seleccionar una opción de filtro.";
-            }
-
-            if (string.IsNullOrWhiteSpace(request.usuario_sesion))
-            {
-                return "No fue posible determinar el usuario de sesión.";
-            }
-
-            if (request.comunes == null ||
-                request.fondos == null ||
-                request.credito == null)
-            {
-                return "Los filtros del reporte están incompletos.";
             }
 
             return string.Empty;
