@@ -148,8 +148,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     }
 
                     var valor = connection.QueryFirstOrDefault<int>(
-                        validacion.query_val,
-                        new { cedula = cedulaSegura });
+                        validacion.query_val.Replace("@cedula", cedula));
 
                     if (valor == validacion.resultado_val)
                     {

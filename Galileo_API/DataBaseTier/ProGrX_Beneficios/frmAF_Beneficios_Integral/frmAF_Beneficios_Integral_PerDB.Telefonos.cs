@@ -93,21 +93,26 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Obtiene los teléfonos del socio, sincronizando primero los del SIF que aún no existan.
         /// </summary>
         public ErrorDto<List<AfiBeneTelefono>> Telefonos_Obtener(int CodCliente, string cedula)
+        
         {
-            const string sqlSync = @"
-                INSERT INTO AFI_BENE_REGISTRO_TELEFONOS
-                    (COD_BENEFICIO, CONSEC, TIPO, TELEFONO, EXT, CONTACTO, REGISTRO_FECHA, REGISTRO_USUARIO, CEDULA)
-                SELECT '1' AS COD_BENEFICIO, TELEFONO AS CONSEC, TIPO, NUMERO AS TELEFONO, EXT, CONTACTO,
-                       FECHA AS REGISTRO_FECHA, USUARIO AS REGISTRO_USUARIO, CEDULA
-                FROM TELEFONOS T
-                WHERE NUMERO IS NOT NULL
-                  AND NUMERO NOT IN (SELECT TELEFONO FROM AFI_BENE_REGISTRO_TELEFONOS A WHERE T.NUMERO = A.TELEFONO)";
+            //const string sqlSync = @"
+            //    INSERT INTO AFI_BENE_REGISTRO_TELEFONOS
+            //        (COD_BENEFICIO, CONSEC, TIPO, TELEFONO, EXT, CONTACTO, REGISTRO_FECHA, REGISTRO_USUARIO, CEDULA)
+            //    SELECT '1' AS COD_BENEFICIO, TELEFONO AS CONSEC, TIPO, NUMERO AS TELEFONO, EXT, CONTACTO,
+            //           FECHA AS REGISTRO_FECHA, USUARIO AS REGISTRO_USUARIO, CEDULA
+            //    FROM TELEFONOS T
+            //    WHERE T.CEDULA = @cedula
+            //      AND NUMERO IS NOT NULL
+            //      AND NOT EXISTS (
+            //            SELECT 1 FROM AFI_BENE_REGISTRO_TELEFONOS A
+            //            WHERE A.CEDULA = T.CEDULA AND A.TELEFONO = T.NUMERO AND CEDULA = @cedula
+            //      )";
 
             const string sqlSelect = "SELECT * FROM AFI_BENE_REGISTRO_TELEFONOS WHERE CEDULA = @cedula";
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
-                connection.Execute(sqlSync);
+                //connection.Execute(sqlSync, new { cedula });
                 return connection.Query<AfiBeneTelefono>(sqlSelect, new { cedula }).ToList();
             });
 
