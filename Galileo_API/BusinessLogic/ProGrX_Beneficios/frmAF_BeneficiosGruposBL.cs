@@ -1,6 +1,8 @@
 using Galileo.DataBaseTier.ProGrX_Beneficios;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
 {
@@ -21,9 +23,26 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             _db = new FrmAfBeneficiosGruposDB(config);
         }
 
-        /// <summary>Lista de grupos de beneficios.</summary>
-        public ErrorDto<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
-            => _db.AfiBeneGrupos_Obtener(CodCliente, pagina, paginacion, filtro);
+        /// <summary>Lista de grupos de beneficios con paginación, filtro y ordenamiento.</summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa serializados en JSON.</param>
+        public ErrorDto<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, string? filtros)
+            => _db.AfiBeneGrupos_Obtener(CodCliente, DeserializarFiltros(filtros));
+
+        /// <summary>
+        /// Convierte el JSON de filtros recibido desde Angular en el modelo de carga perezosa.
+        /// </summary>
+        /// <param name="filtros">Filtros serializados en JSON.</param>
+        /// <returns>Filtros deserializados; instancia vacía si el JSON viene nulo o inválido.</returns>
+        private static FiltrosLazyLoadData DeserializarFiltros(string? filtros)
+        {
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return new FiltrosLazyLoadData();
+            }
+
+            return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros) ?? new FiltrosLazyLoadData();
+        }
 
         /// <summary>Lista de beneficios y su marca de asignación a un grupo.</summary>
         public ErrorDto<AfiBeneGruposAsigandosLista> BeneficioUsuariosLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string cod_grupo)
@@ -37,9 +56,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
         public ErrorDto<List<AfiBeneLista>> AfiBeneCategoriaLista_Obtener(int CodCliente)
             => _db.AfiBeneCategoriaLista_Obtener(CodCliente);
 
-        /// <summary>Exporta la lista completa de grupos.</summary>
-        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente)
-            => _db.AfiBeneGrupoExportar(CodCliente);
+        /// <summary>Exporta la lista de grupos aplicando el filtro vigente, sin paginar.</summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="filtros">Filtros de carga perezosa serializados en JSON.</param>
+        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente, string? filtros)
+            => _db.AfiBeneGrupoExportar(CodCliente, DeserializarFiltros(filtros));
 
         /// <summary>Obtiene las asignaciones de un grupo por tipo.</summary>
         public ErrorDto<List<AfiBeneAsignacionesData>> AfiAsignaciones_Obtener(int CodCliente, int asigna, string grupo)
@@ -61,8 +82,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
         public ErrorDto AfiGrupoBeneficio_Eliminar(int CodCliente, AfiGrupoBeneficioData grupo)
             => _db.AfiGrupoBeneficio_Eliminar(CodCliente, grupo);
 
-        /// <summary>Registra una asignación de grupo por tipo.</summary>
-        public ErrorDto AfiAsignaciones_Actualizar(int CodCliente, int asigna, string grupo, string valor, string usuario, string mov)
-            => _db.AfiAsignaciones_Actualizar(CodCliente, asigna, grupo, valor, usuario, mov);
+        /// <summary>Registra o retira una asignación de grupo por tipo.</summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="request">Datos de la asignación (tipo, grupo, valor, usuario y movimiento).</param>
+        public ErrorDto AfiAsignaciones_Actualizar(int CodCliente, AfiAsignacionRequest request)
+            => _db.AfiAsignaciones_Actualizar(CodCliente, request);
     }
 }

@@ -97,5 +97,27 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         {
             return _bl.CcCaRemesas_Recibe_Aplica(CodEmpresa, request);
         }
+
+        /// <summary>
+        /// Crea el comprobante y asiento contable de la aplicación de una remesa.
+        /// </summary>
+        [HttpPost("CcCaRemesas_Recibe_Asiento")]
+        public ErrorDto<bool> CcCaRemesas_Recibe_Asiento(
+            int CodEmpresa,
+            [FromBody] CcCaRemesasRecibeAsientoRequest request)
+        {
+            return _bl.CcCaRemesas_Recibe_Asiento(CodEmpresa, request);
+        }
+
+        /// <summary>
+        /// Genera y retorna el recibo en PDF de un documento de la remesa.
+        /// </summary>
+        [HttpPost("CcCaRemesas_Recibe_ImprimeRecibo")]
+        public ErrorDto<object> CcCaRemesas_Recibe_ImprimeRecibo(
+            int CodEmpresa,
+            [FromBody] CcCaRemesasRecibeImprimeReciboRequest request)
+        {
+            return _bl.CcCaRemesas_Recibe_ImprimeRecibo(CodEmpresa, request);
+        }
     }
 }

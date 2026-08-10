@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Linq;
 
@@ -90,6 +91,52 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 return data;
             });
+        }
+
+        #endregion
+
+        #region Genera
+
+        /// <summary>
+        /// Genera el corte SICAMA para la fecha indicada.
+        /// Equivalente a sbCorte_Genera del VB6 que ejecuta spPolizas_Sicama_Genera.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="fechaCorte"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario)
+        {
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = true
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                cn.Execute(
+                    "dbo.spPolizas_Sicama_Genera",
+                    new
+                    {
+                        pFecha = fechaCorte,
+                        pUsuario = usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = false;
+            }
+
+            return response;
         }
 
         #endregion

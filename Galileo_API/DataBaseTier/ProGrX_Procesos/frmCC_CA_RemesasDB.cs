@@ -14,10 +14,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
     public class FrmCcCaRemesasDB
     {
         private readonly PortalDB _portalDB;
+        private readonly MRecibos _mRecibos;
 
         public FrmCcCaRemesasDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mRecibos = new MRecibos(config);
         }
 
         #region Envio
@@ -523,6 +525,63 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
         #endregion
 
+
+        #region Asiento y Recibo
+
+        /// <summary>
+        /// Crea el comprobante y asiento contable de la aplicación de una remesa.
+        /// Equivalente a spPrm_CA_Aplica_Asiento del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos: tipo_documento, numero_documento, usuario, numero_generacion.</param>
+        /// <returns>true si exitoso.</returns>
+        public ErrorDto<bool> CcCaRemesas_Recibe_Asiento(
+            int codEmpresa,
+            CcCaRemesasRecibeAsientoRequest request)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+            try
+            {
+                conn.Execute(
+                    "spPrm_CA_Aplica_Asiento",
+                    new
+                    {
+                        TipoDoc = request.tipo_documento.Trim(),
+                        Documento = request.numero_documento.Trim(),
+                        Usuario = request.usuario.Trim(),
+                        Remesa = request.numero_generacion
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Genera y retorna el recibo en PDF de un documento de la remesa.
+        /// Delega en MRecibos que resuelve el RDLC según SysDocVersion.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Datos: numero_documento, tipo_documento, usuario, reimprimir.</param>
+        /// <returns>Objeto con FileContents (base64 PDF) y fileDownloadName.</returns>
+        public ErrorDto<object> CcCaRemesas_Recibe_ImprimeRecibo(
+            int codEmpresa,
+            CcCaRemesasRecibeImprimeReciboRequest request)
+        {
+            return _mRecibos.sbImprimeRecibo(
+                codEmpresa,
+                request.numero_documento,
+                request.tipo_documento,
+                request.usuario,
+                request.reimprimir);
+        }
+
+        #endregion
 
     }
 }

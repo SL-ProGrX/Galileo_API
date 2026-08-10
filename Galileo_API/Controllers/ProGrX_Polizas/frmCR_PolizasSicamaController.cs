@@ -31,6 +31,15 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.fxFechaServidor(codEmpresa);
         }
 
+        [HttpPost("Cr_PolizasSicama_Genera")]
+        public ErrorDto<bool> Cr_PolizasSicama_Genera(
+            int codEmpresa,
+            string usuario,
+            [FromBody] DateTime fechaCorte)
+        {
+            return _bl.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario);
+        }
+
         [HttpPost("Cr_PolizasSicama_Envio_Consulta")]
         public ErrorDto<List<CrPolizasSicamaEnvioRow>> Cr_PolizasSicama_Envio_Consulta(
          int CodEmpresa,
