@@ -221,13 +221,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                 CodigoBeneficio = codBeneficio,
                                 Expediente = expediente
                             });
-                        }
-
-                        // Los adjuntos no se transfieren porque esta versión aún no dispone de la
-                        // infraestructura HTTP de threads y attachments de Zoho Desk.
-
-                        if (expediente[0] != "0")
-                        {
                             var filtros = new FrmFiltros
                             {
                                 codCliente = CodEmpresa,
@@ -239,6 +232,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                             IncluirRespuestasFormularios(filtros, datos);
                         }
+
+                        // Los adjuntos no se transfieren porque esta versión aún no dispone de la
+                        // infraestructura HTTP de threads y attachments de Zoho Desk.
                     }
                 }
 

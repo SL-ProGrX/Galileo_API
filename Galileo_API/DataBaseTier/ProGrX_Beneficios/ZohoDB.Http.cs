@@ -154,9 +154,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var initialData = JsonSerializer.Deserialize<DataModel>(initialBody, _jsonOptions);
             var totalPages = initialData is null
                 ? 0
-                : initialData.count == pageSize
-                    ? 1
-                    : (int)Math.Ceiling((double)initialData.count / pageSize);
+                : (int)Math.Ceiling((double)initialData.count / pageSize);
 
             for (var page = 1; page <= totalPages; page++)
             {
