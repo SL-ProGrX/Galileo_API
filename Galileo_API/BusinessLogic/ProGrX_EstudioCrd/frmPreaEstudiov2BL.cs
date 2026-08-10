@@ -7,6 +7,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
     public class FrmPreaEstudiov2BL
     {
         private readonly FrmPreaEstudiov2DB _db;
+        private const string MensajeCodigoExpedienteRequerido = "Debe indicar el código del expediente.";
 
         public FrmPreaEstudiov2BL(IConfiguration config)
         {
@@ -25,7 +26,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2ScrollResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2ScrollResponse()
                 };
             }
@@ -42,7 +43,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2CargaResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2CargaResponse()
                 };
             }
@@ -92,7 +93,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2AbandonarResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2AbandonarResponse()
                 };
             }
@@ -142,7 +143,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2DeduccionesResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2DeduccionesResponse()
                 };
             }
@@ -182,7 +183,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2CreditosResponse()
                 };
             }
@@ -202,7 +203,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2RefundicionesResponse()
                 };
             }
@@ -222,7 +223,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2FianzasResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2FianzasResponse()
                 };
             }
@@ -242,7 +243,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2DesembolsosResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2DesembolsosResponse()
                 };
             }
@@ -283,7 +284,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2DesembolsosResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2DesembolsosResponse()
                 };
             }
@@ -303,7 +304,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2HistorialResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2HistorialResponse()
                 };
             }
@@ -323,7 +324,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<List<FrmPreaEstudiov2AdjuntoDto>>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = []
                 };
             }
@@ -343,7 +344,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<FrmPreaEstudiov2ResolucionResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2ResolucionResponse()
                 };
             }
@@ -463,7 +464,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<string>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = string.Empty
                 };
             }
@@ -504,7 +505,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 return new ErrorDto<List<FrmPreaEstudiov2CausaDto>>
                 {
                     Code = -1,
-                    Description = "Debe indicar el código del expediente.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = []
                 };
             }

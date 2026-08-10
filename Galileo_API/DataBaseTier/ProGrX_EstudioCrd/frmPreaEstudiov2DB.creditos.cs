@@ -7,6 +7,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
     public partial class FrmPreaEstudiov2DB
     {
+        private const string DescripcionCreditoCancelado = "CANCELADO";
+
         /// <summary>
         /// Consulta los créditos en tránsito del expediente (cancelados y por cobrar).
         /// </summary>
@@ -38,10 +40,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 result.Result = new FrmPreaEstudiov2CreditosResponse
                 {
-                    cancelados = creditos.Where(c => c.descripcion.Contains("CANCELADO")).ToList(),
-                    por_cobrar = creditos.Where(c => !c.descripcion.Contains("CANCELADO")).ToList(),
-                    total_cancelados = creditos.Where(c => c.descripcion.Contains("CANCELADO")).Sum(c => c.saldo),
-                    total_por_cobrar = creditos.Where(c => !c.descripcion.Contains("CANCELADO")).Sum(c => c.saldo)
+                    cancelados = creditos.Where(c => c.descripcion.Contains(DescripcionCreditoCancelado)).ToList(),
+                    por_cobrar = creditos.Where(c => !c.descripcion.Contains(DescripcionCreditoCancelado)).ToList(),
+                    total_cancelados = creditos.Where(c => c.descripcion.Contains(DescripcionCreditoCancelado)).Sum(c => c.saldo),
+                    total_por_cobrar = creditos.Where(c => !c.descripcion.Contains(DescripcionCreditoCancelado)).Sum(c => c.saldo)
                 };
             }
             catch (Exception ex)

@@ -380,102 +380,15 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private ErrorDto Guarda_Productos(int CodCliente, AfiBeneficioAsgInsertar datos, string modificaMonto, string usuario)
         {
             var esNuevo = string.IsNullOrEmpty(datos.txtBeneficioId);
-            var productos = datos.productos ?? new List<AfBeneAsgProductoData>();
-
-            const string sqlInsertOtorga = @"
-                INSERT afi_bene_otorga (consec, cod_beneficio, cedula, monto, modifica_monto, registra_user, registra_fecha,
-                                        estado, notas, Solicita, nombre, tipo)
-                VALUES (@consec, @codBeneficio, @cedula, @monto, @modificaMonto, @usuario, GETDATE(),
-                        @estado, @notas, @solicita, @nombre, @tipo)";
-
-            const string sqlUpdateOtorga = @"
-                UPDATE afi_bene_otorga
-                   SET notas = @notas, estado = @estado, modifica_monto = @modificaMonto, solicita = @solicita,
-                       monto = @monto, nombre = @nombre, TIPO = @tipo
-                 WHERE cod_beneficio = @codBeneficio AND cedula = @cedula AND consec = @consec";
-
-            const string sqlInsertProd = @"INSERT afi_bene_prodasg (consec, cod_beneficio, cod_producto, cantidad, costo_unidad)
-                                            VALUES (@consec, @codBeneficio, @codProducto, @cantidad, @costoUnidad)";
-
-            const string sqlDeleteProd = @"DELETE FROM afi_bene_prodasg
-                                            WHERE cod_beneficio = @codBeneficio AND consec = @consec";
-
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            var solicitud = new BeneficioProductosGuardarRequest
             {
-                using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
-
-                try
-                {
-                    var vBeneConsec = esNuevo
-                        ? connection.QueryFirstOrDefault<long>(
-                            @"SELECT ISNULL(MAX(consec), 0) + 1
-                                FROM afi_bene_otorga WITH (UPDLOCK, HOLDLOCK)
-                               WHERE cod_beneficio = @codBeneficio",
-                            new { codBeneficio = datos.cod_beneficio }, transaction)
-                        : datos.consec ?? 0L;
-
-                    var parametrosOtorga = new
-                    {
-                        consec = vBeneConsec,
-                        codBeneficio = datos.cod_beneficio,
-                        cedula = datos.cedula.Trim(),
-                        monto = datos.monto,
-                        modificaMonto,
-                        usuario = usuario.ToUpper(),
-                        estado = datos.estado,
-                        notas = datos.notas,
-                        solicita = datos.solicita,
-                        nombre = (datos.solicita_nombre ?? string.Empty).ToUpper(),
-                        tipo = datos.tipoBeneficio
-                    };
-
-                    var filas = connection.Execute(
-                        esNuevo ? sqlInsertOtorga : sqlUpdateOtorga,
-                        parametrosOtorga,
-                        transaction);
-
-                    if (filas <= 0)
-                    {
-                        transaction.Rollback();
-                        return 0L;
-                    }
-
-                    if (!esNuevo)
-                    {
-                        connection.Execute(sqlDeleteProd, new
-                        {
-                            codBeneficio = datos.cod_beneficio,
-                            consec = vBeneConsec
-                        }, transaction);
-                    }
-
-                    foreach (var prod in productos)
-                    {
-                        var filasProducto = connection.Execute(sqlInsertProd, new
-                        {
-                            consec = vBeneConsec,
-                            codBeneficio = datos.cod_beneficio,
-                            codProducto = prod.cod_producto,
-                            cantidad = prod.cantidad,
-                            costoUnidad = prod.costo_unidad
-                        }, transaction);
-
-                        if (filasProducto <= 0)
-                        {
-                            transaction.Rollback();
-                            return 0L;
-                        }
-                    }
-
-                    transaction.Commit();
-                    return vBeneConsec;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-            });
+                Datos = datos,
+                ModificaMonto = modificaMonto,
+                Usuario = usuario,
+                EsNuevo = esNuevo
+            };
+            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente,
+                connection => AF_BeneficioAsg_Productos_Procesar(connection, solicitud));
 
             if (result.Code != 0)
             {
@@ -490,7 +403,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     EmpresaId = CodCliente,
                     Usuario = usuario.ToUpper(),
-                    DetalleMovimiento = $"{(esNuevo ? "Registra" : "Modifica")}, Beneficio:{result.Result}-{datos.cod_beneficio}, Cedula [{datos.cedula.Trim()}]",
+                    DetalleMovimiento = $"{(esNuevo ? "Registra" : "Modifica")}, Beneficio:{result.Result}-{datos.cod_beneficio}, Cedula [{(datos.cedula ?? string.Empty).Trim()}]",
                     Movimiento = esNuevo ? "REGISTRA - WEB" : "MODIFICA - WEB",
                     Modulo = 7
                 });

@@ -525,7 +525,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         CodOrigenRecuros = param.CodOrigenRecursos,
                         TramiteId = param.DepositoId
                     };
-                    var result = conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
+                    conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
                     return true;
                 });
             }

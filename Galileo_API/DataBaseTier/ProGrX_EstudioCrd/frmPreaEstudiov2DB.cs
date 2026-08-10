@@ -71,7 +71,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Carga los catálogos (combos) necesarios para el formulario.
         /// </summary>
-        private FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection)
+        private static FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection)
         {
             var catalogos = new FrmPreaEstudiov2CatalogosResponse();
 

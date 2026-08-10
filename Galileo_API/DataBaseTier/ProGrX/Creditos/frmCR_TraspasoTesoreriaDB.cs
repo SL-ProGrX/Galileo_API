@@ -10,7 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 {
     public class FrmCRTraspasoTesoreriaDB
     {
-        private readonly IConfiguration _config;
+        private const string RemesaEstadoSql = "select estado from CRD_REMESAS_TES where cod_remesa = @cod_remesa";
         private readonly int vModulo = 3; // Modulo de Créditos
         private readonly MTesoreria _mtes;
         private readonly MSecurityMainDb _Security_MainDB;
@@ -18,10 +18,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
         public FrmCRTraspasoTesoreriaDB(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _mtes = new MTesoreria(_config);
-            _portalDB = new PortalDB(_config);
-            _Security_MainDB = new MSecurityMainDb(_config);
+            var appConfig = config ?? throw new ArgumentNullException(nameof(config));
+            _mtes = new MTesoreria(appConfig);
+            _portalDB = new PortalDB(appConfig);
+            _Security_MainDB = new MSecurityMainDb(appConfig);
         }
 
         #region remesas
@@ -131,7 +131,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var estado = connection.QueryFirstOrDefault<string?>(
-                    "select estado from CRD_REMESAS_TES where cod_remesa = @cod_remesa",
+                    RemesaEstadoSql,
                     new { request.cod_remesa });
 
                 if (estado != "A")
@@ -176,7 +176,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var estado = connection.QueryFirstOrDefault<string?>(
-                    "select estado from CRD_REMESAS_TES where cod_remesa = @cod_remesa",
+                    RemesaEstadoSql,
                     new { cod_remesa });
 
                 if (estado != "A")
@@ -294,7 +294,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var estado = connection.QueryFirstOrDefault<string?>(
-                    "select estado from CRD_REMESAS_TES where cod_remesa = @cod_remesa",
+                    RemesaEstadoSql,
                     new { request.cod_remesa });
 
                 if (estado != "A")
@@ -349,7 +349,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var estado = connection.QueryFirstOrDefault<string?>(
-                    "select estado from CRD_REMESAS_TES where cod_remesa = @cod_remesa",
+                    RemesaEstadoSql,
                     new { cod_remesa });
 
                 if (estado != "A")
