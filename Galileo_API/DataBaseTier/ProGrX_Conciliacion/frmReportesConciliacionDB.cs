@@ -910,11 +910,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<CcReportesEstudioAuxiliarGenerarResult>
-            CC_ReportesEstudio_Auxiliar_Generar(
-                int CodEmpresa,
-                CcReportesEstudioAuxiliarGenerarRequest? request)
+        public ErrorDto<CcReportesEstudioAuxiliarGenerarResult>CC_ReportesEstudio_Auxiliar_Generar(int CodEmpresa, CcReportesEstudioAuxiliarGenerarRequest? request)
         {
+            if (request == null)
+            {
+                return CrearErrorGeneracion(
+                    "No se recibió la información para generar el auxiliar.",
+                    -2);
+            }
+
             string validacion = ValidarAuxiliarGenerarRequest(request);
 
             if (!string.IsNullOrWhiteSpace(validacion))
@@ -927,10 +931,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 using var connection = DbHelper.OpenConnection(
                     _portalDb,
                     CodEmpresa);
-
+                if (!request.id_per_historico.HasValue)
+                {
+                    return CrearErrorGeneracion(
+                        "Debe seleccionar un período.",
+                        -2);
+                }
                 var periodo = ObtenerPeriodo(
                     connection,
-                    request!.id_per_historico);
+                    request.id_per_historico.Value);
 
                 if (periodo == null)
                 {
@@ -1540,10 +1549,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<CcReportesEstudioEspecialReporteDto> CC_ReportesEstudio_Especial_Generar(
-            int CodEmpresa,
-            CcReportesEstudioEspecialRequest? request)
+        public ErrorDto<CcReportesEstudioEspecialReporteDto>
+    CC_ReportesEstudio_Especial_Generar(
+        int CodEmpresa,
+        CcReportesEstudioEspecialRequest? request)
         {
+            if (request == null)
+            {
+                return CrearErrorEspecial(
+                    "No se recibió la información para generar el informe especial.",
+                    -2);
+            }
+
             string validacion = ValidarEspecialGenerarRequest(request);
 
             if (!string.IsNullOrWhiteSpace(validacion))
@@ -1553,7 +1570,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
             try
             {
-                if (request!.tipo == 4)
+                if (request.tipo == 4)
                 {
                     DateTime fechaServidor = _proGrxMain.fxFechaServidor(
                         CodEmpresa,
@@ -1709,71 +1726,76 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
             return string.Empty;
         }
-        private static ErrorDto<CcReportesEstudioEspecialReporteDto> CrearResultadoEspecialReporte( CcReportesEstudioEspecialRequest request, DateTime fechaServidor)
-        {
-            string nombreReporte = request.detallado
-                ? "Sys_AuxCorteCbrAntiguedadGarantia_Especial_Detalle"
-                : "Sys_AuxCorteCbrAntiguedadGarantia_Especial";
+        private static ErrorDto<CcReportesEstudioEspecialReporteDto> CrearResultadoEspecialReporte(CcReportesEstudioEspecialRequest request, DateTime fechaServidor)
+                {
+                    bool detallado = request.detallado.GetValueOrDefault();
+                    int anio = request.anio.GetValueOrDefault();
+                    int mes = request.mes.GetValueOrDefault();
+                    string usuario = request.usuario_sesion ?? string.Empty;
 
-            string titulo = "Lista de Cartera al Cierre por Garantía";
+                    string nombreReporte = detallado
+                        ? "Sys_AuxCorteCbrAntiguedadGarantia_Especial_Detalle"
+                        : "Sys_AuxCorteCbrAntiguedadGarantia_Especial";
 
-            var parametros = new List<CcReportesEstudioParametroDto>
-                    {
-                        CrearParametro(
-                            "Anio",
-                            request.anio),
+                    string titulo = "Lista de Cartera al Cierre por Garantía";
 
-                        CrearParametro(
-                            "Mes",
-                            request.mes),
-
-                        CrearParametro(
-                            "Cartera",
-                            ConstruirCarterasEspeciales(request.carteras)),
-
-                        CrearParametro(
-                            "Detalle",
-                            request.detallado ? 1 : 0),
-
-                        CrearParametro(
-                            "fxFecha",
-                            $"FECHA: {fechaServidor:dd/MM/yyyy}"),
-
-                        CrearParametro(
-                            "fxEmpresa",
-                            null),
-
-                        CrearParametro(
-                            "fxUsuario",
-                            $"USER: {request.usuario_sesion.ToUpperInvariant()}"),
-
-                        CrearParametro(
-                            "fxTitulo",
-                            titulo),
-
-                        CrearParametro(
-                            "fxSubTitulo",
-                            $"Periodo: {request.anio} - {MConciliacionDB.fxConvierteMES(request.mes)}"),
-
-                        CrearParametro(
-                            "Empresa",
-                            null)
-                    };
-
-            var result = new CcReportesEstudioEspecialReporteDto
+                    var parametros = new List<CcReportesEstudioParametroDto>
             {
-                tipo_salida = "REPORTE",
-                nombre_reporte = nombreReporte,
-                folder = "Conciliacion",
-                cod_reporte = "P",
-                titulo_ventana =
-                    "Reportes de Auxiliares: Antigüedad por Garantías",
-                nombre_archivo = nombreReporte,
-                parametros = parametros
+                CrearParametro(
+                    "Anio",
+                    anio),
+
+                CrearParametro(
+                    "Mes",
+                    mes),
+
+                CrearParametro(
+                    "Cartera",
+                    ConstruirCarterasEspeciales(request.carteras)),
+
+                CrearParametro(
+                    "Detalle",
+                    detallado ? 1 : 0),
+
+                CrearParametro(
+                    "fxFecha",
+                    $"FECHA: {fechaServidor:dd/MM/yyyy}"),
+
+                CrearParametro(
+                    "fxEmpresa",
+                    null),
+
+                CrearParametro(
+                    "fxUsuario",
+                    $"USER: {usuario.ToUpperInvariant()}"),
+
+                CrearParametro(
+                    "fxTitulo",
+                    titulo),
+
+                CrearParametro(
+                    "fxSubTitulo",
+                    $"Periodo: {anio} - {MConciliacionDB.fxConvierteMES(mes)}"),
+
+                CrearParametro(
+                    "Empresa",
+                    null)
             };
 
-            return DbHelper.CreateOkResponse(result);
-        }
+                    var result = new CcReportesEstudioEspecialReporteDto
+                    {
+                        tipo_salida = "REPORTE",
+                        nombre_reporte = nombreReporte,
+                        folder = "Conciliacion",
+                        cod_reporte = "P",
+                        titulo_ventana =
+                            "Reportes de Auxiliares: Antigüedad por Garantías",
+                        nombre_archivo = nombreReporte,
+                        parametros = parametros
+                    };
+
+                    return DbHelper.CreateOkResponse(result);
+                }
         private static ErrorDto<CcReportesEstudioEspecialReporteDto> CrearErrorEspecial(string mensaje, int codigo)
         {
             return DbHelper
