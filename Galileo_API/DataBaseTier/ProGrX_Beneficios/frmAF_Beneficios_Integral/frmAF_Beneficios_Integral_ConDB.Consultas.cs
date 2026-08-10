@@ -131,24 +131,27 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private static void AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
         {
-            var aplicaFecha = filtro.todasFechas == false && filtro.tipoFecha != null;
-            p.Add("@todasFechas", aplicaFecha ? 0 : 1);
-            p.Add("@tipoFecha", aplicaFecha ? filtro.tipoFecha : null);
+            var aplicaFecha = filtro.todasFechas == false &&
+                filtro.tipoFecha is not null &&
+                filtro.fechaInicio.HasValue &&
+                filtro.fechaCorte.HasValue;
 
             if (!aplicaFecha)
             {
+                p.Add("@todasFechas", 1);
+                p.Add("@tipoFecha", null);
                 p.Add("@fechaIni", null);
                 p.Add("@fechaFin", null);
                 return;
             }
 
-            var fechaIni = DateTimeOffset
-                .Parse(filtro.fechaInicio, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
-                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var fechaInicio = filtro.fechaInicio.GetValueOrDefault();
+            var fechaCorte = filtro.fechaCorte.GetValueOrDefault();
+            var fechaIni = fechaInicio.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
+            var fechaFin = fechaCorte.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
 
-            var fechaFin = DateTimeOffset
-                .Parse(filtro.fechaCorte, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
-                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            p.Add("@todasFechas", 0);
+            p.Add("@tipoFecha", filtro.tipoFecha);
             p.Add("@fechaIni", $"{fechaIni} 00:00:00");
             p.Add("@fechaFin", $"{fechaFin} 23:59:59");
         }
