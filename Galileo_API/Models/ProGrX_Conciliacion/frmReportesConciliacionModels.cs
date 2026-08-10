@@ -81,7 +81,7 @@ namespace Galileo_API.Models.ProGrX.Conciliacion
     }
     public class CcReportesEstudioAuxiliarGenerarRequest
     {
-        public int id_per_historico { get; set; }
+        public int? id_per_historico { get; set; }
         public string tipo_auxiliar { get; set; } = string.Empty;
         public string codigo_informe { get; set; } = string.Empty;
         public string codigo_filtro { get; set; } = string.Empty;
@@ -116,10 +116,10 @@ namespace Galileo_API.Models.ProGrX.Conciliacion
     }
     public class CcReportesEstudioEspecialRequest
     {
-        public short tipo { get; set; }
-        public short anio { get; set; }
-        public short mes { get; set; }
-        public bool detallado { get; set; }
+        public short? tipo { get; set; }
+        public short? anio { get; set; }
+        public short? mes { get; set; }
+        public bool? detallado { get; set; }
         public List<string> carteras { get; set; } = [];
         public string usuario_sesion { get; set; } = string.Empty;
     }
