@@ -8,6 +8,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public sealed class FrmCcReportesEstudioDB
     {
+        private const int MinPeriodosProyeccion = 2;
+        private const int MaxPeriodosProyeccion = 60;
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
 
@@ -179,11 +181,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "H01" => ("EXEC dbo.spAfi_History_Liquidacion @FechaInicio, @FechaCorte;", filtros),
                 "x00" => (SqlProyeccion(false, request.rango_proyeccion), filtros),
                 "x01" => ("EXEC dbo.spCrdProyectaCartera @FechaInicio, @rango_proyeccion, 'A';", filtros),
-                "x02" => (SqlTasasPlazos(), filtros),
+                "x02" => (SqlTasasPlazos, filtros),
                 "x03" => (SqlProyeccion(true, request.rango_proyeccion), filtros),
-                "x04" => (SqlEndeudamiento(), filtros),
-                "x05" => (SqlAntiguedadAhorros(), filtros),
-                "x06" => (SqlAntiguedadSaldos(), filtros),
+                "x04" => (SqlEndeudamiento, filtros),
+                "x05" => (SqlAntiguedadAhorros, filtros),
+                "x06" => (SqlAntiguedadSaldos, filtros),
                 "x08" => ("EXEC dbo.spSIFEstudioEndeuda;", filtros),
                 "x09" => ("EXEC dbo.spSIFEstudioPersonasSaldos;", filtros),
                 "x10" => ("EXEC dbo.spSIFEstudioPatrimonioMemb;", filtros),
@@ -207,7 +209,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns>Consulta SQL con las columnas dinámicas de la proyección.</returns>
         private static string SqlProyeccion(bool retencion, int periodos)
         {
-            var columnasPeriodos = string.Join(",\n       ", Enumerable.Range(1, periodos).Select(periodo =>
+            if (periodos is < MinPeriodosProyeccion or > MaxPeriodosProyeccion)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(periodos),
+                    $"El rango debe estar entre {MinPeriodosProyeccion} y {MaxPeriodosProyeccion}.");
+            }
+
+            var columnasPeriodos = string.Join(",\n       ", Enumerable
+                .Range(1, MaxPeriodosProyeccion)
+                .Where(periodo => periodo <= periodos)
+                .Select(periodo =>
                 $"SUM(CASE WHEN periodo = {periodo} THEN saldo ELSE 0 END) AS SALDO{periodo}, " +
                 $"SUM(CASE WHEN periodo = {periodo} THEN interes ELSE 0 END) AS INT{periodo}, " +
                 $"SUM(CASE WHEN periodo = {periodo} THEN amortiza ELSE 0 END) AS AMORTIZA{periodo}"));
@@ -268,7 +280,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>Obtiene la consulta de tasas y plazos ponderados por línea.</summary>
         /// <returns>Consulta SQL parametrizada.</returns>
-        private static string SqlTasasPlazos() => """
+        private const string SqlTasasPlazos = """
             WITH Base AS (
                 SELECT r.codigo, MAX(c.descripcion) AS descripcion, SUM(r.saldo) AS saldo, COUNT_BIG(1) AS casos
                 FROM reg_creditos r
@@ -294,7 +306,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>Obtiene el detalle general de endeudamiento por persona.</summary>
         /// <returns>Consulta SQL parametrizada.</returns>
-        private static string SqlEndeudamiento() => """
+        private const string SqlEndeudamiento = """
             SELECT s.cedula AS identificacion, s.nombre, s.fechaingreso AS ingreso,
                    est.descripcion AS estado, i.descripcion AS institucion, a.fecahorro AS ultimo_aporte,
                    a.ahorromes AS aporte_mes, a.ahorro AS obrero, a.capitaliza AS capitalizacion,
@@ -311,7 +323,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>Obtiene los rangos de antigüedad de ahorro definidos por el formulario original.</summary>
         /// <returns>Consulta SQL con los rangos 6, 12, 24, 36, 48 y 60+.</returns>
-        private static string SqlAntiguedadAhorros() => """
+        private const string SqlAntiguedadAhorros = """
             WITH Rangos AS (
                 SELECT 1 AS orden, '6' AS antiguedad
                 UNION ALL SELECT 2, '12'
@@ -347,7 +359,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>Obtiene los saldos agrupados con el algoritmo original de rangos de ahorro.</summary>
         /// <returns>Consulta SQL con los diez rangos originales.</returns>
-        private static string SqlAntiguedadSaldos() => """
+        private const string SqlAntiguedadSaldos = """
             WITH Rangos AS (
                 SELECT 1 AS orden, '1000000' AS rango
                 UNION ALL SELECT 2, '2000000'

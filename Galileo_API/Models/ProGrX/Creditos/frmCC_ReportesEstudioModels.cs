@@ -15,17 +15,17 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public sealed class CcReportesEstudioLineasRequestDto
     {
-        public bool retencion { get; set; }
-        public bool lineas_internas { get; set; }
-        public bool solo_con_saldo { get; set; }
+        public required bool retencion { get; set; }
+        public required bool lineas_internas { get; set; }
+        public required bool solo_con_saldo { get; set; }
         public string? cod_cartera { get; set; }
     }
 
     public sealed class CcReportesEstudioGenerarRequestDto
     {
         public string codigo_reporte { get; set; } = string.Empty;
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public required DateTime fecha_inicio { get; set; }
+        public required DateTime fecha_corte { get; set; }
         public int rango_proyeccion { get; set; } = 12;
         public int? cod_institucion { get; set; }
         public string? cod_estado { get; set; }
