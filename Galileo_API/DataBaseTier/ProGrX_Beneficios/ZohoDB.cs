@@ -136,7 +136,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 var deptoId = _config["AFI_Beneficios:DepartamentoZoho"] ?? string.Empty;
 
-                var httpClient = new HttpClient();
+                using var httpClient = new HttpClient();
                 var token = ObtenerTokenZoho(httpClient, out var tokenError);
 
                 if (string.IsNullOrEmpty(token))
