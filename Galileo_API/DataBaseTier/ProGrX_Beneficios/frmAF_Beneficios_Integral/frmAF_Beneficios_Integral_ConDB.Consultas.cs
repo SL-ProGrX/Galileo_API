@@ -129,7 +129,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Agrega los parámetros del rango de fechas. Solo se activa cuando todasFechas es false y hay tipo de fecha.
         /// </summary>
-        private static void AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
+        private static void  AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
         {
             var aplicaFecha = filtro.todasFechas == false &&
                 filtro.tipoFecha is not null &&

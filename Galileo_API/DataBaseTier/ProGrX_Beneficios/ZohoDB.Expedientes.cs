@@ -1,7 +1,8 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo_Externo.Models.NewFolder;
+using System.Data;
 using System.Globalization;
 using System.Text.Json;
 
@@ -14,120 +15,76 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto Sepelios_Guardar(int CodEmpresa, Dictionary<string, JsonElement> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDto { Code = 0 };
-            var msjError = string.Empty;
-
-            try
+            return AF_Beneficios_Zoho_Expediente_Procesar(new ZohoExpedienteProcesoRequest
             {
-                using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+                CodEmpresa = CodEmpresa,
+                Datos = datos,
+                Usuario = usuario,
+                Solicitud = jsonZoho,
+                RegistrarUsuarioEnError = true,
+                Preparar = AF_Beneficios_Zoho_Sepelios_Preparar
+            });
+        }
 
-                var cedula = CfStr(datos, CampoCedulaZoho);
-                if (string.IsNullOrEmpty(cedula))
-                {
-                    response.Code = -1;
-                    response.Description = MensajeCedulaRequerida;
-                    return response;
-                }
-
-                var estadoSocio = _mBeneficiosDB.ValidaEstadoSocio(CodEmpresa, cedula.Trim());
-                if (estadoSocio.Code == -1)
-                {
-                    response.Code = -1;
-                    msjError += estadoSocio.Description + "...";
-                }
-
-                if (response.Code != -1)
-                {
-                    var parentesco = (CfStr(datos, "cf_parentesco_de_la_persona_fallecida") ?? string.Empty).Trim().ToUpperInvariant();
-                    var codBeneficio = Sepelios_CodigoBeneficio_Obtener(parentesco);
-
-                    var beneficio = new BeneficioGeneralDatos
-                    {
-                        cod_beneficio = new AfBeneficioIntegralDropsLista { item = codBeneficio },
-                        id_beneficio = 0,
-                        cedula = cedula.Trim(),
-                        monto_aplicado = 0,
-                        registra_user = usuario,
-                        modifica_usuario = usuario,
-                        sepelio_identificacion = CfStr(datos, "cf_numero_de_identificacion_de_persona_fallecida")?.Trim(),
-                        sepelio_nombre = CfStr(datos, "cf_nombre_completo_de_persona_fallecida")?.Trim(),
-                        estado = new AfBeneficioIntegralDropsLista { item = string.Empty },
-                        consec = 0,
-                        requiere_justificacion = jsonZoho.justificacion != null,
-                        notas = jsonZoho.justificacion ?? string.Empty
-                    };
-
-                    var fechaDefuncion = CfStr(datos, "cf_fecha_de_la_defuncion");
-                    if (fechaDefuncion != null && DateTime.TryParse(fechaDefuncion, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var fDefuncion))
-                    {
-                        beneficio.sepelio_fecha_fallecimiento = fDefuncion;
-                    }
-
-                    beneficio.monto = connection.QueryFirstOrDefault<float>(@"SELECT [MONTO]
-                              FROM [AFI_BENE_GRUPOS] WHERE COD_CATEGORIA = 'B_SEPE'
-                              AND COD_GRUPO in (
-                                  SELECT COD_GRUPO
-                                  FROM [AFI_BENEFICIOS] WHERE COD_CATEGORIA = 'B_SEPE'
-                                  AND COD_BENEFICIO = @codBeneficio
-                              )", new { codBeneficio });
-                    beneficio.monto_aplicado = beneficio.monto;
-
-                    beneficio.tipo = new AfBeneficioIntegralDropsLista { item = "M" };
-
-                    var respBeneficio = _beneIntegral.BeneficioIntegralGeneral_Guardar(CodEmpresa, "API", beneficio).Result;
-
-                    if (respBeneficio.Code == -1)
-                    {
-                        response.Code = -1;
-                        msjError += respBeneficio.Description + "...";
-                    }
-                    else
-                    {
-                        var expediente = (respBeneficio.Description ?? "0@0").Split('@');
-                        var nExpediente = expediente[0].PadLeft(6, '0') + codBeneficio.Trim() + expediente[1].PadLeft(6, '0');
-
-                        connection.Execute(@"UPDATE [dbo].[AFI_BENE_OTORGA_INT]
-                                   SET [N_EXPEDIENTE] = @nExpediente, [CONSEC] = @consec, COD_BENEFICIO = @codBeneficio,
-                                       ID_BENEFICIO = @idBeneficio, [ESTADO] = 'S', INCLUIDO_POR = @usuario, INCLUIDO_FECHA = getdate()
-                                 WHERE ID_ZOHO = @idZoho",
-                            new { nExpediente, consec = expediente[1], codBeneficio = codBeneficio.Trim(), idBeneficio = expediente[0], usuario, idZoho = jsonZoho.ticket });
-
-                        // Los adjuntos no se transfieren porque esta versión aún no dispone de la
-                        // infraestructura HTTP de threads y attachments de Zoho Desk.
-
-                        if (expediente[0] != "0")
-                        {
-                            var filtros = new FrmFiltros
-                            {
-                                codCliente = CodEmpresa,
-                                cod_beneficio = codBeneficio.Trim(),
-                                id_beneficio = beneficio.id_beneficio,
-                                socio = beneficio.cedula,
-                                usuario = usuario
-                            };
-
-                            IncluirRespuestasFormularios(filtros, datos);
-                        }
-                    }
-                }
-
-                if (msjError.Trim() != string.Empty)
-                {
-                    response.Code = -1;
-                    response.Description = msjError;
-
-                    connection.Execute(@"UPDATE [dbo].[AFI_BENE_OTORGA_INT]
-                               SET [MSJ_INTERFACE] = @msjError, [ESTADO] = 'E', VISTO_POR = @usuario, VISTO_FECHA = getdate()
-                             WHERE ID_ZOHO = @idZoho", new { msjError, usuario, idZoho = jsonZoho.ticket });
-                }
-            }
-            catch (Exception ex)
+        private ZohoExpedientePreparacion AF_Beneficios_Zoho_Sepelios_Preparar(
+            IDbConnection connection,
+            ZohoExpedienteProcesoRequest request)
+        {
+            var cedula = CfStr(request.Datos, CampoCedulaZoho);
+            if (string.IsNullOrEmpty(cedula))
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return new ZohoExpedientePreparacion
+                {
+                    MensajeError = MensajeCedulaRequerida,
+                    RegistrarError = false
+                };
             }
 
-            return response;
+            var estadoSocio = _mBeneficiosDB.ValidaEstadoSocio(request.CodEmpresa, cedula.Trim());
+            if (estadoSocio.Code == -1)
+            {
+                return new ZohoExpedientePreparacion
+                {
+                    MensajeError = estadoSocio.Description + "..."
+                };
+            }
+
+            var parentesco = (CfStr(request.Datos, "cf_parentesco_de_la_persona_fallecida") ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
+            var codigoBeneficio = Sepelios_CodigoBeneficio_Obtener(parentesco);
+            var beneficio = AF_Beneficios_Zoho_BeneficioBase_Crear(
+                request,
+                cedula,
+                codigoBeneficio,
+                string.Empty);
+            beneficio.sepelio_identificacion = CfStr(
+                request.Datos,
+                "cf_numero_de_identificacion_de_persona_fallecida")?.Trim();
+            beneficio.sepelio_nombre = CfStr(
+                request.Datos,
+                "cf_nombre_completo_de_persona_fallecida")?.Trim();
+
+            var fechaDefuncion = CfStr(request.Datos, "cf_fecha_de_la_defuncion");
+            if (fechaDefuncion != null && DateTime.TryParse(
+                fechaDefuncion,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var fecha))
+            {
+                beneficio.sepelio_fecha_fallecimiento = fecha;
+            }
+
+            beneficio.monto = AF_Beneficios_Zoho_Monto_Obtener(connection, "B_SEPE", codigoBeneficio);
+            beneficio.monto_aplicado = beneficio.monto;
+            beneficio.tipo = new AfBeneficioIntegralDropsLista { item = "M" };
+
+            return new ZohoExpedientePreparacion
+            {
+                Beneficio = beneficio,
+                CodigoBeneficio = codigoBeneficio,
+                CodigoFormulario = codigoBeneficio.Trim()
+            };
         }
 
         /// <summary>
@@ -135,126 +92,61 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto Reconocimientos_Guardar(int CodEmpresa, Dictionary<string, JsonElement> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDto { Code = 0 };
-            var msjError = string.Empty;
-
-            try
+            return AF_Beneficios_Zoho_Expediente_Procesar(new ZohoExpedienteProcesoRequest
             {
-                using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+                CodEmpresa = CodEmpresa,
+                Datos = datos,
+                Usuario = usuario,
+                Solicitud = jsonZoho,
+                Preparar = AF_Beneficios_Zoho_Reconocimientos_Preparar
+            });
+        }
 
-                var cedula = CfStr(datos, CampoCedulaZoho);
-                if (string.IsNullOrEmpty(cedula))
-                {
-                    response.Code = -1;
-                    msjError += MensajeCedulaRequerida;
-                }
+        private ZohoExpedientePreparacion AF_Beneficios_Zoho_Reconocimientos_Preparar(
+            IDbConnection connection,
+            ZohoExpedienteProcesoRequest request)
+        {
+            var cedula = CfStr(request.Datos, CampoCedulaZoho);
+            var mensajeError = string.IsNullOrEmpty(cedula) ? MensajeCedulaRequerida : string.Empty;
+            var estadoSocio = _mBeneficiosDB.ValidaEstadoSocio(
+                request.CodEmpresa,
+                (cedula ?? string.Empty).Trim());
 
-                var estadoSocio = _mBeneficiosDB.ValidaEstadoSocio(CodEmpresa, (cedula ?? string.Empty).Trim());
-                if (estadoSocio.Code == -1)
-                {
-                    response.Code = -1;
-                    msjError += estadoSocio.Description + "...";
-                }
-
-                if (response.Code != -1)
-                {
-                    var reconocimiento = (CfStr(datos, "cf_tipo_de_reconocimiento") ?? string.Empty).Trim();
-                    var codBeneficio = reconocimiento switch
-                    {
-                        "Académico" => "MEAC",
-                        "Científico" => "MERC",
-                        "Artístico" => "MERA",
-                        "Deportivo" => "MERD",
-                        _ => string.Empty
-                    };
-
-                    var beneficio = new BeneficioGeneralDatos
-                    {
-                        cod_beneficio = new AfBeneficioIntegralDropsLista { item = codBeneficio },
-                        id_beneficio = 0,
-                        cedula = (cedula ?? string.Empty).Trim(),
-                        monto_aplicado = 0,
-                        registra_user = usuario,
-                        modifica_usuario = usuario,
-                        sepelio_identificacion = null,
-                        estado = new AfBeneficioIntegralDropsLista { item = string.Empty },
-                        consec = 0,
-                        requiere_justificacion = jsonZoho.justificacion != null,
-                        notas = jsonZoho.justificacion ?? string.Empty
-                    };
-
-                    beneficio.monto = connection.QueryFirstOrDefault<float>(@"SELECT [MONTO]
-                                  FROM [AFI_BENE_GRUPOS] WHERE COD_CATEGORIA = 'B_RECO'
-                                  AND COD_GRUPO in (
-                                      SELECT COD_GRUPO
-                                      FROM [AFI_BENEFICIOS] WHERE COD_CATEGORIA = 'B_RECO'
-                                      AND COD_BENEFICIO = @codBeneficio
-                                  )", new { codBeneficio });
-                    beneficio.monto_aplicado = beneficio.monto;
-                    beneficio.tipo = new AfBeneficioIntegralDropsLista { item = "M" };
-
-                    var respBeneficio = _beneIntegral.BeneficioIntegralGeneral_Guardar(CodEmpresa, "API", beneficio).Result;
-
-                    if (respBeneficio.Code == -1)
-                    {
-                        response.Code = -1;
-                        msjError += respBeneficio.Description + "...";
-                    }
-                    else
-                    {
-                        var expediente = (respBeneficio.Description ?? "0@0").Split('@');
-                        var nExpediente = expediente[0].PadLeft(6, '0') + codBeneficio.Trim() + expediente[1].PadLeft(6, '0');
-
-                        connection.Execute(@"UPDATE [dbo].[AFI_BENE_OTORGA_INT]
-                                   SET [N_EXPEDIENTE] = @nExpediente, [CONSEC] = @consec, COD_BENEFICIO = @codBeneficio,
-                                       ID_BENEFICIO = @idBeneficio, [ESTADO] = 'S', INCLUIDO_POR = @usuario, INCLUIDO_FECHA = getdate()
-                                 WHERE ID_ZOHO = @idZoho",
-                            new { nExpediente, consec = expediente[1], codBeneficio = codBeneficio.Trim(), idBeneficio = expediente[0], usuario, idZoho = jsonZoho.ticket });
-
-                        if (expediente[0] != "0")
-                        {
-                            Reconocimientos_Detalle_Guardar(new ReconocimientoGuardarRequest
-                            {
-                                CodEmpresa = CodEmpresa,
-                                Datos = datos,
-                                Usuario = usuario,
-                                CodigoBeneficio = codBeneficio,
-                                Expediente = expediente
-                            });
-                            var filtros = new FrmFiltros
-                            {
-                                codCliente = CodEmpresa,
-                                cod_beneficio = codBeneficio.Trim(),
-                                id_beneficio = beneficio.id_beneficio,
-                                socio = beneficio.cedula,
-                                usuario = usuario
-                            };
-
-                            IncluirRespuestasFormularios(filtros, datos);
-                        }
-
-                        // Los adjuntos no se transfieren porque esta versión aún no dispone de la
-                        // infraestructura HTTP de threads y attachments de Zoho Desk.
-                    }
-                }
-
-                if (msjError.Trim() != string.Empty)
-                {
-                    response.Code = -1;
-                    response.Description = msjError;
-
-                    connection.Execute(@"UPDATE [dbo].[AFI_BENE_OTORGA_INT]
-                               SET [MSJ_INTERFACE] = @msjError, [ESTADO] = 'E'
-                             WHERE ID_ZOHO = @idZoho", new { msjError, idZoho = jsonZoho.ticket });
-                }
-            }
-            catch (Exception ex)
+            if (estadoSocio.Code == -1)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                mensajeError += estadoSocio.Description + "...";
             }
 
-            return response;
+            if (!string.IsNullOrWhiteSpace(mensajeError))
+            {
+                return new ZohoExpedientePreparacion { MensajeError = mensajeError };
+            }
+
+            var reconocimiento = (CfStr(request.Datos, "cf_tipo_de_reconocimiento") ?? string.Empty).Trim();
+            var codigoBeneficio = reconocimiento switch
+            {
+                "Académico" => "MEAC",
+                "Científico" => "MERC",
+                "Artístico" => "MERA",
+                "Deportivo" => "MERD",
+                _ => string.Empty
+            };
+            var beneficio = AF_Beneficios_Zoho_BeneficioBase_Crear(
+                request,
+                cedula ?? string.Empty,
+                codigoBeneficio,
+                string.Empty);
+            beneficio.monto = AF_Beneficios_Zoho_Monto_Obtener(connection, "B_RECO", codigoBeneficio);
+            beneficio.monto_aplicado = beneficio.monto;
+            beneficio.tipo = new AfBeneficioIntegralDropsLista { item = "M" };
+
+            return new ZohoExpedientePreparacion
+            {
+                Beneficio = beneficio,
+                CodigoBeneficio = codigoBeneficio,
+                CodigoFormulario = codigoBeneficio.Trim(),
+                GuardarReconocimiento = true
+            };
         }
 
         private void Reconocimientos_Detalle_Guardar(ReconocimientoGuardarRequest request)
