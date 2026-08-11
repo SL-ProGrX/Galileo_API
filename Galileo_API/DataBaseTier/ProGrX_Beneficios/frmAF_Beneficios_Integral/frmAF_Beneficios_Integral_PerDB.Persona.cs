@@ -23,19 +23,63 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
 
             const string sql = @"
-                SELECT
-                    SUBSTRING(s.NOMBRE, 1, CHARINDEX(' ', s.NOMBRE) - 1) AS Apellido1,
-                    SUBSTRING(s.NOMBRE, CHARINDEX(' ', s.NOMBRE) + 1,
-                              CHARINDEX(' ', s.NOMBRE, CHARINDEX(' ', s.NOMBRE) + 1) - CHARINDEX(' ', s.NOMBRE) - 1) AS Apellido2,
-                    SUBSTRING(s.NOMBRE, CHARINDEX(' ', s.NOMBRE, CHARINDEX(' ', s.NOMBRE) + 1) + 1, LEN(s.NOMBRE)) AS Nombrev2,
-                    S.NOMBRE, s.ESTADOCIVIL, s.SEXO, s.FECHA_NAC, s.FECHAINGRESO,
-                    s.ct AS LUGAR_TRABAJO, s.NIVEL_ACADEMICO, s.PROFESION,
-                    s.COD_NACIONALIDAD, s.COD_PAIS_NAC, s.AF_EMAIL, s.EMAIL_02, s.APTO,
-                    s.PROVINCIA, s.CANTON, s.DISTRITO, s.DIRECCION, s.ESTADOACTUAL,
-                    m.MEMBRESIA, s.estadolaboral
-                FROM SOCIOS s
-                LEFT JOIN [dbo].[vAFI_Membresias] m ON s.CEDULA = m.CEDULA
-                WHERE s.CEDULA = @cedula";
+                        SELECT
+                            NULLIF(LEFT(n.nombre_limpio, p.primer_espacio - 1), '') AS Apellido1,
+                            NULLIF(
+                                SUBSTRING(
+                                    n.nombre_limpio,
+                                    p.primer_espacio + 1,
+                                    p.segundo_espacio - p.primer_espacio - 1
+                                ),
+                                ''
+                            ) AS Apellido2,
+                            NULLIF(
+                                LTRIM(
+                                    SUBSTRING(
+                                        n.nombre_limpio,
+                                        p.segundo_espacio + 1,
+                                        LEN(n.nombre_limpio)
+                                    )
+                                ),
+                                ''
+                            ) AS Nombrev2,
+                            s.NOMBRE,
+                            s.ESTADOCIVIL,
+                            s.SEXO,
+                            s.FECHA_NAC,
+                            s.FECHAINGRESO,
+                            s.ct AS LUGAR_TRABAJO,
+                            s.NIVEL_ACADEMICO,
+                            s.PROFESION,
+                            s.COD_NACIONALIDAD,
+                            s.COD_PAIS_NAC,
+                            s.AF_EMAIL,
+                            s.EMAIL_02,
+                            s.APTO,
+                            s.PROVINCIA,
+                            s.CANTON,
+                            s.DISTRITO,
+                            s.DIRECCION,
+                            s.ESTADOACTUAL,
+                            m.MEMBRESIA,
+                            s.estadolaboral
+                        FROM SOCIOS s
+                        CROSS APPLY (
+                            VALUES (LTRIM(RTRIM(COALESCE(s.NOMBRE, ''))))
+                        ) n(nombre_limpio)
+                        CROSS APPLY (
+                            VALUES (
+                                CHARINDEX(' ', n.nombre_limpio + '  '),
+                                CHARINDEX(
+                                    ' ',
+                                    n.nombre_limpio + '  ',
+                                    CHARINDEX(' ', n.nombre_limpio + '  ') + 1
+                                )
+                            )
+                        ) p(primer_espacio, segundo_espacio)
+                        LEFT JOIN dbo.vAFI_Membresias m
+                            ON s.CEDULA = m.CEDULA
+                        WHERE s.CEDULA = @cedula;";
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
                 connection.QueryFirstOrDefault<AfiBeneficioIntegralPersonaData>(sql, new { cedula }));
@@ -148,8 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     }
 
                     var valor = connection.QueryFirstOrDefault<int>(
-                        validacion.query_val,
-                        new { cedula = cedulaSegura });
+                        validacion.query_val.Replace("@cedula", cedulaSegura));
 
                     if (valor == validacion.resultado_val)
                     {

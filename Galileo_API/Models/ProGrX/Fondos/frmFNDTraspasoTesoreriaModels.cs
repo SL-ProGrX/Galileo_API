@@ -236,4 +236,29 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? ErrorMensaje { get; set; }
         public List<FndTraspasoTesoreriaProcesoErrorResult> Errores { get; set; } = new();
     }
+
+    /// <summary>
+    /// Parámetros para consultar la lista de remesas de traspaso a tesorería.
+    /// </summary>
+    public sealed class FndTraspasoTesoreriaRemesaParams
+    {
+        public required int CodEmpresa { get; set; }
+        public int Top { get; set; } = 15;
+    }
+
+    /// <summary>
+    /// Resultado de la consulta de remesas de traspaso a tesorería.
+    /// </summary>
+    public sealed class FndTraspasoTesoreriaRemesaResult
+    {
+        public int Cod_Remesa { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+        public DateTime Fecha { get; set; }
+        public string Estado { get; set; } = string.Empty;
+        public DateTime? Fecha_Inicio { get; set; }
+        public DateTime? Fecha_Corte { get; set; }
+        public int Casos { get; set; }
+        public decimal Monto { get; set; }
+        public string Notas { get; set; } = string.Empty;
+    }
 }

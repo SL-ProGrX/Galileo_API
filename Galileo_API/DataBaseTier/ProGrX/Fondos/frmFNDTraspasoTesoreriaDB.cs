@@ -769,5 +769,42 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
+
+        private const string SqlRemesasLista = @"
+            SELECT TOP (@Top)
+                T.cod_remesa,
+                T.usuario,
+                T.fecha,
+                T.estado,
+                T.fecha_inicio,
+                T.fecha_corte,
+                ISNULL(D.Casos, 0) AS Casos,
+                ISNULL(D.Monto, 0) AS Monto,
+                ISNULL(T.notas, '') AS Notas
+            FROM CRD_REMESAS_TES T
+            LEFT JOIN vCrd_Remesa_Tes_Rsm D ON T.cod_Remesa = D.cod_Remesa
+            ORDER BY T.fecha DESC;";
+
+        /// <summary>
+        /// Obtiene la lista de remesas de traspaso a tesorería ordenadas por fecha descendente.
+        /// </summary>
+        /// <param name="param">Parámetros: CodEmpresa y Top.</param>
+        /// <returns>ErrorDto con la lista de remesas.</returns>
+        public ErrorDto<List<FndTraspasoTesoreriaRemesaResult>> TraspasoTesoreria_Remesas_Obtener(
+            FndTraspasoTesoreriaRemesaParams param)
+        {
+            if (param is null)
+            {
+                return DbHelper.CreateErrorResponse<List<FndTraspasoTesoreriaRemesaResult>>(
+                    "Los parámetros de consulta son requeridos.",
+                    -2);
+            }
+
+            return DbHelper.ExecuteListQuery<FndTraspasoTesoreriaRemesaResult>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlRemesasLista,
+                new { Top = param.Top });
+        }
     }
 }

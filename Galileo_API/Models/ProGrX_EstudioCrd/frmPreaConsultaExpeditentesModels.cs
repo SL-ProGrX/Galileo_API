@@ -3,6 +3,7 @@
     public class FrmPreaConsultaExpeditentesListaResponse
     {
         public List<FrmPreaConsultaExpeditentesItem> lista { get; set; } = [];
+        public int total { get; set; }
     }
 
     public class FrmPreaConsultaExpeditentesItem
