@@ -31,7 +31,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var datos = new AfiBeneOtorgaAsgDataList
                 {
                     total = connection.QueryFirstOrDefault<int>(
-                        "SELECT COUNT(*) FROM afi_bene_otorga WHERE cedula = @cedula", p)
+                        @"SELECT COUNT(*)
+                            FROM afi_bene_otorga O
+                            INNER JOIN afi_beneficios B ON O.cod_beneficio = B.cod_beneficio
+                           WHERE O.cedula = @cedula
+                             AND (@filtroLike IS NULL
+                                  OR B.Descripcion LIKE @filtroLike
+                                  OR O.cod_beneficio LIKE @filtroLike
+                                  OR CONVERT(varchar(20), O.consec) LIKE @filtroLike)", p)
                 };
 
                 const string sql = @"SELECT O.*, B.Descripcion FROM afi_bene_otorga O
@@ -40,7 +47,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                        AND (@filtroLike IS NULL
                                             OR B.Descripcion LIKE @filtroLike
                                             OR O.cod_beneficio LIKE @filtroLike
-                                            OR O.consec LIKE @filtroLike)
+                                             OR CONVERT(varchar(20), O.consec) LIKE @filtroLike)
                                      ORDER BY O.cod_beneficio
                                      OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 

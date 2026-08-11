@@ -160,8 +160,8 @@ namespace Galileo.Models.AF
         public int codCliente { get; set; } = 0;
         public string? cedula { get; set; }
         public string? tipoFecha { get; set; }
-        public string? fechaInicio { get; set; }
-        public string? fechaCorte { get; set; }
+        public DateTime? fechaInicio { get; set; }
+        public DateTime? fechaCorte { get; set; }
         public string? estado { get; set; }
         public string? usuario { get; set; }
         public string? noExpediente { get; set; }

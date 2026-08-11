@@ -583,5 +583,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
         #endregion
 
+        #region Consultas
+
+        /// <summary>
+        /// Consulta el historial de remesas con filtros múltiples.
+        /// Equivalente a spPrm_CA_Remesa_Consultas del VB6.
+        /// </summary>
+        public ErrorDto<CcCaRemesasConsultasResponse> CcCaRemesas_Consultas_Consultar(
+            int codEmpresa,
+            CcCaRemesasConsultasRequest request)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            var response = new CcCaRemesasConsultasResponse();
+
+            try
+            {
+                var lista = conn.Query<CcCaRemesasConsultasData>(
+                    "spPrm_CA_Remesa_Consultas",
+                    new
+                    {
+                        NumGeneracion = request.numero_generacion,
+                        Linea = request.cod_linea,
+                        Entidad = request.cod_entidad?.Trim(),
+                        FechaInicio = request.fecha_inicio,
+                        FechaFin = request.fecha_fin,
+                        TipoCuota = request.tipo_cuota?.Trim() ?? "T",
+                        Estado = request.estado?.Trim() ?? "T",
+                        Cedula = request.cedula?.Trim() ?? string.Empty,
+                        Nombre = request.nombre?.Trim() ?? string.Empty
+                    },
+                    commandType: CommandType.StoredProcedure).ToList();
+
+                response.detalle = lista;
+                response.total_compromiso = lista.Sum(x => x.monto_cuota);
+                response.total_recaudado = lista.Sum(x => x.recaudado);
+                response.total_casos = lista.Count;
+
+                return DbHelper.CreateOkResponse(response);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CcCaRemesasConsultasResponse>(ex.Message, -1, response);
+            }
+        }
+
+        #endregion
+
     }
 }

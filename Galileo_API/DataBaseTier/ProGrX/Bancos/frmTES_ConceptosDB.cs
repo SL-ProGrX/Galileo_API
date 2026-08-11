@@ -88,7 +88,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         SELECT
                             cod_concepto,
                             descripcion,
-                            activo,
+                            CAST(CASE WHEN activo IS NOT NULL AND LTRIM(RTRIM(activo)) <> '' THEN 1 ELSE 0 END AS BIT) as activo,
                             cod_cuenta_Mask,
                             AUTO_REGISTRO,
                             DP_TRAMITE_APL,
@@ -249,7 +249,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     cod_concepto = concepto.cod_concepto,
                     descripcion = concepto.descripcion,
-                    estado = (concepto.activo) ? 'A' : 'I',
+                    estado = concepto.activo ? 'A' : 'I',
                     cod_cuenta = cuenta,
                     auto_registro = concepto.auto_registro ? 1 : 0,
                     dp_tramite_apl = concepto.dp_tramite_apl ? 1 : 0,
