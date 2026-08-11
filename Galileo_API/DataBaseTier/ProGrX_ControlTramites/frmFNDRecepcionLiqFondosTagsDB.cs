@@ -8,7 +8,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 {
-    public sealed class FrmFNDRecepcionLiqFondosTagsDb
+    public sealed class FrmFndRecepcionLiqFondosTagsDb
     {
         private const string Modulo = "FLQ";
         private const string MovimientoRecepcion = "RECEPCION";
@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
         private readonly PortalDB _portalDb;
 
-        public FrmFNDRecepcionLiqFondosTagsDb(IConfiguration config)
+        public FrmFndRecepcionLiqFondosTagsDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }

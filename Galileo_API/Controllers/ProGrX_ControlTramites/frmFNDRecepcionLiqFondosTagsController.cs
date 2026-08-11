@@ -9,15 +9,15 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public sealed class FrmFNDRecepcionLiqFondosTagsController :
+    public sealed class FrmFndRecepcionLiqFondosTagsController :
         ControllerBase
     {
-        private readonly FrmFNDRecepcionLiqFondosTagsBl _bl;
+        private readonly FrmFndRecepcionLiqFondosTagsBl _bl;
 
-        public FrmFNDRecepcionLiqFondosTagsController(
+        public FrmFndRecepcionLiqFondosTagsController(
             IConfiguration config)
         {
-            _bl = new FrmFNDRecepcionLiqFondosTagsBl(config);
+            _bl = new FrmFndRecepcionLiqFondosTagsBl(config);
         }
 
         [HttpGet(

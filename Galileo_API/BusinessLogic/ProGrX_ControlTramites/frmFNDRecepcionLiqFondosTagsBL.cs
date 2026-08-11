@@ -6,14 +6,14 @@ using System.Text.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
 {
-    public sealed class FrmFNDRecepcionLiqFondosTagsBl
+    public sealed class FrmFndRecepcionLiqFondosTagsBl
     {
-        private readonly FrmFNDRecepcionLiqFondosTagsDb _db;
+        private readonly FrmFndRecepcionLiqFondosTagsDb _db;
 
-        public FrmFNDRecepcionLiqFondosTagsBl(
+        public FrmFndRecepcionLiqFondosTagsBl(
             IConfiguration config)
         {
-            _db = new FrmFNDRecepcionLiqFondosTagsDb(config);
+            _db = new FrmFndRecepcionLiqFondosTagsDb(config);
         }
 
         public ErrorDto<FndRecepcionLiqFondosTagsInicializarResponse>
