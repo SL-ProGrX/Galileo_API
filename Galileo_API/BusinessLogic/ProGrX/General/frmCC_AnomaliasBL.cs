@@ -48,5 +48,38 @@ namespace Galileo_API.BusinessLogic.ProGrX.General
         {
             return _db.CcAnomaliasCtaDerivadaMenor_Obtener(codEmpresa, filtro);
         }
+
+        public ErrorDto<CcAnomaliaCuentaOpcionDto?> CcAnomaliasCuentaOpcion_Obtener(int codEmpresa, string parametro)
+        {
+            return _db.CcAnomaliasCuentaOpcion_Obtener(codEmpresa, parametro);
+        }
+
+        public ErrorDto<CcAnomaliaSaldosMenoresCorregirResultado> CcAnomaliasSaldosMenores_Corregir(
+            int codEmpresa,
+            CcAnomaliaSaldosMenoresCorregirRequest request)
+        {
+            return _db.CcAnomaliasSaldosMenores_Corregir(codEmpresa, request);
+        }
+
+        public ErrorDto<CcAnomaliaSaldosNegativosCorregirResultado> CcAnomaliasSaldosNegativos_Corregir(
+            int codEmpresa,
+            CcAnomaliaSaldosNegativosCorregirRequest request)
+        {
+            return _db.CcAnomaliasSaldosNegativos_Corregir(codEmpresa, request);
+        }
+
+        public ErrorDto<CcAnomaliaMoraMenorCorregirResultado> CcAnomaliasMoraMenor_Corregir(
+            int codEmpresa,
+            CcAnomaliaMoraMenorCorregirRequest request)
+        {
+            return _db.CcAnomaliasMoraMenor_Corregir(codEmpresa, request);
+        }
+
+        public ErrorDto<CcAnomaliaCtaDerivadaCorregirResultado> CcAnomaliasCtaDerivadaMenor_Corregir(
+            int codEmpresa,
+            CcAnomaliaCtaDerivadaCorregirRequest request)
+        {
+            return _db.CcAnomaliasCtaDerivadaMenor_Corregir(codEmpresa, request);
+        }
     }
 }
