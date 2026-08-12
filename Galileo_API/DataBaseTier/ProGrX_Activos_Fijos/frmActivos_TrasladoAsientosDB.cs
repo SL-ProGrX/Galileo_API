@@ -350,10 +350,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Result = false
             };
         }
-        private TrasladoAsientoResultado TrasladarAsientoItem(
-    int codEmpresa,
-    SqlConnection connection,
-    ActivosTrasladoAsientoRequest item)
+        private TrasladoAsientoResultado TrasladarAsientoItem(int codEmpresa,SqlConnection connection,ActivosTrasladoAsientoRequest item)
         {
             if (item == null ||
                 string.IsNullOrWhiteSpace(item.num_asiento) ||
@@ -372,76 +369,78 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     ta = item.tipo_asiento
                 });
 
-            if (fecha == null)
+            if (!fecha.HasValue)
                 return TrasladoAsientoResultado.Omitido;
 
             var periodoAbierto = _mCntLinkDB.fxgCntPeriodoValida(
-                Convert.ToInt16(item.cod_contabilidad),
+                codEmpresa,
                 fecha.Value);
 
             if (!periodoAbierto)
                 return TrasladoAsientoResultado.PeriodoCerrado;
 
-            using var tran = connection.BeginTransaction();
-
-            try
+            using (var tran = connection.BeginTransaction())
             {
-                connection.Execute(
-                    SqlInsertMaestro,
-                    new
-                    {
-                        cc = item.cod_contabilidad,
-                        na = item.num_asiento,
-                        ta = item.tipo_asiento,
-                        modulo = vModulo
-                    },
-                    tran);
-
-                connection.Execute(
-                    SqlInsertDetalle,
-                    new
-                    {
-                        cc = item.cod_contabilidad,
-                        na = item.num_asiento,
-                        ta = item.tipo_asiento
-                    },
-                    tran);
-
-                connection.Execute(
-                    SqlUpdateOrigen,
-                    new
-                    {
-                        usuario = item.usuario,
-                        cc = item.cod_contabilidad,
-                        na = item.num_asiento,
-                        ta = item.tipo_asiento
-                    },
-                    tran);
-
-                tran.Commit();
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                try
                 {
-                    EmpresaId = codEmpresa,
-                    Usuario = item.usuario,
-                    DetalleMovimiento =
-                        $"Traslado a contabilidad. COD_CONTABILIDAD={item.cod_contabilidad}, " +
-                        $"TIPO_ASIENTO={item.tipo_asiento}, NUM_ASIENTO={item.num_asiento}",
-                    Movimiento = "Trasladar - WEB",
-                    Modulo = vModulo
-                });
+                    connection.Execute(
+                        SqlInsertMaestro,
+                        new
+                        {
+                            cc = item.cod_contabilidad,
+                            na = item.num_asiento,
+                            ta = item.tipo_asiento,
+                            modulo = vModulo
+                        },
+                        tran);
 
-                return TrasladoAsientoResultado.Trasladado;
+                    connection.Execute(
+                        SqlInsertDetalle,
+                        new
+                        {
+                            cc = item.cod_contabilidad,
+                            na = item.num_asiento,
+                            ta = item.tipo_asiento
+                        },
+                        tran);
+
+                    connection.Execute(
+                        SqlUpdateOrigen,
+                        new
+                        {
+                            usuario = item.usuario,
+                            cc = item.cod_contabilidad,
+                            na = item.num_asiento,
+                            ta = item.tipo_asiento
+                        },
+                        tran);
+
+                    tran.Commit();
+                }
+                catch (SqlException ex)
+                {
+                    if (tran.Connection != null)
+                        tran.Rollback();
+
+                    throw new InvalidOperationException(
+                        $"No fue posible trasladar el asiento {item.num_asiento}. " +
+                        "Verifique que el asiento tenga todas sus cuentas contables configuradas.",
+                        ex);
+                }
             }
-            catch (SqlException ex)
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
-                if (connection.State == System.Data.ConnectionState.Open)
-                    tran.Rollback();
+                EmpresaId = codEmpresa,
+                Usuario = item.usuario,
+                DetalleMovimiento =
+                    $"Traslado a contabilidad. COD_CONTABILIDAD={item.cod_contabilidad}, " +
+                    $"TIPO_ASIENTO={item.tipo_asiento}, NUM_ASIENTO={item.num_asiento}",
+                Movimiento = "Trasladar - WEB",
+                Modulo = vModulo
+            });
 
-                throw new InvalidOperationException(
-                    $"No fue posible trasladar el asiento {item.num_asiento}. Verifique que el asiento tenga todas sus cuentas contables configuradas.",
-                    ex);
-            }
+            return TrasladoAsientoResultado.Trasladado;
         }
     }
 }
