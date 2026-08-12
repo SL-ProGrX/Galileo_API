@@ -28,6 +28,9 @@
         public bool? SoloConOrigenRecursos { get; set; } // true: agrega IS NOT NULL
         public decimal? MontoInicio { get; set; }
         public decimal? MontoFin { get; set; }
+        // true: solo saldos retenidos (Nombre IS NULL y Saldo = 0), Nombre se devuelve como "Retenido".
+        // false/null: comportamiento normal, excluyendo siempre los saldos retenidos (Nombre IS NULL).
+        public bool? SoloRetenidos { get; set; }
     }
 
     public class CajasSaldosFavorConsultaResult
