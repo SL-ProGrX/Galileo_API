@@ -22,6 +22,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         private const string ParametroMontoMoraMenor = "24";
         private const string ParametroMontoCtaDerivada = "24.1";
         private const string DivisaCol = "COL";
+        private const string MsgDatosCorreccionRequeridos =
+            "Debe indicar los datos de la corrección.";
+        private const string MsgUsuarioRequerido =
+            "Debe indicar el usuario.";
+        private const string MsgCuentaInvalida =
+            "Cuenta Contable no es válida, revisar!";
 
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
@@ -363,25 +369,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         {
             if (request is null)
             {
-                return CrearErrorCorregir("Debe indicar los datos de la corrección.");
+                return CrearErrorCorregir(MsgDatosCorreccionRequeridos);
             }
 
             var usuario = (request.Usuario ?? string.Empty).Trim();
             var cuentaUi = (request.Cuenta ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return CrearErrorCorregir("Debe indicar el usuario.");
+                return CrearErrorCorregir(MsgUsuarioRequerido);
             }
 
             if (string.IsNullOrWhiteSpace(cuentaUi))
             {
-                return CrearErrorCorregir("Cuenta Contable no es válida, revisar!");
+                return CrearErrorCorregir(MsgCuentaInvalida);
             }
 
             var pCuenta = _mCntLinkDb.fxgCntCuentaFormato(codEmpresa, false, cuentaUi, 0);
             if (string.IsNullOrWhiteSpace(pCuenta) || !_mCntLinkDb.fxgCntCuentaValida(codEmpresa, pCuenta))
             {
-                return CrearErrorCorregir("Cuenta Contable no es válida, revisar!");
+                return CrearErrorCorregir(MsgCuentaInvalida);
             }
 
             var globalesResp = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario);
@@ -457,18 +463,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 InsertarAsiento(
                     conn,
                     tx,
-                    TipoDocumentoNc,
-                    lngNumero,
-                    curTotalSaldos,
-                    "D",
-                    DivisaCol,
-                    1m,
-                    globales.GEnlace,
-                    oficina.Cod_Unidad,
-                    oficina.Cod_Centro_Costo,
-                    pCuenta,
-                    string.Empty,
-                    string.Empty);
+                    new CcAnomaliaAsientoDto
+                    {
+                        TipoDocumento = TipoDocumentoNc,
+                        Documento = lngNumero,
+                        Monto = curTotalSaldos,
+                        DebeHaber = "D",
+                        Divisa = DivisaCol,
+                        Enlace = globales.GEnlace,
+                        Unidad = oficina.Cod_Unidad,
+                        CentroCosto = oficina.Cod_Centro_Costo,
+                        Cuenta = pCuenta
+                    });
 
                 tx.Commit();
 
@@ -517,25 +523,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         {
             if (request is null)
             {
-                return CrearErrorCorregirNegativos("Debe indicar los datos de la corrección.");
+                return CrearErrorCorregirNegativos(MsgDatosCorreccionRequeridos);
             }
 
             var usuario = (request.Usuario ?? string.Empty).Trim();
             var cuentaUi = (request.Cuenta ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return CrearErrorCorregirNegativos("Debe indicar el usuario.");
+                return CrearErrorCorregirNegativos(MsgUsuarioRequerido);
             }
 
             if (string.IsNullOrWhiteSpace(cuentaUi))
             {
-                return CrearErrorCorregirNegativos("Cuenta Contable no es válida, revisar!");
+                return CrearErrorCorregirNegativos(MsgCuentaInvalida);
             }
 
             var pCuenta = _mCntLinkDb.fxgCntCuentaFormato(codEmpresa, false, cuentaUi, 0);
             if (string.IsNullOrWhiteSpace(pCuenta) || !_mCntLinkDb.fxgCntCuentaValida(codEmpresa, pCuenta))
             {
-                return CrearErrorCorregirNegativos("Cuenta Contable no es válida, revisar!");
+                return CrearErrorCorregirNegativos(MsgCuentaInvalida);
             }
 
             var globalesResp = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario);
@@ -664,36 +670,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     InsertarAsiento(
                         conn,
                         tx,
-                        TipoDocumentoNd,
-                        lngNumero,
-                        saldoAbs,
-                        "D",
-                        cuentas.Cod_Divisa,
-                        1m,
-                        globales.GEnlace,
-                        cuentas.Cod_Unidad,
-                        cuentas.Cod_Centro_Costo,
-                        cuentas.CtaAmortiza,
-                        credito.Id_Solicitud.ToString(),
-                        credito.Codigo);
+                        new CcAnomaliaAsientoDto
+                        {
+                            TipoDocumento = TipoDocumentoNd,
+                            Documento = lngNumero,
+                            Monto = saldoAbs,
+                            DebeHaber = "D",
+                            Divisa = cuentas.Cod_Divisa,
+                            Enlace = globales.GEnlace,
+                            Unidad = cuentas.Cod_Unidad,
+                            CentroCosto = cuentas.Cod_Centro_Costo,
+                            Cuenta = cuentas.CtaAmortiza,
+                            Operacion = credito.Id_Solicitud.ToString(),
+                            Codigo = credito.Codigo
+                        });
                 }
 
                 // Contrapartida general: Crédito con unidad/CC de Globales (gOficinaUnidad / gOficinaCentroCosto)
                 InsertarAsiento(
                     conn,
                     tx,
-                    TipoDocumentoNd,
-                    lngNumero,
-                    curTotalSaldos,
-                    "C",
-                    DivisaCol,
-                    1m,
-                    globales.GEnlace,
-                    globales.GOficinaUnidad ?? string.Empty,
-                    globales.GOficinaCentroCosto ?? string.Empty,
-                    pCuenta,
-                    string.Empty,
-                    string.Empty);
+                    new CcAnomaliaAsientoDto
+                    {
+                        TipoDocumento = TipoDocumentoNd,
+                        Documento = lngNumero,
+                        Monto = curTotalSaldos,
+                        DebeHaber = "C",
+                        Divisa = DivisaCol,
+                        Enlace = globales.GEnlace,
+                        Unidad = globales.GOficinaUnidad ?? string.Empty,
+                        CentroCosto = globales.GOficinaCentroCosto ?? string.Empty,
+                        Cuenta = pCuenta
+                    });
 
                 tx.Commit();
 
@@ -742,13 +750,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         {
             if (request is null)
             {
-                return CrearErrorCorregirMora("Debe indicar los datos de la corrección.");
+                return CrearErrorCorregirMora(MsgDatosCorreccionRequeridos);
             }
 
             var usuario = (request.Usuario ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return CrearErrorCorregirMora("Debe indicar el usuario.");
+                return CrearErrorCorregirMora(MsgUsuarioRequerido);
             }
 
             var globalesResp = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario);
@@ -859,13 +867,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         {
             if (request is null)
             {
-                return CrearErrorCorregirCtaDerivada("Debe indicar los datos de la corrección.");
+                return CrearErrorCorregirCtaDerivada(MsgDatosCorreccionRequeridos);
             }
 
             var usuario = (request.Usuario ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(usuario))
             {
-                return CrearErrorCorregirCtaDerivada("Debe indicar el usuario.");
+                return CrearErrorCorregirCtaDerivada(MsgUsuarioRequerido);
             }
 
             try
@@ -1005,18 +1013,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
             InsertarAsiento(
                 conn,
                 tx,
-                TipoDocumentoNc,
-                lngNumero,
-                saldoAbs,
-                "C",
-                cuentas.Cod_Divisa,
-                1m,
-                globales.GEnlace,
-                cuentas.Cod_Unidad,
-                cuentas.Cod_Centro_Costo,
-                cuentas.CtaAmortiza,
-                credito.Id_Solicitud.ToString(),
-                credito.Codigo);
+                new CcAnomaliaAsientoDto
+                {
+                    TipoDocumento = TipoDocumentoNc,
+                    Documento = lngNumero,
+                    Monto = saldoAbs,
+                    DebeHaber = "C",
+                    Divisa = cuentas.Cod_Divisa,
+                    Enlace = globales.GEnlace,
+                    Unidad = cuentas.Cod_Unidad,
+                    CentroCosto = cuentas.Cod_Centro_Costo,
+                    Cuenta = cuentas.CtaAmortiza,
+                    Operacion = credito.Id_Solicitud.ToString(),
+                    Codigo = credito.Codigo
+                });
         }
 
         /// <summary>
@@ -1210,20 +1220,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         private static void InsertarAsiento(
             IDbConnection conn,
             IDbTransaction tx,
-            string tipoDocumento,
-            long documento,
-            decimal monto,
-            string debeHaber,
-            string divisa,
-            decimal tipoCambio,
-            int enlace,
-            string unidad,
-            string centroCosto,
-            string cuenta,
-            string operacion,
-            string codigo)
+            CcAnomaliaAsientoDto asiento)
         {
-            if (string.IsNullOrWhiteSpace(cuenta))
+            if (string.IsNullOrWhiteSpace(asiento.Cuenta))
             {
                 throw new InvalidOperationException(
                     "No se encontró una cuenta contable válida para el asiento.");
@@ -1235,18 +1234,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     @Enlace, @Unidad, @CentroCosto, @Cuenta, @Operacion, @Codigo, '';",
                 new
                 {
-                    Tipo = tipoDocumento,
-                    Documento = documento,
-                    Monto = monto,
-                    DebeHaber = debeHaber,
-                    Divisa = divisa,
-                    TipoCambio = tipoCambio,
-                    Enlace = enlace,
-                    Unidad = unidad ?? string.Empty,
-                    CentroCosto = centroCosto ?? string.Empty,
-                    Cuenta = cuenta,
-                    Operacion = operacion ?? string.Empty,
-                    Codigo = codigo ?? string.Empty
+                    Tipo = asiento.TipoDocumento,
+                    asiento.Documento,
+                    asiento.Monto,
+                    asiento.DebeHaber,
+                    asiento.Divisa,
+                    asiento.TipoCambio,
+                    asiento.Enlace,
+                    Unidad = asiento.Unidad ?? string.Empty,
+                    CentroCosto = asiento.CentroCosto ?? string.Empty,
+                    asiento.Cuenta,
+                    Operacion = asiento.Operacion ?? string.Empty,
+                    Codigo = asiento.Codigo ?? string.Empty
                 },
                 tx);
         }

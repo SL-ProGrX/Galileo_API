@@ -159,4 +159,20 @@
         public string TipoDoc { get; set; } = string.Empty;
         public string NumDoc { get; set; } = string.Empty;
     }
+
+    public class CcAnomaliaAsientoDto
+    {
+        public string TipoDocumento { get; set; } = string.Empty;
+        public long Documento { get; set; }
+        public decimal Monto { get; set; }
+        public string DebeHaber { get; set; } = string.Empty;
+        public string Divisa { get; set; } = "COL";
+        public decimal TipoCambio { get; set; } = 1m;
+        public int Enlace { get; set; }
+        public string Unidad { get; set; } = string.Empty;
+        public string CentroCosto { get; set; } = string.Empty;
+        public string Cuenta { get; set; } = string.Empty;
+        public string Operacion { get; set; } = string.Empty;
+        public string Codigo { get; set; } = string.Empty;
+    }
 }
