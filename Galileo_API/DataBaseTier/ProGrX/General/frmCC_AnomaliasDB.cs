@@ -444,75 +444,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 {
                     var saldoAbs = Math.Abs(credito.Saldo);
                     curTotalSaldos += saldoAbs;
-
-                    if (globales.SysPlanPagos == 1)
-                    {
-                        conn.Execute(
-                            @"exec spCrdPlanPagoAbonoEC
-                                @Operacion,@Concepto,@Usuario,@TipoDoc,@Documento,
-                                0,0,@Saldo,0,dbo.MyGetdate(),'',1;",
-                            new
-                            {
-                                Operacion = credito.Id_Solicitud,
-                                Concepto = ConceptoSaldosMenores,
-                                Usuario = usuario,
-                                TipoDoc = TipoDocumentoNc,
-                                Documento = lngNumero,
-                                Saldo = saldoAbs
-                            },
-                            tx);
-                    }
-                    else
-                    {
-                        conn.Execute(
-                            @"UPDATE reg_creditos
-                                 SET SALDO = 0,
-                                     AMORTIZA = AMORTIZA + @Saldo,
-                                     estado = 'C'
-                               WHERE id_solicitud = @Operacion
-                                 AND estado = 'A';",
-                            new
-                            {
-                                Operacion = credito.Id_Solicitud,
-                                credito.Saldo
-                            },
-                            tx);
-
-                        conn.Execute(
-                            @"INSERT INTO CREDITOS_DT
-                                (CODIGO, ID_SOLICITUD, CUOTA, ABONO, INTCP, AMORTIZA,
-                                 FECHAS, FECHAP, TCON, NCON)
-                              VALUES
-                                (@Codigo, @Operacion, 0, @SaldoAbs, 0, @SaldoAbs,
-                                 dbo.MyGetdate(), @FechaCredito, @TipoDoc, @Documento);",
-                            new
-                            {
-                                credito.Codigo,
-                                Operacion = credito.Id_Solicitud,
-                                SaldoAbs = saldoAbs,
-                                FechaCredito = globales.GlngFechaCR,
-                                TipoDoc = TipoDocumentoNc,
-                                Documento = lngNumero
-                            },
-                            tx);
-                    }
-
-                    var cuentas = ObtenerCuentasOperacion(conn, tx, credito.Id_Solicitud);
-                    InsertarAsiento(
+                    AplicarCreditoSaldoMenor(
                         conn,
                         tx,
-                        TipoDocumentoNc,
+                        globales,
+                        credito,
+                        usuario,
                         lngNumero,
-                        saldoAbs,
-                        "C",
-                        cuentas.Cod_Divisa,
-                        1m,
-                        globales.GEnlace,
-                        cuentas.Cod_Unidad,
-                        cuentas.Cod_Centro_Costo,
-                        cuentas.CtaAmortiza,
-                        credito.Id_Solicitud.ToString(),
-                        credito.Codigo);
+                        saldoAbs);
                 }
 
                 InsertarAsiento(
@@ -996,6 +935,88 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 out var monto)
                 ? monto
                 : 0m;
+        }
+
+        /// <summary>
+        /// Aplica el abono de un crédito en corrección de saldos menores.
+        /// </summary>
+        private static void AplicarCreditoSaldoMenor(
+            IDbConnection conn,
+            IDbTransaction tx,
+            Globales globales,
+            CcAnomaliaCreditoItemDto credito,
+            string usuario,
+            long lngNumero,
+            decimal saldoAbs)
+        {
+            if (globales.SysPlanPagos == 1)
+            {
+                conn.Execute(
+                    @"exec spCrdPlanPagoAbonoEC
+                        @Operacion,@Concepto,@Usuario,@TipoDoc,@Documento,
+                        0,0,@Saldo,0,dbo.MyGetdate(),'',1;",
+                    new
+                    {
+                        Operacion = credito.Id_Solicitud,
+                        Concepto = ConceptoSaldosMenores,
+                        Usuario = usuario,
+                        TipoDoc = TipoDocumentoNc,
+                        Documento = lngNumero,
+                        Saldo = saldoAbs
+                    },
+                    tx);
+            }
+            else
+            {
+                conn.Execute(
+                    @"UPDATE reg_creditos
+                         SET SALDO = 0,
+                             AMORTIZA = AMORTIZA + @Saldo,
+                             estado = 'C'
+                       WHERE id_solicitud = @Operacion
+                         AND estado = 'A';",
+                    new
+                    {
+                        Operacion = credito.Id_Solicitud,
+                        credito.Saldo
+                    },
+                    tx);
+
+                conn.Execute(
+                    @"INSERT INTO CREDITOS_DT
+                        (CODIGO, ID_SOLICITUD, CUOTA, ABONO, INTCP, AMORTIZA,
+                         FECHAS, FECHAP, TCON, NCON)
+                      VALUES
+                        (@Codigo, @Operacion, 0, @SaldoAbs, 0, @SaldoAbs,
+                         dbo.MyGetdate(), @FechaCredito, @TipoDoc, @Documento);",
+                    new
+                    {
+                        credito.Codigo,
+                        Operacion = credito.Id_Solicitud,
+                        SaldoAbs = saldoAbs,
+                        FechaCredito = globales.GlngFechaCR,
+                        TipoDoc = TipoDocumentoNc,
+                        Documento = lngNumero
+                    },
+                    tx);
+            }
+
+            var cuentas = ObtenerCuentasOperacion(conn, tx, credito.Id_Solicitud);
+            InsertarAsiento(
+                conn,
+                tx,
+                TipoDocumentoNc,
+                lngNumero,
+                saldoAbs,
+                "C",
+                cuentas.Cod_Divisa,
+                1m,
+                globales.GEnlace,
+                cuentas.Cod_Unidad,
+                cuentas.Cod_Centro_Costo,
+                cuentas.CtaAmortiza,
+                credito.Id_Solicitud.ToString(),
+                credito.Codigo);
         }
 
         /// <summary>
