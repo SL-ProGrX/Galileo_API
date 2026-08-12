@@ -45,7 +45,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                      FROM AFI_BENE_FORM_MAIN_W F
                                      WHERE F.COD_BENEFICIO = @cod_beneficio AND F.BORRADO = 0
                                      ORDER BY F.ID_FORM DESC";
-                return connection.Query<Formulario>(sql, new { cod_beneficio }).ToList();
+                var frm = connection.Query<Formulario>(sql, new { cod_beneficio }).ToList();
+                return frm;
             });
         }
 

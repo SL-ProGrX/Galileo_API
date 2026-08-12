@@ -46,8 +46,8 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         /// <summary>Formularios activos de un beneficio con respuestas del socio.</summary>
         [Authorize]
         [HttpGet("AfBeneFormSocios_Obtener")]
-        public ErrorDto<List<Formulario>> AfBeneFormSocios_Obtener(string Jformulario)
-            => _bl.AfBeneFormSocios_Obtener(Jformulario);
+        public ErrorDto<List<Formulario>> AfBeneFormSocios_Obtener(string formulario)
+            => _bl.AfBeneFormSocios_Obtener(formulario);
 
         /// <summary>Reporte pivote de respuestas de un formulario.</summary>
         [Authorize]
@@ -70,8 +70,8 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         /// <summary>Agrega las respuestas de un formulario por socio.</summary>
         [Authorize]
         [HttpPost("AfBeneFrmRespuesta_Agregar")]
-        public ErrorDto AfBeneFrmRespuesta_Agregar(string Jdatos, [FromBody] Form frm)
-            => _bl.AfBeneFrmRespuesta_Agregar(Jdatos, frm);
+        public ErrorDto AfBeneFrmRespuesta_Agregar(string datos, [FromBody] Form frm)
+            => _bl.AfBeneFrmRespuesta_Agregar(datos, frm);
 
         /// <summary>Limpia las respuestas de un socio para un formulario.</summary>
         [Authorize]

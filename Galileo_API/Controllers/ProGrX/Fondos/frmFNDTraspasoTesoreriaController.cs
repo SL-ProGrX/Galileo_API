@@ -170,5 +170,16 @@ namespace Galileo.Controllers.ProGrX.Fondos
             request.Usuario = User.Identity?.Name ?? string.Empty;
             return _bl.FND_TraspasoTesoreria_Proceso_Continuar(codEmpresa, request);
         }
+
+        /// <summary>
+        /// Obtiene la lista de remesas de traspaso a tesorería para el tab de Informes.
+        /// </summary>
+        [Authorize]
+        [HttpPost("TraspasoTesoreria_Remesas_Obtener")]
+        public ErrorDto<List<FndTraspasoTesoreriaRemesaResult>> TraspasoTesoreria_Remesas_Obtener(
+            [FromBody] FndTraspasoTesoreriaRemesaParams param)
+        {
+            return _bl.TraspasoTesoreria_Remesas_Obtener(param);
+        }
     }
 }

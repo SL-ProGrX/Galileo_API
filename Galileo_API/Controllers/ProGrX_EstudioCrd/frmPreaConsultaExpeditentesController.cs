@@ -18,12 +18,17 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             _bl = new FrmPreaConsultaExpeditentesBL(configuration);
         }
 
+        /// <summary>
+        /// Obtiene la lista de expedientes con paginación server-side y filtro global.
+        /// </summary>
         [HttpGet("Prea_frmPreaConsultaExpeditentes_Lista_Obtener")]
         public ErrorDto<FrmPreaConsultaExpeditentesListaResponse> Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
             int codEmpresa,
-            string? buscar = null)
+            string? buscar = null,
+            int pagina = 0,
+            int paginacion = 30)
         {
-            return _bl.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(codEmpresa, buscar);
+            return _bl.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(codEmpresa, buscar, pagina, paginacion);
         }
     }
 }
