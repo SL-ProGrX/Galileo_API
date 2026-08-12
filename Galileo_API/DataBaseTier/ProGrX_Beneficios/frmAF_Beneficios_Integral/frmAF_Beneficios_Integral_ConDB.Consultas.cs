@@ -129,26 +129,29 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Agrega los parámetros del rango de fechas. Solo se activa cuando todasFechas es false y hay tipo de fecha.
         /// </summary>
-        private static void AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
+        private static void  AgregarParametrosFecha(BeneConsultaFiltros filtro, DynamicParameters p)
         {
-            var aplicaFecha = filtro.todasFechas == false && filtro.tipoFecha != null;
-            p.Add("@todasFechas", aplicaFecha ? 0 : 1);
-            p.Add("@tipoFecha", aplicaFecha ? filtro.tipoFecha : null);
+            var aplicaFecha = filtro.todasFechas == false &&
+                filtro.tipoFecha is not null &&
+                filtro.fechaInicio.HasValue &&
+                filtro.fechaCorte.HasValue;
 
             if (!aplicaFecha)
             {
+                p.Add("@todasFechas", 1);
+                p.Add("@tipoFecha", null);
                 p.Add("@fechaIni", null);
                 p.Add("@fechaFin", null);
                 return;
             }
 
-            var fechaIni = DateTimeOffset
-                .Parse(filtro.fechaInicio, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
-                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var fechaInicio = filtro.fechaInicio.GetValueOrDefault();
+            var fechaCorte = filtro.fechaCorte.GetValueOrDefault();
+            var fechaIni = fechaInicio.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
+            var fechaFin = fechaCorte.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
 
-            var fechaFin = DateTimeOffset
-                .Parse(filtro.fechaCorte, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
-                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            p.Add("@todasFechas", 0);
+            p.Add("@tipoFecha", filtro.tipoFecha);
             p.Add("@fechaIni", $"{fechaIni} 00:00:00");
             p.Add("@fechaFin", $"{fechaFin} 23:59:59");
         }
@@ -175,8 +178,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             SELECT CONCAT(RIGHT(CONCAT('00000', H.ID_BENEFICIO), 5),
                           TRIM(H.COD_BENEFICIO),
                           RIGHT(CONCAT('00000', H.CONSEC), 5)) AS Expediente,
-                   COD_BENEFICIO, registra_user, cedula, Estado,
-                   Registra_Fecha, Autoriza_Fecha, Pago_Fecha
+                   H.COD_BENEFICIO, H.registra_user, H.cedula, H.Estado,
+                   H.Beneficio_Desc, H.NOMBRE_BENEFICIARIO, H.SEPELIO_IDENTIFICACION,
+                   H.PROVINCIA,
+                   (SELECT B.CRECE_GRUPO FROM AFI_BENE_OTORGA B WHERE B.ID_BENEFICIO = H.ID_BENEFICIO) AS Grupo,
+                   H.Registra_Fecha, H.Autoriza_Fecha, H.Pago_Fecha
             FROM vBeneficios_W_Integral H
             LEFT JOIN AFI_BENE_ESTADOS E
                    ON E.COD_ESTADO = H.ESTADO
@@ -239,7 +245,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
               AND (@expLike IS NULL OR Expediente LIKE @expLike)
               AND (@usuarioLike IS NULL OR UPPER(registra_user) LIKE @usuarioLike) ";
 
-        /// <summary>Filtro de texto libre de la consulta general (solo aplica al detalle, no al conteo).</summary>
+        /// <summary>Filtro de texto libre de la consulta general.</summary>
         private const string FiltroTextoPrincipal = @"
               AND (@filtroLike IS NULL OR ( Expediente LIKE @filtroLike
                                         OR cedula LIKE @filtroLike
@@ -285,7 +291,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         // ==================== Comandos SQL finales (concatenación de constantes) ====================
 
         private const string SqlConsultaCount =
-            "SELECT COUNT(*) FROM ( " + InnerConteoSql + " ) T " + WhereConsulta;
+            "SELECT COUNT(*) FROM ( " + InnerConteoSql + " ) T " + WhereConsulta + FiltroTextoPrincipal;
 
         private const string SqlConsultaLista =
             "SELECT * FROM ( " + InnerDetalleSql + " ) T " + WhereConsulta + FiltroTextoPrincipal

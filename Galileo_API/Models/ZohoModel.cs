@@ -124,7 +124,8 @@
         public string scope { get; set; } = string.Empty;
         public string api_domain { get; set; } = string.Empty;
         public string token_type { get; set; } = string.Empty;
-        public string expires_in { get; set; } = string.Empty;
+        public int expires_in { get; set; }
+        public string? error { get; set; }
     }
 
     public class ZohoAuthModel

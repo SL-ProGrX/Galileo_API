@@ -119,5 +119,16 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         {
             return _bl.CcCaRemesas_Recibe_ImprimeRecibo(CodEmpresa, request);
         }
+
+        /// <summary>
+        /// Consulta el historial de remesas con filtros múltiples.
+        /// </summary>
+        [HttpPost("CcCaRemesas_Consultas_Consultar")]
+        public ErrorDto<CcCaRemesasConsultasResponse> CcCaRemesas_Consultas_Consultar(
+            int CodEmpresa,
+            [FromBody] CcCaRemesasConsultasRequest request)
+        {
+            return _bl.CcCaRemesas_Consultas_Consultar(CodEmpresa, request);
+        }
     }
 }

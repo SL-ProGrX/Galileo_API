@@ -243,7 +243,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 Code = 0,
                 Description = ""
             };
-
+            
             try
             {
                 var sb = new StringBuilder();

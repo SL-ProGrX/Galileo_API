@@ -210,5 +210,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
 
             return _db.CcCaRemesas_Recibe_ImprimeRecibo(codEmpresa, request);
         }
+
+        public ErrorDto<CcCaRemesasConsultasResponse> CcCaRemesas_Consultas_Consultar(
+            int codEmpresa,
+            CcCaRemesasConsultasRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<CcCaRemesasConsultasResponse>(CcCaRemesaCOnstantes.vRequestRequerido);
+
+            return _db.CcCaRemesas_Consultas_Consultar(codEmpresa, request);
+        }
     }
 }

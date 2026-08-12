@@ -124,5 +124,14 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         {
             return _db.FND_TraspasoTesoreria_Proceso_Continuar(codEmpresa, request);
         }
+
+        /// <summary>
+        /// Obtiene la lista de remesas de traspaso a tesorería para el tab de Informes.
+        /// </summary>
+        public ErrorDto<List<FndTraspasoTesoreriaRemesaResult>> TraspasoTesoreria_Remesas_Obtener(
+            FndTraspasoTesoreriaRemesaParams param)
+        {
+            return _db.TraspasoTesoreria_Remesas_Obtener(param);
+        }
     }
 }
