@@ -43,7 +43,7 @@ namespace Galileo.DataBaseTier
         private const string SqlBloqueosBaseFromWhere = @"
                     FROM dbo.afi_congelar C
                     LEFT JOIN dbo.Socios S
-                        ON TRIM(C.cedula) = TRIM(S.cedula)
+                        ON LTRIM(RTRIM(C.cedula)) = LTRIM(RTRIM(S.cedula))
                     LEFT JOIN dbo.afi_congelar_causas X
                         ON C.cod_causa = X.cod_causa
                     WHERE (@Cedula = '' OR C.cedula LIKE '%' + @Cedula + '%')
