@@ -280,7 +280,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 return (edadHombres, edadMujeres);
             }
-            catch
+            catch (DataException)
             {
                 return (0, 0);
             }
