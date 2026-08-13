@@ -510,14 +510,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             string unidad,
             string centroCosto)
         {
+            ArgumentNullException.ThrowIfNull(f);
+
+            var periodo = f.periodo
+                ?? throw new ArgumentException("El período es requerido.", nameof(f));
+            var periodoAnio = f.periodoAnio
+                ?? throw new ArgumentException("El año del período es requerido.", nameof(f));
+            var periodoMes = f.periodoMes
+                ?? throw new ArgumentException("El mes del período es requerido.", nameof(f));
+
+            if (string.IsNullOrWhiteSpace(f.usuario))
+            {
+                throw new ArgumentException("El usuario es requerido.", nameof(f));
+            }
+
+            var usuario = f.usuario.Trim();
+
             return new
             {
                 cod_contabilidad = codContabilidad,
-                periodo = f.periodo.Value,
-                periodo_anio = f.periodoAnio.Value,
-                periodo_mes = f.periodoMes.Value,
+                periodo,
+                periodo_anio = periodoAnio,
+                periodo_mes = periodoMes,
                 reporte = f.reporte,
-                usuario = f.usuario.Trim(),
+                usuario,
                 unidad,
                 centro_costo = centroCosto
             };
