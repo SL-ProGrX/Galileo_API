@@ -23,15 +23,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var cedulaEscapada = (cedula ?? string.Empty).Trim().Replace("'", "''");
+                var cedulaNormalizada = (cedula ?? string.Empty).Trim();
 
-                if (string.IsNullOrEmpty(cedulaEscapada))
+                if (string.IsNullOrEmpty(cedulaNormalizada))
                 {
                     return result;
                 }
 
-                var sql = "SELECT dbo.fxCrdPrea_Persona_Datos_Valida('" + cedulaEscapada + "')";
-                result.Result = connection.QueryFirstOrDefault<int?>(sql) ?? 0;
+                const string sql = "SELECT dbo.fxCrdPrea_Persona_Datos_Valida(@Cedula)";
+                result.Result = connection.QueryFirstOrDefault<int?>(sql, new { Cedula = cedulaNormalizada }) ?? 0;
             }
             catch (Exception ex)
             {
@@ -65,7 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var cedula = (request.cedula ?? string.Empty).Trim().Replace("'", "''");
+                var cedula = (request.cedula ?? string.Empty).Trim();
                 var formulario = (request.formulario ?? string.Empty).Trim().ToUpperInvariant();
 
                 decimal monto = 0m;
@@ -73,14 +73,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 {
                     string? sql = formulario switch
                     {
-                        "F01" => "SELECT dbo.fxCrdGarantiaPatMnt('" + cedula + "', 'A', 'M')",
-                        "F06" => "SELECT dbo.fxCrdDisponibleAdelantoSalario_Estudio('" + cedula + "', 'M')",
+                        "F01" => "SELECT dbo.fxCrdGarantiaPatMnt(@Cedula, 'A', 'M')",
+                        "F06" => "SELECT dbo.fxCrdDisponibleAdelantoSalario_Estudio(@Cedula, 'M')",
                         _ => null
                     };
 
                     if (sql is not null)
                     {
-                        monto = connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+                        monto = connection.QueryFirstOrDefault<decimal?>(sql, new { Cedula = cedula }) ?? 0m;
                     }
                 }
 
@@ -118,19 +118,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var cedula = (request.cedula ?? string.Empty).Trim().Replace("'", "''");
-                var fondo = (request.cod_fondo ?? string.Empty).Trim().Replace("'", "''");
+                var cedula = (request.cedula ?? string.Empty).Trim();
+                var fondo = (request.cod_fondo ?? string.Empty).Trim();
                 var esCambioDeFondo = string.IsNullOrWhiteSpace(request.cod_contrato);
 
-                var sql = "EXEC spCRDGarantiaFNDCalculo '" + cedula + "', '" + fondo + "'";
-                if (!esCambioDeFondo)
-                {
-                    sql += ", " + request.cod_contrato!.Trim().Replace("'", "''");
-                }
+                const string sqlFondo = "EXEC spCRDGarantiaFNDCalculo @Cedula, @Fondo";
+                const string sqlContrato = "EXEC spCRDGarantiaFNDCalculo @Cedula, @Fondo, @Contrato";
+                var sql = esCambioDeFondo ? sqlFondo : sqlContrato;
 
                 var response = new FrmPreaEstudiov2FondoCalcularResponse();
 
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                var row = connection.QueryFirstOrDefault(sql, new
+                {
+                    Cedula = cedula,
+                    Fondo = fondo,
+                    Contrato = request.cod_contrato?.Trim()
+                }) as IDictionary<string, object>;
                 if (row is not null)
                 {
                     var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
@@ -146,12 +149,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     // VB6 (línea 14151-14168): select cod_contrato,Tasa_Referencia,Aportes,
                     // isnull(FECHA_CORTE, getdate()) as 'FECHA_CORTE' from fnd_contratos
                     // where cod_plan = '<fondo>' and estado = 'A' and cedula = '<cedula>'
-                    var sqlContratos = @"select cod_contrato, Tasa_Referencia, Aportes,
+                    const string sqlContratos = @"select cod_contrato, Tasa_Referencia, Aportes,
                             isnull(FECHA_CORTE, getdate()) as FECHA_CORTE
                         from fnd_contratos
-                        where cod_plan = '" + fondo + @"' and estado = 'A' and cedula = '" + cedula + "'";
+                        where cod_plan = @Fondo and estado = 'A' and cedula = @Cedula";
 
-                    var rows = connection.Query(sqlContratos);
+                    var rows = connection.Query(sqlContratos, new { Fondo = fondo, Cedula = cedula });
                     var contratos = new List<FrmPreaEstudiov2DropdownDto>();
                     foreach (var r in rows)
                     {

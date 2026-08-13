@@ -70,13 +70,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var etiqueta = (request.cod_etiqueta ?? string.Empty).Trim().Replace("'", "''");
-                var nota = (request.nota ?? string.Empty).Trim().Replace("'", "''");
-                var usuario = (request.usuario ?? string.Empty).Trim().Replace("'", "''");
-
-                var strSQL = $"exec spCrdPreaAgregaEtiqueta '{exp}', '{etiqueta}', '{nota}', '{usuario}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaAgregaEtiqueta @Expediente, @Etiqueta, @Nota, @Usuario";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    Etiqueta = (request.cod_etiqueta ?? string.Empty).Trim(),
+                    Nota = (request.nota ?? string.Empty).Trim(),
+                    Usuario = (request.usuario ?? string.Empty).Trim()
+                });
             }
             catch (Exception ex)
             {

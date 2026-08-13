@@ -137,9 +137,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         return response;
                 }
 
-                var strSQL = "exec spCRDPreaObservaciones_M " +
-                    $"'{exp}', '{analista.Replace("'", "''")}', '{comite.Replace("'", "''")}', '{jd.Replace("'", "''")}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCRDPreaObservaciones_M @Expediente, @Analista, @Comite, @Jd";
+                connection.Execute(sql, new { Expediente = exp, Analista = analista, Comite = comite, Jd = jd });
 
                 response.Result = "La información se registró correctamente.";
                 return response;
@@ -176,11 +175,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
+                var exp = request.cod_preanalisis.Trim();
                 var comite = request.comite?.Trim() ?? string.Empty;
 
                 var validacionRow = connection.QueryFirstOrDefault(
-                    $"exec spCrdPrea_Comite_Asigna_Valida '{exp}', {comite}"
+                    "EXEC spCrdPrea_Comite_Asigna_Valida @Expediente, @Comite",
+                    new { Expediente = exp, Comite = comite }
                 ) as IDictionary<string, object>;
 
                 if (validacionRow is null)
@@ -221,17 +221,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         break;
                 }
 
-                var strSQL = $"exec spCrdPreaGestionaComiteResolutivo {comite}, '{exp}', '{nuevoEstado}', {indicadorEditable}";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = @"EXEC spCrdPreaGestionaComiteResolutivo
+                    @Comite, @Expediente, @NuevoEstado, @IndicadorEditable";
+                connection.Execute(sql, new
+                {
+                    Comite = comite,
+                    Expediente = exp,
+                    NuevoEstado = nuevoEstado,
+                    IndicadorEditable = indicadorEditable
+                });
 
                 if (tipoAprobacion == "M")
                 {
-                    var usuario = (request.usuario ?? string.Empty).Trim().Replace("'", "''");
-                    var comiteDesc = (request.comite_desc ?? string.Empty).Trim().Replace("'", "''");
+                    var usuario = (request.usuario ?? string.Empty).Trim();
+                    var comiteDesc = (request.comite_desc ?? string.Empty).Trim();
                     var nota = $"ELEVADO AL COMITE: {comite}-{comiteDesc} Fecha envio: {DateTime.Now}";
 
-                    var bitacoraSql = $"exec spCrdPreaGuardaBitacoraElevacionComite '{exp}', '{usuario}', {comite}, '{nota}'";
-                    connection.Execute(bitacoraSql, commandType: CommandType.Text);
+                    const string bitacoraSql = @"EXEC spCrdPreaGuardaBitacoraElevacionComite
+                        @Expediente, @Usuario, @Comite, @Nota";
+                    connection.Execute(bitacoraSql, new
+                    {
+                        Expediente = exp,
+                        Usuario = usuario,
+                        Comite = comite,
+                        Nota = nota
+                    });
                 }
 
                 response.Result = new FrmPreaEstudiov2ComiteAsignarResponse
@@ -450,14 +464,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var codExtras = (request.cod_extras ?? string.Empty).Trim().Replace("'", "''");
-                var monto = Dec(request.monto);
+                var exp = request.cod_preanalisis.Trim();
+                var codExtras = (request.cod_extras ?? string.Empty).Trim();
                 var esNuevo = request.idx <= 0;
-                var spName = esNuevo ? "spCRDPreaDETALLE_EXTRAS_A" : "spCRDPreaDETALLE_EXTRAS_M";
-
-                var strSQL = $"exec {spName} {request.idx}, '{exp}', '{codExtras}', {monto}";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sqlAgregar = "EXEC spCRDPreaDETALLE_EXTRAS_A @Idx, @Expediente, @CodExtras, @Monto";
+                const string sqlModificar = "EXEC spCRDPreaDETALLE_EXTRAS_M @Idx, @Expediente, @CodExtras, @Monto";
+                var sql = esNuevo ? sqlAgregar : sqlModificar;
+                connection.Execute(sql, new
+                {
+                    request.idx,
+                    Expediente = exp,
+                    CodExtras = codExtras,
+                    request.monto
+                });
 
                 response.Result = "Extra guardado correctamente.";
                 return response;
@@ -491,9 +510,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var strSQL = $"exec spCRDPreaDETALLE_EXTRAS_B {request.idx}, '{exp}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCRDPreaDETALLE_EXTRAS_B @Idx, @Expediente";
+                connection.Execute(sql, new { request.idx, Expediente = request.cod_preanalisis.Trim() });
 
                 response.Result = "Extra eliminado correctamente.";
                 return response;

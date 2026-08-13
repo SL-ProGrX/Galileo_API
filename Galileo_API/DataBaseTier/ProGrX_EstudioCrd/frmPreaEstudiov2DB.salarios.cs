@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda la "Tabla de Salarios" (gSalarios en VB6). VB6: sbSalarios_Guardar
         /// (frmPreaEstudiov2.frm línea ~13737):
-        ///   1. EXEC spCrdPreaEliminarSalarios '&lt;expediente&gt;' (borra todo)
+        ///   1. EXEC spCrdPreaEliminarSalarios '&lt;expediente&gt;' (elimina los registros)
         ///   2. Por cada fila: EXEC spCrdPreaGeneraSalariosSistema '&lt;expediente&gt;',
         ///      &lt;salario_s&gt;, '&lt;fecha&gt;', &lt;orden&gt;, &lt;ca&gt;, &lt;mes&gt;
         ///   3. Por cada fila: EXEC spCrdPreaGeneraSalariosConsultaLinea '&lt;expediente&gt;',
@@ -43,9 +43,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var expedienteEscapado = codPreanalisis.Replace("'", "''");
+                connection.Execute(
+                    "EXEC spCrdPreaEliminarSalarios @Expediente",
+                    new { Expediente = codPreanalisis });
 
-                connection.Execute("EXEC spCrdPreaEliminarSalarios '" + expedienteEscapado + "'");
+                var expedienteEscapado = codPreanalisis.Replace("'", "''");
 
                 var sqlSistema = new StringBuilder();
                 var sqlOtros = new StringBuilder();
@@ -133,11 +135,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     return result;
                 }
 
-                var promotorParam = int.TryParse(request.id_promotor, out var idPromotor) ? idPromotor.ToString() : "Null";
-                var oficinaEscapada = (request.cod_oficina ?? string.Empty).Trim().Replace("'", "''");
-
-                var sql = "EXEC spCrdPreaAsignaOficina '" + codPreanalisis.Replace("'", "''") + "', '" + oficinaEscapada + "', " + promotorParam;
-                connection.Execute(sql);
+                int? idPromotor = int.TryParse(request.id_promotor, out var valorPromotor) ? valorPromotor : null;
+                const string sql = "EXEC spCrdPreaAsignaOficina @Expediente, @Oficina, @IdPromotor";
+                connection.Execute(sql, new
+                {
+                    Expediente = codPreanalisis,
+                    Oficina = (request.cod_oficina ?? string.Empty).Trim(),
+                    IdPromotor = idPromotor
+                });
 
                 result.Result = "Se ha actualizado la Oficina y el Ejecutivo del expediente correctamente.";
             }

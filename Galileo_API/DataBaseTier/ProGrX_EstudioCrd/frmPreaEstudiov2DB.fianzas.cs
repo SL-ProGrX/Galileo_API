@@ -43,11 +43,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
         private static FrmPreaEstudiov2FianzasResponse ConsultarFianzas(IDbConnection connection, string cod_preanalisis)
         {
-            var exp = cod_preanalisis.Trim().Replace("'", "''");
-
+            const string sql = "EXEC spCrdPreaConsultaFianzas @Expediente";
             var fianzas = connection.Query<FrmPreaEstudiov2FianzaDto>(
-                $"exec spCrdPreaConsultaFianzas '{exp}'",
-                commandType: CommandType.Text
+                sql,
+                new { Expediente = cod_preanalisis.Trim() }
             ).ToList();
 
             decimal totalSaldos = 0;
@@ -89,9 +88,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var strSQL = $"exec spCRDPreaFianzas '{exp}', 'I'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCRDPreaFianzas @Expediente, 'I'";
+                connection.Execute(sql, new { Expediente = request.cod_preanalisis.Trim() });
 
                 return new ErrorDto<FrmPreaEstudiov2FianzasResponse>
                 {
@@ -125,15 +123,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var aplica = request.aplica ? 1 : 0;
-                var cancelaMora = request.cancela_mora ? 1 : 0;
-
-                var strSQL = "update CRD_PREA_DETALLE_FIANZAS set Aplica = " + aplica +
-                    ", Cancela_Mora = " + cancelaMora +
-                    " where cod_PreAnalisis = '" + exp + "' and id_solicitud = " + request.id_solicitud;
-
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = @"UPDATE CRD_PREA_DETALLE_FIANZAS
+                    SET Aplica = @Aplica, Cancela_Mora = @CancelaMora
+                    WHERE cod_PreAnalisis = @Expediente AND id_solicitud = @IdSolicitud";
+                connection.Execute(sql, new
+                {
+                    Aplica = request.aplica ? 1 : 0,
+                    CancelaMora = request.cancela_mora ? 1 : 0,
+                    Expediente = request.cod_preanalisis.Trim(),
+                    IdSolicitud = request.id_solicitud
+                });
 
                 return new ErrorDto<FrmPreaEstudiov2FianzasResponse>
                 {

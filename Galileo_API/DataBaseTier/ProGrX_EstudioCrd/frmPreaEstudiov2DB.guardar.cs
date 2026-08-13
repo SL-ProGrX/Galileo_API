@@ -46,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 if (esNuevo)
                 {
-                    codPreanalisisResultado = GuardarNuevo(connection, usuario, request, notasCumplimiento);
+                    codPreanalisisResultado = GuardarNuevo(connection, usuario, request);
 
                     if (!string.IsNullOrEmpty(codPreanalisisResultado))
                     {
@@ -102,16 +102,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             try
             {
-                var sql = "EXEC spCrdFormaliza_Valida_Rangos '"
-                    + (request.cedula?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                    + (request.linea?.Trim() ?? string.Empty).Replace("'", "''") + "', "
-                    + request.monto.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", "
-                    + request.tasa.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", "
-                    + request.plazo + ", '"
-                    + (request.destino?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                    + (request.garantia?.Trim() ?? string.Empty).Replace("'", "''") + "', 0";
-
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = @"EXEC spCrdFormaliza_Valida_Rangos
+                    @Cedula, @Linea, @Monto, @Tasa, @Plazo, @Destino, @Garantia, 0";
+                var row = connection.QueryFirstOrDefault(sql, new
+                {
+                    Cedula = request.cedula?.Trim() ?? string.Empty,
+                    Linea = request.linea?.Trim() ?? string.Empty,
+                    request.monto,
+                    request.tasa,
+                    request.plazo,
+                    Destino = request.destino?.Trim() ?? string.Empty,
+                    Garantia = request.garantia?.Trim() ?? string.Empty
+                }) as IDictionary<string, object>;
                 if (row is null)
                 {
                     return string.Empty;
@@ -140,63 +142,69 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private static string GuardarNuevo(
             IDbConnection connection,
             string usuario,
-            FrmPreaEstudiov2GuardarRequest request,
-            string notasCumplimiento)
+            FrmPreaEstudiov2GuardarRequest request)
         {
             var esSubExpediente = string.Equals(request.tipo_preanalisis, "S", StringComparison.OrdinalIgnoreCase)
                 && !string.IsNullOrWhiteSpace(request.cod_preanalisis_ref);
 
             var tipoExpediente = esSubExpediente ? "S" : "E";
-            var expedienteRef = esSubExpediente
-                ? "'" + request.cod_preanalisis_ref!.Trim().Replace("'", "''") + "'"
-                : "Null";
+            var expedienteRef = esSubExpediente ? request.cod_preanalisis_ref.Trim() : null;
 
             var oficina = ObtenerOficinaTitular(connection, usuario);
             var edad = CalcularEdad(request.fecha_nacimiento);
             var cph = string.IsNullOrWhiteSpace(request.cph) ? "0" : request.cph.Trim();
-            const string tasaPtsBono = "0"; // ver nota en el comentario del método
+            const int tasaPtsBono = 0; // ver nota en el comentario del método
 
             var fechaNacimiento = request.fecha_nacimiento.HasValue
                 ? request.fecha_nacimiento.Value.ToString("yyyy-MM-dd")
                 : string.Empty;
 
-            var sql = "EXEC spCrdPreaPreanalisisNuevo '"
-                + (request.tipo_salario?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + tipoExpediente + "', " + expedienteRef + ", '"
-                + usuario.Replace("'", "''") + "', '"
-                + (request.cedula?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + (request.linea?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + (request.destino?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + (request.nombre?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + (string.IsNullOrEmpty(request.sexo) ? string.Empty : request.sexo.Trim().Substring(0, 1)) + "', '"
-                + fechaNacimiento + "', "
-                + BoolToInt(request.poliza_vida) + ", "
-                + BoolToInt(request.poliza_incendio) + ", "
-                + BoolToInt(request.primera_cuota) + ", "
-                + Dec(request.monto) + ", "
-                + Dec(request.tasa) + ", "
-                + request.plazo + ", "
-                + Dec(request.cuota) + ", "
-                + Dec(request.monto_poliza_vida) + ", "
-                + Dec(request.monto_poliza_incendio) + ", "
-                + Dec(request.compromiso) + ", Null, '"
-                + (request.garantia?.Trim() ?? string.Empty).Replace("'", "''") + "', '"
-                + (request.garantia?.Trim() ?? string.Empty).Replace("'", "''") + "', "
-                + request.fiadores + ", Null, '"
-                + oficina.Replace("'", "''") + "', " + tasaPtsBono + ", Null, "
-                + edad + ", "
-                + request.edad_aplica + ", '"
-                + (request.edad_justificacion ?? string.Empty).Replace("'", "''") + "', "
-                + request.plazo + ", 0, 0, 0, "
-                + cph + ", 1, "
-                + Dec(request.monto_construccion) + ", "
-                + BoolToInt(request.poliza_vehiculo) + ", "
-                + Dec(request.monto_poliza_prenda) + ", "
-                + Dec(request.valor_prenda) + ", '"
-                + (request.clasificacion_crediticia ?? string.Empty).Replace("'", "''") + "', '"
-                + (request.no_op_crm?.Trim() ?? string.Empty).Replace("'", "''") + "'";
-
-            var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+            const string sql = @"EXEC spCrdPreaPreanalisisNuevo
+                @TipoSalario, @TipoExpediente, @ExpedienteRef, @Usuario, @Cedula,
+                @Linea, @Destino, @Nombre, @Sexo, @FechaNacimiento, @PolizaVida,
+                @PolizaIncendio, @PrimeraCuota, @Monto, @Tasa, @Plazo, @Cuota,
+                @MontoPolizaVida, @MontoPolizaIncendio, @Compromiso, NULL,
+                @Garantia, @Garantia, @Fiadores, NULL, @Oficina, @TasaPtsBono,
+                NULL, @Edad, @EdadAplica, @EdadJustificacion, @Plazo, 0, 0, 0,
+                @Cph, 1, @MontoConstruccion, @PolizaVehiculo, @MontoPolizaPrenda,
+                @ValorPrenda, @ClasificacionCrediticia, @NoOpCrm";
+            var row = connection.QueryFirstOrDefault(sql, new
+            {
+                TipoSalario = request.tipo_salario?.Trim() ?? string.Empty,
+                TipoExpediente = tipoExpediente,
+                ExpedienteRef = expedienteRef,
+                Usuario = usuario,
+                Cedula = request.cedula?.Trim() ?? string.Empty,
+                Linea = request.linea?.Trim() ?? string.Empty,
+                Destino = request.destino?.Trim() ?? string.Empty,
+                Nombre = request.nombre?.Trim() ?? string.Empty,
+                Sexo = string.IsNullOrEmpty(request.sexo) ? string.Empty : request.sexo.Trim().Substring(0, 1),
+                FechaNacimiento = fechaNacimiento,
+                PolizaVida = BoolToInt(request.poliza_vida),
+                PolizaIncendio = BoolToInt(request.poliza_incendio),
+                PrimeraCuota = BoolToInt(request.primera_cuota),
+                request.monto,
+                request.tasa,
+                request.plazo,
+                request.cuota,
+                MontoPolizaVida = request.monto_poliza_vida,
+                MontoPolizaIncendio = request.monto_poliza_incendio,
+                request.compromiso,
+                Garantia = request.garantia?.Trim() ?? string.Empty,
+                request.fiadores,
+                Oficina = oficina,
+                TasaPtsBono = tasaPtsBono,
+                Edad = edad,
+                EdadAplica = request.edad_aplica,
+                EdadJustificacion = request.edad_justificacion ?? string.Empty,
+                Cph = cph,
+                MontoConstruccion = request.monto_construccion,
+                PolizaVehiculo = BoolToInt(request.poliza_vehiculo),
+                MontoPolizaPrenda = request.monto_poliza_prenda,
+                ValorPrenda = request.valor_prenda,
+                ClasificacionCrediticia = request.clasificacion_crediticia ?? string.Empty,
+                NoOpCrm = request.no_op_crm?.Trim() ?? string.Empty
+            }) as IDictionary<string, object>;
             if (row is null)
             {
                 return string.Empty;
@@ -300,15 +308,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         private static void InicializarTablasHijasNuevoExpediente(IDbConnection connection, string codPreanalisis)
         {
-            var expedienteEscapado = codPreanalisis.Replace("'", "''");
+            var parameters = new { Expediente = codPreanalisis };
 
-            try { connection.Execute("EXEC spCRDPreaRefundiciones '" + expedienteEscapado + "', 'I'"); } catch { /* no bloqueante, igual que VB6 (solo MsgBox) */ }
-            try { connection.Execute("EXEC spCRDPreaFianzas '" + expedienteEscapado + "', 'I'"); } catch { /* no bloqueante */ }
-            try { connection.Execute("EXEC spCRDPreaCreditosTransito '" + expedienteEscapado + "', 'I', 0"); } catch { /* no bloqueante */ }
+            try { connection.Execute("EXEC spCRDPreaRefundiciones @Expediente, 'I'", parameters); } catch { /* no bloqueante, igual que VB6 (solo MsgBox) */ }
+            try { connection.Execute("EXEC spCRDPreaFianzas @Expediente, 'I'", parameters); } catch { /* no bloqueante */ }
+            try { connection.Execute("EXEC spCRDPreaCreditosTransito @Expediente, 'I', 0", parameters); } catch { /* no bloqueante */ }
 
             // VB6: m_NumPagos por defecto es 2 (línea 15393); solo cambia tras cargar datos
             // de frecuencia de pago del socio, que Angular no rastrea todavía.
-            try { connection.Execute("EXEC spCRDPreaImportCreditosVigentes '" + expedienteEscapado + "', 2"); } catch { /* no bloqueante */ }
+            try { connection.Execute("EXEC spCRDPreaImportCreditosVigentes @Expediente, 2", parameters); } catch { /* no bloqueante */ }
         }
 
         /// <summary>
@@ -354,8 +362,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
-                var sql = "EXEC sbSIFOficinasUsuario '" + usuario.Replace("'", "''") + "'";
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = "EXEC sbSIFOficinasUsuario @Usuario";
+                var row = connection.QueryFirstOrDefault(sql, new { Usuario = usuario }) as IDictionary<string, object>;
                 if (row is null)
                 {
                     return string.Empty;
@@ -421,12 +429,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var refParam = string.IsNullOrWhiteSpace(codPreanalisisRef)
-                    ? "Null"
-                    : "'" + codPreanalisisRef.Trim().Replace("'", "''") + "'";
-
-                var sql = "EXEC spCRDPreaPREANALISIS_B '" + expediente.Replace("'", "''") + "', " + refParam;
-                connection.Execute(sql);
+                const string sql = "EXEC spCRDPreaPREANALISIS_B @Expediente, @ExpedienteRef";
+                connection.Execute(sql, new
+                {
+                    Expediente = expediente,
+                    ExpedienteRef = string.IsNullOrWhiteSpace(codPreanalisisRef)
+                        ? null
+                        : codPreanalisisRef.Trim()
+                });
 
                 result.Result.cod_preanalisis = expediente;
                 result.Result.mensaje = "La información fue borrada correctamente.";
