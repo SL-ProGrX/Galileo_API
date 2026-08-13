@@ -31,15 +31,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = cod_preanalisis.Trim().Replace("'", "''");
-                var garantia = (cod_garantia ?? string.Empty).Trim().Replace("'", "''");
-                var fecha = DateTime.Now.ToString("yyyy-MM-dd");
-
-                var strSQL = $"exec spCrdPreaConsultaRefundicionesPreanalisis '{exp}', '{fecha}', '{garantia}'";
-
+                const string sql = "EXEC spCrdPreaConsultaRefundicionesPreanalisis @Expediente, @Fecha, @Garantia";
                 var refundiciones = connection.Query<FrmPreaEstudiov2RefundicionDto>(
-                    strSQL,
-                    commandType: CommandType.Text
+                    sql,
+                    new
+                    {
+                        Expediente = cod_preanalisis.Trim(),
+                        Fecha = DateTime.Now.Date,
+                        Garantia = (cod_garantia ?? string.Empty).Trim()
+                    }
                 ).ToList();
 
                 result.Result = new FrmPreaEstudiov2RefundicionesResponse
@@ -74,9 +74,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var strSQL = $"exec spCrdPreaRefundicionesActualiza '{exp}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaRefundicionesActualiza @Expediente";
+                connection.Execute(sql, new { Expediente = request.cod_preanalisis.Trim() });
             }
             catch (Exception ex)
             {
@@ -106,15 +105,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var aplica = request.aplica ? 1 : 0;
-                var aplMora = request.apl_mora ? 1 : 0;
-
-                var strSQL = "update CRD_PREA_REFUNDICIONES set Aplica = " + aplica +
-                    ", Apl_Mora = " + aplMora +
-                    " where cod_PreAnalisis = '" + exp + "' and id_solicitud = " + request.id_solicitud;
-
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = @"UPDATE CRD_PREA_REFUNDICIONES
+                    SET Aplica = @Aplica, Apl_Mora = @AplMora
+                    WHERE cod_PreAnalisis = @Expediente AND id_solicitud = @IdSolicitud";
+                connection.Execute(sql, new
+                {
+                    Aplica = request.aplica ? 1 : 0,
+                    AplMora = request.apl_mora ? 1 : 0,
+                    Expediente = request.cod_preanalisis.Trim(),
+                    IdSolicitud = request.id_solicitud
+                });
             }
             catch (Exception ex)
             {

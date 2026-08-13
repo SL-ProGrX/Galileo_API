@@ -78,9 +78,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 // clsEntidad concatena el parámetro como literal SQL (fxFormatearValor),
                 // no como parámetro nombrado. Se replica igual, escapando comillas simples.
-                var sql = "EXEC spCRDPreaPREANALISIS_T '" + codPreanalisis.Replace("'", "''") + "'";
-
-                var rawRow = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = "EXEC spCRDPreaPREANALISIS_T @CodPreanalisis";
+                var rawRow = connection.QueryFirstOrDefault(sql, new { CodPreanalisis = codPreanalisis })
+                    as IDictionary<string, object>;
 
                 if (rawRow is null)
                 {
@@ -379,8 +379,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
-                var sql = "EXEC spCRDConsultarCategoriaAsociado '" + cedula.Replace("'", "''") + "'";
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = "EXEC spCRDConsultarCategoriaAsociado @Cedula";
+                var row = connection.QueryFirstOrDefault(sql, new { Cedula = cedula }) as IDictionary<string, object>;
 
                 if (row is null)
                 {
@@ -452,12 +452,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             List<FrmPreaEstudiov2DropdownDto> destinos;
             try
             {
-                var sql = @"SELECT rtrim(D.cod_destino) AS item, rtrim(D.descripcion) AS descripcion
+                const string sql = @"SELECT rtrim(D.cod_destino) AS item, rtrim(D.descripcion) AS descripcion
                             FROM catalogo_destinos D
                             INNER JOIN catalogo_destinosASG C ON D.cod_destino = C.cod_destino
-                            WHERE C.codigo = '" + lineaParam.Replace("'", "''") + @"'
+                            WHERE C.codigo = @Linea
                             ORDER BY D.prioridad ASC";
-                destinos = connection.Query<FrmPreaEstudiov2DropdownDto>(sql).ToList();
+                destinos = connection.Query<FrmPreaEstudiov2DropdownDto>(sql, new { Linea = lineaParam }).ToList();
             }
             catch
             {
@@ -467,11 +467,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             List<FrmPreaEstudiov2DropdownDto> garantias;
             try
             {
-                var sql = @"SELECT T.Garantia AS item, rtrim(T.descripcion) AS descripcion, rtrim(T.Formulario) AS formulario
+                const string sql = @"SELECT T.Garantia AS item, rtrim(T.descripcion) AS descripcion, rtrim(T.Formulario) AS formulario
                             FROM crd_catalogo_garantias C
                             INNER JOIN crd_garantia_tipos T ON C.garantia = T.garantia
-                            WHERE C.codigo = '" + lineaParam.Replace("'", "''") + @"'";
-                garantias = connection.Query<FrmPreaEstudiov2DropdownDto>(sql).ToList();
+                            WHERE C.codigo = @Linea";
+                garantias = connection.Query<FrmPreaEstudiov2DropdownDto>(sql, new { Linea = lineaParam }).ToList();
             }
             catch
             {
@@ -540,8 +540,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var sql = "EXEC spCRDPreaPREANALISIS_TXSubExpediente '" + padre.Replace("'", "''") + "'";
-                var rows = connection.Query(sql);
+                const string sql = "EXEC spCRDPreaPREANALISIS_TXSubExpediente @Padre";
+                var rows = connection.Query(sql, new { Padre = padre });
 
                 var subExpedientes = new List<string>();
                 foreach (var r in rows)
@@ -599,8 +599,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var sql = "EXEC spCrd_Prea_Expediente_Numero '" + expedienteTrim.Replace("'", "''") + "', 'S'";
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = "EXEC spCrd_Prea_Expediente_Numero @Expediente, 'S'";
+                var row = connection.QueryFirstOrDefault(sql, new { Expediente = expedienteTrim })
+                    as IDictionary<string, object>;
 
                 if (row is null)
                 {
@@ -640,8 +641,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             try
             {
-                var sql = "EXEC spCrdPreaTraeSalariosExpediente '" + codPreanalisis.Replace("'", "''") + "'";
-                var rows = connection.Query(sql);
+                const string sql = "EXEC spCrdPreaTraeSalariosExpediente @CodPreanalisis";
+                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
 
                 var lista = new List<FrmPreaEstudiov2SalarioDetalleDto>();
                 foreach (var r in rows)
@@ -685,8 +686,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             try
             {
-                var sql = "EXEC spCRDPreaDETALLE_EXTRAS_TxExpediente '" + codPreanalisis.Replace("'", "''") + "'";
-                var rows = connection.Query(sql);
+                const string sql = "EXEC spCRDPreaDETALLE_EXTRAS_TxExpediente @CodPreanalisis";
+                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
 
                 var lista = new List<FrmPreaEstudiov2ExtraDto>();
                 foreach (var r in rows)
@@ -1018,11 +1019,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var usuario = (request.usuario ?? string.Empty).Trim().Replace("'", "''");
-
-                var strSQL = $"exec spCrdPreaSumarAvaluoCFIA '{exp}', '{usuario}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaSumarAvaluoCFIA @Expediente, @Usuario";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    Usuario = (request.usuario ?? string.Empty).Trim()
+                });
 
                 var monto = connection.QueryFirstOrDefault<decimal?>(
                     "select MONTO_AVALUO_CFIA from CRD_PREA_PREANALISIS where cod_Preanalisis = @Expediente",
@@ -1066,10 +1068,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
+                var exp = request.cod_preanalisis.Trim();
 
                 var tieneComiteAsignado = connection.QueryFirstOrDefault<int?>(
-                    $"select dbo.fxValidaAsignacionComite('{exp}') as Estado"
+                    "select dbo.fxValidaAsignacionComite(@Expediente) as Estado",
+                    new { Expediente = exp }
                 ) ?? 0;
 
                 if (tieneComiteAsignado == 0)
@@ -1086,9 +1089,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     return result;
                 }
 
-                var codComite = request.cod_comite.Trim().Replace("'", "''");
+                var codComite = request.cod_comite.Trim();
                 var validacionRow = connection.QueryFirstOrDefault(
-                    $"exec spCrdPrea_Comite_Asigna_Valida '{exp}', {codComite}"
+                    "exec spCrdPrea_Comite_Asigna_Valida @Expediente, @Comite",
+                    new { Expediente = exp, Comite = codComite }
                 ) as IDictionary<string, object>;
 
                 var validacion = validacionRow is null
@@ -1104,9 +1108,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 if ((request.cod_garantia ?? string.Empty).Trim() == "H")
                 {
-                    var usuario = (request.usuario ?? string.Empty).Trim().Replace("'", "''");
-                    var strSQL = $"exec spCRDPreaEstadoHipotecarioAprob '{exp}', '{usuario}', 0, ''";
-                    connection.Execute(strSQL, commandType: CommandType.Text);
+                    const string sql = "exec spCRDPreaEstadoHipotecarioAprob @Expediente, @Usuario, 0, ''";
+                    connection.Execute(sql, new
+                    {
+                        Expediente = exp,
+                        Usuario = (request.usuario ?? string.Empty).Trim()
+                    });
                 }
 
                 result.Result = new FrmPreaEstudiov2HipotecarioResponse

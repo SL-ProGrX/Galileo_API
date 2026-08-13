@@ -54,13 +54,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             string usuario,
             out bool sinBancos)
         {
-            var exp = cod_preanalisis.Trim().Replace("'", "''");
-
+            const string sqlDesembolsos = @"select IdX as id_desembolso, cod_Acredor as cod_acredor,
+                Ordinario as ordinario, Descripcion as descripcion, Cuota as cuota, Monto as monto
+                from CRD_PREA_DETALLE_DESEMBOLSOS where cod_PreAnalisis = @Expediente";
             var desembolsos = connection.Query<FrmPreaEstudiov2DesembolsoDto>(
-                $"select IdX as id_desembolso, cod_Acredor as cod_acredor, Ordinario as ordinario," +
-                " Descripcion as descripcion, Cuota as cuota, Monto as monto" +
-                $" from CRD_PREA_DETALLE_DESEMBOLSOS where cod_PreAnalisis = '{exp}'",
-                commandType: CommandType.Text
+                sqlDesembolsos,
+                new { Expediente = cod_preanalisis.Trim() }
             ).ToList();
 
             var bancosParameters = new DynamicParameters();
@@ -102,24 +101,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var codAcreedor = (request.cod_acreedor ?? string.Empty).Trim().Replace("'", "''");
-                var ordinario = request.ordinario ? 1 : 0;
-                var descripcion = (request.descripcion ?? string.Empty).Trim().Replace("'", "''");
-                var tipoGiro = (request.tipo_giro ?? string.Empty).Trim().Replace("'", "''");
-                var cedulaDestino = (request.cedula_destino ?? string.Empty).Trim().Replace("'", "''");
-                var cuenta = (request.cuenta ?? string.Empty).Trim().Replace("'", "''");
-                var codDivisa = (request.cod_divisa ?? string.Empty).Trim().Replace("'", "''");
-                var correo = (request.correo ?? string.Empty).Trim().Replace("'", "''");
-                var detalle = (request.detalle ?? string.Empty).Trim().Replace("'", "''");
-                var codBanco = (request.cod_banco ?? string.Empty).Trim().Replace("'", "''");
-
-                var strSQL = "exec spCrdPreaGuardaDesembolsos " +
-                    $"'{exp}', '{codAcreedor}', {ordinario}, '{descripcion}', {Dec(request.cuota)}, {Dec(request.monto)}, " +
-                    $"'{tipoGiro}', '{cedulaDestino}', {request.tipo_cedula}, '{cuenta}', '{codDivisa}', '', " +
-                    $"'{correo}', '{detalle}', '', {codBanco}";
-
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = @"EXEC spCrdPreaGuardaDesembolsos @Expediente, @CodAcreedor,
+                    @Ordinario, @Descripcion, @Cuota, @Monto, @TipoGiro, @CedulaDestino,
+                    @TipoCedula, @Cuenta, @CodDivisa, '', @Correo, @Detalle, '', @CodBanco";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    CodAcreedor = (request.cod_acreedor ?? string.Empty).Trim(),
+                    Ordinario = request.ordinario ? 1 : 0,
+                    Descripcion = (request.descripcion ?? string.Empty).Trim(),
+                    request.cuota,
+                    request.monto,
+                    TipoGiro = (request.tipo_giro ?? string.Empty).Trim(),
+                    CedulaDestino = (request.cedula_destino ?? string.Empty).Trim(),
+                    TipoCedula = request.tipo_cedula,
+                    Cuenta = (request.cuenta ?? string.Empty).Trim(),
+                    CodDivisa = (request.cod_divisa ?? string.Empty).Trim(),
+                    Correo = (request.correo ?? string.Empty).Trim(),
+                    Detalle = (request.detalle ?? string.Empty).Trim(),
+                    CodBanco = (request.cod_banco ?? string.Empty).Trim()
+                });
 
                 return Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, request.cod_preanalisis, request.usuario);
             }
@@ -153,9 +154,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = cod_preanalisis.Trim().Replace("'", "''");
-                var strSQL = $"exec spCrdPreaEliminarDesembolsos '{exp}', {id_desembolso}";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaEliminarDesembolsos @Expediente, @IdDesembolso";
+                connection.Execute(sql, new { Expediente = cod_preanalisis.Trim(), IdDesembolso = id_desembolso });
 
                 return Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, cod_preanalisis, usuario);
             }

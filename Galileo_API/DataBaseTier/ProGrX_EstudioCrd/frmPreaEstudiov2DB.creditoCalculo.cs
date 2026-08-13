@@ -3,7 +3,6 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -27,8 +26,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var polizaDesempleo = GetBool(row, "APL_POLIZA_DESEMPLEO");
 
             var recalculo = RecalcularCreditoPolizas(
-                connection, monto, plazo, tasa, montoConstruccion,
-                polizaVida, ref polizaIncendio, polizaPrenda, polizaDesempleo);
+                connection,
+                new CreditoPolizasCalculoParametros
+                {
+                    Monto = monto,
+                    Plazo = plazo,
+                    Tasa = tasa,
+                    MontoConstruccion = montoConstruccion,
+                    PolizaVida = polizaVida,
+                    PolizaIncendio = polizaIncendio,
+                    PolizaPrenda = polizaPrenda,
+                    PolizaDesempleo = polizaDesempleo
+                });
 
             return new FrmPreaEstudiov2CreditoDto
             {
@@ -43,7 +52,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 cuota = recalculo.Cuota,
                 monto_construccion = montoConstruccion,
                 poliza_vida = polizaVida,
-                poliza_incendio = polizaIncendio,
+                poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
                 poliza_prenda = polizaPrenda,
                 poliza_desempleo = polizaDesempleo,
                 monto_poliza_vida = recalculo.MontoPolizaVida,
@@ -95,22 +104,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 if (string.Equals(request.origen, "monto", StringComparison.OrdinalIgnoreCase))
                 {
                     (tasa, plazo, tasaPtsBono) = RecalcularTasaPlazoCatalogo(
-                        connection, request.linea, request.destino, request.garantia,
-                        request.cedula, request.estado, request.monto, tasa, plazo);
+                        connection,
+                        new CreditoCatalogoCalculoParametros
+                        {
+                            Linea = request.linea,
+                            Destino = request.destino,
+                            Garantia = request.garantia,
+                            Cedula = request.cedula,
+                            Estado = request.estado,
+                            Monto = request.monto,
+                            TasaActual = tasa,
+                            PlazoActual = plazo
+                        });
                 }
 
                 var polizaIncendio = request.poliza_incendio;
 
                 var recalculo = RecalcularCreditoPolizas(
                     connection,
-                    request.monto,
-                    plazo,
-                    tasa,
-                    request.monto_construccion,
-                    request.poliza_vida,
-                    ref polizaIncendio,
-                    request.poliza_prenda,
-                    request.poliza_desempleo);
+                    new CreditoPolizasCalculoParametros
+                    {
+                        Monto = request.monto,
+                        Plazo = plazo,
+                        Tasa = tasa,
+                        MontoConstruccion = request.monto_construccion,
+                        PolizaVida = request.poliza_vida,
+                        PolizaIncendio = polizaIncendio,
+                        PolizaPrenda = request.poliza_prenda,
+                        PolizaDesempleo = request.poliza_desempleo
+                    });
 
                 result.Result = new FrmPreaEstudiov2CreditoRecalculoResponse
                 {
@@ -122,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     monto_poliza_incendio = recalculo.MontoPolizaIncendio,
                     monto_poliza_prenda = recalculo.MontoPolizaPrenda,
                     monto_poliza_desempleo = recalculo.MontoPolizaDesempleo,
-                    poliza_incendio = polizaIncendio,
+                    poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
                     tasa_pts_bono = tasaPtsBono,
                 };
             }
@@ -170,6 +192,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             public bool PolizaIncendioAutoMarcada { get; }
         }
 
+        private sealed class CreditoCatalogoCalculoParametros
+        {
+            public string Linea { get; init; } = string.Empty;
+            public string Destino { get; init; } = string.Empty;
+            public string Garantia { get; init; } = string.Empty;
+            public string Cedula { get; init; } = string.Empty;
+            public string Estado { get; init; } = string.Empty;
+            public decimal Monto { get; init; }
+            public decimal TasaActual { get; init; }
+            public int PlazoActual { get; init; }
+        }
+
+        private sealed class CreditoPolizasCalculoParametros
+        {
+            public decimal Monto { get; init; }
+            public int Plazo { get; init; }
+            public decimal Tasa { get; init; }
+            public decimal MontoConstruccion { get; init; }
+            public bool PolizaVida { get; init; }
+            public bool PolizaIncendio { get; init; }
+            public bool PolizaPrenda { get; init; }
+            public bool PolizaDesempleo { get; init; }
+        }
+
         /// <summary>
         /// VB6: fxCalcula_Cuota(Monto, Plazo, Interes, Frecuencia) — mValidacion.bas
         /// (PGX DLL Estudio Credito), línea ~656. Fórmula de amortización estándar.
@@ -209,13 +255,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private static decimal CalcularCatalogoRango(
             IDbConnection connection, string codigo, decimal monto, string tipo, string destino, string garantia)
         {
-            var sql = "SELECT dbo.fxCrdCatalogoRango('"
-                + (codigo ?? string.Empty).Replace("'", "''") + "', "
-                + monto.ToString(CultureInfo.InvariantCulture) + ", '"
-                + tipo + "', '"
-                + (destino ?? string.Empty).Replace("'", "''") + "', '"
-                + (garantia ?? string.Empty).Replace("'", "''") + "')";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrdCatalogoRango(@Codigo, @Monto, @Tipo, @Destino, @Garantia)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new
+            {
+                Codigo = codigo ?? string.Empty,
+                Monto = monto,
+                Tipo = tipo,
+                Destino = destino ?? string.Empty,
+                Garantia = garantia ?? string.Empty
+            }) ?? 0m;
         }
 
         /// <summary>VB6: fxBonoMembresia(cedula, linea, garantia, destino, plazo) —
@@ -228,13 +276,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return 0m;
             }
 
-            var sql = "SELECT dbo.fxCrdTasaBonifica('"
-                + cedula.Replace("'", "''") + "', '"
-                + linea.Replace("'", "''") + "', '"
-                + garantia.Replace("'", "''") + "', '"
-                + (destino ?? string.Empty).Replace("'", "''") + "', "
-                + plazo + ")";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrdTasaBonifica(@Cedula, @Linea, @Garantia, @Destino, @Plazo)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new
+            {
+                Cedula = cedula,
+                Linea = linea,
+                Garantia = garantia,
+                Destino = destino ?? string.Empty,
+                Plazo = plazo
+            }) ?? 0m;
         }
 
         /// <summary>VB6: fxBonoPlazoMembresia(cedula, garantia) — mValidacion.bas línea
@@ -246,10 +296,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return 0;
             }
 
-            var sql = "SELECT dbo.fxCrdPlazoBonifica('"
-                + cedula.Replace("'", "''") + "', '"
-                + garantia.Replace("'", "''") + "')";
-            return connection.QueryFirstOrDefault<int?>(sql) ?? 0;
+            const string sql = "SELECT dbo.fxCrdPlazoBonifica(@Cedula, @Garantia)";
+            return connection.QueryFirstOrDefault<int?>(sql, new
+            {
+                Cedula = cedula,
+                Garantia = garantia
+            }) ?? 0;
         }
 
         /// <summary>
@@ -260,26 +312,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Tasa/Plazo ya vienen fijados por Prea_frmPreaEstudiov2_Fondo_Calcular.
         /// </summary>
         private static (decimal tasa, int plazo, decimal tasaPtsBono) RecalcularTasaPlazoCatalogo(
-            IDbConnection connection, string linea, string destino, string garantia,
-            string cedula, string estado, decimal monto, decimal tasaActual, int plazoActual)
+            IDbConnection connection,
+            CreditoCatalogoCalculoParametros parametros)
         {
-            var tasa = tasaActual;
-            var plazo = plazoActual;
+            var tasa = parametros.TasaActual;
+            var plazo = parametros.PlazoActual;
 
-            var esFondo = string.Equals((garantia ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+            var esFondo = string.Equals(parametros.Garantia.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
 
-            if (!esFondo && !string.IsNullOrWhiteSpace(linea) && monto > 0)
+            if (!esFondo && !string.IsNullOrWhiteSpace(parametros.Linea) && parametros.Monto > 0)
             {
-                plazo = (int)CalcularCatalogoRango(connection, linea, monto, "P", destino, garantia);
-                tasa = CalcularCatalogoRango(connection, linea, monto, "I", destino, garantia);
+                plazo = (int)CalcularCatalogoRango(
+                    connection, parametros.Linea, parametros.Monto, "P", parametros.Destino, parametros.Garantia);
+                tasa = CalcularCatalogoRango(
+                    connection, parametros.Linea, parametros.Monto, "I", parametros.Destino, parametros.Garantia);
             }
 
             var tasaPtsBono = 0m;
-            var estadoTrim = (estado ?? string.Empty).Trim();
+            var estadoTrim = parametros.Estado.Trim();
             if (estadoTrim.Equals("R", StringComparison.OrdinalIgnoreCase) || estadoTrim.Equals("P", StringComparison.OrdinalIgnoreCase))
             {
-                var bono = CalcularBonoMembresia(connection, cedula, linea, garantia, destino, plazo);
-                var plazoBono = CalcularBonoPlazoMembresia(connection, cedula, garantia);
+                var bono = CalcularBonoMembresia(
+                    connection,
+                    parametros.Cedula,
+                    parametros.Linea,
+                    parametros.Garantia,
+                    parametros.Destino,
+                    plazo);
+                var plazoBono = CalcularBonoPlazoMembresia(
+                    connection, parametros.Cedula, parametros.Garantia);
 
                 if (bono > 0)
                 {
@@ -304,8 +365,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return 0m;
             }
 
-            var sql = "SELECT dbo.fxCrd_Prea_Poliza_Vida(" + monto.ToString(CultureInfo.InvariantCulture) + ")";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrd_Prea_Poliza_Vida(@Monto)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new { Monto = monto }) ?? 0m;
         }
 
         /// <summary>
@@ -320,8 +381,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             var montoBase = montoConstruccion > 1000 ? montoConstruccion : monto;
-            var sql = "SELECT dbo.fxCrd_Prea_Poliza_Incendio(" + montoBase.ToString(CultureInfo.InvariantCulture) + ")";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrd_Prea_Poliza_Incendio(@MontoBase)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new { MontoBase = montoBase }) ?? 0m;
         }
 
         /// <summary>VB6: dbo.fxCrd_Prea_Poliza_Vehiculo(Monto) — sbCalculaPolizaDePrenda, línea ~15026.</summary>
@@ -332,8 +393,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return 0m;
             }
 
-            var sql = "SELECT dbo.fxCrd_Prea_Poliza_Vehiculo(" + monto.ToString(CultureInfo.InvariantCulture) + ")";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrd_Prea_Poliza_Vehiculo(@Monto)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new { Monto = monto }) ?? 0m;
         }
 
         /// <summary>
@@ -348,8 +409,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             var monto = cuota + montoPolizaVida + montoPolizaIncendio;
-            var sql = "SELECT dbo.fxCrd_Prea_Poliza_Desempleo(" + monto.ToString(CultureInfo.InvariantCulture) + ")";
-            return connection.QueryFirstOrDefault<decimal?>(sql) ?? 0m;
+            const string sql = "SELECT dbo.fxCrd_Prea_Poliza_Desempleo(@Monto)";
+            return connection.QueryFirstOrDefault<decimal?>(sql, new { Monto = monto }) ?? 0m;
         }
 
         /// <summary>
@@ -360,30 +421,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         private static CreditoRecalculoResultado RecalcularCreditoPolizas(
             IDbConnection connection,
-            decimal monto,
-            int plazo,
-            decimal tasa,
-            decimal montoConstruccion,
-            bool polizaVida,
-            ref bool polizaIncendio,
-            bool polizaPrenda,
-            bool polizaDesempleo)
+            CreditoPolizasCalculoParametros parametros)
         {
-            var cuota = CalcularCuota(monto, plazo, tasa);
+            var cuota = CalcularCuota(parametros.Monto, parametros.Plazo, parametros.Tasa);
 
             // VB6 (sbCalculaPolizaDeIncendio ~línea 14999): si hay Monto Construcción y el
             // checkbox está sin marcar, lo marca automáticamente.
             var autoMarcada = false;
-            if (montoConstruccion > 0 && !polizaIncendio)
+            var polizaIncendio = parametros.PolizaIncendio;
+            if (parametros.MontoConstruccion > 0 && !polizaIncendio)
             {
                 polizaIncendio = true;
                 autoMarcada = true;
             }
 
-            var montoPolizaVida = polizaVida ? CalcularPolizaVida(connection, monto) : 0m;
-            var montoPolizaIncendio = polizaIncendio ? CalcularPolizaIncendio(connection, monto, montoConstruccion) : 0m;
-            var montoPolizaPrenda = polizaPrenda ? CalcularPolizaPrenda(connection, monto) : 0m;
-            var montoPolizaDesempleo = polizaDesempleo
+            var montoPolizaVida = parametros.PolizaVida ? CalcularPolizaVida(connection, parametros.Monto) : 0m;
+            var montoPolizaIncendio = polizaIncendio
+                ? CalcularPolizaIncendio(connection, parametros.Monto, parametros.MontoConstruccion)
+                : 0m;
+            var montoPolizaPrenda = parametros.PolizaPrenda ? CalcularPolizaPrenda(connection, parametros.Monto) : 0m;
+            var montoPolizaDesempleo = parametros.PolizaDesempleo
                 ? CalcularPolizaDesempleo(connection, cuota, montoPolizaVida, montoPolizaIncendio)
                 : 0m;
 

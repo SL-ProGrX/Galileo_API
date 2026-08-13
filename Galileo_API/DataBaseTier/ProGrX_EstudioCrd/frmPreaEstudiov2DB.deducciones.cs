@@ -101,15 +101,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 const int numPagos = 2;
                 var monto = request.monto;
 
-                var sql = "EXEC spCrdPrea_Deducciones_Add '"
-                    + request.cod_preanalisis.Trim().Replace("'", "''") + "', 0, "
-                    + (string.IsNullOrWhiteSpace(request.cod_deduccion) ? "0" : request.cod_deduccion.Trim()) + ", '"
-                    + (request.descripcion?.Trim() ?? string.Empty).Replace("'", "''") + "', "
-                    + monto.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", "
-                    + (monto * numPagos).ToString(System.Globalization.CultureInfo.InvariantCulture) + ", '"
-                    + (request.usuario?.Trim() ?? string.Empty).Replace("'", "''") + "'";
-
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = @"EXEC spCrdPrea_Deducciones_Add
+                    @Expediente, 0, @CodDeduccion, @Descripcion, @Monto, @MontoTotal, @Usuario";
+                var row = connection.QueryFirstOrDefault(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    CodDeduccion = string.IsNullOrWhiteSpace(request.cod_deduccion) ? "0" : request.cod_deduccion.Trim(),
+                    Descripcion = request.descripcion?.Trim() ?? string.Empty,
+                    Monto = monto,
+                    MontoTotal = monto * numPagos,
+                    Usuario = request.usuario?.Trim() ?? string.Empty
+                }) as IDictionary<string, object>;
                 if (row is not null)
                 {
                     var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
@@ -154,10 +156,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var sql = "EXEC spCRDPreaDETALLE_DEDUC_B '"
-                    + (request.id_x ?? string.Empty).Trim().Replace("'", "''") + "', '"
-                    + request.cod_preanalisis.Trim().Replace("'", "''") + "'";
-                connection.Execute(sql);
+                const string sql = "EXEC spCRDPreaDETALLE_DEDUC_B @Id, @Expediente";
+                connection.Execute(sql, new
+                {
+                    Id = (request.id_x ?? string.Empty).Trim(),
+                    Expediente = request.cod_preanalisis.Trim()
+                });
 
                 return Prea_frmPreaEstudiov2_Deducciones_Consultar(codEmpresa, request.cod_preanalisis.Trim());
             }

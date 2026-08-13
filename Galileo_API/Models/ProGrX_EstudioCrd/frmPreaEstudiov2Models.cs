@@ -99,13 +99,21 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int plazo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal tasa { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_construccion { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_vida { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_incendio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_prenda { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_desempleo { get; set; }
 
         /// <summary>
@@ -245,6 +253,7 @@
         public int componente_adicional_id { get; set; }
         public decimal componente_adicional_porc { get; set; }
         /// <summary>txtS_ComponenteAdicional en VB6 (EXTRAS_FIJAS): base editable, txtCompAdicional = base * porc / 100.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal componente_adicional_base { get; set; }
         public decimal componentes_adicionales { get; set; }
         public decimal total_extras { get; set; }
@@ -513,19 +522,32 @@
         /// VB6: clsMensajes.cod_preanalisis_ref.</summary>
         public string cod_preanalisis_ref { get; set; } = string.Empty;
 
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_vida { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_incendio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_vehiculo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool poliza_desempleo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool primera_cuota { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_vida { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_incendio { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_vehiculo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_prenda { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_desempleo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal valor_prenda { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal compromiso { get; set; }
         public string cph { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int edad_aplica { get; set; }
         public string edad_justificacion { get; set; } = string.Empty;
         public string clasificacion_crediticia { get; set; } = string.Empty;
@@ -561,7 +583,7 @@
 
     /// <summary>
     /// Guarda la grilla "Tabla de Salarios" (gSalarios en VB6). VB6: sbSalarios_Guardar
-    /// (frmPreaEstudiov2.frm línea ~13737) — borra todo y reconstruye desde cero.
+    /// (frmPreaEstudiov2.frm línea ~13737) — elimina los registros y los reconstruye desde cero.
     /// </summary>
     public class FrmPreaEstudiov2TablaSalariosGuardarRequest
     {
@@ -583,6 +605,7 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         /// <summary>IdX del extra. 0 (o vacío) para insertar, &gt; 0 para modificar.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public int idx { get; set; }
         public string cod_extras { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonRequired]
@@ -593,6 +616,7 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int idx { get; set; }
     }
 
@@ -656,6 +680,7 @@
     {
         public int id_solicitud { get; set; }
         public string detalle { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal cuota { get; set; }
     }
 
@@ -673,7 +698,7 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
-        /// <summary>'C' = Cancelados, 'A' = Por Cobrar. VB6 borra TODO el bucket, no una fila.</summary>
+        /// <summary>'C' = Cancelados, 'A' = Por Cobrar. VB6 elimina el grupo completo, no una fila.</summary>
         public string tipo { get; set; } = string.Empty;
     }
 
@@ -708,8 +733,11 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_solicitud { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool aplica { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool apl_mora { get; set; }
     }
 
@@ -751,8 +779,11 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_solicitud { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool aplica { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool cancela_mora { get; set; }
     }
 
@@ -795,8 +826,10 @@
         /// <summary>txtDS_Descripcion.Tag: código del acreedor/concepto seleccionado en la lista.</summary>
         public string cod_acreedor { get; set; } = string.Empty;
         /// <summary>cboD_Ordinario = "Sí"/"No".</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public bool ordinario { get; set; }
         public string descripcion { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal cuota { get; set; }
         [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
@@ -805,6 +838,7 @@
         /// <summary>txtIdentificación.Text.</summary>
         public string cedula_destino { get; set; } = string.Empty;
         /// <summary>cboTipoId.ItemData.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public int tipo_cedula { get; set; }
         /// <summary>cboCuenta.ItemData.</summary>
         public string cuenta { get; set; } = string.Empty;
@@ -840,6 +874,7 @@
 
     public class FrmPreaEstudiov2AdjuntoDto
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_adjunto { get; set; }
         public string nombre_archivo { get; set; } = string.Empty;
         public DateTime fecha { get; set; }

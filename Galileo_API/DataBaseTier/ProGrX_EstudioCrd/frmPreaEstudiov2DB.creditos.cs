@@ -80,12 +80,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var detalle = (request.detalle ?? string.Empty).Trim().Replace("'", "''");
-                var cuota = Dec(request.cuota);
-
-                var strSQL = $"exec spCrdPreaRegistrarCreditosCuotasCxC '{exp}', {cuota}, '{request.tipo}', '{detalle}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaRegistrarCreditosCuotasCxC @Expediente, @Cuota, @Tipo, @Detalle";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    request.cuota,
+                    request.tipo,
+                    Detalle = (request.detalle ?? string.Empty).Trim()
+                });
             }
             catch (Exception ex)
             {
@@ -113,9 +115,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
-                var strSQL = $"exec spCrdPreaEliminarCreditosCuotasCxC '{exp}', '{request.tipo}'";
-                connection.Execute(strSQL, commandType: CommandType.Text);
+                const string sql = "EXEC spCrdPreaEliminarCreditosCuotasCxC @Expediente, @Tipo";
+                connection.Execute(sql, new { Expediente = request.cod_preanalisis.Trim(), request.tipo });
             }
             catch (Exception ex)
             {
