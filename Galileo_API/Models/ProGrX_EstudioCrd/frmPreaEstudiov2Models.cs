@@ -551,6 +551,129 @@
         public int edad_aplica { get; set; }
         public string edad_justificacion { get; set; } = string.Empty;
         public string clasificacion_crediticia { get; set; } = string.Empty;
+
+        // ---- Fase 2 del diccionario de campos (frmPreaEstudiov2_diccionario_campos.md):
+        // parámetros de spCrdPreaPreanalisisModifica con fuente YA confirmada en Angular
+        // (resumen/credito/salariosForm/observaciones), agregados para dejar de mandarlos
+        // en 0/vacío. Los marcados ⚠️/❌/❓ en el diccionario quedan para fases siguientes.
+        /// <summary>@27 REBAJO_EXTRAS (txtT_Extras). VB6: salariosForm.total_extras.</summary>
+        public decimal total_extras { get; set; }
+        /// <summary>@35 DEDUCCIONES. Fuente: resumen.deducciones (solo lectura).</summary>
+        public decimal deducciones { get; set; }
+        /// <summary>@36 CRD_TRANSITO_CANCELADOS. Fuente: resumen.creditos_cancelados.</summary>
+        public decimal creditos_cancelados { get; set; }
+        /// <summary>@37 CRD_TRANSITO_XCOBRAR. Fuente: resumen.creditos_por_cobrar.</summary>
+        public decimal creditos_por_cobrar { get; set; }
+        /// <summary>@38 SALARIO_LIQUIDO. Fuente: resumen.salario_liquido.</summary>
+        public decimal salario_liquido { get; set; }
+        /// <summary>@39 REFUNDICIONES. Fuente: resumen.refundiciones.</summary>
+        public decimal refundiciones { get; set; }
+        /// <summary>@40 REFUNDICIONES_CUOTA. Fuente: resumen.refundiciones_cuota.</summary>
+        public decimal refundiciones_cuota { get; set; }
+        /// <summary>@41 DESEMBOLSOS. Fuente: resumen.desembolsos.</summary>
+        public decimal desembolsos { get; set; }
+        /// <summary>@42 DESEMBOLSOS_CUOTA. Fuente: resumen.desembolsos_cuota.</summary>
+        public decimal desembolsos_cuota { get; set; }
+        /// <summary>@44 LIQUIDEZ_SIMPLE. Fuente: resumen.liquidez_sin_fianzas.</summary>
+        public decimal liquidez_sin_fianzas { get; set; }
+        /// <summary>@45 FIANZAS. Fuente: resumen.fianzas.</summary>
+        public decimal fianzas { get; set; }
+        /// <summary>@46 LIQUIDEZ_CFIANZAS. Fuente: resumen.liquidez_con_fianzas.</summary>
+        public decimal liquidez_con_fianzas { get; set; }
+        /// <summary>@47 OBSERVACION_ANALISTA. Fuente: this.observacionAnalista.</summary>
+        public string observacion_analista { get; set; } = string.Empty;
+        /// <summary>@48 OBSERVACION_COMITE. Fuente: this.observacionComite.</summary>
+        public string observacion_comite { get; set; } = string.Empty;
+        /// <summary>@49 OBSERVACION_JD. Fuente: this.observacionJd.</summary>
+        public string observacion_jd { get; set; } = string.Empty;
+        /// <summary>@53 COD_ENDEUDAMIENTO. Fuente: credito.cod_endeudamiento.</summary>
+        public string cod_endeudamiento { get; set; } = string.Empty;
+        /// <summary>@54 COD_HISTORIAL. Fuente: credito.cod_historial.</summary>
+        public string cod_historial { get; set; } = string.Empty;
+        /// <summary>@55 COD_MORA. Fuente: credito.cod_mora.</summary>
+        public string cod_mora { get; set; } = string.Empty;
+        /// <summary>@56 COD_CAPACIDAD. Fuente: credito.cod_capacidad.</summary>
+        public string cod_capacidad { get; set; } = string.Empty;
+        /// <summary>@57 SALARIO_REAL (default NULL en el SP). Fuente: resumen.salario_real.</summary>
+        public decimal? salario_real { get; set; }
+        /// <summary>@60 GARANTIA_FND (default NULL). Fuente: this.fondoSeleccionado.</summary>
+        public string? garantia_fondo { get; set; }
+        /// <summary>@69 PORC_LIQ_CON_FIANZA. Fuente: resumen.liquidez_con_fianzas_porc.</summary>
+        public decimal liquidez_con_fianzas_porc { get; set; }
+        /// <summary>@70 PORC_LIQ_SIN_FIANZA. Fuente: resumen.liquidez_sin_fianzas_porc.</summary>
+        public decimal liquidez_sin_fianzas_porc { get; set; }
+        /// <summary>@74 MONTO_PORC_COMPONENTE_AD. Fuente: salariosForm.componentes_adicionales (base * porc / 100, ya calculado en Cargar).</summary>
+        public decimal componentes_adicionales { get; set; }
+        /// <summary>@78 PUNTOS_CIC_DEUDOR. Fuente: credito.cic_puntaje.</summary>
+        public string cic_puntaje { get; set; } = string.Empty;
+        /// <summary>@79 NIVEL_COMPORTAMIENTO_HIST. Fuente: credito.cic_nivel_historico.</summary>
+        public string cic_nivel_historico { get; set; } = string.Empty;
+        /// <summary>@81 DIAS_INTERES_GASTOS_OP. Fuente: credito.dias_interes_gastos_op.</summary>
+        public decimal? dias_interes_gastos_op { get; set; }
+        /// <summary>@87 PORC_LIQ_SIN_FIANZA_CA. Fuente: resumen.liquidez_sin_fianzas_comp_porc.</summary>
+        public decimal liquidez_sin_fianzas_comp_porc { get; set; }
+        /// <summary>@88 PORC_LIQ_CON_FIANZA_CA. Fuente: resumen.liquidez_con_fianzas_comp_porc.</summary>
+        public decimal liquidez_con_fianzas_comp_porc { get; set; }
+        /// <summary>@89 LIQUIDEZ_SFIANZAS_CA. Fuente: resumen.liquidez_sin_fianzas_comp.</summary>
+        public decimal liquidez_sin_fianzas_comp { get; set; }
+        /// <summary>@90 LIQUIDEZ_CFIANZAS_CA. Fuente: resumen.liquidez_con_fianzas_comp.</summary>
+        public decimal liquidez_con_fianzas_comp { get; set; }
+        /// <summary>@94 MONTO_VALOR_VEHICULO. Ya existe como valor_prenda arriba (txtPrendaValor) — no duplicar.</summary>
+        /// <summary>@100 MONTO_INTERES. Fuente: resumen.intereses.</summary>
+        public decimal intereses { get; set; }
+        /// <summary>@101 MONTO_COMISION. Fuente: resumen.comisiones.</summary>
+        public decimal comisiones { get; set; }
+
+        // ---- Fase 3 del diccionario: ambigüedades resueltas leyendo sbEstudio_Guarda_Modifica
+        // (frmPreaEstudiov2.frm líneas 12185-12298) directamente ----
+        /// <summary>@52 COD_GARANTIA = clsMensajes.COD_GARANTIA (columna COD_GARANTIA cargada en
+        /// sbLigarDatos, línea 10673) — es DISTINTO de @51 GARANTIA (cboGarantia.ItemData).
+        /// Fuente Angular: credito.cod_garantia_clasificacion (ya mapeado 1:1 desde la misma
+        /// columna COD_GARANTIA en ConstruirCredito).</summary>
+        public string cod_garantia_clasificacion { get; set; } = string.Empty;
+        /// <summary>@93 MONTO_POLIZA_VEHICULO = txtPolizaPrenda.Text (distinto de @94
+        /// MONTO_VALOR_VEHICULO = txtPrendaValor.Text = valor_prenda). Sin control propio en
+        /// Angular todavía — se envía 0 documentado, no inventado (mismo campo que ya existía
+        /// como monto_poliza_prenda, hardcodeado a 0 en el request).</summary>
+        public decimal monto_poliza_prenda_vehiculo { get; set; }
+        /// <summary>@25 ID_SOLICITUD = txtAsignado.Text. Fuente Angular: credito.asignado_operacion
+        /// (ya mapeado 1:1 desde la columna ID_SOLICITUD en ConstruirCredito).</summary>
+        public string asignado_operacion { get; set; } = string.Empty;
+        /// <summary>@97 ID_PROMOTOR = txtEjecutivo.Tag. Fuente Angular: credito.id_promotor.</summary>
+        public string id_promotor { get; set; } = string.Empty;
+        /// <summary>@24 ESTADO = lblEstado.Tag. Fuente Angular: this.estadoCodigo.</summary>
+        public string estado { get; set; } = string.Empty;
+        /// <summary>@105 SALARIO_NORMATIVA = txtSalarioNormativa.Text (CRD_PREA_PARAMETROS '22').
+        /// Fuente Angular: this.salarioNormativa (property de página, NO resumen.salario_normativa_estudio,
+        /// que es un campo distinto).</summary>
+        public decimal salario_normativa { get; set; }
+        /// <summary>@43 LIQUIDO_TOTAL = txtTotalLiquido.Text, cargado desde la columna LIQUIDO_TOTAL
+        /// (confirmado: distinto de LIQUIDO_TOTAL_GRUPO). Fuente Angular: resumen.total_liquido_persona
+        /// (mapeado 1:1 desde esa misma columna en Prea_frmPreaEstudiov2_Cargar).</summary>
+        public decimal total_liquido_persona { get; set; }
+
+        // ---- Fase 4 del diccionario: 11 parámetros sin control propio en Angular, resueltos
+        // leyendo sbEstudio_Guarda_Modifica línea por línea (frmPreaEstudiov2.frm 12185-12298). ----
+        /// <summary>@59 NSUB_EXP = cboCantidadFiadores.Text (línea 12284) — en VB6 esta posición
+        /// realmente recibe el conteo de fiadores, NO un conteo de sub-expedientes pese al nombre
+        /// del parámetro. Fuente Angular: el campo `fiadores` ya existente arriba.</summary>
+        /// <summary>@75 APL_IND_COMPONENTE: en VB6 = 0 si txtS_ComponenteAdicionalPorc.Text = 0,
+        /// si no 1 (líneas 12256-12260). Se deriva en el API desde componente_adicional_porc,
+        /// no requiere campo propio.</summary>
+        /// <summary>@84 IND_TIPO_SALARIO_EXT: en VB6, default 0; 1 si chkS_Constancia está marcado;
+        /// 2 si chkS_OrdenPatronal está marcado (el segundo pisa al primero, líneas 12246-12253).
+        /// Fuente Angular: salariosForm.ind_salario_constancia / ind_salario_orden_patronal.</summary>
+        public bool ind_salario_constancia { get; set; }
+        public bool ind_salario_orden_patronal { get; set; }
+
+        // ---- Fase 5 del diccionario: últimos 3 params ❓ resueltos leyendo sbEstudio_Guarda_Modifica ----
+        /// <summary>@103 REFUNDICIONES_MORA = txtR_TotalMora.Text. Fuente Angular: total_mora del
+        /// tab Refundiciones (propiedad de página, actualizada por TabRefundicionesComponent).</summary>
+        public decimal refundiciones_mora { get; set; }
+        /// <summary>@104 SALARIO_USURA = txtSalarioMinimoInembargable.Text (VB6 reutiliza el
+        /// control del salario mínimo inembargable para este parámetro, no hay txtSalarioUsura
+        /// propio). Fuente Angular: this.salarioMinimoInembargable.</summary>
+        public decimal salario_minimo_inembargable { get; set; }
     }
 
     public class FrmPreaEstudiov2GuardarResponse
