@@ -17,6 +17,11 @@ namespace Galileo_API.Controllers.ProGrX_ARF
             _bl = new FrmArfInformesBl(config);
         }
 
+        /// <summary>
+        /// Lista las oficinas o unidades disponibles para los informes.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <returns>Resultado con las unidades disponibles.</returns>
         [Authorize]
         [HttpGet]
         [Route("ARF_Unidades_Listar")]
@@ -25,6 +30,11 @@ namespace Galileo_API.Controllers.ProGrX_ARF
             return _bl.ARF_Unidades_Listar(codEmpresa);
         }
 
+        /// <summary>
+        /// Lista los arrendadores disponibles para los informes.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa que se consultará.</param>
+        /// <returns>Resultado con los arrendadores disponibles.</returns>
         [Authorize]
         [HttpGet]
         [Route("ARF_Arrendadores_Listar")]

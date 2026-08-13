@@ -1,9 +1,9 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Microsoft.Data.SqlClient;
 using Galileo_API.Models.ProGrX_Contabilidad;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -11,91 +11,99 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     {
         private readonly PortalDB _portalDb;
 
+        /// <summary>
+        /// Inicializa el acceso a datos de informes especiales desde la configuración.
+        /// </summary>
+        /// <param name="config">Configuración de conexiones del API.</param>
         public FrmCntXRepEspecialesDb(IConfiguration config)
             : this(new PortalDB(config))
         {
         }
 
+        /// <summary>
+        /// Inicializa el acceso a datos con una instancia de PortalDB.
+        /// </summary>
+        /// <param name="portalDb">Proveedor de conexiones por empresa.</param>
         public FrmCntXRepEspecialesDb(PortalDB portalDb)
         {
             _portalDb = portalDb;
         }
 
         /// <summary>
-        /// Busca peridos que listar
+        /// Lista los cierres contables y coloca primero el período activo.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa conectada.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <returns>Períodos disponibles para el informe.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntX_Periodos_Listar(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
-                SELECT 
+                SELECT
                     id_cierre AS item,
                     RTRIM(descripcion) AS descripcion
                 FROM CntX_Cierres
                 WHERE cod_contabilidad = @cod_contabilidad
-                ORDER BY id_cierre DESC
-            ";
+                ORDER BY activo DESC, id_cierre DESC;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new
-                {
-                    cod_contabilidad = codContabilidad
-                }
-            );
+                new { cod_contabilidad = codContabilidad });
         }
 
         /// <summary>
-        /// Busca unidades
+        /// Lista las unidades de negocio de la contabilidad.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa conectada.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <returns>Unidades disponibles para el informe.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntX_Unidades_Listar(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
-                SELECT 
+                SELECT
                     RTRIM(cod_unidad) AS item,
                     RTRIM(descripcion) AS descripcion
                 FROM CntX_Unidades
                 WHERE cod_contabilidad = @cod_contabilidad
-
-            ";
+                ORDER BY descripcion;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new
-                {
-                    cod_contabilidad = codContabilidad
-                }
-            );
+                new { cod_contabilidad = codContabilidad });
         }
 
         /// <summary>
-        /// Busca centros de costo
+        /// Lista los centros de costo de la unidad o todos para el consolidado.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="unidad"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostos_Listar(int codEmpresa, int codContabilidad, string unidad)
+        /// <param name="codEmpresa">Código de la empresa conectada.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="unidad">Código de unidad o C para el consolidado.</param>
+        /// <returns>Centros de costo disponibles para el filtro.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCostos_Listar(
+            int codEmpresa,
+            int codContabilidad,
+            string unidad)
         {
             const string sql = @"
-                SELECT 
-                    RTRIM(cod_centro_costo) AS item,
-                    RTRIM(descripcion) AS descripcion
-                FROM CntX_Centro_Costos
-                WHERE cod_contabilidad = @cod_contabilidad
-                AND ( cod_centro_costo IN (
-                            SELECT cod_centro_costo
-                            FROM CntX_Unidades_CC
-                            WHERE cod_contabilidad = @cod_contabilidad))";
+                SELECT
+                    RTRIM(CC.cod_centro_costo) AS item,
+                    RTRIM(CC.descripcion) AS descripcion
+                FROM CntX_Centro_Costos CC
+                WHERE CC.cod_contabilidad = @cod_contabilidad
+                  AND (
+                        @unidad = 'C'
+                        OR EXISTS (
+                            SELECT 1
+                            FROM CntX_Unidades_CC UCC
+                            WHERE UCC.cod_contabilidad = CC.cod_contabilidad
+                              AND UCC.cod_centro_costo = CC.cod_centro_costo
+                              AND UCC.cod_unidad = @unidad
+                        )
+                  )
+                ORDER BY CC.descripcion;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
@@ -104,149 +112,431 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 new
                 {
                     cod_contabilidad = codContabilidad,
-                }
-            );
+                    unidad
+                });
         }
 
+        /// <summary>
+        /// Prepara en una transacción la información trimestral que consumen los reportes.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa conectada.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros seleccionados y período contable vigente.</param>
+        /// <returns>Resultado de la preparación de los datos.</returns>
+        public ErrorDto<bool> GenerarReporte(
+            int codEmpresa,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
+        {
+            var validacion = ValidarFiltros(f);
+            if (validacion is not null)
+            {
+                return DbHelper.CreateErrorResponse<bool>(validacion, result: false);
+            }
+
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection => EjecutarPreparacion(connection, codContabilidad, f));
+        }
 
         /// <summary>
-        /// Realiza acciones para generar el reporte
+        /// Valida los datos indispensables antes de abrir una conexión.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="f"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> GenerarReporte(int codEmpresa,int codContabilidad,CntxRepEspecialFiltroDto f)
+        /// <param name="f">Filtros recibidos desde la pantalla.</param>
+        /// <returns>Mensaje de error o null cuando los filtros son válidos.</returns>
+        private static string? ValidarFiltros(CntxRepEspecialFiltroDto f)
         {
-            var response = new ErrorDto<bool>();
+            if (f.periodo is null or <= 0)
+            {
+                return "El período es requerido.";
+            }
+
+            if (f.periodoAnio is null or <= 0 || f.periodoMes is null or < 1 or > 12)
+            {
+                return "El año y mes del período contable son requeridos.";
+            }
+
+            if (string.IsNullOrWhiteSpace(f.usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            if (f.reporte is not ("1" or "2" or "2.1" or "2.2" or "3"))
+            {
+                return "El tipo de reporte no es válido.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Coordina la preparación transaccional del reporte seleccionado.
+        /// </summary>
+        /// <param name="connection">Conexión de la empresa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        /// <returns>True cuando toda la preparación termina correctamente.</returns>
+        private static bool EjecutarPreparacion(
+            SqlConnection connection,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
+        {
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                cn.Open();
-
-                string sql;
-
-                //--------------------------------------
-                // 1 eliminar información anterior
-                //--------------------------------------
-
-                if (f.reporte == "2.1" || f.reporte == "2.2")
+                if (f.reporte is "2.1" or "2.2")
                 {
-                    sql = @"DELETE CNTX_REP_PERIODOS_MOV_UNIDAD
-                    WHERE usuario = @usuario";
-
-                    cn.Execute(sql, new { usuario = f.usuario });
+                    EjecutarRentabilidadEspecial(connection, transaction, codContabilidad, f);
                 }
                 else
                 {
-                    sql = @"DELETE CntX_Rep_Periodos_mov
-                    WHERE usuario = @usuario";
-
-                    cn.Execute(sql, new { usuario = f.usuario });
+                    EjecutarMovimientoCatalogo(connection, transaction, codContabilidad, f);
                 }
 
-
-                //--------------------------------------
-                // 2 lógica principal VB6
-                //--------------------------------------
-
-                if (f.reporte == "2.1" || f.reporte == "2.2")
-                {
-                    EjecutarRentabilidadEspecial(cn, codContabilidad, f);
-                }
-                else
-                {
-                    EjecutarMovimientoCatalogo(cn, codContabilidad, f);
-                }
-
-                response.Result = true;
+                transaction.Commit();
+                return true;
             }
-            catch (Exception ex)
+            catch
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                transaction.Rollback();
+                throw;
             }
-
-            return response;
         }
 
-        private void EjecutarMovimientoCatalogo(SqlConnection cn,int codContabilidad,CntxRepEspecialFiltroDto f)
+        /// <summary>
+        /// Replica la preparación de activos, pasivos, rentabilidad y balance del formulario VB6.
+        /// </summary>
+        /// <param name="connection">Conexión abierta de la empresa.</param>
+        /// <param name="transaction">Transacción que agrupa toda la preparación.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        private static void EjecutarMovimientoCatalogo(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
         {
-            var sql = @"
-                    INSERT INTO CntX_Rep_Periodos_mov
-                    (
-                        cod_cuenta,
-                        usuario,
-                        cod_contabilidad,
-                        movimiento_10,
-                        movimiento_11,
-                        movimiento_12,
-                        movimiento_01,
-                        movimiento_02,
-                        movimiento_03,
-                        movimiento_04,
-                        movimiento_05,
-                        movimiento_06,
-                        movimiento_07,
-                        movimiento_08,
-                        movimiento_09
-                    )
-                    SELECT
-                        cod_cuenta,
-                        @usuario,
-                        @cod_contabilidad,
-                        0,0,0,0,0,0,0,0,0,0,0,0
-                    FROM CntX_Cuentas
-                    WHERE cod_contabilidad = @cod_contabilidad
-                    ";
+            var unidad = NormalizarOpcion(f.unidad, "C");
+            var centroCosto = NormalizarOpcion(f.centroCosto, "T");
+            const string sql = @"
+                DELETE CntX_Rep_Periodos_mov
+                WHERE usuario = @usuario;
 
-            cn.Execute(sql, new
-            {
-                usuario = f.usuario,
-                cod_contabilidad = codContabilidad
-            });
+                DECLARE @cuenta_utilidad varchar(100) = (
+                    SELECT TOP (1) RTRIM(Cuenta_GanPer)
+                    FROM CNTX_CIERRES
+                    WHERE ID_CIERRE = @periodo
+                      AND cod_contabilidad = @cod_contabilidad
+                );
+
+                IF NULLIF(@cuenta_utilidad, '') IS NULL
+                    THROW 50001, 'El cierre seleccionado no tiene cuenta de ganancias y pérdidas.', 1;
+
+                INSERT INTO CntX_Rep_Periodos_mov
+                    (cod_cuenta, usuario, cod_contabilidad,
+                     movimiento_10, movimiento_11, movimiento_12,
+                     movimiento_01, movimiento_02, movimiento_03,
+                     movimiento_04, movimiento_05, movimiento_06,
+                     movimiento_07, movimiento_08, movimiento_09)
+                VALUES
+                    (@cuenta_utilidad, @usuario, @cod_contabilidad,
+                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+                INSERT INTO CntX_Rep_Periodos_mov
+                    (cod_cuenta, usuario, cod_contabilidad,
+                     movimiento_10, movimiento_11, movimiento_12,
+                     movimiento_01, movimiento_02, movimiento_03,
+                     movimiento_04, movimiento_05, movimiento_06,
+                     movimiento_07, movimiento_08, movimiento_09)
+                SELECT C.cod_cuenta, @usuario, @cod_contabilidad,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                FROM CntX_Cuentas C
+                INNER JOIN CntX_Tipos_Cuentas T
+                    ON T.cod_contabilidad = C.cod_contabilidad
+                   AND T.tipo_cuenta = C.tipo_cuenta
+                WHERE C.cod_contabilidad = @cod_contabilidad
+                  AND C.cod_cuenta <> @cuenta_utilidad
+                  AND (
+                        (@reporte = '1' AND T.clasificacion IN ('A', 'P', 'C'))
+                        OR (@reporte = '2' AND T.clasificacion IN ('I', 'V', 'G'))
+                        OR (@reporte = '3' AND T.clasificacion IN ('I', 'V', 'C', 'G', 'P', 'A'))
+                  );
+
+                DECLARE @fecha_inicial date = DATEADD(month, -2, DATEFROMPARTS(@periodo_anio, @periodo_mes, 1));
+
+                ;WITH MovimientosBase AS
+                (
+                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
+                    FROM vCntX_Mov_Cuentas_General M
+                    WHERE @unidad = '' AND @centro_costo = ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                    UNION ALL
+                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
+                    FROM vCntX_Mov_Cuentas_CentroCosto M
+                    WHERE @unidad = '' AND @centro_costo <> ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_centro_costo = @centro_costo
+                    UNION ALL
+                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
+                    FROM vCntX_Mov_Cuentas_Unidad M
+                    WHERE @unidad <> '' AND @centro_costo = ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_unidad = @unidad
+                    UNION ALL
+                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
+                    FROM CntX_Mov_Cuentas_Detallado M
+                    WHERE @unidad <> '' AND @centro_costo <> ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_unidad = @unidad
+                      AND M.cod_centro_costo = @centro_costo
+                ),
+                Movimientos AS
+                (
+                    SELECT M.cod_cuenta,
+                           SUM(CASE WHEN M.anio = YEAR(@fecha_inicial)
+                                         AND M.mes = MONTH(@fecha_inicial)
+                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_01,
+                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
+                                         AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
+                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_02,
+                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
+                                         AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
+                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_03,
+                           SUM(CASE WHEN M.anio = YEAR(@fecha_inicial)
+                                         AND M.mes = MONTH(@fecha_inicial)
+                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_04,
+                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
+                                         AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
+                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_05,
+                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
+                                         AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
+                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_06
+                    FROM MovimientosBase M
+                    WHERE DATEFROMPARTS(M.anio, M.mes, 1)
+                          BETWEEN @fecha_inicial AND DATEADD(month, 2, @fecha_inicial)
+                    GROUP BY M.cod_cuenta
+                )
+                UPDATE R
+                SET movimiento_01 = M.movimiento_01,
+                    movimiento_02 = M.movimiento_02,
+                    movimiento_03 = M.movimiento_03,
+                    movimiento_04 = M.movimiento_04,
+                    movimiento_05 = M.movimiento_05,
+                    movimiento_06 = M.movimiento_06
+                FROM CntX_Rep_Periodos_mov R
+                INNER JOIN Movimientos M ON M.cod_cuenta = R.cod_cuenta
+                WHERE R.usuario = @usuario
+                  AND R.cod_contabilidad = @cod_contabilidad;
+
+                UPDATE CntX_Rep_Periodos_mov
+                SET movimiento_01 = movimiento_01
+                        + dbo.fxCntX_UtilidadMes(YEAR(@fecha_inicial), MONTH(@fecha_inicial),
+                                                @cod_contabilidad, @unidad, @centro_costo),
+                    movimiento_02 = movimiento_02
+                        + dbo.fxCntX_UtilidadMes(YEAR(DATEADD(month, 1, @fecha_inicial)),
+                                                MONTH(DATEADD(month, 1, @fecha_inicial)),
+                                                @cod_contabilidad, @unidad, @centro_costo),
+                    movimiento_03 = movimiento_03
+                        + dbo.fxCntX_UtilidadMes(YEAR(DATEADD(month, 2, @fecha_inicial)),
+                                                MONTH(DATEADD(month, 2, @fecha_inicial)),
+                                                @cod_contabilidad, @unidad, @centro_costo),
+                    movimiento_04 = movimiento_04
+                        + dbo.fxCntX_Utilidad(YEAR(@fecha_inicial), MONTH(@fecha_inicial),
+                                             @cod_contabilidad, @unidad, @centro_costo),
+                    movimiento_05 = movimiento_05
+                        + dbo.fxCntX_Utilidad(YEAR(DATEADD(month, 1, @fecha_inicial)),
+                                             MONTH(DATEADD(month, 1, @fecha_inicial)),
+                                             @cod_contabilidad, @unidad, @centro_costo),
+                    movimiento_06 = movimiento_06
+                        + dbo.fxCntX_Utilidad(YEAR(DATEADD(month, 2, @fecha_inicial)),
+                                             MONTH(DATEADD(month, 2, @fecha_inicial)),
+                                             @cod_contabilidad, @unidad, @centro_costo)
+                WHERE usuario = @usuario
+                  AND cod_contabilidad = @cod_contabilidad
+                  AND cod_cuenta IN (
+                      SELECT cuenta
+                      FROM dbo.fxCntX_CuentasCascada(@cod_contabilidad, @cuenta_utilidad)
+                  );
+
+                DELETE CntX_Rep_Periodos_mov
+                WHERE usuario = @usuario
+                  AND movimiento_01 + movimiento_02 + movimiento_03
+                    + movimiento_04 + movimiento_05 + movimiento_06 = 0;";
+
+            connection.Execute(
+                sql,
+                CrearParametros(codContabilidad, f, unidad, centroCosto),
+                transaction,
+                commandTimeout: 0);
         }
 
-        private void EjecutarRentabilidadEspecial(SqlConnection cn,int codContabilidad,CntxRepEspecialFiltroDto f)
+        /// <summary>
+        /// Replica la preparación de rentabilidad agrupada por centro de costo o unidad.
+        /// </summary>
+        /// <param name="connection">Conexión abierta de la empresa.</param>
+        /// <param name="transaction">Transacción que agrupa toda la preparación.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        private static void EjecutarRentabilidadEspecial(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
         {
-            var sql = @"
-                        INSERT INTO CNTX_REP_PERIODOS_MOV_UNIDAD
-                        (
-                            cod_unidad,
-                            cod_centro_costo,
-                            usuario,
-                            cod_contabilidad,
-                            movimiento_10,
-                            movimiento_11,
-                            movimiento_12,
-                            movimiento_01,
-                            movimiento_02,
-                            movimiento_03,
-                            movimiento_04,
-                            movimiento_05,
-                            movimiento_06,
-                            movimiento_07,
-                            movimiento_08,
-                            movimiento_09
-                        )
-                        SELECT
-                            cod_unidad,
-                            '',
-                            @usuario,
-                            @cod_contabilidad,
-                            0,0,0,0,0,0,0,0,0,0,0,0
-                        FROM CntX_Unidades
-                        WHERE cod_contabilidad = @cod_contabilidad
-                        ";
+            var unidad = NormalizarOpcion(f.unidad, "C");
+            var centroCosto = NormalizarOpcion(f.centroCosto, "T");
+            const string sqlCentroCosto = @"
+                DELETE CNTX_REP_PERIODOS_MOV_UNIDAD
+                WHERE usuario = @usuario;
 
-                                cn.Execute(sql, new
-                                {
-                                    usuario = f.usuario,
-                                    cod_contabilidad = codContabilidad
-                                });
-                            }
-                        }
+                INSERT INTO CNTX_REP_PERIODOS_MOV_UNIDAD
+                    (cod_unidad, cod_centro_costo, usuario, cod_contabilidad,
+                     movimiento_10, movimiento_11, movimiento_12,
+                     movimiento_01, movimiento_02, movimiento_03,
+                     movimiento_04, movimiento_05, movimiento_06,
+                     movimiento_07, movimiento_08, movimiento_09)
+                SELECT UCC.cod_unidad, UCC.cod_centro_costo, @usuario, UCC.cod_contabilidad,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                FROM CNTX_UNIDADES_CC UCC
+                WHERE UCC.cod_contabilidad = @cod_contabilidad
+                  AND @centro_costo = ''
+                  AND (@unidad = '' OR UCC.cod_unidad = @unidad)
+                UNION ALL
+                SELECT @unidad, @centro_costo, @usuario, @cod_contabilidad,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                WHERE @centro_costo <> '';
+
+                DECLARE @fecha_inicial date = DATEADD(month, -2, DATEFROMPARTS(@periodo_anio, @periodo_mes, 1));
+
+                UPDATE R
+                SET movimiento_01 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(@fecha_inicial), MONTH(@fecha_inicial),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_02 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 1, @fecha_inicial)),
+                        MONTH(DATEADD(month, 1, @fecha_inicial)),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_03 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 2, @fecha_inicial)),
+                        MONTH(DATEADD(month, 2, @fecha_inicial)),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_04 = dbo.fxCntX_UtilidadDetallada(
+                        @periodo_anio, @periodo_mes,
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'A')
+                FROM CNTX_REP_PERIODOS_MOV_UNIDAD R
+                WHERE R.usuario = @usuario
+                  AND R.cod_contabilidad = @cod_contabilidad;";
+
+            const string sqlUnidad = @"
+                DELETE CNTX_REP_PERIODOS_MOV_UNIDAD
+                WHERE usuario = @usuario;
+
+                INSERT INTO CNTX_REP_PERIODOS_MOV_UNIDAD
+                    (cod_unidad, cod_centro_costo, usuario, cod_contabilidad,
+                     movimiento_10, movimiento_11, movimiento_12,
+                     movimiento_01, movimiento_02, movimiento_03,
+                     movimiento_04, movimiento_05, movimiento_06,
+                     movimiento_07, movimiento_08, movimiento_09)
+                SELECT U.cod_unidad, '', @usuario, U.cod_contabilidad,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                FROM CntX_Unidades U
+                WHERE U.cod_contabilidad = @cod_contabilidad
+                  AND @centro_costo = ''
+                  AND (@unidad = '' OR U.cod_unidad = @unidad)
+                UNION ALL
+                SELECT @unidad, @centro_costo, @usuario, @cod_contabilidad,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                WHERE @centro_costo <> '';
+
+                DECLARE @fecha_inicial date = DATEADD(month, -2, DATEFROMPARTS(@periodo_anio, @periodo_mes, 1));
+
+                UPDATE R
+                SET movimiento_01 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(@fecha_inicial), MONTH(@fecha_inicial),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_02 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 1, @fecha_inicial)),
+                        MONTH(DATEADD(month, 1, @fecha_inicial)),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_03 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 2, @fecha_inicial)),
+                        MONTH(DATEADD(month, 2, @fecha_inicial)),
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'N'),
+                    movimiento_04 = dbo.fxCntX_UtilidadDetallada(
+                        @periodo_anio, @periodo_mes,
+                        R.cod_contabilidad, R.cod_unidad, R.cod_centro_costo, 'A')
+                FROM CNTX_REP_PERIODOS_MOV_UNIDAD R
+                WHERE R.usuario = @usuario
+                  AND R.cod_contabilidad = @cod_contabilidad;";
+
+            var parametros = CrearParametros(codContabilidad, f, unidad, centroCosto);
+            if (f.reporte == "2.1")
+            {
+                connection.Execute(sqlCentroCosto, parametros, transaction, commandTimeout: 0);
+                return;
+            }
+
+            connection.Execute(sqlUnidad, parametros, transaction, commandTimeout: 0);
+        }
+
+        /// <summary>
+        /// Convierte las opciones sintéticas de la interfaz en filtros vacíos como en el VB6.
+        /// </summary>
+        /// <param name="valor">Valor recibido desde la pantalla.</param>
+        /// <param name="opcionTodos">Código que representa consolidado o todos.</param>
+        /// <returns>Valor recortado o cadena vacía.</returns>
+        private static string NormalizarOpcion(string? valor, string opcionTodos)
+        {
+            var normalizado = valor?.Trim() ?? string.Empty;
+            return normalizado.Equals(opcionTodos, StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : normalizado;
+        }
+
+        /// <summary>
+        /// Construye los parámetros comunes de las consultas de preparación.
+        /// </summary>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        /// <param name="unidad">Unidad normalizada.</param>
+        /// <param name="centroCosto">Centro de costo normalizado.</param>
+        /// <returns>Objeto de parámetros para Dapper.</returns>
+        private static object CrearParametros(
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f,
+            string unidad,
+            string centroCosto)
+        {
+            ArgumentNullException.ThrowIfNull(f);
+
+            var periodo = f.periodo
+                ?? throw new ArgumentException("El período es requerido.", nameof(f));
+            var periodoAnio = f.periodoAnio
+                ?? throw new ArgumentException("El año del período es requerido.", nameof(f));
+            var periodoMes = f.periodoMes
+                ?? throw new ArgumentException("El mes del período es requerido.", nameof(f));
+
+            if (string.IsNullOrWhiteSpace(f.usuario))
+            {
+                throw new ArgumentException("El usuario es requerido.", nameof(f));
+            }
+
+            var usuario = f.usuario.Trim();
+
+            return new
+            {
+                cod_contabilidad = codContabilidad,
+                periodo,
+                periodo_anio = periodoAnio,
+                periodo_mes = periodoMes,
+                reporte = f.reporte,
+                usuario,
+                unidad,
+                centro_costo = centroCosto
+            };
+        }
+    }
 }
