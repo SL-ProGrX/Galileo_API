@@ -352,7 +352,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 return existeEnPreanalisis.HasValue ? "No Socio" : string.Empty;
             }
-            catch
+            catch (DataException)
             {
                 return string.Empty;
             }
