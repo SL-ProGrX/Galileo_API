@@ -29,6 +29,52 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Scroll(codEmpresa, request);
         }
 
+        /// <summary>
+        /// Recalcula Cuota/Pólizas/Compromiso al cambiar Monto/Plazo/Tasa/Monto
+        /// Construcción o una póliza.
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Credito_Recalcular")]
+        public ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse> Prea_frmPreaEstudiov2_Credito_Recalcular(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2CreditoRecalcularRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Credito_Recalcular(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Borra un expediente (equivalente a sbBorrar en VB6).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Borrar")]
+        public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Borrar(
+            int codEmpresa,
+            [FromQuery] string codPreanalisis,
+            [FromQuery] string codPreanalisisRef)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Borrar(codEmpresa, codPreanalisis, codPreanalisisRef);
+        }
+
+        /// <summary>
+        /// Guarda la grilla "Tabla de Salarios" (sbSalarios_Guardar en VB6).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_TablaSalarios_Guardar")]
+        public ErrorDto<List<FrmPreaEstudiov2SalarioDetalleDto>> Prea_frmPreaEstudiov2_TablaSalarios_Guardar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2TablaSalariosGuardarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_TablaSalarios_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Cambia oficina y ejecutivo colocador (btnOficinaCambia_Click en VB6).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar")]
+        public ErrorDto<string> Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2OficinaEjecutivoCambiarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(codEmpresa, request);
+        }
+
         [HttpPost("Prea_frmPreaEstudiov2_Cargar")]
         public ErrorDto<FrmPreaEstudiov2CargaResponse> Prea_frmPreaEstudiov2_Cargar(
             int codEmpresa,
@@ -38,14 +84,88 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Obtiene la información del tab Hipotecario.
+        /// Recarga destino/garantía en cascada cuando cambia la Línea de crédito
+        /// seleccionada (equivalente a txtLinea_LostFocus en VB6).
         /// </summary>
-        [HttpPost("Prea_frmPreaEstudiov2_Hipotecario_Obtener")]
-        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_Obtener(
+        [HttpGet("Prea_frmPreaEstudiov2_DestinosGarantias_Consultar")]
+        public ErrorDto<FrmPreaEstudiov2DestinosGarantiasResponse> Prea_frmPreaEstudiov2_DestinosGarantias_Consultar(
             int codEmpresa,
-            FrmPreaEstudiov2HipotecarioRequest request)
+            [FromQuery] string linea)
         {
-            return _bl.Prea_frmPreaEstudiov2_Hipotecario_Obtener(codEmpresa, request);
+            return _bl.Prea_frmPreaEstudiov2_DestinosGarantias_Consultar(codEmpresa, linea);
+        }
+
+        /// <summary>
+        /// Valida si la cédula requiere abrir Verificación de Datos Personales.
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Persona_ValidarDatos")]
+        public ErrorDto<int> Prea_frmPreaEstudiov2_Persona_ValidarDatos(
+            int codEmpresa,
+            [FromQuery] string cedula)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Persona_ValidarDatos(codEmpresa, cedula);
+        }
+
+        /// <summary>
+        /// Calcula el Monto según el FORMULARIO de la Garantía (F01/F06).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Garantia_Monto")]
+        public ErrorDto<FrmPreaEstudiov2GarantiaMontoResponse> Prea_frmPreaEstudiov2_Garantia_Monto(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2GarantiaMontoRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Garantia_Monto(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Calcula Monto/Tasa/Plazo de un Fondo de Ahorros (y su lista de contratos).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Fondo_Calcular")]
+        public ErrorDto<FrmPreaEstudiov2FondoCalcularResponse> Prea_frmPreaEstudiov2_Fondo_Calcular(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2FondoCalcularRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Fondo_Calcular(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Lista de sub-expedientes (fiadores) ligados a un expediente principal
+        /// (combo cboSubExpediente en VB6).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_SubExpedientes_Consultar")]
+        public ErrorDto<FrmPreaEstudiov2SubExpedientesResponse> Prea_frmPreaEstudiov2_SubExpedientes_Consultar(
+            int codEmpresa,
+            [FromQuery] string expedientePadre)
+        {
+            return _bl.Prea_frmPreaEstudiov2_SubExpedientes_Consultar(codEmpresa, expedientePadre);
+        }
+
+        /// <summary>
+        /// Genera/valida el número de un nuevo sub-expediente (fiador), equivalente a
+        /// seleccionar "Nuevo SubExpediente" en cboSubExpediente en VB6.
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_SubExpediente_Generar")]
+        public ErrorDto<FrmPreaEstudiov2SubExpedienteGenerarResponse> Prea_frmPreaEstudiov2_SubExpediente_Generar(
+            int codEmpresa,
+            [FromQuery] string expediente)
+        {
+            return _bl.Prea_frmPreaEstudiov2_SubExpediente_Generar(codEmpresa, expediente);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia")]
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2HipotecarioSumarAvaluoRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(codEmpresa, request);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado")]
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2HipotecarioCambiarEstadoRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(codEmpresa, request);
         }
 
         /// <summary>
@@ -93,6 +213,17 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Borra una deducción (sbDeducciones_Borrar en VB6).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Deducciones_Borrar")]
+        public ErrorDto<FrmPreaEstudiov2DeduccionesResponse> Prea_frmPreaEstudiov2_Deducciones_Borrar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2DeduccionesBorrarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Deducciones_Borrar(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta los créditos en tránsito del expediente.
         /// </summary>
         [HttpGet("Prea_frmPreaEstudiov2_Creditos_Consultar")]
@@ -103,15 +234,50 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [HttpPost("Prea_frmPreaEstudiov2_Creditos_Registrar")]
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Registrar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2CreditoTransitoRegistrarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Creditos_Registrar(codEmpresa, request);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Creditos_Borrar")]
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Borrar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2CreditoTransitoBorrarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Creditos_Borrar(codEmpresa, request);
+        }
+
         /// <summary>
         /// Consulta las refundiciones del expediente.
         /// </summary>
         [HttpGet("Prea_frmPreaEstudiov2_Refundiciones_Consultar")]
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
-            [FromQuery] string cod_preanalisis)
+            [FromQuery] string cod_preanalisis,
+            [FromQuery] string cod_garantia)
         {
-            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis);
+            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_Actualizar")]
+        public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
+            int codEmpresa,
+            [FromQuery] string cod_garantia,
+            [FromBody] FrmPreaEstudiov2RefundicionesActualizarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica")]
+        public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(
+            int codEmpresa,
+            [FromQuery] string cod_garantia,
+            [FromBody] FrmPreaEstudiov2RefundicionToggleRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(codEmpresa, request, cod_garantia);
         }
 
         /// <summary>
@@ -125,15 +291,32 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Fianzas_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [HttpPost("Prea_frmPreaEstudiov2_Fianzas_Actualizar")]
+        public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_Actualizar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2FianzasActualizarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Fianzas_Actualizar(codEmpresa, request);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Fianzas_ToggleAplica")]
+        public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_ToggleAplica(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2FianzaToggleRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Fianzas_ToggleAplica(codEmpresa, request);
+        }
+
         /// <summary>
         /// Consulta los desembolsos del expediente.
         /// </summary>
         [HttpGet("Prea_frmPreaEstudiov2_Desembolsos_Consultar")]
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Consultar(
             int codEmpresa,
-            [FromQuery] string cod_preanalisis)
+            [FromQuery] string cod_preanalisis,
+            [FromQuery] string usuario)
         {
-            return _bl.Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, cod_preanalisis);
+            return _bl.Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, cod_preanalisis, usuario);
         }
 
         /// <summary>
@@ -154,9 +337,10 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Eliminar(
             int codEmpresa,
             [FromQuery] string cod_preanalisis,
-            [FromQuery] int id_desembolso)
+            [FromQuery] int id_desembolso,
+            [FromQuery] string usuario)
         {
-            return _bl.Prea_frmPreaEstudiov2_Desembolsos_Eliminar(codEmpresa, cod_preanalisis, id_desembolso);
+            return _bl.Prea_frmPreaEstudiov2_Desembolsos_Eliminar(codEmpresa, cod_preanalisis, id_desembolso, usuario);
         }
 
         /// <summary>
@@ -170,6 +354,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Historial_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [HttpPost("Prea_frmPreaEstudiov2_Etiqueta_Agregar")]
+        public ErrorDto<FrmPreaEstudiov2HistorialResponse> Prea_frmPreaEstudiov2_Etiqueta_Agregar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2EtiquetaAgregarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Etiqueta_Agregar(codEmpresa, request);
+        }
+
         /// <summary>
         /// Consulta los adjuntos del expediente.
         /// </summary>
@@ -179,6 +371,28 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromQuery] string cod_preanalisis)
         {
             return _bl.Prea_frmPreaEstudiov2_Adjuntos_Consultar(codEmpresa, cod_preanalisis);
+        }
+
+        /// <summary>
+        /// Guarda un archivo adjunto al expediente.
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Adjunto_Guardar")]
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Guardar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2AdjuntoGuardarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Adjunto_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Elimina un archivo adjunto del expediente.
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Adjunto_Eliminar")]
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2AdjuntoEliminarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Adjunto_Eliminar(codEmpresa, request);
         }
 
         /// <summary>
@@ -267,6 +481,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromBody] FrmPreaEstudiov2ExtraGuardarRequest request)
         {
             return _bl.Prea_frmPreaEstudiov2_Extras_Guardar(codEmpresa, request);
+        }
+
+        [HttpPost("Prea_frmPreaEstudiov2_Extras_Borrar")]
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Borrar(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2ExtraBorrarRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Extras_Borrar(codEmpresa, request);
         }
 
         /// <summary>

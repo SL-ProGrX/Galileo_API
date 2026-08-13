@@ -46,5 +46,87 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             return result;
         }
+
+        /// <summary>
+        /// VB6: btnAdjunto_Guardar_Click. Guarda el archivo (contenido binario) adjunto al expediente.
+        /// INSERT INTO CRD_PREA_V2_ADJUNTOS (ID_EXPEDIENTE, DOC_ADJUNTO, NOM_ADJUNTO, USUARIO_REG, FECHA_REG)
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Guardar(
+            int codEmpresa,
+            string usuario,
+            string cod_preanalisis,
+            string nombre_archivo,
+            byte[] contenido)
+        {
+            var result = new ErrorDto<string>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = "Ok"
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = @"INSERT INTO CRD_PREA_V2_ADJUNTOS (ID_EXPEDIENTE, DOC_ADJUNTO, NOM_ADJUNTO, USUARIO_REG, FECHA_REG)
+                                     VALUES (@Expediente, @Contenido, @NombreArchivo, @Usuario, @FechaReg)";
+
+                connection.Execute(sql, new
+                {
+                    Expediente = cod_preanalisis.Trim(),
+                    Contenido = contenido,
+                    NombreArchivo = nombre_archivo,
+                    Usuario = usuario,
+                    FechaReg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                }, commandType: CommandType.Text);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = string.Empty;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// VB6: btnAdjunto_Elimina_Click.
+        /// delete CRD_PREA_V2_ADJUNTOS Where ID_EXPEDIENTE = '&lt;exp&gt;' and ID_ADJUNTO in(&lt;ids&gt;)
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
+            int codEmpresa,
+            string cod_preanalisis,
+            int id_adjunto)
+        {
+            var result = new ErrorDto<string>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = "Ok"
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
+
+                connection.Execute(sql, new
+                {
+                    Expediente = cod_preanalisis.Trim(),
+                    IdAdjunto = id_adjunto
+                }, commandType: CommandType.Text);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = string.Empty;
+            }
+
+            return result;
+        }
     }
 }
