@@ -511,7 +511,7 @@
         [System.Text.Json.Serialization.JsonRequired]
         public decimal componente_adicional_porc { get; set; }
         /// <summary>txtS_ComponenteAdicional en VB6 (SP: @EXTRAS_FIJAS).</summary>
-        public decimal componente_adicional_base { get; set; }
+        public decimal componente_adicional_base { get; set; } = 0;
         public string notas_cumplimiento { get; set; } = string.Empty;
 
         /// <summary>'E' expediente principal, 'S' sub-expediente (fiador). VB6:
@@ -691,7 +691,7 @@
         /// <summary>'C' = Cancelados, 'A' = Por Cobrar (gCuotasCancela/gCuotasCobrar en VB6).</summary>
         public string tipo { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
-        public decimal cuota { get; set; }
+        public decimal cuota { get; set; } = 0;
     }
 
     public class FrmPreaEstudiov2CreditoTransitoBorrarRequest
@@ -893,7 +893,7 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
-        public int id_adjunto { get; set; }
+        public int id_adjunto { get; set; } = 0;
     }
 
     #endregion
