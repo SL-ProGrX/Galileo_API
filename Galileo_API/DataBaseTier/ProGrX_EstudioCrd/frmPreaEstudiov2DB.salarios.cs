@@ -2,7 +2,6 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
-using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -47,34 +46,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     "EXEC spCrdPreaEliminarSalarios @Expediente",
                     new { Expediente = codPreanalisis });
 
-                var expedienteEscapado = codPreanalisis.Replace("'", "''");
-
-                var sqlSistema = new StringBuilder();
-                var sqlOtros = new StringBuilder();
+                const string sqlSistema = @"EXEC spCrdPreaGeneraSalariosSistema
+                    @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
+                const string sqlOtros = @"EXEC spCrdPreaGeneraSalariosConsultaLinea
+                    @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
                 var orden = 0;
 
                 foreach (var fila in request.tabla_salarios)
                 {
                     orden++;
-                    var fecha = fila.fecha.HasValue ? fila.fecha.Value.ToString("yyyy-MM-dd") : string.Empty;
-
-                    sqlSistema.Append(' ').Append(
-                        "EXEC spCrdPreaGeneraSalariosSistema '" + expedienteEscapado + "', "
-                        + Dec(fila.salario_s) + ", '" + fecha + "', " + orden + ", " + Dec(fila.ca) + ", " + fila.mes);
-
-                    sqlOtros.Append(' ').Append(
-                        "EXEC spCrdPreaGeneraSalariosConsultaLinea '" + expedienteEscapado + "', "
-                        + Dec(fila.salario_rh) + ", '" + fecha + "', " + orden + ", " + Dec(fila.ca) + ", " + fila.mes);
+                    connection.Execute(
+                        sqlSistema,
+                        CrearParametrosTablaSalarios(new TablaSalariosParametros
+                        {
+                            CodPreanalisis = codPreanalisis,
+                            Fila = fila,
+                            Orden = orden,
+                            Salario = fila.salario_s
+                        }));
                 }
 
-                if (sqlSistema.Length > 0)
+                orden = 0;
+                foreach (var fila in request.tabla_salarios)
                 {
-                    connection.Execute(sqlSistema.ToString());
-                }
-
-                if (sqlOtros.Length > 0)
-                {
-                    connection.Execute(sqlOtros.ToString());
+                    orden++;
+                    connection.Execute(
+                        sqlOtros,
+                        CrearParametrosTablaSalarios(new TablaSalariosParametros
+                        {
+                            CodPreanalisis = codPreanalisis,
+                            Fila = fila,
+                            Orden = orden,
+                            Salario = fila.salario_rh
+                        }));
                 }
 
                 result.Result = ObtenerTablaSalarios(connection, codPreanalisis);
@@ -86,6 +90,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Crea los parámetros comunes para registrar una fila de la tabla de salarios.
+        /// </summary>
+        private static DynamicParameters CrearParametrosTablaSalarios(TablaSalariosParametros valores)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@Expediente", valores.CodPreanalisis, DbType.String);
+            parameters.Add("@Salario", valores.Salario, DbType.Decimal);
+            parameters.Add("@Fecha", valores.Fila.fecha, DbType.Date);
+            parameters.Add("@Orden", valores.Orden, DbType.Int32);
+            parameters.Add("@Ca", valores.Fila.ca, DbType.Decimal);
+            parameters.Add("@Mes", valores.Fila.mes, DbType.Int32);
+            return parameters;
+        }
+
+        private sealed class TablaSalariosParametros
+        {
+            public string CodPreanalisis { get; init; } = string.Empty;
+            public FrmPreaEstudiov2SalarioDetalleDto Fila { get; init; } = new();
+            public int Orden { get; init; }
+            public decimal Salario { get; init; }
         }
 
         /// <summary>
