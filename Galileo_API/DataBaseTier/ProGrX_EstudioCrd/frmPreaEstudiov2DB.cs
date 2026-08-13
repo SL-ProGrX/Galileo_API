@@ -238,7 +238,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 return (salarioMinimo, salarioMinimo + spreadNormativa);
             }
-            catch
+            catch (DataException)
             {
                 return (0m, 0m);
             }
