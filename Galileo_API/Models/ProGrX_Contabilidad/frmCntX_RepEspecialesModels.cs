@@ -4,6 +4,10 @@
     {
         public int? periodo { get; set; }
 
+        public int? periodoAnio { get; set; }
+
+        public int? periodoMes { get; set; }
+
         public string? unidad { get; set; }
 
         public string? centroCosto { get; set; }
