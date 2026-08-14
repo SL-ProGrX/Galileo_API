@@ -33,7 +33,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
         public ErrorDto<AfRecepcionDevolucionesLiqAplicarData>
             AF_frmAF_RecepcionDevolucionesLiq_Aplicar(
                 int codEmpresa,
-                AfRecepcionDevolucionesLiqAplicarRequest? request)
+                AfRecepcionDevolucionesLiqAplicarRequest request)
         {
             return _db.AF_frmAF_RecepcionDevolucionesLiq_Aplicar(
                 codEmpresa,

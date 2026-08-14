@@ -41,13 +41,8 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         public ErrorDto<AfRecepcionDevolucionesLiqAplicarData>
             AF_frmAF_RecepcionDevolucionesLiq_Aplicar(
                 int codEmpresa,
-                AfRecepcionDevolucionesLiqAplicarRequest? request)
+                AfRecepcionDevolucionesLiqAplicarRequest request)
         {
-            if (request is not null)
-            {
-                request.usuario = User.Identity?.Name?.Trim() ?? string.Empty;
-            }
-
             return _bl.AF_frmAF_RecepcionDevolucionesLiq_Aplicar(
                 codEmpresa,
                 request);

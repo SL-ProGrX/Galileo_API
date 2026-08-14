@@ -126,7 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         public ErrorDto<AfRecepcionDevolucionesLiqAplicarData>
             AF_frmAF_RecepcionDevolucionesLiq_Aplicar(
                 int codEmpresa,
-                AfRecepcionDevolucionesLiqAplicarRequest? request)
+                AfRecepcionDevolucionesLiqAplicarRequest request)
         {
             string? validacion = AF_frmAF_RecepcionDevolucionesLiq_Aplicar_Validar(
                 request);
@@ -149,11 +149,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         connection,
                         transaction);
 
-                    int aplicados = AF_frmAF_RecepcionDevolucionesLiq_Aplicar_Procesar(
-                        connection,
-                        transaction,
-                        request!,
-                        tag);
+                    int aplicados =
+                        AF_frmAF_RecepcionDevolucionesLiq_Aplicar_Procesar(
+                            connection,
+                            transaction,
+                            request,
+                            tag);
 
                     transaction.Commit();
 
