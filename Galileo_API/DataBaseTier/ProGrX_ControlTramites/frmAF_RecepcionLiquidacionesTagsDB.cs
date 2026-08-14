@@ -280,6 +280,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         /// Registra los tags de recepcion o devolucion para
         /// las liquidaciones seleccionadas.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<
             AfRecepcionLiquidacionesTagAplicarResponse>
             AF_frmAF_RecepcionLiquidacionesTag_Movimiento_Aplicar(
@@ -289,53 +292,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         {
             if (request is null)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Los datos del proceso son requeridos.",
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
+                return AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                    "Los datos del proceso son requeridos.");
             }
 
             string movimiento =
                 AF_frmAF_RecepcionLiquidacionesTag_Movimiento_Normalizar(
                     request.movimiento);
 
-            if (string.IsNullOrWhiteSpace(movimiento))
-            {
-                return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es v&aacute;lido.",
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
-            }
+            string? mensajeValidacion =
+                AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Validar(
+                    request,
+                    movimiento);
 
-            if (string.IsNullOrWhiteSpace(request.usuario))
+            if (!string.IsNullOrWhiteSpace(mensajeValidacion))
             {
-                return DbHelper.CreateErrorResponse(
-                    "El usuario es requerido.",
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
-            }
-
-            if (
-                request.boletas is null ||
-                request.boletas.Count == 0
-            )
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Debe seleccionar al menos una boleta.",
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
-            }
-
-            if (
-                request.boletas.Any(
-                    numeroBoleta =>
-                        numeroBoleta <= 0)
-            )
-            {
-                return DbHelper.CreateErrorResponse(
-                    "La lista contiene n&uacute;meros de boleta no v&aacute;lidos.",
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
+                return AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                    mensajeValidacion);
             }
 
             try
@@ -383,10 +356,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             transaction.Rollback();
 
-                            return DbHelper.CreateErrorResponse(
-                                $"No se encontr&oacute; la liquidaci&oacute;n {numeroBoleta}.",
-                                -2,
-                                new AfRecepcionLiquidacionesTagAplicarResponse());
+                            return AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                                $"No se encontr&oacute; la liquidaci&oacute;n {numeroBoleta}.");
                         }
 
                         string? validacion =
@@ -397,15 +368,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 movimiento,
                                 tags);
 
-                        if (!string.IsNullOrWhiteSpace(
-                                validacion))
+                        if (!string.IsNullOrWhiteSpace(validacion))
                         {
                             transaction.Rollback();
 
-                            return DbHelper.CreateErrorResponse(
-                                validacion,
-                                -2,
-                                new AfRecepcionLiquidacionesTagAplicarResponse());
+                            return AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                                validacion);
                         }
 
                         connection.Execute(
@@ -454,10 +422,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -2,
-                    new AfRecepcionLiquidacionesTagAplicarResponse());
+                return AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                    ex.Message);
             }
             catch (Exception ex)
             {
@@ -471,6 +437,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         /// <summary>
         /// Obtiene el historial de tags de una boleta.
         /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<List<
             AfRecepcionLiquidacionesTagHistorialResponse>>
             AF_frmAF_RecepcionLiquidacionesTag_Historial_Obtener(
@@ -833,6 +802,52 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             }
 
             return null;
+        }
+
+        private static string?
+            AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Validar(
+                AfRecepcionLiquidacionesTagAplicarRequest request,
+                string movimiento)
+        {
+            if (string.IsNullOrWhiteSpace(movimiento))
+            {
+                return "El tipo de movimiento no es v&aacute;lido.";
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            if (
+                request.boletas is null ||
+                request.boletas.Count == 0
+            )
+            {
+                return "Debe seleccionar al menos una boleta.";
+            }
+
+            if (
+                request.boletas.Any(
+                    numeroBoleta =>
+                        numeroBoleta <= 0)
+            )
+            {
+                return "La lista contiene n&uacute;meros de boleta no v&aacute;lidos.";
+            }
+
+            return null;
+        }
+
+        private static ErrorDto<
+            AfRecepcionLiquidacionesTagAplicarResponse>
+            AF_frmAF_RecepcionLiquidacionesTag_Aplicar_Error(
+                string mensaje)
+        {
+            return DbHelper.CreateErrorResponse(
+                mensaje,
+                -2,
+                new AfRecepcionLiquidacionesTagAplicarResponse());
         }
 
         private static string
