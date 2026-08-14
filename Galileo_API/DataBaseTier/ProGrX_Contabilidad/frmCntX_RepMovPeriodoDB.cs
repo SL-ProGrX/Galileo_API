@@ -174,7 +174,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var (mes, anio) = ObtenerPeriodo(
                     connection,
                     transaction,
-                    f.periodo!.Value,
+                    f.periodo.Value,
                     codContabilidad);
 
                 if (f.reporte == "03")
@@ -204,12 +204,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             ArgumentNullException.ThrowIfNull(f);
 
+            ValidarCamposRequeridos(f);
+            ValidarCodigos(f);
+            ValidarNivel(f);
+        }
+
+        /// <summary>
+        /// Valida los campos obligatorios del formulario.
+        /// </summary>
+        /// <param name="f">Filtros seleccionados en la pantalla.</param>
+        private static void ValidarCamposRequeridos(CntxRepMovPeriodoFiltroDto f)
+        {
             if (string.IsNullOrWhiteSpace(f.usuario))
                 throw new ArgumentException("Usuario es requerido.");
 
             if (!f.periodo.HasValue)
                 throw new ArgumentException("Periodo es requerido.");
 
+            if (f.tipo == "02" && string.IsNullOrWhiteSpace(f.area))
+                throw new ArgumentException("Área de trabajo es requerida.");
+        }
+
+        /// <summary>
+        /// Valida los códigos cerrados enviados por la interfaz.
+        /// </summary>
+        /// <param name="f">Filtros seleccionados en la pantalla.</param>
+        private static void ValidarCodigos(CntxRepMovPeriodoFiltroDto f)
+        {
             if (f.tipo is not ("01" or "02"))
                 throw new ArgumentException("Tipo de consulta inválido.");
 
@@ -218,18 +239,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (f.mostrar is not ("A" or "N"))
                 throw new ArgumentException("Forma de cálculo inválida.");
+        }
 
-            if (f.tipo == "02" && string.IsNullOrWhiteSpace(f.area))
-                throw new ArgumentException("Área de trabajo es requerida.");
-
-            if (f.reporte == "03" && f.nivel is not ("Unidad" or "Centro"))
-                throw new ArgumentException("Nivel de resultados inválido.");
-
-            if (f.reporte != "03"
-                && (!int.TryParse(f.nivel, out var nivel) || nivel is < 1 or > 8))
+        /// <summary>
+        /// Valida el nivel según la rama de resultados o catálogo.
+        /// </summary>
+        /// <param name="f">Filtros seleccionados en la pantalla.</param>
+        private static void ValidarNivel(CntxRepMovPeriodoFiltroDto f)
+        {
+            if (f.reporte == "03")
             {
-                throw new ArgumentException("Nivel contable inválido.");
+                if (f.nivel is not ("Unidad" or "Centro"))
+                    throw new ArgumentException("Nivel de resultados inválido.");
+
+                return;
             }
+
+            if (!int.TryParse(f.nivel, out var nivel) || nivel is < 1 or > 8)
+                throw new ArgumentException("Nivel contable inválido.");
         }
 
         /// <summary>
@@ -325,73 +352,148 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 transaction,
                 commandTimeout: 0);
 
-            var unidad = NormalizarOpcion(f.unidad, "C");
-            var centroCosto = NormalizarOpcion(f.centroCosto, "T");
-            var (mes, anio) = (mesInicial, anioInicial);
-
-            for (var indice = 1; indice <= 12; indice++)
-            {
-                ActualizarMovimientoCatalogo(
-                    connection,
-                    transaction,
-                    codContabilidad,
-                    f,
-                    unidad,
-                    centroCosto,
-                    indice,
-                    mes,
-                    anio);
-
-                (mes, anio) = SiguienteMes(mes, anio);
-            }
+            ActualizarMovimientosCatalogo(
+                connection,
+                transaction,
+                codContabilidad,
+                f,
+                mesInicial,
+                anioInicial);
         }
 
         /// <summary>
-        /// Actualiza un mes del catálogo usando la misma fuente elegida por el VB6 para unidad y centro.
+        /// Actualiza los doce meses usando las mismas fuentes elegidas por el VB6 para unidad y centro.
         /// </summary>
         /// <param name="connection">Conexión abierta de la empresa.</param>
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="codContabilidad">Código de la contabilidad.</param>
         /// <param name="f">Filtros seleccionados en la pantalla.</param>
-        /// <param name="unidad">Unidad normalizada; vacío significa consolidado.</param>
-        /// <param name="centroCosto">Centro normalizado; vacío significa todos.</param>
-        /// <param name="indice">Columna mensual de destino, de 1 a 12.</param>
-        /// <param name="mes">Mes calendario que se procesa.</param>
-        /// <param name="anio">Año calendario que se procesa.</param>
-        private static void ActualizarMovimientoCatalogo(
+        /// <param name="mesInicial">Mes inicial del periodo fiscal.</param>
+        /// <param name="anioInicial">Año inicial del periodo fiscal.</param>
+        private static void ActualizarMovimientosCatalogo(
             SqlConnection connection,
             SqlTransaction transaction,
             int codContabilidad,
             CntxRepMovPeriodoFiltroDto f,
-            string unidad,
-            string centroCosto,
-            int indice,
-            int mes,
-            int anio)
+            int mesInicial,
+            int anioInicial)
         {
-            var columna = ObtenerColumnaMovimiento(indice);
-            var fuente = ObtenerFuenteMovimiento(unidad, centroCosto);
-            var expresion = f.mostrar == "A"
-                ? "M.saldo_inicial + M.total_debitos + M.total_creditos"
-                : "M.total_debitos + M.total_creditos";
+            var unidad = NormalizarOpcion(f.unidad, "C");
+            var centroCosto = NormalizarOpcion(f.centroCosto, "T");
 
-            var filtroUnidad = string.IsNullOrEmpty(unidad) ? string.Empty : "AND M.cod_unidad = @unidad";
-            var filtroCentro = string.IsNullOrEmpty(centroCosto) ? string.Empty : "AND M.cod_centro_costo = @centro_costo";
+            const string sql = @"
+                DECLARE @fecha_inicial date = DATEFROMPARTS(@anio_inicial, @mes_inicial, 1);
 
-            var sql = $@"
-                UPDATE R
-                SET R.{columna} = X.movimiento
-                FROM CntX_Rep_Periodos_mov R
-                INNER JOIN (
-                    SELECT M.cod_cuenta, SUM({expresion}) AS movimiento
-                    FROM {fuente} M
-                    WHERE M.anio = @anio
-                      AND M.mes = @mes
+                ;WITH MovimientosBase AS
+                (
+                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
+                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
+                    FROM vCntX_Mov_Cuentas_General M
+                    WHERE @unidad = ''
+                      AND @centro_costo = ''
                       AND M.cod_contabilidad = @cod_contabilidad
-                      {filtroUnidad}
-                      {filtroCentro}
+
+                    UNION ALL
+
+                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
+                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
+                    FROM vCntX_Mov_Cuentas_CentroCosto M
+                    WHERE @unidad = ''
+                      AND @centro_costo <> ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_centro_costo = @centro_costo
+
+                    UNION ALL
+
+                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
+                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
+                    FROM vCntX_Mov_Cuentas_Unidad M
+                    WHERE @unidad <> ''
+                      AND @centro_costo = ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_unidad = @unidad
+
+                    UNION ALL
+
+                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
+                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
+                    FROM CntX_Mov_Cuentas_Detallado M
+                    WHERE @unidad <> ''
+                      AND @centro_costo <> ''
+                      AND M.cod_contabilidad = @cod_contabilidad
+                      AND M.cod_unidad = @unidad
+                      AND M.cod_centro_costo = @centro_costo
+                ),
+                Movimientos AS
+                (
+                    SELECT M.cod_cuenta,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 0, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_01,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 1, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_02,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 2, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_03,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 3, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_04,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 4, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_05,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 5, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_06,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 6, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_07,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 7, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_08,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 8, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_09,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 9, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_10,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 10, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_11,
+                           SUM(CASE WHEN M.fecha = DATEADD(month, 11, @fecha_inicial)
+                               THEN CASE WHEN @mostrar = 'A'
+                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
+                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_12
+                    FROM MovimientosBase M
+                    WHERE M.fecha BETWEEN @fecha_inicial AND DATEADD(month, 11, @fecha_inicial)
                     GROUP BY M.cod_cuenta
-                ) X ON X.cod_cuenta = R.cod_cuenta
+                )
+                UPDATE R
+                SET R.movimiento_01 = X.movimiento_01,
+                    R.movimiento_02 = X.movimiento_02,
+                    R.movimiento_03 = X.movimiento_03,
+                    R.movimiento_04 = X.movimiento_04,
+                    R.movimiento_05 = X.movimiento_05,
+                    R.movimiento_06 = X.movimiento_06,
+                    R.movimiento_07 = X.movimiento_07,
+                    R.movimiento_08 = X.movimiento_08,
+                    R.movimiento_09 = X.movimiento_09,
+                    R.movimiento_10 = X.movimiento_10,
+                    R.movimiento_11 = X.movimiento_11,
+                    R.movimiento_12 = X.movimiento_12
+                FROM CntX_Rep_Periodos_mov R
+                INNER JOIN Movimientos X ON X.cod_cuenta = R.cod_cuenta
                 WHERE R.usuario = @usuario
                   AND R.cod_contabilidad = @cod_contabilidad;";
 
@@ -399,12 +501,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 sql,
                 new
                 {
-                    anio,
-                    mes,
+                    anio_inicial = anioInicial,
+                    mes_inicial = mesInicial,
+                    mostrar = f.mostrar,
                     cod_contabilidad = codContabilidad,
                     unidad,
                     centro_costo = centroCosto,
-                    usuario = f.usuario!.Trim()
+                    usuario = f.usuario.Trim()
                 },
                 transaction,
                 commandTimeout: 0);
@@ -510,7 +613,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var parametros = new
             {
-                usuario = f.usuario!.Trim(),
+                usuario = f.usuario.Trim(),
                 cod_contabilidad = codContabilidad,
                 tipo = f.tipo,
                 nivel = f.nivel,
@@ -521,51 +624,72 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             connection.Execute(sqlInicial, parametros, transaction, commandTimeout: 0);
 
-            var (mes, anio) = (mesInicial, anioInicial);
-            for (var indice = 1; indice <= 12; indice++)
-            {
-                ActualizarMovimientoResultados(
-                    connection,
-                    transaction,
-                    codContabilidad,
-                    f,
-                    indice,
-                    mes,
-                    anio);
-
-                (mes, anio) = SiguienteMes(mes, anio);
-            }
+            ActualizarMovimientosResultados(
+                connection,
+                transaction,
+                codContabilidad,
+                f,
+                mesInicial,
+                anioInicial);
         }
 
         /// <summary>
-        /// Calcula un mes de resultados mediante fxCntX_UtilidadDetallada para cada agrupación preparada.
+        /// Calcula los doce meses mediante fxCntX_UtilidadDetallada para cada agrupación preparada.
         /// </summary>
         /// <param name="connection">Conexión abierta de la empresa.</param>
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="codContabilidad">Código de la contabilidad.</param>
         /// <param name="f">Filtros seleccionados en la pantalla.</param>
-        /// <param name="indice">Columna mensual de destino, de 1 a 12.</param>
-        /// <param name="mes">Mes calendario que se procesa.</param>
-        /// <param name="anio">Año calendario que se procesa.</param>
-        private static void ActualizarMovimientoResultados(
+        /// <param name="mesInicial">Mes inicial del periodo fiscal.</param>
+        /// <param name="anioInicial">Año inicial del periodo fiscal.</param>
+        private static void ActualizarMovimientosResultados(
             SqlConnection connection,
             SqlTransaction transaction,
             int codContabilidad,
             CntxRepMovPeriodoFiltroDto f,
-            int indice,
-            int mes,
-            int anio)
+            int mesInicial,
+            int anioInicial)
         {
-            var columna = ObtenerColumnaMovimiento(indice);
-            var sql = $@"
+            const string sql = @"
+                DECLARE @fecha_inicial date = DATEFROMPARTS(@anio_inicial, @mes_inicial, 1);
+
                 UPDATE CNTX_REP_PERIODOS_MOV_UNIDAD
-                SET {columna} = dbo.fxCntX_UtilidadDetallada(
-                    @anio,
-                    @mes,
-                    cod_contabilidad,
-                    cod_unidad,
-                    cod_centro_costo,
-                    @mostrar)
+                SET movimiento_01 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 0, @fecha_inicial)), MONTH(DATEADD(month, 0, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_02 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 1, @fecha_inicial)), MONTH(DATEADD(month, 1, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_03 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 2, @fecha_inicial)), MONTH(DATEADD(month, 2, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_04 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 3, @fecha_inicial)), MONTH(DATEADD(month, 3, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_05 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 4, @fecha_inicial)), MONTH(DATEADD(month, 4, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_06 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 5, @fecha_inicial)), MONTH(DATEADD(month, 5, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_07 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 6, @fecha_inicial)), MONTH(DATEADD(month, 6, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_08 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 7, @fecha_inicial)), MONTH(DATEADD(month, 7, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_09 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 8, @fecha_inicial)), MONTH(DATEADD(month, 8, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_10 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 9, @fecha_inicial)), MONTH(DATEADD(month, 9, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_11 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 10, @fecha_inicial)), MONTH(DATEADD(month, 10, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar),
+                    movimiento_12 = dbo.fxCntX_UtilidadDetallada(
+                        YEAR(DATEADD(month, 11, @fecha_inicial)), MONTH(DATEADD(month, 11, @fecha_inicial)),
+                        cod_contabilidad, cod_unidad, cod_centro_costo, @mostrar)
                 WHERE usuario = @usuario
                   AND cod_contabilidad = @cod_contabilidad;";
 
@@ -573,10 +697,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 sql,
                 new
                 {
-                    anio,
-                    mes,
+                    anio_inicial = anioInicial,
+                    mes_inicial = mesInicial,
                     mostrar = f.mostrar,
-                    usuario = f.usuario!.Trim(),
+                    usuario = f.usuario.Trim(),
                     cod_contabilidad = codContabilidad
                 },
                 transaction,
@@ -593,7 +717,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             return new
             {
-                usuario = f.usuario!.Trim(),
+                usuario = f.usuario.Trim(),
                 cod_contabilidad = codContabilidad,
                 reporte = f.reporte,
                 tipo = f.tipo,
@@ -613,45 +737,5 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return normalizado == opcionTodos ? string.Empty : normalizado;
         }
 
-        /// <summary>
-        /// Elige la vista contable equivalente a la combinación usada por el VB6.
-        /// </summary>
-        /// <param name="unidad">Unidad normalizada.</param>
-        /// <param name="centroCosto">Centro de costo normalizado.</param>
-        /// <returns>Nombre controlado de la vista o tabla de movimientos.</returns>
-        private static string ObtenerFuenteMovimiento(string unidad, string centroCosto)
-        {
-            return (string.IsNullOrEmpty(unidad), string.IsNullOrEmpty(centroCosto)) switch
-            {
-                (true, true) => "vCntX_Mov_Cuentas_General",
-                (true, false) => "vCntX_Mov_Cuentas_CentroCosto",
-                (false, true) => "vCntX_Mov_Cuentas_Unidad",
-                _ => "CntX_Mov_Cuentas_Detallado"
-            };
-        }
-
-        /// <summary>
-        /// Obtiene una columna mensual controlada para evitar identificadores SQL provenientes del cliente.
-        /// </summary>
-        /// <param name="indice">Número de columna mensual, de 1 a 12.</param>
-        /// <returns>Nombre de columna de movimiento.</returns>
-        private static string ObtenerColumnaMovimiento(int indice)
-        {
-            if (indice is < 1 or > 12)
-                throw new ArgumentOutOfRangeException(nameof(indice), "Mes inválido.");
-
-            return $"movimiento_{indice:00}";
-        }
-
-        /// <summary>
-        /// Avanza al siguiente mes calendario, incluyendo el cambio de año.
-        /// </summary>
-        /// <param name="mes">Mes actual.</param>
-        /// <param name="anio">Año actual.</param>
-        /// <returns>Siguiente mes y año calendario.</returns>
-        private static (int mes, int anio) SiguienteMes(int mes, int anio)
-        {
-            return mes == 12 ? (1, anio + 1) : (mes + 1, anio);
-        }
     }
 }
