@@ -166,6 +166,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             ValidarFiltros(f);
 
+            if (!f.periodo.HasValue)
+                throw new ArgumentException("Periodo es requerido.");
+
+            var periodo = f.periodo.Value;
+
             connection.Open();
             using var transaction = connection.BeginTransaction();
 
@@ -174,7 +179,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 var (mes, anio) = ObtenerPeriodo(
                     connection,
                     transaction,
-                    f.periodo.Value,
+                    periodo,
                     codContabilidad);
 
                 if (f.reporte == "03")
