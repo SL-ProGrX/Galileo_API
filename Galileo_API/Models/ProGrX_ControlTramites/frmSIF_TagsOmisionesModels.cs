@@ -40,6 +40,6 @@
     {
         public int Id_Error { get; set; } = 0;
         public string Cod_Modulo { get; set; } = string.Empty;
-        public bool Asignado { get; set; }
+        public required bool Asignado { get; set; }
     }
 }
