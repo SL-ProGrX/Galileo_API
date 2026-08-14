@@ -14,7 +14,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmCntXRepMovPeriodoDb(config);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
+        public ErrorDto<List<CntxRepMovPeriodoPeriodoDto>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
         {
             return _db.CntX_PeriodosRepMov_Listar(codEmpresa, codContabilidad);
         }
