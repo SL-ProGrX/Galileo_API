@@ -822,19 +822,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Guarda una incapacidad del expediente.
+        /// Guarda la lista de incapacidades del expediente (sbIncapacidades_Guardar en VB6).
         /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
+        public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
             FrmPreaEstudiov2IncapacidadGuardarRequest request)
         {
             if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
-                return new ErrorDto<string>
+                return new ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente y la incapacidad.",
-                    Result = string.Empty
+                    Description = "Debe indicar el expediente y las incapacidades.",
+                    Result = []
                 };
             }
 
@@ -940,6 +940,56 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             }
 
             return _db.Prea_frmPreaEstudiov2_Causas_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Consulta el tab Prendario: log de exámenes y datos de la prenda.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2PrendarioConsultarResponse> Prea_frmPreaEstudiov2_Prendario_Consultar(
+            int codEmpresa,
+            string cod_preanalisis)
+        {
+            if (string.IsNullOrWhiteSpace(cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioConsultarResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2PrendarioConsultarResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Prendario_Consultar(codEmpresa, cod_preanalisis);
+        }
+
+        /// <summary>
+        /// Aplica un estado a los exámenes de prenda del expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse> Prea_frmPreaEstudiov2_Prendario_Estado(
+            int codEmpresa,
+            FrmPreaEstudiov2PrendarioEstadoRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2PrendarioEstadoResponse()
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.estado))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar el estado de los exámenes.",
+                    Result = new FrmPreaEstudiov2PrendarioEstadoResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Prendario_Estado(codEmpresa, request);
         }
     }
 }

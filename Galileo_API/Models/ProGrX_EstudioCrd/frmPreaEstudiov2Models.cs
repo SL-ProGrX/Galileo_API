@@ -196,6 +196,12 @@
         public string id_promotor { get; set; } = string.Empty;
         public string promotor_desc { get; set; } = string.Empty;
 
+        /// <summary>txtOficina en VB6. Texto = OFICINA (descripción de SIF_OFICINAS,
+        /// sbLigarDatos frm ~10713); Tag = COD_OFICINA (código, se reenvía al guardar
+        /// y en btnOficinaCambia_Click vía spCrdPreaAsignaOficina).</summary>
+        public string oficina { get; set; } = string.Empty;
+        public string cod_oficina { get; set; } = string.Empty;
+
         /// <summary>txtCFIA_Avaluo en VB6 (columna MONTO_AVALUO_CFIA).</summary>
         public decimal monto_avaluo_cfia { get; set; }
 
@@ -1122,6 +1128,11 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        public List<FrmPreaEstudiov2IncapacidadItemRequest> incapacidades { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2IncapacidadItemRequest
+    {
         [System.Text.Json.Serialization.JsonRequired]
         public DateTime desde { get; set; }
         [System.Text.Json.Serialization.JsonRequired]
@@ -1177,6 +1188,53 @@
         public string estado { get; set; } = "B";
         public string estado_desc { get; set; } = "Abandonado";
         public string mensaje { get; set; } = "Se ha ABANDONADO el expediente correctamente.";
+    }
+
+    #endregion
+
+    #region Prendario
+
+    /// <summary>
+    /// Consulta la información del tab Prendario (sbPrendario_Load en VB6):
+    /// log de exámenes (spCrd_Prea_Examenes_Log) y datos de la prenda
+    /// (spCrd_Prea_Prenda_Datos: Prenda_Poliza, Prenda_Monto, ESTADO_EXAMENES).
+    /// </summary>
+    public class FrmPreaEstudiov2PrendarioConsultarRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2ExamenPrendaDto
+    {
+        public int id_nota { get; set; }
+        public string nota { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string fecha { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2PrendarioConsultarResponse
+    {
+        public List<FrmPreaEstudiov2ExamenPrendaDto> examenes { get; set; } = new();
+        public decimal valor_prenda { get; set; }
+        public decimal monto_poliza_prenda { get; set; }
+        public string estado_examenes { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Aplica un estado a los exámenes de prenda (btnP_Examenes_Click en VB6):
+    /// exec spCRD_PreaAplicaEstadoExamenes '&lt;expediente&gt;', '&lt;estado&gt;', '&lt;usuario&gt;', '&lt;nota&gt;'.
+    /// El estado es E/R/A (Enviados/Recibidos/Aprobados).
+    /// </summary>
+    public class FrmPreaEstudiov2PrendarioEstadoRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2PrendarioEstadoResponse
+    {
+        public string mensaje { get; set; } = string.Empty;
     }
 
     #endregion
