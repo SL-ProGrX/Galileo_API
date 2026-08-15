@@ -70,9 +70,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             try
             {
-                var sql = "SELECT dbo.fxCRDPreaCalculaRenta("
-                    + salario.ToString(System.Globalization.CultureInfo.InvariantCulture) + ") AS Resultado";
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                const string sql = "SELECT dbo.fxCRDPreaCalculaRenta(@Salario) AS Resultado";
+                var row = connection.QueryFirstOrDefault(sql, new { Salario = salario }) as IDictionary<string, object>;
                 if (row is null)
                 {
                     return 0m;
