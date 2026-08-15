@@ -65,6 +65,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 valor_prenda = GetDecimal(row, "MONTO_VALOR_VEHICULO"),
                 id_promotor = GetString(row, "Id_Promotor"),
                 promotor_desc = GetString(row, "PromotorDesc"),
+                oficina = GetString(row, "OFICINA"),
+                cod_oficina = GetString(row, "COD_OFICINA"),
                 monto_avaluo_cfia = GetDecimal(row, "MONTO_AVALUO_CFIA"),
                 dias_interes_gastos_op = GetInt(row, "DIAS_INTERES_GASTOS_OP"),
                 cod_capacidad = GetString(row, "COD_CAPACIDAD"),

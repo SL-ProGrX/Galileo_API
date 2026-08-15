@@ -250,6 +250,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Borrar(codEmpresa, request);
         }
 
+        [HttpDelete("Prea_frmPreaEstudiov2_Creditos_BorrarFila")]
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Creditos_BorrarFila(codEmpresa, request);
+        }
+
         /// <summary>
         /// Consulta las refundiciones del expediente.
         /// </summary>
@@ -451,10 +459,10 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Guarda una incapacidad del expediente.
+        /// Guarda la lista de incapacidades del expediente (sbIncapacidades_Guardar en VB6).
         /// </summary>
         [HttpPost("Prea_frmPreaEstudiov2_Incapacidades_Guardar")]
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
+        public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
             [FromBody] FrmPreaEstudiov2IncapacidadGuardarRequest request)
         {
@@ -512,6 +520,29 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromBody] FrmPreaEstudiov2CausasGuardarRequest request)
         {
             return _bl.Prea_frmPreaEstudiov2_Causas_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Consulta el tab Prendario: log de exámenes y datos de la prenda
+        /// (sbPrendario_Load en VB6).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Prendario_Consultar")]
+        public ErrorDto<FrmPreaEstudiov2PrendarioConsultarResponse> Prea_frmPreaEstudiov2_Prendario_Consultar(
+            int codEmpresa,
+            [FromQuery] string cod_preanalisis)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Prendario_Consultar(codEmpresa, cod_preanalisis);
+        }
+
+        /// <summary>
+        /// Aplica un estado a los exámenes de prenda (btnP_Examenes_Click en VB6).
+        /// </summary>
+        [HttpPost("Prea_frmPreaEstudiov2_Prendario_Estado")]
+        public ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse> Prea_frmPreaEstudiov2_Prendario_Estado(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2PrendarioEstadoRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Prendario_Estado(codEmpresa, request);
         }
     }
 }
