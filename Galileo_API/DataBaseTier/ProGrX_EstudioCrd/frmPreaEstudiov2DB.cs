@@ -993,6 +993,44 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.bancos = [];
             }
 
+            try
+            {
+                // VB6: txtOficina_KeyDown (frmPreaEstudiov2.frm F4) -> select Cod_Oficina,
+                // Descripcion from SIF_OFICINAS con Filtro " and Estado = 1", Orden =
+                // Descripcion. Catálogo para el lookup del botón Cambiar.
+                var oficinas = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT RTRIM(Cod_Oficina) AS item, RTRIM(Descripcion) AS descripcion
+                      FROM SIF_OFICINAS
+                      WHERE Estado = 1
+                      ORDER BY Descripcion"
+                ).ToList();
+                catalogos.oficinas = oficinas;
+            }
+            catch
+            {
+                catalogos.oficinas = [];
+            }
+
+            try
+            {
+                // VB6: txtEjecutivo_KeyDown (frmPreaEstudiov2.frm F4) -> select ID_PROMOTOR
+                // as 'Id.', Nombre, Usuario from promotores con Filtro " and Estado = 1",
+                // Columna/Orden = ID_PROMOTOR. Catálogo para el lookup del botón Cambiar.
+                var ejecutivos = connection.Query<FrmPreaEstudiov2EjecutivoDto>(
+                    @"SELECT CAST(ID_PROMOTOR AS varchar(20)) AS id_promotor,
+                             RTRIM(Nombre) AS nombre,
+                             RTRIM(Usuario) AS usuario
+                      FROM promotores
+                      WHERE Estado = 1
+                      ORDER BY ID_PROMOTOR"
+                ).ToList();
+                catalogos.ejecutivos = ejecutivos;
+            }
+            catch
+            {
+                catalogos.ejecutivos = [];
+            }
+
             return catalogos;
         }
 

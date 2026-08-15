@@ -385,6 +385,28 @@
         /// cédula ni línea). Columnas verificadas por convención de sbCbo_Llena_New: el SP
         /// debe devolver IdX/ItmX (mProGrX_Dlls.bas línea ~1563).</summary>
         public List<FrmPreaEstudiov2DropdownDto> fondos { get; set; } = [];
+
+        /// <summary>Oficinas para el lookup del botón Cambiar (btnOficinaCambia).
+        /// VB6: txtOficina_KeyDown (F4) -> select Cod_Oficina, Descripcion from
+        /// SIF_OFICINAS + " and Estado = 1", orden por Descripcion.</summary>
+        public List<FrmPreaEstudiov2DropdownDto> oficinas { get; set; } = [];
+
+        /// <summary>Ejecutivos colocadores (promotores) para el lookup del botón Cambiar.
+        /// VB6: txtEjecutivo_KeyDown (F4) -> select ID_PROMOTOR as 'Id.', Nombre, Usuario
+        /// from promotores + " and Estado = 1", orden por ID_PROMOTOR.</summary>
+        public List<FrmPreaEstudiov2EjecutivoDto> ejecutivos { get; set; } = [];
+    }
+
+    /// <summary>
+    /// Ejecutivo colocador para el lookup del botón Cambiar (btnOficinaCambia).
+    /// VB6: txtEjecutivo_KeyDown (F4) -> "select ID_PROMOTOR as 'Id.',Nombre, Usuario
+    /// from promotores" con Filtro " and Estado = 1", Columna/Orden = ID_PROMOTOR.
+    /// </summary>
+    public class FrmPreaEstudiov2EjecutivoDto
+    {
+        public string id_promotor { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class FrmPreaEstudiov2DestinosGarantiasResponse
@@ -829,6 +851,15 @@
         public string cod_preanalisis { get; set; } = string.Empty;
         /// <summary>'C' = Cancelados, 'A' = Por Cobrar. VB6 elimina el grupo completo, no una fila.</summary>
         public string tipo { get; set; } = string.Empty;
+    }
+
+    /// <summary>Elimina UNA cuota en tránsito por su id_solicitud (borrado individual de fila).</summary>
+    public class FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string cod_preanalisis { get; set; } = string.Empty;
+        /// <summary>Identificador de la cuota en tránsito a eliminar (id_solicitud de CRD_PREA_DETALLE_CUOTAS_EN_TRANSITO).</summary>
+        public int id_solicitud { get; set; }
     }
 
     #endregion

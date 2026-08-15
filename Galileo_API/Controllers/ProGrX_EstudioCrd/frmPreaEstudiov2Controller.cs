@@ -250,6 +250,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Borrar(codEmpresa, request);
         }
 
+        [HttpDelete("Prea_frmPreaEstudiov2_Creditos_BorrarFila")]
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Creditos_BorrarFila(codEmpresa, request);
+        }
+
         /// <summary>
         /// Consulta las refundiciones del expediente.
         /// </summary>

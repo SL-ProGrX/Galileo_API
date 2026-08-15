@@ -396,6 +396,36 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Elimina una cuota en tránsito individual por id_solicitud.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            if (request.id_solicitud <= 0)
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar la cuota en tránsito a eliminar.",
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Creditos_BorrarFila(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta las refundiciones del expediente.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
