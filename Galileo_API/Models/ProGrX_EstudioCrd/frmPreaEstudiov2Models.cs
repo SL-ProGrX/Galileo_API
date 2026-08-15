@@ -585,28 +585,40 @@
         // (resumen/credito/salariosForm/observaciones), agregados para dejar de mandarlos
         // en 0/vacío. Los marcados ⚠️/❌/❓ en el diccionario quedan para fases siguientes.
         /// <summary>@27 REBAJO_EXTRAS (txtT_Extras). VB6: salariosForm.total_extras.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal total_extras { get; set; }
         /// <summary>@35 DEDUCCIONES. Fuente: resumen.deducciones (solo lectura).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal deducciones { get; set; }
         /// <summary>@36 CRD_TRANSITO_CANCELADOS. Fuente: resumen.creditos_cancelados.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal creditos_cancelados { get; set; }
         /// <summary>@37 CRD_TRANSITO_XCOBRAR. Fuente: resumen.creditos_por_cobrar.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal creditos_por_cobrar { get; set; }
         /// <summary>@38 SALARIO_LIQUIDO. Fuente: resumen.salario_liquido.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_liquido { get; set; }
         /// <summary>@39 REFUNDICIONES. Fuente: resumen.refundiciones.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal refundiciones { get; set; }
         /// <summary>@40 REFUNDICIONES_CUOTA. Fuente: resumen.refundiciones_cuota.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal refundiciones_cuota { get; set; }
         /// <summary>@41 DESEMBOLSOS. Fuente: resumen.desembolsos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal desembolsos { get; set; }
         /// <summary>@42 DESEMBOLSOS_CUOTA. Fuente: resumen.desembolsos_cuota.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal desembolsos_cuota { get; set; }
         /// <summary>@44 LIQUIDEZ_SIMPLE. Fuente: resumen.liquidez_sin_fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_sin_fianzas { get; set; }
         /// <summary>@45 FIANZAS. Fuente: resumen.fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal fianzas { get; set; }
         /// <summary>@46 LIQUIDEZ_CFIANZAS. Fuente: resumen.liquidez_con_fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_con_fianzas { get; set; }
         /// <summary>@47 OBSERVACION_ANALISTA. Fuente: this.observacionAnalista.</summary>
         public string observacion_analista { get; set; } = string.Empty;
@@ -627,10 +639,13 @@
         /// <summary>@60 GARANTIA_FND (default NULL). Fuente: this.fondoSeleccionado.</summary>
         public string? garantia_fondo { get; set; }
         /// <summary>@69 PORC_LIQ_CON_FIANZA. Fuente: resumen.liquidez_con_fianzas_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_con_fianzas_porc { get; set; }
         /// <summary>@70 PORC_LIQ_SIN_FIANZA. Fuente: resumen.liquidez_sin_fianzas_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_sin_fianzas_porc { get; set; }
         /// <summary>@74 MONTO_PORC_COMPONENTE_AD. Fuente: salariosForm.componentes_adicionales (base * porc / 100, ya calculado en Cargar).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal componentes_adicionales { get; set; }
         /// <summary>@78 PUNTOS_CIC_DEUDOR. Fuente: credito.cic_puntaje.</summary>
         public string cic_puntaje { get; set; } = string.Empty;
@@ -639,17 +654,23 @@
         /// <summary>@81 DIAS_INTERES_GASTOS_OP. Fuente: credito.dias_interes_gastos_op.</summary>
         public decimal? dias_interes_gastos_op { get; set; }
         /// <summary>@87 PORC_LIQ_SIN_FIANZA_CA. Fuente: resumen.liquidez_sin_fianzas_comp_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_sin_fianzas_comp_porc { get; set; }
         /// <summary>@88 PORC_LIQ_CON_FIANZA_CA. Fuente: resumen.liquidez_con_fianzas_comp_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_con_fianzas_comp_porc { get; set; }
         /// <summary>@89 LIQUIDEZ_SFIANZAS_CA. Fuente: resumen.liquidez_sin_fianzas_comp.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_sin_fianzas_comp { get; set; }
         /// <summary>@90 LIQUIDEZ_CFIANZAS_CA. Fuente: resumen.liquidez_con_fianzas_comp.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal liquidez_con_fianzas_comp { get; set; }
         /// <summary>@94 MONTO_VALOR_VEHICULO. Ya existe como valor_prenda arriba (txtPrendaValor) — no duplicar.</summary>
         /// <summary>@100 MONTO_INTERES. Fuente: resumen.intereses.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal intereses { get; set; }
         /// <summary>@101 MONTO_COMISION. Fuente: resumen.comisiones.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal comisiones { get; set; }
 
         // ---- Fase 3 del diccionario: ambigüedades resueltas leyendo sbEstudio_Guarda_Modifica
@@ -663,6 +684,7 @@
         /// MONTO_VALOR_VEHICULO = txtPrendaValor.Text = valor_prenda). Sin control propio en
         /// Angular todavía — se envía 0 documentado, no inventado (mismo campo que ya existía
         /// como monto_poliza_prenda, hardcodeado a 0 en el request).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto_poliza_prenda_vehiculo { get; set; }
         /// <summary>@25 ID_SOLICITUD = txtAsignado.Text. Fuente Angular: credito.asignado_operacion
         /// (ya mapeado 1:1 desde la columna ID_SOLICITUD en ConstruirCredito).</summary>
@@ -674,10 +696,12 @@
         /// <summary>@105 SALARIO_NORMATIVA = txtSalarioNormativa.Text (CRD_PREA_PARAMETROS '22').
         /// Fuente Angular: this.salarioNormativa (property de página, NO resumen.salario_normativa_estudio,
         /// que es un campo distinto).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_normativa { get; set; }
         /// <summary>@43 LIQUIDO_TOTAL = txtTotalLiquido.Text, cargado desde la columna LIQUIDO_TOTAL
         /// (confirmado: distinto de LIQUIDO_TOTAL_GRUPO). Fuente Angular: resumen.total_liquido_persona
         /// (mapeado 1:1 desde esa misma columna en Prea_frmPreaEstudiov2_Cargar).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal total_liquido_persona { get; set; }
 
         // ---- Fase 4 del diccionario: 11 parámetros sin control propio en Angular, resueltos
@@ -691,16 +715,20 @@
         /// <summary>@84 IND_TIPO_SALARIO_EXT: en VB6, default 0; 1 si chkS_Constancia está marcado;
         /// 2 si chkS_OrdenPatronal está marcado (el segundo pisa al primero, líneas 12246-12253).
         /// Fuente Angular: salariosForm.ind_salario_constancia / ind_salario_orden_patronal.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public bool ind_salario_constancia { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool ind_salario_orden_patronal { get; set; }
 
         // ---- Fase 5 del diccionario: últimos 3 params ❓ resueltos leyendo sbEstudio_Guarda_Modifica ----
         /// <summary>@103 REFUNDICIONES_MORA = txtR_TotalMora.Text. Fuente Angular: total_mora del
         /// tab Refundiciones (propiedad de página, actualizada por TabRefundicionesComponent).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal refundiciones_mora { get; set; }
         /// <summary>@104 SALARIO_USURA = txtSalarioMinimoInembargable.Text (VB6 reutiliza el
         /// control del salario mínimo inembargable para este parámetro, no hay txtSalarioUsura
         /// propio). Fuente Angular: this.salarioMinimoInembargable.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_minimo_inembargable { get; set; }
     }
 
@@ -859,6 +887,7 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         /// <summary>Identificador de la cuota en tránsito a eliminar (id_solicitud de CRD_PREA_DETALLE_CUOTAS_EN_TRANSITO).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_solicitud { get; set; }
     }
 
