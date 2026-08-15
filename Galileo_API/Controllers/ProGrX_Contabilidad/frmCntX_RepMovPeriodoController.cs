@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("CntX_PeriodosRepmov_Listar")]
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
+        public ErrorDto<List<CntxRepMovPeriodoPeriodoDto>> CntX_PeriodosRepMov_Listar(int codEmpresa, int codContabilidad)
         {
             return _bl.CntX_PeriodosRepMov_Listar(codEmpresa, codContabilidad);
         }
