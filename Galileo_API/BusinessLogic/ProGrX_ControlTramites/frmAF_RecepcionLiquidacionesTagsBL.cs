@@ -6,45 +6,59 @@ using Galileo_API.Models.ProGrX_ControlTramites;
 
 namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
 {
-    public sealed class FrmCrSeguimientoRecepcionTagBl
+    public sealed class FrmAfRecepcionLiquidacionesTagsBl
     {
-        private readonly FrmCrSeguimientoRecepcionTagDb _db;
+        private readonly
+            FrmAfRecepcionLiquidacionesTagsDb _db;
 
-        public FrmCrSeguimientoRecepcionTagBl(
+        public FrmAfRecepcionLiquidacionesTagsBl(
             IConfiguration config)
         {
             _db =
-                new FrmCrSeguimientoRecepcionTagDb(
+                new FrmAfRecepcionLiquidacionesTagsDb(
                     config);
         }
 
         public ErrorDto<
-            CrSeguimientoRecepcionTagInicializarResponse>
-            CR_frmCR_SeguimientoRecepcionTag_Inicializar(
+            AfRecepcionLiquidacionesTagInicializarResponse>
+            AF_frmAF_RecepcionLiquidacionesTag_Inicializar(
                 int codEmpresa)
         {
             return _db
-                .CR_frmCR_SeguimientoRecepcionTag_Inicializar(
+                .AF_frmAF_RecepcionLiquidacionesTag_Inicializar(
                     codEmpresa);
         }
 
         public ErrorDto<
-            CrSeguimientoRecepcionTagOperacionResponse?>
-            CR_frmCR_SeguimientoRecepcionTag_Operacion_Obtener(
+            AfRecepcionLiquidacionesTagLiquidacionResponse?>
+            AF_frmAF_RecepcionLiquidacionesTag_Liquidacion_Obtener(
                 int codEmpresa,
-                long idSolicitud,
+                long numeroBoleta,
                 string movimiento)
         {
             return _db
-                .CR_frmCR_SeguimientoRecepcionTag_Operacion_Obtener(
+                .AF_frmAF_RecepcionLiquidacionesTag_Liquidacion_Obtener(
                     codEmpresa,
-                    idSolicitud,
+                    numeroBoleta,
                     movimiento);
         }
 
+        public ErrorDto<
+            AfRecepcionLiquidacionesTagAplicarResponse>
+            AF_frmAF_RecepcionLiquidacionesTag_Movimiento_Aplicar(
+                int codEmpresa,
+                AfRecepcionLiquidacionesTagAplicarRequest?
+                    request)
+        {
+            return _db
+                .AF_frmAF_RecepcionLiquidacionesTag_Movimiento_Aplicar(
+                    codEmpresa,
+                    request);
+        }
+
         public ErrorDto<List<
-            CrSeguimientoRecepcionTagPendienteResponse>>
-            CR_frmCR_SeguimientoRecepcionTag_Pendientes_Obtener(
+            AfRecepcionLiquidacionesTagPendienteResponse>>
+            AF_frmAF_RecepcionLiquidacionesTag_Pendientes_Obtener(
                 int codEmpresa,
                 string? request)
         {
@@ -56,16 +70,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                         "Los filtros de pendientes son requeridos.",
                         -2,
                         new List<
-                            CrSeguimientoRecepcionTagPendienteResponse>());
+                            AfRecepcionLiquidacionesTagPendienteResponse>());
                 }
 
                 var filtros =
                     JsonSerializer.Deserialize<
-                        CrSeguimientoRecepcionTagPendientesRequest>(
+                        AfRecepcionLiquidacionesTagPendientesRequest>(
                             request,
                             new JsonSerializerOptions
                             {
-                                PropertyNameCaseInsensitive = true
+                                PropertyNameCaseInsensitive =
+                                    true
                             });
 
                 if (filtros is null)
@@ -74,11 +89,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                         "Los filtros de pendientes no son v&aacute;lidos.",
                         -2,
                         new List<
-                            CrSeguimientoRecepcionTagPendienteResponse>());
+                            AfRecepcionLiquidacionesTagPendienteResponse>());
                 }
 
                 return _db
-                    .CR_frmCR_SeguimientoRecepcionTag_Pendientes_Obtener(
+                    .AF_frmAF_RecepcionLiquidacionesTag_Pendientes_Obtener(
                         codEmpresa,
                         filtros);
             }
@@ -88,7 +103,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                     "El formato de los filtros de pendientes no es v&aacute;lido.",
                     -2,
                     new List<
-                        CrSeguimientoRecepcionTagPendienteResponse>());
+                        AfRecepcionLiquidacionesTagPendienteResponse>());
             }
             catch (Exception ex)
             {
@@ -96,26 +111,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                     ex.Message,
                     -1,
                     new List<
-                        CrSeguimientoRecepcionTagPendienteResponse>());
+                        AfRecepcionLiquidacionesTagPendienteResponse>());
             }
         }
 
-        public ErrorDto<
-            CrSeguimientoRecepcionTagAplicarResponse>
-            CR_frmCR_SeguimientoRecepcionTag_Movimiento_Aplicar(
-                int codEmpresa,
-                CrSeguimientoRecepcionTagAplicarRequest
-                    request)
-        {
-            return _db
-                .CR_frmCR_SeguimientoRecepcionTag_Movimiento_Aplicar(
-                    codEmpresa,
-                    request);
-        }
-
         public ErrorDto<List<
-            CrSeguimientoRecepcionTagHistorialResponse>>
-            CR_frmCR_SeguimientoRecepcionTag_Historial_Obtener(
+            AfRecepcionLiquidacionesTagHistorialResponse>>
+            AF_frmAF_RecepcionLiquidacionesTag_Historial_Obtener(
                 int codEmpresa,
                 string? request)
         {
@@ -127,12 +129,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                         "Los filtros de consulta son requeridos.",
                         -2,
                         new List<
-                            CrSeguimientoRecepcionTagHistorialResponse>());
+                            AfRecepcionLiquidacionesTagHistorialResponse>());
                 }
 
                 var filtros =
                     JsonSerializer.Deserialize<
-                        CrSeguimientoRecepcionTagHistorialRequest>(
+                        AfRecepcionLiquidacionesTagHistorialRequest>(
                             request,
                             new JsonSerializerOptions
                             {
@@ -146,11 +148,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                         "Los filtros de consulta no son v&aacute;lidos.",
                         -2,
                         new List<
-                            CrSeguimientoRecepcionTagHistorialResponse>());
+                            AfRecepcionLiquidacionesTagHistorialResponse>());
                 }
 
                 return _db
-                    .CR_frmCR_SeguimientoRecepcionTag_Historial_Obtener(
+                    .AF_frmAF_RecepcionLiquidacionesTag_Historial_Obtener(
                         codEmpresa,
                         filtros);
             }
@@ -160,7 +162,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                     "El formato de los filtros de consulta no es v&aacute;lido.",
                     -2,
                     new List<
-                        CrSeguimientoRecepcionTagHistorialResponse>());
+                        AfRecepcionLiquidacionesTagHistorialResponse>());
             }
             catch (Exception ex)
             {
@@ -168,7 +170,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                     ex.Message,
                     -1,
                     new List<
-                        CrSeguimientoRecepcionTagHistorialResponse>());
+                        AfRecepcionLiquidacionesTagHistorialResponse>());
             }
         }
     }

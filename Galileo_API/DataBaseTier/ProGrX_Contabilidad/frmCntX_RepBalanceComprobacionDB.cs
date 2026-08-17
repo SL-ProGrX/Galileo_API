@@ -1,10 +1,8 @@
-﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.Models;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Microsoft.Data.SqlClient;
-using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
@@ -12,19 +10,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     {
         private readonly PortalDB _portalDB;
         private readonly MCntXPreliminaresDb _mCntXPreliminaresDb;
+        private readonly MCntXCalculosDb _mCntXCalculosDb;
 
         public FrmCntXRepBalanceComprobacionDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _mCntXPreliminaresDb = new MCntXPreliminaresDb(config);
+            _mCntXCalculosDb = new MCntXCalculosDb(config);
         }
 
         /// <summary>
         /// Genera los movimientos temporales requeridos por el balance preliminar.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request">Parametros del proceso preliminar.</param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa cuya conexión se utilizará.</param>
+        /// <param name="request">Parámetros del proceso preliminar.</param>
+        /// <returns>Resultado del montaje de los movimientos temporales.</returns>
         public ErrorDto<bool> CntX_Preliminar_Montar(
             int codEmpresa,
             CntXPreliminarMontarRequest request)
@@ -35,51 +35,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Lista las unidades 
+        /// Lista las unidades de negocio de la contabilidad activa.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Unidades_Listar(int codEmpresa)
+        /// <param name="codEmpresa">Código de la empresa cuya conexión se utilizará.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <returns>Lista de unidades ordenada por código.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_Unidades_Listar(
+            int codEmpresa,
+            int codContabilidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            const string sql = @"
+                SELECT
+                    RTRIM(cod_unidad) AS item,
+                    RTRIM(descripcion) AS descripcion,
+                    Nivel AS nivel,
+                    unidad_omision,
+                    reporta_renta,
+                    activa,
+                    RTRIM(Cta_Renta) AS cta_renta,
+                    RTRIM(Cta_Renta_Gasto) AS cta_renta_gasto
+                FROM CntX_Unidades
+                WHERE COD_CONTABILIDAD = @CodContabilidad
+                ORDER BY cod_unidad;";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
-
-                var sql = @"
-                            SELECT
-                                RTRIM(cod_unidad) AS item,
-                                RTRIM(descripcion) AS descripcion,
-                                Nivel AS nivel,
-                                unidad_omision,
-                                reporta_renta,
-                                activa,
-                                RTRIM(Cta_Renta) AS cta_renta,
-                                RTRIM(Cta_Renta_Gasto) AS cta_renta_gasto
-                            FROM CntX_Unidades
-                            WHERE COD_CONTABILIDAD = 2
-                            ORDER BY cod_unidad;
-                        ";
-
-                response.Result = cn
-                    .Query<DropDownListaGenericaModel>(sql, new { codEmpresa })
-                    .ToList();
-
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                new { CodContabilidad = codContabilidad });
         }
 
-
-
+        /// <summary>
+        /// Reestructura los movimientos del período antes de generar el balance.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa cuya conexión se utilizará.</param>
+        /// <param name="request">Contabilidad, período y tipo de revisión solicitados.</param>
+        /// <returns>Resultado de la reestructuración.</returns>
+        public ErrorDto CntX_Movimientos_Restructurar(
+            int codEmpresa,
+            CntXCalculosRestructuraRequest request)
+        {
+            return _mCntXCalculosDb.SbCntX_RestructuraMovimientosRSM(
+                codEmpresa,
+                request);
+        }
     }
 }

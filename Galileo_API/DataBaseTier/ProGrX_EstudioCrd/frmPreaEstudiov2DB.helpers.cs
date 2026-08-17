@@ -363,45 +363,72 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda una incapacidad del expediente.
         /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
+        /// <summary>
+        /// Guarda la lista de incapacidades del expediente.
+        /// VB6: sbIncapacidades_Guardar (frmPreaEstudiov2.frm línea ~13806):
+        ///   1. EXEC spCrdPreaEliminarIncapacidades '&lt;expediente&gt;'
+        ///   2. Por cada fila: EXEC spCrdPreaGeneraIncapacidades '&lt;expediente&gt;',
+        ///      &lt;dias&gt;, '&lt;desde&gt;', '&lt;hasta&gt;', &lt;orden&gt; (dias = (hasta-desde).Days + 1)
+        /// Devuelve la lista recargada, igual que Prea_frmPreaEstudiov2_TablaSalarios_Guardar.
+        /// </summary>
+        public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
             FrmPreaEstudiov2IncapacidadGuardarRequest request)
         {
-            var response = new ErrorDto<string>
+            var response = new ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = string.Empty
+                Result = []
             };
+
+            var codPreanalisis = (request.cod_preanalisis ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(codPreanalisis))
+            {
+                response.Code = -1;
+                response.Description = "Debe indicar el expediente.";
+                return response;
+            }
 
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 connection.Open();
 
-                var dias = (request.hasta - request.desde).Days + 1;
-
                 connection.Execute(
-                    "spCrdPreaGeneraIncapacidades",
-                    new
-                    {
-                        Expediente = request.cod_preanalisis.Trim(),
-                        Dias = dias,
-                        Desde = request.desde.ToString("yyyy-MM-dd"),
-                        Hasta = request.hasta.ToString("yyyy-MM-dd"),
-                        Orden = 1
-                    },
+                    "spCrdPreaEliminarIncapacidades",
+                    new { Expediente = codPreanalisis },
                     commandType: CommandType.StoredProcedure
                 );
 
-                response.Result = "Incapacidad guardada correctamente.";
+                var orden = 0;
+                foreach (var incapacidad in request.incapacidades ?? [])
+                {
+                    orden++;
+                    var dias = (incapacidad.hasta - incapacidad.desde).Days + 1;
+
+                    connection.Execute(
+                        "spCrdPreaGeneraIncapacidades",
+                        new
+                        {
+                            Expediente = codPreanalisis,
+                            Dias = dias,
+                            Desde = incapacidad.desde.ToString("yyyy-MM-dd"),
+                            Hasta = incapacidad.hasta.ToString("yyyy-MM-dd"),
+                            Orden = orden
+                        },
+                        commandType: CommandType.StoredProcedure
+                    );
+                }
+
+                response.Result = ObtenerIncapacidades(connection, codPreanalisis);
                 return response;
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = string.Empty;
+                response.Result = [];
                 return response;
             }
         }

@@ -1,10 +1,10 @@
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX.Creditos;
+using Galileo_API.Models.ProGrX.General;
 using Microsoft.Data.SqlClient;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Creditos
+namespace Galileo_API.DataBaseTier.ProGrX.General
 {
     public sealed class FrmCcReportesEstudioDB
     {

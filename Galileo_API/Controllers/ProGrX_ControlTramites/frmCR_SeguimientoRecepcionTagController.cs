@@ -58,9 +58,8 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         public ErrorDto<List<
             CrSeguimientoRecepcionTagPendienteResponse>>
             CR_frmCR_SeguimientoRecepcionTag_Pendientes_Obtener(
-                int codEmpresa,
-                CrSeguimientoRecepcionTagPendientesRequest
-                    request)
+            int codEmpresa,
+            string request)
         {
             return _bl
                 .CR_frmCR_SeguimientoRecepcionTag_Pendientes_Obtener(
