@@ -196,6 +196,12 @@
         public string id_promotor { get; set; } = string.Empty;
         public string promotor_desc { get; set; } = string.Empty;
 
+        /// <summary>txtOficina en VB6. Texto = OFICINA (descripción de SIF_OFICINAS,
+        /// sbLigarDatos frm ~10713); Tag = COD_OFICINA (código, se reenvía al guardar
+        /// y en btnOficinaCambia_Click vía spCrdPreaAsignaOficina).</summary>
+        public string oficina { get; set; } = string.Empty;
+        public string cod_oficina { get; set; } = string.Empty;
+
         /// <summary>txtCFIA_Avaluo en VB6 (columna MONTO_AVALUO_CFIA).</summary>
         public decimal monto_avaluo_cfia { get; set; }
 
@@ -379,6 +385,28 @@
         /// cédula ni línea). Columnas verificadas por convención de sbCbo_Llena_New: el SP
         /// debe devolver IdX/ItmX (mProGrX_Dlls.bas línea ~1563).</summary>
         public List<FrmPreaEstudiov2DropdownDto> fondos { get; set; } = [];
+
+        /// <summary>Oficinas para el lookup del botón Cambiar (btnOficinaCambia).
+        /// VB6: txtOficina_KeyDown (F4) -> select Cod_Oficina, Descripcion from
+        /// SIF_OFICINAS + " and Estado = 1", orden por Descripcion.</summary>
+        public List<FrmPreaEstudiov2DropdownDto> oficinas { get; set; } = [];
+
+        /// <summary>Ejecutivos colocadores (promotores) para el lookup del botón Cambiar.
+        /// VB6: txtEjecutivo_KeyDown (F4) -> select ID_PROMOTOR as 'Id.', Nombre, Usuario
+        /// from promotores + " and Estado = 1", orden por ID_PROMOTOR.</summary>
+        public List<FrmPreaEstudiov2EjecutivoDto> ejecutivos { get; set; } = [];
+    }
+
+    /// <summary>
+    /// Ejecutivo colocador para el lookup del botón Cambiar (btnOficinaCambia).
+    /// VB6: txtEjecutivo_KeyDown (F4) -> "select ID_PROMOTOR as 'Id.',Nombre, Usuario
+    /// from promotores" con Filtro " and Estado = 1", Columna/Orden = ID_PROMOTOR.
+    /// </summary>
+    public class FrmPreaEstudiov2EjecutivoDto
+    {
+        public string id_promotor { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class FrmPreaEstudiov2DestinosGarantiasResponse
@@ -551,6 +579,157 @@
         public int edad_aplica { get; set; }
         public string edad_justificacion { get; set; } = string.Empty;
         public string clasificacion_crediticia { get; set; } = string.Empty;
+
+        // ---- Fase 2 del diccionario de campos (frmPreaEstudiov2_diccionario_campos.md):
+        // parámetros de spCrdPreaPreanalisisModifica con fuente YA confirmada en Angular
+        // (resumen/credito/salariosForm/observaciones), agregados para dejar de mandarlos
+        // en 0/vacío. Los marcados ⚠️/❌/❓ en el diccionario quedan para fases siguientes.
+        /// <summary>@27 REBAJO_EXTRAS (txtT_Extras). VB6: salariosForm.total_extras.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal total_extras { get; set; }
+        /// <summary>@35 DEDUCCIONES. Fuente: resumen.deducciones (solo lectura).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal deducciones { get; set; }
+        /// <summary>@36 CRD_TRANSITO_CANCELADOS. Fuente: resumen.creditos_cancelados.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal creditos_cancelados { get; set; }
+        /// <summary>@37 CRD_TRANSITO_XCOBRAR. Fuente: resumen.creditos_por_cobrar.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal creditos_por_cobrar { get; set; }
+        /// <summary>@38 SALARIO_LIQUIDO. Fuente: resumen.salario_liquido.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal salario_liquido { get; set; }
+        /// <summary>@39 REFUNDICIONES. Fuente: resumen.refundiciones.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal refundiciones { get; set; }
+        /// <summary>@40 REFUNDICIONES_CUOTA. Fuente: resumen.refundiciones_cuota.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal refundiciones_cuota { get; set; }
+        /// <summary>@41 DESEMBOLSOS. Fuente: resumen.desembolsos.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal desembolsos { get; set; }
+        /// <summary>@42 DESEMBOLSOS_CUOTA. Fuente: resumen.desembolsos_cuota.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal desembolsos_cuota { get; set; }
+        /// <summary>@44 LIQUIDEZ_SIMPLE. Fuente: resumen.liquidez_sin_fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_sin_fianzas { get; set; }
+        /// <summary>@45 FIANZAS. Fuente: resumen.fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal fianzas { get; set; }
+        /// <summary>@46 LIQUIDEZ_CFIANZAS. Fuente: resumen.liquidez_con_fianzas.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_con_fianzas { get; set; }
+        /// <summary>@47 OBSERVACION_ANALISTA. Fuente: this.observacionAnalista.</summary>
+        public string observacion_analista { get; set; } = string.Empty;
+        /// <summary>@48 OBSERVACION_COMITE. Fuente: this.observacionComite.</summary>
+        public string observacion_comite { get; set; } = string.Empty;
+        /// <summary>@49 OBSERVACION_JD. Fuente: this.observacionJd.</summary>
+        public string observacion_jd { get; set; } = string.Empty;
+        /// <summary>@53 COD_ENDEUDAMIENTO. Fuente: credito.cod_endeudamiento.</summary>
+        public string cod_endeudamiento { get; set; } = string.Empty;
+        /// <summary>@54 COD_HISTORIAL. Fuente: credito.cod_historial.</summary>
+        public string cod_historial { get; set; } = string.Empty;
+        /// <summary>@55 COD_MORA. Fuente: credito.cod_mora.</summary>
+        public string cod_mora { get; set; } = string.Empty;
+        /// <summary>@56 COD_CAPACIDAD. Fuente: credito.cod_capacidad.</summary>
+        public string cod_capacidad { get; set; } = string.Empty;
+        /// <summary>@57 SALARIO_REAL (default NULL en el SP). Fuente: resumen.salario_real.</summary>
+        public decimal? salario_real { get; set; }
+        /// <summary>@60 GARANTIA_FND (default NULL). Fuente: this.fondoSeleccionado.</summary>
+        public string? garantia_fondo { get; set; }
+        /// <summary>@69 PORC_LIQ_CON_FIANZA. Fuente: resumen.liquidez_con_fianzas_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_con_fianzas_porc { get; set; }
+        /// <summary>@70 PORC_LIQ_SIN_FIANZA. Fuente: resumen.liquidez_sin_fianzas_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_sin_fianzas_porc { get; set; }
+        /// <summary>@74 MONTO_PORC_COMPONENTE_AD. Fuente: salariosForm.componentes_adicionales (base * porc / 100, ya calculado en Cargar).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal componentes_adicionales { get; set; }
+        /// <summary>@78 PUNTOS_CIC_DEUDOR. Fuente: credito.cic_puntaje.</summary>
+        public string cic_puntaje { get; set; } = string.Empty;
+        /// <summary>@79 NIVEL_COMPORTAMIENTO_HIST. Fuente: credito.cic_nivel_historico.</summary>
+        public string cic_nivel_historico { get; set; } = string.Empty;
+        /// <summary>@81 DIAS_INTERES_GASTOS_OP. Fuente: credito.dias_interes_gastos_op.</summary>
+        public decimal? dias_interes_gastos_op { get; set; }
+        /// <summary>@87 PORC_LIQ_SIN_FIANZA_CA. Fuente: resumen.liquidez_sin_fianzas_comp_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_sin_fianzas_comp_porc { get; set; }
+        /// <summary>@88 PORC_LIQ_CON_FIANZA_CA. Fuente: resumen.liquidez_con_fianzas_comp_porc.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_con_fianzas_comp_porc { get; set; }
+        /// <summary>@89 LIQUIDEZ_SFIANZAS_CA. Fuente: resumen.liquidez_sin_fianzas_comp.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_sin_fianzas_comp { get; set; }
+        /// <summary>@90 LIQUIDEZ_CFIANZAS_CA. Fuente: resumen.liquidez_con_fianzas_comp.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal liquidez_con_fianzas_comp { get; set; }
+        /// <summary>@94 MONTO_VALOR_VEHICULO. Ya existe como valor_prenda arriba (txtPrendaValor) — no duplicar.</summary>
+        /// <summary>@100 MONTO_INTERES. Fuente: resumen.intereses.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal intereses { get; set; }
+        /// <summary>@101 MONTO_COMISION. Fuente: resumen.comisiones.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal comisiones { get; set; }
+
+        // ---- Fase 3 del diccionario: ambigüedades resueltas leyendo sbEstudio_Guarda_Modifica
+        // (frmPreaEstudiov2.frm líneas 12185-12298) directamente ----
+        /// <summary>@52 COD_GARANTIA = clsMensajes.COD_GARANTIA (columna COD_GARANTIA cargada en
+        /// sbLigarDatos, línea 10673) — es DISTINTO de @51 GARANTIA (cboGarantia.ItemData).
+        /// Fuente Angular: credito.cod_garantia_clasificacion (ya mapeado 1:1 desde la misma
+        /// columna COD_GARANTIA en ConstruirCredito).</summary>
+        public string cod_garantia_clasificacion { get; set; } = string.Empty;
+        /// <summary>@93 MONTO_POLIZA_VEHICULO = txtPolizaPrenda.Text (distinto de @94
+        /// MONTO_VALOR_VEHICULO = txtPrendaValor.Text = valor_prenda). Sin control propio en
+        /// Angular todavía — se envía 0 documentado, no inventado (mismo campo que ya existía
+        /// como monto_poliza_prenda, hardcodeado a 0 en el request).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal monto_poliza_prenda_vehiculo { get; set; }
+        /// <summary>@25 ID_SOLICITUD = txtAsignado.Text. Fuente Angular: credito.asignado_operacion
+        /// (ya mapeado 1:1 desde la columna ID_SOLICITUD en ConstruirCredito).</summary>
+        public string asignado_operacion { get; set; } = string.Empty;
+        /// <summary>@97 ID_PROMOTOR = txtEjecutivo.Tag. Fuente Angular: credito.id_promotor.</summary>
+        public string id_promotor { get; set; } = string.Empty;
+        /// <summary>@24 ESTADO = lblEstado.Tag. Fuente Angular: this.estadoCodigo.</summary>
+        public string estado { get; set; } = string.Empty;
+        /// <summary>@105 SALARIO_NORMATIVA = txtSalarioNormativa.Text (CRD_PREA_PARAMETROS '22').
+        /// Fuente Angular: this.salarioNormativa (property de página, NO resumen.salario_normativa_estudio,
+        /// que es un campo distinto).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal salario_normativa { get; set; }
+        /// <summary>@43 LIQUIDO_TOTAL = txtTotalLiquido.Text, cargado desde la columna LIQUIDO_TOTAL
+        /// (confirmado: distinto de LIQUIDO_TOTAL_GRUPO). Fuente Angular: resumen.total_liquido_persona
+        /// (mapeado 1:1 desde esa misma columna en Prea_frmPreaEstudiov2_Cargar).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal total_liquido_persona { get; set; }
+
+        // ---- Fase 4 del diccionario: 11 parámetros sin control propio en Angular, resueltos
+        // leyendo sbEstudio_Guarda_Modifica línea por línea (frmPreaEstudiov2.frm 12185-12298). ----
+        /// <summary>@59 NSUB_EXP = cboCantidadFiadores.Text (línea 12284) — en VB6 esta posición
+        /// realmente recibe el conteo de fiadores, NO un conteo de sub-expedientes pese al nombre
+        /// del parámetro. Fuente Angular: el campo `fiadores` ya existente arriba.</summary>
+        /// <summary>@75 APL_IND_COMPONENTE: en VB6 = 0 si txtS_ComponenteAdicionalPorc.Text = 0,
+        /// si no 1 (líneas 12256-12260). Se deriva en el API desde componente_adicional_porc,
+        /// no requiere campo propio.</summary>
+        /// <summary>@84 IND_TIPO_SALARIO_EXT: en VB6, default 0; 1 si chkS_Constancia está marcado;
+        /// 2 si chkS_OrdenPatronal está marcado (el segundo pisa al primero, líneas 12246-12253).
+        /// Fuente Angular: salariosForm.ind_salario_constancia / ind_salario_orden_patronal.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public bool ind_salario_constancia { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
+        public bool ind_salario_orden_patronal { get; set; }
+
+        // ---- Fase 5 del diccionario: últimos 3 params ❓ resueltos leyendo sbEstudio_Guarda_Modifica ----
+        /// <summary>@103 REFUNDICIONES_MORA = txtR_TotalMora.Text. Fuente Angular: total_mora del
+        /// tab Refundiciones (propiedad de página, actualizada por TabRefundicionesComponent).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal refundiciones_mora { get; set; }
+        /// <summary>@104 SALARIO_USURA = txtSalarioMinimoInembargable.Text (VB6 reutiliza el
+        /// control del salario mínimo inembargable para este parámetro, no hay txtSalarioUsura
+        /// propio). Fuente Angular: this.salarioMinimoInembargable.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public decimal salario_minimo_inembargable { get; set; }
     }
 
     public class FrmPreaEstudiov2GuardarResponse
@@ -700,6 +879,16 @@
         public string cod_preanalisis { get; set; } = string.Empty;
         /// <summary>'C' = Cancelados, 'A' = Por Cobrar. VB6 elimina el grupo completo, no una fila.</summary>
         public string tipo { get; set; } = string.Empty;
+    }
+
+    /// <summary>Elimina UNA cuota en tránsito por su id_solicitud (borrado individual de fila).</summary>
+    public class FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string cod_preanalisis { get; set; } = string.Empty;
+        /// <summary>Identificador de la cuota en tránsito a eliminar (id_solicitud de CRD_PREA_DETALLE_CUOTAS_EN_TRANSITO).</summary>
+        [System.Text.Json.Serialization.JsonRequired]
+        public int id_solicitud { get; set; }
     }
 
     #endregion
@@ -999,6 +1188,11 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
+        public List<FrmPreaEstudiov2IncapacidadItemRequest> incapacidades { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2IncapacidadItemRequest
+    {
         [System.Text.Json.Serialization.JsonRequired]
         public DateTime desde { get; set; }
         [System.Text.Json.Serialization.JsonRequired]
@@ -1054,6 +1248,53 @@
         public string estado { get; set; } = "B";
         public string estado_desc { get; set; } = "Abandonado";
         public string mensaje { get; set; } = "Se ha ABANDONADO el expediente correctamente.";
+    }
+
+    #endregion
+
+    #region Prendario
+
+    /// <summary>
+    /// Consulta la información del tab Prendario (sbPrendario_Load en VB6):
+    /// log de exámenes (spCrd_Prea_Examenes_Log) y datos de la prenda
+    /// (spCrd_Prea_Prenda_Datos: Prenda_Poliza, Prenda_Monto, ESTADO_EXAMENES).
+    /// </summary>
+    public class FrmPreaEstudiov2PrendarioConsultarRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2ExamenPrendaDto
+    {
+        public int id_nota { get; set; }
+        public string nota { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string fecha { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2PrendarioConsultarResponse
+    {
+        public List<FrmPreaEstudiov2ExamenPrendaDto> examenes { get; set; } = new();
+        public decimal valor_prenda { get; set; }
+        public decimal monto_poliza_prenda { get; set; }
+        public string estado_examenes { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Aplica un estado a los exámenes de prenda (btnP_Examenes_Click en VB6):
+    /// exec spCRD_PreaAplicaEstadoExamenes '&lt;expediente&gt;', '&lt;estado&gt;', '&lt;usuario&gt;', '&lt;nota&gt;'.
+    /// El estado es E/R/A (Enviados/Recibidos/Aprobados).
+    /// </summary>
+    public class FrmPreaEstudiov2PrendarioEstadoRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2PrendarioEstadoResponse
+    {
+        public string mensaje { get; set; } = string.Empty;
     }
 
     #endregion

@@ -130,5 +130,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             return Prea_frmPreaEstudiov2_Creditos_Consultar(codEmpresa, request.cod_preanalisis);
         }
+
+        /// <summary>
+        /// Elimina UNA cuota en tránsito por su id_solicitud (borrado individual de fila,
+        /// complemento del borrado grupal de VB6 para el patrón de tabla editable).
+        /// Parámetros: id_solicitud y expediente; consulta parametrizada.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest request)
+        {
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = "delete from CRD_PREA_DETALLE_CUOTAS_EN_TRANSITO" +
+                                   " where id_solicitud = @IdSolicitud and cod_PreAnalisis = @Expediente";
+                connection.Execute(sql, new
+                {
+                    IdSolicitud = request.id_solicitud,
+                    Expediente = request.cod_preanalisis.Trim()
+                });
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            return Prea_frmPreaEstudiov2_Creditos_Consultar(codEmpresa, request.cod_preanalisis);
+        }
     }
 }

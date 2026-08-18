@@ -57,12 +57,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             int? solInicio = string.Equals(f.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase) ? f.minimo : 0;
             int? solCorte = string.Equals(f.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase) ? f.maximo : 999999999;
 
-            DateTime? fechaInicio = string.Equals(f.generarPor, nFechas, StringComparison.OrdinalIgnoreCase) ? f.fecha_inicio?.Date : null;
+            DateTime? fechaInicio = string.Equals(f.generarPor, nFechas, StringComparison.OrdinalIgnoreCase)
+                ? NormalizarFechaRango(f.fecha_inicio, esCorte: false)
+                : null;
             DateTime? fechaCorte = string.Equals(f.generarPor, nFechas, StringComparison.OrdinalIgnoreCase)
-                ? f.fecha_corte?.Date.AddDays(1).AddTicks(-1)
+                ? NormalizarFechaRango(f.fecha_corte, esCorte: true)
                 : null;
 
             return (solInicio, solCorte, fechaInicio, fechaCorte);
+        }
+
+        /// <summary>
+        /// Normaliza una fecha de filtro al rango del patrón estándar del módulo:
+        /// inicio a las 00:00:00 y corte a las 23:59:59, formateada como "yyyy-MM-dd HH:mm:ss".
+        /// </summary>
+        /// <param name="fecha">Fecha a normalizar.</param>
+        /// <param name="esCorte">Indica si corresponde al extremo final (23:59:59) o inicial (00:00:00).</param>
+        /// <returns>Fecha normalizada o null si el valor original es null.</returns>
+        private static DateTime? NormalizarFechaRango(DateTime? fecha, bool esCorte)
+        {
+            if (!fecha.HasValue)
+            {
+                return null;
+            }
+
+            string hora = esCorte ? "23:59:59" : "00:00:00";
+            string? texto = MProGrXAuxiliarDB.validaFechaGlobal(fecha, "yyyy-MM-dd " + hora);
+            return texto is null
+                ? null
+                : DateTime.ParseExact(texto, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         }
 
         private static string SerializarResultadoReporte(IActionResult action)
@@ -693,11 +716,11 @@ where B.estado = 'A'
                 : (int?)null;
 
             var fechaInicio = ctx.Filtro.generarPor == "fechas"
-                ? ctx.Filtro.fecha_inicio?.Date
+                ? NormalizarFechaRango(ctx.Filtro.fecha_inicio, esCorte: false)
                 : (DateTime?)null;
 
             var fechaCorte = ctx.Filtro.generarPor == "fechas"
-                ? ctx.Filtro.fecha_corte?.Date.AddDays(1).AddTicks(-1)
+                ? NormalizarFechaRango(ctx.Filtro.fecha_corte, esCorte: true)
                 : (DateTime?)null;
 
             _ = ResolverBancoConsecTransferencia(ctx);
@@ -1321,8 +1344,8 @@ where nsolicitud in ";
             };
 
             int txtCantidadSolicitudes = filtros.cantidad;
-            var mFechaInicio = filtros.fecha_inicio?.Date;
-            var mFechaCorte = filtros.fecha_corte?.Date.AddDays(1).AddTicks(-1);
+            var mFechaInicio = NormalizarFechaRango(filtros.fecha_inicio, esCorte: false);
+            var mFechaCorte = NormalizarFechaRango(filtros.fecha_corte, esCorte: true);
             int? mSolInicio = null;
             int? mSolCorte = null;
 
