@@ -678,7 +678,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             Codigo = request.cod_plan.Trim(),
                             Tag = request.tag_codigo.Trim(),
                             Usuario = request.usuario.Trim(),
-                            Observacion = request.observacion.Trim(),
+                            Notas = request.observacion.Trim(),
                             Documento = request.cod_contrato.ToString(),
                             Modulo,
                             Llave_01 = request.cod_plan.Trim(),
