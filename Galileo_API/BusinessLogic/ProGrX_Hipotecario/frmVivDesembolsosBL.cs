@@ -19,6 +19,37 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             return _db.Operaciones_Listar(codEmpresa);
         }
 
+        public ErrorDto<List<ConsultaDesembolsoDto>> ConsultaDesembolso_Listar(
+            int codEmpresa,
+            ConsultaDesembolsoRequestDto request)
+        {
+            request ??= new ConsultaDesembolsoRequestDto();
+
+            if (request.operacion < 0)
+            {
+                return new ErrorDto<List<ConsultaDesembolsoDto>>
+                {
+                    Code = -1,
+                    Description = "La operación no puede ser negativa."
+                };
+            }
+
+            request.cedula = (request.cedula ?? string.Empty).Trim();
+            request.nombre = (request.nombre ?? string.Empty).Trim();
+            request.linea = (request.linea ?? string.Empty).Trim();
+
+            if (request.cedula.Length > 30 || request.nombre.Length > 150 || request.linea.Length > 30)
+            {
+                return new ErrorDto<List<ConsultaDesembolsoDto>>
+                {
+                    Code = -1,
+                    Description = "Uno o más criterios de búsqueda superan la longitud permitida."
+                };
+            }
+
+            return _db.ConsultaDesembolso_Listar(codEmpresa, request);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)
         {
             return _db.Lineas_Listar(codEmpresa);

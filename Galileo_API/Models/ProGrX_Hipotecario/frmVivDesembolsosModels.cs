@@ -1,5 +1,25 @@
 ﻿namespace Galileo_API.Models.ProGrX_Hipotecario
 {
+    public class ConsultaDesembolsoRequestDto
+    {
+        public int? operacion { get; set; }
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string linea { get; set; } = string.Empty;
+    }
+
+    public class ConsultaDesembolsoDto
+    {
+        public int operacion { get; set; }
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string linea { get; set; } = string.Empty;
+        public int? desembolso { get; set; }
+        public decimal monto { get; set; }
+        public decimal disponible { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
     public class VivDesembolsoHeaderDto
     {
         public string cedula { get; set; } = string.Empty;
