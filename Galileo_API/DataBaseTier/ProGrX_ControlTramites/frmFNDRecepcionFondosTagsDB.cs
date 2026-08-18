@@ -61,7 +61,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         usuarios = usuarios
                     });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new FndRecepcionFondosTagsInicializarResponse());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -201,7 +208,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 return DbHelper.CreateOkResponse<
                     FndRecepcionFondosTagsContratoResponse?>(contrato);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<
+                    FndRecepcionFondosTagsContratoResponse?>(
+                        ex.Message,
+                        -1,
+                        null);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<
                     FndRecepcionFondosTagsContratoResponse?>(
@@ -279,7 +294,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             string movimiento =
                 FND_frmFNDRecepcionFondosTags_Movimiento_Normalizar(
-                    request!.movimiento);
+                    request.movimiento);
 
             try
             {
@@ -358,7 +373,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     throw;
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new FndRecepcionFondosTagsAplicarResponse());
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
