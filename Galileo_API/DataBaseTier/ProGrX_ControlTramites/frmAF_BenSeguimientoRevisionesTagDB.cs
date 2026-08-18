@@ -600,12 +600,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                     const string sqlBeneficio = """
                         select count(1)
-                        from AFI_BENE_OTORGA
-                        where CEDULA = @Cedula
-                          and COD_BENEFICIO = @CodBeneficio
-                          and CONSEC = @Consecutivo
-                          and B.ANALISTA_REVISION is null
-                          and B.ANALISTA_RECEPCION is not null;
+                        FROM AFI_BENE_OTORGA B
+                        WHERE B.CEDULA = @Cedula
+                          AND B.COD_BENEFICIO = @CodBeneficio
+                          AND B.CONSEC = @Consecutivo
+                          AND ISNULL(B.ANALISTA_REVISION, 'N') = 'N'
+                          AND B.ANALISTA_RECEPCION IS NOT NULL
                         """;
 
                     int existeBeneficio =
@@ -676,34 +676,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                         return DbHelper.ErrorResponse(
                             "La etiqueta seleccionada no es v&aacute;lida para el usuario.",
-                            -2);
-                    }
-
-                    const string sqlNotaLargo = """
-                        select isnull(NOTA_LARGO, 0)
-                        from SIF_TAGS
-                        where TAG_CODIGO = @TagCodigo;
-                        """;
-
-                    int notaLargo =
-                        connection.QueryFirstOrDefault<int>(
-                            sqlNotaLargo,
-                            new
-                            {
-                                TagCodigo =
-                                    request.tag_codigo.Trim()
-                            },
-                            transaction);
-
-                    if (
-                        request.observacion.Trim().Length <
-                        notaLargo
-                    )
-                    {
-                        transaction.Rollback();
-
-                        return DbHelper.ErrorResponse(
-                            $"La etiqueta requiere una nota de al menos {notaLargo} caracteres.",
                             -2);
                     }
 
