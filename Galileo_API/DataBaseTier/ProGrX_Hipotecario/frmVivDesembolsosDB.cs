@@ -71,6 +71,62 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         }
 
         /// <summary>
+        /// Lista las operaciones disponibles para la consulta de desembolsos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Criterios opcionales de búsqueda.</param>
+        /// <returns>Operaciones formalizadas con su último desembolso.</returns>
+        public ErrorDto<List<ConsultaDesembolsoDto>> ConsultaDesembolso_Listar(
+            int codEmpresa,
+            ConsultaDesembolsoRequestDto request)
+        {
+            return ExecuteQuery(codEmpresa, cn =>
+            {
+                const string sql = @"
+                    SELECT TOP (200)
+                        R.ID_SOLICITUD AS operacion,
+                        RTRIM(ISNULL(S.CEDULA, '')) AS cedula,
+                        RTRIM(ISNULL(S.NOMBRE, '')) AS nombre,
+                        RTRIM(ISNULL(R.CODIGO, '')) AS linea,
+                        UltimoDesembolso.CodigoDesembolso AS desembolso,
+                        ISNULL(UltimoDesembolso.Monto, 0) AS monto,
+                        ISNULL(Disponible.Disponible, 0) AS disponible,
+                        RTRIM(ISNULL(UltimoDesembolso.RegistroUsuario, '')) AS usuario
+                    FROM REG_CREDITOS AS R
+                    INNER JOIN SOCIOS AS S
+                        ON R.CEDULA = S.CEDULA
+                    INNER JOIN ViviendaDesembolsosDisponible AS Disponible
+                        ON R.ID_SOLICITUD = Disponible.NumeroOperacion
+                    OUTER APPLY
+                    (
+                        SELECT TOP (1)
+                            D.CodigoDesembolso,
+                            D.Monto,
+                            D.RegistroUsuario
+                        FROM ViviendaDesembolsos AS D
+                        WHERE D.NumeroOperacion = R.ID_SOLICITUD
+                        ORDER BY D.CodigoDesembolso DESC
+                    ) AS UltimoDesembolso
+                    WHERE R.ESTADOSOL = 'F'
+                        AND R.EMITIR NOT IN ('CK', 'TE')
+                        AND Disponible.Disponible > 0
+                        AND (@operacion IS NULL OR R.ID_SOLICITUD = @operacion)
+                        AND (@cedula = '' OR S.CEDULA LIKE '%' + @cedula + '%')
+                        AND (@nombre = '' OR S.NOMBRE LIKE '%' + @nombre + '%')
+                        AND (@linea = '' OR R.CODIGO = @linea)
+                    ORDER BY R.ID_SOLICITUD DESC";
+
+                return cn.Query<ConsultaDesembolsoDto>(sql, new
+                {
+                    request.operacion,
+                    request.cedula,
+                    request.nombre,
+                    request.linea
+                }).ToList();
+            });
+        }
+
+        /// <summary>
         /// Lineas listar
         /// </summary>
         /// <param name="codEmpresa"></param>
