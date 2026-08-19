@@ -117,4 +117,14 @@ namespace Galileo.Models.CPR
         public int qty_recervada { get; set; }
         public int qty_entregada { get; set; }
     }
+
+    public class CprSeleccionDto
+    {
+        public int cprId { get; set; }
+        public string nodoTipo { get; set; } = string.Empty;
+        public int? peId { get; set; }
+        public int? perspectivaId { get; set; }
+        public int? proyectoId { get; set; }
+        public int? objetivoId { get; set; }
+    }
 }

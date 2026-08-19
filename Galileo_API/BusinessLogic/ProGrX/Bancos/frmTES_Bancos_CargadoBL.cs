@@ -124,10 +124,12 @@ namespace Galileo_API.BusinessLogic
         /// </summary>
         public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
             int CodEmpresa,
+             string usuario,
             TesBancosCargadoRevMovConciliaAplicarRequest request)
         {
             return _Db.TES_BancosCargado_RevMovConcilia_Aplicar(
                 CodEmpresa,
+                usuario,
                 request);
         }
 

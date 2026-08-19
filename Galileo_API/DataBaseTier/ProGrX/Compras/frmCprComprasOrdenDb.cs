@@ -249,7 +249,7 @@ namespace Galileo.DataBaseTier
         public ErrorDto ComprasOrden_Guardar(int codEmpresa, ComprasOrdenDatos orden)
         {
             var basic = ValidarFacturaNoVacia(orden);
-            if (basic != null) return basic;
+            if (basic.Code != 0) return basic;
 
             var valida = ValidarCompraOrden(codEmpresa, orden);
             if (valida.Code != 0) return valida;
@@ -298,12 +298,12 @@ namespace Galileo.DataBaseTier
             return UnwrapResult(r);
         }
 
-        private static ErrorDto? ValidarFacturaNoVacia(ComprasOrdenDatos orden)
+        private static ErrorDto ValidarFacturaNoVacia(ComprasOrdenDatos orden)
         {
             if (string.IsNullOrWhiteSpace(orden.cod_factura))
                 return DbHelper.ErrorResponse("El campo Factura no puede ser nulo", -1);
 
-            return null;
+            return DbHelper.CreateOkResponse();
         }
 
         private ErrorDto ValidarCompraOrden(int codEmpresa, ComprasOrdenDatos orden)

@@ -122,9 +122,11 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         [HttpPost("TES_BancosCargado_RevMovConcilia_Aplicar")]
         public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
             int CodEmpresa,
+            string usuario,
             [FromBody] TesBancosCargadoRevMovConciliaAplicarRequest request)
         {
-            return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, request);
+           
+            return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, usuario, request);
         }
     }
 }

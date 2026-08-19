@@ -109,6 +109,11 @@ namespace Galileo.BusinessLogic
             return _db.Articulos_Obtener(CodCliente, pagina, paginacion, filtro, cod_unidad);
         }
 
+        public ErrorDto<ArticuloDataLista> CprSolicitud_ArticulosGenerales_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        {
+            return _db.CprSolicitud_ArticulosGenerales_Obtener(CodCliente, pagina, paginacion, filtro);
+        }
+
         public ErrorDto CprSolicitud_TipoExcepcion(int CodCliente)
         {
             return _db.CprSolicitud_TipoExcepcion(CodCliente);

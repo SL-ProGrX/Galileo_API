@@ -75,7 +75,10 @@ namespace Galileo.DataBaseTier
 
             var code = Convert.ToInt32(r.Code);
             if (code != 0)
-                return DbHelper.CreateErrorResponse<TiposOrdenLista>(r.Description ?? "Error", code, default);
+                return DbHelper.CreateErrorResponse<TiposOrdenLista>(
+                    r.Description ?? "Error",
+                    code,
+                    new TiposOrdenLista { total = 0, lista = new List<TiposOrdenDto>() });
 
             return DbHelper.CreateOkResponse(
                 r.Result ?? new TiposOrdenLista { total = 0, lista = new List<TiposOrdenDto>() }
