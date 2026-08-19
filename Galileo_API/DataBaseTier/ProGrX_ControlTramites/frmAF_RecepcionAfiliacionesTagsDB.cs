@@ -754,16 +754,55 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
         private sealed class TagsConfiguracion
         {
-            public string tag_recepcion { get; set; } = string.Empty;
-            public string tag_devolucion { get; set; } = string.Empty;
-            public string tag_recepcion_devolucion { get; set; } = string.Empty;
-            public int tags_existentes { get; set; }
+            /// <summary>
+            /// Inicializa la configuracion obtenida desde la base de datos.
+            /// </summary>
+            /// <param name="tag_recepcion">Etiqueta de recepcion.</param>
+            /// <param name="tag_devolucion">Etiqueta de devolucion.</param>
+            /// <param name="tag_recepcion_devolucion">
+            /// Etiqueta de control de recepcion y devolucion.
+            /// </param>
+            /// <param name="tags_existentes">
+            /// Cantidad de etiquetas configuradas que existen.
+            /// </param>
+            public TagsConfiguracion(
+                string tag_recepcion,
+                string tag_devolucion,
+                string tag_recepcion_devolucion,
+                int tags_existentes)
+            {
+                this.tag_recepcion = tag_recepcion;
+                this.tag_devolucion = tag_devolucion;
+                this.tag_recepcion_devolucion = tag_recepcion_devolucion;
+                this.tags_existentes = tags_existentes;
+            }
+
+            public string tag_recepcion { get; }
+            public string tag_devolucion { get; }
+            public string tag_recepcion_devolucion { get; }
+            public int tags_existentes { get; }
         }
 
         private sealed class TagValidacionResultado
         {
-            public int resultado { get; set; }
-            public int resultado_recepcion_devolucion { get; set; }
+            /// <summary>
+            /// Inicializa los resultados devueltos por la funcion de etiquetas.
+            /// </summary>
+            /// <param name="resultado">Resultado general de la validacion.</param>
+            /// <param name="resultado_recepcion_devolucion">
+            /// Resultado de la secuencia recepcion y devolucion.
+            /// </param>
+            public TagValidacionResultado(
+                int resultado,
+                int resultado_recepcion_devolucion)
+            {
+                this.resultado = resultado;
+                this.resultado_recepcion_devolucion =
+                    resultado_recepcion_devolucion;
+            }
+
+            public int resultado { get; }
+            public int resultado_recepcion_devolucion { get; }
         }
     }
 }
