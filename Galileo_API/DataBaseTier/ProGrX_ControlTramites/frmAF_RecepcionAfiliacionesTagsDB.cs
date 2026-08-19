@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text;
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
@@ -47,31 +48,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 var usuarios = connection.Query<DropDownListaGenericaModel>(
                     """
                     select
-                        upper(rtrim(nombre)) as item,
-                        upper(rtrim(nombre)) as descripcion
+                        item = upper(rtrim(nombre)),
+                        descripcion = upper(rtrim(nombre))
                     from Usuarios
                     where estado = 'A'
-                    order by nombre;
+                    order by item;
                     """).ToList();
 
-                return DbHelper.CreateOkResponse(
+                var resultado =
                     new AfRecepcionAfiliacionesTagsInicializarResponse
-                    {
-                        tag_recepcion = tags.tag_recepcion,
-                        tag_devolucion = tags.tag_devolucion,
-                        tag_recepcion_devolucion =
-                            tags.tag_recepcion_devolucion,
-                        usuarios = usuarios
-                    });
+                {
+                    usuarios = usuarios
+                };
+                resultado.tag_recepcion = tags.tag_recepcion;
+                resultado.tag_devolucion = tags.tag_devolucion;
+                resultado.tag_recepcion_devolucion =
+                    tags.tag_recepcion_devolucion;
+
+                return DbHelper.CreateOkResponse(resultado);
             }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new AfRecepcionAfiliacionesTagsInicializarResponse());
-            }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
+                when (ex is SqlException or InvalidOperationException)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -381,14 +378,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     throw;
                 }
             }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new AfRecepcionAfiliacionesTagsAplicarResponse());
-            }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
+                when (ex is SqlException or InvalidOperationException)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -428,50 +419,55 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     new List<AfRecepcionAfiliacionesTagsHistorialResponse>());
             }
 
-            const string sql = """
+            var sql = new StringBuilder(
+                """
                 select
                     rtrim(T.descripcion) as descripcion,
-                    isnull(rtrim(CT.notas), '') as notas,
+                    coalesce(rtrim(CT.notas), '') as notas,
                     CT.registro_fecha,
-                    isnull(rtrim(CT.registro_usuario), '')
+                    coalesce(rtrim(CT.registro_usuario), '')
                         as registro_usuario,
-                    isnull(rtrim(CT.documento), '') as documento
+                    coalesce(rtrim(CT.documento), '') as documento
                 from SIF_Control_Tags CT
                 inner join SIF_Tags T
-                    on CT.tag_codigo = T.tag_codigo
+                    on T.tag_codigo = CT.tag_codigo
                 where CT.cod_modulo = @Modulo
-                  and (@Cedula = '' or CT.codigo like '%' + @Cedula + '%')
-                  and (
-                      @Documento is null
-                      or CT.documento like
-                          '%' + convert(varchar(30), @Documento) + '%'
-                  )
-                  and (
-                      @Usuario = ''
-                      or CT.registro_usuario like '%' + @Usuario + '%'
-                  )
-                  and (
-                      @FechaInicio is null
-                      or CT.registro_fecha >= @FechaInicio
-                  )
-                  and (
-                      @FechaFin is null
-                      or CT.registro_fecha < dateadd(day, 1, @FechaFin)
-                  )
-                order by CT.registro_fecha desc;
-                """;
+                """);
+
+            if (cedula.Length > 0)
+            {
+                sql.AppendLine("and CT.codigo like @Cedula");
+            }
+            if (request.documento.HasValue)
+            {
+                sql.AppendLine("and CT.documento like @Documento");
+            }
+            if (usuario.Length > 0)
+            {
+                sql.AppendLine("and CT.registro_usuario like @Usuario");
+            }
+            if (request.fecha_inicio.HasValue)
+            {
+                sql.AppendLine("and CT.registro_fecha >= @FechaInicio");
+            }
+            if (request.fecha_fin.HasValue)
+            {
+                sql.AppendLine(
+                    "and CT.registro_fecha < dateadd(day, 1, @FechaFin)");
+            }
+            sql.AppendLine("order by CT.registro_fecha desc;");
 
             return DbHelper.ExecuteListQuery<
                 AfRecepcionAfiliacionesTagsHistorialResponse>(
                     _portalDb,
                     codEmpresa,
-                    sql,
+                    sql.ToString(),
                     new
                     {
                         Modulo,
-                        Cedula = cedula,
-                        request.documento,
-                        Usuario = usuario,
+                        Cedula = $"%{cedula}%",
+                        Documento = $"%{request.documento}%",
+                        Usuario = $"%{usuario}%",
                         FechaInicio = request.fecha_inicio?.Date,
                         FechaFin = request.fecha_fin?.Date
                     });
@@ -602,26 +598,46 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 SqlConnection connection,
                 SqlTransaction? transaction)
         {
-            var parametros = connection.Query<ParametroTag>(
+            var tags = connection.QuerySingle<TagsConfiguracion>(
                 """
+                with configuracion as
+                (
+                    select
+                        max(case when cod_parametro = '10'
+                            then nullif(rtrim(valor), '') end)
+                            as tag_recepcion,
+                        max(case when cod_parametro = '11'
+                            then nullif(rtrim(valor), '') end)
+                            as tag_devolucion,
+                        max(case when cod_parametro = '12'
+                            then nullif(rtrim(valor), '') end)
+                            as tag_recepcion_devolucion
+                    from SIF_Parametros
+                    where cod_parametro in ('10', '11', '12')
+                )
                 select
-                    rtrim(cod_parametro) as cod_parametro,
-                    isnull(rtrim(valor), '') as valor
-                from SIF_Parametros
-                where cod_parametro in ('10', '11', '12');
+                    isnull(C.tag_recepcion, '') as tag_recepcion,
+                    isnull(C.tag_devolucion, '') as tag_devolucion,
+                    isnull(C.tag_recepcion_devolucion, '')
+                        as tag_recepcion_devolucion,
+                    case when exists (
+                        select 1
+                        from SIF_Tags
+                        where tag_codigo = C.tag_recepcion
+                    ) then 1 else 0 end
+                    + case when exists (
+                        select 1
+                        from SIF_Tags
+                        where tag_codigo = C.tag_devolucion
+                    ) then 1 else 0 end
+                    + case when exists (
+                        select 1
+                        from SIF_Tags
+                        where tag_codigo = C.tag_recepcion_devolucion
+                    ) then 1 else 0 end as tags_existentes
+                from configuracion C;
                 """,
-                transaction: transaction).ToList();
-
-            string Obtener(string codigo) => parametros
-                .FirstOrDefault(x => x.cod_parametro == codigo)?.valor
-                ?? string.Empty;
-
-            var tags = new TagsConfiguracion
-            {
-                tag_recepcion = Obtener("10"),
-                tag_devolucion = Obtener("11"),
-                tag_recepcion_devolucion = Obtener("12")
-            };
+                transaction: transaction);
 
             if (string.IsNullOrWhiteSpace(tags.tag_recepcion) ||
                 string.IsNullOrWhiteSpace(tags.tag_devolucion) ||
@@ -631,29 +647,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     "Falta configurar uno de los parametros de etiquetas 10, 11 o 12.");
             }
 
-            int existentes = connection.ExecuteScalar<int>(
-                """
-                select
-                    case when exists (
-                        select 1 from SIF_Tags where tag_codigo = @Recepcion
-                    ) then 1 else 0 end
-                    + case when exists (
-                        select 1 from SIF_Tags where tag_codigo = @Devolucion
-                    ) then 1 else 0 end
-                    + case when exists (
-                        select 1 from SIF_Tags
-                        where tag_codigo = @RecepcionDevolucion
-                    ) then 1 else 0 end;
-                """,
-                new
-                {
-                    Recepcion = tags.tag_recepcion,
-                    Devolucion = tags.tag_devolucion,
-                    RecepcionDevolucion = tags.tag_recepcion_devolucion
-                },
-                transaction);
-
-            if (existentes != 3)
+            if (tags.tags_existentes != 3)
             {
                 throw new InvalidOperationException(
                     "Uno o mas codigos de etiqueta configurados no existen.");
@@ -750,17 +744,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             AF_frmAF_RecepcionAfiliacionesTags_Movimiento_Normalizar(
                 string? movimiento)
         {
-            string valor = movimiento?.Trim().ToUpperInvariant()
-                ?? string.Empty;
-            return valor is MovimientoRecepcion or MovimientoDevolucion
-                ? valor
-                : string.Empty;
-        }
-
-        private sealed class ParametroTag
-        {
-            public string cod_parametro { get; set; } = string.Empty;
-            public string valor { get; set; } = string.Empty;
+            return movimiento?.Trim().ToUpperInvariant() switch
+            {
+                MovimientoRecepcion => MovimientoRecepcion,
+                MovimientoDevolucion => MovimientoDevolucion,
+                _ => string.Empty
+            };
         }
 
         private sealed class TagsConfiguracion
@@ -768,6 +757,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             public string tag_recepcion { get; set; } = string.Empty;
             public string tag_devolucion { get; set; } = string.Empty;
             public string tag_recepcion_devolucion { get; set; } = string.Empty;
+            public int tags_existentes { get; set; }
         }
 
         private sealed class TagValidacionResultado
