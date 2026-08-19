@@ -8,7 +8,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 {
-    public sealed class FrmAfRecepcionAfiliacionesTagsDb
+    public sealed partial class FrmAfRecepcionAfiliacionesTagsDb
     {
         private const string Modulo = "AFI";
         private const string MovimientoRecepcion = "RECEPCION";
@@ -349,7 +349,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             string movimiento =
                 AF_frmAF_RecepcionAfiliacionesTags_Movimiento_Normalizar(
-                    request!.movimiento);
+                    request.movimiento);
 
             try
             {
@@ -360,71 +360,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                 try
                 {
-                    var tags =
-                        AF_frmAF_RecepcionAfiliacionesTags_Tags_Obtener(
+                    int aplicados =
+                        AF_frmAF_RecepcionAfiliacionesTags_Aplicar_Transaccion(
                             connection,
-                            transaction);
-                    string tag = movimiento == MovimientoRecepcion
-                        ? tags.tag_recepcion
-                        : tags.tag_devolucion;
-                    string observacion = movimiento == MovimientoRecepcion
-                        ? "Recibida la documentacion de la afiliacion"
-                        : "Devolucion de la documentacion de la afiliacion";
-                    int aplicados = 0;
-
-                    foreach (var item in request.afiliaciones
-                        .GroupBy(x => new
-                        {
-                            Cedula = x.cedula.Trim(),
-                            x.consec
-                        })
-                        .Select(group => group.First()))
-                    {
-                        string identificacion = item.cedula.Trim();
-                        string? validacion =
-                            AF_frmAF_RecepcionAfiliacionesTags_Tag_Validar(
-                                connection,
-                                transaction,
-                                identificacion,
-                                item.consec,
-                                movimiento,
-                                tags);
-                        if (validacion is not null)
-                        {
-                            throw new InvalidOperationException(validacion);
-                        }
-
-                        var afiliacion =
-                            AF_frmAF_RecepcionAfiliacionesTags_Afiliacion_Consultar(
-                                connection,
-                                transaction,
-                                identificacion,
-                                item.consec,
-                                movimiento);
-                        if (afiliacion is null)
-                        {
-                            throw new InvalidOperationException(
-                                $"La cedula {identificacion} y boleta {item.consec} ya no cumplen el estado requerido.");
-                        }
-
-                        connection.Execute(
-                            "spSIFRegistraTags",
-                            new
-                            {
-                                Codigo = afiliacion.cedula,
-                                Tag = tag,
-                                Usuario = request.usuario.Trim(),
-                                Observacion = observacion,
-                                Documento = afiliacion.consec.ToString(),
-                                Modulo,
-                                Llave_01 = afiliacion.cedula,
-                                Llave_02 = afiliacion.consec.ToString(),
-                                Llave_03 = string.Empty
-                            },
                             transaction,
-                            commandType: CommandType.StoredProcedure);
-                        aplicados++;
-                    }
+                            request,
+                            movimiento);
 
                     transaction.Commit();
                     return DbHelper.CreateOkResponse(
@@ -601,47 +542,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 string movimiento,
                 TagsConfiguracion tags)
         {
-            int resultado = connection.ExecuteScalar<int>(
+            var resultados = connection.QuerySingle<TagValidacionResultado>(
                 """
-                select dbo.fxSIFValidaTagRev(
-                    @Cedula,
-                    @TagRecepcion,
-                    @TagDevolucion,
-                    @Modulo,
-                    @Documento,
-                    null
-                );
-                """,
-                new
-                {
-                    Cedula = cedula,
-                    TagRecepcion = tags.tag_recepcion,
-                    TagDevolucion = tags.tag_devolucion,
-                    Modulo,
-                    Documento = numeroBoleta.ToString()
-                },
-                transaction);
-
-            if (movimiento == MovimientoRecepcion && resultado == 2)
-            {
-                return $"No es posible registrar dos recepciones consecutivas en la cedula {cedula}.";
-            }
-
-            if (movimiento == MovimientoDevolucion && resultado == 3)
-            {
-                return $"No es posible registrar dos devoluciones consecutivas en la cedula {cedula}.";
-            }
-
-            int resultadoRecepcionDevolucion = connection.ExecuteScalar<int>(
-                """
-                select dbo.fxSIFValidaTagRev(
-                    @Cedula,
-                    @TagRecepcion,
-                    @TagDevolucion,
-                    @Modulo,
-                    @Documento,
-                    @TagRecepcionDevolucion
-                );
+                select
+                    dbo.fxSIFValidaTagRev(
+                        @Cedula,
+                        @TagRecepcion,
+                        @TagDevolucion,
+                        @Modulo,
+                        @Documento,
+                        null
+                    ) as resultado,
+                    dbo.fxSIFValidaTagRev(
+                        @Cedula,
+                        @TagRecepcion,
+                        @TagDevolucion,
+                        @Modulo,
+                        @Documento,
+                        @TagRecepcionDevolucion
+                    ) as resultado_recepcion_devolucion;
                 """,
                 new
                 {
@@ -655,7 +574,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 },
                 transaction);
 
-            return resultadoRecepcionDevolucion == 4
+            if (movimiento == MovimientoRecepcion &&
+                resultados.resultado == 2)
+            {
+                return $"No es posible registrar dos recepciones consecutivas en la cedula {cedula}.";
+            }
+
+            if (movimiento == MovimientoDevolucion &&
+                resultados.resultado == 3)
+            {
+                return $"No es posible registrar dos devoluciones consecutivas en la cedula {cedula}.";
+            }
+
+            return resultados.resultado_recepcion_devolucion == 4
                 ? $"No es posible registrar una recepcion sin aplicar la devolucion en la cedula {cedula}."
                 : null;
         }
@@ -837,6 +768,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             public string tag_recepcion { get; set; } = string.Empty;
             public string tag_devolucion { get; set; } = string.Empty;
             public string tag_recepcion_devolucion { get; set; } = string.Empty;
+        }
+
+        private sealed class TagValidacionResultado
+        {
+            public int resultado { get; set; }
+            public int resultado_recepcion_devolucion { get; set; }
         }
     }
 }
