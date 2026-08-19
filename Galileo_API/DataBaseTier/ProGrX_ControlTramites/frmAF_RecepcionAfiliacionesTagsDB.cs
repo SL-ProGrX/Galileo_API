@@ -13,6 +13,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         private const string Modulo = "AFI";
         private const string MovimientoRecepcion = "RECEPCION";
         private const string MovimientoDevolucion = "DEVOLUCION";
+        private const string MensajeMovimientoInvalido =
+            "El tipo de movimiento no es valido.";
         private readonly PortalDB _portalDb;
 
         /// <summary>
@@ -146,7 +148,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (string.IsNullOrWhiteSpace(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es valido.",
+                    MensajeMovimientoInvalido,
                     -2,
                     new List<AfRecepcionAfiliacionesTagsBoletaResponse>());
             }
@@ -296,7 +298,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (string.IsNullOrWhiteSpace(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es valido.",
+                    MensajeMovimientoInvalido,
                     -2,
                     new List<AfRecepcionAfiliacionesTagsPendienteResponse>());
             }
@@ -756,7 +758,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return DbHelper.CreateErrorResponse<
                     AfRecepcionAfiliacionesTagsAfiliacionResponse?>(
-                        "El tipo de movimiento no es valido.",
+                        MensajeMovimientoInvalido,
                         -2,
                         null);
             }
@@ -790,7 +792,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         request.movimiento)))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es valido.",
+                    MensajeMovimientoInvalido,
                     -2,
                     new AfRecepcionAfiliacionesTagsAplicarResponse());
             }
