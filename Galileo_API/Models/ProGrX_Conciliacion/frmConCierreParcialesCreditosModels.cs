@@ -9,14 +9,14 @@
 
     public class ConCierreParcialesCreditosCierreParcialRequest
     {
-        public DateTime Fecha_Corte { get; set; }
+        public DateTime? Fecha_Corte { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class ConCierreParcialesCreditosProyeccionRequest
     {
-        public DateTime Fecha_Inicio { get; set; }
-        public short Meses { get; set; }
+        public DateTime? Fecha_Inicio { get; set; }
+        public short? Meses { get; set; }
     }
 
     public class ConCierreParcialesCreditosProductoAcumuladoRequest
