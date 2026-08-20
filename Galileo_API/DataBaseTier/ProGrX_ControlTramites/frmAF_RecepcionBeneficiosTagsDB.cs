@@ -69,10 +69,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 return DbHelper.CreateOkResponse(
                     new AfRecepcionBeneficiosTagsInicializarResponse
                     {
-                        tag_recepcion = tags.tag_recepcion,
-                        tag_devolucion = tags.tag_devolucion,
+                        tag_recepcion = tags.TagRecepcion,
+                        tag_devolucion = tags.TagDevolucion,
                         tag_recepcion_devolucion =
-                            tags.tag_recepcion_devolucion,
+                            tags.TagRecepcionDevolucion,
                         beneficios = beneficios,
                         usuarios = usuarios
                     });
@@ -235,7 +235,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             string movimiento =
                 AF_frmAF_RecepcionBeneficiosTags_Movimiento_Normalizar(
-                    request!.movimiento);
+                    request.movimiento);
 
             try
             {
@@ -252,8 +252,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             connection,
                             transaction);
                     string tag = movimiento == MovimientoRecepcion
-                        ? tags.tag_recepcion
-                        : tags.tag_devolucion;
+                        ? tags.TagRecepcion
+                        : tags.TagDevolucion;
                     string observacion = movimiento == MovimientoRecepcion
                         ? "Recibida la documentacion del Beneficio"
                         : "Devolucion de la documentacion del Beneficio";
@@ -482,8 +482,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 new
                 {
                     CodBeneficio = codBeneficio,
-                    TagRecepcion = tags.tag_recepcion,
-                    TagDevolucion = tags.tag_devolucion,
+                    TagRecepcion = tags.TagRecepcion,
+                    TagDevolucion = tags.TagDevolucion,
                     Modulo,
                     Documento = consec.ToString()
                 },
@@ -513,12 +513,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 new
                 {
                     CodBeneficio = codBeneficio,
-                    TagRecepcion = tags.tag_recepcion,
-                    TagDevolucion = tags.tag_devolucion,
+                    TagRecepcion = tags.TagRecepcion,
+                    TagDevolucion = tags.TagDevolucion,
                     Modulo,
                     Documento = consec.ToString(),
                     TagRecepcionDevolucion =
-                        tags.tag_recepcion_devolucion
+                        tags.TagRecepcionDevolucion
                 },
                 transaction);
 
@@ -544,41 +544,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     select
                         isnull(max(case
                             when cod_parametro = '10' then rtrim(valor)
-                        end), '') as tag_recepcion,
+                        end), '') as TagRecepcion,
                         isnull(max(case
                             when cod_parametro = '11' then rtrim(valor)
-                        end), '') as tag_devolucion,
+                        end), '') as TagDevolucion,
                         isnull(max(case
                             when cod_parametro = '12' then rtrim(valor)
-                        end), '') as tag_recepcion_devolucion
+                        end), '') as TagRecepcionDevolucion
                     from SIF_Parametros
                     where cod_parametro in ('10', '11', '12')
                 )
                 select
-                    C.tag_recepcion,
-                    C.tag_devolucion,
-                    C.tag_recepcion_devolucion,
+                    C.TagRecepcion,
+                    C.TagDevolucion,
+                    C.TagRecepcionDevolucion,
                     case when exists (
                         select 1 from SIF_Tags
-                        where tag_codigo = C.tag_recepcion
+                        where tag_codigo = C.TagRecepcion
                     ) then 1 else 0 end
                     + case when exists (
                         select 1 from SIF_Tags
-                        where tag_codigo = C.tag_devolucion
+                        where tag_codigo = C.TagDevolucion
                     ) then 1 else 0 end
                     + case when exists (
                         select 1 from SIF_Tags
-                        where tag_codigo = C.tag_recepcion_devolucion
-                    ) then 1 else 0 end as etiquetas_existentes
+                        where tag_codigo = C.TagRecepcionDevolucion
+                    ) then 1 else 0 end as EtiquetasExistentes
                 from Configuracion C;
                 """,
                 transaction: transaction);
 
             string[] codigosConfigurados =
             [
-                tags.tag_recepcion,
-                tags.tag_devolucion,
-                tags.tag_recepcion_devolucion
+                tags.TagRecepcion,
+                tags.TagDevolucion,
+                tags.TagRecepcionDevolucion
             ];
             if (codigosConfigurados.Any(string.IsNullOrWhiteSpace))
             {
@@ -586,7 +586,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     "Falta configurar uno de los parametros de etiquetas 10, 11 o 12.");
             }
 
-            if (tags.etiquetas_existentes != 3)
+            if (tags.EtiquetasExistentes != 3)
             {
                 throw new InvalidOperationException(
                     "Uno o mas codigos de etiqueta configurados no existen.");
@@ -695,10 +695,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
         private sealed class TagsConfiguracion
         {
-            public string tag_recepcion { get; set; } = string.Empty;
-            public string tag_devolucion { get; set; } = string.Empty;
-            public string tag_recepcion_devolucion { get; set; } = string.Empty;
-            public int etiquetas_existentes { get; set; }
+            public TagsConfiguracion(
+                string tagRecepcion,
+                string tagDevolucion,
+                string tagRecepcionDevolucion,
+                int etiquetasExistentes)
+            {
+                TagRecepcion = tagRecepcion;
+                TagDevolucion = tagDevolucion;
+                TagRecepcionDevolucion = tagRecepcionDevolucion;
+                EtiquetasExistentes = etiquetasExistentes;
+            }
+
+            public string TagRecepcion { get; }
+            public string TagDevolucion { get; }
+            public string TagRecepcionDevolucion { get; }
+            public int EtiquetasExistentes { get; }
         }
     }
 }
