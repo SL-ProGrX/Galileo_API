@@ -6,7 +6,7 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
-using static Galileo_API.Models.ProGrX_ControlTramites.frmSIFTagsModels;
+using static Galileo_API.Models.ProGrX_ControlTramites.FrmSifTagsModels;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites

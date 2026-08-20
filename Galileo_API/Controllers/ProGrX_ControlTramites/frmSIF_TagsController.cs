@@ -3,17 +3,17 @@ using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.ControlTramites;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Galileo_API.Models.ProGrX_ControlTramites.frmSIFTagsModels;
+using static Galileo_API.Models.ProGrX_ControlTramites.FrmSifTagsModels;
 
 namespace Galileo_API.Controllers.ProGrX.ControlTramites
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmSIFTagsController : ControllerBase
+    public class FrmSifTagsController : ControllerBase
     {
         private readonly FrmSifTagsBL _bl;
 
-        public FrmSIFTagsController(IConfiguration config)
+        public FrmSifTagsController(IConfiguration config)
         {
             _bl = new FrmSifTagsBL(config);
         }

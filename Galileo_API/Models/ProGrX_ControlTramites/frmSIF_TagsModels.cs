@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX_ControlTramites
 {
-    public class frmSIFTagsModels
+    public class FrmSifTagsModels
     {
         public class SifTagsListaResult
         {

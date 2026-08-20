@@ -1,7 +1,7 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.ControlTramites;
-using static Galileo_API.Models.ProGrX_ControlTramites.frmSIFTagsModels;
+using static Galileo_API.Models.ProGrX_ControlTramites.FrmSifTagsModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX.ControlTramites
 {
