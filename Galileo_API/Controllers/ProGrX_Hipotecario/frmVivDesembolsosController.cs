@@ -28,6 +28,14 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.Operaciones_Listar(codEmpresa);
         }
 
+        [HttpPost("ConsultaDesembolso_Listar")]
+        public ErrorDto<List<ConsultaDesembolsoDto>> ConsultaDesembolso_Listar(
+            int codEmpresa,
+            ConsultaDesembolsoRequestDto request)
+        {
+            return _bl.ConsultaDesembolso_Listar(codEmpresa, request);
+        }
+
         [Authorize]
         [HttpGet("Lineas_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Lineas_Listar(int codEmpresa)

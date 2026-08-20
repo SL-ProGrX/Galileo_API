@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
+using System.Collections.Generic;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
@@ -19,6 +20,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Carga la información completa de un expediente de estudio de crédito.
         /// Obtiene estado, encabezado, crédito, salarios y catálogos en una sola llamada.
         /// </summary>
+        /// <remarks>
+        /// VB6 (frmPreaEstudiov2.frm) no llama a "spCRDPreaPREANALISIS" directamente.
+        /// Usa clsEntidad, que arma el SP a partir de una convención genérica:
+        ///   clsEntidad.tablaName = "spCRDPreaPREANALISIS"
+        ///   clsEntidad.fxTraerUno(parametro)  -->  EXEC spCRDPreaPREANALISIS_T '&lt;param&gt;'
+        /// (ver clsEntidad.fxTraerUno: "EXEC " &amp; m_tableName &amp; "_T " &amp; ParamsArray)
+        ///
+        /// El resultado es UN solo recordset plano con ~80 columnas (no varios result sets),
+        /// leído campo a campo en sbLigarDatos. Aquí se mapean únicamente los campos que
+        /// las pantallas de Angular actualmente consumen (estado/encabezado/credito/salarios).
+        ///
+        /// Campos que NO vienen de este SP en VB6 y se resuelven aparte:
+        ///   - encabezado.estado_persona: ObtenerEstadoPersona (réplica de txtCedula_LostFocus
+        ///     contra socios/AFI_ESTADOS_PERSONA).
+        ///   - encabezado.edad: ObtenerEdad (réplica de dbo.fxSys_Edad_Anios).
+        ///   - salarios.tabla_salarios/extras/incapacidades: ObtenerTablaSalarios/ObtenerExtras/
+        ///     ObtenerIncapacidades (réplica de sbSalarios_Load/sbExtras_Load/sbIncapacidades_Load).
+        ///   - comite_resolutivo: rs!ID_COMITE (sí está en el recordset plano).
+        ///   - salario_minimo_inembargable/salario_normativa: ObtenerParametrosSalario
+        ///     (parámetros globales de empresa, CRD_PREA_PARAMETROS, no del expediente).
+        ///
+        /// Campos que SIGUEN sin origen confirmado (quedan con su valor por defecto):
+        ///   - encabezado.clasificacion_crediticia (rs!CATEGORIA en LigarDatosClasificacion, sub aparte)
+        ///   - encabezado.edad_aplica / edad_justificacion (query aparte sobre
+        ///     APL_JUSTIFICACION_EDAD/JUSTIFICACION_EDAD)
+        ///   - estado.tiene_alerta / mensaje_alerta (no se encontró origen confirmado en el .frm)
+        ///   - credito.contrato (cboFondoContrato no se restaura en sbLigarDatos)
+        ///   - credito.respaldo / cph: en VB6 "Respaldo" es solo un Label junto a cboGarantia,
+        ///     no hay un combo propio con ese nombre; y el Angular actual espera una estructura
+        ///     ("respaldo_options" embebido por garantía) que no existe en ningún lado del VB6
+        ///     revisado. Requiere investigación aparte antes de implementarlo — no se adivinó.
+        /// </remarks>
         public ErrorDto<FrmPreaEstudiov2CargaResponse> Prea_frmPreaEstudiov2_Cargar(
             int codEmpresa,
             FrmPreaEstudiov2CargaRequest request)
@@ -30,33 +63,133 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 Result = new FrmPreaEstudiov2CargaResponse()
             };
 
+            var codPreanalisis = request.cod_preanalisis?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrEmpty(codPreanalisis))
+            {
+                result.Code = -1;
+                result.Description = "Debe indicar el código de expediente.";
+                return result;
+            }
+
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var parameters = new DynamicParameters();
-                parameters.Add("@Expediente", request.cod_preanalisis?.Trim() ?? string.Empty, DbType.String);
-                parameters.Add("@Usuario", request.usuario?.Trim() ?? string.Empty, DbType.String);
+                // clsEntidad concatena el parámetro como literal SQL (fxFormatearValor),
+                // no como parámetro nombrado. Se replica igual, escapando comillas simples.
+                const string sql = "EXEC spCRDPreaPREANALISIS_T @CodPreanalisis";
+                var rawRow = connection.QueryFirstOrDefault(sql, new { CodPreanalisis = codPreanalisis })
+                    as IDictionary<string, object>;
 
-                using var multi = connection.QueryMultiple(
-                    "spCRDPreaPREANALISIS",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
+                if (rawRow is null)
+                {
+                    result.Code = -1;
+                    result.Description = $"No se encontró el expediente {codPreanalisis}.";
+                    return result;
+                }
 
-                var estado = multi.ReadFirstOrDefault<FrmPreaEstudiov2EstadoDto>();
-                var encabezado = multi.ReadFirstOrDefault<FrmPreaEstudiov2EncabezadoDto>();
-                var credito = multi.ReadFirstOrDefault<FrmPreaEstudiov2CreditoDto>();
-                var salarios = multi.ReadFirstOrDefault<FrmPreaEstudiov2SalariosDto>();
+                // VB6 accede a los campos del recordset con "rs!Campo" (comparación
+                // insensible a mayúsculas/minúsculas de ADO), así que no se puede saber
+                // con certeza el casing real de las columnas devueltas por el SP.
+                // Se normaliza a un diccionario case-insensitive para que los nombres de
+                // columna mapeados abajo (tomados literalmente del código VB6) coincidan
+                // sin importar cómo los haya declarado el SP en la base de datos.
+                IDictionary<string, object> row = new Dictionary<string, object>(rawRow, StringComparer.OrdinalIgnoreCase);
+
+                var extrasFijas = GetDecimal(row, "EXTRAS_FIJAS");
+                var porcComponenteAdicional = GetDecimal(row, "PORCENTAJE_COMPONENTE_AD");
+                var (edadAplica, edadJustificacion) = ObtenerJustificacionEdad(connection, codPreanalisis);
+                var lineaActual = GetString(row, "Cod_Linea");
 
                 result.Result = new FrmPreaEstudiov2CargaResponse
                 {
-                    estado = estado ?? new FrmPreaEstudiov2EstadoDto(),
-                    encabezado = encabezado ?? new FrmPreaEstudiov2EncabezadoDto(),
-                    credito = credito ?? new FrmPreaEstudiov2CreditoDto(),
-                    salarios = salarios ?? new FrmPreaEstudiov2SalariosDto(),
-                    catalogos = CargarCatalogos(connection)
+                    estado = new FrmPreaEstudiov2EstadoDto
+                    {
+                        cod_preanalisis = codPreanalisis,
+                        estado = GetString(row, "Estado"),
+                        estado_desc = GetString(row, "EstadoDesc"),
+                        estado_v2 = GetString(row, "COD_ESTADO_V2"),
+                        estado_v2_desc = GetString(row, "EstadoV2Desc"),
+                        editable = GetBool(row, "INDICADOR_EDITABLE"),
+                    },
+                    encabezado = new FrmPreaEstudiov2EncabezadoDto
+                    {
+                        cedula = GetString(row, "Cedula"),
+                        nombre = GetString(row, "Nombre"),
+                        sexo = GetString(row, "sexo"),
+                        fecha_nacimiento = GetDateTime(row, "fecha_nacimiento"),
+                        estado_persona = ObtenerEstadoPersona(connection, GetString(row, "Cedula")),
+                        edad = ObtenerEdad(connection, GetDateTime(row, "fecha_nacimiento")),
+                        clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, GetString(row, "Cedula"), GetString(row, "Estado")),
+                        edad_aplica = edadAplica,
+                        edad_justificacion = edadJustificacion,
+                        observacion_analista = GetString(row, "OBSERVACION_ANALISTA"),
+                        observacion_comite = GetString(row, "OBSERVACION_COMITE"),
+                        observacion_jd = GetString(row, "OBSERVACION_JD"),
+                        registro_usuario = GetString(row, "Usuario"),
+                        registro_fecha = GetDateTime(row, "FECHA_CREACION"),
+                    },
+                    credito = ConstruirCredito(connection, row),
+                    salarios = new FrmPreaEstudiov2SalariosDto
+                    {
+                        tipo_salario = GetString(row, "tipo_salario"),
+                        corte_colilla = GetDateTime(row, "FECHA_CORTE_COLIILA"), // nombre real en VB6 (con typo)
+                        salario_devengado = GetDecimal(row, "SALARIO_DEVENGADO_COLILLA"),
+                        salario_mensual = GetDecimal(row, "DEVENGADO_MES"),
+                        salario_constancia = GetDecimal(row, "SALARIO_CONSTANCIA"),
+                        salario_orden_patronal = GetDecimal(row, "SALARIO_ORDEN_PATRONAL"),
+                        ingreso_privado = GetDecimal(row, "MONTO_ACT_PRIVADAS"),
+                        componente_adicional_id = GetInt(row, "ID_COMPONENTE_AD"),
+                        componente_adicional_porc = porcComponenteAdicional,
+                        componente_adicional_base = extrasFijas,
+                        // Replica el cálculo cliente de VB6: txtCompAdicional = base * porc / 100
+                        componentes_adicionales = Math.Round(extrasFijas * porcComponenteAdicional / 100m, 2),
+                        total_extras = GetDecimal(row, "REBAJO_EXTRAS"),
+                        tabla_salarios = ObtenerTablaSalarios(connection, codPreanalisis),
+                        extras = ObtenerExtras(connection, codPreanalisis),
+                        incapacidades = ObtenerIncapacidades(connection, codPreanalisis),
+                    },
+                    resumen = new FrmPreaEstudiov2ResumenDto
+                    {
+                        salario_real = GetDecimal(row, "SALARIO_REAL"),
+                        cargas = GetDecimal(row, "TOTAL_CARGA_CCSS"),
+                        porc_sobre_salario = GetDecimal(row, "PORCENTAJE_LIBRE"),
+                        deducciones = GetDecimal(row, "DEDUCCIONES"),
+                        creditos_cancelados = GetDecimal(row, "CRD_TRANSITO_CANCELADOS"),
+                        creditos_por_cobrar = GetDecimal(row, "CRD_TRANSITO_XCOBRAR"),
+                        salario_liquido = GetDecimal(row, "SALARIO_LIQUIDO"),
+                        refundiciones = GetDecimal(row, "REFUNDICIONES"),
+                        refundiciones_cuota = GetDecimal(row, "REFUNDICIONES_CUOTA"),
+                        desembolsos = GetDecimal(row, "DESEMBOLSOS"),
+                        desembolsos_cuota = GetDecimal(row, "DESEMBOLSOS_CUOTA"),
+                        total_liquido_persona = GetDecimal(row, "LIQUIDO_TOTAL"),
+                        total_liquido_grupo = GetDecimal(row, "LIQUIDO_TOTAL_GRUPO"),
+                        fianzas = GetDecimal(row, "FIANZAS"),
+                        comisiones = GetDecimal(row, "MONTO_COMISION"),
+                        intereses = GetDecimal(row, "Monto_Interes"),
+                        // VB6 (frmPreaEstudiov2.frm ~10120): Abs(Cuota - (REFUNDICIONES_CUOTA + DESEMBOLSOS_CUOTA))
+                        diferencia_cuota = Math.Abs(GetDecimal(row, "Cuota") - (GetDecimal(row, "REFUNDICIONES_CUOTA") + GetDecimal(row, "DESEMBOLSOS_CUOTA"))),
+                        salario_minimo_estudio = GetDecimal(row, "SALARIO_USURA"),
+                        salario_normativa_estudio = GetDecimal(row, "SALARIO_NORMATIVA"),
+                        liquidez_sin_fianzas = GetDecimal(row, "LIQUIDEZ_SIMPLE"),
+                        liquidez_sin_fianzas_porc = GetDecimal(row, "PORC_LIQ_SIN_FIANZA"),
+                        liquidez_con_fianzas = GetDecimal(row, "LIQUIDEZ_CFIANZAS"),
+                        liquidez_con_fianzas_porc = GetDecimal(row, "PORC_LIQ_CON_FIANZA"),
+                        liquidez_sin_fianzas_comp = GetDecimal(row, "LIQUIDEZ_SFIANZAS_CA"),
+                        liquidez_sin_fianzas_comp_porc = GetDecimal(row, "PORC_LIQ_SIN_FIANZA_CA"),
+                        liquidez_con_fianzas_comp = GetDecimal(row, "LIQUIDEZ_CFIANZAS_CA"),
+                        liquidez_con_fianzas_comp_porc = GetDecimal(row, "PORC_LIQ_CON_FIANZA_CA"),
+                    },
+                    catalogos = CargarCatalogos(connection, request.usuario?.Trim() ?? string.Empty, lineaActual),
+                    comite_resolutivo = GetString(row, "ID_COMITE"),
                 };
+
+                (result.Result.salario_minimo_inembargable, result.Result.salario_normativa) =
+                    ObtenerParametrosSalario(connection);
+
+                (result.Result.edad_maxima_hombres, result.Result.edad_maxima_mujeres) =
+                    ObtenerEdadMaximaPermitida(connection);
             }
             catch (Exception ex)
             {
@@ -69,9 +202,634 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Carga los catálogos (combos) necesarios para el formulario.
+        /// Salario Mínimo Inembargable y Salario Normativa. Son parámetros globales
+        /// de la empresa, no del expediente.
+        /// VB6: mPreAnalisis.bas, sbInicializaGlobales() ->
+        ///   SELECT * FROM CRD_PREA_PARAMETROS
+        ///   COD_PARAMETRO='17' -> GlobalSalarioMinimoInembargable
+        ///   COD_PARAMETRO='22' -> GlobalSalarioNormativo = GlobalSalarioMinimoInembargable + VALOR('22')
         /// </summary>
-        private static FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection)
+        private static (decimal salarioMinimoInembargable, decimal salarioNormativa) ObtenerParametrosSalario(IDbConnection connection)
+        {
+            try
+            {
+                var parametros = connection.Query(
+                    "SELECT COD_PARAMETRO, VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN ('17', '22')"
+                );
+
+                decimal salarioMinimo = 0m;
+                decimal spreadNormativa = 0m;
+
+                foreach (var p in parametros)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)p, StringComparer.OrdinalIgnoreCase);
+                    var codParametro = GetString(dict, "COD_PARAMETRO");
+                    var valor = GetDecimal(dict, "VALOR");
+
+                    if (codParametro == "17")
+                    {
+                        salarioMinimo = valor;
+                    }
+                    else if (codParametro == "22")
+                    {
+                        spreadNormativa = valor;
+                    }
+                }
+
+                return (salarioMinimo, salarioMinimo + spreadNormativa);
+            }
+            catch (DataException)
+            {
+                return (0m, 0m);
+            }
+        }
+
+        /// <summary>
+        /// Edad Máxima Permitida para Hombres / Mujeres (años). Parámetros globales
+        /// de la empresa, no del expediente.
+        /// VB6: mPreAnalisis.bas, sbInicializaGlobales() ->
+        ///   COD_PARAMETRO='01' -> GlobalEdadMaximaPermitidaHombre
+        ///   COD_PARAMETRO='02' -> GlobalEdadMaximaPermitidaMujeres
+        /// </summary>
+        private static (int edadMaximaHombres, int edadMaximaMujeres) ObtenerEdadMaximaPermitida(IDbConnection connection)
+        {
+            try
+            {
+                var parametros = connection.Query(
+                    "SELECT COD_PARAMETRO, VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN ('01', '02')"
+                );
+
+                int edadHombres = 0;
+                int edadMujeres = 0;
+
+                foreach (var p in parametros)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)p, StringComparer.OrdinalIgnoreCase);
+                    var codParametro = GetString(dict, "COD_PARAMETRO");
+                    var valor = GetInt(dict, "VALOR");
+
+                    if (codParametro == "01")
+                    {
+                        edadHombres = valor;
+                    }
+                    else if (codParametro == "02")
+                    {
+                        edadMujeres = valor;
+                    }
+                }
+
+                return (edadHombres, edadMujeres);
+            }
+            catch (DataException)
+            {
+                return (0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Edad de la persona en años. VB6 (txtCedula_LostFocus, línea ~16869):
+        ///   SELECT dbo.fxSys_Edad_Anios('&lt;fecha_nacimiento&gt;') as 'Edad'
+        /// </summary>
+        private static int ObtenerEdad(IDbConnection connection, DateTime? fechaNacimiento)
+        {
+            if (fechaNacimiento is null)
+            {
+                return 0;
+            }
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@FechaNacimiento", fechaNacimiento.Value.ToString("yyyy-MM-dd"), DbType.String);
+
+                return connection.QueryFirstOrDefault<int?>(
+                    "SELECT dbo.fxSys_Edad_Anios(@FechaNacimiento)",
+                    parameters
+                ) ?? 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Estado de la persona (socio/no socio). En VB6 (txtCedula_LostFocus, línea ~16804)
+        /// se ejecuta primero contra "socios" y, si no hay resultado, contra
+        /// CRD_PREA_PREANALISIS. No es parte de spCRDPreaPREANALISIS_T.
+        /// </summary>
+        private static string ObtenerEstadoPersona(IDbConnection connection, string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@Cedula", cedula, DbType.String);
+
+                var estado = connection.QueryFirstOrDefault<string>(
+                    @"SELECT ISNULL(E.descripcion, '')
+                      FROM socios S
+                      LEFT JOIN AFI_ESTADOS_PERSONA E ON S.EstadoActual = E.cod_Estado
+                      WHERE S.cedula = @Cedula",
+                    parameters
+                );
+
+                if (!string.IsNullOrWhiteSpace(estado))
+                {
+                    return estado.Trim();
+                }
+
+                // No es socio: en VB6 se marca como "No Socio" cuando la cédula
+                // existe en CRD_PREA_PREANALISIS pero no en socios.
+                var existeEnPreanalisis = connection.QueryFirstOrDefault<int?>(
+                    "SELECT TOP 1 1 FROM CRD_PREA_PREANALISIS WHERE cedula = @Cedula",
+                    parameters
+                );
+
+                return existeEnPreanalisis.HasValue ? "No Socio" : string.Empty;
+            }
+            catch (DataException)
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Clasificación crediticia. VB6 (txtCedula_LostFocus, línea ~16888):
+        ///   Si Estado empieza con 'R' o 'P': EXEC spCRDConsultarCategoriaAsociado '&lt;cedula&gt;'
+        ///   campo CATEGORIA.
+        /// </summary>
+        private static string ObtenerClasificacionCrediticia(IDbConnection connection, string cedula, string estado)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return string.Empty;
+            }
+
+            var estadoTrim = (estado ?? string.Empty).Trim();
+            if (!estadoTrim.StartsWith("R", StringComparison.OrdinalIgnoreCase)
+                && !estadoTrim.StartsWith("P", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                const string sql = "EXEC spCRDConsultarCategoriaAsociado @Cedula";
+                var row = connection.QueryFirstOrDefault(sql, new { Cedula = cedula }) as IDictionary<string, object>;
+
+                if (row is null)
+                {
+                    return string.Empty;
+                }
+
+                var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                return GetString(dict, "CATEGORIA");
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Justificación de edad. VB6 (sbEdad_Verifica, línea ~9380):
+        ///   SELECT ISNULL(APL_JUSTIFICACION_EDAD,0) 'EDAD_APLICA', ISNULL(JUSTIFICACION_EDAD,'') 'EDAD_JUSTIFICACION'
+        ///   FROM CRD_PREA_PREANALISIS WHERE COD_PREANALISIS = '&lt;expediente&gt;'
+        /// </summary>
+        private static (int edadAplica, string edadJustificacion) ObtenerJustificacionEdad(IDbConnection connection, string codPreanalisis)
+        {
+            if (string.IsNullOrWhiteSpace(codPreanalisis))
+            {
+                return (0, string.Empty);
+            }
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@CodPreanalisis", codPreanalisis, DbType.String);
+
+                var row = connection.QueryFirstOrDefault(
+                    @"SELECT ISNULL(APL_JUSTIFICACION_EDAD,0) AS EDAD_APLICA, ISNULL(JUSTIFICACION_EDAD,'') AS EDAD_JUSTIFICACION
+                      FROM CRD_PREA_PREANALISIS WHERE COD_PREANALISIS = @CodPreanalisis",
+                    parameters
+                ) as IDictionary<string, object>;
+
+                if (row is null)
+                {
+                    return (0, string.Empty);
+                }
+
+                var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                return (GetInt(dict, "EDAD_APLICA"), GetString(dict, "EDAD_JUSTIFICACION"));
+            }
+            catch
+            {
+                return (0, string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Destino y Garantía en cascada por línea de crédito. VB6:
+        ///   sbSTCargaCboDestinos (mValidacion.bas ~275): catalogo_destinos D
+        ///     INNER JOIN catalogo_destinosASG C ON D.cod_destino = C.cod_destino
+        ///     WHERE C.codigo = '&lt;linea&gt;' ORDER BY D.prioridad
+        ///   sbSTCargaCboGarantiav2 (mValidacion.bas ~308): crd_catalogo_garantias C
+        ///     INNER JOIN crd_garantia_tipos T ON C.garantia = T.garantia
+        ///     WHERE C.codigo = '&lt;linea&gt;'
+        /// Si no hay línea seleccionada, VB6 llama con "-1" al inicializar el formulario
+        /// (ambas consultas típicamente no devuelven filas en ese caso).
+        /// </summary>
+        private static (List<FrmPreaEstudiov2DropdownDto> destinos, List<FrmPreaEstudiov2DropdownDto> garantias) ObtenerDestinosGarantias(
+            IDbConnection connection, string linea)
+        {
+            var lineaParam = string.IsNullOrWhiteSpace(linea) ? "-1" : linea.Trim();
+
+            List<FrmPreaEstudiov2DropdownDto> destinos;
+            try
+            {
+                const string sql = @"SELECT rtrim(D.cod_destino) AS item, rtrim(D.descripcion) AS descripcion
+                            FROM catalogo_destinos D
+                            INNER JOIN catalogo_destinosASG C ON D.cod_destino = C.cod_destino
+                            WHERE C.codigo = @Linea
+                            ORDER BY D.prioridad ASC";
+                destinos = connection.Query<FrmPreaEstudiov2DropdownDto>(sql, new { Linea = lineaParam }).ToList();
+            }
+            catch
+            {
+                destinos = [];
+            }
+
+            List<FrmPreaEstudiov2DropdownDto> garantias;
+            try
+            {
+                const string sql = @"SELECT T.Garantia AS item, rtrim(T.descripcion) AS descripcion, rtrim(T.Formulario) AS formulario
+                            FROM crd_catalogo_garantias C
+                            INNER JOIN crd_garantia_tipos T ON C.garantia = T.garantia
+                            WHERE C.codigo = @Linea";
+                garantias = connection.Query<FrmPreaEstudiov2DropdownDto>(sql, new { Linea = lineaParam }).ToList();
+            }
+            catch
+            {
+                garantias = [];
+            }
+
+            return (destinos, garantias);
+        }
+
+        /// <summary>
+        /// Consulta pública de destinos/garantías por línea, para recargar los combos
+        /// cuando el usuario cambia la Línea en Angular (equivalente a lo que VB6 hace
+        /// en txtLinea_LostFocus).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2DestinosGarantiasResponse> Prea_frmPreaEstudiov2_DestinosGarantias_Consultar(
+            int codEmpresa, string linea)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2DestinosGarantiasResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2DestinosGarantiasResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
+                result.Result.destinos = destinos;
+                result.Result.garantias = garantias;
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sub-expedientes (fiadores) ligados a un expediente principal. VB6
+        /// (sbLlenarComboFiltrado sobre cboSubExpediente, línea ~11198):
+        ///   clsEntidad.tablaName = "spCRDPreaPREANALISIS"
+        ///   clsEntidad.fxTraerFiltrado("SubExpediente", "&lt;padre&gt;")
+        ///   -&gt; EXEC spCRDPreaPREANALISIS_TXSubExpediente '&lt;padre&gt;'
+        /// Devuelve únicamente el campo COD_PREANALISIS de cada sub-expediente
+        /// (no incluye al expediente principal; eso lo agrega el consumidor).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2SubExpedientesResponse> Prea_frmPreaEstudiov2_SubExpedientes_Consultar(
+            int codEmpresa, string expedientePadre)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2SubExpedientesResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2SubExpedientesResponse()
+            };
+
+            var padre = (expedientePadre ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(padre))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                const string sql = "EXEC spCRDPreaPREANALISIS_TXSubExpediente @Padre";
+                var rows = connection.Query(sql, new { Padre = padre });
+
+                var subExpedientes = new List<string>();
+                foreach (var r in rows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+                    var codPreanalisis = GetString(dict, "COD_PREANALISIS");
+
+                    // VB6 (sbLlenarComboFiltrado) descarta filas con ValueMember = "-1".
+                    if (!string.IsNullOrEmpty(codPreanalisis) && codPreanalisis != "-1")
+                    {
+                        subExpedientes.Add(codPreanalisis);
+                    }
+                }
+
+                result.Result.sub_expedientes = subExpedientes;
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Genera/valida el número de un nuevo sub-expediente (fiador). VB6
+        /// (cboSubExpediente_Click, caso "Nuevo SubExpediente", línea ~14676):
+        ///   EXEC spCrd_Prea_Expediente_Numero '&lt;expediente&gt;', 'S'
+        /// Si rs!Expediente = "0" es un error de validación (rs!Mensaje trae el motivo);
+        /// en VB6 el valor de rs!Expediente devuelto NO se asigna a txtExpediente.Text
+        /// (línea comentada) — el código real del sub-expediente lo genera el SP de
+        /// guardado (spCrdPreaPreanalisisNuevo/Modifica) al persistir, no este paso.
+        /// Esta llamada es solo la validación previa que hace VB6 antes de habilitar
+        /// la captura del nuevo fiador.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2SubExpedienteGenerarResponse> Prea_frmPreaEstudiov2_SubExpediente_Generar(
+            int codEmpresa, string expediente)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2SubExpedienteGenerarResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2SubExpedienteGenerarResponse()
+            };
+
+            var expedienteTrim = (expediente ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(expedienteTrim))
+            {
+                result.Code = -1;
+                result.Description = "Debe indicar el expediente.";
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                const string sql = "EXEC spCrd_Prea_Expediente_Numero @Expediente, 'S'";
+                var row = connection.QueryFirstOrDefault(sql, new { Expediente = expedienteTrim })
+                    as IDictionary<string, object>;
+
+                if (row is null)
+                {
+                    result.Code = -1;
+                    result.Description = "No se pudo validar el nuevo sub-expediente.";
+                    return result;
+                }
+
+                var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                var expedienteResultado = GetString(dict, "Expediente");
+                var mensaje = GetString(dict, "Mensaje");
+
+                result.Result.expediente = expedienteResultado;
+                result.Result.mensaje = mensaje;
+                result.Result.exito = expedienteResultado != "0";
+
+                if (!result.Result.exito)
+                {
+                    result.Code = -1;
+                    result.Description = mensaje;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Tabla de salarios del expediente (grid "Tabla de Salarios").
+        /// VB6: sbSalarios_Load -> exec spCrdPreaTraeSalariosExpediente '&lt;expediente&gt;'
+        /// </summary>
+        private static List<FrmPreaEstudiov2SalarioDetalleDto> ObtenerTablaSalarios(IDbConnection connection, string codPreanalisis)
+        {
+            try
+            {
+                const string sql = "EXEC spCrdPreaTraeSalariosExpediente @CodPreanalisis";
+                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
+
+                var lista = new List<FrmPreaEstudiov2SalarioDetalleDto>();
+                foreach (var r in rows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                    // VB6 sólo agrega la fila si Salario1 + Salario0 + Monto_CA > 0
+                    var salario1 = GetDecimal(dict, "Salario1");
+                    var salario0 = GetDecimal(dict, "Salario0");
+                    var montoCa = GetDecimal(dict, "Monto_CA");
+
+                    if (salario1 + salario0 + montoCa <= 0)
+                    {
+                        continue;
+                    }
+
+                    lista.Add(new FrmPreaEstudiov2SalarioDetalleDto
+                    {
+                        orden = GetInt(dict, "Orden"),
+                        fecha = GetDateTime(dict, "Fecha1"),
+                        salario_s = salario1,
+                        mes = GetInt(dict, "Mes1"),
+                        salario_rh = salario0,
+                        ca = montoCa,
+                    });
+                }
+
+                return lista;
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        /// <summary>
+        /// Extras del expediente (grid "Extras").
+        /// VB6: sbExtras_Load -> exec spCRDPreaDETALLE_EXTRAS_TxExpediente '&lt;expediente&gt;'
+        /// </summary>
+        private static List<FrmPreaEstudiov2ExtraDto> ObtenerExtras(IDbConnection connection, string codPreanalisis)
+        {
+            try
+            {
+                const string sql = "EXEC spCRDPreaDETALLE_EXTRAS_TxExpediente @CodPreanalisis";
+                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
+
+                var lista = new List<FrmPreaEstudiov2ExtraDto>();
+                foreach (var r in rows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                    lista.Add(new FrmPreaEstudiov2ExtraDto
+                    {
+                        idx = GetInt(dict, "IdX"),
+                        cod_extras = GetString(dict, "COD_EXTRAS"),
+                        tipo_extra = GetString(dict, "TipoExtra"),
+                        monto = GetDecimal(dict, "Monto"),
+                    });
+                }
+
+                return lista;
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        /// <summary>
+        /// Incapacidades del expediente.
+        /// VB6: sbIncapacidades_Load -> SELECT directo a CRD_PREA_V2_INCAPACIDADES.
+        /// </summary>
+        private static List<FrmPreaEstudiov2IncapacidadDto> ObtenerIncapacidades(IDbConnection connection, string codPreanalisis)
+        {
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@CodPreanalisis", codPreanalisis, DbType.String);
+
+                var registros = connection.Query(
+                    @"SELECT COD_PREANALISIS, DIAS, DESDE, HASTA, ORDEN
+                      FROM CRD_PREA_V2_INCAPACIDADES
+                      WHERE COD_PREANALISIS = @CodPreanalisis
+                      ORDER BY ORDEN",
+                    parameters
+                );
+
+                var lista = new List<FrmPreaEstudiov2IncapacidadDto>();
+                foreach (var r in registros)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                    lista.Add(new FrmPreaEstudiov2IncapacidadDto
+                    {
+                        orden = GetInt(dict, "Orden"),
+                        desde = GetDateTime(dict, "Desde"),
+                        hasta = GetDateTime(dict, "Hasta"),
+                        dias = GetInt(dict, "Dias"),
+                    });
+                }
+
+                return lista;
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        private static string GetString(IDictionary<string, object> row, string column)
+        {
+            if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
+            {
+                return string.Empty;
+            }
+
+            return value.ToString()?.Trim() ?? string.Empty;
+        }
+
+        private static decimal GetDecimal(IDictionary<string, object> row, string column)
+        {
+            if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
+            {
+                return 0m;
+            }
+
+            return Convert.ToDecimal(value);
+        }
+
+        private static int GetInt(IDictionary<string, object> row, string column)
+        {
+            if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
+            {
+                return 0;
+            }
+
+            return Convert.ToInt32(Convert.ToDecimal(value));
+        }
+
+        private static bool GetBool(IDictionary<string, object> row, string column)
+        {
+            if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
+            {
+                return false;
+            }
+
+            if (value is bool b) return b;
+
+            return Convert.ToDecimal(value) != 0;
+        }
+
+        private static DateTime? GetDateTime(IDictionary<string, object> row, string column)
+        {
+            if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
+            {
+                return null;
+            }
+
+            return Convert.ToDateTime(value);
+        }
+
+        /// <summary>
+        /// Carga los catálogos (combos) necesarios para el formulario.
+        /// Fuentes verificadas contra frmPreaEstudiov2.frm / mValidacion.bas (las tablas
+        /// usadas antes -CRD_LINEA_CREDITO, CRD_DESTINO_CREDITO, CRD_GARANTIA_CREDITO,
+        /// CRD_TIPO_SALARIO, CRD_COMPONENTE_ADICIONAL, CRD_COMITE_RESOLUTIVO- no existen
+        /// en VB6 y eran una suposición sin verificar):
+        ///   - lineas: txtLinea es un campo de texto con búsqueda F4 (Case "txtLinea",
+        ///     línea ~11504) contra "select codigo,descripcion from catalogo where
+        ///     Activo = 1 and Retencion = 'N'". No es un combo precargado en VB6, pero se
+        ///     expone como lista para el p-select de Angular.
+        ///   - destinos/garantias: dependen de la línea seleccionada (combos en cascada).
+        ///     Ver sbSTCargaCboDestinos/sbSTCargaCboGarantiav2 en mValidacion.bas.
+        ///     Cuando se llama desde Cargar() con la línea del expediente ya cargado, se
+        ///     usan esas tablas filtradas por esa línea (igual que sbLigarDatos hace tras
+        ///     poblar txtLinea). Cuando se llama desde el endpoint de cambio de línea
+        ///     (onChangeLinea en Angular) se recalculan con la nueva línea.
+        ///   - tipos_salario: cboSalario se llena con sbLlenarComboTodosV2(cboSalario,
+        ///     "spCRDPreaTIPO_SALARIO", "TIPO_SALARIO", "DescTipoSalario") -> por
+        ///     convención de clsEntidad.fxTraerTodos esto ejecuta "spCRDPreaTIPO_SALARIO_TT".
+        ///   - componentes_adicionales: cboS_ComponenteAdicional se llena con
+        ///     "SELECT COD_PARAMETRO as IdX, DESCRIPCION + ' [ ' + VALOR + ' % ]' as ItmX
+        ///     FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN('18','19','20')".
+        ///   - comites: sbCargaCboComites -> "Select id_comite as IdX, descripcion as ItmX
+        ///     from comites where estado = 1".
+        /// </summary>
+        private static FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection, string usuario, string linea = "")
         {
             var catalogos = new FrmPreaEstudiov2CatalogosResponse();
 
@@ -90,7 +848,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 var lineas = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_linea AS item, descripcion FROM CRD_LINEA_CREDITO WHERE estado = 'A' ORDER BY descripcion"
+                    "SELECT codigo AS item, descripcion FROM catalogo WHERE Activo = 1 AND Retencion = 'N' ORDER BY descripcion"
                 ).ToList();
                 catalogos.lineas = lineas;
             }
@@ -99,35 +857,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.lineas = [];
             }
 
-            try
-            {
-                var destinos = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_destino AS item, descripcion FROM CRD_DESTINO_CREDITO WHERE estado = 'A' ORDER BY descripcion"
-                ).ToList();
-                catalogos.destinos = destinos;
-            }
-            catch
-            {
-                catalogos.destinos = [];
-            }
+            var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
+            catalogos.destinos = destinos;
+            catalogos.garantias = garantias;
 
             try
             {
-                var garantias = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_garantia AS item, descripcion FROM CRD_GARANTIA_CREDITO WHERE estado = 'A' ORDER BY descripcion"
-                ).ToList();
-                catalogos.garantias = garantias;
-            }
-            catch
-            {
-                catalogos.garantias = [];
-            }
-
-            try
-            {
-                var tipos_salario = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_tipo_salario AS item, descripcion FROM CRD_TIPO_SALARIO WHERE estado = 'A' ORDER BY descripcion"
-                ).ToList();
+                var rawRows = connection.Query("EXEC spCRDPreaTIPO_SALARIO_TT");
+                var tipos_salario = new List<FrmPreaEstudiov2DropdownDto>();
+                foreach (var r in rawRows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+                    tipos_salario.Add(new FrmPreaEstudiov2DropdownDto
+                    {
+                        item = GetString(dict, "TIPO_SALARIO"),
+                        descripcion = GetString(dict, "DescTipoSalario"),
+                    });
+                }
                 catalogos.tipos_salario = tipos_salario;
             }
             catch
@@ -138,7 +884,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 var componentes = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_componente AS item, descripcion FROM CRD_COMPONENTE_ADICIONAL WHERE estado = 'A' ORDER BY descripcion"
+                    @"SELECT COD_PARAMETRO AS item, RTRIM(DESCRIPCION) + ' [ ' + VALOR + ' % ]' AS descripcion
+                      FROM CRD_PREA_PARAMETROS
+                      WHERE COD_PARAMETRO IN ('18', '19', '20')"
                 ).ToList();
                 catalogos.componentes_adicionales = componentes;
             }
@@ -150,7 +898,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 var comites = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT id_comite AS item, descripcion FROM CRD_COMITE_RESOLUTIVO WHERE estado = 'A' ORDER BY descripcion"
+                    "SELECT id_comite AS item, descripcion FROM comites WHERE estado = 1 ORDER BY descripcion"
                 ).ToList();
                 catalogos.comites = comites;
             }
@@ -161,8 +909,82 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
+                // VB6: sbCargarCombos -> cboDeduccion (frmPreaEstudiov2.frm línea ~11432).
+                var deducciones = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT ID_DEDUCCION AS item, DESCRIPCION AS descripcion
+                      FROM CRD_PREA_V2_DEDUCCIONES_CONFIG
+                      WHERE AUTOMATICA = 0
+                      ORDER BY PRIORIDAD"
+                ).ToList();
+                catalogos.deducciones = deducciones;
+            }
+            catch
+            {
+                catalogos.deducciones = [];
+            }
+
+            try
+            {
+                // VB6: cboEtiquetas (frmPreaEstudiov2.frm línea ~11407).
+                var etiquetas = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT COD_ETIQUETA AS item, DESCRIPCION AS descripcion
+                      FROM CRD_PREA_V2_ETIQUETAS
+                      WHERE SISTEMA = 0 AND MANEJO_ERRORES = 0"
+                ).ToList();
+                catalogos.etiquetas = etiquetas;
+            }
+            catch
+            {
+                catalogos.etiquetas = [];
+            }
+
+            try
+            {
+                // VB6: mTipoExtraLista (frmPreaEstudiov2.frm línea ~11412) — combo de gExtras.
+                var tiposExtra = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT RTRIM(cod_Extras) AS item, RTRIM(cod_Extras) + ' - ' + RTRIM(descripcion) AS descripcion
+                      FROM CRD_PREA_TIPOS_EXTRAS
+                      ORDER BY cod_Extras"
+                ).ToList();
+                catalogos.tipos_extra = tiposExtra;
+            }
+            catch
+            {
+                catalogos.tipos_extra = [];
+            }
+
+            try
+            {
+                // VB6: cboFondo (Form_Load, línea ~11461-11462) -> EXEC spCRDGarantiaFND.
+                // sbCbo_Llena_New (mProGrX_Dlls.bas) liga por nombre de columna (IdX/ItmX),
+                // no posicional; el SP debe devolver esas columnas ya aliasadas.
+                var rawRows = connection.Query("EXEC spCRDGarantiaFND");
+                var fondos = new List<FrmPreaEstudiov2DropdownDto>();
+                foreach (var r in rawRows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+                    fondos.Add(new FrmPreaEstudiov2DropdownDto
+                    {
+                        item = GetString(dict, "IdX"),
+                        descripcion = GetString(dict, "ItmX"),
+                    });
+                }
+                catalogos.fondos = fondos;
+            }
+            catch
+            {
+                catalogos.fondos = [];
+            }
+
+            try
+            {
+                var bancosParameters = new DynamicParameters();
+                bancosParameters.Add("@Usuario", usuario ?? string.Empty, DbType.String);
+
                 var bancos = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "exec spCrd_SGT_Bancos_Desembolso @Usuario = ''"
+                    "spCrd_SGT_Bancos_Desembolso",
+                    bancosParameters,
+                    commandType: CommandType.StoredProcedure
                 ).ToList();
                 catalogos.bancos = bancos;
             }
@@ -171,15 +993,58 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.bancos = [];
             }
 
+            try
+            {
+                // VB6: txtOficina_KeyDown (frmPreaEstudiov2.frm F4) -> select Cod_Oficina,
+                // Descripcion from SIF_OFICINAS con Filtro " and Estado = 1", Orden =
+                // Descripcion. Catálogo para el lookup del botón Cambiar.
+                var oficinas = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT RTRIM(Cod_Oficina) AS item, RTRIM(Descripcion) AS descripcion
+                      FROM SIF_OFICINAS
+                      WHERE Estado = 1
+                      ORDER BY Descripcion"
+                ).ToList();
+                catalogos.oficinas = oficinas;
+            }
+            catch
+            {
+                catalogos.oficinas = [];
+            }
+
+            try
+            {
+                // VB6: txtEjecutivo_KeyDown (frmPreaEstudiov2.frm F4) -> select ID_PROMOTOR
+                // as 'Id.', Nombre, Usuario from promotores con Filtro " and Estado = 1",
+                // Columna/Orden = ID_PROMOTOR. Catálogo para el lookup del botón Cambiar.
+                var ejecutivos = connection.Query<FrmPreaEstudiov2EjecutivoDto>(
+                    @"SELECT CAST(ID_PROMOTOR AS varchar(20)) AS id_promotor,
+                             RTRIM(Nombre) AS nombre,
+                             RTRIM(Usuario) AS usuario
+                      FROM promotores
+                      WHERE Estado = 1
+                      ORDER BY ID_PROMOTOR"
+                ).ToList();
+                catalogos.ejecutivos = ejecutivos;
+            }
+            catch
+            {
+                catalogos.ejecutivos = [];
+            }
+
             return catalogos;
         }
 
         /// <summary>
-        /// Obtiene la información del tab Hipotecario del Estudio de Crédito v2.
+        /// Suma el avalúo Factor CFIA del expediente. Fiel a VB6 btnHipotecario_Click
+        /// Case 1 "Avalúos CFIA" (frmPreaEstudiov2.frm línea ~13418):
+        /// exec spCrdPreaSumarAvaluoCFIA '&lt;expediente&gt;', '&lt;usuario&gt;'.
+        /// Reemplaza al endpoint Prea_frmPreaEstudiov2_Hipotecario_Obtener que llamaba
+        /// a un SP inexistente en VB6 (spPrea_frmPreaEstudiov2_Hipotecario_Obtener) y
+        /// que no tenía ningún consumidor en Angular.
         /// </summary>
-        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_Obtener(
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(
             int codEmpresa,
-            FrmPreaEstudiov2HipotecarioRequest request)
+            FrmPreaEstudiov2HipotecarioSumarAvaluoRequest request)
         {
             var result = new ErrorDto<FrmPreaEstudiov2HipotecarioResponse>
             {
@@ -192,16 +1057,107 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var parameters = new DynamicParameters();
-                parameters.Add("@cod_preanalisis", request.cod_preanalisis?.Trim() ?? string.Empty, DbType.String);
-                parameters.Add("@id_solicitud", request.id_solicitud, DbType.Int64);
-                parameters.Add("@usuario", request.usuario?.Trim() ?? string.Empty, DbType.String);
+                const string sql = "EXEC spCrdPreaSumarAvaluoCFIA @Expediente, @Usuario";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    Usuario = (request.usuario ?? string.Empty).Trim()
+                });
 
-                result.Result = connection.QueryFirstOrDefault<FrmPreaEstudiov2HipotecarioResponse>(
-                    "spPrea_frmPreaEstudiov2_Hipotecario_Obtener",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                ) ?? new FrmPreaEstudiov2HipotecarioResponse();
+                var monto = connection.QueryFirstOrDefault<decimal?>(
+                    "select MONTO_AVALUO_CFIA from CRD_PREA_PREANALISIS where cod_Preanalisis = @Expediente",
+                    new { Expediente = request.cod_preanalisis.Trim() }
+                ) ?? 0;
+
+                result.Result = new FrmPreaEstudiov2HipotecarioResponse
+                {
+                    monto_avaluo_cfia = monto
+                };
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2HipotecarioResponse();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Cambia el estado hipotecario del expediente. Fiel a VB6 btnHipotecario_Click
+        /// Case 4 "Cambio de Estado" (frmPreaEstudiov2.frm línea ~13466): valida que
+        /// exista comité asignado (dbo.fxValidaAsignacionComite), valida el comité
+        /// seleccionado (spCrdPrea_Comite_Asigna_Valida) y, solo si la garantía es
+        /// Hipotecaria ('H'), ejecuta spCRDPreaEstadoHipotecarioAprob.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(
+            int codEmpresa,
+            FrmPreaEstudiov2HipotecarioCambiarEstadoRequest request)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2HipotecarioResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2HipotecarioResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                var exp = request.cod_preanalisis.Trim();
+
+                var tieneComiteAsignado = connection.QueryFirstOrDefault<int?>(
+                    "select dbo.fxValidaAsignacionComite(@Expediente) as Estado",
+                    new { Expediente = exp }
+                ) ?? 0;
+
+                if (tieneComiteAsignado == 0)
+                {
+                    result.Code = -1;
+                    result.Description = "Debe seleccionar un comité para poder continuar, favor validar.";
+                    return result;
+                }
+
+                if (string.IsNullOrWhiteSpace(request.cod_comite))
+                {
+                    result.Code = -1;
+                    result.Description = "Debe seleccionar un comité para poder continuar, favor validar.";
+                    return result;
+                }
+
+                var codComite = request.cod_comite.Trim();
+                var validacionRow = connection.QueryFirstOrDefault(
+                    "exec spCrdPrea_Comite_Asigna_Valida @Expediente, @Comite",
+                    new { Expediente = exp, Comite = codComite }
+                ) as IDictionary<string, object>;
+
+                var validacion = validacionRow is null
+                    ? string.Empty
+                    : GetString(new Dictionary<string, object>(validacionRow, StringComparer.OrdinalIgnoreCase), "Mensaje");
+
+                if (!string.IsNullOrEmpty(validacion))
+                {
+                    result.Code = -1;
+                    result.Description = validacion;
+                    return result;
+                }
+
+                if ((request.cod_garantia ?? string.Empty).Trim() == "H")
+                {
+                    const string sql = "exec spCRDPreaEstadoHipotecarioAprob @Expediente, @Usuario, 0, ''";
+                    connection.Execute(sql, new
+                    {
+                        Expediente = exp,
+                        Usuario = (request.usuario ?? string.Empty).Trim()
+                    });
+                }
+
+                result.Result = new FrmPreaEstudiov2HipotecarioResponse
+                {
+                    mensaje = "Estado actualizado correctamente."
+                };
             }
             catch (Exception ex)
             {
@@ -316,6 +1272,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda observaciones de una causa del expediente.
         /// Actualiza las observaciones de una causa específica en la gestión del preanálisis.
+        /// AVISO: no se encontró en VB6 (frmPreaEstudiov2.frm) ningún mecanismo de edición o
+        /// guardado de causas — sbCargarListaCausas solo lee CRD_PREA_GESTION/OPERACION_CAUSAS
+        /// (lista de solo lectura, sin columna de observación editable ni botón de guardar).
+        /// Este endpoint fue una invención de un pase anterior y ya no se invoca desde Angular
+        /// (tab-causas.component.ts). Se conserva sin usar hasta confirmar si existe un flujo
+        /// real equivalente antes de eliminarlo o de darle un uso legítimo.
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Causas_Guardar(
             int codEmpresa,

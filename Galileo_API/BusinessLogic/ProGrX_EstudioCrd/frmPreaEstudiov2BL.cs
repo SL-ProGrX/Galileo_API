@@ -34,6 +34,140 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             return _db.Prea_frmPreaEstudiov2_Scroll(codEmpresa, request);
         }
 
+        /// <summary>
+        /// Recalcula Cuota/Pólizas/Compromiso. VB6: sbCalcularCuota, chkPolizaX_Click.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse> Prea_frmPreaEstudiov2_Credito_Recalcular(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoRecalcularRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2CreditoRecalculoResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Credito_Recalcular(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Recarga destino/garantía en cascada cuando cambia la Línea seleccionada
+        /// (equivalente a txtLinea_LostFocus en VB6).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2DestinosGarantiasResponse> Prea_frmPreaEstudiov2_DestinosGarantias_Consultar(
+            int codEmpresa, string linea)
+        {
+            return _db.Prea_frmPreaEstudiov2_DestinosGarantias_Consultar(codEmpresa, linea);
+        }
+
+        /// <summary>
+        /// Valida si la cédula requiere abrir Verificación de Datos Personales. VB6:
+        /// txtCedula_LostFocus -> dbo.fxCrdPrea_Persona_Datos_Valida.
+        /// </summary>
+        public ErrorDto<int> Prea_frmPreaEstudiov2_Persona_ValidarDatos(int codEmpresa, string cedula)
+        {
+            return _db.Prea_frmPreaEstudiov2_Persona_ValidarDatos(codEmpresa, cedula);
+        }
+
+        /// <summary>
+        /// Calcula el Monto según el FORMULARIO de la Garantía (F01/F06). VB6: cboGarantia_Click.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2GarantiaMontoResponse> Prea_frmPreaEstudiov2_Garantia_Monto(
+            int codEmpresa, FrmPreaEstudiov2GarantiaMontoRequest request)
+        {
+            return _db.Prea_frmPreaEstudiov2_Garantia_Monto(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Calcula Monto/Tasa/Plazo disponibles de un Fondo de Ahorros (y su lista de
+        /// contratos si es cambio de Fondo). VB6: cboFondo_Click / cboFondoContrato_Click.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2FondoCalcularResponse> Prea_frmPreaEstudiov2_Fondo_Calcular(
+            int codEmpresa, FrmPreaEstudiov2FondoCalcularRequest request)
+        {
+            return _db.Prea_frmPreaEstudiov2_Fondo_Calcular(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Lista de sub-expedientes (fiadores) ligados a un expediente principal.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2SubExpedientesResponse> Prea_frmPreaEstudiov2_SubExpedientes_Consultar(
+            int codEmpresa, string expedientePadre)
+        {
+            return _db.Prea_frmPreaEstudiov2_SubExpedientes_Consultar(codEmpresa, expedientePadre);
+        }
+
+        /// <summary>
+        /// Genera/valida el número de un nuevo sub-expediente (fiador).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2SubExpedienteGenerarResponse> Prea_frmPreaEstudiov2_SubExpediente_Generar(
+            int codEmpresa, string expediente)
+        {
+            return _db.Prea_frmPreaEstudiov2_SubExpediente_Generar(codEmpresa, expediente);
+        }
+
+        /// <summary>
+        /// Borra un expediente. Solo permitido en modo edición (equivalente a
+        /// m_ventanaEnModo = ModificarRegistro en VB6) — validación replicada aquí.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Borrar(
+            int codEmpresa, string codPreanalisis, string codPreanalisisRef)
+        {
+            if (string.IsNullOrWhiteSpace(codPreanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2GuardarResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2GuardarResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Borrar(codEmpresa, codPreanalisis, codPreanalisisRef);
+        }
+
+        /// <summary>
+        /// Guarda la grilla "Tabla de Salarios" (equivalente a sbSalarios_Guardar en VB6).
+        /// </summary>
+        public ErrorDto<List<FrmPreaEstudiov2SalarioDetalleDto>> Prea_frmPreaEstudiov2_TablaSalarios_Guardar(
+            int codEmpresa, FrmPreaEstudiov2TablaSalariosGuardarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<List<FrmPreaEstudiov2SalarioDetalleDto>>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = []
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_TablaSalarios_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Cambia oficina y ejecutivo colocador (equivalente a btnOficinaCambia_Click en VB6).
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(
+            int codEmpresa, FrmPreaEstudiov2OficinaEjecutivoCambiarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<string>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = string.Empty
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(codEmpresa, request);
+        }
+
         public ErrorDto<FrmPreaEstudiov2CargaResponse> Prea_frmPreaEstudiov2_Cargar(
             int codEmpresa,
             FrmPreaEstudiov2CargaRequest request)
@@ -52,33 +186,43 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Obtiene la información del tab Hipotecario.
+        /// Suma el avalúo Factor CFIA del expediente.
         /// </summary>
-        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_Obtener(
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(
             int codEmpresa,
-            FrmPreaEstudiov2HipotecarioRequest request)
+            FrmPreaEstudiov2HipotecarioSumarAvaluoRequest request)
         {
-            if (request is null)
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
                 return new ErrorDto<FrmPreaEstudiov2HipotecarioResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar la información del estudio.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2HipotecarioResponse()
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(request.cod_preanalisis) && request.id_solicitud <= 0)
+            return _db.Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Cambia el estado hipotecario del expediente (comité + estado hipotecario aprobado).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(
+            int codEmpresa,
+            FrmPreaEstudiov2HipotecarioCambiarEstadoRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
                 return new ErrorDto<FrmPreaEstudiov2HipotecarioResponse>
                 {
                     Code = -1,
-                    Description = "Debe indicar un expediente o una solicitud válida.",
+                    Description = MensajeCodigoExpedienteRequerido,
                     Result = new FrmPreaEstudiov2HipotecarioResponse()
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Hipotecario_Obtener(codEmpresa, request);
+            return _db.Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(codEmpresa, request);
         }
 
         /// <summary>
@@ -172,6 +316,26 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Borra una deducción del expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2DeduccionesResponse> Prea_frmPreaEstudiov2_Deducciones_Borrar(
+            int codEmpresa,
+            FrmPreaEstudiov2DeduccionesBorrarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis) || string.IsNullOrWhiteSpace(request.id_x))
+            {
+                return new ErrorDto<FrmPreaEstudiov2DeduccionesResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar el expediente y la deducción a borrar.",
+                    Result = new FrmPreaEstudiov2DeduccionesResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Deducciones_Borrar(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta los créditos en tránsito del expediente.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Consultar(
@@ -192,11 +356,82 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Registra una cuota en tránsito (Cancelada o Por Cobrar).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Registrar(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoTransitoRegistrarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Creditos_Registrar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Elimina todas las cuotas en tránsito del tipo indicado (Cancelada o Por Cobrar).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Borrar(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoTransitoBorrarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Creditos_Borrar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Elimina una cuota en tránsito individual por id_solicitud.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
+            int codEmpresa,
+            FrmPreaEstudiov2CreditoTransitoBorrarFilaRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            if (request.id_solicitud <= 0)
+            {
+                return new ErrorDto<FrmPreaEstudiov2CreditosResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar la cuota en tránsito a eliminar.",
+                    Result = new FrmPreaEstudiov2CreditosResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Creditos_BorrarFila(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta las refundiciones del expediente.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
-            string cod_preanalisis)
+            string cod_preanalisis,
+            string cod_garantia)
         {
             if (string.IsNullOrWhiteSpace(cod_preanalisis))
             {
@@ -208,7 +443,49 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis);
+            return _db.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia);
+        }
+
+        /// <summary>
+        /// Actualiza (recalcula) las refundiciones del expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
+            int codEmpresa,
+            FrmPreaEstudiov2RefundicionesActualizarRequest request,
+            string cod_garantia)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2RefundicionesResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia);
+        }
+
+        /// <summary>
+        /// Actualiza los checkboxes Aplica / Apl_Mora de una fila de refundición.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(
+            int codEmpresa,
+            FrmPreaEstudiov2RefundicionToggleRequest request,
+            string cod_garantia)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2RefundicionesResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(codEmpresa, request, cod_garantia);
         }
 
         /// <summary>
@@ -232,11 +509,52 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Actualiza (recalcula) las fianzas del expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_Actualizar(
+            int codEmpresa,
+            FrmPreaEstudiov2FianzasActualizarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2FianzasResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2FianzasResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Fianzas_Actualizar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Actualiza los checkboxes Aplica / Cancela_Mora de una fila de fianza.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_ToggleAplica(
+            int codEmpresa,
+            FrmPreaEstudiov2FianzaToggleRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2FianzasResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2FianzasResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Fianzas_ToggleAplica(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta los desembolsos del expediente.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Consultar(
             int codEmpresa,
-            string cod_preanalisis)
+            string cod_preanalisis,
+            string usuario)
         {
             if (string.IsNullOrWhiteSpace(cod_preanalisis))
             {
@@ -248,7 +566,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, cod_preanalisis);
+            return _db.Prea_frmPreaEstudiov2_Desembolsos_Consultar(codEmpresa, cod_preanalisis, usuario);
         }
 
         /// <summary>
@@ -277,7 +595,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Eliminar(
             int codEmpresa,
             string cod_preanalisis,
-            int id_desembolso)
+            int id_desembolso,
+            string usuario)
         {
             if (string.IsNullOrWhiteSpace(cod_preanalisis))
             {
@@ -289,7 +608,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Desembolsos_Eliminar(codEmpresa, cod_preanalisis, id_desembolso);
+            return _db.Prea_frmPreaEstudiov2_Desembolsos_Eliminar(codEmpresa, cod_preanalisis, id_desembolso, usuario);
         }
 
         /// <summary>
@@ -313,6 +632,46 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Agrega una etiqueta de seguimiento con nota al expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2HistorialResponse> Prea_frmPreaEstudiov2_Etiqueta_Agregar(
+            int codEmpresa,
+            FrmPreaEstudiov2EtiquetaAgregarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2HistorialResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2HistorialResponse()
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cod_etiqueta))
+            {
+                return new ErrorDto<FrmPreaEstudiov2HistorialResponse>
+                {
+                    Code = -1,
+                    Description = "Debe seleccionar una etiqueta.",
+                    Result = new FrmPreaEstudiov2HistorialResponse()
+                };
+            }
+
+            if ((request.nota ?? string.Empty).Trim().Length < 50)
+            {
+                return new ErrorDto<FrmPreaEstudiov2HistorialResponse>
+                {
+                    Code = -1,
+                    Description = "Indique una observación válida, tiene que ser de al menos 50 caracteres.",
+                    Result = new FrmPreaEstudiov2HistorialResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Etiqueta_Agregar(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta los adjuntos del expediente.
         /// </summary>
         public ErrorDto<List<FrmPreaEstudiov2AdjuntoDto>> Prea_frmPreaEstudiov2_Adjuntos_Consultar(
@@ -330,6 +689,66 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             }
 
             return _db.Prea_frmPreaEstudiov2_Adjuntos_Consultar(codEmpresa, cod_preanalisis);
+        }
+
+        /// <summary>
+        /// VB6: btnAdjunto_Guardar_Click. Guarda un archivo adjunto al expediente.
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Guardar(
+            int codEmpresa,
+            FrmPreaEstudiov2AdjuntoGuardarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<string> { Code = -1, Description = MensajeCodigoExpedienteRequerido, Result = string.Empty };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.nombre_archivo))
+            {
+                return new ErrorDto<string> { Code = -1, Description = "Debe indicar el nombre del archivo.", Result = string.Empty };
+            }
+
+            byte[] contenido;
+            try
+            {
+                contenido = Convert.FromBase64String(request.contenido_base64 ?? string.Empty);
+            }
+            catch (FormatException)
+            {
+                return new ErrorDto<string> { Code = -1, Description = "El contenido del archivo no es válido.", Result = string.Empty };
+            }
+
+            if (contenido.Length == 0)
+            {
+                return new ErrorDto<string> { Code = -1, Description = "El archivo no contiene datos.", Result = string.Empty };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Adjunto_Guardar(
+                codEmpresa,
+                request.usuario,
+                request.cod_preanalisis,
+                request.nombre_archivo,
+                contenido);
+        }
+
+        /// <summary>
+        /// VB6: btnAdjunto_Elimina_Click. Elimina un archivo adjunto del expediente.
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
+            int codEmpresa,
+            FrmPreaEstudiov2AdjuntoEliminarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<string> { Code = -1, Description = MensajeCodigoExpedienteRequerido, Result = string.Empty };
+            }
+
+            if (request.id_adjunto <= 0)
+            {
+                return new ErrorDto<string> { Code = -1, Description = "Debe indicar el adjunto a eliminar.", Result = string.Empty };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Adjunto_Eliminar(codEmpresa, request.cod_preanalisis, request.id_adjunto);
         }
 
         /// <summary>
@@ -433,19 +852,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Guarda una incapacidad del expediente.
+        /// Guarda la lista de incapacidades del expediente (sbIncapacidades_Guardar en VB6).
         /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
+        public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
             FrmPreaEstudiov2IncapacidadGuardarRequest request)
         {
             if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
-                return new ErrorDto<string>
+                return new ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>>
                 {
                     Code = -1,
-                    Description = "Debe indicar el expediente y la incapacidad.",
-                    Result = string.Empty
+                    Description = "Debe indicar el expediente y las incapacidades.",
+                    Result = []
                 };
             }
 
@@ -493,6 +912,26 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Elimina un extra del expediente.
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Borrar(
+            int codEmpresa,
+            FrmPreaEstudiov2ExtraBorrarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<string>
+                {
+                    Code = -1,
+                    Description = "Debe indicar el expediente y el extra.",
+                    Result = string.Empty
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Extras_Borrar(codEmpresa, request);
+        }
+
+        /// <summary>
         /// Consulta las causas de seguimiento del expediente.
         /// </summary>
         public ErrorDto<List<FrmPreaEstudiov2CausaDto>> Prea_frmPreaEstudiov2_Causas_Consultar(
@@ -531,6 +970,56 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             }
 
             return _db.Prea_frmPreaEstudiov2_Causas_Guardar(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Consulta el tab Prendario: log de exámenes y datos de la prenda.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2PrendarioConsultarResponse> Prea_frmPreaEstudiov2_Prendario_Consultar(
+            int codEmpresa,
+            string cod_preanalisis)
+        {
+            if (string.IsNullOrWhiteSpace(cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioConsultarResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2PrendarioConsultarResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Prendario_Consultar(codEmpresa, cod_preanalisis);
+        }
+
+        /// <summary>
+        /// Aplica un estado a los exámenes de prenda del expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse> Prea_frmPreaEstudiov2_Prendario_Estado(
+            int codEmpresa,
+            FrmPreaEstudiov2PrendarioEstadoRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2PrendarioEstadoResponse()
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.estado))
+            {
+                return new ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse>
+                {
+                    Code = -1,
+                    Description = "Debe indicar el estado de los exámenes.",
+                    Result = new FrmPreaEstudiov2PrendarioEstadoResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Prendario_Estado(codEmpresa, request);
         }
     }
 }

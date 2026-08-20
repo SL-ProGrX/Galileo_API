@@ -1,5 +1,12 @@
 ﻿namespace Galileo_API.Models.ProGrX_Contabilidad
 {
+    public class CntxRepMovPeriodoPeriodoDto
+    {
+        public int item { get; set; }
+        public string descripcion { get; set; } = string.Empty;
+        public bool activo { get; set; }
+    }
+
     public class CntxRepMovPeriodoFiltroDto
     {
         public string? tipo { get; set; }

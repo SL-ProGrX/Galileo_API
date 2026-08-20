@@ -90,7 +90,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
                 if (filtros is null)
                 {
                     return DbHelper.CreateErrorResponse(
-                        "Los filtros de consulta no son válidos.",
+                        "Los filtros de consulta no son v&aacute;lidos.",
                         -2,
                         new List<
                             FndRecepcionLiqFondosTagsHistorialResponse>());
@@ -104,7 +104,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
             catch (JsonException)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El formato de los filtros de consulta no es válido.",
+                    "El formato de los filtros de consulta no es v&aacute;lido.",
                     -2,
                     new List<
                         FndRecepcionLiqFondosTagsHistorialResponse>());

@@ -55,5 +55,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             return result;
         }
+
+        /// <summary>
+        /// Agrega una etiqueta de seguimiento con nota al expediente. Fiel a VB6
+        /// btnEtiqueta_Click (frmPreaEstudiov2.frm línea ~13247): exec spCrdPreaAgregaEtiqueta
+        /// '&lt;expediente&gt;', '&lt;etiqueta&gt;', '&lt;nota&gt;', '&lt;usuario&gt;', luego recarga
+        /// el historial (sbHistorial_Load("E")).
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2HistorialResponse> Prea_frmPreaEstudiov2_Etiqueta_Agregar(
+            int codEmpresa,
+            FrmPreaEstudiov2EtiquetaAgregarRequest request)
+        {
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = "EXEC spCrdPreaAgregaEtiqueta @Expediente, @Etiqueta, @Nota, @Usuario";
+                connection.Execute(sql, new
+                {
+                    Expediente = request.cod_preanalisis.Trim(),
+                    Etiqueta = (request.cod_etiqueta ?? string.Empty).Trim(),
+                    Nota = (request.nota ?? string.Empty).Trim(),
+                    Usuario = (request.usuario ?? string.Empty).Trim()
+                });
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<FrmPreaEstudiov2HistorialResponse>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = new FrmPreaEstudiov2HistorialResponse()
+                };
+            }
+
+            return Prea_frmPreaEstudiov2_Historial_Consultar(codEmpresa, request.cod_preanalisis);
+        }
     }
 }

@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
+using System.Collections.Generic;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
@@ -79,7 +80,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Guarda observaciones del expediente.
+        /// Guarda observaciones del expediente. Fiel a VB6 sbGuardaObservaciones
+        /// (frmPreaEstudiov2.frm línea ~15116): clsEntidad.tablaName = "spCRDPreaObservaciones"
+        /// → EXEC spCRDPreaObservaciones_M &lt;expediente&gt;, &lt;analista&gt;, &lt;comite&gt;, &lt;jd&gt;.
+        /// El SP actualiza los 3 campos juntos, por lo que primero se leen los valores
+        /// actuales y solo se sobrescribe el campo correspondiente a request.tipo
+        /// ('A' Analista / 'C' Comité / 'J' Junta Directiva — optObservacion 0/1/2).
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Observaciones_Guardar(
             int codEmpresa,
@@ -95,23 +101,46 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
 
-                const string sql = @"UPDATE CRD_PREA_PREANALISIS 
-                                     SET CUMPLIMIENTO_NOTAS = @Observaciones 
-                                     WHERE cod_Preanalisis = @Expediente";
+                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
 
-                connection.Execute(
-                    sql,
-                    new
-                    {
-                        Expediente = request.cod_preanalisis.Trim(),
-                        Observaciones = request.observaciones?.Trim() ?? string.Empty
-                    },
-                    commandType: CommandType.Text
-                );
+                var actualRow = connection.QueryFirstOrDefault(
+                    "select OBSERVACION_ANALISTA, OBSERVACION_COMITE, OBSERVACION_JD" +
+                    " from CRD_PREA_PREANALISIS where cod_Preanalisis = @Expediente",
+                    new { Expediente = request.cod_preanalisis.Trim() }
+                ) as IDictionary<string, object>;
 
-                response.Result = "Observaciones guardadas correctamente.";
+                var dict = actualRow is null
+                    ? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, object>(actualRow, StringComparer.OrdinalIgnoreCase);
+
+                var analista = GetString(dict, "OBSERVACION_ANALISTA");
+                var comite = GetString(dict, "OBSERVACION_COMITE");
+                var jd = GetString(dict, "OBSERVACION_JD");
+
+                var nuevoValor = (request.observaciones ?? string.Empty).Trim();
+
+                switch ((request.tipo ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                    case "A":
+                        analista = nuevoValor;
+                        break;
+                    case "C":
+                        comite = nuevoValor;
+                        break;
+                    case "J":
+                        jd = nuevoValor;
+                        break;
+                    default:
+                        response.Code = -1;
+                        response.Description = "Tipo de observación inválido (use 'A', 'C' o 'J').";
+                        return response;
+                }
+
+                const string sql = "EXEC spCRDPreaObservaciones_M @Expediente, @Analista, @Comite, @Jd";
+                connection.Execute(sql, new { Expediente = exp, Analista = analista, Comite = comite, Jd = jd });
+
+                response.Result = "La información se registró correctamente.";
                 return response;
             }
             catch (Exception ex)
@@ -124,7 +153,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Asigna comité resolutivo al expediente.
+        /// Asigna comité resolutivo al expediente. Fiel a VB6 (frmPreaEstudiov2.frm línea
+        /// ~12840, botón de asignar comité): valida con spCrdPrea_Comite_Asigna_Valida
+        /// (liquidez, máximo del comité, etiquetas, justificación de edad), determina el
+        /// nuevo estado según Tipo_Aprobacion ('E' Ejecutivo → RECI/editable, 'M' Mancomunado
+        /// → PRCO), ejecuta spCrdPreaGestionaComiteResolutivo y, solo si es Mancomunado,
+        /// registra la bitácora vía spCrdPreaGuardaBitacoraElevacionComite.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2ComiteAsignarResponse> Prea_frmPreaEstudiov2_Comite_Asignar(
             int codEmpresa,
@@ -140,25 +174,86 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
 
-                connection.Execute(
-                    "spCrdPreaGestionaComiteResolutivo",
-                    new
+                var exp = request.cod_preanalisis.Trim();
+                var comite = request.comite?.Trim() ?? string.Empty;
+
+                var validacionRow = connection.QueryFirstOrDefault(
+                    "EXEC spCrdPrea_Comite_Asigna_Valida @Expediente, @Comite",
+                    new { Expediente = exp, Comite = comite }
+                ) as IDictionary<string, object>;
+
+                if (validacionRow is null)
+                {
+                    response.Code = -1;
+                    response.Description = "No se pudo validar la asignación del comité.";
+                    response.Result = new FrmPreaEstudiov2ComiteAsignarResponse();
+                    return response;
+                }
+
+                var dict = new Dictionary<string, object>(validacionRow, StringComparer.OrdinalIgnoreCase);
+                var mensajeValidacion = GetString(dict, "Mensaje");
+
+                if (!string.IsNullOrEmpty(mensajeValidacion))
+                {
+                    response.Code = -1;
+                    response.Description = mensajeValidacion;
+                    response.Result = new FrmPreaEstudiov2ComiteAsignarResponse();
+                    return response;
+                }
+
+                var tipoAprobacion = GetString(dict, "Tipo_Aprobacion");
+
+                string nuevoEstado;
+                int indicadorEditable = 0;
+
+                switch (tipoAprobacion)
+                {
+                    case "E":
+                        nuevoEstado = "RECI";
+                        indicadorEditable = 1;
+                        break;
+                    case "M":
+                        nuevoEstado = "PRCO";
+                        break;
+                    default:
+                        nuevoEstado = string.Empty;
+                        break;
+                }
+
+                const string sql = @"EXEC spCrdPreaGestionaComiteResolutivo
+                    @Comite, @Expediente, @NuevoEstado, @IndicadorEditable";
+                connection.Execute(sql, new
+                {
+                    Comite = comite,
+                    Expediente = exp,
+                    NuevoEstado = nuevoEstado,
+                    IndicadorEditable = indicadorEditable
+                });
+
+                if (tipoAprobacion == "M")
+                {
+                    var usuario = (request.usuario ?? string.Empty).Trim();
+                    var comiteDesc = (request.comite_desc ?? string.Empty).Trim();
+                    var nota = $"ELEVADO AL COMITE: {comite}-{comiteDesc} Fecha envio: {DateTime.Now}";
+
+                    const string bitacoraSql = @"EXEC spCrdPreaGuardaBitacoraElevacionComite
+                        @Expediente, @Usuario, @Comite, @Nota";
+                    connection.Execute(bitacoraSql, new
                     {
-                        IdComite = request.comite?.Trim() ?? string.Empty,
-                        Expediente = request.cod_preanalisis.Trim(),
-                        NuevoEstado = "RECI",
-                        IndicadorEditable = 1
-                    },
-                    commandType: CommandType.StoredProcedure
-                );
+                        Expediente = exp,
+                        Usuario = usuario,
+                        Comite = comite,
+                        Nota = nota
+                    });
+                }
 
                 response.Result = new FrmPreaEstudiov2ComiteAsignarResponse
                 {
-                    comite = request.comite?.Trim() ?? string.Empty,
+                    comite = comite,
                     asignado = true,
-                    mensaje = "Comité asignado correctamente."
+                    mensaje = "Comité asignado correctamente.",
+                    tipo_aprobacion = tipoAprobacion
                 };
 
                 return response;
@@ -268,45 +363,72 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda una incapacidad del expediente.
         /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
+        /// <summary>
+        /// Guarda la lista de incapacidades del expediente.
+        /// VB6: sbIncapacidades_Guardar (frmPreaEstudiov2.frm línea ~13806):
+        ///   1. EXEC spCrdPreaEliminarIncapacidades '&lt;expediente&gt;'
+        ///   2. Por cada fila: EXEC spCrdPreaGeneraIncapacidades '&lt;expediente&gt;',
+        ///      &lt;dias&gt;, '&lt;desde&gt;', '&lt;hasta&gt;', &lt;orden&gt; (dias = (hasta-desde).Days + 1)
+        /// Devuelve la lista recargada, igual que Prea_frmPreaEstudiov2_TablaSalarios_Guardar.
+        /// </summary>
+        public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
             FrmPreaEstudiov2IncapacidadGuardarRequest request)
         {
-            var response = new ErrorDto<string>
+            var response = new ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = string.Empty
+                Result = []
             };
+
+            var codPreanalisis = (request.cod_preanalisis ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(codPreanalisis))
+            {
+                response.Code = -1;
+                response.Description = "Debe indicar el expediente.";
+                return response;
+            }
 
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 connection.Open();
 
-                var dias = (request.hasta - request.desde).Days + 1;
-
                 connection.Execute(
-                    "spCrdPreaGeneraIncapacidades",
-                    new
-                    {
-                        Expediente = request.cod_preanalisis.Trim(),
-                        Dias = dias,
-                        Desde = request.desde.ToString("yyyy-MM-dd"),
-                        Hasta = request.hasta.ToString("yyyy-MM-dd"),
-                        Orden = 1
-                    },
+                    "spCrdPreaEliminarIncapacidades",
+                    new { Expediente = codPreanalisis },
                     commandType: CommandType.StoredProcedure
                 );
 
-                response.Result = "Incapacidad guardada correctamente.";
+                var orden = 0;
+                foreach (var incapacidad in request.incapacidades ?? [])
+                {
+                    orden++;
+                    var dias = (incapacidad.hasta - incapacidad.desde).Days + 1;
+
+                    connection.Execute(
+                        "spCrdPreaGeneraIncapacidades",
+                        new
+                        {
+                            Expediente = codPreanalisis,
+                            Dias = dias,
+                            Desde = incapacidad.desde.ToString("yyyy-MM-dd"),
+                            Hasta = incapacidad.hasta.ToString("yyyy-MM-dd"),
+                            Orden = orden
+                        },
+                        commandType: CommandType.StoredProcedure
+                    );
+                }
+
+                response.Result = ObtenerIncapacidades(connection, codPreanalisis);
                 return response;
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = string.Empty;
+                response.Result = [];
                 return response;
             }
         }
@@ -349,7 +471,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Guarda un extra del expediente.
+        /// Guarda (inserta o modifica) un extra del expediente. Fiel a VB6 fxExtras_Inserta /
+        /// fxExtras_Modifica (frmPreaEstudiov2.frm líneas ~15829/~15897), que usan
+        /// clsEntidad.tablaName = "spCRDPreaDETALLE_EXTRAS" → EXEC spCRDPreaDETALLE_EXTRAS_A/_M
+        /// &lt;idx&gt;, &lt;expediente&gt;, &lt;codExtras&gt;, &lt;monto&gt; (idx = 0 para insertar).
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Guardar(
             int codEmpresa,
@@ -365,24 +490,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
 
-                const string sql = @"INSERT INTO CRD_PREA_DETALLE_EXTRAS 
-                                     (cod_Preanalisis, Cod_Extras, Monto) 
-                                     VALUES (@Expediente, @CodExtras, @Monto)";
-
-                connection.Execute(
-                    sql,
-                    new
-                    {
-                        Expediente = request.cod_preanalisis.Trim(),
-                        CodExtras = request.cod_extras?.Trim() ?? string.Empty,
-                        Monto = request.monto
-                    },
-                    commandType: CommandType.Text
-                );
+                var exp = request.cod_preanalisis.Trim();
+                var codExtras = (request.cod_extras ?? string.Empty).Trim();
+                var esNuevo = request.idx <= 0;
+                const string sqlAgregar = "EXEC spCRDPreaDETALLE_EXTRAS_A @Idx, @Expediente, @CodExtras, @Monto";
+                const string sqlModificar = "EXEC spCRDPreaDETALLE_EXTRAS_M @Idx, @Expediente, @CodExtras, @Monto";
+                var sql = esNuevo ? sqlAgregar : sqlModificar;
+                connection.Execute(sql, new
+                {
+                    request.idx,
+                    Expediente = exp,
+                    CodExtras = codExtras,
+                    request.monto
+                });
 
                 response.Result = "Extra guardado correctamente.";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = string.Empty;
+                return response;
+            }
+        }
+
+        /// <summary>
+        /// Elimina un extra del expediente. Fiel a VB6 fxExtras_Borrar (frmPreaEstudiov2.frm
+        /// línea ~15948): clsEntidad.tablaName = "spCRDPreaDETALLE_EXTRAS" →
+        /// EXEC spCRDPreaDETALLE_EXTRAS_B &lt;idx&gt;, &lt;expediente&gt;.
+        /// </summary>
+        public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Borrar(
+            int codEmpresa,
+            FrmPreaEstudiov2ExtraBorrarRequest request)
+        {
+            var response = new ErrorDto<string>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = string.Empty
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = "EXEC spCRDPreaDETALLE_EXTRAS_B @Idx, @Expediente";
+                connection.Execute(sql, new { request.idx, Expediente = request.cod_preanalisis.Trim() });
+
+                response.Result = "Extra eliminado correctamente.";
                 return response;
             }
             catch (Exception ex)
