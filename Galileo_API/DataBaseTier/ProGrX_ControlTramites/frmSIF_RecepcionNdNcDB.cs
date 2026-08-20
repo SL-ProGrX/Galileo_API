@@ -383,6 +383,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 int codEmpresa,
                 SifRecepcionNdNcAplicarRequest? request)
         {
+            if (request is null)
+            {
+                return CrearErrorAplicar(
+                    "Los datos del proceso son requeridos.");
+            }
             string? validacion =
                 SIF_RecepcionNdNc_Aplicar_Validar(request);
 
