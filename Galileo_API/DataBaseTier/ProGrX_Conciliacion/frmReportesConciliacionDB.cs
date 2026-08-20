@@ -1000,24 +1000,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
         private static ErrorDto<CcReportesEstudioAuxiliarGenerarResult>GenerarAuxiliarPatrimonio( CcReportesEstudioAuxiliarGenerarRequest request, CcReportesEstudioPeriodoData periodo,DateTime fechaServidor)
         {
             string codigoInforme = NormalizarTexto(request.codigo_informe);
-            bool incluyeFci = NormalizarTexto(request.codigo_filtro) == "00";
 
             string nombreReporte = codigoInforme switch
             {
-                "01" => incluyeFci
-                    ? "Sys_AuxAportesResumenFCI"
-                    : "Sys_AuxAportesResumen",
-
-                "02" => incluyeFci
-                    ? "Sys_AuxAportesDetalleFCI"
-                    : "Sys_AuxAportesDetalle",
-
-                "03" => incluyeFci
-                    ? "Sys_AuxAportesRsmCategoriaFCI"
-                    : "Sys_AuxAportesRsmCategoria",
-
-                "04" => "Sys_AuxAportesCuentas",
-
+                "01" => "Sys_AuxAportesResumen",
+                "02" => "Sys_AuxAportesDetalle",
+                "03" => "Sys_AuxAportesRsmCategoria",
                 _ => string.Empty
             };
 
@@ -1025,14 +1013,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
             {
                 return CrearErrorGeneracion(
                     "El informe de patrimonio indicado no es válido.",
-                    -2);
-            }
-
-            if (codigoInforme == "04" &&
-                string.IsNullOrWhiteSpace(request.gstr_niveles))
-            {
-                return CrearErrorGeneracion(
-                    "No se encontró la configuración de niveles contables.",
                     -2);
             }
 
@@ -1051,19 +1031,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 parametros,
                 ParametroFiltros,
                 filtros);
-
-            if (codigoInforme == "04")
-            {
-                AgregarParametro(
-                    parametros,
-                    ParametroMascara,
-                    ConstruirMascaraNiveles(request.gstr_niveles));
-
-                AgregarParametro(
-                    parametros,
-                    ParametroTitulo,
-                    titulo);
-            }
 
             return CrearResultadoGeneracion(
                 nombreReporte,
