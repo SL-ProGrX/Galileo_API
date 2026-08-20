@@ -55,7 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
                 codEmpresa,
                 new ConCierreParcialesCreditosProductoAcumuladoRequest
                 {
-                    Fecha_Corte = request.Fecha_Corte,
+                    Fecha_Corte = request.Fecha_Corte.GetValueOrDefault(),
                 });
         }
     }
