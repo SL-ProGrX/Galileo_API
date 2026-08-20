@@ -12,6 +12,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         private const string Modulo = "DOC";
         private const string MovimientoRecepcion = "RECEPCION";
         private const string MovimientoDevolucion = "DEVOLUCION";
+        private const string MensajeTipoDocumentoInvalido =
+            "El tipo de documento no es v&aacute;lido.";
 
         private readonly PortalDB _portalDb;
 
@@ -178,7 +180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (tipoDocumento == string.Empty)
             {
                 return CrearErrorLista(
-                    "El tipo de documento no es v&aacute;lido.");
+                    MensajeTipoDocumentoInvalido);
             }
 
             string movimiento =
@@ -250,7 +252,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (tipoDocumento == string.Empty)
             {
                 return CrearErrorLista(
-                    "El tipo de documento no es v&aacute;lido.");
+                    MensajeTipoDocumentoInvalido);
             }
 
             const string sql = """
@@ -303,7 +305,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (tipoDocumento == string.Empty)
             {
                 return CrearErrorConsulta(
-                    "El tipo de documento no es v&aacute;lido.");
+                    MensajeTipoDocumentoInvalido);
             }
 
             string codTransaccion =
@@ -388,6 +390,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 return CrearErrorAplicar(
                     "Los datos del proceso son requeridos.");
             }
+
             string? validacion =
                 SIF_RecepcionNdNc_Aplicar_Validar(request);
 
@@ -395,20 +398,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return CrearErrorAplicar(validacion);
             }
-
-            string tipoDocumento =
-                SIF_RecepcionNdNc_TipoDocumento_Normalizar(
-                    request.tipo_documento);
-
-            string movimiento =
-                SIF_RecepcionNdNc_Movimiento_Normalizar(
-                    request.movimiento);
-
-            List<string> documentos = request.documentos
-                .Select(NormalizarTexto)
-                .Where(documento => documento != string.Empty)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
 
             ErrorDto<TagsConfiguracion> tagsResultado =
                 SIF_RecepcionNdNc_Tags_Obtener(codEmpresa);
@@ -422,196 +411,73 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     0);
             }
 
-            TagsConfiguracion tags =
-                tagsResultado.Result ?? new TagsConfiguracion();
+            MovimientoAplicarContexto contexto =
+                SIF_RecepcionNdNc_Movimiento_Contexto_Crear(
+                    request,
+                    tagsResultado.Result ?? new TagsConfiguracion());
 
-            string tag =
-                movimiento == MovimientoRecepcion
+            return SIF_RecepcionNdNc_Movimiento_Ejecutar(
+                codEmpresa,
+                contexto);
+        }
+
+        /// <summary>
+        /// Construye la informacion normalizada necesaria para aplicar
+        /// el movimiento.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="tags"></param>
+        /// <returns></returns>
+        private static MovimientoAplicarContexto
+            SIF_RecepcionNdNc_Movimiento_Contexto_Crear(
+                SifRecepcionNdNcAplicarRequest request,
+                TagsConfiguracion tags)
+        {
+            string movimiento =
+                SIF_RecepcionNdNc_Movimiento_Normalizar(
+                    request.movimiento);
+
+            return new MovimientoAplicarContexto
+            {
+                TipoDocumento =
+                    SIF_RecepcionNdNc_TipoDocumento_Normalizar(
+                        request.tipo_documento),
+                Movimiento = movimiento,
+                Documentos = (request.documentos ?? [])
+                    .Select(NormalizarTexto)
+                    .Where(documento => documento != string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
+                Usuario = NormalizarTexto(request.usuario),
+                Tags = tags,
+                Tag = movimiento == MovimientoRecepcion
                     ? tags.tag_recepcion
-                    : tags.tag_devolucion;
-
-            string observacion =
-                movimiento == MovimientoRecepcion
+                    : tags.tag_devolucion,
+                Observacion = movimiento == MovimientoRecepcion
                     ? "Recibida la documentacion de la liquidacion"
-                    : "Devolucion la documentacion de la liquidacion";
+                    : "Devolucion la documentacion de la liquidacion"
+            };
+        }
 
+        /// <summary>
+        /// Ejecuta el movimiento dentro de una conexion controlada.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="contexto"></param>
+        /// <returns></returns>
+        private ErrorDto<int>
+            SIF_RecepcionNdNc_Movimiento_Ejecutar(
+                int codEmpresa,
+                MovimientoAplicarContexto contexto)
+        {
             ErrorDto<ErrorDto<int>> ejecucion =
                 DbHelper.WithConn(
                     _portalDb,
                     codEmpresa,
                     connection =>
-                    {
-                        connection.Open();
-
-                        using var transaction =
-                            connection.BeginTransaction();
-
-                        try
-                        {
-                            int aplicados = 0;
-
-                            foreach (string codTransaccion in documentos)
-                            {
-                                const string sqlExiste = """
-                                select count(1)
-                                from SIF_TRANSACCIONES
-                                where TIPO_DOCUMENTO = @TipoDocumento
-                                  and COD_TRANSACCION = @CodTransaccion;
-                                """;
-
-                                int existe =
-                                    connection.ExecuteScalar<int>(
-                                        sqlExiste,
-                                        new
-                                        {
-                                            TipoDocumento = tipoDocumento,
-                                            CodTransaccion = codTransaccion
-                                        },
-                                        transaction);
-
-                                if (existe == 0)
-                                {
-                                    transaction.Rollback();
-
-                                    return CrearErrorAplicar(
-                                        "No se encontr&oacute; el documento "
-                                        + $"{codTransaccion}.");
-                                }
-
-                                string tagPrincipal =
-                                    movimiento == MovimientoRecepcion
-                                        ? tags.tag_recepcion
-                                        : tags.tag_devolucion;
-
-                                string tagAlterno =
-                                    movimiento == MovimientoRecepcion
-                                        ? tags.tag_devolucion
-                                        : tags.tag_recepcion;
-
-                                const string sqlValidarMovimiento = """
-                                select dbo.fxSIFValidaTagRev
-                                (
-                                    @TipoDocumento,
-                                    @TagPrincipal,
-                                    @TagAlterno,
-                                    @Modulo,
-                                    @CodTransaccion,
-                                    null
-                                );
-                                """;
-
-                                int resultadoMovimiento =
-                                    connection.ExecuteScalar<int>(
-                                        sqlValidarMovimiento,
-                                        new
-                                        {
-                                            TipoDocumento = tipoDocumento,
-                                            TagPrincipal = tagPrincipal,
-                                            TagAlterno = tagAlterno,
-                                            Modulo,
-                                            CodTransaccion = codTransaccion
-                                        },
-                                        transaction);
-
-                                if (
-                                    movimiento == MovimientoRecepcion &&
-                                    resultadoMovimiento == 2
-                                )
-                                {
-                                    transaction.Rollback();
-
-                                    return CrearErrorAplicar(
-                                        "No es posible registrar en forma "
-                                        + "consecutiva dos recepciones del "
-                                        + $"documento {codTransaccion}.");
-                                }
-
-                                if (
-                                    movimiento == MovimientoDevolucion &&
-                                    resultadoMovimiento == 3
-                                )
-                                {
-                                    transaction.Rollback();
-
-                                    return CrearErrorAplicar(
-                                        "No es posible registrar en forma "
-                                        + "consecutiva dos devoluciones del "
-                                        + $"documento {codTransaccion}.");
-                                }
-
-                                const string sqlValidarDevolucion = """
-                                select dbo.fxSIFValidaTagRev
-                                (
-                                    @TipoDocumento,
-                                    @TagDevolucion,
-                                    @TagRecepcion,
-                                    @Modulo,
-                                    @CodTransaccion,
-                                    @TagRecepcionDevolucion
-                                );
-                                """;
-
-                                int resultadoDevolucion =
-                                    connection.ExecuteScalar<int>(
-                                        sqlValidarDevolucion,
-                                        new
-                                        {
-                                            TipoDocumento = tipoDocumento,
-                                            TagDevolucion =
-                                                tags.tag_devolucion,
-                                            TagRecepcion =
-                                                tags.tag_recepcion,
-                                            Modulo,
-                                            CodTransaccion = codTransaccion,
-                                            TagRecepcionDevolucion =
-                                                tags.tag_recepcion_devolucion
-                                        },
-                                        transaction);
-
-                                if (resultadoDevolucion == 4)
-                                {
-                                    transaction.Rollback();
-
-                                    return CrearErrorAplicar(
-                                        "No es posible registrar una "
-                                        + "recepci&oacute;n sin aplicar la "
-                                        + "devoluci&oacute;n del documento "
-                                        + $"{codTransaccion}.");
-                                }
-
-                                connection.Execute(
-                                    "spSIFRegistraTags",
-                                    new
-                                    {
-                                        Codigo = tipoDocumento,
-                                        Tag = tag,
-                                        Usuario = request.usuario.Trim(),
-                                        Notas = observacion,
-                                        Documento = codTransaccion,
-                                        Modulo,
-                                        Llave_01 = tipoDocumento,
-                                        Llave_02 = codTransaccion,
-                                        Llave_03 = string.Empty
-                                    },
-                                    transaction,
-                                    commandType:
-                                        CommandType.StoredProcedure);
-
-                                aplicados++;
-                            }
-
-                            transaction.Commit();
-
-                            return DbHelper.CreateOkResponse(
-                                aplicados,
-                                "Proceso concluido con exito.");
-                        }
-                        catch
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
-                    });
+                        SIF_RecepcionNdNc_Movimiento_Transaccion_Ejecutar(
+                            connection,
+                            contexto));
 
             if (ejecucion.Code == -1)
             {
@@ -629,17 +495,337 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     0);
         }
 
+        /// <summary>
+        /// Controla la transaccion utilizada para procesar los documentos.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="contexto"></param>
+        /// <returns></returns>
+        private static ErrorDto<int>
+            SIF_RecepcionNdNc_Movimiento_Transaccion_Ejecutar(
+                IDbConnection connection,
+                MovimientoAplicarContexto contexto)
+        {
+            connection.Open();
+
+            using IDbTransaction transaction =
+                connection.BeginTransaction();
+
+            try
+            {
+                ErrorDto<int> resultado =
+                    SIF_RecepcionNdNc_Movimiento_Documentos_Procesar(
+                        connection,
+                        transaction,
+                        contexto);
+
+                if (resultado.Code != 0)
+                {
+                    transaction.Rollback();
+                    return resultado;
+                }
+
+                transaction.Commit();
+                return resultado;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Valida y registra cada documento incluido en el movimiento.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="contexto"></param>
+        /// <returns></returns>
+        private static ErrorDto<int>
+            SIF_RecepcionNdNc_Movimiento_Documentos_Procesar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                MovimientoAplicarContexto contexto)
+        {
+            int aplicados = 0;
+
+            foreach (string codTransaccion in contexto.Documentos)
+            {
+                string? error =
+                    SIF_RecepcionNdNc_Movimiento_Documento_Validar(
+                        connection,
+                        transaction,
+                        contexto,
+                        codTransaccion);
+
+                if (error is not null)
+                {
+                    return CrearErrorAplicar(error);
+                }
+
+                SIF_RecepcionNdNc_Movimiento_Documento_Registrar(
+                    connection,
+                    transaction,
+                    contexto,
+                    codTransaccion);
+
+                aplicados++;
+            }
+
+            return DbHelper.CreateOkResponse(
+                aplicados,
+                "Proceso concluido con exito.");
+        }
+
+        /// <summary>
+        /// Valida la existencia y el estado de recepcion o devolucion
+        /// de un documento.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="contexto"></param>
+        /// <param name="codTransaccion"></param>
+        /// <returns></returns>
+        private static string?
+            SIF_RecepcionNdNc_Movimiento_Documento_Validar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                MovimientoAplicarContexto contexto,
+                string codTransaccion)
+        {
+            bool existe =
+                SIF_RecepcionNdNc_Movimiento_Documento_Existe(
+                    connection,
+                    transaction,
+                    contexto.TipoDocumento,
+                    codTransaccion);
+
+            if (!existe)
+            {
+                return "No se encontr&oacute; el documento "
+                    + $"{codTransaccion}.";
+            }
+
+            string? validacionMovimiento =
+                SIF_RecepcionNdNc_Movimiento_Consecutivo_Validar(
+                    connection,
+                    transaction,
+                    contexto,
+                    codTransaccion);
+
+            if (validacionMovimiento is not null)
+            {
+                return validacionMovimiento;
+            }
+
+            return SIF_RecepcionNdNc_Movimiento_Devolucion_Validar(
+                connection,
+                transaction,
+                contexto,
+                codTransaccion);
+        }
+
+        /// <summary>
+        /// Verifica que el documento exista en SIF_TRANSACCIONES.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="tipoDocumento"></param>
+        /// <param name="codTransaccion"></param>
+        /// <returns></returns>
+        private static bool
+            SIF_RecepcionNdNc_Movimiento_Documento_Existe(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                string tipoDocumento,
+                string codTransaccion)
+        {
+            const string sql = """
+                select count(1)
+                from SIF_TRANSACCIONES
+                where TIPO_DOCUMENTO = @TipoDocumento
+                  and COD_TRANSACCION = @CodTransaccion;
+                """;
+
+            int cantidad =
+                connection.ExecuteScalar<int>(
+                    sql,
+                    new
+                    {
+                        TipoDocumento = tipoDocumento,
+                        CodTransaccion = codTransaccion
+                    },
+                    transaction);
+
+            return cantidad > 0;
+        }
+
+        /// <summary>
+        /// Evita registrar dos recepciones o devoluciones consecutivas.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="contexto"></param>
+        /// <param name="codTransaccion"></param>
+        /// <returns></returns>
+        private static string?
+            SIF_RecepcionNdNc_Movimiento_Consecutivo_Validar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                MovimientoAplicarContexto contexto,
+                string codTransaccion)
+        {
+            string tagPrincipal =
+                contexto.Movimiento == MovimientoRecepcion
+                    ? contexto.Tags.tag_recepcion
+                    : contexto.Tags.tag_devolucion;
+
+            string tagAlterno =
+                contexto.Movimiento == MovimientoRecepcion
+                    ? contexto.Tags.tag_devolucion
+                    : contexto.Tags.tag_recepcion;
+
+            const string sql = """
+                select dbo.fxSIFValidaTagRev
+                (
+                    @TipoDocumento,
+                    @TagPrincipal,
+                    @TagAlterno,
+                    @Modulo,
+                    @CodTransaccion,
+                    null
+                );
+                """;
+
+            int resultado =
+                connection.ExecuteScalar<int>(
+                    sql,
+                    new
+                    {
+                        contexto.TipoDocumento,
+                        TagPrincipal = tagPrincipal,
+                        TagAlterno = tagAlterno,
+                        Modulo,
+                        CodTransaccion = codTransaccion
+                    },
+                    transaction);
+
+            return (contexto.Movimiento, resultado) switch
+            {
+                (MovimientoRecepcion, 2) =>
+                    "No es posible registrar en forma "
+                    + "consecutiva dos recepciones del documento "
+                    + $"{codTransaccion}.",
+
+                (MovimientoDevolucion, 3) =>
+                    "No es posible registrar en forma "
+                    + "consecutiva dos devoluciones del documento "
+                    + $"{codTransaccion}.",
+
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// Valida que no exista una recepcion pendiente de devolucion.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="contexto"></param>
+        /// <param name="codTransaccion"></param>
+        /// <returns></returns>
+        private static string?
+            SIF_RecepcionNdNc_Movimiento_Devolucion_Validar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                MovimientoAplicarContexto contexto,
+                string codTransaccion)
+        {
+            const string sql = """
+                select dbo.fxSIFValidaTagRev
+                (
+                    @TipoDocumento,
+                    @TagDevolucion,
+                    @TagRecepcion,
+                    @Modulo,
+                    @CodTransaccion,
+                    @TagRecepcionDevolucion
+                );
+                """;
+
+            int resultado =
+                connection.ExecuteScalar<int>(
+                    sql,
+                    new
+                    {
+                        contexto.TipoDocumento,
+                        TagDevolucion =
+                            contexto.Tags.tag_devolucion,
+                        TagRecepcion =
+                            contexto.Tags.tag_recepcion,
+                        Modulo,
+                        CodTransaccion = codTransaccion,
+                        TagRecepcionDevolucion =
+                            contexto.Tags.tag_recepcion_devolucion
+                    },
+                    transaction);
+
+            return resultado == 4
+                ? "No es posible registrar una recepci&oacute;n "
+                    + "sin aplicar la devoluci&oacute;n del documento "
+                    + $"{codTransaccion}."
+                : null;
+        }
+
+        /// <summary>
+        /// Registra la etiqueta correspondiente al documento.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="contexto"></param>
+        /// <param name="codTransaccion"></param>
+        private static void
+            SIF_RecepcionNdNc_Movimiento_Documento_Registrar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                MovimientoAplicarContexto contexto,
+                string codTransaccion)
+        {
+            connection.Execute(
+                "spSIFRegistraTags",
+                new
+                {
+                    Codigo = contexto.TipoDocumento,
+                    contexto.Tag,
+                    contexto.Usuario,
+                    Notas = contexto.Observacion,
+                    Documento = codTransaccion,
+                    Modulo,
+                    Llave_01 = contexto.TipoDocumento,
+                    Llave_02 = codTransaccion,
+                    Llave_03 = string.Empty
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        /// <summary>
+        /// Obtiene y valida la configuracion de etiquetas.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         private ErrorDto<TagsConfiguracion>
             SIF_RecepcionNdNc_Tags_Obtener(
                 int codEmpresa)
         {
             const string sqlParametros = """
-            select
-                rtrim(COD_PARAMETRO) as item,
-                isnull(rtrim(VALOR), '') as descripcion
-            from SIF_PARAMETROS
-            where COD_PARAMETRO in ('10', '11', '12');
-            """;
+                select
+                    rtrim(COD_PARAMETRO) as item,
+                    isnull(rtrim(VALOR), '') as descripcion
+                from SIF_PARAMETROS
+                where COD_PARAMETRO in ('10', '11', '12');
+                """;
 
             ErrorDto<List<DropDownListaGenericaModel<string>>>
                 parametrosResultado =
@@ -700,39 +886,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             }
 
             const string sqlValidar = """
-            select
-                case
-                    when exists
-                    (
-                        select 1
-                        from SIF_TAGS
-                        where TAG_CODIGO = @TagRecepcion
-                    )
-                    then 1
-                    else 0
-                end as recepcion_existe,
-                case
-                    when exists
-                    (
-                        select 1
-                        from SIF_TAGS
-                        where TAG_CODIGO = @TagDevolucion
-                    )
-                    then 1
-                    else 0
-                end as devolucion_existe,
-                case
-                    when exists
-                    (
-                        select 1
-                        from SIF_TAGS
-                        where TAG_CODIGO =
-                              @TagRecepcionDevolucion
-                    )
-                    then 1
-                    else 0
-                end as recepcion_devolucion_existe;
-            """;
+                select
+                    case
+                        when exists
+                        (
+                            select 1
+                            from SIF_TAGS
+                            where TAG_CODIGO = @TagRecepcion
+                        )
+                        then 1
+                        else 0
+                    end as recepcion_existe,
+                    case
+                        when exists
+                        (
+                            select 1
+                            from SIF_TAGS
+                            where TAG_CODIGO = @TagDevolucion
+                        )
+                        then 1
+                        else 0
+                    end as devolucion_existe,
+                    case
+                        when exists
+                        (
+                            select 1
+                            from SIF_TAGS
+                            where TAG_CODIGO =
+                                  @TagRecepcionDevolucion
+                        )
+                        then 1
+                        else 0
+                    end as recepcion_devolucion_existe;
+                """;
 
             ErrorDto<TagsValidacion?> validacionResultado =
                 DbHelper.ExecuteSingleQuery<TagsValidacion>(
@@ -784,21 +970,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             return DbHelper.CreateOkResponse(tags);
         }
 
+        /// <summary>
+        /// Valida los datos requeridos para aplicar el movimiento.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static string?
             SIF_RecepcionNdNc_Aplicar_Validar(
-                SifRecepcionNdNcAplicarRequest? request)
+                SifRecepcionNdNcAplicarRequest request)
         {
-            if (request is null)
-            {
-                return "Los datos del proceso son requeridos.";
-            }
-
             if (
                 SIF_RecepcionNdNc_TipoDocumento_Normalizar(
                     request.tipo_documento) == string.Empty
             )
             {
-                return "El tipo de documento no es v&aacute;lido.";
+                return MensajeTipoDocumentoInvalido;
             }
 
             if (
@@ -911,6 +1097,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         private static string NormalizarTexto(string? valor)
         {
             return valor?.Trim() ?? string.Empty;
+        }
+
+        private sealed class MovimientoAplicarContexto
+        {
+            public string TipoDocumento { get; set; } = string.Empty;
+            public string Movimiento { get; set; } = string.Empty;
+            public List<string> Documentos { get; set; } = [];
+            public string Usuario { get; set; } = string.Empty;
+            public TagsConfiguracion Tags { get; set; } = new();
+            public string Tag { get; set; } = string.Empty;
+            public string Observacion { get; set; } = string.Empty;
         }
 
         private sealed class TagsConfiguracion
