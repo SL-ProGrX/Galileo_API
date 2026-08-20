@@ -52,12 +52,12 @@ namespace Galileo_API.BusinessLogic
         }
 
 
-        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, List<RegistroBancoDto> registroLista)
         {
             return await _Db.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
         }
 
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, string registroLista)
+        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
         {
             return _Db.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }

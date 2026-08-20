@@ -221,4 +221,11 @@
         public TesBancosCargadoRevMovDestinoAplicarRequest
             MovimientoDestino { get; set; } = new();
     }
+
+    public class TesBancoCargadoElimina
+    {
+         public long? linea_id { get; set; }
+        public string? usuario { get; set; }
+        public long? auto_id { get; set; }
+    }
 }
