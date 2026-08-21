@@ -706,34 +706,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             Func<SqlConnection, T> action,
             T errorResult)
         {
-            try
-            {
-                using var connection = DbHelper.OpenConnection(
-                    _portalDB,
-                    codEmpresa);
-
-                return DbHelper.CreateOkResponse(
-                    action(connection));
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
+            return EjecutarOperacion(
+                codEmpresa,
+                connection => DbHelper.CreateOkResponse(
+                    action(connection)),
+                mensaje => DbHelper.CreateErrorResponse(
+                    mensaje,
                     -1,
-                    errorResult);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    errorResult);
-            }
+                    errorResult));
         }
 
         private ErrorDto EjecutarAccion(
             int codEmpresa,
             Func<SqlConnection, ErrorDto> action)
+        {
+            return EjecutarOperacion(
+                codEmpresa,
+                action,
+                mensaje => DbHelper.ErrorResponse(
+                    mensaje));
+        }
+
+        private TResult EjecutarOperacion<TResult>(
+            int codEmpresa,
+            Func<SqlConnection, TResult> action,
+            Func<string, TResult> crearError)
         {
             try
             {
@@ -745,11 +742,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             }
             catch (SqlException ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return crearError(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return crearError(ex.Message);
             }
         }
 
