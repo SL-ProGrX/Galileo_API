@@ -9,7 +9,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
 {
-    public class FrmSIFTagsModulosDB
+    public class FrmSifTagsModulosDb
     {
         private const int ModuloControlTramites = 8;
 
@@ -28,7 +28,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDB;
 
-        public FrmSIFTagsModulosDB(
+        public FrmSifTagsModulosDb(
             IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -130,11 +130,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                     -2);
             }
 
-            string codigo = request!.cod_modulo
+            string codigo = (
+                request?.cod_modulo ?? string.Empty)
                 .Trim()
                 .ToUpperInvariant();
 
-            string descripcion = request.descripcion.Trim();
+            string descripcion = (
+                request?.descripcion ?? string.Empty)
+                .Trim();
 
             ErrorDto<int> resultado = EjecutarConsulta(
                 CodEmpresa,
@@ -375,15 +378,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                     -2);
             }
 
-            string codigoModulo = request!.cod_modulo
+            string codigoModulo = (
+                request?.cod_modulo ?? string.Empty)
                 .Trim()
                 .ToUpperInvariant();
 
-            string codigoEtiqueta = request.tag_codigo
+            string codigoEtiqueta = (
+                request?.tag_codigo ?? string.Empty)
                 .Trim()
                 .ToUpperInvariant();
 
-            bool asignado = request.asignado!.Value;
+            bool asignado = request?.asignado ?? false;
 
             ErrorDto<int> resultado = EjecutarConsulta(
                 CodEmpresa,

@@ -5,13 +5,13 @@ using Galileo_API.DataBaseTier.ProGrX.ControlTramites;
 
 namespace Galileo_API.BusinessLogic.ProGrX.ControlTramites
 {
-    public class FrmSIFTagsModulosBL
+    public class FrmSifTagsModulosBl
     {
-        private readonly FrmSIFTagsModulosDB _db;
+        private readonly FrmSifTagsModulosDb _db;
 
-        public FrmSIFTagsModulosBL(IConfiguration config)
+        public FrmSifTagsModulosBl(IConfiguration config)
         {
-            _db = new FrmSIFTagsModulosDB(config);
+            _db = new FrmSifTagsModulosDb(config);
         }
 
         public ErrorDto<List<SifTagsModulosProcesoData>> SIF_TagsModulos_Procesos_Lista_Obtener(int CodEmpresa)
