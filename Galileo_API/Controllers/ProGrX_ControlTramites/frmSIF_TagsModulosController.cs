@@ -9,11 +9,11 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmSIFTagsModulosController : ControllerBase
+    public class FrmSifTagsModulosController : ControllerBase
     {
         private readonly FrmSifTagsModulosBl _bl;
 
-        public FrmSIFTagsModulosController(IConfiguration config)
+        public FrmSifTagsModulosController(IConfiguration config)
         {
             _bl = new FrmSifTagsModulosBl(config);
         }
