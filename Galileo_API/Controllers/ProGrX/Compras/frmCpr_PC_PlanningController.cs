@@ -76,5 +76,17 @@ namespace Galileo.Controllers
         {
             return PC_PlanningBL.CprPlanDT_Upsert(CodEmpresa, parametros, cortes);
         }
+
+        [HttpGet("CprPlanCompras_PlanesEstrategicos")]
+        public ErrorDto<string> CprPlanCompras_PlanesEstrategicos(int CodEmpresa, int planCompras)
+        {
+            return PC_PlanningBL.CprPlanCompras_PlanesEstrategicos(CodEmpresa, planCompras);
+        }
+
+        [HttpPost("CprPlanCompras_AgregarSeleccion")]
+        public ErrorDto<int> CprPlanCompras_AgregarSeleccion(int CodEmpresa, List<CprSeleccionDto> planEst)
+        {
+            return PC_PlanningBL.CprPlanCompras_AgregarSeleccion(CodEmpresa, planEst);
+        }
     }
 }

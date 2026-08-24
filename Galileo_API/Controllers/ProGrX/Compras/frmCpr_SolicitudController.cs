@@ -134,6 +134,12 @@ namespace Galileo.Controllers
             return _bl.Articulos_Obtener(CodEmpresa, pagina, paginacion, filtro, cod_unidad);
         }
 
+        [HttpGet("CprSolicitud_ArticulosGenerales_Obtener")]
+        public ErrorDto<ArticuloDataLista> CprSolicitud_ArticulosGenerales_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        {
+            return _bl.CprSolicitud_ArticulosGenerales_Obtener(CodEmpresa, pagina, paginacion, filtro);
+        }
+
         [HttpGet("CprSolicitud_TipoExcepcion")]
         public ErrorDto CprSolicitud_TipoExcepcion(int CodCliente)
         {

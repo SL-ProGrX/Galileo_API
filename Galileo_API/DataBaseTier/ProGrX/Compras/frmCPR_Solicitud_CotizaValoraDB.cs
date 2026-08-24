@@ -315,9 +315,9 @@ namespace Galileo.DataBaseTier
             var prov = Convert.ToInt32(proveedor.proveedor_codigo);
             var usuario = Convert.ToString(proveedor.registro_usuario) ?? string.Empty;
 
-            if (cprId <= 0) return DbHelper.CreateErrorResponse<InvitarData>("cpr_id inválido", -1, default);
-            if (prov <= 0) return DbHelper.CreateErrorResponse<InvitarData>("proveedor_codigo inválido", -1, default);
-            if (string.IsNullOrWhiteSpace(usuario)) return DbHelper.CreateErrorResponse<InvitarData>("registro_usuario inválido", -1, default);
+            if (cprId <= 0) return DbHelper.CreateErrorResponse<InvitarData>("cpr_id inválido", -1, new InvitarData(0, 0, string.Empty));
+            if (prov <= 0) return DbHelper.CreateErrorResponse<InvitarData>("proveedor_codigo inválido", -1, new InvitarData(0, 0, string.Empty));
+            if (string.IsNullOrWhiteSpace(usuario)) return DbHelper.CreateErrorResponse<InvitarData>("registro_usuario inválido", -1, new InvitarData(0, 0, string.Empty));
 
             return DbHelper.CreateOkResponse(new InvitarData(cprId, prov, usuario));
         }

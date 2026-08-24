@@ -18,6 +18,7 @@
         public List<string> operaciones { get; set; } = new();
         public string usuario { get; set; } = string.Empty;
         public string oficina { get; set; } = string.Empty;
+        public string nota { get; set; } = string.Empty;
     }
 
     public class AfcdRechazoRequest

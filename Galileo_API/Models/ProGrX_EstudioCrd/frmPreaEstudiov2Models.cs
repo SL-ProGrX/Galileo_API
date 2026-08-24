@@ -306,6 +306,22 @@
         public decimal salario_real { get; set; }
         /// <summary>rs!TOTAL_CARGA_CCSS (txtTotal_Cargas_CCSS).</summary>
         public decimal cargas { get; set; }
+        /// <summary>rs!CARGA_CCSS (lblCargaCCSS).</summary>
+        public decimal carga_ccss { get; set; }
+        /// <summary>rs!CARGA_ASOCIACION (lblCargaAsociacion).</summary>
+        public decimal carga_asociacion { get; set; }
+        /// <summary>rs!CARGA_FRAP (lblCargaFrap).</summary>
+        public decimal carga_frap { get; set; }
+        /// <summary>rs!CARGA_IMPUESTO_SALARIO (lblCargaImpSalario).</summary>
+        public decimal carga_impuesto_salario { get; set; }
+        /// <summary>rs!PTS_EXTRA_FRAP (txtFrapPorc).</summary>
+        public decimal pts_extra_frap { get; set; }
+        /// <summary>CRD_PREA_PARAMETROS '09' (GlobalPorcFRAPFAP), usado por el recálculo local.</summary>
+        public decimal porc_frap_fap { get; set; }
+        /// <summary>chkCargaAsociacion.Tag = "S" cuando CARGA_ASOCIACION es mayor a 0.</summary>
+        public bool aplica_carga_asociacion { get; set; }
+        /// <summary>chkCargaFrap.Tag = "S" cuando CARGA_FRAP es mayor a 0.</summary>
+        public bool aplica_carga_frap { get; set; }
         /// <summary>rs!PORCENTAJE_LIBRE (txtPorcSobreSalario).</summary>
         public decimal porc_sobre_salario { get; set; }
         /// <summary>rs!DEDUCCIONES.</summary>
@@ -730,6 +746,12 @@
         /// propio). Fuente Angular: this.salarioMinimoInembargable.</summary>
         [System.Text.Json.Serialization.JsonRequired]
         public decimal salario_minimo_inembargable { get; set; }
+        /// <summary>@65 PTS_EXTRA_FAP = txtFrapPorc.Text en VB6.</summary>
+        public decimal? pts_extra_frap { get; set; }
+        /// <summary>chkCargaAsociacion.Value en VB6. Null conserva compatibilidad con clientes viejos.</summary>
+        public bool? aplica_carga_asociacion { get; set; }
+        /// <summary>chkCargaFrap.Value en VB6. Null conserva compatibilidad con clientes viejos.</summary>
+        public bool? aplica_carga_frap { get; set; }
     }
 
     public class FrmPreaEstudiov2GuardarResponse

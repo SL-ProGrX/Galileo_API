@@ -8,7 +8,7 @@ using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmCprSolicitudDB
+    public partial class FrmCprSolicitudDB
     {
         private const string ErrorLiteral = "Ocurrió un error inesperado.";
 
@@ -51,8 +51,9 @@ namespace Galileo.DataBaseTier
 
                 // Filtro texto
                 var like = NormalizeLike(filtro.filtro);
-                p.Add("HasFiltro", like is null ? 0 : 1);
-                p.Add("Like", like);
+                var hasFiltro = !string.IsNullOrWhiteSpace(like);
+                p.Add("HasFiltro", hasFiltro ? 1 : 0);
+                p.Add("Like", hasFiltro ? like : null);
 
                 // Solicitantes
                 var solicitantes = (filtro.solicitante ?? new List<string>())
@@ -181,7 +182,7 @@ namespace Galileo.DataBaseTier
                 ActualizarEstadoSolicitudSiAplica(conn, cpr_id);
 
                 var solicitud = ObtenerSolicitud(conn, cpr_id);
-                if (solicitud == null) return null;
+                if (solicitud == null) return new CprSolicitudDto();
 
                 EnriquecerCompraDirectaSiAplica(conn, codEmpresa, cpr_id, solicitud);
                 return solicitud;
@@ -189,6 +190,14 @@ namespace Galileo.DataBaseTier
 
             var baseResp = MapDbResult(db);
             if (baseResp.Code != 0) return baseResp;
+
+            if (baseResp.Result == null)
+                return new ErrorDto<CprSolicitudDto>
+                {
+                    Code = -1,
+                    Description = "Solicitud no encontrada",
+                    Result = null
+                };
 
             return ValidarPermisoConsulta(codEmpresa, usuario, baseResp.Result);
         }
@@ -299,6 +308,85 @@ namespace Galileo.DataBaseTier
             return string.Equals(tipoOrdenSolicitud, tipoEx, StringComparison.OrdinalIgnoreCase);
         }
 
+        private ErrorDto CompraDirectaProveedor_UpsertSiNoAutorizada(IDbConnection conn, int codEmpresa, CprSolicitudDto solicitud)
+        {
+            if (!EsCompraDirecta(codEmpresa, solicitud.tipo_orden))
+                return DbHelper.CreateOkResponse();
+
+            if ((solicitud.cpr_id ?? 0) <= 0)
+                return DbHelper.ErrorResponse("No se pudo identificar la solicitud para compra directa", -1);
+
+            var codProveedor = solicitud.com_dir_cod_proveedor ?? 0;
+            if (codProveedor <= 0)
+                return DbHelper.ErrorResponse("Debe seleccionar un proveedor para la compra directa", -1);
+
+            var cprId = solicitud.cpr_id ?? 0;
+            var estadoSolicitud = conn.QueryFirstOrDefault<string>(
+                "SELECT ESTADO FROM CPR_SOLICITUD WHERE CPR_ID = @Id;",
+                new { Id = cprId }) ?? string.Empty;
+
+            if (string.Equals(estadoSolicitud, "A", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(estadoSolicitud, "F", StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.ErrorResponse("La solicitud ya está autorizada/finalizada y no permite cambiar proveedor en compra directa", -1);
+            }
+
+            var usuario = string.IsNullOrWhiteSpace(solicitud.modifica_usuario)
+                ? (solicitud.registro_usuario ?? string.Empty)
+                : solicitud.modifica_usuario;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+                return DbHelper.ErrorResponse("No se pudo identificar el usuario para actualizar proveedor de compra directa", -1);
+
+            var existe = conn.QueryFirstOrDefault<int>(
+                "SELECT COUNT(*) FROM CPR_SOLICITUD_PROV WHERE CPR_ID = @Id;",
+                new { Id = cprId });
+
+            if (existe == 0)
+            {
+                conn.Execute(@"
+INSERT INTO CPR_SOLICITUD_PROV
+(
+    CPR_ID,
+    PROVEEDOR_CODIGO,
+    PROVEEDOR_ESTADO,
+    REGISTRO_FECHA,
+    REGISTRO_USUARIO,
+    VALORA_PUNTAJE
+)
+VALUES
+(
+    @CprId,
+    @CodProveedor,
+    'I',
+    GETDATE(),
+    @Usuario,
+    0
+);",
+                new { CprId = cprId, CodProveedor = codProveedor, Usuario = usuario });
+            }
+            else
+            {
+                conn.Execute(@"
+UPDATE CPR_SOLICITUD_PROV
+SET PROVEEDOR_CODIGO = @CodProveedor,
+    PROVEEDOR_ESTADO = 'I',
+    REGISTRO_FECHA = GETDATE(),
+    REGISTRO_USUARIO = @Usuario,
+    VALORA_PUNTAJE = 0
+WHERE CPR_ID = @CprId;",
+                new { CprId = cprId, CodProveedor = codProveedor, Usuario = usuario });
+            }
+
+            conn.Execute(@"
+UPDATE CPR_SOLICITUD_PROV
+SET ESTADO = 'V'
+WHERE CPR_ID = @CprId;",
+                new { CprId = cprId });
+
+            return DbHelper.CreateOkResponse();
+        }
+
         public ErrorDto<CprSolicitudDto> CprSolicitud_Scroll(int codEmpresa, int scroll, string usuario, string? codigo)
         {
             if (!int.TryParse(codigo ?? "", out var codId))
@@ -365,7 +453,7 @@ FROM CPR_SOLICITUD_PROV P
 LEFT JOIN CXP_PROVEEDORES cp ON cp.COD_PROVEEDOR = P.PROVEEDOR_CODIGO
 WHERE P.CPR_ID = @Id;";
 
-                    return conn.QueryFirstOrDefault<CprSolicitudDto>(qProv, new { Id = r.Result.cpr_id });
+                    return conn.QueryFirstOrDefault<CprSolicitudDto>(qProv, new { Id = r.Result.cpr_id }) ?? new CprSolicitudDto();
                 });
 
                 if (provR.Code == 0 && provR.Result != null)
@@ -408,6 +496,10 @@ WHERE P.CPR_ID = @Id;";
                 // xml -> sp (parametrizado)
                 var xmlOutput = MProGrXAuxiliarDB.fxConvertModelToXml<CprSolicitudDto>(solicitud);
                 conn.Execute("exec spCPR_Solicitud_Insertar @Xml;", new { Xml = xmlOutput });
+
+                var proveedorR = CompraDirectaProveedor_UpsertSiNoAutorizada(conn, codEmpresa, solicitud);
+                if (proveedorR.Code != 0)
+                    return proveedorR;
 
                 // asigna encargado
                 _ = AsignaEncargado_Solicitud(codEmpresa, solicitud.cod_unidad_solicitante ?? string.Empty, secuencia);
@@ -454,16 +546,25 @@ WHERE P.CPR_ID = @Id;";
 
         private ErrorDto CprSolicitud_Actualizar(int codEmpresa, CprSolicitudDto solicitud)
         {
-            var r = DbHelper.WithConn<int>(_portalDb, codEmpresa, conn =>
+            var r = DbHelper.WithConn<ErrorDto>(_portalDb, codEmpresa, conn =>
             {
                 EnsureOpen(conn);
 
                 var xmlOutput = MProGrXAuxiliarDB.fxConvertModelToXml<CprSolicitudDto>(solicitud);
-                return conn.Execute("exec spCPR_Solicitud_Actualizar @Xml;", new { Xml = xmlOutput });
+                conn.Execute("exec spCPR_Solicitud_Actualizar @Xml;", new { Xml = xmlOutput });
+
+                var proveedorR = CompraDirectaProveedor_UpsertSiNoAutorizada(conn, codEmpresa, solicitud);
+                if (proveedorR.Code != 0)
+                    return proveedorR;
+
+                return DbHelper.CreateOkResponse();
             });
 
-            if (r.Code != 0)
+            if (r.Code != 0 || r.Result == null)
                 return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
+
+            if (r.Result.Code != 0)
+                return DbHelper.ErrorResponse(r.Result.Description ?? ErrorLiteral, r.Result.Code ?? -1);
 
             return DbHelper.OkResponse((solicitud.cpr_id ?? 0).ToString());
         }
@@ -702,26 +803,7 @@ WHERE P.CPR_ID = @Id;";
                     CodCot = cod_cotizacion
                 }).ToList();
 
-                // batch unidades
-                var productos = lista.cotizaciones.Select(x => x.cod_producto).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
-                if (productos.Count > 0)
-                {
-                    const string qUnidades = "SELECT COD_PRODUCTO, COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO IN @Productos;";
-                    var map = conn.Query<(string COD_PRODUCTO, string COD_UNIDAD)>(qUnidades, new { Productos = productos })
-                                  .ToDictionary(x => x.COD_PRODUCTO, x => x.COD_UNIDAD);
-
-                     foreach (var entry in lista.cotizaciones
-                         .Where(it => !string.IsNullOrWhiteSpace(it.cod_producto))
-                         .Select(it =>
-                         {
-                             bool found = map.TryGetValue(it.cod_producto, out string? unidad);
-                             return new { Item = it, Found = found, Unidad = unidad };
-                         })
-                         .Where(x => x.Found))
-                     {
-                         entry.Item.unidad = entry.Unidad;
-                     }
-                }
+                CprSolicitudCotizacionBs_UnidadesAsignar(conn, lista.cotizaciones);
 
                 return lista;
             });
@@ -830,73 +912,6 @@ WHERE R.CORE_USUARIO = @Usuario
                 return DbHelper.ErrorResponse("El usuario no tiene permisos para realizar esta acción", -1);
 
             return DbHelper.CreateOkResponse();
-        }
-
-        // ===========================
-        //  ARTICULOS PLAN
-        // ===========================
-
-        public ErrorDto<ArticuloDataLista> Articulos_Obtener(int codEmpresa, int? pagina, int? paginacion, string? filtro, string? cod_unidad)
-        {
-            var r = DbHelper.WithConn<ArticuloDataLista>(_portalDb, codEmpresa, conn =>
-            {
-                EnsureOpen(conn);
-
-                var p = new DynamicParameters();
-                p.Add("CodUnidad", cod_unidad ?? "");
-
-                var like = NormalizeLike(filtro);
-                p.Add("HasFiltro", like != null ? 1 : 0);
-                p.Add("Like", like);
-
-                var (offset, fetch, _) = GetPaging(pagina, paginacion);
-                p.Add("Offset", offset);
-                p.Add("Fetch", fetch);
-
-                const string qCount = @"
-                            SELECT COUNT(*) FROM (
-                                SELECT DISTINCT D.COD_PRODUCTO
-                                FROM CPR_PLAN_DT D
-                                INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
-                                INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                                INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                                WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
-                                AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
-                            ) T;";
-
-                var total = conn.Query<int>(qCount, p).FirstOrDefault();
-
-                const string qList = @"
-                            SELECT DISTINCT
-                                D.COD_PRODUCTO,
-                                P.DESCRIPCION,
-                                P.COSTO_REGULAR,
-                                P.EXISTENCIA,
-                                P.COD_BARRAS,
-                                P.CABYS,
-                                P.PRECIO_REGULAR,
-                                P.IMPUESTO_VENTAS,
-                                P.COD_FABRICANTE,
-                                P.I_STOCK
-                            FROM CPR_PLAN_DT D
-                            INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
-                            INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                            INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                            WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
-                            AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
-                            ORDER BY D.COD_PRODUCTO
-                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
-
-                var articulos = conn.Query<ArticuloData>(qList, p).ToList();
-
-                return new ArticuloDataLista
-                {
-                    Total = total,
-                    Articulos = articulos
-                };
-            });
-
-            return WrapRequired(r);
         }
 
         // ===========================
@@ -1273,13 +1288,13 @@ WHERE CPR_ID = @Id;";
             return new ErrorDto<T> { Code = 0, Result = r.Result };
         }
 
-        private static string? NormalizeLike(string? filtro)
+        private static string NormalizeLike(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
-                return null;
+                return string.Empty;
 
             var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
+            return f.Length == 0 ? string.Empty : $"%{f}%";
         }
 
         private static void EnsureOpen(IDbConnection conn)
