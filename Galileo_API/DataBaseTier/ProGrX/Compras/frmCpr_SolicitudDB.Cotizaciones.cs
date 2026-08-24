@@ -29,17 +29,12 @@ namespace Galileo.DataBaseTier
         private static List<string> CprSolicitudCotizacionBs_ProductosObtener(
             IEnumerable<CprSolicitudCotizacionPrvBs> cotizaciones)
         {
-            var productos = new HashSet<string>();
-            foreach (var item in cotizaciones)
-            {
-                var codProducto = item.cod_producto;
-                if (!string.IsNullOrWhiteSpace(codProducto))
-                {
-                    productos.Add(codProducto);
-                }
-            }
-
-            return productos.ToList();
+            return cotizaciones
+                .Select(item => item.cod_producto)
+                .OfType<string>()
+                .Where(codProducto => !string.IsNullOrWhiteSpace(codProducto))
+                .Distinct()
+                .ToList();
         }
 
         private static void CprSolicitudCotizacionBs_UnidadAsignar(
