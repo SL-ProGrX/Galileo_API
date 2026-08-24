@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         {
             string query = @"select 
                 NOPERACION, 
-                DEPOSITO as deposito,
+                CAST(CASE WHEN LTRIM(RTRIM(ISNULL(DEPOSITO, '0'))) = '1' THEN 1 ELSE 0 END AS bit) as deposito,
                 NDOCUMENTO as ndocumento,
                 FECHA_DOCUMENTO as fecha_documento,
                 DETALLE as detalle,
@@ -398,9 +398,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Result = null
                 };
             }
-            string transaccion = data.transaccion;
-            string tipoDoc = data.tipoDoc;
-            return sbImprimeRecibo(codEmpresa, transaccion, tipoDoc, usuario);
+            return DbHelper.CreateOkResponse<object>(data);
         }
 
         /// <summary>
@@ -605,7 +603,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 {
                     NOperacion = request.noperacion,
                     NDocumento = request.ndocumento,
-                    Deposito = request.deposito,
+                    Deposito = request.deposito ? "1" : "0",
                     Detalle = request.detalle,
                     FechaDocumento = request.fecha_documento,
                     Monto = request.monto,

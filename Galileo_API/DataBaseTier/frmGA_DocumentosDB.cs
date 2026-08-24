@@ -61,12 +61,22 @@ namespace Galileo.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
+                NormalizarDocumento(data);
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    string queryExist = @"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = @Llave_01 AND Llave_02 = @Llave_02 AND Llave_03 = @Llave_03";
+                    string queryExist = @"
+                        SELECT COUNT(*)
+                        FROM GA_Files
+                        WHERE EmpresaId = @EmpresaId
+                          AND ModuloId = @ModuloId
+                          AND Llave_01 = @Llave_01
+                          AND Llave_02 = @Llave_02
+                          AND ISNULL(Llave_03, '') = @Llave_03";
                     int count = connection.QuerySingle<int>(queryExist, new
                     {
+                        EmpresaId = data.empresaid,
+                        ModuloId = data.moduloid,
                         Llave_01 = data.llave_01,
                         Llave_02 = data.llave_02,
                         Llave_03 = data.llave_03
@@ -132,6 +142,9 @@ namespace Galileo.DataBaseTier
             List<DocumentosArchivoDto> resp = new List<DocumentosArchivoDto>();
             try
             {
+                filtros.llave1 = NormalizarTexto(filtros.llave1);
+                filtros.llave2 = NormalizarFiltroOpcional(filtros.llave2);
+                filtros.llave3 = NormalizarFiltroOpcional(filtros.llave3);
 
                 List<DocumentosArchivoDto> respGen = null;
 
@@ -150,7 +163,7 @@ namespace Galileo.DataBaseTier
 
                     if (filtros.llave3 != null)
                     {
-                        query += " AND Llave_03 = @llave3";
+                        query += " AND ISNULL(Llave_03, '') = @llave3";
                         parameters.Add("@llave3", filtros.llave3, DbType.String);
                     }
 
@@ -164,6 +177,29 @@ namespace Galileo.DataBaseTier
                 _ = ex.Message;
             }
             return resp;
+        }
+
+        private static void NormalizarDocumento(DocumentosArchivoDto data)
+        {
+            data.empresaid = NormalizarTexto(data.empresaid);
+            data.moduloid = NormalizarTexto(data.moduloid);
+            data.typeid = NormalizarTexto(data.typeid);
+            data.llave_01 = NormalizarTexto(data.llave_01);
+            data.llave_02 = NormalizarTexto(data.llave_02);
+            data.llave_03 = NormalizarTexto(data.llave_03);
+            data.filename = NormalizarTexto(data.filename);
+            data.filetype = NormalizarTexto(data.filetype);
+            data.registrousuario = NormalizarTexto(data.registrousuario);
+        }
+
+        private static string NormalizarTexto(string? valor)
+        {
+            return valor?.Trim() ?? string.Empty;
+        }
+
+        private static string? NormalizarFiltroOpcional(string? valor)
+        {
+            return valor is null ? null : valor.Trim();
         }
 
         /// <summary>

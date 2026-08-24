@@ -65,8 +65,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     SELECT TOP 1
                         RTRIM(C.descripcion) AS ComiteDescripcion
                     FROM afi_cd_comites C
-                    LEFT JOIN afi_cd_nombramientos N
-                        ON C.cod_comite = N.cod_comite
+                    WHERE C.cod_comite = @ComiteId;";
+
+                const string queryMiembroDesembolso = @"
+                    SELECT COUNT(1)
+                    FROM afi_cd_nombramientos N
                     INNER JOIN socios S
                         ON S.cedula = N.cedula
                     WHERE N.cod_comite = @ComiteId
@@ -90,6 +93,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     queryAsociados,
                     new { request.ComiteId });
 
+                var tieneMiembroDesembolso = connection.ExecuteScalar<int>(
+                    queryMiembroDesembolso,
+                    new { request.ComiteId }) > 0;
+
                 var response = new CrdPreCalculoComiteResponse
                 {
                     ComiteId = request.ComiteId?.Trim() ?? string.Empty,
@@ -97,8 +104,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     CantidadAsociados = cantidadAsociados,
                     AjusteAsociados = request.AjusteAsociados,
                     TotalAsociadosAjustado = cantidadAsociados - request.AjusteAsociados,
-                    //TieneMiembroDesembolso = !string.IsNullOrWhiteSpace(descripcion),
-                    Mensaje = string.IsNullOrWhiteSpace(descripcion)
+                    Mensaje = !tieneMiembroDesembolso
                         ? "No se cuenta con miembro asignado al desembolso."
                         : string.Empty
                 };
