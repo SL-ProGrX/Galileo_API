@@ -803,28 +803,7 @@ WHERE P.CPR_ID = @Id;";
                     CodCot = cod_cotizacion
                 }).ToList();
 
-                // batch unidades
-                var productos = lista.cotizaciones.Select(x => x.cod_producto).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
-                if (productos.Count > 0)
-                {
-                    const string qUnidades = "SELECT COD_PRODUCTO, COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO IN @Productos;";
-                    var map = conn.Query<(string COD_PRODUCTO, string COD_UNIDAD)>(qUnidades, new { Productos = productos })
-                                  .ToDictionary(x => x.COD_PRODUCTO, x => x.COD_UNIDAD);
-
-                    foreach (var item in lista.cotizaciones)
-                    {
-                        var codProducto = item.cod_producto;
-                        if (string.IsNullOrWhiteSpace(codProducto))
-                        {
-                            continue;
-                        }
-
-                        if (map.TryGetValue(codProducto, out string? unidad))
-                        {
-                            item.unidad = unidad;
-                        }
-                    }
-                }
+                CprSolicitudCotizacionBs_UnidadesAsignar(conn, lista.cotizaciones);
 
                 return lista;
             });
