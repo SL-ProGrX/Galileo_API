@@ -1,82 +1,73 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models.ERROR;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using System.Data;
 using static Galileo_API.Models.ProGrX_Procesos.FrmCcFndSolidarioModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 {
-    public class FrmCcFndSolidarioDB
+    public sealed class FrmCcFndSolidarioDB
     {
-        private readonly PortalDB _portalDB;
-        private readonly MProGrxMain mProGrxDll;
+        private const int TiempoEsperaSegundos = 5000;
 
-        public FrmCcFndSolidarioDB(IConfiguration config)
-        {
-            _portalDB = new PortalDB(config);
-            mProGrxDll = new MProGrxMain(config);
-        }
-        private enum FndsPasoTipo
-        {
-            Paso1,
-            Paso2,
-            Paso3
-        }
-
-        private enum FndsUpdateTipo
-        {
-            Reemplazar,
-            SumarConSaldoMes,
-            SumarSinSaldoMes
-        }
-
-        private enum TipoFechaProceso
-        {
-            Anterior,
-            Siguiente
-        }
+        private readonly PortalDB _portalDb;
+        private readonly MProGrxMain _mProGrxMain;
 
         private static readonly DateTime FechaCorteFnds =
             new(2004, 6, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
-        private const string SqlFndsPaso1 = @"
-            select R.cedula as Cedula, sum(R.montoapr) as Monto
+        private const string SqlFndsPaso1 = """
+            select
+                R.cedula as Cedula,
+                sum(R.montoapr) as Monto
             from reg_creditos R
-            inner join Catalogo C on R.codigo = C.codigo
-            inner join Socios S on R.cedula = S.cedula
+            inner join Catalogo C
+                on R.codigo = C.codigo
+            inner join Socios S
+                on R.cedula = S.cedula
             where C.retencion = 'N'
               and C.poliza = 'N'
               and C.cobertura = 1
-              and R.garantia in ('A','N')
+              and R.garantia in ('A', 'N')
               and R.saldo > 0
               and R.estado = 'A'
               and R.proceso <> 'J'
               and R.fechaforp < @FechaCorte
               and S.cod_institucion = @CodInstitucion
-            group by R.cedula";
+            group by R.cedula;
+            """;
 
-        private const string SqlFndsPaso2 = @"
-            select R.cedula as Cedula, sum(R.montoapr) as Monto
+        private const string SqlFndsPaso2 = """
+            select
+                R.cedula as Cedula,
+                sum(R.montoapr) as Monto
             from reg_creditos R
-            inner join Catalogo C on R.codigo = C.codigo
-            inner join Socios S on R.cedula = S.cedula
+            inner join Catalogo C
+                on R.codigo = C.codigo
+            inner join Socios S
+                on R.cedula = S.cedula
             where C.retencion = 'N'
               and C.poliza = 'N'
               and C.cobertura = 1
-              and R.garantia in ('F','X')
+              and R.garantia in ('F', 'X')
               and R.saldo > 0
               and R.estado = 'A'
               and R.proceso <> 'J'
               and R.fechaforp < @FechaCorte
               and S.cod_institucion = @CodInstitucion
-            group by R.cedula";
+            group by R.cedula;
+            """;
 
-        private const string SqlFndsPaso3 = @"
-            select R.cedula as Cedula, sum(R.montoapr) as Monto
+        private const string SqlFndsPaso3 = """
+            select
+                R.cedula as Cedula,
+                sum(R.montoapr) as Monto
             from reg_creditos R
-            inner join Catalogo C on R.codigo = C.codigo
-            inner join Socios S on R.cedula = S.cedula
+            inner join Catalogo C
+                on R.codigo = C.codigo
+            inner join Socios S
+                on R.cedula = S.cedula
             where C.retencion = 'N'
               and C.poliza = 'N'
               and C.cobertura = 1
@@ -86,363 +77,833 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
               and R.proceso <> 'J'
               and R.fechaforp >= @FechaCorte
               and S.cod_institucion = @CodInstitucion
-            group by R.cedula";
+            group by R.cedula;
+            """;
 
-
-
-        public ErrorDto<List<DropDownListaGenericaModel>> FNDSolidario_Instituciones_Obtener(int codEmpresa)
+        private enum FndsPasoTipo
         {
-            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
-            {
-                const string sql = @"
-                    select 
-                        cod_institucion as item,
-                        rtrim(descripcion) as descripcion
-                    from instituciones
-                    where activa = 1
-                      and cod_institucion in (1,2)
-                    order by descripcion";
-
-                return conn.Query<DropDownListaGenericaModel>(sql).ToList();
-            });
+            Paso1,
+            Paso2,
+            Paso3,
         }
 
-        private static decimal FxFechaProceso(
-            IDbConnection connection,
-            IDbTransaction tx,
-            decimal proceso,
-            TipoFechaProceso tipo)
+        private enum FndsUpdateTipo
         {
-            const string sqlAnterior = @"SELECT ISNULL(dbo.fxSIFPrmProcesoAnt(@Proceso), @Proceso);";
-            const string sqlSiguiente = @"SELECT ISNULL(dbo.fxSIFPrmProcesoSig(@Proceso), @Proceso);";
-
-            var sql = tipo == TipoFechaProceso.Anterior ? sqlAnterior : sqlSiguiente;
-            return connection.ExecuteScalar<decimal>(sql, new { Proceso = proceso }, tx);
+            Reemplazar,
+            SumarConSaldoMes,
+            SumarSinSaldoMes,
         }
 
-        private static DateTime FechaServidor(IDbConnection conn, IDbTransaction tx)
+        private enum TipoFechaProceso
         {
-            const string sql = @"SELECT GETDATE();";
-            return conn.ExecuteScalar<DateTime>(sql, transaction: tx);
+            Anterior,
+            Siguiente,
         }
 
-        private static decimal FxFondoSolidario(decimal monto, decimal montoBase = 150m)
+        public FrmCcFndSolidarioDB(IConfiguration config)
         {
-            return (monto / 1000000m) * montoBase;
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+            _mProGrxMain = new MProGrxMain(config);
         }
 
+        /// <summary>
+        /// Obtiene las instituciones habilitadas para ejecutar el proceso
+        /// de Fondo Solidario.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FNDSolidario_Instituciones_Obtener(int codEmpresa)
+        {
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection =>
+                {
+                    const string sql = """
+                        select
+                            cod_institucion as item,
+                            rtrim(descripcion) as descripcion
+                        from instituciones
+                        where activa = 1
+                          and cod_institucion in (1, 2)
+                        order by descripcion;
+                        """;
+
+                    return connection
+                        .Query<DropDownListaGenericaModel>(
+                            sql)
+                        .ToList();
+                });
+        }
+
+        /// <summary>
+        /// Ejecuta el proceso de Fondo Solidario o Fondo de Beneficio Social
+        /// segun la configuración de la empresa.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codContabilidad"></param>
+        /// <param name="codInstitucion"></param>
+        /// <returns></returns>
         public ErrorDto FrmCC_FNDSolidario_Ejecutar(
             int codEmpresa,
             string usuario,
             int codContabilidad,
             int codInstitucion)
         {
-            var globales = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad)?.Result
-                           ?? new Globales();
-
-            if (globales.GlngFechaCR <= 0)
+            try
             {
-                return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar el proceso.");
+                string usuarioNormalizado =
+                    usuario?.Trim() ?? string.Empty;
+
+                ErrorDto? validacion = ValidarParametros(
+                    codEmpresa,
+                    usuarioNormalizado,
+                    codContabilidad);
+
+                if (validacion is not null)
+                {
+                    return validacion;
+                }
+
+                var globalesResponse =
+                    _mProGrxMain.sbSifParametrosInicializa(
+                        codEmpresa,
+                        usuarioNormalizado,
+                        codContabilidad);
+
+                if (globalesResponse is null)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No se obtuvo respuesta al cargar los par&aacute;metros del sistema.");
+                }
+
+                int codigoRespuesta = globalesResponse.Code ?? 0;
+
+                if (codigoRespuesta != 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        globalesResponse.Description ??
+                            "Ocurri&oacute; un error al cargar los par&aacute;metros del sistema.",
+                        codigoRespuesta == -2 ? -2 : -1);
+                }
+
+                Globales? globales = globalesResponse.Result;
+
+                if (globales is null)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No fue posible obtener los par&aacute;metros necesarios para ejecutar el proceso.",
+                        -2);
+                }
+
+                if (globales.GlngFechaCR <= 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No fue posible obtener el per&iacute;odo de cr&eacute;ditos para ejecutar el proceso.",
+                        -2);
+                }
+
+                if (
+                    globales.SysASEVersion &&
+                    codInstitucion != 1 &&
+                    codInstitucion != 2)
+                {
+                    return DbHelper.ErrorResponse(
+                        "Debe seleccionar una instituci&oacute;n v&aacute;lida.",
+                        -2);
+                }
+
+                return globales.SysASEVersion
+                    ? FrmCC_FNDSolidario_Ejecutar_FNDS(
+                        codEmpresa,
+                        usuarioNormalizado,
+                        codInstitucion,
+                        globales)
+                    : FrmCC_FNDSolidario_Ejecutar_FBEN(
+                        codEmpresa,
+                        usuarioNormalizado,
+                        globales);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message, -1);
+            }
+        }
+
+        private static ErrorDto? ValidarParametros(
+            int codEmpresa,
+            string usuario,
+            int codContabilidad)
+        {
+            if (codEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "No fue posible determinar la empresa de la sesi&oacute;n actual.",
+                    -2);
             }
 
-            return globales.SysASEVersion
-                ? FrmCC_FNDSolidario_Ejecutar_FNDS(codEmpresa, usuario, codInstitucion, globales)
-                : FrmCC_FNDSolidario_Ejecutar_FBEN(codEmpresa, usuario, codContabilidad);
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "No fue posible determinar el usuario de la sesi&oacute;n actual.",
+                    -2);
+            }
+
+            if (codContabilidad <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "No fue posible determinar la contabilidad de la sesi&oacute;n actual.",
+                    -2);
+            }
+
+            return null;
         }
 
         private ErrorDto FrmCC_FNDSolidario_Ejecutar_FNDS(
             int codEmpresa,
             string usuario,
             int codInstitucion,
-            Globales globalesLocal)
+            Globales globales)
         {
-            return EjecutarEnTransaccion(codEmpresa, (connection, tx) =>
-            {
-                var fechaServidor = FechaServidor(connection, tx);
-                var fechaProX = FxFechaProceso(connection, tx, globalesLocal.GlngFechaCR, TipoFechaProceso.Siguiente);
-
-                const string codigo = "FNDS";
-
-                Db_FNDS_CancelarSinCobertura(connection, tx, codInstitucion, codigo);
-                Db_FNDS_InicializarCuotas(connection, tx, codInstitucion, codigo);
-
-                var ctx = new FondoSolidarioContext
+            return EjecutarEnTransaccion(
+                codEmpresa,
+                (connection, transaction) =>
                 {
-                    CodEmpresa = codEmpresa,
-                    CodInstitucion = codInstitucion,
-                    Usuario = usuario,
-                    GlngFechaCR = globalesLocal.GlngFechaCR,
-                    FechaProcesoSiguiente = fechaProX,
-                    FechaServidor = fechaServidor
-                };
+                    DateTime fechaServidor = FechaServidor(
+                        connection,
+                        transaction);
 
-                var pasos = new[]
-                {
-                    new FndsPasoConfig
+                    decimal fechaProcesoSiguiente = FxFechaProceso(
+                        connection,
+                        transaction,
+                        globales.GlngFechaCR,
+                        TipoFechaProceso.Siguiente);
+
+                    const string codigo = "FNDS";
+
+                    Db_FNDS_CancelarSinCobertura(
+                        connection,
+                        transaction,
+                        codInstitucion,
+                        codigo);
+
+                    Db_FNDS_InicializarCuotas(
+                        connection,
+                        transaction,
+                        codInstitucion,
+                        codigo);
+
+                    var contexto = new FondoSolidarioContext
                     {
-                        Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso1),
-                        MontoBase = 150m,
-                        Garantia = "S",
-                        Actualizar = (conn, tran, id, monto) =>
-                            Db_FNDS_ActualizarPaso(conn, tran, id, monto, FndsUpdateTipo.Reemplazar)
-                    },
-                    new FndsPasoConfig
+                        CodEmpresa = codEmpresa,
+                        CodInstitucion = codInstitucion,
+                        Usuario = usuario,
+                        GlngFechaCR = globales.GlngFechaCR,
+                        FechaProcesoSiguiente = fechaProcesoSiguiente,
+                        FechaServidor = fechaServidor,
+                    };
+
+                    FndsPasoConfig[] pasos =
+                    [
+                        new()
+                        {
+                            Rows = Db_FNDS_Paso_Listar(
+                                connection,
+                                transaction,
+                                codInstitucion,
+                                FndsPasoTipo.Paso1),
+                            MontoBase = 150m,
+                            Garantia = "S",
+                            Actualizar =
+                                (
+                                    currentConnection,
+                                    currentTransaction,
+                                    idSolicitud,
+                                    monto
+                                ) =>
+                                    Db_FNDS_ActualizarPaso(
+                                        currentConnection,
+                                        currentTransaction,
+                                        idSolicitud,
+                                        monto,
+                                        FndsUpdateTipo.Reemplazar),
+                        },
+                        new()
+                        {
+                            Rows = Db_FNDS_Paso_Listar(
+                                connection,
+                                transaction,
+                                codInstitucion,
+                                FndsPasoTipo.Paso2),
+                            MontoBase = 300m,
+                            Garantia = "Z",
+                            Actualizar =
+                                (
+                                    currentConnection,
+                                    currentTransaction,
+                                    idSolicitud,
+                                    monto
+                                ) =>
+                                    Db_FNDS_ActualizarPaso(
+                                        currentConnection,
+                                        currentTransaction,
+                                        idSolicitud,
+                                        monto,
+                                        FndsUpdateTipo.SumarConSaldoMes),
+                        },
+                        new()
+                        {
+                            Rows = Db_FNDS_Paso_Listar(
+                                connection,
+                                transaction,
+                                codInstitucion,
+                                FndsPasoTipo.Paso3),
+                            MontoBase = 300m,
+                            Garantia = "Z",
+                            Actualizar =
+                                (
+                                    currentConnection,
+                                    currentTransaction,
+                                    idSolicitud,
+                                    monto
+                                ) =>
+                                    Db_FNDS_ActualizarPaso(
+                                        currentConnection,
+                                        currentTransaction,
+                                        idSolicitud,
+                                        monto,
+                                        FndsUpdateTipo.SumarSinSaldoMes),
+                        },
+                    ];
+
+                    foreach (FndsPasoConfig paso in pasos)
                     {
-                        Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso2),
-                        MontoBase = 300m,
-                        Garantia = "Z",
-                        Actualizar = (conn, tran, id, monto) =>
-                            Db_FNDS_ActualizarPaso(conn, tran, id, monto, FndsUpdateTipo.SumarConSaldoMes)
-                    },
-                    new FndsPasoConfig
-                    {
-                        Rows = Db_FNDS_Paso_Listar(connection, tx, codInstitucion, FndsPasoTipo.Paso3),
-                        MontoBase = 300m,
-                        Garantia = "Z",
-                        Actualizar = (conn, tran, id, monto) =>
-                            Db_FNDS_ActualizarPaso(conn, tran, id, monto, FndsUpdateTipo.SumarSinSaldoMes)
+                        ProcesarPasoFnds(
+                            connection,
+                            transaction,
+                            contexto,
+                            codigo,
+                            paso);
                     }
-                };
 
-                foreach (var paso in pasos)
-                {
-                    ProcesarPasoFnds(connection, tx, ctx, codigo, paso);
-                }
+                    Db_FNDS_CancelarPorCongelamiento(
+                        connection,
+                        transaction,
+                        codInstitucion,
+                        codigo);
 
-                Db_FNDS_CancelarPorCongelamiento(connection, tx, codInstitucion, codigo);
-
-                return DbHelper.OkResponse("Fondo Solidario Actualizado Satisfactoriamente...");
-            });
+                    return DbHelper.OkResponse(
+                        "Fondo Solidario actualizado satisfactoriamente.");
+                });
         }
 
         private ErrorDto FrmCC_FNDSolidario_Ejecutar_FBEN(
             int codEmpresa,
             string usuario,
-            int codContabilidad)
+            Globales globales)
         {
-            return EjecutarEnTransaccion(codEmpresa, (connection, tx) =>
-            {
-                var globalesDto = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad);
-                var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
-
-                if (glngFechaCR <= 0)
+            return EjecutarEnTransaccion(
+                codEmpresa,
+                (connection, transaction) =>
                 {
-                    return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar FBEN.");
-                }
+                    DateTime fechaServidor = FechaServidor(
+                        connection,
+                        transaction);
 
-                var fechaServidor = FechaServidor(connection, tx);
-                var fechaProcesoSiguiente = FxFechaProceso(connection, tx, glngFechaCR, TipoFechaProceso.Siguiente);
-                var fechaProcesoAnterior = FxFechaProceso(connection, tx, glngFechaCR, TipoFechaProceso.Anterior);
+                    decimal fechaProcesoSiguiente = FxFechaProceso(
+                        connection,
+                        transaction,
+                        globales.GlngFechaCR,
+                        TipoFechaProceso.Siguiente);
 
-                const string codigo = "FBEN";
-                const decimal monto = 800m;
+                    decimal fechaProcesoAnterior = FxFechaProceso(
+                        connection,
+                        transaction,
+                        globales.GlngFechaCR,
+                        TipoFechaProceso.Anterior);
 
-                Db_FBEN_ExcluirExSocios(connection, tx, codigo);
-                Db_FBEN_ActualizarCasosActuales(connection, tx, codigo, monto);
+                    const string codigo = "FBEN";
+                    const decimal monto = 800m;
 
-                var ctx = new FondoSolidarioContext
-                {
-                    CodEmpresa = codEmpresa,
-                    Usuario = usuario,
-                    GlngFechaCR = glngFechaCR,
-                    FechaProcesoSiguiente = fechaProcesoSiguiente,
-                    FechaProcesoAnterior = fechaProcesoAnterior,
-                    FechaServidor = fechaServidor
-                };
+                    Db_FBEN_ExcluirExSocios(
+                        connection,
+                        transaction,
+                        codigo);
 
-                Db_FBEN_InsertarCasosNuevos(connection, tx, ctx, codigo, monto);
-                Db_FBEN_CancelarSinAporteMas2Meses(connection, tx, codigo);
+                    Db_FBEN_ActualizarCasosActuales(
+                        connection,
+                        transaction,
+                        codigo,
+                        monto);
 
-                return DbHelper.OkResponse("Fondo de Beneficio Socual Actualizado Satisfactoriamente...");
-            });
+                    var contexto = new FondoSolidarioContext
+                    {
+                        CodEmpresa = codEmpresa,
+                        Usuario = usuario,
+                        GlngFechaCR = globales.GlngFechaCR,
+                        FechaProcesoSiguiente = fechaProcesoSiguiente,
+                        FechaProcesoAnterior = fechaProcesoAnterior,
+                        FechaServidor = fechaServidor,
+                    };
+
+                    Db_FBEN_InsertarCasosNuevos(
+                        connection,
+                        transaction,
+                        contexto,
+                        codigo,
+                        monto);
+
+                    Db_FBEN_CancelarSinAporteMas2Meses(
+                        connection,
+                        transaction,
+                        codigo);
+
+                    return DbHelper.OkResponse(
+                        "Fondo de Beneficio Social actualizado satisfactoriamente.");
+                });
         }
 
-        private static void Db_FBEN_ExcluirExSocios(IDbConnection conn, IDbTransaction tx, string codigo)
+        private static decimal FxFechaProceso(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            decimal proceso,
+            TipoFechaProceso tipo)
         {
-            const string sql = @"
+            const string sqlAnterior = """
+                select isnull(
+                    dbo.fxSIFPrmProcesoAnt(@Proceso),
+                    @Proceso
+                );
+                """;
+
+            const string sqlSiguiente = """
+                select isnull(
+                    dbo.fxSIFPrmProcesoSig(@Proceso),
+                    @Proceso
+                );
+                """;
+
+            string sql = tipo switch
+            {
+                TipoFechaProceso.Anterior => sqlAnterior,
+                TipoFechaProceso.Siguiente => sqlSiguiente,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(tipo),
+                    tipo,
+                    "El tipo de fecha de proceso no es v&aacute;lido."),
+            };
+
+            return connection.ExecuteScalar<decimal>(
+                sql,
+                new { Proceso = proceso },
+                transaction,
+                TiempoEsperaSegundos);
+        }
+
+        private static DateTime FechaServidor(
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            const string sql = "select getdate();";
+
+            return connection.ExecuteScalar<DateTime>(
+                sql,
+                transaction: transaction,
+                commandTimeout: TiempoEsperaSegundos);
+        }
+
+        private static decimal FxFondoSolidario(
+            decimal monto,
+            decimal montoBase)
+        {
+            return monto / 1000000m * montoBase;
+        }
+
+        private static void Db_FBEN_ExcluirExSocios(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            string codigo)
+        {
+            const string sql = """
                 update reg_creditos
-                set estado = 'C', saldo = 0, cuota = 0
+                set estado = 'C',
+                    saldo = 0,
+                    cuota = 0
                 where estado = 'A'
                   and codigo = @Codigo
-                  and cedula in (select cedula from socios where estadoactual <> 'S')";
+                  and cedula in (
+                        select cedula
+                        from socios
+                        where estadoactual <> 'S'
+                  );
+                """;
 
-            conn.Execute(sql, new { Codigo = codigo }, transaction: tx);
+            connection.Execute(
+                sql,
+                new { Codigo = codigo },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
-        private static void Db_FBEN_ActualizarCasosActuales(IDbConnection conn, IDbTransaction tx, string codigo, decimal monto)
+        private static void Db_FBEN_ActualizarCasosActuales(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            string codigo,
+            decimal monto)
         {
-            const string sql = @"
+            const string sql = """
                 update reg_creditos
                 set montoapr = @Monto,
                     cuota = @Monto,
                     saldo = @Monto
                 where estado = 'A'
                   and codigo = @Codigo
-                  and cedula in (select cedula from socios where estadoactual = 'S')";
+                  and cedula in (
+                        select cedula
+                        from socios
+                        where estadoactual = 'S'
+                  );
+                """;
 
-            conn.Execute(sql, new { Codigo = codigo, Monto = monto }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    Monto = monto,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
         private static void Db_FBEN_InsertarCasosNuevos(
-            IDbConnection conn,
-            IDbTransaction tx,
-            FondoSolidarioContext ctx,
+            IDbConnection connection,
+            IDbTransaction transaction,
+            FondoSolidarioContext contexto,
             string codigo,
             decimal monto)
         {
-            const string sql = @"
+            const string sql = """
                 insert into reg_creditos
-                (codigo,id_comite,cedula,montosol,montoapr,monto_girado,
-                 saldo,amortiza,interesc,saldo_mes,cuota,int,interesv,plazo,userrec,userres,
-                 userfor,usertesoreria,tesoreria,fechasol,fechares,fechaforp,fechaforf,
-                 fecha_calculo_int,garantia,primer_cuota,tdocumento,ndocumento,pagare,
-                 firma_deudor,premio,observacion,estado,prideduc,fecult,estadosol,documento_referido)
+                (
+                    codigo,
+                    id_comite,
+                    cedula,
+                    montosol,
+                    montoapr,
+                    monto_girado,
+                    saldo,
+                    amortiza,
+                    interesc,
+                    saldo_mes,
+                    cuota,
+                    int,
+                    interesv,
+                    plazo,
+                    userrec,
+                    userres,
+                    userfor,
+                    usertesoreria,
+                    tesoreria,
+                    fechasol,
+                    fechares,
+                    fechaforp,
+                    fechaforf,
+                    fecha_calculo_int,
+                    garantia,
+                    primer_cuota,
+                    tdocumento,
+                    ndocumento,
+                    pagare,
+                    firma_deudor,
+                    premio,
+                    observacion,
+                    estado,
+                    prideduc,
+                    fecult,
+                    estadosol,
+                    documento_referido
+                )
                 select
-                 @Codigo,6,cedula,@Monto,@Monto,0,@Monto,0,0,@Monto,@Monto,0,0,999,
-                 @Usuario,@Usuario,@Usuario,@Usuario,
-                 @Fecha,@Fecha,@Fecha,@Fecha,@Fecha,@Fecha,
-                 'N','N','OT','',0,1,0,
-                 'Proceso Automatico Cuota Mantenimiento CR',
-                 'A',@FechaProcesoSiguiente,@FechaProcesoAnterior,'F','AUTOMATICO'
+                    @Codigo,
+                    6,
+                    cedula,
+                    @Monto,
+                    @Monto,
+                    0,
+                    @Monto,
+                    0,
+                    0,
+                    @Monto,
+                    @Monto,
+                    0,
+                    0,
+                    999,
+                    @Usuario,
+                    @Usuario,
+                    @Usuario,
+                    @Usuario,
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    'N',
+                    'N',
+                    'OT',
+                    '',
+                    0,
+                    1,
+                    0,
+                    'Proceso Automatico Cuota Mantenimiento CR',
+                    'A',
+                    @FechaProcesoSiguiente,
+                    @FechaProcesoAnterior,
+                    'F',
+                    'AUTOMATICO'
                 from socios
                 where estadoactual = 'S'
-                  and cedula not in(
-                        select cedula from reg_creditos
-                        where estado = 'A' and codigo = @Codigo
-                  )";
+                  and cedula not in (
+                        select cedula
+                        from reg_creditos
+                        where estado = 'A'
+                          and codigo = @Codigo
+                  );
+                """;
 
-            conn.Execute(sql, new
-            {
-                Codigo = codigo.ToUpperInvariant(),
-                Monto = monto,
-                Usuario = ctx.Usuario.Trim(),
-                Fecha = ctx.FechaServidor,
-               ctx.FechaProcesoSiguiente,
-                ctx.FechaProcesoAnterior
-            }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo.ToUpperInvariant(),
+                    Monto = monto,
+                    Usuario = contexto.Usuario.Trim(),
+                    Fecha = contexto.FechaServidor,
+                    contexto.FechaProcesoSiguiente,
+                    contexto.FechaProcesoAnterior,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
-        private static void Db_FBEN_CancelarSinAporteMas2Meses(IDbConnection conn, IDbTransaction tx, string codigo)
+        private static void Db_FBEN_CancelarSinAporteMas2Meses(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            string codigo)
         {
-            const string sql = @"
+            const string sql = """
                 update reg_creditos
-                set estado = 'C', saldo = 0
+                set estado = 'C',
+                    saldo = 0
                 where estado = 'A'
                   and codigo = @Codigo
                   and cedula in (
                         select A.cedula
                         from ahorro_consolidado A
-                        inner join socios S on A.cedula = S.cedula
+                        inner join socios S
+                            on A.cedula = S.cedula
                         where S.estadoactual = 'S'
-                          and datediff(month, A.fecAporte, dbo.MyGetdate()) > 2
-                  )";
+                          and datediff(
+                                month,
+                                A.fecAporte,
+                                getdate()
+                              ) > 2
+                  );
+                """;
 
-            conn.Execute(sql, new { Codigo = codigo }, transaction: tx);
+            connection.Execute(
+                sql,
+                new { Codigo = codigo },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
-        private static void Db_FNDS_CancelarSinCobertura(IDbConnection conn, IDbTransaction tx, int codInstitucion, string codigo)
+        private static void Db_FNDS_CancelarSinCobertura(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int codInstitucion,
+            string codigo)
         {
-            const string sql = @"
-                update R set Estado = 'C'
+            const string sql = """
+                update R
+                set estado = 'C'
                 from reg_creditos R
-                inner join catalogo C on R.codigo = C.codigo
-                inner join Socios S on R.cedula = S.cedula
+                inner join catalogo C
+                    on R.codigo = C.codigo
+                inner join Socios S
+                    on R.cedula = S.cedula
                 where S.cod_institucion = @CodInstitucion
                   and R.codigo = @Codigo
                   and R.estado = 'A'
-                  and R.cedula not in(
-                        select Reg.Cedula
+                  and R.cedula not in (
+                        select Reg.cedula
                         from reg_creditos Reg
-                        inner join catalogo Cat on Reg.codigo = Cat.codigo
+                        inner join catalogo Cat
+                            on Reg.codigo = Cat.codigo
                         where Cat.retencion = 'N'
                           and Cat.poliza = 'N'
                           and Cat.cobertura = 1
-                          and Reg.garantia not in('H')
+                          and Reg.garantia not in ('H')
                           and Reg.saldo > 0
                           and Reg.estado = 'A'
                           and Reg.proceso <> 'J'
                         group by Reg.cedula
-                  )";
+                  );
+                """;
 
-            conn.Execute(sql, new { CodInstitucion = codInstitucion, Codigo = codigo }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    CodInstitucion = codInstitucion,
+                    Codigo = codigo,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
-        private static void Db_FNDS_InicializarCuotas(IDbConnection conn, IDbTransaction tx, int codInstitucion, string codigo)
+        private static void Db_FNDS_InicializarCuotas(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int codInstitucion,
+            string codigo)
         {
-            const string sql = @"
+            const string sql = """
                 update R
                 set cuota = 0,
                     saldo = 0,
                     montoapr = 0,
                     saldo_mes = 0
                 from reg_creditos R
-                inner join Socios S on R.cedula = S.cedula
+                inner join Socios S
+                    on R.cedula = S.cedula
                 where R.estado = 'A'
                   and R.codigo = @Codigo
-                  and S.cod_institucion = @CodInstitucion";
+                  and S.cod_institucion = @CodInstitucion;
+                """;
 
-            conn.Execute(sql, new { Codigo = codigo, CodInstitucion = codInstitucion }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    CodInstitucion = codInstitucion,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
         private static void Db_FNDS_ActualizarPaso(
-            IDbConnection conn,
-            IDbTransaction tx,
+            IDbConnection connection,
+            IDbTransaction transaction,
             int idSolicitud,
-            decimal vFnd,
+            decimal montoFondo,
             FndsUpdateTipo tipo)
         {
-            var sql = tipo switch
+            const string sqlReemplazar = """
+                update reg_creditos
+                set cuota = @Monto,
+                    saldo = @Monto,
+                    montoapr = @Monto,
+                    saldo_mes = @Monto
+                where id_solicitud = @IdSolicitud;
+                """;
+
+            const string sqlSumarConSaldoMes = """
+                update reg_creditos
+                set cuota = cuota + @Monto,
+                    saldo = saldo + @Monto,
+                    saldo_mes = saldo_mes + @Monto,
+                    montoapr = montoapr + @Monto
+                where id_solicitud = @IdSolicitud;
+                """;
+
+            const string sqlSumarSinSaldoMes = """
+                update reg_creditos
+                set cuota = cuota + @Monto,
+                    saldo = saldo + @Monto,
+                    montoapr = montoapr + @Monto
+                where id_solicitud = @IdSolicitud;
+                """;
+
+            string sql = tipo switch
             {
-                FndsUpdateTipo.Reemplazar => @"
-                    update reg_creditos
-                    set cuota = @Monto,
-                        saldo = @Monto,
-                        montoapr = @Monto,
-                        saldo_mes = @Monto
-                    where id_solicitud = @IdSolicitud",
+                FndsUpdateTipo.Reemplazar =>
+                    sqlReemplazar,
 
-                FndsUpdateTipo.SumarConSaldoMes => @"
-                    update reg_creditos
-                    set cuota = cuota + @Monto,
-                        saldo = saldo + @Monto,
-                        saldo_mes = saldo_mes + @Monto,
-                        montoapr = montoapr + @Monto
-                    where id_solicitud = @IdSolicitud",
+                FndsUpdateTipo.SumarConSaldoMes =>
+                    sqlSumarConSaldoMes,
 
-                _ => @"
-                    update reg_creditos
-                    set cuota = cuota + @Monto,
-                        saldo = saldo + @Monto,
-                        montoapr = montoapr + @Monto
-                    where id_solicitud = @IdSolicitud"
+                FndsUpdateTipo.SumarSinSaldoMes =>
+                    sqlSumarSinSaldoMes,
+
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(tipo),
+                    tipo,
+                    "El tipo de actualizaci&oacute;n no es v&aacute;lido."),
             };
 
-            conn.Execute(sql, new { Monto = vFnd, IdSolicitud = idSolicitud }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    Monto = montoFondo,
+                    IdSolicitud = idSolicitud,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
-        private static (int IdSolicitud, decimal Cuota)? Db_FNDS_ObtenerActivo(IDbConnection conn, IDbTransaction tx, string codigo, string cedula)
+        private static (int IdSolicitud, decimal Cuota)?
+            Db_FNDS_ObtenerActivo(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                string codigo,
+                string cedula)
         {
-            const string sql = @"
-                select top 1 id_solicitud as IdSolicitud, cuota as Cuota
+            const string sql = """
+                select top 1
+                    id_solicitud as IdSolicitud,
+                    cuota as Cuota
                 from reg_creditos
                 where codigo = @Codigo
                   and cedula = @Cedula
-                  and estado = 'A'";
+                  and estado = 'A';
+                """;
 
-            var result = conn.QueryFirstOrDefault<(int IdSolicitud, decimal Cuota)>(
-                sql,
-                new { Codigo = codigo, Cedula = cedula },
-                transaction: tx);
+            var resultado = connection
+                .QueryFirstOrDefault<(int IdSolicitud, decimal Cuota)>(
+                    sql,
+                    new
+                    {
+                        Codigo = codigo,
+                        Cedula = cedula,
+                    },
+                    transaction,
+                    TiempoEsperaSegundos);
 
-            return result.IdSolicitud <= 0 ? null : result;
+            return resultado.IdSolicitud <= 0
+                ? null
+                : resultado;
         }
 
-        private static void Db_FNDS_CancelarPorCongelamiento(IDbConnection conn, IDbTransaction tx, int codInstitucion, string codigo)
+        private static void Db_FNDS_CancelarPorCongelamiento(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            int codInstitucion,
+            string codigo)
         {
-            const string sql = @"
-                update R set estado = 'C'
+            const string sql = """
+                update R
+                set estado = 'C'
                 from reg_creditos R
-                inner join Socios S on R.cedula = S.cedula
+                inner join Socios S
+                    on R.cedula = S.cedula
                 where R.estado = 'A'
                   and R.codigo = @Codigo
                   and S.cod_institucion = @CodInstitucion
@@ -450,119 +911,251 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         select cedula
                         from afi_congelar
                         where estado = 'A'
-                          and fecha_finaliza >= dbo.MyGetdate()
+                          and fecha_finaliza >= getdate()
                           and per_cobro_fndSol = 0
-                  )";
+                  );
+                """;
 
-            conn.Execute(sql, new { Codigo = codigo, CodInstitucion = codInstitucion }, transaction: tx);
+            connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    CodInstitucion = codInstitucion,
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
         private static void Db_FNDS_InsertarPaso(
-            IDbConnection conn,
-            IDbTransaction tx,
-            FondoSolidarioContext ctx,
+            IDbConnection connection,
+            IDbTransaction transaction,
+            FondoSolidarioContext contexto,
             string codigo,
             string cedula,
-            decimal vFnd,
+            decimal montoFondo,
             string garantia)
         {
-            const string sql = @"
+            const string sql = """
                 insert reg_creditos
-                (id_comite,codigo,cedula,montosol,montoapr,plazo,int,interesv,
-                 saldo,interesc,amortiza,cuota,prideduc,fecult,estadosol,estado,
-                 fechasol,fechares,fechaforp,fechaforf,observacion,garantia,
-                 tdocumento,ndocumento,tesoreria,userrec,userfor,userres)
+                (
+                    id_comite,
+                    codigo,
+                    cedula,
+                    montosol,
+                    montoapr,
+                    plazo,
+                    int,
+                    interesv,
+                    saldo,
+                    interesc,
+                    amortiza,
+                    cuota,
+                    prideduc,
+                    fecult,
+                    estadosol,
+                    estado,
+                    fechasol,
+                    fechares,
+                    fechaforp,
+                    fechaforf,
+                    observacion,
+                    garantia,
+                    tdocumento,
+                    ndocumento,
+                    tesoreria,
+                    userrec,
+                    userfor,
+                    userres
+                )
                 values
-                (1,@Codigo,@Cedula,@Monto,@Monto,999,0,0,
-                 @Monto,0,0,@Monto,@FechaProX,@GlngFechaCR,'F','A',
-                 @Fecha,@Fecha,@Fecha,@Fecha,
-                 @Obs,@Garantia,'OT','',@Fecha,
-                 @Usuario,@Usuario,@Usuario)";
+                (
+                    1,
+                    @Codigo,
+                    @Cedula,
+                    @Monto,
+                    @Monto,
+                    999,
+                    0,
+                    0,
+                    @Monto,
+                    0,
+                    0,
+                    @Monto,
+                    @FechaProX,
+                    @GlngFechaCR,
+                    'F',
+                    'A',
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    @Fecha,
+                    @Observacion,
+                    @Garantia,
+                    'OT',
+                    '',
+                    @Fecha,
+                    @Usuario,
+                    @Usuario,
+                    @Usuario
+                );
+                """;
 
-            conn.Execute(sql, new
-            {
-                Codigo = codigo,
-                Cedula = cedula.Trim(),
-                Monto = vFnd,
-                FechaProX = ctx.FechaProcesoSiguiente,
-                ctx.GlngFechaCR,
-                Fecha = ctx.FechaServidor,
-                Obs = $"FONDO SOLIDARIO CREADO EL {ctx.FechaServidor:yyyy-MM-dd HH:mm:ss}",
-                Garantia = garantia,
-                Usuario = ctx.Usuario.Trim()
-            }, transaction: tx);
+            string fechaDescripcion =
+                contexto.FechaServidor?.ToString(
+                    "yyyy-MM-dd HH:mm:ss") ??
+                string.Empty;
+
+            connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    Cedula = cedula.Trim(),
+                    Monto = montoFondo,
+                    FechaProX = contexto.FechaProcesoSiguiente,
+                    contexto.GlngFechaCR,
+                    Fecha = contexto.FechaServidor,
+                    Observacion =
+                        $"FONDO SOLIDARIO CREADO EL {fechaDescripcion}",
+                    Garantia = garantia,
+                    Usuario = contexto.Usuario.Trim(),
+                },
+                transaction,
+                TiempoEsperaSegundos);
         }
 
         private static void ProcesarPasoFnds(
             IDbConnection connection,
-            IDbTransaction tx,
-            FondoSolidarioContext ctx,
+            IDbTransaction transaction,
+            FondoSolidarioContext contexto,
             string codigo,
-            FndsPasoConfig config)
+            FndsPasoConfig configuracion)
         {
-            foreach (var (cedula, monto) in config.Rows)
+            if (configuracion.Actualizar is null)
             {
-                var vFnd = FxFondoSolidario(monto, config.MontoBase);
-                var activo = Db_FNDS_ObtenerActivo(connection, tx, codigo, cedula);
+                throw new InvalidOperationException(
+                    "No se configur&oacute; la operaci&oacute;n de actualizaci&oacute;n del Fondo Solidario.");
+            }
 
-                if (activo is null)
+            foreach (
+                (string cedula, decimal monto) in
+                configuracion.Rows)
+            {
+                decimal montoFondo = FxFondoSolidario(
+                    monto,
+                    configuracion.MontoBase);
+
+                var fondoActivo = Db_FNDS_ObtenerActivo(
+                    connection,
+                    transaction,
+                    codigo,
+                    cedula);
+
+                if (fondoActivo is null)
                 {
-                    Db_FNDS_InsertarPaso(connection, tx, ctx, codigo, cedula, vFnd, config.Garantia);
+                    Db_FNDS_InsertarPaso(
+                        connection,
+                        transaction,
+                        contexto,
+                        codigo,
+                        cedula,
+                        montoFondo,
+                        configuracion.Garantia);
+
+                    continue;
                 }
-                else if (Math.Abs(vFnd - activo.Value.Cuota) > 1m)
+
+                if (
+                    Math.Abs(
+                        montoFondo -
+                        fondoActivo.Value.Cuota
+                    ) <= 1m)
                 {
-                    config.Actualizar?.Invoke(connection, tx, activo.Value.IdSolicitud, vFnd);
+                    continue;
                 }
+
+                configuracion.Actualizar(
+                    connection,
+                    transaction,
+                    fondoActivo.Value.IdSolicitud,
+                    montoFondo);
             }
         }
 
-        private ErrorDto EjecutarEnTransaccion(int codEmpresa, Func<IDbConnection, IDbTransaction, ErrorDto> action)
+        private ErrorDto EjecutarEnTransaccion(
+            int codEmpresa,
+            Func<
+                IDbConnection,
+                IDbTransaction,
+                ErrorDto
+            > accion)
         {
-            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
-            connection.Open();
-
-            using var tx = connection.BeginTransaction();
             try
             {
-                var result = action(connection, tx);
+                using var connection = DbHelper.OpenConnection(
+                    _portalDb,
+                    codEmpresa);
 
-                if ((result.Code ?? 0) != 0)
+                connection.Open();
+
+                using var transaction =
+                    connection.BeginTransaction();
+
+                try
                 {
-                    tx.Rollback();
-                    return result;
-                }
+                    ErrorDto resultado = accion(
+                        connection,
+                        transaction);
 
-                tx.Commit();
-                return result;
+                    if ((resultado.Code ?? 0) != 0)
+                    {
+                        transaction.Rollback();
+                        return resultado;
+                    }
+
+                    transaction.Commit();
+                    return resultado;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                tx.Rollback();
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(ex.Message, -1);
             }
         }
 
-        private static IEnumerable<(string Cedula, decimal Monto)> Db_FNDS_Paso_Listar(
-            IDbConnection conn,
-            IDbTransaction tx,
-            int codInstitucion,
-            FndsPasoTipo tipo)
+        private static IEnumerable<(string Cedula, decimal Monto)>
+            Db_FNDS_Paso_Listar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                int codInstitucion,
+                FndsPasoTipo tipo)
         {
-            var sql = tipo switch
+            string sql = tipo switch
             {
                 FndsPasoTipo.Paso1 => SqlFndsPaso1,
                 FndsPasoTipo.Paso2 => SqlFndsPaso2,
-                _ => SqlFndsPaso3
+                FndsPasoTipo.Paso3 => SqlFndsPaso3,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(tipo),
+                    tipo,
+                    "El paso del Fondo Solidario no es v&aacute;lido."),
             };
 
-            return conn.Query<(string Cedula, decimal Monto)>(
+            return connection.Query<(string Cedula, decimal Monto)>(
                 sql,
                 new
                 {
                     CodInstitucion = codInstitucion,
-                    FechaCorte = FechaCorteFnds
+                    FechaCorte = FechaCorteFnds,
                 },
-                transaction: tx);
+                transaction: transaction,
+                commandTimeout: TiempoEsperaSegundos);
         }
     }
 }
