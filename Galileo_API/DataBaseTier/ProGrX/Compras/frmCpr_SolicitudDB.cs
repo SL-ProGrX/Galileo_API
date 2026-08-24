@@ -811,18 +811,18 @@ WHERE P.CPR_ID = @Id;";
                     var map = conn.Query<(string COD_PRODUCTO, string COD_UNIDAD)>(qUnidades, new { Productos = productos })
                                   .ToDictionary(x => x.COD_PRODUCTO, x => x.COD_UNIDAD);
 
-                    foreach (var entry in lista.cotizaciones
-                        .Select(it => new { Item = it, CodProducto = it.cod_producto })
-                        .Where(x => !string.IsNullOrWhiteSpace(x.CodProducto))
-                        .Select(x =>
-                        {
-                            var codProducto = x.CodProducto!;
-                            bool found = map.TryGetValue(codProducto, out string? unidad);
-                            return new { x.Item, Found = found, Unidad = unidad };
-                        })
-                        .Where(x => x.Found))
+                    foreach (var item in lista.cotizaciones)
                     {
-                        entry.Item.unidad = entry.Unidad;
+                        var codProducto = item.cod_producto;
+                        if (string.IsNullOrWhiteSpace(codProducto))
+                        {
+                            continue;
+                        }
+
+                        if (map.TryGetValue(codProducto, out string? unidad))
+                        {
+                            item.unidad = unidad;
+                        }
                     }
                 }
 
@@ -946,7 +946,7 @@ WHERE R.CORE_USUARIO = @Usuario
                 return DbHelper.CreateErrorResponse<ArticuloDataLista>("Debe indicar la unidad solicitante para consultar artículos del plan de compras");
 
             var filtroBusqueda = (filtro ?? string.Empty).Trim();
-            var usaPaginacion = pagina.HasValue && paginacion.HasValue && pagina.Value >= 0 && paginacion.Value > 0;
+            var paging = GetPaging(pagina, paginacion);
 
             var r = DbHelper.WithConn<ArticuloDataLista>(_portalDb, codEmpresa, conn =>
             {
@@ -955,8 +955,8 @@ WHERE R.CORE_USUARIO = @Usuario
                 var p = new DynamicParameters();
                 p.Add("CodUnidad", codUnidad);
                 p.Add("Filtro", filtroBusqueda);
-                p.Add("Offset", usaPaginacion ? pagina!.Value : 0);
-                p.Add("Fetch", usaPaginacion ? paginacion!.Value : int.MaxValue);
+                p.Add("Offset", paging.Offset);
+                p.Add("Fetch", paging.Fetch);
 
                 const string qCount = @"
                             SELECT COUNT(*) FROM (
@@ -1020,7 +1020,7 @@ WHERE R.CORE_USUARIO = @Usuario
         public ErrorDto<ArticuloDataLista> CprSolicitud_ArticulosGenerales_Obtener(int codEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             var filtroBusqueda = (filtro ?? string.Empty).Trim();
-            var usaPaginacion = pagina.HasValue && paginacion.HasValue && pagina.Value >= 0 && paginacion.Value > 0;
+            var paging = GetPaging(pagina, paginacion);
 
             var r = DbHelper.WithConn<ArticuloDataLista>(_portalDb, codEmpresa, conn =>
             {
@@ -1028,8 +1028,8 @@ WHERE R.CORE_USUARIO = @Usuario
 
                 var p = new DynamicParameters();
                 p.Add("Filtro", filtroBusqueda);
-                p.Add("Offset", usaPaginacion ? pagina!.Value : 0);
-                p.Add("Fetch", usaPaginacion ? paginacion!.Value : int.MaxValue);
+                p.Add("Offset", paging.Offset);
+                p.Add("Fetch", paging.Fetch);
 
                 const string qCount = @"
                             SELECT COUNT(*)
