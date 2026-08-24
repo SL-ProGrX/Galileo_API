@@ -32,7 +32,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     pFechaCorte = fechaCorteStr
                 },
-                commandTimeout: 120 // en segundos
+                commandTimeout: 0 // en segundos
                 ).ToList();
 
                 return DbHelper.CreateOkResponse<List<TesMonitoreoDto>>(result);
