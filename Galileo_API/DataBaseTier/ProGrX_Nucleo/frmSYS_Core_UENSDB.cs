@@ -445,7 +445,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad, int contabilidad)
         {
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
@@ -457,7 +457,7 @@ namespace Galileo.DataBaseTier
                                 FROM CORE_UENS C
                                 LEFT JOIN CNTX_UNIDADES U
                                     ON U.COD_UNIDAD = C.CNTX_UNIDAD
-                                WHERE C.UNIDAD_PRINCIPAL = @cod_unidad
+                                WHERE C.UNIDAD_PRINCIPAL = @cod_unidad AND U.COD_CONTABILIDAD = @contabilidad
 
                                 UNION
 
@@ -470,12 +470,12 @@ namespace Galileo.DataBaseTier
                                 LEFT JOIN CNTX_UNIDADES U
                                     ON U.COD_UNIDAD = C.CNTX_UNIDAD
                                 WHERE C.COD_UNIDAD = @cod_unidad
-
+                                 AND U.COD_CONTABILIDAD = @contabilidad
                                 ORDER BY CNTX_UNIDAD DESC";
 
                 var dto = EmptyUensList();
                 dto.Total = 0;
-                dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad }).ToList();
+                dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad, contabilidad }).ToList();
 
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_unidad))
                     return null;

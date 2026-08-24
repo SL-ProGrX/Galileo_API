@@ -125,7 +125,10 @@ namespace Galileo.DataBaseTier
 
             var code = rowsResp.Code is int c ? c : -1;
             if (code != 0)
-                return DbHelper.CreateErrorResponse<CprValoraEsquemaDtoList>(rowsResp.Description ?? ErrorMessage, code, default);
+                return DbHelper.CreateErrorResponse<CprValoraEsquemaDtoList>(
+                    rowsResp.Description ?? ErrorMessage,
+                    code,
+                    new CprValoraEsquemaDtoList { Total = 0, esquemas = new List<CprValoraEsquemaDto>() });
 
             var rows = rowsResp.Result ?? new List<EsquemaRow>();
             var total = rows.Count == 0 ? 0 : rows[0].Total;
@@ -188,7 +191,10 @@ namespace Galileo.DataBaseTier
 
             var code = rowsResp.Code is int c ? c : -1;
             if (code != 0)
-                return DbHelper.CreateErrorResponse<CprValoraItemsDtoList>(rowsResp.Description ?? ErrorMessage, code, default);
+                return DbHelper.CreateErrorResponse<CprValoraItemsDtoList>(
+                    rowsResp.Description ?? ErrorMessage,
+                    code,
+                    new CprValoraItemsDtoList { Total = 0, items = new List<CprValoraItemsDto>() });
 
             var rows = rowsResp.Result ?? new List<ItemRow>();
             var total = rows.Count == 0 ? 0 : rows[0].Total;

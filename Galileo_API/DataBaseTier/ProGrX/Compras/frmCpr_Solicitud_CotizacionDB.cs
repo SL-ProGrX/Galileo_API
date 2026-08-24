@@ -137,11 +137,12 @@ namespace Galileo.DataBaseTier
 
             var cprId = solicitud.cpr_id ?? cotizacion.cpr_id.Value;
             var proveedorCodigo = cotizacion.proveedor_codigo.Value;
-            var noCotizacion = cotizacion.cotiza_numero;
+            var noCotizacion = cotizacion.cotiza_numero ?? string.Empty;
+            var codProducto = cotizacion.codigo;
 
             MarcarCotizaVigente(conn, tx, cprId, proveedorCodigo, idCotizacion);
             EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
-            InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion);
+            InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion, codProducto);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);
         }
 
@@ -173,56 +174,48 @@ namespace Galileo.DataBaseTier
     int cprId,
     int proveedorCodigo,
     string noCotizacion,
-    int idCotizacion)
+    int idCotizacion,
+            string codProducto)
         {
             conn.Execute(
                 @"INSERT INTO CPR_SOLICITUD_PROV_BS
           (
-              ID_COTIZACION_LINEA,
-              CPR_ID,
-              COD_PRODUCTO,
-              PROVEEDOR_CODIGO,
-              CODIGO,
-              MONTO,
-              CANTIDAD,
-              TOTAL,
-              IVA_PORC,
-              IVA_MONTO,
-              DESC_PORC,
-              DESC_MONTO,
-              REGISTRO_FECHA,
-              REGISTRO_USUARIO,
-              ESTADO,
-              NO_COTIZACION
+              CPR_ID, 
+                                                        COD_PRODUCTO, 
+                                                        PROVEEDOR_CODIGO, 
+                                                        CODIGO, 
+                                                        MONTO, 
+                                                        CANTIDAD, 
+                                                        TOTAL ,  
+                                                        IVA_PORC,
+                                                        IVA_MONTO , 
+                                                        DESC_PORC, 
+                                                        DESC_MONTO, 
+                                                        registro_fecha, 
+                                                        registro_usuario, 
+                                                        ESTADO, 
+                                                        NO_COTIZACION
           )
-          SELECT
-              spcl.ID_COTIZACION_LINEA,
-              @CprId,
-              spcl.COD_PRODUCTO,
-              @Proveedor,
-              spcl.CODIGO,
-              spcl.MONTO,
-              spcl.CANTIDAD,
-              spcl.TOTAL,
-              spcl.IVA_PORC,
-              spcl.IVA_MONTO,
-              spcl.DESC_PORC,
-              spcl.DESC_MONTO,
-              GETDATE(),
-              cspc.REGISTRO_USUARIO,
-              'V',
-              @NoCotizacion
-          FROM CPR_SOLICITUD_PROV_COTIZA_LINEAS spcl
-          INNER JOIN CPR_SOLICITUD_PROV_COTIZA cspc
-              ON cspc.ID_COTIZACION = spcl.ID_COTIZACION
-          WHERE spcl.ID_COTIZACION = @IdCotizacion
-            AND ISNULL(spcl.SELECCIONADO, 0) = 1;",
+        SELECT 
+              csb.CPR_ID, 
+              csb.COD_PRODUCTO 
+              ,@Proveedor AS COD_PROVEEDOR 
+              ,@codProducto AS CODIGO 
+               , spcl.MONTO, spcl.CANTIDAD, spcl.TOTAL,
+                spcl.IVA_PORC AS IVA_PORC, spcl.IVA_MONTO AS IVA_MONTO,spcl.DESC_PORC as DESC_PORC, spcl.DESC_MONTO AS DESC_MONTO, getdate() as registro_fecha, 
+                csb.registro_usuario , 'V' as ESTADO, @NoCotizacion AS NO_COTIZACION 
+                 FROM CPR_SOLICITUD_BS csb 
+                 left join CPR_SOLICITUD_PROV_COTIZA cspc ON csb.CPR_ID = cspc.CPR_ID
+                AND cspc.PROVEEDOR_CODIGO = @Proveedor
+                left join CPR_SOLICITUD_PROV_COTIZA_LINEAS spcl ON spcl.ID_COTIZACION = cspc.ID_COTIZACION
+               WHERE csb.CPR_ID = @CprId",
                 new
                 {
                     CprId = cprId,
                     Proveedor = proveedorCodigo,
                     NoCotizacion = noCotizacion,
-                    IdCotizacion = idCotizacion
+                    IdCotizacion = idCotizacion,
+                    codProducto = codProducto
                 },
                 transaction: tx
             );

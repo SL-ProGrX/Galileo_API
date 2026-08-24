@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Comites;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -11,10 +12,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
     public class FrmAfCdAprobacionesDb
     {
         private readonly PortalDB _portalDb;
+        private readonly MProGrxMain _grxMain;
 
         public FrmAfCdAprobacionesDb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _grxMain = new MProGrxMain(config);
         }
         /// <summary>
         /// En lista las aprobaciones pendientes
@@ -116,6 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<bool> Aprobar(AfcdAprobacionRequest req)
         {
+            req.oficina = _grxMain.sbSifParametrosInicializa(req.codEmpresa, req.usuario).Result.GOficinaTitular ?? req.oficina;
             return DbHelper.WithConn(_portalDb, req.codEmpresa, conn =>
             {
                 foreach (var op in req.operaciones)
@@ -124,9 +128,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                         "spAFI_CD_AsientoCuentas",
                         new
                         {
-                            nOperacion = op,
-                            Usuario = req.usuario,
-                            Oficina = req.oficina
+                            Operacion = op,
+                            Usuario = req.usuario.ToUpper(),
+                            Oficina = req.oficina,
+                            Nota = req.nota?.Trim() ?? string.Empty
                         },
                         commandType: CommandType.StoredProcedure
                     );

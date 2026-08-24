@@ -42,12 +42,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
                         "spAFI_CD_Cuenta_List",
                         new
                         {
-                            Comite = string.IsNullOrEmpty(filtro.comite) ? "" : filtro.comite,
-                            Emite = string.IsNullOrEmpty(filtro.tipo) ? "" : filtro.tipo,
+                            Comite = NormalizarValorFiltro(filtro.comite),
+                            Emite = NormalizarValorFiltro(filtro.tipo),
                             FInicio = fechaInicio,
                             FCorte = fechaFin,
-                            Proceso = string.IsNullOrEmpty(filtro.proceso) ? "" : filtro.proceso,
-                            Estado = string.IsNullOrEmpty(filtro.estado) ? "" : filtro.estado,
+                            Proceso = NormalizarValorFiltro(filtro.proceso),
+                            Estado = NormalizarValorFiltro(filtro.estado),
                             TesoreriaId = filtro.tesoreria_id
                         },
                         commandType: CommandType.StoredProcedure
@@ -56,7 +56,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
                     return data;
                 });
             }
-                
+
+        private static string NormalizarValorFiltro(string? valor)
+        {
+            var filtro = valor?.Trim() ?? string.Empty;
+            return filtro.Equals("TODOS", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : filtro;
+        }
+
         /// <summary>
         /// En lista los tipos
         /// </summary>

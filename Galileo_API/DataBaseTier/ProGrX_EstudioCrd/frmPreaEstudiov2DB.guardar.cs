@@ -375,9 +375,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             if (request.ind_salario_constancia) indTipoSalarioExt = 1;
             if (request.ind_salario_orden_patronal) indTipoSalarioExt = 2;
             parameters.Add("@IND_TIPO_SALARIO_EXT", indTipoSalarioExt, DbType.Int32);
-            // PTS_EXTRA_FAP (#65) = txtFrapPorc.Text, control en vivo sin control equivalente en
-            // Angular hoy; el SP lo declara con default NULL, así que se omite en vez de adivinar.
-            parameters.Add("@PTS_EXTRA_FAP", (int?)null, DbType.Int32);
+            // PTS_EXTRA_FAP (#65) = txtFrapPorc.Text en VB6.
+            var ptsExtraFrap = NormalizarFrapPorc(request.pts_extra_frap ?? 0m);
+            parameters.Add("@PTS_EXTRA_FAP", ptsExtraFrap, DbType.Decimal);
             // MONTO_MEJORA_CUOTA (#99) = txtCuotaDiferencia.Text, control en vivo sin equivalente
             // en Angular hoy; el SP lo exige sin default, así que se documenta en 0 (igual patrón
             // ya usado para monto_poliza_prenda). MEJORA_CUOTA (#102) se deriva EXACTO de ese mismo
@@ -395,8 +395,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@SALARIO_USURA", request.salario_minimo_inembargable, DbType.Decimal);
 
             // ---- Fase 6: últimos 5 params, motor de cargas sociales (sbCalcula_Cargas) ----
-            var (aplicaCargaAsociacion, aplicaCargaFrap) = ObtenerAplicaCargas(connection, request.cod_preanalisis?.Trim() ?? string.Empty);
-            var cargas = CalcularCargas(connection, request.salario_mensual, aplicaCargaAsociacion, aplicaCargaFrap);
+            var (aplicaCargaAsociacionActual, aplicaCargaFrapActual) = ObtenerAplicaCargas(connection, request.cod_preanalisis?.Trim() ?? string.Empty);
+            var aplicaCargaAsociacion = request.aplica_carga_asociacion ?? aplicaCargaAsociacionActual;
+            var aplicaCargaFrap = request.aplica_carga_frap ?? aplicaCargaFrapActual;
+            var cargas = CalcularCargas(connection, request.salario_mensual, aplicaCargaAsociacion, aplicaCargaFrap, ptsExtraFrap);
             parameters.Add("@TOTAL_CARGA_CCSS", cargas.TotalCargaCcss, DbType.Decimal);
             parameters.Add("@CARGA_CCSS", cargas.CargaCcss, DbType.Decimal);
             parameters.Add("@CARGA_ASOCIACION", cargas.CargaAsociacion, DbType.Decimal);

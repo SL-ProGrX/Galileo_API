@@ -48,9 +48,9 @@ namespace Galileo.BusinessLogic
             return _db.Core_UENSPrincipales_Obtener(CodCliente, filtros);
         }
 
-        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad, int contabilidad)
         {
-            return _db.Core_SubUnidades_Obtener(CodCliente, cod_unidad);
+            return _db.Core_SubUnidades_Obtener(CodCliente, cod_unidad, contabilidad);
         }
 
         public ErrorDto<CoreUeNsDtoList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
