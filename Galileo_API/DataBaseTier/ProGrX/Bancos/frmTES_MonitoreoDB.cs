@@ -8,12 +8,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesMonitoreoDB
     {
         private readonly PortalDB _portalDB;
-        private readonly MCntLinkDB mCntLink;
 
         public FrmTesMonitoreoDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            mCntLink = new MCntLinkDB(config);
         }
 
         /// <summary>
@@ -77,87 +75,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 return DbHelper.CreateErrorResponse<List<TesMonitoreoDto>>(ex.Message);
             }
-
-
-            //using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            //try
-            //{
-               
-
-
-                //var Lista = TES_Monitoreo_Obtener(CodEmpresa, fechaCorte).Result;
-                //var result = new List<TesMonitoreoDto>();
-                //foreach (var item in Lista)
-                //{
-                //    var fechaInicio = item.inicio.AddDays(-1).Date;
-                //    string ctaConta = mCntLink.fxgCntCuentaFormato(CodEmpresa, false, item.cuentaBanco, 0);
-
-                //    //Emisiones de Documentos
-                //    var queryE = @"select D.debehaber as Movimiento,sum(D.monto / D.Tipo_Cambio) as Total
-                //        from Tes_Transacciones C inner join Tes_Trans_Asiento D on C.nsolicitud = D.nsolicitud
-                //        where C.fecha_emision between @inicio 
-                //        and @corte and C.estado in('I','T','A') 
-                //        and D.cuenta_contable = @ctaconta 
-                //        and D.Tipo_Cambio <> 0
-                //        group by D.debehaber";
-                //    var emisionesDoc = conn.Query<TesMonitoreoDocumentosDto>(queryE,
-                //        new
-                //        {
-                //            inicio = fechaInicio,
-                //            corte = fechaCorte,
-                //            ctaconta = ctaConta
-                //        }).ToList();
-                //    foreach (var rs in emisionesDoc)
-                //    {
-                //        if (rs.movimiento == "D")
-                //        {
-                //            item.totalCreditos = rs.total;
-                //        }
-                //        else
-                //        {
-                //            item.totalDebitos = rs.total;
-                //        }
-                //    }
-
-                //    //Anulaciones de Documentos
-                //    var queryA = @"select D.debehaber as Movimiento,sum(D.monto/ D.Tipo_Cambio) as Total
-                //        from Tes_Transacciones C inner join Tes_Trans_Asiento D on C.nsolicitud = D.nsolicitud
-                //        where C.fecha_anula between @inicio 
-                //        and @corte and C.estado in('A') 
-                //        and D.cuenta_contable = @ctaconta 
-                //        and D.Tipo_Cambio <> 0
-                //        group by D.debehaber";
-                //    var anulacionesDoc = conn.Query<TesMonitoreoDocumentosDto>(queryA,
-                //        new
-                //        {
-                //            inicio = fechaInicio,
-                //            corte = fechaCorte,
-                //            ctaconta = ctaConta
-                //        }).ToList();
-
-                //    foreach (var rs in anulacionesDoc)
-                //    {
-                //        if (rs.movimiento == "D")
-                //        {
-                //            item.totalDebitos += rs.total;
-                //        }
-                //        else
-                //        {
-                //            item.totalCreditos += rs.total;
-                //        }
-                //    }
-                //    item.saldoFinal = item.saldoInicial - item.totalDebitos + item.totalCreditos;
-
-                //    result.Add(item);
-                //}
-            
-                //return DbHelper.CreateOkResponse<List<TesMonitoreoDto>>(result);
-            
-            //}
-            //catch (Exception ex)
-            //{
-            //    return DbHelper.CreateErrorResponse<List<TesMonitoreoDto>>(ex.Message);
-            //}
         }
     }
 }

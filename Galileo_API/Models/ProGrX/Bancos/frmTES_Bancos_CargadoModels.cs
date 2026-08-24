@@ -65,9 +65,9 @@
 
     public class RegistroBancoDto
     {
-        public int Linea_Id { get; set; }
+        public int Linea_Id { get; set; } = 0;
         public string Usuario { get; set; } = string.Empty;
-        public int Auto_Id { get; set; }
+        public int Auto_Id { get; set; } = 0;
         public string Concepto { get; set; } = string.Empty;
         public string Unidad { get; set; } = string.Empty;
         public string Centro { get; set; } = string.Empty;

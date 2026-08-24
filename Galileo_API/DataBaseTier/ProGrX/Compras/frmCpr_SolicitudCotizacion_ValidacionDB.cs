@@ -105,21 +105,6 @@ namespace Galileo.DataBaseTier
                             transaction: tx
                         );
 
-                        //conn.Execute(
-                        //    @"DELETE B
-                        //      FROM CPR_SOLICITUD_PROV_BS B
-                        //      INNER JOIN CPR_SOLICITUD_PROV_COTIZA_LINEAS L
-                        //              ON L.ID_COTIZACION_LINEA = @IdLinea
-                        //      INNER JOIN CPR_SOLICITUD_PROV_COTIZA C
-                        //              ON C.ID_COTIZACION = L.ID_COTIZACION
-                        //      WHERE B.CPR_ID = C.CPR_ID
-                        //        AND B.PROVEEDOR_CODIGO = C.PROVEEDOR_CODIGO
-                        //        AND ISNULL(B.COD_PRODUCTO, '') = ISNULL(L.COD_PRODUCTO, '')
-                        //        AND ISNULL(B.CODIGO, '') = ISNULL(L.CODIGO, '')
-                        //        AND ISNULL(B.NO_COTIZACION, '') = ISNULL(C.NO_COTIZACION, ISNULL(C.COTIZA_NUMERO, ''))",
-                        //    new { IdLinea = id_cotizacion_linea },
-                        //    transaction: tx
-                        //);
                     }
 
                     if (affected == 0)

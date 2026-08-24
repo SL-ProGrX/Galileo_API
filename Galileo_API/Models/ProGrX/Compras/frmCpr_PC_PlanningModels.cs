@@ -120,7 +120,7 @@ namespace Galileo.Models.CPR
 
     public class CprSeleccionDto
     {
-        public int cprId { get; set; }
+        public int cprId { get; set; } = 0;
         public string nodoTipo { get; set; } = string.Empty;
         public int? peId { get; set; }
         public int? perspectivaId { get; set; }
