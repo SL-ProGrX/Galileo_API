@@ -390,13 +390,13 @@ namespace Galileo.DataBaseTier
             return r.Result;
         }
         
-        private static string? ValidarOrdenBasica(OrdenDatosAcciones ordenes)
+        private static string ValidarOrdenBasica(OrdenDatosAcciones ordenes)
         {
             if (ordenes == null) return "Orden inválida";
             if (string.IsNullOrWhiteSpace(ordenes.usuario)) return "Debe indicar usuario";
             if (string.IsNullOrWhiteSpace(ordenes.tipo_orden)) return "Debe indicar tipo de orden";
             if (ordenes.lineas == null || ordenes.lineas.Count == 0) return "No hay productos en la orden";
-            return null;
+            return string.Empty;
         }
 
         private static string ValidarProductosActivos(IDbConnection conn, List<OrdenLineas> lineas)
