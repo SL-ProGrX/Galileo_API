@@ -46,7 +46,7 @@ namespace Galileo.BusinessLogic
                         new Claim("UserName", resultado.UserName.ToString()),
                     };
 
-                    var secret = _config["Jwt:Secret"];
+                    var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
                     if (string.IsNullOrWhiteSpace(secret))
                     {
                         throw new InvalidOperationException("Jwt:Secret no está configurada.");

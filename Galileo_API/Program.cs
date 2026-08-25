@@ -95,9 +95,20 @@ builder.Services.AddHsts(options =>
 
 // === JWT Auth ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyString = builder.Configuration["Jwt:Secret"]; // user-secrets (dev) o env var Jwt__Secret (prod)
+var keyString = Environment.GetEnvironmentVariable("Jwt__Secret");
 if (string.IsNullOrWhiteSpace(keyString))
-    throw new InvalidOperationException("Jwt:Secret no está configurada. Define la key con 'dotnet user-secrets set \"Jwt:Secret\" \"...\"' en dev, o como variable Jwt__Secret en prod.");
+{
+    // Compatibilidad con User Secrets y con la configuración externa de producción.
+    var configuredSecret = builder.Configuration["Jwt:Secret"];
+    if (!string.IsNullOrWhiteSpace(configuredSecret))
+    {
+        Environment.SetEnvironmentVariable("Jwt__Secret", configuredSecret);
+        keyString = Environment.GetEnvironmentVariable("Jwt__Secret");
+    }
+
+    if (string.IsNullOrWhiteSpace(keyString))
+        throw new InvalidOperationException("Jwt:Secret no está configurada. Define la variable de entorno Jwt__Secret.");
+}
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
 

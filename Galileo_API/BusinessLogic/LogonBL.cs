@@ -96,8 +96,8 @@ namespace Galileo.BusinessLogic
             };
 
             // La misma configuración se usa aquí para firmar y en Program.cs para validar.
-            // Jwt:Secret puede venir de user-secrets, APP_CONFIG_PATH o Jwt__Secret.
-            var secret = _config["Jwt:Secret"];
+            // La clave debe existir únicamente como variable de entorno en el despliegue.
+            var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
             if (string.IsNullOrWhiteSpace(secret))
             {
                 throw new InvalidOperationException("Jwt:Secret no está configurada.");
