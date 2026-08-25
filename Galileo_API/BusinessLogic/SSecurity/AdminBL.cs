@@ -46,14 +46,20 @@ namespace Galileo.BusinessLogic
                         new Claim("UserName", resultado.UserName.ToString()),
                     };
 
-                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
+                    var secret = _config["Jwt:Secret"];
+                    if (string.IsNullOrWhiteSpace(secret))
+                    {
+                        throw new InvalidOperationException("Jwt:Secret no está configurada.");
+                    }
+
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
                     var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
                     var token = new JwtSecurityToken(
                         issuer: jwt.Issuer,
                         audience: jwt.Audience,
                         claims: claims,
-                        expires: DateTime.UtcNow.AddMinutes(60), // Expira en una hora desde el tiempo actual
+                        expires: DateTime.UtcNow.AddMinutes(Math.Max(jwt.AccessTokenMinutes, 1)),
                         signingCredentials: signIn
                     );
 

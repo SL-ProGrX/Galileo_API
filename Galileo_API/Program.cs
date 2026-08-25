@@ -1,4 +1,5 @@
 using System.Text;
+using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Galileo_API;
@@ -55,6 +56,10 @@ const string bearerScheme = "Bearer";
 
 builder.Services.AddSwaggerGen(c =>
 {
+    c.IncludeXmlComments(Path.Combine(
+        AppContext.BaseDirectory,
+        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Galileo API",
@@ -210,8 +215,8 @@ namespace Galileo_API
         public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
         {
             "http://localhost:4200",
-            "http://localhost:4201",
-            "http://localhost:4202",
+            "http://localhost:4300",
+            "http://localhost:4301",
             "http://localhost:61968",
             "http://localhost:61969",
             "https://progrxpruebas.aseccss.com",
