@@ -56,9 +56,11 @@ const string bearerScheme = "Bearer";
 
 builder.Services.AddSwaggerGen(c =>
 {
+    var xmlDocFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var safeXmlDocFileName = Path.GetFileName(xmlDocFileName);
     c.IncludeXmlComments(Path.Combine(
         AppContext.BaseDirectory,
-        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+        safeXmlDocFileName));
 
     c.SwaggerDoc("v1", new OpenApiInfo
     {
