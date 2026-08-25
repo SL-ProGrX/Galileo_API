@@ -58,7 +58,10 @@ builder.Services.AddSwaggerGen(c =>
 {
     var xmlDocFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var safeXmlDocFileName = Path.GetFileName(xmlDocFileName);
-    c.IncludeXmlComments(Path.Combine(
+    if (Path.IsPathRooted(safeXmlDocFileName))
+        throw new InvalidOperationException("XML documentation file name must be relative.");
+
+    c.IncludeXmlComments(Path.Join(
         AppContext.BaseDirectory,
         safeXmlDocFileName));
 
