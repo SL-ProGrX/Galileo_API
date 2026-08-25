@@ -464,25 +464,6 @@ namespace Galileo.Controllers.ProGrX.Credito
 
         #endregion
 
-        #region @
-
-        [Authorize]
-        [HttpGet("Email_SocioPeriodos_Obtener")]
-        public ErrorDto<SocioCierresData> Email_SocioPeriodos_Obtener(int CodEmpresa, string cedula)
-        {
-            return _BL.Email_SocioPeriodos_Obtener(CodEmpresa, cedula);
-        }
-
-
-        [Authorize]
-        [HttpPost("Email_SocioEstadoCuenta_Enviar")]
-        public ErrorDto Email_SocioEstadoCuenta_Enviar(int CodEmpresa, string usuario, string cedula, string email, string periodo, string tipo)
-        {
-            return _BL.Email_SocioEstadoCuenta_Enviar(CodEmpresa, usuario, cedula, email, periodo, tipo);
-        }
-
-        #endregion
-
         #region Aut/C.I
 
         [Authorize]
