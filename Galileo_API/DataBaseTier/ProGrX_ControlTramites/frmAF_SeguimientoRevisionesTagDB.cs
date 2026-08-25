@@ -1282,27 +1282,42 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                     -2);
             }
 
-            string cedula = request!.cedula!.Trim();
-            string tagCodigo = request.tag_codigo!.Trim();
-            long consecutivo = request.consecutivo!.Value;
+            string cedula = (
+                request?.cedula ?? string.Empty)
+                .Trim();
+
+            string tagCodigo = (
+                request?.tag_codigo ?? string.Empty)
+                .Trim();
+
+            long consecutivo =
+                request?.consecutivo ?? 0L;
+
             string documento = Convert.ToString(
                 consecutivo,
                 CultureInfo.InvariantCulture);
 
-            string observacion =
-                (request.observacion ?? string.Empty).Trim();
+            string observacion = (
+                request?.observacion ?? string.Empty)
+                .Trim();
 
-            List<int> erroresSeleccionados = request.revisiones
-                .Where(item =>
-                    item.seleccionado == true &&
-                    item.id_error.GetValueOrDefault() > 0)
-                .Select(item => item.id_error!.Value)
-                .Distinct()
-                .ToList();
+            List<int> erroresSeleccionados =
+                request?.revisiones
+                    .Where(item =>
+                        item.seleccionado == true &&
+                        item.id_error.GetValueOrDefault() > 0)
+                    .Select(item =>
+                        item.id_error.GetValueOrDefault())
+                    .Distinct()
+                    .ToList() ??
+                new List<int>();
 
-            ErrorDto<bool> validacionCadena = _proGrxMain.fxSIFValidaCadena(cedula);
+            ErrorDto<bool> validacionCadena =
+                _proGrxMain.fxSIFValidaCadena(cedula);
 
-            int codigoValidacion = validacionCadena.Code ?? -1;
+            int codigoValidacion =
+                validacionCadena.Code ?? -1;
+
             string mensajeValidacion =
                 validacionCadena.Description ??
                 "La identificación indicada no es válida.";
@@ -1316,7 +1331,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             }
 
             string connectionString =
-                _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+                _portalDB.ObtenerDbConnStringEmpresa(
+                    CodEmpresa);
 
             try
             {
@@ -1394,15 +1410,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             }
             catch (SqlException ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(
+                    ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(
+                    ex.Message);
             }
             catch (DataException ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(
+                    ex.Message);
             }
         }
 
@@ -1519,9 +1538,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                     null);
             }
 
-            string cedula = request!.cedula!.Trim();
-            long consecutivo = request.consecutivo!.Value;
-            int idError = request.id_error!.Value;
+            string cedula = (
+                request?.cedula ?? string.Empty)
+                .Trim();
+
+            long consecutivo =
+                request?.consecutivo ?? 0L;
+
+            int idError =
+                request?.id_error ?? 0;
+
+            bool seleccionado =
+                request?.seleccionado ?? false;
+
+            long lineaError =
+                request?.linea_err ?? 0L;
 
             string documento = Convert.ToString(
                 consecutivo,
@@ -1530,7 +1561,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             ErrorDto<bool> validacionCadena =
                 _proGrxMain.fxSIFValidaCadena(cedula);
 
-            int codigoValidacion = validacionCadena.Code ?? -1;
+            int codigoValidacion =
+                validacionCadena.Code ?? -1;
 
             if (codigoValidacion != 0 ||
                 !validacionCadena.Result)
@@ -1543,7 +1575,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
             }
 
             string connectionString =
-                _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+                _portalDB.ObtenerDbConnStringEmpresa(
+                    CodEmpresa);
 
             try
             {
@@ -1555,7 +1588,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                 using var transaction =
                     connection.BeginTransaction();
 
-                ErrorDto<long?> resultado = request.seleccionado!.Value
+                ErrorDto<long?> resultado = seleccionado
                     ? SeleccionarOmision(
                         connection,
                         transaction,
@@ -1569,7 +1602,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.ControlTramites
                         cedula,
                         documento,
                         idError,
-                        request.linea_err!.Value);
+                        lineaError);
 
                 if ((resultado.Code ?? -1) != 0)
                 {
