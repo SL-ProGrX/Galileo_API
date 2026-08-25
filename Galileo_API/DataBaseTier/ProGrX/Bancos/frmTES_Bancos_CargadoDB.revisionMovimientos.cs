@@ -2,9 +2,11 @@ using Dapper;
 using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using System.Data;
 using System.Xml.Linq;
+using static ClosedXML.Excel.XLPredefinedFormat;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -22,13 +24,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 var parameters = new
                 {
-                    FechaInicio = request.FechaInicio.Date,
-                    FechaFin = request.FechaFin.Date,
-                    NDocumento = NormalizarFiltro(request.NDocumento),
-                    request.IdBanco,
-                    Tipo = NormalizarFiltro(request.Tipo),
-                    Estados = NormalizarFiltro(request.Estados),
-                    EstadoSocio = NormalizarFiltro(request.EstadoSocio)
+                    pIdBanco = request.IdBanco,
+                    pTipoDocumento = NormalizarFiltro(request.Tipo),
+                    pEstadoTesoreria = NormalizarFiltro(request.Estados),
+                    pEstadoBancario = NormalizarFiltro(request.EstadoSocio),
+                    pDocumento = NormalizarFiltro(request.NDocumento),
+                    pFechaDesde = request.FechaInicio.Date,
+                    pFechaHasta = request.FechaFin.Date,
+                    pOrdenacion = "FD"
                 };
 
                 return connection.Query<TesBancosCargadoRevMovDto>(
@@ -50,15 +53,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 var parameters = new
                 {
-                    Banco = NormalizarFiltro(request.Banco),
-                    Concepto = NormalizarFiltro(request.Concepto),
-                    TipoMov = NormalizarFiltro(request.TipoMov),
-                    Documento = NormalizarFiltro(request.Documento),
-                    request.MontoDesde,
-                    request.MontoHasta,
-                    FechaInicio = request.FechaInicio.Date,
-                    FechaFin = request.FechaFin.Date,
-                    Estado = NormalizarFiltro(request.Estado)
+                    pIdBanco = NormalizarFiltro(request.Banco),
+                    pDocumento = NormalizarFiltro(request.Documento),
+                    pCodConcepto = NormalizarFiltro(request.Concepto),
+                    pTipoMovimiento = NormalizarFiltro(request.TipoMov),
+                    pFechaDesde = request.FechaInicio.Date,
+                    pFechaHasta = request.FechaFin.Date,
+                    pMontoDesde = request.MontoDesde,
+                    pMontoHasta = request.MontoHasta,
+                    pOrdenacion = "FD",
+                    pEstadoCliente = NormalizarFiltro(request.Estado) //S 32676 C 7508
                 };
 
                 var lista = connection.Query<TesBancosCargadoRevMovConciliaDto>(
@@ -75,6 +79,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
             int CodEmpresa,
+            string usuario, 
             TesBancosCargadoRevMovConciliaAplicarRequest request)
         {
             if (request.Solicitudes.Count == 0)
@@ -96,6 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         new
                         {
                             IdLineaOrigen = request.MovimientoDestino.IdLinea,
+                            pUsuario = usuario,
                             SolicitudesXml = solicitudesXml
                         },
                         commandType: CommandType.StoredProcedure);

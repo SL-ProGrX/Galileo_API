@@ -91,8 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         ///   CARGA_CCSS = DevengadoMes * PorcCCSS / 100 (incondicional, si PorcCCSS es numérico).
         ///   CARGA_ASOCIACION = aplicaCargaAsociacion ? DevengadoMes * PorcAsociacion / 100 : 0.
         ///   CARGA_FRAP = aplicaCargaFrap ? DevengadoMes * (FrapPorcAdicional + PorcFrapFap) / 100 : 0.
-        ///     FrapPorcAdicional = txtFrapPorc.Text en VB6 (puntos extra sobre el % global) — sin
-        ///     control propio en Angular todavía (mismo caso que PTS_EXTRA_FAP en fase 4); se usa 0.
+        ///     FrapPorcAdicional = txtFrapPorc.Text en VB6 (puntos extra sobre el % global).
         ///   CARGA_IMPUESTO_SALARIO = DevengadoMes &gt; 0 ? fxRentaCalculo(DevengadoMes) : 0.
         ///   TOTAL_CARGA_CCSS = (CARGA_ASOCIACION si aplica) + (CARGA_FRAP si aplica)
         ///                      + CARGA_IMPUESTO_SALARIO + CARGA_CCSS (líneas 10343-10360; NO es
@@ -102,14 +101,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             IDbConnection connection,
             decimal devengadoMes,
             bool aplicaCargaAsociacion,
-            bool aplicaCargaFrap)
+            bool aplicaCargaFrap,
+            decimal frapPorcAdicional)
         {
             var (porcCcss, porcAsociacion, porcFrapFap) = ObtenerParametrosCargas(connection);
-
-            // txtFrapPorc.Text (puntos extra de FRAP) — sin control migrado en Angular; se documenta
-            // en 0, igual patrón que PTS_EXTRA_FAP (fase 4). El % global (PorcFrapFap) sí se aplica.
-            const decimal frapPorcAdicional = 0m;
-            var frapPorcTotal = frapPorcAdicional + porcFrapFap;
+            var frapPorcTotal = NormalizarFrapPorc(frapPorcAdicional) + porcFrapFap;
 
             var result = new CargasResult
             {
@@ -125,6 +121,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 + result.CargaCcss;
 
             return result;
+        }
+
+        /// <summary>
+        /// VB6: txtFrapPorc_Change fuerza el porcentaje extra de FRAP al rango 0..10.
+        /// </summary>
+        private static decimal NormalizarFrapPorc(decimal value)
+        {
+            if (value < 0m)
+            {
+                return 0m;
+            }
+
+            if (value > 10m)
+            {
+                return 10m;
+            }
+
+            return value;
         }
 
         /// <summary>

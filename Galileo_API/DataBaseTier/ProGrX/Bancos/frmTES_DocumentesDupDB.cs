@@ -66,10 +66,29 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto<List<DocumentoDuplicadosLista>> Documentos_Duplicados_Obtener(int CodEmpresa, string filtros)
         {
             TesDocumentosDuplicadosFiltros filtro = JsonConvert.DeserializeObject<TesDocumentosDuplicadosFiltros>(filtros) ?? new TesDocumentosDuplicadosFiltros();
+            var documento = (filtro.documento ?? string.Empty).Trim();
+            var fechaInicio = filtro.fecha_desde.Date;
+            var fechaCorte = filtro.fecha_hasta.Date.AddDays(1).AddTicks(-1);
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"
+                if (filtro.todos)
+                {
+                    return Documentos_Duplicados_PorRango_Obtener(conn, filtro, fechaInicio, fechaCorte);
+                }
+
+                return Documentos_Duplicados_PorFiltros_Obtener(conn, filtro, documento, fechaInicio, fechaCorte);
+            });
+        }
+
+        private static List<DocumentoDuplicadosLista> Documentos_Duplicados_PorFiltros_Obtener(
+            System.Data.IDbConnection conn,
+            TesDocumentosDuplicadosFiltros filtro,
+            string documento,
+            DateTime fechaInicio,
+            DateTime fechaCorte)
+        {
+            const string query = @"
             SELECT 
                 nsolicitud,
                 id_banco,
@@ -84,30 +103,64 @@ namespace Galileo_API.DataBaseTier
                 id_banco = @IdBanco
                 AND tipo = @Tipo
                 AND fecha_emision BETWEEN @FechaInicio AND @FechaCorte
-                AND (
-                    (@Documento IS NOT NULL AND @Documento <> '' AND ndocumento = @Documento)
-                    OR
-                    (@Documento IS NULL OR @Documento = '') AND ndocumento IN (
-                        SELECT ndocumento
-                        FROM Tes_Transacciones
-                        WHERE 
-                            id_banco = @IdBanco
-                            AND tipo = @Tipo
-                            AND fecha_emision BETWEEN @FechaInicio AND @FechaCorte
-                        GROUP BY ndocumento
-                        HAVING COUNT(*) > 1
-                    )
-                )";
+                AND (@Documento = '' OR ndocumento = @Documento)";
 
-                return conn.Query<DocumentoDuplicadosLista>(query, new
-                {
-                    IdBanco = filtro.id_banco,
-                    Tipo = filtro.tipo_doc,
-                    FechaInicio = filtro.fecha_desde,
-                    FechaCorte = filtro.fecha_hasta,
-                    Documento = filtro.documento
-                }).ToList();
-            });
+            return conn.Query<DocumentoDuplicadosLista>(query, new
+            {
+                IdBanco = filtro.id_banco,
+                Tipo = filtro.tipo_doc,
+                FechaInicio = fechaInicio,
+                FechaCorte = fechaCorte,
+                Documento = documento
+            }).ToList();
+        }
+
+        private static List<DocumentoDuplicadosLista> Documentos_Duplicados_PorRango_Obtener(
+            System.Data.IDbConnection conn,
+            TesDocumentosDuplicadosFiltros filtro,
+            DateTime fechaInicio,
+            DateTime fechaCorte)
+        {
+            const string query = @"
+            WITH DocumentosFiltrados AS
+            (
+                SELECT 
+                    nsolicitud,
+                    id_banco,
+                    ndocumento,
+                    monto,
+                    fecha_emision,
+                    beneficiario,
+                    estado_asiento,
+                    COUNT(*) OVER (PARTITION BY ndocumento) AS total_documentos
+                FROM 
+                    Tes_Transacciones
+                WHERE 
+                    id_banco = @IdBanco
+                    AND tipo = @Tipo
+                    AND ndocumento IS NOT NULL
+                    AND fecha_emision BETWEEN @FechaInicio AND @FechaCorte
+            )
+            SELECT
+                nsolicitud,
+                id_banco,
+                ndocumento,
+                monto,
+                fecha_emision,
+                beneficiario,
+                estado_asiento
+            FROM
+                DocumentosFiltrados
+            WHERE
+                total_documentos > 1";
+
+            return conn.Query<DocumentoDuplicadosLista>(query, new
+            {
+                IdBanco = filtro.id_banco,
+                Tipo = filtro.tipo_doc,
+                FechaInicio = fechaInicio,
+                FechaCorte = fechaCorte
+            }).ToList();
         }
     }
 }

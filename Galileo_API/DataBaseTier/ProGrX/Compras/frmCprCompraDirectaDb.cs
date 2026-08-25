@@ -93,7 +93,6 @@ namespace Galileo.DataBaseTier
                 codEmpresa,
                 @"SELECT COUNT(D.cod_producto)
                   FROM cpr_compras_detalle D
-                  INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
                   WHERE D.cod_factura = @CodFactura
                     AND D.cod_proveedor = @CodProveedor",
                 0,
@@ -112,7 +111,6 @@ namespace Galileo.DataBaseTier
                     codEmpresa,
                     @"SELECT ISNULL(SUM(D.cantidad),0)
                       FROM cpr_compras_detalle D
-                      INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
                       WHERE D.cod_factura = @CodFactura
                         AND D.cod_proveedor = @CodProveedor",
                     0,
@@ -130,14 +128,26 @@ namespace Galileo.DataBaseTier
             // Lineas
             var qLineas = @"
                 SELECT
-                    D.cod_producto,
-                    P.descripcion,
+                    CASE WHEN P.cod_producto IS NULL THEN '0' ELSE D.cod_producto END AS cod_producto,
+                    CASE
+                        WHEN P.cod_producto IS NULL THEN ISNULL((
+                            SELECT TOP 1 X.DETALLE
+                            FROM CPR_FACTURAS_XML_DETALLE X
+                            WHERE X.COD_DOCUMENTO = D.COD_FACTURA
+                              AND X.NUMERO_LINEA = D.LINEA
+                        ), '')
+                        ELSE P.descripcion
+                    END AS descripcion,
                     D.cantidad,
                     D.cod_bodega,
                     D.precio,
                     ISNULL(D.descuento,0) AS descuento,
                     D.imp_ventas,
-                    0 AS total,
+                    (
+                        (D.cantidad * D.precio)
+                        - ((D.cantidad * D.precio) * (ISNULL(D.descuento,0) / 100.0))
+                        + (((D.cantidad * D.precio) - ((D.cantidad * D.precio) * (ISNULL(D.descuento,0) / 100.0))) * (D.imp_ventas / 100.0))
+                    ) AS total,
                     CASE WHEN (
                         SELECT U.COD_PRODUCTO
                         FROM CPR_ORDENES_UENS U
@@ -155,7 +165,7 @@ namespace Galileo.DataBaseTier
                         ), 0)
                     ) < D.cantidad THEN 0 ELSE 1 END AS i_completo
                 FROM cpr_compras_detalle D
-                INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                LEFT JOIN pv_productos P ON D.cod_producto = P.cod_producto
                 LEFT JOIN cpr_compras C ON C.COD_FACTURA = D.COD_FACTURA
                 WHERE D.cod_factura = @CodFactura
                   AND D.cod_proveedor = @CodProveedor
@@ -179,7 +189,7 @@ namespace Galileo.DataBaseTier
             if (v0.Code != 0) return v0;
 
             // Validación con BD + ejecución en transacción
-            var r = DbHelper.WithConn<string>(_portalDb, codEmpresa, conn =>
+            var r = DbHelper.WithConn<ErrorDto>(_portalDb, codEmpresa, conn =>
             {
                 if (conn.State != ConnectionState.Open) conn.Open();
                 using var tx = conn.BeginTransaction();
@@ -189,7 +199,10 @@ namespace Galileo.DataBaseTier
                     // Validación productos/bodegas (sin SQL injection)
                     var errLineas = ValidarLineasConBd(conn, tx, orden.lineas, "E");
                     if (!string.IsNullOrEmpty(errLineas))
-                        return errLineas;
+                    {
+                        tx.Rollback();
+                        return DbHelper.ErrorResponse(errLineas, -1);
+                    }
 
                     // Totales (mantiene tu lógica)
                     CalcularTotales(orden.lineas, out _, out _, out _, out _);
@@ -224,20 +237,19 @@ namespace Galileo.DataBaseTier
                     _comprasDb.FacturaOrdenes_Actualizar(codEmpresa, orden.cod_factura, orden.cod_proveedor);
 
                     tx.Commit();
-                    return $"{codOrden}-{codCompra}";
+                    return DbHelper.OkResponse($"{codOrden}-{codCompra}");
                 }
-                catch
+                catch (Exception ex)
                 {
                     tx.Rollback();
-                    throw;
+                    return DbHelper.ErrorResponse(ex.Message, -1);
                 }
             });
 
             if (r.Code != 0)
                 return DbHelper.ErrorResponse(r.Description ?? DefaultErrorMessage, r.Code ?? -1);
 
-            // éxito
-            return DbHelper.OkResponse(r.Result ?? "ok");
+            return r.Result ?? DbHelper.ErrorResponse(DefaultErrorMessage, -1);
         }
 
         // =========================
@@ -266,10 +278,10 @@ namespace Galileo.DataBaseTier
             return string.Empty;
         }
 
-        private static string? ValidarLinea(IDbConnection conn, IDbTransaction tx, CompraDirectaDetalle item, string mov)
+        private static string ValidarLinea(IDbConnection conn, IDbTransaction tx, CompraDirectaDetalle item, string mov)
         {
             if (item == null) return "Línea inválida";
-            if (item.cantidad <= 0) return null;
+            if (item.cantidad <= 0) return string.Empty;
 
             var errProd = ValidarProducto(conn, tx, item.cod_producto);
             if (!string.IsNullOrEmpty(errProd)) return errProd;
@@ -277,7 +289,7 @@ namespace Galileo.DataBaseTier
             return ValidarBodega(conn, tx, item.cod_bodega, mov);
         }
 
-        private static string? ValidarProducto(IDbConnection conn, IDbTransaction tx, string? codProducto)
+        private static string ValidarProducto(IDbConnection conn, IDbTransaction tx, string? codProducto)
         {
             if (string.IsNullOrWhiteSpace(codProducto))
                 return "Código de producto inválido";
@@ -290,10 +302,10 @@ namespace Galileo.DataBaseTier
 
             if (estado == null) return $"El producto {codProducto} no existe";
             if (estado == "I") return $"El producto {codProducto} no esta activo";
-            return null;
+            return string.Empty;
         }
 
-        private static string? ValidarBodega(IDbConnection conn, IDbTransaction tx, string? codBodega, string mov)
+        private static string ValidarBodega(IDbConnection conn, IDbTransaction tx, string? codBodega, string mov)
         {
             if (string.IsNullOrWhiteSpace(codBodega))
                 return "Debe indicar bodega";
@@ -324,7 +336,7 @@ namespace Galileo.DataBaseTier
             if (requiereSalida && bodega.permite_salidas != "1")
                 return $"La bodega {codBodega} - No permite Salidas";
 
-            return null;
+            return string.Empty;
         }
 
         // =========================

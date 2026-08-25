@@ -101,6 +101,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var porcComponenteAdicional = GetDecimal(row, "PORCENTAJE_COMPONENTE_AD");
                 var (edadAplica, edadJustificacion) = ObtenerJustificacionEdad(connection, codPreanalisis);
                 var lineaActual = GetString(row, "Cod_Linea");
+                var (_, _, porcFrapFap) = ObtenerParametrosCargas(connection);
+                var ptsExtraFrap = row.ContainsKey("PTS_EXTRA_FRAP")
+                    ? GetDecimal(row, "PTS_EXTRA_FRAP")
+                    : GetDecimal(row, "PTS_EXTRA_FAP");
 
                 result.Result = new FrmPreaEstudiov2CargaResponse
                 {
@@ -154,6 +158,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     {
                         salario_real = GetDecimal(row, "SALARIO_REAL"),
                         cargas = GetDecimal(row, "TOTAL_CARGA_CCSS"),
+                        carga_ccss = GetDecimal(row, "CARGA_CCSS"),
+                        carga_asociacion = GetDecimal(row, "CARGA_ASOCIACION"),
+                        carga_frap = GetDecimal(row, "CARGA_FRAP"),
+                        carga_impuesto_salario = GetDecimal(row, "CARGA_IMPUESTO_SALARIO"),
+                        pts_extra_frap = ptsExtraFrap,
+                        porc_frap_fap = porcFrapFap,
+                        aplica_carga_asociacion = GetDecimal(row, "CARGA_ASOCIACION") > 0m,
+                        aplica_carga_frap = GetDecimal(row, "CARGA_FRAP") > 0m,
                         porc_sobre_salario = GetDecimal(row, "PORCENTAJE_LIBRE"),
                         deducciones = GetDecimal(row, "DEDUCCIONES"),
                         creditos_cancelados = GetDecimal(row, "CRD_TRANSITO_CANCELADOS"),

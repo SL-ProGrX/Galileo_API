@@ -19,15 +19,16 @@
         public string cod_banco { get; set; } = string.Empty;
         public string tipo_doc { get; set; } = string.Empty;
         public string documento { get; set; } = string.Empty;
-        public string fecha_desde { get; set; } = string.Empty;
-        public string fecha_hasta { get; set; } = string.Empty;
+        public bool todos { get; set; }
+        public DateTime fecha_desde { get; set; }
+        public DateTime fecha_hasta { get; set; }
     }
 
     public class DocumentoDuplicadosLista
     {
         public int nsolicitud { get; set; }
         public string id_banco { get; set; } = string.Empty;
-        public int ndocumento { get; set; } 
+        public string ndocumento { get; set; } = string.Empty;
         public decimal monto { get; set; } 
         public DateTime fecha_emision { get; set; }
         public string beneficiario { get; set; } = string.Empty;

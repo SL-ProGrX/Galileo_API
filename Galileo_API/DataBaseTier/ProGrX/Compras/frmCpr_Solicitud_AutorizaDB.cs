@@ -432,28 +432,27 @@ UPDATE CPR_SOLICITUD
         private static List<OrdenLineas> GetLineasAdjudicadas(SqlConnection conn, int cprId, string proveedor)
         {
             const string sqlLineas = @"
-    SELECT
-        BS.COD_PRODUCTO AS COD_PRODUCTO,
-        ISNULL(P.DESCRIPCION, '') + CASE
-            WHEN ISNULL(CL.MODELO, '') = '' THEN ''
-            ELSE ' - ' + CL.MODELO
-        END AS DESCRIPCION,
-        BS.CANTIDAD AS CANTIDAD,
-        BS.MONTO AS PRECIO,
-        BS.DESC_PORC AS DESCUENTO,
-        BS.IVA_PORC AS IMP_VENTAS,
-        BS.TOTAL AS TOTAL
-    FROM dbo.CPR_SOLICITUD_PROV_BS BS
-    INNER JOIN dbo.CPR_SOLICITUD_PROV_COTIZA_LINEAS CL
-        ON CL.ID_COTIZACION_LINEA = BS.ID_COTIZACION_LINEA
-    LEFT JOIN dbo.PV_PRODUCTOS P
-        ON P.COD_PRODUCTO = BS.COD_PRODUCTO
-    WHERE BS.CPR_ID = @cpr_id
-      AND BS.ADJUDICA_IND = 1
-      AND BS.PROVEEDOR_CODIGO = @proveedor
-    ORDER BY BS.ID_COTIZACION_LINEA;";
+                             SELECT 
+                                           BS.[COD_PRODUCTO]
+                                          ,ISNULL(P.DESCRIPCION, '') + CASE
+											    WHEN ISNULL(CL.MODELO, '') = '' THEN ''
+											    ELSE ' - ' + CL.MODELO
+											    END AS DESCRIPCION
+	                                      ,CL.[CANTIDAD] 
+	                                      ,CL.[MONTO] AS PRECIO
+	                                      ,CL.[DESC_PORC] AS DESCUENTO
+	                                      ,CL.[IVA_PORC] AS IMP_VENTAS
+	                                      ,CL.[TOTAL]
+                                      FROM [dbo].[CPR_SOLICITUD_PROV_BS] BS
+                                      INNER JOIN dbo.CPR_SOLICITUD_PROV_COTIZA SPC
+                                         ON SPC.CPR_ID = BS.CPR_ID AND SPC.PROVEEDOR_CODIGO = BS.PROVEEDOR_CODIGO
+                                      INNER JOIN CPR_SOLICITUD_PROV_COTIZA_LINEAS CL ON 
+                                        CL.COD_PRODUCTO = BS.COD_PRODUCTO AND Cl.ID_COTIZACION = SPC.ID_COTIZACION  
+                                      LEFT JOIN dbo.PV_PRODUCTOS P
+                                         ON P.COD_PRODUCTO = BS.COD_PRODUCTO
+                                      WHERE BS.CPR_ID = @cpr_id AND BS.ADJUDICA_IND = 1 AND BS.PROVEEDOR_CODIGO = @proveedor";
 
-            return conn.Query<OrdenLineas>(sqlLineas, new { cpr_id = cprId, proveedor }).ToList();
+            return conn.Query<OrdenLineas>(sqlLineas, new { cpr_id = cprId, proveedor = proveedor }).ToList();
         }
 
 

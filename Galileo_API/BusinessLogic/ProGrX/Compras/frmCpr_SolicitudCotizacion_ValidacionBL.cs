@@ -24,9 +24,21 @@ namespace Galileo.BusinessLogic
         }
 
         /// <summary>Desmarca como seleccionada la línea de cotización indicada.</summary>
-        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
+        public ErrorDto CprValidacionCotizacionBs_Eliminar(
+            int CodEmpresa,
+            int id_cotizacion_linea,
+            int? cpr_id,
+            int? proveedor_codigo,
+            string? codigo,
+            string? cod_producto)
         {
-            return _db.CprValidacionCotizacionBs_Eliminar(CodEmpresa, id_cotizacion_linea);
+            return _db.CprValidacionCotizacionBs_Eliminar(
+                CodEmpresa,
+                id_cotizacion_linea,
+                cpr_id,
+                proveedor_codigo,
+                codigo,
+                cod_producto);
         }
     }
 }
