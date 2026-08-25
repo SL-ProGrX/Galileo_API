@@ -3,7 +3,6 @@ using Galileo.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo_API.BusinessLogic.ProGrX_Procesos;
-using Galileo_API.DataBaseTier.ProGrX_Procesos;
 
 namespace Galileo_API.Controllers.ProGrX_Procesos
 {

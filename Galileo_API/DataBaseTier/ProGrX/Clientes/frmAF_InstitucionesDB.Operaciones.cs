@@ -300,17 +300,17 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     SpInstitucionCopia,
                     new
                     {
-                        CodInstitucion,
-                        Destino = 0,
-                        CopiaDesc = NormalizarTexto(CopiaDesc),
-                        CopiaDescCorta = NormalizarTexto(CopiaDescCorta),
+                        InstOrigen = CodInstitucion,
+                        InstDest = 0,
+                        Descripcion = NormalizarTexto(CopiaDesc),
+                        DescCorta = NormalizarTexto(CopiaDescCorta),
                         Usuario = NormalizarTexto(Usuario),
-                        Copia1 = 1,
-                        Copia2 = 1,
-                        Copia3 = 1,
-                        Copia4 = 1,
-                        Copia5 = 1,
-                        Copia6 = 1
+                        Config = 1,
+                        DeptSec = 1,
+                        EstadosPersona = 1,
+                        Deducciones = 1,
+                        AccesoPlanilla = 1,
+                        Empresas = 1
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
 
