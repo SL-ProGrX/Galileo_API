@@ -53,7 +53,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     -2,
                     new AfRecepcionDevolucionesTagsInicializarData());
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new AfRecepcionDevolucionesTagsInicializarData());
+            }
+            catch (DataException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -117,7 +124,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     -2,
                     null);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesTagsData?>(
+                    ex.Message,
+                    -1,
+                    null);
+            }
+            catch (DataException ex)
             {
                 return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesTagsData?>(
                     ex.Message,
@@ -190,7 +204,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return AF_frmAF_RecepcionDevolucionesTags_Aplicar_Error(ex.Message);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new AfRecepcionDevolucionesTagsAplicarData());
+            }
+            catch (DataException ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
