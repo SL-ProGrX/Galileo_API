@@ -62,5 +62,15 @@ namespace Galileo.BusinessLogic
         {
             return _db.CprResumenPlan_ObtenerxCuenta(CodEmpresa, parametros);
         }
+
+        public ErrorDto<string> CprPlanCompras_PlanesEstrategicos(int CodEmpresa, int planCompras)
+        {
+            return _db.CprPlanCompras_PlanesEstrategicos(CodEmpresa, planCompras);
+        }
+
+        public ErrorDto<int> CprPlanCompras_AgregarSeleccion(int CodEmpresa, List<CprSeleccionDto> planEst)
+        {
+            return _db.CprPlanCompras_AgregarSeleccion(CodEmpresa, planEst);
+        }
     }
 }

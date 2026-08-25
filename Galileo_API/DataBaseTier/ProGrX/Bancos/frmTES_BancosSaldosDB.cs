@@ -333,9 +333,11 @@ FETCH NEXT @fetch ROWS ONLY;";
 
                 var cierre = conn.QueryFirstOrDefault<TesBancosSaldosCierresDto>(query, new { Banco });
 
+
                 if (cierre != null)
                 {
                     response.Result.inicio = (cierre.corte).AddDays(1);
+                    response.Result.corte = (cierre.corte).AddDays(1);
                     response.Result.inicio_habilitado = false;
                     response.Result.saldo_inicial = cierre.saldo_final;
                     response.Result.saldo_minimo = cierre.saldo_minimo;
@@ -464,7 +466,14 @@ FETCH NEXT @fetch ROWS ONLY;";
 
             try
             {
-                if (datos.inicio > datos.corte)
+
+                string fechaIni = MProGrXAuxiliarDB.validaFechaGlobal(datos.inicio, "yyyy-MM-dd 00:00:00.000") ?? "";
+                string fechaFin = MProGrXAuxiliarDB.validaFechaGlobal(datos.corte, "yyyy-MM-dd 23:59:59") ?? "";
+                string fechaFin2 = MProGrXAuxiliarDB.validaFechaGlobal(datos.corte, "yyyy-MM-dd 00:00:00.000") ?? "";
+                DateTime vFechaIni = Convert.ToDateTime(fechaIni);
+                DateTime vFechaFin = Convert.ToDateTime(fechaFin);
+
+                if (vFechaIni > vFechaFin)
                 {
                     response.Code = -1;
                     response.Description = "La fecha de corte no puede ser menor a la de inicio, verifique...";
@@ -488,8 +497,8 @@ FETCH NEXT @fetch ROWS ONLY;";
                 {
                     Banco = datos.id_banco,
                     Usuario = Usuario,
-                    Inicio = datos.inicio,
-                    Corte = datos.corte,
+                    Inicio = fechaIni,
+                    Corte = fechaFin2,
                     SaldoInicial = datos.saldo_inicial,
                     Debitos = datos.total_debitos,
                     Creditos = datos.total_creditos,

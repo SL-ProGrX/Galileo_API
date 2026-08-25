@@ -1,6 +1,8 @@
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 
 namespace Galileo.DataBaseTier
@@ -107,8 +109,8 @@ namespace Galileo.DataBaseTier
             var offset = filtros.pagina.GetValueOrDefault(0);
             if (offset < 0) offset = 0;
 
-            var fetch = filtros.paginacion.GetValueOrDefault(int.MaxValue);
-            if (fetch <= 0) fetch = int.MaxValue;
+            var fetch = filtros.paginacion.GetValueOrDefault(30);
+            if (fetch <= 0) fetch = 30;
 
             return new PagedArgs(corte, q, offset, fetch);
         }
@@ -293,20 +295,26 @@ namespace Galileo.DataBaseTier
             var existeR = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, existeSql, 0, new { id_pc = PlanCompras, cod_producto = CodProducto });
             var existeCode = existeR.Code is int ec ? ec : -1;
             if (existeCode != 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>(existeR.Description ?? DefaultErrorDescription, existeCode, default);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(
+                    existeR.Description ?? DefaultErrorDescription,
+                    existeCode,
+                    new CprPlanDTDto());
 
             if (existeR.Result <= 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>("Producto sin registrar", -1, default);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("Producto sin registrar", -1, new CprPlanDTDto());
 
             const string planSql = @"SELECT * FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
             var planR = DbHelper.ExecuteSingleQuery<CprPlanDTDto>(_portalDB, CodEmpresa, planSql, null, new { id_pc = PlanCompras, cod_producto = CodProducto });
             var planCode = planR.Code is int pc ? pc : -1;
             if (planCode != 0)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>(planR.Description ?? DefaultErrorDescription, planCode, default);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(
+                    planR.Description ?? DefaultErrorDescription,
+                    planCode,
+                    new CprPlanDTDto());
 
             var plan = planR.Result;
             if (plan == null)
-                return DbHelper.CreateErrorResponse<CprPlanDTDto>("No se pudo obtener la información del producto.", -1, default);
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("No se pudo obtener la información del producto.", -1, new CprPlanDTDto());
 
             const string uenSql = @"
                         SELECT DISTINCT
@@ -544,7 +552,7 @@ namespace Galileo.DataBaseTier
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
                          WHERE D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Corte IS NULL OR CONVERT(varchar(10), S.CORTE, 111) = @Corte)
                            AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
                            AND (@ProdClas IS NULL OR P.COD_PRODCLAS = @ProdClas)
                          ORDER BY
@@ -617,7 +625,7 @@ namespace Galileo.DataBaseTier
                               INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
                               INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
                              WHERE D.ID_PC = @IdPc
-                               AND (@Corte IS NULL OR S.CORTE = @Corte)
+                               AND (@Corte IS NULL OR CONVERT(varchar(10), S.CORTE, 111) = @Corte)
                                AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
                         )
                         SELECT CUENTA,
@@ -730,6 +738,94 @@ namespace Galileo.DataBaseTier
             args = args with { Q = null };
 
             return ObtenerResumenPlanCore(CodEmpresa, filtros, args, prodClas: prodclas);
+        }
+
+        public ErrorDto<string> CprPlanCompras_PlanesEstrategicos(int codEmpresa, int planCompras)
+        {
+            var result = DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                codEmpresa,
+                "exec spPE_W_GetPlanificacionTree @CPR_ID",
+                "[]",
+                new { CPR_ID = planCompras });
+
+            var code = result.Code is int c ? c : -1;
+            if (code != 0)
+            {
+                return DbHelper.CreateErrorResponse<string>(
+                    result.Description ?? DefaultErrorDescription,
+                    code,
+                    string.Empty);
+            }
+
+            return DbHelper.CreateOkResponse(result.Result ?? "[]");
+        }
+
+        public ErrorDto<int> CprPlanCompras_AgregarSeleccion(int codEmpresa, List<CprSeleccionDto> planEst)
+        {
+            if (planEst == null || planEst.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse<int>("Debe seleccionar al menos un elemento.", -1, 0);
+            }
+
+            var cprId = planEst[0].cprId;
+            if (cprId <= 0)
+            {
+                return DbHelper.CreateErrorResponse<int>("El plan de compras no es válido.", -1, 0);
+            }
+
+            var tabla = Cpr_PC_Planning_Seleccion_DataTable_Crear();
+            Cpr_PC_Planning_Seleccion_DataTable_Llenar(planEst, tabla);
+
+            var execResult = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                using var cmd = new SqlCommand("spPE_W_InsertPlanComprasSeleccion_Tvp", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                cmd.Parameters.AddWithValue("@CPR_ID", cprId);
+                var pItems = cmd.Parameters.AddWithValue("@Items", tabla);
+                pItems.SqlDbType = SqlDbType.Structured;
+                pItems.TypeName = "dbo.CprSeleccionItem";
+
+                cmd.ExecuteNonQuery();
+                return 1;
+            });
+
+            var execCode = execResult.Code is int ec ? ec : -1;
+            if (execCode != 0)
+            {
+                return DbHelper.CreateErrorResponse<int>(execResult.Description ?? DefaultErrorDescription, execCode, 0);
+            }
+
+            return DbHelper.CreateOkResponse(1, "OK");
+        }
+
+        private static DataTable Cpr_PC_Planning_Seleccion_DataTable_Crear()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("cprId", typeof(int));
+            dt.Columns.Add("NodoTipo", typeof(string));
+            dt.Columns.Add("PeId", typeof(int));
+            dt.Columns.Add("PerspectivaId", typeof(int));
+            dt.Columns.Add("ProyectoId", typeof(int));
+            dt.Columns.Add("ObjetivoId", typeof(int));
+            return dt;
+        }
+
+        private static void Cpr_PC_Planning_Seleccion_DataTable_Llenar(List<CprSeleccionDto> planEst, DataTable tabla)
+        {
+            foreach (var item in planEst)
+            {
+                tabla.Rows.Add(
+                    item.cprId,
+                    item.nodoTipo,
+                    item.peId.HasValue ? item.peId.Value : DBNull.Value,
+                    item.perspectivaId.HasValue ? item.perspectivaId.Value : DBNull.Value,
+                    item.proyectoId.HasValue ? item.proyectoId.Value : DBNull.Value,
+                    item.objetivoId.HasValue ? item.objetivoId.Value : DBNull.Value);
+            }
         }
     }
 }

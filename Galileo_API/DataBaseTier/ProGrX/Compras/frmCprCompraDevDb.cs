@@ -484,10 +484,10 @@ namespace Galileo.DataBaseTier
             return string.Empty;
         }
 
-        private static string? ValidarLinea(IDbConnection conn, FacturaDetalleDto item, string mov)
+        private static string ValidarLinea(IDbConnection conn, FacturaDetalleDto item, string mov)
         {
             if (item is null) return "Línea inválida";
-            if (item.cantidad <= 0) return null;
+            if (item.cantidad <= 0) return string.Empty;
 
             var errorProd = ValidarProducto(conn, item.cod_producto);
             if (!string.IsNullOrEmpty(errorProd)) return errorProd;
@@ -495,7 +495,7 @@ namespace Galileo.DataBaseTier
             return ValidarBodega(conn, item.cod_bodega, mov);
         }
 
-        private static string? ValidarProducto(IDbConnection conn, string? codProducto)
+        private static string ValidarProducto(IDbConnection conn, string? codProducto)
         {
             if (string.IsNullOrWhiteSpace(codProducto))
                 return "Código de producto inválido";
@@ -513,13 +513,13 @@ namespace Galileo.DataBaseTier
             if (estadoProd == "I")
                 return $"El producto {codProducto} no esta activo";
 
-            return null;
+            return string.Empty;
         }
 
-        private static string? ValidarBodega(IDbConnection conn, string? codBodega, string mov)
+        private static string ValidarBodega(IDbConnection conn, string? codBodega, string mov)
         {
             if (string.IsNullOrWhiteSpace(codBodega))
-                return null;
+                return string.Empty;
 
             var bodega = conn.QueryFirstOrDefault<Models.BodegaDto>(
                 @"SELECT permite_entradas, permite_salidas, estado
@@ -542,7 +542,7 @@ namespace Galileo.DataBaseTier
             if (requiereSalida && bodega.permite_salidas != "1")
                 return $"La bodega {codBodega} - No permite Salidas";
 
-            return null;
+            return string.Empty;
         }
 
         private static (bool requiereEntrada, bool requiereSalida) RequerimientosMovimiento(string mov)

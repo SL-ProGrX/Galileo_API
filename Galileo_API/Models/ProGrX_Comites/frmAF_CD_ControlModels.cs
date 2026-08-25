@@ -3,6 +3,7 @@
     public class AfcdCuentaDto
     {
         public int noperacion { get; set; }
+        public string? cod_comite { get; set; }
         public string? comite_desc { get; set; }
         public decimal monto { get; set; }
         public string? estado_desc { get; set; }

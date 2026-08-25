@@ -815,12 +815,6 @@ namespace Galileo.Models.ProGrX.Credito
         public string? registro_usuario { get; set; } = string.Empty;
     }
 
-    public class SocioCierresData
-    {
-        public string email { get; set; } = string.Empty;
-        public List<DropDownListaGenericaModel> periodos { get; set; } = new List<DropDownListaGenericaModel>();
-    }
-
     public class SociosPeriodoData
     {
         public string? itmx { get; set; }

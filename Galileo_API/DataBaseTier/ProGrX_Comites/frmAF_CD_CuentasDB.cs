@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Comites;
+using Microsoft.Data.SqlClient;
 using System.Reflection;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Comites
@@ -10,15 +11,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
     public class FrmAfCdCuentasDb
     {
         private readonly PortalDB _portalDb;
+        private readonly IConfiguration? _config;
+        private const string GaConnectionStringName = "GAConnString";
 
         public FrmAfCdCuentasDb(IConfiguration config)
-            : this(new PortalDB(config))
+            : this(new PortalDB(config), config)
         {
         }
 
         public FrmAfCdCuentasDb(PortalDB portalDb)
+            : this(portalDb, null)
+        {
+        }
+
+        private FrmAfCdCuentasDb(PortalDB portalDb, IConfiguration? config)
         {
             _portalDb = portalDb;
+            _config = config;
         }
 
         /// <summary>
@@ -121,7 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         {
             const string query = @"exec spAFI_CD_Cuenta_Adjuntos @Operacion;";
 
-            return DbHelper.ExecuteListQuery<AfCdCuentaAdjuntosData>(
+            var response = DbHelper.ExecuteListQuery<AfCdCuentaAdjuntosData>(
                 _portalDb,
                 codEmpresa,
                 query,
@@ -130,6 +139,59 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Operacion = operacion
                 }
             );
+
+            if (response.Code < 0)
+            {
+                return response;
+            }
+
+            response.Result ??= [];
+            response.Result.AddRange(AfCdCuenta_GaFilesAdjuntos_Obtener(codEmpresa, operacion));
+            return response;
+        }
+
+        private List<AfCdCuentaAdjuntosData> AfCdCuenta_GaFilesAdjuntos_Obtener(int codEmpresa, int operacion)
+        {
+            if (_config == null)
+            {
+                return [];
+            }
+
+            const string query = @"
+                SELECT
+                    TRY_CONVERT(int, FileId) AS idArchivoAdjunto,
+                    TRY_CONVERT(int, Llave_02) AS noperacion,
+                    ISNULL(FileName, '') AS nombreArchivo,
+                    TRY_CONVERT(int, TypeId) AS idtipoarchivo,
+                    ISNULL(Notas, '') AS nota,
+                    RegistroFecha AS registrofecha,
+                    ISNULL(RegistroUsuario, '') AS registroUsuario,
+                    ISNULL(TypeId, '') AS nombreTipoArchivo
+                FROM GA_Files
+                WHERE EmpresaId = @codEmpresa
+                  AND ModuloId = 'CD_01'
+                  AND Llave_02 = @operacion
+                  AND ISNULL(Llave_03, '') = ''
+                ORDER BY RegistroFecha DESC, FileId DESC;";
+
+            try
+            {
+                using var connection = new SqlConnection(
+                    _config.GetConnectionString(GaConnectionStringName));
+
+                return connection.Query<AfCdCuentaAdjuntosData>(
+                    query,
+                    new
+                    {
+                        codEmpresa,
+                        operacion = operacion.ToString()
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+                return [];
+            }
         }
 
         /// <summary>

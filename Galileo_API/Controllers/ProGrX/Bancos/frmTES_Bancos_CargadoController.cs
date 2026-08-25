@@ -64,13 +64,13 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpPost("TES_RegistrosBancosCargados_Aplicar")]
-        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, List<RegistroBancoDto> registroLista)
         {
             return await _bl.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
         }
 
         [HttpPost("TES_RegistrosBancosCargados_Elimina")]
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, string registroLista)
+        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
         {
             return _bl.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }
@@ -122,9 +122,11 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         [HttpPost("TES_BancosCargado_RevMovConcilia_Aplicar")]
         public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
             int CodEmpresa,
+            string usuario,
             [FromBody] TesBancosCargadoRevMovConciliaAplicarRequest request)
         {
-            return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, request);
+           
+            return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, usuario, request);
         }
     }
 }

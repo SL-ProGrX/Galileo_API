@@ -361,20 +361,6 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
 
         #endregion
 
-        #region @
-
-        public ErrorDto<SocioCierresData> Email_SocioPeriodos_Obtener(int CodEmpresa, string cedula)
-        {
-            return _Db.Email_SocioPeriodos_Obtener(CodEmpresa, cedula);
-        }
-
-        public ErrorDto Email_SocioEstadoCuenta_Enviar(int CodEmpresa, string usuario, string cedula, string email, string periodo, string tipo)
-        {
-            return _Db.Email_SocioEstadoCuenta_Enviar(CodEmpresa, usuario, cedula, email, periodo, tipo);
-        }
-
-        #endregion
-
         #region Aut/C.I
 
         public ErrorDto CR_RegistraConsentimiento(int CodEmpresa, string cedula, string usuario)

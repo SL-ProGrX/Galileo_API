@@ -167,7 +167,10 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
             });
 
             if (r.Code != 0)
-                return DbHelper.CreateErrorResponse<OrdenCompraDto>(r.Description ?? "Error", r.Code ?? -1, default);
+                return DbHelper.CreateErrorResponse<OrdenCompraDto>(
+                    r.Description ?? "Error",
+                    r.Code ?? -1,
+                    new OrdenCompraDto { total = 0, ordenes = new List<OrdenCompra>() });
 
             return DbHelper.CreateOkResponse(r.Result ?? new OrdenCompraDto { total = 0, ordenes = new List<OrdenCompra>() });
         }
@@ -342,10 +345,10 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
         private static string? NormalizeLike(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
-                return null;
+                return string.Empty;
 
             var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
+            return f.Length == 0 ? string.Empty : $"%{f}%";
         }
 
         private static (int Offset, int Fetch) NormalizePaging(int pagina, int paginacion)

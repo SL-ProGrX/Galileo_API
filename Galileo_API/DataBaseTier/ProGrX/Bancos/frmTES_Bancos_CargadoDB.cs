@@ -340,9 +340,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="registroLista"></param>
         /// <returns></returns>
-        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, List<RegistroBancoDto> lista)
         {
-            List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
+
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
@@ -394,9 +394,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             
         }
 
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, string registroLista)
+        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> lista)
         {
-            List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
+          
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
@@ -405,7 +405,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     var querySP = "spTes_Bancos_Mov_Elimina";
                     conn.Execute(querySP, new
                     {
-                        LineaId = item.Linea_Id
+                        LineaId = item.linea_id
                     },
                     commandType: CommandType.StoredProcedure);
                 }
