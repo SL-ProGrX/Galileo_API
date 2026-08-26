@@ -26,9 +26,11 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpGet("ConsultarPersonasF4")]
-        public ErrorDto<List<CxCPersonaDto>> ConsultarPersonasF4(int codEmpresa, string? filtro = null)
+        public ErrorDto<CxCPersonasF4ListaDto> ConsultarPersonasF4(
+            int codEmpresa,
+            [FromQuery] CxCPersonasF4FiltroDto request)
         {
-            return _bl.ConsultarPersonasF4(codEmpresa, filtro);
+            return _bl.ConsultarPersonasF4(codEmpresa, request);
         }
 
         [Authorize]

@@ -49,19 +49,49 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// Obtiene las personas disponibles para la búsqueda F4 de Consulta de CxC.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa activa.</param>
-        /// <param name="filtro">Texto opcional para filtrar por cédula o nombre.</param>
-        /// <returns>Primeras personas de CxC ordenadas por nombre.</returns>
-        public ErrorDto<List<CxCPersonaDto>> ConsultarPersonasF4(int codEmpresa, string? filtro)
-            => DbHelper.ExecuteListQuery<CxCPersonaDto>(
-                _portalDB,
-                codEmpresa,
-                @"SELECT TOP (100) cedula, nombre
-                  FROM CxC_Personas
-                  WHERE @filtro = ''
-                     OR cedula LIKE '%' + @filtro + '%'
-                     OR nombre LIKE '%' + @filtro + '%'
-                  ORDER BY nombre",
-                new { filtro = (filtro ?? string.Empty).Trim() });
+        /// <param name="request">Paginación, búsqueda y ordenamiento solicitados.</param>
+        /// <returns>Página de personas y cantidad total de registros filtrados.</returns>
+        public ErrorDto<CxCPersonasF4ListaDto> ConsultarPersonasF4(
+            int codEmpresa,
+            CxCPersonasF4FiltroDto request)
+            => DbHelper.WithConn(_portalDB, codEmpresa, connection =>
+            {
+                var pagina = Math.Max(request.pagina, 0);
+                var paginacion = Math.Clamp(request.paginacion, 1, 100);
+                var filtro = (request.filtro ?? string.Empty).Trim();
+                var columnaOrden = string.Equals(
+                    request.sortField,
+                    "cedula",
+                    StringComparison.OrdinalIgnoreCase)
+                    ? "cedula"
+                    : "nombre";
+                var direccionOrden = request.sortOrder == -1 ? "DESC" : "ASC";
+
+                var sql = $@"
+                    SELECT COUNT(*)
+                    FROM CxC_Personas
+                    WHERE @filtro = ''
+                       OR cedula LIKE '%' + @filtro + '%'
+                       OR nombre LIKE '%' + @filtro + '%';
+
+                    SELECT cedula, nombre
+                    FROM CxC_Personas
+                    WHERE @filtro = ''
+                       OR cedula LIKE '%' + @filtro + '%'
+                       OR nombre LIKE '%' + @filtro + '%'
+                    ORDER BY {columnaOrden} {direccionOrden}, cedula ASC
+                    OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY;";
+
+                using var multi = connection.QueryMultiple(
+                    sql,
+                    new { filtro, pagina, paginacion });
+
+                return new CxCPersonasF4ListaDto
+                {
+                    total = multi.ReadSingle<int>(),
+                    lista = multi.Read<CxCPersonaDto>().ToList()
+                };
+            });
 
         /// <summary>
         /// Consulta las cuentas de una persona filtradas por estado.

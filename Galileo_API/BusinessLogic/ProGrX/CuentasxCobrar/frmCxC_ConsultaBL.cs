@@ -23,11 +23,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 
         /// <summary>Obtiene las personas de CxC para la búsqueda F4.</summary>
         /// <param name="codEmpresa">Código de la empresa activa.</param>
-        /// <param name="filtro">Texto para filtrar por cédula o nombre.</param>
-        /// <returns>Personas disponibles ordenadas por nombre.</returns>
-        public ErrorDto<List<CxCPersonaDto>> ConsultarPersonasF4(int codEmpresa, string? filtro)
+        /// <param name="request">Paginación, búsqueda y ordenamiento solicitados.</param>
+        /// <returns>Página de personas y cantidad total de registros.</returns>
+        public ErrorDto<CxCPersonasF4ListaDto> ConsultarPersonasF4(
+            int codEmpresa,
+            CxCPersonasF4FiltroDto request)
         {
-            return _db.ConsultarPersonasF4(codEmpresa, filtro);
+            return _db.ConsultarPersonasF4(codEmpresa, request);
         }
 
         /// <summary>Consulta las cuentas de una persona por estado.</summary>
