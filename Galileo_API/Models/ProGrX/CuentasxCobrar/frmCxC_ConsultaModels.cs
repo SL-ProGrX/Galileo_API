@@ -10,6 +10,21 @@
         public decimal? facturas_total { get; set; }
     }
 
+    public class CxCPersonasF4FiltroDto
+    {
+        public required int pagina { get; set; }
+        public required int paginacion { get; set; }
+        public string? filtro { get; set; }
+        public string? sortField { get; set; }
+        public required int sortOrder { get; set; }
+    }
+
+    public class CxCPersonasF4ListaDto
+    {
+        public int total { get; set; }
+        public List<CxCPersonaDto> lista { get; set; } = [];
+    }
+
     public class CxCCuentaDto
     {
         public long? operacion { get; set; }
