@@ -47,7 +47,7 @@ namespace Galileo.Controllers
         #region MÉTODOS APP_BLOCK
 
         [HttpGet("Bloqueo_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<Bloqueo> Bloqueo_ObtenerTodos(string Cod_App)
         {
             return new AplicacionBL(_config).Bloqueo_ObtenerTodos(Cod_App);
