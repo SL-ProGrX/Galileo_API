@@ -19,7 +19,7 @@ namespace Galileo.Controllers
 
         [HttpGet("CC_CA_Lineas_Obtener")]
         public ErrorDto<CcCaLineasLista> CC_CA_Lineas_Obtener(int CodEmpresa, string filtros)
-        {             
+        {
             return _bl.CC_CA_Lineas_Obtener(CodEmpresa, filtros);
         }
 
@@ -34,11 +34,17 @@ namespace Galileo.Controllers
         {
             return _bl.CC_CA_CatalogoLineas_Delete(CodEmpresa, Usuario, cod_linea);
         }
-        
+
         [HttpGet("CC_CA_Lineas_Cbo_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CC_CA_Lineas_Cbo_Obtener(int CodEmpresa)
         {
             return _bl.CC_CA_Lineas_Cbo_Obtener(CodEmpresa);
+        }
+
+        [HttpGet("CC_CA_Origenes_Cbo_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CC_CA_Origenes_Cbo_Obtener(int CodEmpresa, string tipoOrigen)
+        {
+            return _bl.CC_CA_Origenes_Cbo_Obtener(CodEmpresa, tipoOrigen);
         }
 
 
@@ -47,7 +53,16 @@ namespace Galileo.Controllers
         {
             return _bl.CC_CA_CatalogoLineas_Obtener(CodEmpresa, cod_linea);
         }
-             
+
+        [HttpGet("CC_CA_CatalogoAsignaciones_Obtener")]
+        public ErrorDto<List<CcCaCatalogoLineasData>> CC_CA_CatalogoAsignaciones_Obtener(
+            int CodEmpresa,
+            string tipoOrigen,
+            string codigoOrigen)
+        {
+            return _bl.CC_CA_CatalogoAsignaciones_Obtener(CodEmpresa, tipoOrigen, codigoOrigen);
+        }
+
         [HttpPost("CC_CA_LineasDetalle_Insertar")]
         public ErrorDto CC_CA_LineasDetalle_Insertar(int CodEmpresa, string usuario, string cod_linea, string codigo)
         {
@@ -58,6 +73,12 @@ namespace Galileo.Controllers
         public ErrorDto CC_CA_LineasDetalle_Delete(int CodEmpresa, string usuario, string cod_linea, string codigo)
         {
             return _bl.CC_CA_LineasDetalle_Delete(CodEmpresa, usuario, cod_linea, codigo);
+        }
+
+        [HttpPost("CC_CA_Asignacion_Guardar")]
+        public ErrorDto CC_CA_Asignacion_Guardar([FromBody] CcCaAsignacionGuardarRequest request)
+        {
+            return _bl.CC_CA_Asignacion_Guardar(request);
         }
     }
 }

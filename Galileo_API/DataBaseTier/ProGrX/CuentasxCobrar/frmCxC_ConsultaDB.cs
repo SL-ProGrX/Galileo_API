@@ -46,6 +46,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 parameters: new { cedula });
 
         /// <summary>
+        /// Obtiene las personas disponibles para la búsqueda F4 de Consulta de CxC.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="filtro">Texto opcional para filtrar por cédula o nombre.</param>
+        /// <returns>Primeras personas de CxC ordenadas por nombre.</returns>
+        public ErrorDto<List<CxCPersonaDto>> ConsultarPersonasF4(int codEmpresa, string? filtro)
+            => DbHelper.ExecuteListQuery<CxCPersonaDto>(
+                _portalDB,
+                codEmpresa,
+                @"SELECT TOP (100) cedula, nombre
+                  FROM CxC_Personas
+                  WHERE @filtro = ''
+                     OR cedula LIKE '%' + @filtro + '%'
+                     OR nombre LIKE '%' + @filtro + '%'
+                  ORDER BY nombre",
+                new { filtro = (filtro ?? string.Empty).Trim() });
+
+        /// <summary>
         /// Consulta las cuentas de una persona filtradas por estado.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa activa.</param>
