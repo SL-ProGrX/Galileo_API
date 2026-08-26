@@ -24,6 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var polizaIncendio = GetBool(row, "apl_poliza_incendio");
             var polizaPrenda = GetBool(row, "APL_POLIZA_VEHICULO");
             var polizaDesempleo = GetBool(row, "APL_POLIZA_DESEMPLEO");
+            var frecuenciaPago = ObtenerFrecuenciaPago(connection, GetString(row, "Cedula"));
 
             var recalculo = RecalcularCreditoPolizas(
                 connection,
@@ -32,6 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     Monto = monto,
                     Plazo = plazo,
                     Tasa = tasa,
+                    FrecuenciaPago = frecuenciaPago,
                     MontoConstruccion = montoConstruccion,
                     PolizaVida = polizaVida,
                     PolizaIncendio = polizaIncendio,
@@ -49,12 +51,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 monto = monto,
                 tasa = tasa,
                 plazo = plazo,
+                frecuencia_pago = frecuenciaPago,
                 cuota = recalculo.Cuota,
                 monto_construccion = montoConstruccion,
                 poliza_vida = polizaVida,
                 poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
                 poliza_prenda = polizaPrenda,
                 poliza_desempleo = polizaDesempleo,
+                primera_cuota = GetBool(row, "APL_PRIMER_CUOTA"),
                 monto_poliza_vida = recalculo.MontoPolizaVida,
                 monto_poliza_incendio = recalculo.MontoPolizaIncendio,
                 monto_poliza_prenda = recalculo.MontoPolizaPrenda,
@@ -121,6 +125,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 var polizaIncendio = request.poliza_incendio;
+                var frecuenciaPago = ObtenerFrecuenciaPago(connection, request.cedula);
 
                 var recalculo = RecalcularCreditoPolizas(
                     connection,
@@ -129,6 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         Monto = request.monto,
                         Plazo = plazo,
                         Tasa = tasa,
+                        FrecuenciaPago = frecuenciaPago,
                         MontoConstruccion = request.monto_construccion,
                         PolizaVida = request.poliza_vida,
                         PolizaIncendio = polizaIncendio,
@@ -211,6 +217,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             public decimal Monto { get; init; }
             public int Plazo { get; init; }
             public decimal Tasa { get; init; }
+            public string FrecuenciaPago { get; init; } = "M";
             public decimal MontoConstruccion { get; init; }
             public bool PolizaVida { get; init; }
             public bool PolizaIncendio { get; init; }
@@ -224,28 +231,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         private static decimal CalcularCuota(decimal monto, int plazo, decimal tasa, string frecuencia = "M")
         {
-            if (plazo <= 0 || monto <= 0)
-            {
-                return 0m;
-            }
-
-            double interesPeriodo = string.Equals(frecuencia, "Q", StringComparison.OrdinalIgnoreCase)
-                ? (double)tasa / (24 * 100)
-                : (double)tasa / (12 * 100);
-
-            if (tasa == 0)
-            {
-                return Math.Round(monto / plazo, 2, MidpointRounding.AwayFromZero);
-            }
-
-            double factor = Math.Pow(1 + interesPeriodo, plazo);
-            if (factor - 1 == 0)
-            {
-                return 0m;
-            }
-
-            double cuota = (double)monto * interesPeriodo * factor / (factor - 1);
-            return Math.Round((decimal)cuota, 2, MidpointRounding.AwayFromZero);
+            return monto <= 0m || plazo <= 0
+                ? 0m
+                : MCobroDb.fxCalcula_Cuota(monto, plazo, tasa, frecuencia);
         }
 
         /// <summary>
@@ -425,7 +413,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             IDbConnection connection,
             CreditoPolizasCalculoParametros parametros)
         {
-            var cuota = CalcularCuota(parametros.Monto, parametros.Plazo, parametros.Tasa);
+            var cuota = CalcularCuota(parametros.Monto, parametros.Plazo, parametros.Tasa, parametros.FrecuenciaPago);
 
             // VB6 (sbCalculaPolizaDeIncendio ~línea 14999): si hay Monto Construcción y el
             // checkbox está sin marcar, lo marca automáticamente.
@@ -456,6 +444,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 montoPolizaDesempleo,
                 compromiso,
                 autoMarcada);
+        }
+
+        /// <summary>
+        /// VB6: txtCedula_LostFocus / SbCargaCreditoFrecuenciaPago carga
+        /// isnull(I.Frecuencia,'M') como mFrecuenciaPago desde socios + Instituciones.
+        /// </summary>
+        private static string ObtenerFrecuenciaPago(IDbConnection connection, string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return "M";
+            }
+
+            const string sql = @"
+                SELECT ISNULL(I.Frecuencia, 'M')
+                FROM socios S
+                LEFT JOIN Instituciones I ON S.cod_institucion = I.cod_Institucion
+                WHERE S.cedula = @Cedula";
+
+            var frecuencia = connection.QueryFirstOrDefault<string>(
+                sql,
+                new { Cedula = cedula.Trim() });
+
+            return string.IsNullOrWhiteSpace(frecuencia) ? "M" : frecuencia.Trim();
         }
     }
 }

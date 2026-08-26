@@ -265,18 +265,20 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
             [FromQuery] string cod_preanalisis,
-            [FromQuery] string cod_garantia)
+            [FromQuery] string cod_garantia,
+            [FromQuery] DateTime? fechaFormaliza = null)
         {
-            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia);
+            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia, fechaFormaliza);
         }
 
         [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_Actualizar")]
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
             int codEmpresa,
             [FromQuery] string cod_garantia,
-            [FromBody] FrmPreaEstudiov2RefundicionesActualizarRequest request)
+            [FromBody] FrmPreaEstudiov2RefundicionesActualizarRequest request,
+            [FromQuery] DateTime? fechaFormaliza = null)
         {
-            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia);
+            return _bl.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia, fechaFormaliza);
         }
 
         [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica")]
