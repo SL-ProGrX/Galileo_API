@@ -1,4 +1,5 @@
 using System.Text;
+using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Galileo_API;
@@ -55,6 +56,15 @@ const string bearerScheme = "Bearer";
 
 builder.Services.AddSwaggerGen(c =>
 {
+    var xmlDocFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var safeXmlDocFileName = Path.GetFileName(xmlDocFileName);
+    if (Path.IsPathRooted(safeXmlDocFileName))
+        throw new InvalidOperationException("XML documentation file name must be relative.");
+
+    c.IncludeXmlComments(Path.Join(
+        AppContext.BaseDirectory,
+        safeXmlDocFileName));
+
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Galileo API",
@@ -90,9 +100,20 @@ builder.Services.AddHsts(options =>
 
 // === JWT Auth ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyString = builder.Configuration["Jwt:Secret"]; // user-secrets (dev) o env var Jwt__Secret (prod)
+var keyString = Environment.GetEnvironmentVariable("Jwt__Secret");
 if (string.IsNullOrWhiteSpace(keyString))
-    throw new InvalidOperationException("Jwt:Secret no está configurada. Define la key con 'dotnet user-secrets set \"Jwt:Secret\" \"...\"' en dev, o como variable Jwt__Secret en prod.");
+{
+    // Compatibilidad con User Secrets y con la configuración externa de producción.
+    var configuredSecret = builder.Configuration["Jwt:Secret"];
+    if (!string.IsNullOrWhiteSpace(configuredSecret))
+    {
+        Environment.SetEnvironmentVariable("Jwt__Secret", configuredSecret);
+        keyString = Environment.GetEnvironmentVariable("Jwt__Secret");
+    }
+
+    if (string.IsNullOrWhiteSpace(keyString))
+        throw new InvalidOperationException("Jwt:Secret no está configurada. Define la variable de entorno Jwt__Secret.");
+}
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
 
@@ -210,8 +231,8 @@ namespace Galileo_API
         public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
         {
             "http://localhost:4200",
-            "http://localhost:4201",
-            "http://localhost:4202",
+            "http://localhost:4300",
+            "http://localhost:4301",
             "http://localhost:61968",
             "http://localhost:61969",
             "https://progrxpruebas.aseccss.com",
