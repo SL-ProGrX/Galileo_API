@@ -740,7 +740,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         #endregion
 
         #region Selección
+        private sealed class SeleccionOmisionContexto
+        {
+            public string usuario { get; init; } =
+                string.Empty;
 
+            public string cedula { get; init; } =
+                string.Empty;
+
+            public long consecutivo { get; init; }
+
+            public int idError { get; init; }
+
+            public bool seleccionado { get; init; }
+
+            public long lineaError { get; init; }
+
+            public string documento { get; init; } =
+                string.Empty;
+        }
         /// <summary>
         /// Guarda o elimina inmediatamente la selección de una omisión sin
         /// marcarla como aplicada.
@@ -750,11 +768,67 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto<long?>
-            FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar(
-                int CodEmpresa,
-                string? usuario,
-                FndLiqSeguimientoRevisionesTagSeleccionRequest? request)
+     FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar(
+         int CodEmpresa,
+         string? usuario,
+         FndLiqSeguimientoRevisionesTagSeleccionRequest? request)
         {
+            string validacion = CrearContextoSeleccion(
+                usuario,
+                request,
+                out SeleccionOmisionContexto contexto);
+
+            if (validacion.Length > 0)
+            {
+                return DbHelper.CreateErrorResponse<long?>(
+                    validacion,
+                    -2,
+                    null);
+            }
+
+            return EjecutarSeleccionEnTransaccion(
+                CodEmpresa,
+                (connection, transaction) =>
+                {
+                    string codigo = ObtenerLlaveLiquidacion(
+                        connection,
+                        transaction,
+                        contexto.cedula,
+                        contexto.consecutivo);
+
+                    if (codigo.Length == 0)
+                    {
+                        return CrearErrorSeleccion(
+                            "No se encontró el plan y contrato de la liquidación indicada.",
+                            -2);
+                    }
+
+                    return contexto.seleccionado
+                        ? SeleccionarOmision(
+                            connection,
+                            transaction,
+                            contexto.cedula,
+                            codigo,
+                            contexto.documento,
+                            contexto.usuario,
+                            contexto.idError)
+                        : DeseleccionarOmision(
+                            connection,
+                            transaction,
+                            contexto.cedula,
+                            codigo,
+                            contexto.documento,
+                            contexto.idError,
+                            contexto.lineaError);
+                });
+        }
+        private static string CrearContextoSeleccion(
+    string? usuario,
+    FndLiqSeguimientoRevisionesTagSeleccionRequest? request,
+    out SeleccionOmisionContexto contexto)
+        {
+            contexto = new SeleccionOmisionContexto();
+
             string usuarioActual = (usuario ?? string.Empty)
                 .Trim()
                 .ToUpperInvariant();
@@ -765,67 +839,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (validacion.Length > 0)
             {
-                return DbHelper.CreateErrorResponse<long?>(
-                    validacion,
-                    -2,
-                    null);
+                return validacion;
             }
-
-            string cedula = (
-                request?.cedula ?? string.Empty)
-                .Trim();
 
             long consecutivo =
                 request?.consecutivo ?? 0L;
 
-            int idError =
-                request?.id_error ?? 0;
+            contexto = new SeleccionOmisionContexto
+            {
+                usuario = usuarioActual,
+                cedula = (
+                    request?.cedula ?? string.Empty)
+                    .Trim(),
+                consecutivo = consecutivo,
+                idError = request?.id_error ?? 0,
+                seleccionado =
+                    request?.seleccionado ?? false,
+                lineaError =
+                    request?.linea_err ?? 0L,
+                documento = Convert.ToString(
+                    consecutivo,
+                    CultureInfo.InvariantCulture),
+            };
 
-            bool seleccionado =
-                request?.seleccionado ?? false;
-
-            long lineaError =
-                request?.linea_err ?? 0L;
-
-            string documento = Convert.ToString(
-                consecutivo,
-                CultureInfo.InvariantCulture);
-
-            return EjecutarSeleccionEnTransaccion(
-                CodEmpresa,
-                (connection, transaction) =>
-                {
-                    string codigo = ObtenerLlaveLiquidacion(
-                        connection,
-                        transaction,
-                        cedula,
-                        consecutivo);
-
-                    if (codigo.Length == 0)
-                    {
-                        return CrearErrorSeleccion(
-                            "No se encontró el plan y contrato de la liquidación indicada.",
-                            -2);
-                    }
-
-                    return seleccionado
-                        ? SeleccionarOmision(
-                            connection,
-                            transaction,
-                            cedula,
-                            codigo,
-                            documento,
-                            usuarioActual,
-                            idError)
-                        : DeseleccionarOmision(
-                            connection,
-                            transaction,
-                            cedula,
-                            codigo,
-                            documento,
-                            idError,
-                            lineaError);
-                });
+            return string.Empty;
         }
         private ErrorDto<long?> EjecutarSeleccionEnTransaccion(
     int CodEmpresa,
