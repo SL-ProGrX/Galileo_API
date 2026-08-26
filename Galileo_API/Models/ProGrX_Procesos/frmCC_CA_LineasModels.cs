@@ -23,6 +23,16 @@ namespace Galileo.Models.GEN
         public bool activo => existe != "-1";
     }
 
+    public class CcCaAsignacionGuardarRequest
+    {
+        public required int codEmpresa { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public string tipoOrigen { get; set; } = string.Empty;
+        public string codigoOrigen { get; set; } = string.Empty;
+        public string codigo { get; set; } = string.Empty;
+        public required bool activo { get; set; }
+    }
+
 
     public class CcCaLineasActivasData
     {

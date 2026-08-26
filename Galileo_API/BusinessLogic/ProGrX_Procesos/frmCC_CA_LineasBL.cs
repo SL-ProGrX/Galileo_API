@@ -25,12 +25,23 @@ namespace Galileo.BusinessLogic
             return _db.CC_CA_Lineas_Guardar(CodEmpresa, usuario, request);
         }
         public ErrorDto<List<DropDownListaGenericaModel>> CC_CA_Lineas_Cbo_Obtener(int CodEmpresa)
-        {             
+        {
             return _db.CC_CA_Lineas_Cbo_Obtener(CodEmpresa);
+        }
+        public ErrorDto<List<DropDownListaGenericaModel>> CC_CA_Origenes_Cbo_Obtener(int CodEmpresa, string tipoOrigen)
+        {
+            return _db.CC_CA_Origenes_Cbo_Obtener(CodEmpresa, tipoOrigen);
         }
         public ErrorDto<List<CcCaCatalogoLineasData>> CC_CA_CatalogoLineas_Obtener(int CodEmpresa, string cod_Linea)
         {
             return _db.CC_CA_CatalogoLineas_Obtener(CodEmpresa, cod_Linea);
+        }
+        public ErrorDto<List<CcCaCatalogoLineasData>> CC_CA_CatalogoAsignaciones_Obtener(
+            int CodEmpresa,
+            string tipoOrigen,
+            string codigoOrigen)
+        {
+            return _db.CC_CA_CatalogoAsignaciones_Obtener(CodEmpresa, tipoOrigen, codigoOrigen);
         }
         public ErrorDto CC_CA_CatalogoLineas_Delete(int CodEmpresa, string Usuario, string cod_Linea)
         {
@@ -43,6 +54,10 @@ namespace Galileo.BusinessLogic
         public ErrorDto CC_CA_LineasDetalle_Delete(int CodEmpresa, string usuario, string cod_Linea, string codigo)
         {
             return _db.CC_CA_LineasDetalle_Delete(CodEmpresa, usuario, cod_Linea, codigo);
+        }
+        public ErrorDto CC_CA_Asignacion_Guardar(CcCaAsignacionGuardarRequest request)
+        {
+            return _db.CC_CA_Asignacion_Guardar(request);
         }
 
     }
