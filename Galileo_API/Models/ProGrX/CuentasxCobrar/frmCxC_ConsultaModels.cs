@@ -12,11 +12,11 @@
 
     public class CxCPersonasF4FiltroDto
     {
-        public int pagina { get; set; }
-        public int paginacion { get; set; } = 30;
+        public required int pagina { get; set; }
+        public required int paginacion { get; set; }
         public string? filtro { get; set; }
         public string? sortField { get; set; }
-        public int sortOrder { get; set; } = 1;
+        public required int sortOrder { get; set; }
     }
 
     public class CxCPersonasF4ListaDto

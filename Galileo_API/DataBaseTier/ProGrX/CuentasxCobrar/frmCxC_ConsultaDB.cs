@@ -59,15 +59,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var pagina = Math.Max(request.pagina, 0);
                 var paginacion = Math.Clamp(request.paginacion, 1, 100);
                 var filtro = (request.filtro ?? string.Empty).Trim();
-                var columnaOrden = string.Equals(
+                var sortField = string.Equals(
                     request.sortField,
                     "cedula",
                     StringComparison.OrdinalIgnoreCase)
                     ? "cedula"
                     : "nombre";
-                var direccionOrden = request.sortOrder == -1 ? "DESC" : "ASC";
+                var sortOrder = request.sortOrder == -1 ? -1 : 1;
 
-                var sql = $@"
+                const string sql = @"
                     SELECT COUNT(*)
                     FROM CxC_Personas
                     WHERE @filtro = ''
@@ -79,12 +79,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     WHERE @filtro = ''
                        OR cedula LIKE '%' + @filtro + '%'
                        OR nombre LIKE '%' + @filtro + '%'
-                    ORDER BY {columnaOrden} {direccionOrden}, cedula ASC
+                    ORDER BY
+                        CASE WHEN @sortField = 'cedula' AND @sortOrder = 1 THEN cedula END ASC,
+                        CASE WHEN @sortField = 'cedula' AND @sortOrder = -1 THEN cedula END DESC,
+                        CASE WHEN @sortField = 'nombre' AND @sortOrder = 1 THEN nombre END ASC,
+                        CASE WHEN @sortField = 'nombre' AND @sortOrder = -1 THEN nombre END DESC,
+                        cedula ASC
                     OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY;";
 
                 using var multi = connection.QueryMultiple(
                     sql,
-                    new { filtro, pagina, paginacion });
+                    new { filtro, pagina, paginacion, sortField, sortOrder });
 
                 return new CxCPersonasF4ListaDto
                 {
