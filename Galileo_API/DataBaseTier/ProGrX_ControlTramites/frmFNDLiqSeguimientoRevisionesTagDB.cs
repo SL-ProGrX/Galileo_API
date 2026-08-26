@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 {
-    public class frmFNDLiqSeguimientoRevisionesTagDB
+    public class FrmFndLiqSeguimientoRevisionesTagDb
     {
         private const int ModuloControlTramites = 8;
         private const string CodigoModulo = "FLQ";
@@ -35,13 +35,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             };
 
         private readonly PortalDB _portalDB;
-        private readonly MSecurityMainDb _securityMainDB;
 
-        public frmFNDLiqSeguimientoRevisionesTagDB(
+        public FrmFndLiqSeguimientoRevisionesTagDb(
             IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _securityMainDB = new MSecurityMainDb(config);
         }
 
         #region Liquidaciones
@@ -751,7 +749,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<long?> FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar(int CodEmpresa, string? usuario, FndLiqSeguimientoRevisionesTagSeleccionRequest? request)
+        public ErrorDto<long?>
+            FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar(
+                int CodEmpresa,
+                string? usuario,
+                FndLiqSeguimientoRevisionesTagSeleccionRequest? request)
         {
             string usuarioActual = (usuario ?? string.Empty)
                 .Trim()
@@ -769,16 +771,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     null);
             }
 
-            string cedula = request!.cedula!.Trim();
-            long consecutivo = request.consecutivo!.Value;
-            int idError = request.id_error!.Value;
+            string cedula = (
+                request?.cedula ?? string.Empty)
+                .Trim();
+
+            long consecutivo =
+                request?.consecutivo ?? 0L;
+
+            int idError =
+                request?.id_error ?? 0;
+
+            bool seleccionado =
+                request?.seleccionado ?? false;
+
+            long lineaError =
+                request?.linea_err ?? 0L;
 
             string documento = Convert.ToString(
                 consecutivo,
                 CultureInfo.InvariantCulture);
 
             string connectionString =
-                _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+                _portalDB.ObtenerDbConnStringEmpresa(
+                    CodEmpresa);
 
             try
             {
@@ -806,24 +821,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         null);
                 }
 
-                ErrorDto<long?> resultado =
-                    request.seleccionado.GetValueOrDefault()
-                        ? SeleccionarOmision(
-                            connection,
-                            transaction,
-                            cedula,
-                            codigo,
-                            documento,
-                            usuarioActual,
-                            idError)
-                        : DeseleccionarOmision(
-                            connection,
-                            transaction,
-                            cedula,
-                            codigo,
-                            documento,
-                            idError,
-                            request.linea_err!.Value);
+                ErrorDto<long?> resultado = seleccionado
+                    ? SeleccionarOmision(
+                        connection,
+                        transaction,
+                        cedula,
+                        codigo,
+                        documento,
+                        usuarioActual,
+                        idError)
+                    : DeseleccionarOmision(
+                        connection,
+                        transaction,
+                        cedula,
+                        codigo,
+                        documento,
+                        idError,
+                        lineaError);
 
                 if ((resultado.Code ?? -1) != 0)
                 {
@@ -1297,7 +1311,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         #endregion
 
         #region Contexto de liquidación
-        private class LiquidacionContexto
+        sealed class LiquidacionContexto
         {
             public string cedula { get; set; } = string.Empty;
             public long consecutivo { get; set; }

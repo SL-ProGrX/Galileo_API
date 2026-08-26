@@ -3,13 +3,13 @@ using Galileo_API.DataBaseTier.ProGrX_ControlTramites;
 
 namespace Galileo_API.BusinessLogic.ProGrX_ControlTramites
 {
-    public class frmFNDLiqSeguimientoRevisionesTagBL
+    public class FrmFndLiqSeguimientoRevisionesTagBl
     {
-        private readonly frmFNDLiqSeguimientoRevisionesTagDB _db;
+        private readonly FrmFndLiqSeguimientoRevisionesTagDb _db;
 
-        public frmFNDLiqSeguimientoRevisionesTagBL(IConfiguration config)
+        public FrmFndLiqSeguimientoRevisionesTagBl(IConfiguration config)
         {
-            _db = new frmFNDLiqSeguimientoRevisionesTagDB(config);
+            _db = new FrmFndLiqSeguimientoRevisionesTagDb(config);
         }
 
         public ErrorDto<FndLiqSeguimientoRevisionesTagLiquidacionesListaResult> FND_LiqSeguimientoRevisionesTag_Liquidaciones_Lista_Obtener(int CodEmpresa, string parametros, bool soloSinRetencion)

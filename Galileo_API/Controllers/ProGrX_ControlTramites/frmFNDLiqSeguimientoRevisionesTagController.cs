@@ -7,13 +7,13 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmFNDLiqSeguimientoRevisionesTagController : ControllerBase
+    public class FrmFndLiqSeguimientoRevisionesTagController : ControllerBase
     {
-        private readonly frmFNDLiqSeguimientoRevisionesTagBL _bl;
+        private readonly FrmFndLiqSeguimientoRevisionesTagBl _bl;
 
-        public frmFNDLiqSeguimientoRevisionesTagController(IConfiguration config)
+        public FrmFndLiqSeguimientoRevisionesTagController(IConfiguration config)
         {
-            _bl = new frmFNDLiqSeguimientoRevisionesTagBL(config);
+            _bl = new FrmFndLiqSeguimientoRevisionesTagBl(config);
         }
 
         [Authorize]
