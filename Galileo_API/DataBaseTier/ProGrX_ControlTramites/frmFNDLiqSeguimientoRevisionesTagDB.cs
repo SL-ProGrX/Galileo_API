@@ -791,6 +791,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 consecutivo,
                 CultureInfo.InvariantCulture);
 
+            return EjecutarSeleccionEnTransaccion(
+                CodEmpresa,
+                (connection, transaction) =>
+                {
+                    string codigo = ObtenerLlaveLiquidacion(
+                        connection,
+                        transaction,
+                        cedula,
+                        consecutivo);
+
+                    if (codigo.Length == 0)
+                    {
+                        return CrearErrorSeleccion(
+                            "No se encontró el plan y contrato de la liquidación indicada.",
+                            -2);
+                    }
+
+                    return seleccionado
+                        ? SeleccionarOmision(
+                            connection,
+                            transaction,
+                            cedula,
+                            codigo,
+                            documento,
+                            usuarioActual,
+                            idError)
+                        : DeseleccionarOmision(
+                            connection,
+                            transaction,
+                            cedula,
+                            codigo,
+                            documento,
+                            idError,
+                            lineaError);
+                });
+        }
+        private ErrorDto<long?> EjecutarSeleccionEnTransaccion(
+    int CodEmpresa,
+    Func<
+        SqlConnection,
+        SqlTransaction,
+        ErrorDto<long?>
+    > operacion)
+        {
             string connectionString =
                 _portalDB.ObtenerDbConnStringEmpresa(
                     CodEmpresa);
@@ -805,39 +849,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 using var transaction =
                     connection.BeginTransaction();
 
-                string codigo = ObtenerLlaveLiquidacion(
+                ErrorDto<long?> resultado = operacion(
                     connection,
-                    transaction,
-                    cedula,
-                    consecutivo);
-
-                if (codigo.Length == 0)
-                {
-                    transaction.Rollback();
-
-                    return DbHelper.CreateErrorResponse<long?>(
-                        "No se encontró el plan y contrato de la liquidación indicada.",
-                        -2,
-                        null);
-                }
-
-                ErrorDto<long?> resultado = seleccionado
-                    ? SeleccionarOmision(
-                        connection,
-                        transaction,
-                        cedula,
-                        codigo,
-                        documento,
-                        usuarioActual,
-                        idError)
-                    : DeseleccionarOmision(
-                        connection,
-                        transaction,
-                        cedula,
-                        codigo,
-                        documento,
-                        idError,
-                        lineaError);
+                    transaction);
 
                 if ((resultado.Code ?? -1) != 0)
                 {
@@ -850,27 +864,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             }
             catch (SqlException ex)
             {
-                return DbHelper.CreateErrorResponse<long?>(
-                    ex.Message,
-                    -1,
-                    null);
+                return CrearErrorSeleccion(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                return DbHelper.CreateErrorResponse<long?>(
-                    ex.Message,
-                    -1,
-                    null);
+                return CrearErrorSeleccion(ex.Message);
             }
             catch (DataException ex)
             {
-                return DbHelper.CreateErrorResponse<long?>(
-                    ex.Message,
-                    -1,
-                    null);
+                return CrearErrorSeleccion(ex.Message);
             }
         }
 
+        private static ErrorDto<long?> CrearErrorSeleccion(
+            string mensaje,
+            int codigo = -1)
+        {
+            return DbHelper.CreateErrorResponse<long?>(
+                mensaje,
+                codigo,
+                null);
+        }
         private static string ObtenerLlaveLiquidacion(SqlConnection connection,SqlTransaction transaction,string cedula, long consecutivo)
         {
             const string sql = """
