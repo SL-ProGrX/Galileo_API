@@ -317,7 +317,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     Usuario = registro.Usuario,
                     Notas = registro.Notas,
                     Documento = registro.Documento,
-                    Modulo = registro.Modulo,
+                    Modulo = registro.CodModulo,
                     Llave_01 = registro.Codigo,
                     Llave_02 = registro.Documento,
                     Llave_03 = string.Empty
@@ -481,6 +481,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             string Usuario,
             string Notas,
             string Documento,
-            string Modulo);
+            string CodModulo);
     }
 }
