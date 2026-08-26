@@ -312,12 +312,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     .AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
                         connection,
                         transaction,
-                        codBeneficio,
-                        tagDevolucion,
-                        usuario,
-                        NotasAplicar,
-                        item.Consec.ToString(),
-                        Modulo);
+                        new FrmAfRecepcionDevolucionesTagsDb.RecepcionDevolucionTagRegistro(
+                            codBeneficio,
+                            tagDevolucion,
+                            usuario,
+                            NotasAplicar,
+                            item.Consec.ToString(),
+                            Modulo));
 
                 aplicados++;
             }

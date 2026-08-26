@@ -302,34 +302,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         /// </summary>
         /// <param name="connection">Conexion SQL.</param>
         /// <param name="transaction">Transaccion activa.</param>
-        /// <param name="codigo">Codigo (cedula o beneficio).</param>
-        /// <param name="tag">Tag de devolucion.</param>
-        /// <param name="usuario">Usuario que aplica.</param>
-        /// <param name="notas">Notas del registro.</param>
-        /// <param name="documento">Documento / consecutivo.</param>
-        /// <param name="modulo">Modulo AFI o BEN.</param>
+        /// <param name="registro">Datos del tag a registrar.</param>
         internal static void AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
             SqlConnection connection,
             SqlTransaction transaction,
-            string codigo,
-            string tag,
-            string usuario,
-            string notas,
-            string documento,
-            string modulo)
+            RecepcionDevolucionTagRegistro registro)
         {
             connection.Execute(
                 "spSIFRegistraTags",
                 new
                 {
-                    Codigo = codigo,
-                    Tag = tag,
-                    Usuario = usuario,
-                    Notas = notas,
-                    Documento = documento,
-                    Modulo = modulo,
-                    Llave_01 = codigo,
-                    Llave_02 = documento,
+                    Codigo = registro.Codigo,
+                    Tag = registro.Tag,
+                    Usuario = registro.Usuario,
+                    Notas = registro.Notas,
+                    Documento = registro.Documento,
+                    Modulo = registro.Modulo,
+                    Llave_01 = registro.Codigo,
+                    Llave_02 = registro.Documento,
                     Llave_03 = string.Empty
                 },
                 transaction,
@@ -428,12 +418,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
                     connection,
                     transaction,
-                    cedula,
-                    tagDevolucion,
-                    usuario,
-                    NotasAplicar,
-                    item.Consec.ToString(),
-                    Modulo);
+                    new RecepcionDevolucionTagRegistro(
+                        cedula,
+                        tagDevolucion,
+                        usuario,
+                        NotasAplicar,
+                        item.Consec.ToString(),
+                        Modulo));
 
                 aplicados++;
             }
@@ -483,5 +474,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             public string Tag_Aplicado { get; set; } = string.Empty;
             public string Tag_Devolucion { get; set; } = string.Empty;
         }
+
+        internal readonly record struct RecepcionDevolucionTagRegistro(
+            string Codigo,
+            string Tag,
+            string Usuario,
+            string Notas,
+            string Documento,
+            string Modulo);
     }
 }
