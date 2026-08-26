@@ -221,74 +221,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         }
 
         /// <summary>
-        /// Consulta la afiliacion elegible por cedula (VB6 sbCargaInformacion).
-        /// </summary>
-        /// <param name="connection">Conexion SQL.</param>
-        /// <param name="transaction">Transaccion opcional.</param>
-        /// <param name="cedula">Cedula a buscar.</param>
-        /// <param name="tags">Tags de parametros 11 y 12.</param>
-        /// <returns>Afiliacion o null.</returns>
-        private static AfRecepcionDevolucionesTagsData?
-            AF_frmAF_RecepcionDevolucionesTags_Cedula_Consultar(
-                SqlConnection connection,
-                SqlTransaction? transaction,
-                string cedula,
-                TagsConfiguracion tags)
-        {
-            const string sql = """
-                -- @Cedula: cedula a consultar
-                -- @TagDocumentoDevuelto: tag S04 de documento devuelto
-                -- @Modulo: modulo AFI
-                -- @TagAplicado: parametro 11
-                -- @TagDevolucion: parametro 12
-                select top 1
-                    isnull(rtrim(I.CEDULA), '') as Cedula,
-                    isnull(rtrim(S.nombre), '') as Nombre,
-                    isnull(rtrim(O.DESCRIPCION), '') as Descripcion,
-                    I.CONSEC as Consec
-                from AFI_INGRESOS I
-                inner join SOCIOS S
-                    on I.CEDULA = S.CEDULA
-                left join SIF_OFICINAS O
-                    on I.COD_OFICINA = O.COD_OFICINA
-                where I.CEDULA in (
-                    select CT.codigo
-                    from SIF_CONTROL_TAGS CT
-                    where CT.codigo = @Cedula
-                      and CT.TAG_CODIGO = @TagDocumentoDevuelto
-                      and CT.cod_modulo = @Modulo
-                )
-                  and I.Analista_recepcion = 2
-                  and dbo.fxSIFValidaTagRev(
-                        I.cedula,
-                        @TagAplicado,
-                        @TagDevolucion,
-                        @Modulo,
-                        I.consec,
-                        null
-                      ) <> 1;
-                """;
-
-            return connection.QueryFirstOrDefault<AfRecepcionDevolucionesTagsData>(
-                sql,
-                new
-                {
-                    Cedula = cedula,
-                    TagDocumentoDevuelto,
-                    Modulo,
-                    TagAplicado = tags.Tag_Aplicado,
-                    TagDevolucion = tags.Tag_Devolucion
-                },
-                transaction);
-        }
-
-        /// <summary>
-        /// Obtiene y valida parametros 11 y 12 (VB6 Form_Load).
+        /// Obtiene y valida parametros 11 y 12 (compartido con BeneTags).
         /// </summary>
         /// <param name="connection">Conexion SQL.</param>
         /// <param name="transaction">Transaccion opcional.</param>
         /// <returns>Configuracion de tags.</returns>
-        private static TagsConfiguracion
+        internal static TagsConfiguracion
             AF_frmAF_RecepcionDevolucionesTags_Tags_Obtener(
                 SqlConnection connection,
                 SqlTransaction? transaction)
@@ -360,6 +298,107 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         }
 
         /// <summary>
+        /// Ejecuta spSIFRegistraTags (compartido con BeneTags).
+        /// </summary>
+        /// <param name="connection">Conexion SQL.</param>
+        /// <param name="transaction">Transaccion activa.</param>
+        /// <param name="codigo">Codigo (cedula o beneficio).</param>
+        /// <param name="tag">Tag de devolucion.</param>
+        /// <param name="usuario">Usuario que aplica.</param>
+        /// <param name="notas">Notas del registro.</param>
+        /// <param name="documento">Documento / consecutivo.</param>
+        /// <param name="modulo">Modulo AFI o BEN.</param>
+        internal static void AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string codigo,
+            string tag,
+            string usuario,
+            string notas,
+            string documento,
+            string modulo)
+        {
+            connection.Execute(
+                "spSIFRegistraTags",
+                new
+                {
+                    Codigo = codigo,
+                    Tag = tag,
+                    Usuario = usuario,
+                    Notas = notas,
+                    Documento = documento,
+                    Modulo = modulo,
+                    Llave_01 = codigo,
+                    Llave_02 = documento,
+                    Llave_03 = string.Empty
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        /// <summary>
+        /// Consulta la afiliacion elegible por cedula (VB6 sbCargaInformacion).
+        /// </summary>
+        /// <param name="connection">Conexion SQL.</param>
+        /// <param name="transaction">Transaccion opcional.</param>
+        /// <param name="cedula">Cedula a buscar.</param>
+        /// <param name="tags">Tags de parametros 11 y 12.</param>
+        /// <returns>Afiliacion o null.</returns>
+        private static AfRecepcionDevolucionesTagsData?
+            AF_frmAF_RecepcionDevolucionesTags_Cedula_Consultar(
+                SqlConnection connection,
+                SqlTransaction? transaction,
+                string cedula,
+                TagsConfiguracion tags)
+        {
+            const string sql = """
+                -- @Cedula: cedula a consultar
+                -- @TagDocumentoDevuelto: tag S04 de documento devuelto
+                -- @Modulo: modulo AFI
+                -- @TagAplicado: parametro 11
+                -- @TagDevolucion: parametro 12
+                select top 1
+                    isnull(rtrim(I.CEDULA), '') as Cedula,
+                    isnull(rtrim(S.nombre), '') as Nombre,
+                    isnull(rtrim(O.DESCRIPCION), '') as Descripcion,
+                    I.CONSEC as Consec
+                from AFI_INGRESOS I
+                inner join SOCIOS S
+                    on I.CEDULA = S.CEDULA
+                left join SIF_OFICINAS O
+                    on I.COD_OFICINA = O.COD_OFICINA
+                where I.CEDULA in (
+                    select CT.codigo
+                    from SIF_CONTROL_TAGS CT
+                    where CT.codigo = @Cedula
+                      and CT.TAG_CODIGO = @TagDocumentoDevuelto
+                      and CT.cod_modulo = @Modulo
+                )
+                  and I.Analista_recepcion = 2
+                  and dbo.fxSIFValidaTagRev(
+                        I.cedula,
+                        @TagAplicado,
+                        @TagDevolucion,
+                        @Modulo,
+                        I.consec,
+                        null
+                      ) <> 1;
+                """;
+
+            return connection.QueryFirstOrDefault<AfRecepcionDevolucionesTagsData>(
+                sql,
+                new
+                {
+                    Cedula = cedula,
+                    TagDocumentoDevuelto,
+                    Modulo,
+                    TagAplicado = tags.Tag_Aplicado,
+                    TagDevolucion = tags.Tag_Devolucion
+                },
+                transaction);
+        }
+
+        /// <summary>
         /// Registra tags de devolucion para cada item (VB6 sbAplicarRecepcionDevolucion).
         /// </summary>
         /// <param name="connection">Conexion SQL.</param>
@@ -374,6 +413,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             string tagDevolucion)
         {
             int aplicados = 0;
+            string usuario = request.Usuario.Trim();
 
             foreach (var item in request.Items)
             {
@@ -385,22 +425,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         "La lista contiene registros no validos.");
                 }
 
-                connection.Execute(
-                    "spSIFRegistraTags",
-                    new
-                    {
-                        Codigo = cedula,
-                        Tag = tagDevolucion,
-                        Usuario = request.Usuario.Trim(),
-                        Notas = NotasAplicar,
-                        Documento = item.Consec.ToString(),
-                        Modulo,
-                        Llave_01 = cedula,
-                        Llave_02 = item.Consec.ToString(),
-                        Llave_03 = string.Empty
-                    },
+                AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
+                    connection,
                     transaction,
-                    commandType: CommandType.StoredProcedure);
+                    cedula,
+                    tagDevolucion,
+                    usuario,
+                    NotasAplicar,
+                    item.Consec.ToString(),
+                    Modulo);
 
                 aplicados++;
             }
@@ -445,7 +478,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 new AfRecepcionDevolucionesTagsAplicarData());
         }
 
-        private sealed class TagsConfiguracion
+        internal sealed class TagsConfiguracion
         {
             public string Tag_Aplicado { get; set; } = string.Empty;
             public string Tag_Devolucion { get; set; } = string.Empty;

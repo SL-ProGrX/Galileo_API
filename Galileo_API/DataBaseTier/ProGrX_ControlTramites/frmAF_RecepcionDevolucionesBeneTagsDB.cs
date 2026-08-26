@@ -36,9 +36,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
 
-                var tags = AF_frmAF_RecepcionDevolucionesBeneTags_Tags_Obtener(
-                    connection,
-                    null);
+                var tags = FrmAfRecepcionDevolucionesTagsDb
+                    .AF_frmAF_RecepcionDevolucionesTags_Tags_Obtener(
+                        connection,
+                        null);
 
                 var beneficios = connection.Query<DropDownListaGenericaModel>(
                     """
@@ -112,10 +113,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
 
-                _ = AF_frmAF_RecepcionDevolucionesBeneTags_Tags_Obtener(
-                    connection,
-                    null);
-
                 var beneficio = AF_frmAF_RecepcionDevolucionesBeneTags_Beneficio_Consultar(
                     connection,
                     null,
@@ -132,13 +129,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                 return DbHelper.CreateOkResponse<AfRecepcionDevolucionesBeneTagsData?>(
                     beneficio);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesBeneTagsData?>(
-                    ex.Message,
-                    -2,
-                    null);
             }
             catch (SqlException ex)
             {
@@ -184,9 +174,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                 try
                 {
-                    var tags = AF_frmAF_RecepcionDevolucionesBeneTags_Tags_Obtener(
-                        connection,
-                        transaction);
+                    var tags = FrmAfRecepcionDevolucionesTagsDb
+                        .AF_frmAF_RecepcionDevolucionesTags_Tags_Obtener(
+                            connection,
+                            transaction);
 
                     if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
                     {
@@ -291,83 +282,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         }
 
         /// <summary>
-        /// Obtiene y valida parametros 11 y 12 (VB6 Form_Load).
-        /// </summary>
-        /// <param name="connection">Conexion SQL.</param>
-        /// <param name="transaction">Transaccion opcional.</param>
-        /// <returns>Configuracion de tags.</returns>
-        private static TagsConfiguracion
-            AF_frmAF_RecepcionDevolucionesBeneTags_Tags_Obtener(
-                SqlConnection connection,
-                SqlTransaction? transaction)
-        {
-            const string sql = """
-                -- @ParamAplicado: codigo parametro 11
-                -- @ParamDevolucion: codigo parametro 12
-                select
-                    isnull((
-                        select nullif(rtrim(valor), '')
-                        from SIF_PARAMETROS
-                        where cod_parametro = @ParamAplicado
-                    ), '') as Tag_Aplicado,
-                    isnull((
-                        select nullif(rtrim(valor), '')
-                        from SIF_PARAMETROS
-                        where cod_parametro = @ParamDevolucion
-                    ), '') as Tag_Devolucion;
-                """;
-
-            var tags = connection.QuerySingleOrDefault<TagsConfiguracion>(
-                sql,
-                new
-                {
-                    ParamAplicado = "11",
-                    ParamDevolucion = "12"
-                },
-                transaction)
-                ?? new TagsConfiguracion();
-
-            if (string.IsNullOrWhiteSpace(tags.Tag_Aplicado))
-            {
-                throw new InvalidOperationException(
-                    "Falta agregar el parametro 11 en la base de datos.");
-            }
-
-            if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
-            {
-                throw new InvalidOperationException(
-                    "Falta agregar el parametro 12 en la base de datos.");
-            }
-
-            int existeTag = connection.ExecuteScalar<int>(
-                """
-                -- @Tag: codigo de tag de devolucion
-                select case
-                    when exists (
-                        select 1
-                        from SIF_TAGS
-                        where TAG_CODIGO = @Tag
-                    )
-                    then 1
-                    else 0
-                end;
-                """,
-                new
-                {
-                    Tag = tags.Tag_Devolucion
-                },
-                transaction);
-
-            if (existeTag == 0)
-            {
-                throw new InvalidOperationException(
-                    "El codigo de tag definido en los parametros para la Recepcion/Devolucion no existe.");
-            }
-
-            return tags;
-        }
-
-        /// <summary>
         /// Registra tags de devolucion (VB6 sbAplicarRecepcionDevolucion).
         /// </summary>
         /// <param name="connection">Conexion SQL.</param>
@@ -382,6 +296,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             string tagDevolucion)
         {
             int aplicados = 0;
+            string usuario = request.Usuario.Trim();
 
             foreach (var item in request.Items)
             {
@@ -393,24 +308,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         "La lista contiene registros no validos.");
                 }
 
-                string documento = item.Consec.ToString();
-
-                connection.Execute(
-                    "spSIFRegistraTags",
-                    new
-                    {
-                        Codigo = codBeneficio,
-                        Tag = tagDevolucion,
-                        Usuario = request.Usuario.Trim(),
-                        Notas = NotasAplicar,
-                        Documento = documento,
-                        Modulo,
-                        Llave_01 = codBeneficio,
-                        Llave_02 = documento,
-                        Llave_03 = string.Empty
-                    },
-                    transaction,
-                    commandType: CommandType.StoredProcedure);
+                FrmAfRecepcionDevolucionesTagsDb
+                    .AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
+                        connection,
+                        transaction,
+                        codBeneficio,
+                        tagDevolucion,
+                        usuario,
+                        NotasAplicar,
+                        item.Consec.ToString(),
+                        Modulo);
 
                 aplicados++;
             }
@@ -453,12 +360,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 mensaje,
                 -2,
                 new AfRecepcionDevolucionesBeneTagsAplicarData());
-        }
-
-        private sealed class TagsConfiguracion
-        {
-            public string Tag_Aplicado { get; set; } = string.Empty;
-            public string Tag_Devolucion { get; set; } = string.Empty;
         }
     }
 }
