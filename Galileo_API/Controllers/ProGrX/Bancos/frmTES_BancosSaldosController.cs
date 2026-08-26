@@ -60,5 +60,14 @@ namespace Galileo_API.Controllers
         {
             return _bancosSaldosBL.TES_BancosSaldos_Cierres_Actualizar(CodEmpresa, Usuario, Datos);
         }
+
+        [HttpPost("TES_BancosSaldos_Cierres_CargaMasiva")]
+        public ErrorDto<TesBancosSaldosCargaMasivaResult> TES_BancosSaldos_Cierres_CargaMasiva(
+            int CodEmpresa,
+            string Usuario,
+            [FromBody] TesBancosSaldosCargaMasivaRequest request)
+        {
+            return _bancosSaldosBL.TES_BancosSaldos_Cierres_CargaMasiva(CodEmpresa, Usuario, request);
+        }
     }
 }

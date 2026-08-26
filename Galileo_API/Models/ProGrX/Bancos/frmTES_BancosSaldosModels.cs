@@ -40,6 +40,39 @@
         public string? tipo_cierre { get; set; }
     }
 
+    public class TesBancosSaldosCargaMasivaDto
+    {
+        public int? linea { get; set; }
+        public string codigo_cuenta { get; set; } = string.Empty;
+        public string nombre_cuenta { get; set; } = string.Empty;
+        public DateTime fecha_inicio { get; set; }
+        public DateTime fecha_corte { get; set; }
+        public decimal saldo_inicial { get; set; }
+        public decimal saldo_final { get; set; }
+    }
+
+    public class TesBancosSaldosCargaMasivaRequest
+    {
+        public string tipo_cierre { get; set; } = string.Empty;
+        public List<TesBancosSaldosCargaMasivaDto> registros { get; set; } = new();
+    }
+
+    public class TesBancosSaldosCargaMasivaResult
+    {
+        public int registros_insertados { get; set; }
+        public int registros_actualizados { get; set; }
+        public int registros_error { get; set; }
+        public List<TesBancosSaldosCargaMasivaErrorDto> errores { get; set; } = new();
+    }
+
+    public class TesBancosSaldosCargaMasivaErrorDto
+    {
+        public int linea { get; set; }
+        public string codigo_cuenta { get; set; } = string.Empty;
+        public string nombre_cuenta { get; set; } = string.Empty;
+        public string mensaje { get; set; } = string.Empty;
+    }
+
     public class HistoricoFiltros
     {
         public bool todas_fechas { get; set; }
