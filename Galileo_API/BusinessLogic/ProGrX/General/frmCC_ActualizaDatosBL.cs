@@ -1,20 +1,21 @@
-using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.DataBaseTier;
 
-namespace Galileo.BusinessLogic
+namespace Galileo_API.BusinessLogic
 {
     public class FrmCcActualizaDatosBl
     {
-        private readonly FrmCcActualizaDatosDb DbfrmCC_ActualizaDatos;
+        private readonly FrmCcActualizaDatosDb _db;
 
         public FrmCcActualizaDatosBl(IConfiguration config)
         {
-            DbfrmCC_ActualizaDatos = new FrmCcActualizaDatosDb(config);
+            _db = new FrmCcActualizaDatosDb(config);
         }
 
-        public ErrorDto CC_ActualizaDatos_SP(int CodEmpresa)
+        public ErrorDto CC_ActualizaDatos_Proceso_Ejecutar(int CodEmpresa)
         {
-            return DbfrmCC_ActualizaDatos.CC_ActualizaDatos_SP(CodEmpresa);
+            return _db.CC_ActualizaDatos_Proceso_Ejecutar(CodEmpresa);
         }
     }
 }
