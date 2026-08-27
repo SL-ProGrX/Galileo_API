@@ -186,7 +186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var cuentaOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, trx.id_banco ?? 0);
 
-                if (string.IsNullOrEmpty(trx.cta_iban_origen.Trim()) || trx.cta_iban_origen == "9999999999999999999999")
+                if (string.IsNullOrWhiteSpace(trx.cta_iban_origen) || trx.cta_iban_origen == "9999999999999999999999")
                 {
                     trx.cta_iban_origen = cuentaOrigen.Result.cuenta_interna;
                     trx.cedula_origen = cuentaOrigen.Result.itmx;
