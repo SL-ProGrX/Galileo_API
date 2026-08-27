@@ -11,14 +11,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Consulta las refundiciones del expediente. Fiel a VB6 sbRefundiciones_Load
         /// (frmPreaEstudiov2.frm línea ~17313): exec spCrdPreaConsultaRefundicionesPreanalisis
         /// '&lt;expediente&gt;', '&lt;fechaFormaliza yyyy-mm-dd&gt;', '&lt;codGarantia&gt;'.
-        /// dtpR_Formaliza no tiene evento Change/Validate en VB6 (solo default = fecha de servidor
-        /// al abrir el formulario), por lo que aquí se usa siempre la fecha del servidor.
+        /// Si fechaFormaliza es null, usa GETDATE() del servidor SQL (fxFechaServidor).
         /// Totales replican sbRefundiciones_Calcula: solo suman filas con Aplica=1.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
             string cod_preanalisis,
-            string cod_garantia)
+            string cod_garantia,
+            DateTime? fechaFormaliza = null)
         {
             var result = new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
             {
@@ -31,13 +31,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
+                // Fiel a VB6 fxFechaServidor: si el cliente no envía fecha, usa GETDATE() del SQL Server.
+                var fechaBloqueo = fechaFormaliza?.Date
+                    ?? connection.Query<DateTime>("SELECT CAST(dbo.MyGetdate() AS DATE)").Single();
+
                 const string sql = "EXEC spCrdPreaConsultaRefundicionesPreanalisis @Expediente, @Fecha, @Garantia";
                 var refundiciones = connection.Query<FrmPreaEstudiov2RefundicionDto>(
                     sql,
                     new
                     {
                         Expediente = cod_preanalisis.Trim(),
-                        Fecha = DateTime.Now.Date,
+                        Fecha = fechaBloqueo,
                         Garantia = (cod_garantia ?? string.Empty).Trim()
                     }
                 ).ToList();
@@ -45,9 +49,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 result.Result = new FrmPreaEstudiov2RefundicionesResponse
                 {
                     refundiciones = refundiciones,
-                    total_refunde = refundiciones.Where(r => r.aplica && !r.apl_mora).Sum(r => r.refunde),
-                    total_cuotas = refundiciones.Where(r => r.aplica && !r.apl_mora).Sum(r => r.cuota),
-                    total_mora = refundiciones.Where(r => r.aplica && r.apl_mora).Sum(r => r.mora)
+                    total_refunde = refundiciones.Where(r => r.Aplica && !r.Apl_Mora).Sum(r => r.Mora_principal),
+                    total_cuotas = refundiciones.Where(r => r.Aplica && !r.Apl_Mora).Sum(r => r.cuota),
+                    total_mora = refundiciones.Where(r => r.Aplica && r.Apl_Mora).Sum(r => r.Mora_intereses),
+                    fecha_servidor = fechaBloqueo
                 };
             }
             catch (Exception ex)
@@ -68,7 +73,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
             int codEmpresa,
             FrmPreaEstudiov2RefundicionesActualizarRequest request,
-            string cod_garantia)
+            string cod_garantia,
+            DateTime? fechaFormaliza = null)
         {
             try
             {
@@ -87,7 +93,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 };
             }
 
-            return Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, request.cod_preanalisis, cod_garantia);
+            return Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, request.cod_preanalisis, cod_garantia, fechaFormaliza);
         }
 
         /// <summary>
