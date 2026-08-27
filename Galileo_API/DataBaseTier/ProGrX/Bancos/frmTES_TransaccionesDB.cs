@@ -184,6 +184,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     trx.tipo_ced_destino = tipoCalculado;
                 }
 
+                var cuentaOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, trx.id_banco ?? 0);
+
+                if (string.IsNullOrEmpty(trx.cta_iban_origen.Trim()) || trx.cta_iban_origen == "9999999999999999999999")
+                {
+                    trx.cta_iban_origen = cuentaOrigen.Result.cuenta_interna;
+                    trx.cedula_origen = cuentaOrigen.Result.itmx;
+                    trx.nombre_origen = cuentaOrigen.Result.cuenta_desc;
+                }
+
+                if(trx.tipo != "TS")
+                {
+                    if (string.IsNullOrEmpty(trx.cta_ahorros))
+                    {
+                        trx.cta_ahorros = "9999999999999999";
+                    }
+                }
+
+                ActualizaCuentasSolicitud(CodEmpresa, tesoreria, trx);
 
                 trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
@@ -195,6 +213,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 return trx;
             });
+        }
+
+        private void ActualizaCuentasSolicitud(int CodEmpresa, long solicitud, TesTransaccionDto trx)
+        {
+            const string Query = @"UPDATE TES_TRANSACCIONES
+                                SET
+                                    cta_iban_origen   = @cta_iban_origen,
+                                    cedula_origen     = @cedula_origen,
+                                    nombre_origen     = @nombre_origen,
+                                    cta_ahorros       = @cta_ahorros
+                                WHERE
+                                    NSOLICITUD = @nSolicitud ;";
+            var parametros = new
+            {
+                cta_iban_origen = trx.cta_iban_origen,
+                cedula_origen = trx.cedula_origen,
+                nombre_origen = trx.nombre_origen,
+                cta_ahorros = trx.cta_ahorros,
+                nSolicitud = solicitud
+            };
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
         public int fxTipoIdentificacion(int CodEmpresa, string cedula)
@@ -909,6 +948,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 });
 
                 TES_TransaccionDetalleActualizar(CodEmpresa, transaccion.nsolicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
+
+                /**Des-Autoriza si existe algun cambio **/
+                var queryAuth = @"update T set T.Autoriza = 'N', T.Fecha_Autorizacion = Null, User_Autoriza = Null,
+                                    USUARIO_AUTORIZA_ESPECIAL = null, TIPO_GIROSINPE = null
+                                   from Tes_Transacciones T  
+                                   Where T.NSOLICITUD = @nSolicitud AND T.ESTADO NOT IN ('A', 'I', 'E')";
+                connection.Execute(queryAuth, new {
+                    nSolicitud = transaccion.nsolicitud
+                });
+
 
                 return OkSimple(transaccion.nsolicitud.ToString());
             }
