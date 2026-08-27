@@ -111,12 +111,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var psd = CalcularPsd(credito.monto, porcPsd, esExpedientePrincipal);
                 var montoGirar = CalcularMontoGirar(
                     credito.monto,
-                    GetDecimal(row, "REFUNDICIONES"),
-                    GetDecimal(row, "DESEMBOLSOS"),
-                    credito.primera_cuota ? credito.cuota : 0m,
-                    psd,
-                    GetDecimal(row, "Monto_Interes"),
-                    GetDecimal(row, "MONTO_COMISION"),
+                    new RebajosMontoGirar(
+                        GetDecimal(row, "REFUNDICIONES"),
+                        GetDecimal(row, "DESEMBOLSOS"),
+                        credito.primera_cuota ? credito.cuota : 0m,
+                        psd,
+                        GetDecimal(row, "Monto_Interes"),
+                        GetDecimal(row, "MONTO_COMISION")),
                     esExpedientePrincipal);
 
                 result.Result = new FrmPreaEstudiov2CargaResponse
@@ -306,17 +307,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ? Math.Round(monto * porcentajePsd / 100m, 2)
                 : 0m;
 
+        private readonly record struct RebajosMontoGirar(
+            decimal Refundiciones,
+            decimal Desembolsos,
+            decimal PrimeraCuota,
+            decimal Psd,
+            decimal Intereses,
+            decimal Comisiones);
+
         /// <summary>
         /// Replica eMontoGirar restando P.S.D., rebajos de formalización y primera cuota cuando aplica.
         /// </summary>
         private static decimal CalcularMontoGirar(
             decimal monto,
-            decimal refundiciones,
-            decimal desembolsos,
-            decimal primeraCuota,
-            decimal psd,
-            decimal intereses,
-            decimal comisiones,
+            RebajosMontoGirar rebajos,
             bool esExpedientePrincipal)
         {
             if (!esExpedientePrincipal)
@@ -324,7 +328,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return 0m;
             }
 
-            return monto - (refundiciones + desembolsos + primeraCuota + psd + intereses + comisiones);
+            return monto - (
+                rebajos.Refundiciones
+                + rebajos.Desembolsos
+                + rebajos.PrimeraCuota
+                + rebajos.Psd
+                + rebajos.Intereses
+                + rebajos.Comisiones);
         }
 
         /// <summary>

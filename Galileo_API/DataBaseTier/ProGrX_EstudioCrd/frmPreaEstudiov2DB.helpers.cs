@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// </summary>
         /// <param name="codPreanalisis">Código del preanálisis/expediente.</param>
         /// <returns>true si es sub-expediente, false si es principal.</returns>
-        private bool EsSubExpediente(string codPreanalisis)
+        private static bool EsSubExpediente(string codPreanalisis)
         {
             return codPreanalisis.Contains('-');
         }

@@ -60,38 +60,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             string nombre_archivo,
             byte[] contenido)
         {
-            var result = new ErrorDto<string>
+            return EjecutarCambioAdjunto(codEmpresa, cod_preanalisis, (connection, codPreanalisis) =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = "Ok"
-            };
-
-            var codPreanalisis = (cod_preanalisis ?? string.Empty).Trim();
-            if (string.IsNullOrEmpty(codPreanalisis))
-            {
-                result.Code = -1;
-                result.Description = "Debe indicar el expediente.";
-                return result;
-            }
-
-            try
-            {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-
-                // Validación defensiva: verificar estado del expediente
-                var estadoActual = ObtenerEstadoExpediente(connection, codPreanalisis);
-                if (!string.IsNullOrEmpty(estadoActual))
-                {
-                    var estadoUpper = estadoActual.ToUpperInvariant();
-                    if (estadoUpper == "A" || estadoUpper == "D" || estadoUpper == "B")
-                    {
-                        result.Code = -1;
-                        result.Description = "Este Expediente no puede ser modificado!";
-                        return result;
-                    }
-                }
-
                 const string sql = @"INSERT INTO CRD_PREA_V2_ADJUNTOS (ID_EXPEDIENTE, DOC_ADJUNTO, NOM_ADJUNTO, USUARIO_REG, FECHA_REG)
                                      VALUES (@Expediente, @Contenido, @NombreArchivo, @Usuario, @FechaReg)";
 
@@ -103,15 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     Usuario = usuario,
                     FechaReg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 }, commandType: CommandType.Text);
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = string.Empty;
-            }
-
-            return result;
+            });
         }
 
         /// <summary>
@@ -124,6 +86,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             string cod_preanalisis,
             int id_adjunto)
+        {
+            return EjecutarCambioAdjunto(codEmpresa, cod_preanalisis, (connection, codPreanalisis) =>
+            {
+                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
+
+                connection.Execute(sql, new
+                {
+                    Expediente = codPreanalisis,
+                    IdAdjunto = id_adjunto
+                }, commandType: CommandType.Text);
+            });
+        }
+
+        private ErrorDto<string> EjecutarCambioAdjunto(
+            int codEmpresa,
+            string cod_preanalisis,
+            Action<IDbConnection, string> ejecutar)
         {
             var result = new ErrorDto<string>
             {
@@ -144,7 +123,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                // Validación defensiva: verificar estado del expediente
                 var estadoActual = ObtenerEstadoExpediente(connection, codPreanalisis);
                 if (!string.IsNullOrEmpty(estadoActual))
                 {
@@ -157,13 +135,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     }
                 }
 
-                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
-
-                connection.Execute(sql, new
-                {
-                    Expediente = codPreanalisis,
-                    IdAdjunto = id_adjunto
-                }, commandType: CommandType.Text);
+                ejecutar(connection, codPreanalisis);
             }
             catch (Exception ex)
             {
