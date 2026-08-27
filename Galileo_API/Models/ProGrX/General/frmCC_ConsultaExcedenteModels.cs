@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Galileo.Models.GEN
 {
     public class CCPeriodoList
@@ -97,5 +99,45 @@ namespace Galileo.Models.GEN
         public int anio { get; set; }
         public int mes { get; set; }
         public decimal cuotacancelada { get; set; }
+    }
+
+    public class CcConsultaExcedentePersonaData
+    {
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+    }
+
+    public class CcConsultaExcedenteResultadoData
+    {
+        public CCConsultaExcedenteData? excedente { get; set; }
+        public List<VSifAuxCreditosMovDetalle> notas { get; set; } = [];
+        public DateTime fecha_servidor { get; set; }
+    }
+
+    public class CcConsultaExcedenteEmailRequest
+    {
+        public required int id_periodo { get; set; }
+
+        [Required]
+        public string cedula { get; set; } = string.Empty;
+
+        [Required]
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class CcConsultaExcedenteBitacoraRequest
+    {
+        public required int id_periodo { get; set; }
+
+        [Required]
+        public string periodo { get; set; } = string.Empty;
+
+        [Required]
+        public string cedula { get; set; } = string.Empty;
+
+        [Required]
+        public string usuario { get; set; } = string.Empty;
+
+        public required bool todos { get; set; }
     }
 }

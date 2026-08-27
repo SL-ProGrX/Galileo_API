@@ -15,6 +15,62 @@ namespace Galileo.Controllers
             BL_CC_ConsultaExcedente = new FrmCcConsultaExcedenteBl(config);
         }
 
+        [HttpGet("CC_ConsultaExcedente_Periodos_Obtener")]
+        public ErrorDto<List<CCPeriodoList>>
+            CC_ConsultaExcedente_Periodos_Obtener(int codEmpresa)
+        {
+            return BL_CC_ConsultaExcedente
+                .CC_ConsultaExcedente_Periodos_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CC_ConsultaExcedente_Persona_Obtener")]
+        public ErrorDto<CcConsultaExcedentePersonaData>
+            CC_ConsultaExcedente_Persona_Obtener(
+                int codEmpresa,
+                string cedula,
+                string usuario)
+        {
+            return BL_CC_ConsultaExcedente
+                .CC_ConsultaExcedente_Persona_Obtener(
+                    codEmpresa,
+                    cedula,
+                    usuario);
+        }
+
+        [HttpGet("CC_ConsultaExcedente_Consultar")]
+        public ErrorDto<CcConsultaExcedenteResultadoData>
+            CC_ConsultaExcedente_Consultar(
+                int codEmpresa,
+                int idPeriodo,
+                string cedula)
+        {
+            return BL_CC_ConsultaExcedente
+                .CC_ConsultaExcedente_Consultar(
+                    codEmpresa,
+                    idPeriodo,
+                    cedula);
+        }
+
+        [HttpPost("CC_ConsultaExcedente_Email_Enviar")]
+        public ErrorDto CC_ConsultaExcedente_Email_Enviar(
+            int codEmpresa,
+            [FromBody] CcConsultaExcedenteEmailRequest request)
+        {
+            return BL_CC_ConsultaExcedente
+                .CC_ConsultaExcedente_Email_Enviar(codEmpresa, request);
+        }
+
+        [HttpPost("CC_ConsultaExcedente_Reporte_Bitacora_Registrar")]
+        public ErrorDto CC_ConsultaExcedente_Reporte_Bitacora_Registrar(
+            int codEmpresa,
+            [FromBody] CcConsultaExcedenteBitacoraRequest request)
+        {
+            return BL_CC_ConsultaExcedente
+                .CC_ConsultaExcedente_Reporte_Bitacora_Registrar(
+                    codEmpresa,
+                    request);
+        }
+
         [HttpGet("CC_Periodos_Obtener")]
         public List<CCPeriodoList> CC_Periodos_Obtener(int CodEmpresa)
         {
