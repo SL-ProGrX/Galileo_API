@@ -18,19 +18,19 @@ namespace Galileo.BusinessLogic
             return _db.Departamentos_Obtener(CodCliente, pagina, paginacion, filtro);
         }
 
-        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Insertar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
-            return _db.Departamentos_Insertar(CodEmpresa, request);
+            return _db.Departamentos_Insertar(CodEmpresa, usuario, request);
         }
 
-        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Actualizar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
-            return _db.Departamentos_Actualizar(CodEmpresa, request);
+            return _db.Departamentos_Actualizar(CodEmpresa, usuario, request);
         }
 
-        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento)
+        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento, string usuario)
         {
-            return _db.Departamentos_Eliminar(CodEmpresa, departamento);
+            return _db.Departamentos_Eliminar(CodEmpresa, departamento, usuario);
         }
 
         public ErrorDto<List<AsignacionesDto>> Asignaciones_ObtenerTodos(int CodEmpresa, string departamento)
