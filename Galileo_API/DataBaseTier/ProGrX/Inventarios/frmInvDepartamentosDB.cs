@@ -7,6 +7,8 @@ namespace Galileo.DataBaseTier
     public class FrmInvDepartamentosDB
     {
         private readonly IConfiguration _config;
+        private readonly MSecurityMainDb _bitacora;
+        private const int ModuloInventarios = 32;
 
         #region Constructor y helpers
 
@@ -17,6 +19,7 @@ namespace Galileo.DataBaseTier
         public FrmInvDepartamentosDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _bitacora = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -60,6 +63,29 @@ namespace Galileo.DataBaseTier
             Cod_Prodclas = codProdclas,
             cod_prodclas = codProdclas
         };
+
+        /// <summary>
+        /// Registra en bitácora un movimiento realizado sobre un departamento.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario que realizó el movimiento.</param>
+        /// <param name="movimiento">Tipo de movimiento registrado.</param>
+        /// <param name="codDepartamento">Código del departamento afectado.</param>
+        private void RegistrarBitacoraDepartamento(
+            int codEmpresa,
+            string usuario,
+            string movimiento,
+            string codDepartamento)
+        {
+            _bitacora.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Departamento : {codDepartamento}",
+                Movimiento = movimiento,
+                Modulo = ModuloInventarios
+            });
+        }
 
         #endregion
 
@@ -120,9 +146,10 @@ namespace Galileo.DataBaseTier
         /// Actualiza el departamento.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario que registra el movimiento.</param>
         /// <param name="request">Datos del departamento.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Actualizar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
@@ -138,18 +165,23 @@ namespace Galileo.DataBaseTier
                     request.Activo
                 });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al actualizar el departamento.", result.Code.GetValueOrDefault(-1));
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(result.Description ?? "Error al actualizar el departamento.", result.Code.GetValueOrDefault(-1));
+            }
+
+            RegistrarBitacoraDepartamento(CodEmpresa, usuario, "Modifica - WEB", request.Cod_Departamento);
+            return DbHelper.OkResponse("Ok");
         }
 
         /// <summary>
         /// Inserta un nuevo departamento.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario que registra el movimiento.</param>
         /// <param name="request">Datos del departamento.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Insertar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
@@ -163,9 +195,13 @@ namespace Galileo.DataBaseTier
                     request.Activo
                 });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el departamento.", result.Code.GetValueOrDefault(-1));
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(result.Description ?? "Error al insertar el departamento.", result.Code.GetValueOrDefault(-1));
+            }
+
+            RegistrarBitacoraDepartamento(CodEmpresa, usuario, "Registra - WEB", request.Cod_Departamento);
+            return DbHelper.OkResponse("Ok");
         }
 
         /// <summary>
@@ -173,8 +209,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="departamento">Código del departamento.</param>
+        /// <param name="usuario">Usuario que registra el movimiento.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento)
+        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento, string usuario)
         {
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
@@ -182,9 +219,13 @@ namespace Galileo.DataBaseTier
                 "DELETE pv_Departamentos WHERE cod_departamento = @cod_departamento",
                 CrearParametrosDepartamento(departamento));
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el departamento.", result.Code.GetValueOrDefault(-1));
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el departamento.", result.Code.GetValueOrDefault(-1));
+            }
+
+            RegistrarBitacoraDepartamento(CodEmpresa, usuario, "Elimina - WEB", departamento);
+            return DbHelper.OkResponse("Ok");
         }
 
         #endregion

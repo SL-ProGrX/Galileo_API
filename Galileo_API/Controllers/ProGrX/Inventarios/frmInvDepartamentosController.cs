@@ -25,21 +25,21 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Departamentos_Insertar")]
-        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Insertar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
-            return DepartamentosBL.Departamentos_Insertar(CodEmpresa, request);
+            return DepartamentosBL.Departamentos_Insertar(CodEmpresa, usuario, request);
         }
 
         [HttpPost("Departamentos_Actualizar")]
-        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDto request)
+        public ErrorDto Departamentos_Actualizar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
-            return DepartamentosBL.Departamentos_Actualizar(CodEmpresa, request);
+            return DepartamentosBL.Departamentos_Actualizar(CodEmpresa, usuario, request);
         }
 
         [HttpDelete("Departamentos_Eliminar")]
-        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento)
+        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento, string usuario)
         {
-            return DepartamentosBL.Departamentos_Eliminar(CodEmpresa, departamento);
+            return DepartamentosBL.Departamentos_Eliminar(CodEmpresa, departamento, usuario);
         }
 
         [HttpGet("Asignaciones_ObtenerTodos")]
