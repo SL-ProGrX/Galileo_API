@@ -77,37 +77,60 @@ namespace Galileo.DataBaseTier
         /// <param name="connection">Conexión activa.</param>
         /// <param name="codLineaSubMadre">Código de la línea madre.</param>
         /// <returns>Nivel encontrado.</returns>
-        private static int ObtenerNivelPadre(IDbConnection connection, string codLineaSubMadre)
+        private static int? ObtenerNivelPadre(IDbConnection connection, string codLineaSubMadre)
         {
-            return connection.QueryFirstOrDefault<int>(
+            return connection.QueryFirstOrDefault<int?>(
                 "SELECT NIVEL FROM PV_PROD_CLASIFICA_SUB WHERE Cod_Linea_Sub = @Cod_Linea_Sub_Madre",
                 new { Cod_Linea_Sub_Madre = codLineaSubMadre });
         }
 
         /// <summary>
-        /// Crea la consulta de actualización de subcategoría según si cambia o no la línea madre.
+        /// Determina si una categoría pertenece a la descendencia de otra.
         /// </summary>
-        /// <param name="actualizaLineaMadre">Indica si debe actualizarse COD_LINEA_SUB_MADRE.</param>
-        /// <returns>Consulta SQL de actualización.</returns>
-        private static string CrearConsultaActualizarSubcategoria(bool actualizaLineaMadre)
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="codProdclas">Código del tipo de producto.</param>
+        /// <param name="codigoRaiz">Código desde el cual se recorre la jerarquía.</param>
+        /// <param name="posibleDescendiente">Código que se desea validar.</param>
+        /// <returns><see langword="true"/> cuando el código pertenece a la descendencia.</returns>
+        private static bool EsDescendiente(
+            IDbConnection connection,
+            int codProdclas,
+            string codigoRaiz,
+            string posibleDescendiente)
         {
-            if (actualizaLineaMadre)
-            {
-                return @"Update pv_prod_clasifica_Sub set
-                                    descripcion = @Descripcion,
-                                    activo = @Activo,
-                                    CABYS = @CABYS,
-                                    COD_CUENTA = @COD_CUENTA,
-                                    COD_LINEA_SUB_MADRE = @COD_LINEA_SUB_MADRE,
-                                    NIVEL = @NIVEL
-                                WHERE Cod_Prodclas = @Cod_Prodclas AND COD_LINEA_SUB = @Cod_Linea_Sub";
-            }
+            return connection.QueryFirstOrDefault<int>(
+                @"WITH Descendientes AS (
+                      SELECT COD_LINEA_SUB
+                      FROM PV_PROD_CLASIFICA_SUB
+                      WHERE COD_PRODCLAS = @codProdclas
+                        AND COD_LINEA_SUB_MADRE = @codigoRaiz
 
+                      UNION ALL
+
+                      SELECT hijo.COD_LINEA_SUB
+                      FROM PV_PROD_CLASIFICA_SUB hijo
+                      INNER JOIN Descendientes padre
+                        ON hijo.COD_LINEA_SUB_MADRE = padre.COD_LINEA_SUB
+                      WHERE hijo.COD_PRODCLAS = @codProdclas
+                  )
+                  SELECT COUNT(*)
+                  FROM Descendientes
+                  WHERE COD_LINEA_SUB = @posibleDescendiente",
+                new { codProdclas, codigoRaiz, posibleDescendiente }) > 0;
+        }
+
+        /// <summary>
+        /// Crea la consulta de actualización de una subcategoría.
+        /// </summary>
+        /// <returns>Consulta SQL de actualización.</returns>
+        private static string CrearConsultaActualizarSubcategoria()
+        {
             return @"Update pv_prod_clasifica_Sub set
                                     descripcion = @Descripcion,
                                     activo = @Activo,
                                     CABYS = @CABYS,
                                     COD_CUENTA = @COD_CUENTA,
+                                    COD_LINEA_SUB_MADRE = @COD_LINEA_SUB_MADRE,
                                     NIVEL = @NIVEL
                                 WHERE Cod_Prodclas = @Cod_Prodclas AND COD_LINEA_SUB = @Cod_Linea_Sub";
         }
@@ -224,14 +247,25 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearTipoProductoListaVacia();
+                var parametros = new DynamicParameters();
+                parametros.Add("cod_contabilidad", cod_contabilidad);
+                var filtroSql = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    filtroSql = @" WHERE CONVERT(VARCHAR(20), T.cod_prodclas) LIKE @Filtro
+                                   OR T.DESCRIPCION LIKE @Filtro
+                                   OR T.costeo LIKE @Filtro
+                                   OR T.valuacion LIKE @Filtro ";
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
                 respuesta.Total = connection.QueryFirstOrDefault<int>(
                     @"SELECT Count(*)
                       FROM pv_prod_clasifica T
-                      LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta AND C.cod_contabilidad = @cod_contabilidad",
-                    new { cod_contabilidad });
+                      LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta AND C.cod_contabilidad = @cod_contabilidad" + filtroSql,
+                    parametros);
 
-                var parametros = new DynamicParameters();
-                parametros.Add("cod_contabilidad", cod_contabilidad);
                 var queryBuilder = new StringBuilder(@"SELECT T.cod_prodclas,
                                                              T.descripcion,
                                                              T.costeo,
@@ -243,14 +277,7 @@ namespace Galileo.DataBaseTier
                                                       FROM pv_prod_clasifica T
                                                       LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta AND C.cod_contabilidad = @cod_contabilidad");
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    queryBuilder.Append(@" WHERE T.cod_prodclas LIKE @Filtro
-                                   OR T.DESCRIPCION LIKE @Filtro
-                                   OR T.costeo LIKE @Filtro
-                                   OR T.valuacion LIKE @Filtro ");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                queryBuilder.Append(filtroSql);
 
                 queryBuilder.Append(" ORDER BY T.cod_prodclas desc ");
 
@@ -315,7 +342,7 @@ namespace Galileo.DataBaseTier
                     request.Descripcion,
                     request.Costeo,
                     request.Valuacion,
-                    Cod_Cuenta = request.Cod_Cuenta.Replace("-", string.Empty),
+                    Cod_Cuenta = (request.Cod_Cuenta ?? string.Empty).Replace("-", string.Empty),
                     request.Cod_Alter
                 });
 
@@ -341,7 +368,7 @@ namespace Galileo.DataBaseTier
                     request.Descripcion,
                     request.Costeo,
                     request.Valuacion,
-                    Cod_Cuenta = request.Cod_Cuenta.Replace("-", string.Empty),
+                    Cod_Cuenta = (request.Cod_Cuenta ?? string.Empty).Replace("-", string.Empty),
                     request.Cod_Alter
                 });
 
@@ -387,13 +414,16 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearTipoProductoSubListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(
-                    "SELECT count(*) FROM PV_PROD_CLASIFICA_SUB WHERE Cod_Prodclas = @ProdClas",
-                    new { ProdClas });
-
                 var parametros = new DynamicParameters();
                 parametros.Add("ProdClas", ProdClas);
-                var queryBuilder = new StringBuilder(@"WITH RecursiveHierarchy AS (
+                var filtroSql = string.Empty;
+                if (!string.IsNullOrWhiteSpace(filtro))
+                {
+                    filtroSql = " WHERE Descripcion LIKE @Filtro OR Niveles LIKE @Filtro ";
+                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
+                }
+
+                const string jerarquiaSql = @"WITH RecursiveHierarchy AS (
                                 SELECT COD_LINEA_SUB,
                                        Cod_Prodclas,
                                        DESCRIPCION,
@@ -402,7 +432,6 @@ namespace Galileo.DataBaseTier
                                        Cabys,
                                        COD_CUENTA,
                                        NIVEL,
-                                       COD_LINEA_SUB_MADRE,
                                        CAST(CAST(COD_LINEA_SUB AS VARCHAR(MAX)) AS VARCHAR(MAX)) AS Niveles
                                 FROM PV_PROD_CLASIFICA_SUB
                                 WHERE COD_LINEA_SUB_MADRE IS NULL AND COD_PRODCLAS = @ProdClas
@@ -417,13 +446,13 @@ namespace Galileo.DataBaseTier
                                        p.Cabys,
                                        p.COD_CUENTA,
                                        p.NIVEL,
-                                       p.COD_LINEA_SUB_MADRE,
                                        CONCAT(rh.Niveles, '.', p.NIVEL) AS Niveles
                                 FROM PV_PROD_CLASIFICA_SUB p
                                 INNER JOIN RecursiveHierarchy rh ON p.COD_LINEA_SUB_MADRE = rh.COD_LINEA_SUB
                                 WHERE p.COD_PRODCLAS = @ProdClas
-                            )
-                            SELECT COD_LINEA_SUB,
+                            ) ";
+                var queryBuilder = new StringBuilder(jerarquiaSql);
+                queryBuilder.Append(@"SELECT COD_LINEA_SUB,
                                    Cod_Prodclas,
                                    DESCRIPCION,
                                    COD_LINEA_SUB_MADRE,
@@ -431,15 +460,14 @@ namespace Galileo.DataBaseTier
                                    Cabys,
                                    COD_CUENTA,
                                    NIVEL,
-                                   COD_LINEA_SUB_MADRE,
                                    Niveles
                             FROM RecursiveHierarchy");
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    queryBuilder.Append(" WHERE Descripcion LIKE @Filtro OR Niveles LIKE @Filtro ");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                respuesta.Total = connection.QueryFirstOrDefault<int>(
+                    jerarquiaSql + "SELECT COUNT(*) FROM RecursiveHierarchy" + filtroSql,
+                    parametros);
+
+                queryBuilder.Append(filtroSql);
 
                 queryBuilder.Append(" ORDER BY Niveles ASC ");
 
@@ -467,19 +495,11 @@ namespace Galileo.DataBaseTier
         /// <returns>Estructura jerárquica de subcategorías.</returns>
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
-            var response = new ErrorDto<List<TipoProductoSubGradaData>>
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                Code = 0,
-                Result = new List<TipoProductoSubGradaData>()
-            };
-
-            try
-            {
-                var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                {
-                    var salida = new List<TipoProductoSubGradaData>();
-                    var info = connection.Query<TipoProductoSubDto>(
-                        @"SELECT Cod_Prodclas,
+                var salida = new List<TipoProductoSubGradaData>();
+                var info = connection.Query<TipoProductoSubDto>(
+                    @"SELECT Cod_Prodclas,
                                  Cod_Linea_Sub,
                                  Descripcion,
                                  Activo,
@@ -489,43 +509,34 @@ namespace Galileo.DataBaseTier
                                  COD_LINEA_SUB_MADRE
                           FROM PV_PROD_CLASIFICA_SUB
                           WHERE Cod_Prodclas = @Cod_Prodclas",
-                        new { Cod_Prodclas }).ToList();
+                    new { Cod_Prodclas }).ToList();
 
-                    foreach (TipoProductoSubDto dt in info)
-                    {
-                        CompletarEstadoSubcategoria(dt);
-
-                        if (dt.Nivel == 1)
-                        {
-                            salida.Add(new TipoProductoSubGradaData
-                            {
-                                key = dt.Cod_Linea_Sub,
-                                icon = "",
-                                label = dt.Descripcion,
-                                data = dt,
-                                children = TipoProductoSub_SeguienteNivel(connection, dt)
-                            });
-                        }
-                    }
-
-                    return salida;
-                });
-
-                response.Result = result.Code == 0 ? result.Result ?? new List<TipoProductoSubGradaData>() : new List<TipoProductoSubGradaData>();
-                if (result.Code != 0)
+                foreach (TipoProductoSubDto dt in info)
                 {
-                    response.Code = result.Code.GetValueOrDefault(-1);
-                    response.Description = result.Description;
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new List<TipoProductoSubGradaData>();
-            }
+                    CompletarEstadoSubcategoria(dt);
 
-            return response;
+                    if (dt.Nivel == 1)
+                    {
+                        salida.Add(new TipoProductoSubGradaData
+                        {
+                            key = dt.Cod_Linea_Sub,
+                            icon = "",
+                            label = dt.Descripcion,
+                            data = dt,
+                            children = TipoProductoSub_SeguienteNivel(connection, dt)
+                        });
+                    }
+                }
+
+                return salida;
+            });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<TipoProductoSubGradaData>())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al obtener las subcategorías.",
+                    result.Code.GetValueOrDefault(-1),
+                    new List<TipoProductoSubGradaData>());
         }
 
         /// <summary>
@@ -538,34 +549,51 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn<ErrorDto>(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var valida = FxValidaProfundidadRaiz(connection, request.Cod_Linea_Sub);
-                if (valida.Code == -1)
+                var lineaMadreActual = connection.QueryFirstOrDefault<string?>(
+                    "SELECT CONVERT(VARCHAR(50), COD_LINEA_SUB_MADRE) FROM PV_PROD_CLASIFICA_SUB WHERE Cod_Prodclas = @Cod_Prodclas AND Cod_Linea_Sub = @Cod_Linea_Sub",
+                    new { request.Cod_Prodclas, request.Cod_Linea_Sub });
+                var nuevaLineaMadre = string.IsNullOrWhiteSpace(request.Cod_Linea_Sub_Madre)
+                    ? null
+                    : request.Cod_Linea_Sub_Madre.Trim();
+
+                if (string.Equals(request.Cod_Linea_Sub, nuevaLineaMadre, StringComparison.OrdinalIgnoreCase))
                 {
-                    return valida;
+                    return new ErrorDto { Code = -1, Description = "Una subcategoría no puede ser su propia categoría madre." };
                 }
 
-                int nivel = 0;
-                if (request.Cod_Linea_Sub_Madre != "")
+                if (nuevaLineaMadre is not null &&
+                    EsDescendiente(connection, request.Cod_Prodclas, request.Cod_Linea_Sub, nuevaLineaMadre))
                 {
-                    nivel = ObtenerNivelPadre(connection, request.Cod_Linea_Sub_Madre);
+                    return new ErrorDto { Code = -1, Description = "No se puede seleccionar una categoría hija como categoría madre." };
                 }
 
-                bool actualizaLineaMadre = nivel > 0;
-                if (actualizaLineaMadre)
+                if (!string.Equals(lineaMadreActual, nuevaLineaMadre, StringComparison.OrdinalIgnoreCase))
                 {
-                    nivel += 1;
+                    var valida = FxValidaProfundidadRaiz(connection, request.Cod_Linea_Sub);
+                    if (valida.Code == -1)
+                    {
+                        return valida;
+                    }
+                }
+
+                var nivel = 1;
+                if (nuevaLineaMadre is not null)
+                {
+                    var nivelPadre = ObtenerNivelPadre(connection, nuevaLineaMadre);
+                    if (!nivelPadre.HasValue)
+                    {
+                        return new ErrorDto { Code = -1, Description = "La categoría madre seleccionada no existe." };
+                    }
+
+                    nivel = nivelPadre.Value + 1;
 
                     if (nivel > 5)
                     {
-                        return new ErrorDto { Code = -1, Description = "No se puede agregar mas subcategorias" };
+                        return new ErrorDto { Code = -1, Description = "No se pueden agregar más de cinco niveles de subcategorías." };
                     }
                 }
-                else
-                {
-                    nivel = request.Nivel;
-                }
 
-                var query = CrearConsultaActualizarSubcategoria(actualizaLineaMadre);
+                var query = CrearConsultaActualizarSubcategoria();
 
                 var parameters = new DynamicParameters();
                 parameters.Add("Cod_Prodclas", request.Cod_Prodclas, DbType.Int32);
@@ -573,13 +601,9 @@ namespace Galileo.DataBaseTier
                 parameters.Add("Descripcion", request.Descripcion, DbType.String);
                 parameters.Add("Activo", request.Activo, DbType.Int32);
                 parameters.Add("CABYS", request.Cabys, DbType.String);
-                parameters.Add("COD_CUENTA", request.Cod_Cuenta, DbType.String);
+                parameters.Add("COD_CUENTA", (request.Cod_Cuenta ?? string.Empty).Replace("-", string.Empty), DbType.String);
                 parameters.Add("NIVEL", nivel, DbType.Int32);
-
-                if (actualizaLineaMadre)
-                {
-                    parameters.Add("COD_LINEA_SUB_MADRE", request.Cod_Linea_Sub_Madre, DbType.Int32);
-                }
+                parameters.Add("COD_LINEA_SUB_MADRE", nuevaLineaMadre, DbType.String);
 
                 connection.Execute(query, parameters);
                 return new ErrorDto { Code = 0, Description = "Ok" };
@@ -601,8 +625,8 @@ namespace Galileo.DataBaseTier
                 int consecutivo = ObtenerSiguienteCodLineaSub(connection);
 
                 connection.Execute(
-                    @"insert into pv_prod_clasifica_Sub(COD_PRODCLAS, COD_LINEA_SUB, DESCRIPCION, Activo, CABYS, REGISTRO_FECHA, REGISTRO_USUARIO, NIVEL)
-                      values(@Cod_Prodclas, @Cod_Linea_Sub, @Descripcion, @Activo, @CABYS, @Registro_Fecha, @Registro_Usuario, 1)",
+                    @"insert into pv_prod_clasifica_Sub(COD_PRODCLAS, COD_LINEA_SUB, DESCRIPCION, Activo, CABYS, COD_CUENTA, REGISTRO_FECHA, REGISTRO_USUARIO, NIVEL)
+                      values(@Cod_Prodclas, @Cod_Linea_Sub, @Descripcion, @Activo, @CABYS, @COD_CUENTA, dbo.MyGetdate(), @Registro_Usuario, 1)",
                     new
                     {
                         request.Cod_Prodclas,
@@ -610,8 +634,8 @@ namespace Galileo.DataBaseTier
                         request.Descripcion,
                         request.Activo,
                         CABYS = request.Cabys,
+                        COD_CUENTA = (request.Cod_Cuenta ?? string.Empty).Replace("-", string.Empty),
                         request.Registro_Usuario,
-                        Registro_Fecha = DateTime.Now
                     });
 
                 return true;
