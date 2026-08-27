@@ -193,12 +193,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     trx.nombre_origen = cuentaOrigen.Result.cuenta_desc;
                 }
 
-                if(trx.tipo != "TS")
+                if (trx.tipo != "TS" && string.IsNullOrEmpty(trx.cta_ahorros))
                 {
-                    if (string.IsNullOrEmpty(trx.cta_ahorros))
-                    {
-                        trx.cta_ahorros = "9999999999999999";
-                    }
+                    trx.cta_ahorros = "9999999999999999";
                 }
 
                 ActualizaCuentasSolicitud(CodEmpresa, tesoreria, trx);
