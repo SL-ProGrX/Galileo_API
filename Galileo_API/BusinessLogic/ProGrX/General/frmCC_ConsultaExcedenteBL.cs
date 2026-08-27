@@ -13,6 +13,57 @@ namespace Galileo.BusinessLogic
             DbfrmCC_ConsultaExcedente = new FrmCcConsultaExcedenteDb(config);
         }
 
+        public ErrorDto<List<CCPeriodoList>>
+            CC_ConsultaExcedente_Periodos_Obtener(int codEmpresa)
+        {
+            return DbfrmCC_ConsultaExcedente
+                .CC_ConsultaExcedente_Periodos_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<CcConsultaExcedentePersonaData>
+            CC_ConsultaExcedente_Persona_Obtener(
+                int codEmpresa,
+                string cedula,
+                string usuario)
+        {
+            return DbfrmCC_ConsultaExcedente
+                .CC_ConsultaExcedente_Persona_Obtener(
+                    codEmpresa,
+                    cedula,
+                    usuario);
+        }
+
+        public ErrorDto<CcConsultaExcedenteResultadoData>
+            CC_ConsultaExcedente_Consultar(
+                int codEmpresa,
+                int idPeriodo,
+                string cedula)
+        {
+            return DbfrmCC_ConsultaExcedente
+                .CC_ConsultaExcedente_Consultar(
+                    codEmpresa,
+                    idPeriodo,
+                    cedula);
+        }
+
+        public ErrorDto CC_ConsultaExcedente_Email_Enviar(
+            int codEmpresa,
+            CcConsultaExcedenteEmailRequest request)
+        {
+            return DbfrmCC_ConsultaExcedente
+                .CC_ConsultaExcedente_Email_Enviar(codEmpresa, request);
+        }
+
+        public ErrorDto CC_ConsultaExcedente_Reporte_Bitacora_Registrar(
+            int codEmpresa,
+            CcConsultaExcedenteBitacoraRequest request)
+        {
+            return DbfrmCC_ConsultaExcedente
+                .CC_ConsultaExcedente_Reporte_Bitacora_Registrar(
+                    codEmpresa,
+                    request);
+        }
+
         public List<CCPeriodoList> CC_Periodos_Obtener(int CodEmpresa)
         {
             return DbfrmCC_ConsultaExcedente.CC_Periodos_Obtener(CodEmpresa);
