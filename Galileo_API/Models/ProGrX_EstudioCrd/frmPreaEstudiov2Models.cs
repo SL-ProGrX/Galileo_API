@@ -166,12 +166,16 @@
         public decimal monto { get; set; }
         public decimal tasa { get; set; }
         public int plazo { get; set; }
+        /// <summary>mFrecuenciaPago en VB6. Se carga desde Instituciones.Frecuencia
+        /// por cédula del socio; si no existe, usa "M".</summary>
+        public string frecuencia_pago { get; set; } = "M";
         public decimal cuota { get; set; }
         public decimal monto_construccion { get; set; }
         public bool poliza_vida { get; set; }
         public bool poliza_incendio { get; set; }
         public bool poliza_prenda { get; set; }
         public bool poliza_desempleo { get; set; }
+        public bool primera_cuota { get; set; }
         public decimal monto_poliza_vida { get; set; }
         public decimal monto_poliza_incendio { get; set; }
         public decimal monto_poliza_prenda { get; set; }
@@ -350,6 +354,11 @@
         public decimal comisiones { get; set; }
         /// <summary>rs!Monto_Interes (txtIntereses).</summary>
         public decimal intereses { get; set; }
+        /// <summary>txtPSD = Monto * GlobalPorcPSD / 100, solo para expediente principal.</summary>
+        public decimal psd { get; set; }
+        /// <summary>txtMontoGirar = Monto menos refundiciones, desembolsos, P.S.D.,
+        /// intereses, comisiones y primera cuota cuando aplica.</summary>
+        public decimal monto_girar { get; set; }
         /// <summary>
         /// txtCuotaDiferencia = Abs(Cuota - (REFUNDICIONES_CUOTA + DESEMBOLSOS_CUOTA)).
         /// Calculado aquí porque en VB6 no viene como columna propia, se deriva de
@@ -505,6 +514,11 @@
         /// F01-F07). VB6: cboGarantia_Click consulta esto por separado; aquí se trae junto
         /// con el resto del catálogo para evitar un roundtrip extra.</summary>
         public string? formulario { get; set; }
+
+        /// <summary>Solo poblado para el catálogo de tipos de salario.
+        /// VB6: frmPreaEstudiov2.frm línea 10466 — indica si el campo Base (EXTRAS_FIJAS)
+        /// es editable (1) o solo lectura (0).</summary>
+        public bool? modifica_extras_fijas { get; set; }
     }
 
     #endregion
@@ -923,21 +937,49 @@
         public decimal total_cuotas { get; set; }
         public decimal total_refunde { get; set; }
         public decimal total_mora { get; set; }
+        /// <summary>Fecha del servidor SQL (dbo.MyGetdate). VB6: dtpR_Formaliza.</summary>
+        public DateTime fecha_servidor { get; set; }
     }
 
     public class FrmPreaEstudiov2RefundicionDto
     {
-        /// <summary>Clave real usada por VB6 en el UPDATE de Aplica/Apl_Mora (id_solicitud).</summary>
+        /// <summary>Clave real usada por VB6 en el UPDATE de Aplica/Apl_Mora.</summary>
         public int id_solicitud { get; set; }
-        public int orden { get; set; }
         public string descripcion { get; set; } = string.Empty;
+        /// <summary>Saldo a refundir.</summary>
+        public decimal saldo { get; set; }
+        /// <summary>Tasa de interés.</summary>
+        public decimal Interes { get; set; }
         public decimal cuota { get; set; }
-        public decimal refunde { get; set; }
-        public decimal mora { get; set; }
+        /// <summary>Interés corriente.</summary>
+        public decimal IntCor { get; set; }
+        /// <summary>Interés devuelto.</summary>
+        public decimal IntDevueltos { get; set; }
+        public decimal Cargos { get; set; }
+        /// <summary>Mora principal (monto a refundir).</summary>
+        public decimal Mora_principal { get; set; }
+        /// <summary>Mora intereses.</summary>
+        public decimal Mora_intereses { get; set; }
         /// <summary>Columna real CRD_PREA_REFUNDICIONES.Aplica.</summary>
-        public bool aplica { get; set; }
+        public bool Aplica { get; set; }
         /// <summary>Columna real CRD_PREA_REFUNDICIONES.Apl_Mora.</summary>
-        public bool apl_mora { get; set; }
+        public bool Apl_Mora { get; set; }
+        /// <summary>Código de garantía (F, H, etc).</summary>
+        public string garantia { get; set; } = string.Empty;
+        /// <summary>Descripción de garantía.</summary>
+        public string Gdescripcion { get; set; } = string.Empty;
+        /// <summary>Porcentaje.</summary>
+        public decimal Porcentaje { get; set; }
+        /// <summary>Monto aprobado.</summary>
+        public decimal MontoApr { get; set; }
+        /// <summary>Código de línea.</summary>
+        public string Codigo { get; set; } = string.Empty;
+        /// <summary>Mora IVA.</summary>
+        public decimal mora_iva { get; set; }
+        /// <summary>Fecha de cálculo.</summary>
+        public DateTime? FechaCalculo { get; set; }
+        /// <summary>No bloqueado.</summary>
+        public int NO_BLOQUEO { get; set; }
     }
 
     public class FrmPreaEstudiov2RefundicionToggleRequest

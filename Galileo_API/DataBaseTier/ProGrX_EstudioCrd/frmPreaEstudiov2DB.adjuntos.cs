@@ -50,6 +50,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// VB6: btnAdjunto_Guardar_Click. Guarda el archivo (contenido binario) adjunto al expediente.
         /// INSERT INTO CRD_PREA_V2_ADJUNTOS (ID_EXPEDIENTE, DOC_ADJUNTO, NOM_ADJUNTO, USUARIO_REG, FECHA_REG)
+        /// Validación defensiva replicada del VB6: no permite modificar adjuntos si el estado
+        /// es "A" (Aprobado), "D" (Descartado) o "B" (Abandonado).
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Guardar(
             int codEmpresa,
@@ -58,47 +60,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             string nombre_archivo,
             byte[] contenido)
         {
-            var result = new ErrorDto<string>
+            return EjecutarCambioAdjunto(codEmpresa, cod_preanalisis, (connection, codPreanalisis) =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = "Ok"
-            };
-
-            try
-            {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-
                 const string sql = @"INSERT INTO CRD_PREA_V2_ADJUNTOS (ID_EXPEDIENTE, DOC_ADJUNTO, NOM_ADJUNTO, USUARIO_REG, FECHA_REG)
                                      VALUES (@Expediente, @Contenido, @NombreArchivo, @Usuario, @FechaReg)";
 
                 connection.Execute(sql, new
                 {
-                    Expediente = cod_preanalisis.Trim(),
+                    Expediente = codPreanalisis,
                     Contenido = contenido,
                     NombreArchivo = nombre_archivo,
                     Usuario = usuario,
                     FechaReg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 }, commandType: CommandType.Text);
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = string.Empty;
-            }
-
-            return result;
+            });
         }
 
         /// <summary>
         /// VB6: btnAdjunto_Elimina_Click.
         /// delete CRD_PREA_V2_ADJUNTOS Where ID_EXPEDIENTE = '&lt;exp&gt;' and ID_ADJUNTO in(&lt;ids&gt;)
+        /// Validación defensiva replicada del VB6: no permite eliminar adjuntos si el estado
+        /// es "A" (Aprobado), "D" (Descartado) o "B" (Abandonado).
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
             int codEmpresa,
             string cod_preanalisis,
             int id_adjunto)
+        {
+            return EjecutarCambioAdjunto(codEmpresa, cod_preanalisis, (connection, codPreanalisis) =>
+            {
+                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
+
+                connection.Execute(sql, new
+                {
+                    Expediente = codPreanalisis,
+                    IdAdjunto = id_adjunto
+                }, commandType: CommandType.Text);
+            });
+        }
+
+        private ErrorDto<string> EjecutarCambioAdjunto(
+            int codEmpresa,
+            string cod_preanalisis,
+            Action<IDbConnection, string> ejecutar)
         {
             var result = new ErrorDto<string>
             {
@@ -107,17 +111,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 Result = "Ok"
             };
 
+            var codPreanalisis = (cod_preanalisis ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(codPreanalisis))
+            {
+                result.Code = -1;
+                result.Description = "Debe indicar el expediente.";
+                return result;
+            }
+
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
-
-                connection.Execute(sql, new
+                var estadoActual = ObtenerEstadoExpediente(connection, codPreanalisis);
+                if (!string.IsNullOrEmpty(estadoActual))
                 {
-                    Expediente = cod_preanalisis.Trim(),
-                    IdAdjunto = id_adjunto
-                }, commandType: CommandType.Text);
+                    var estadoUpper = estadoActual.ToUpperInvariant();
+                    if (estadoUpper == "A" || estadoUpper == "D" || estadoUpper == "B")
+                    {
+                        result.Code = -1;
+                        result.Description = "Este Expediente no puede ser modificado!";
+                        return result;
+                    }
+                }
+
+                ejecutar(connection, codPreanalisis);
             }
             catch (Exception ex)
             {

@@ -158,7 +158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 if (codPreanalisis.Contains('-'))
                 {
                     result.Code = -1;
-                    result.Description = "No se puede CAMBIAR la Oficina de un expediente secundario, por favor seleccione el expediente principal.";
+                    result.Description = "No se puede CAMBIAR la Oficina de un expediente secundario, por favor seleccione el expediente principal e intente de nuevo.";
                     return result;
                 }
 

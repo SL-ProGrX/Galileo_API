@@ -53,5 +53,13 @@ namespace Galileo_API.BusinessLogic
             TesBancosSaldosCierresDto datos = JsonConvert.DeserializeObject<TesBancosSaldosCierresDto>(Datos) ?? new TesBancosSaldosCierresDto();
             return _bancosSaldosDb.TES_BancosSaldos_Cierres_Actualizar(CodEmpresa, Usuario, datos);
         }
+
+        public ErrorDto<TesBancosSaldosCargaMasivaResult> TES_BancosSaldos_Cierres_CargaMasiva(
+            int CodEmpresa,
+            string Usuario,
+            TesBancosSaldosCargaMasivaRequest request)
+        {
+            return _bancosSaldosDb.TES_BancosSaldos_Cierres_CargaMasiva(CodEmpresa, Usuario, request);
+        }
     }
 }

@@ -1029,14 +1029,21 @@ namespace Galileo_API.DataBaseTier
 
                 transaccion.ClienteOrigen = new ClienteAS400();
                 transaccion.ClienteOrigen.Identificacion = solicitud.CedulaOrigen?.Replace("-", "").Trim();
+
+                solicitud.tipoIdOrigen = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo);
+
                 transaccion.ClienteOrigen.Nombre = solicitud.NombreOrigen ?? "ProGrX";
                 transaccion.ClienteOrigen.IBAN = solicitud.CuentaOrigen;
                 transaccion.ClienteOrigen.TipoCedula =
                                 ((E_TipoIdentificacion)setCodigoSugefEstandar(solicitud.tipoIdOrigen).Result)
                                 .ToString();
+               
 
                 transaccion.ClienteDestino = new ClienteAS400();
                 transaccion.ClienteDestino.Identificacion = solicitud.Codigo?.Replace("-", "").Trim();
+
+                solicitud.tipoIdDestino = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo);
+
                 transaccion.ClienteDestino.Nombre = solicitud.Beneficiario;
                 transaccion.ClienteDestino.IBAN = solicitud.Cuenta;
                 transaccion.ClienteDestino.TipoCedula =
@@ -1185,7 +1192,7 @@ namespace Galileo_API.DataBaseTier
 
                         var resultadoPin =
                             ElResultadoDeSendTransfer?.PINSendingResult;
-                        if (estadoSinpe || resultadoPin is null)
+                        if (!estadoSinpe || resultadoPin is null)
                         {
                             estadoSinpe = false;
                             idRechazo = -1;
@@ -1341,6 +1348,7 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.CurrencyCode = solicitud.Divisa;
                 TransferData.Transfer.Description = detalle;
                 TransferData.Transfer.OriginEntityIBAN = ""; 
+
                 TransferData.Transfer.OriginCustomer = new Sinpe_PIN.OriginCustomer();
                 TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo), solicitud.CedulaOrigen.Trim()); 
                 TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo);
@@ -1348,12 +1356,18 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.OriginCustomer.IBAN = solicitud.CuentaOrigen;
                 TransferData.Transfer.OriginCustomer.Email = "";
                 TransferData.Transfer.OriginCustomer.DebitIBAN = true;
+
                 TransferData.Transfer.DestinationCustomer = new DestinationCustomer();
                 TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo), solicitud.Codigo.Trim());
                 TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo);
                 TransferData.Transfer.DestinationCustomer.Name = solicitud.Beneficiario;
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
-                TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica; ;
+                TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica;
+
+                /**
+                    Para pruebas de SINPE
+                    **/
+                string json = JsonSerializer.Serialize(TransferData);
 
                 ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera).Result;
 
