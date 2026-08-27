@@ -116,8 +116,7 @@ namespace Galileo.Models.GEN
 
     public class CcConsultaExcedenteEmailRequest
     {
-        [Required]
-        public int id_periodo { get; set; }
+        public required int id_periodo { get; set; }
 
         [Required]
         public string cedula { get; set; } = string.Empty;
@@ -128,8 +127,7 @@ namespace Galileo.Models.GEN
 
     public class CcConsultaExcedenteBitacoraRequest
     {
-        [Required]
-        public int id_periodo { get; set; }
+        public required int id_periodo { get; set; }
 
         [Required]
         public string periodo { get; set; } = string.Empty;
@@ -140,6 +138,6 @@ namespace Galileo.Models.GEN
         [Required]
         public string usuario { get; set; } = string.Empty;
 
-        public bool todos { get; set; }
+        public required bool todos { get; set; }
     }
 }
