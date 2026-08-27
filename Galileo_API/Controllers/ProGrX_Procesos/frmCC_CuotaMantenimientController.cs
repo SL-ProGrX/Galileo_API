@@ -3,6 +3,7 @@ using Galileo.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo_API.BusinessLogic.ProGrX_Procesos;
+using Galileo_API.Models.ProGrX_Procesos;
 
 namespace Galileo_API.Controllers.ProGrX_Procesos
 {
@@ -23,8 +24,8 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
         [Authorize]
         [HttpPost("Crd_CuotaMantenimiento_Ejecutar")]
-        public ErrorDto Crd_CuotaMantenimiento_Ejecutar(int codEmpresa, string usuario, int codContabilidad, int codInstitucion)
-                     => _bl.Crd_CuotaMantenimiento_Ejecutar(codEmpresa, usuario, codContabilidad, codInstitucion);
+        public ErrorDto Crd_CuotaMantenimiento_Ejecutar([FromBody] CcCuotaMantenimientoEjecutarRequest request)
+                     => _bl.Crd_CuotaMantenimiento_Ejecutar(request);
 
         [Authorize]
         [HttpGet("Crd_CuotaMantenimiento_Derecho_Obtener")]
