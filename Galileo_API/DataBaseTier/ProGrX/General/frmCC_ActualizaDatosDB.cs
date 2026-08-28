@@ -1,40 +1,57 @@
 using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Microsoft.Data.SqlClient;
+using System.Data;
 
-namespace Galileo.DataBaseTier
+namespace Galileo_API.DataBaseTier
 {
     public class FrmCcActualizaDatosDb
     {
-        private readonly IConfiguration _config;
+        private const int TiempoEsperaSegundos = 300;
+        private const string ProcedimientoActualizaDatos = "spCRDActualizaDatos";
+
+        private readonly PortalDB _portalDb;
 
         public FrmCcActualizaDatosDb(IConfiguration config)
         {
-            _config = config;
+            _portalDb = new PortalDB(config);
         }
 
-        public ErrorDto CC_ActualizaDatos_SP(int CodEmpresa)
+        /// <summary>
+        /// Ejecuta el proceso de actualizacion de datos relacionados.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto CC_ActualizaDatos_Proceso_Ejecutar(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new ErrorDto();
-            try
+            if (CodEmpresa <= 0)
             {
-                using var connection = new SqlConnection(stringConn);
-                EjecutarActualizaDatos(connection, resp);
+                return DbHelper.ErrorResponse(
+                    "El c&oacute;digo de empresa es requerido.",
+                    -2);
             }
-            catch (Exception ex)
-            {
-                resp.Code = 0;
-                resp.Description = ex.Message;
-            }
-            return resp;
-        }
 
-        private static void EjecutarActualizaDatos(SqlConnection connection, ErrorDto resp)
-        {
-            var query = "exec spCRDActualizaDatos";
-            resp.Code = connection.Execute(query);
-            resp.Description = "Proceso Terminado Satisfactoriamente...";
+            var resultado = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                {
+                    connection.Execute(
+                        ProcedimientoActualizaDatos,
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: TiempoEsperaSegundos);
+
+                    return true;
+                });
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    $"Ocurri&oacute; un error al actualizar los datos relacionados. {resultado.Description}");
+            }
+
+            return DbHelper.OkResponse(
+                "Proceso terminado satisfactoriamente.");
         }
     }
 }

@@ -1,23 +1,29 @@
-using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
+using Galileo_API.BusinessLogic;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Galileo.Controllers
+namespace Galileo_API.Controllers
 {
     [Route("api/frmCC_ActualizaDatos")]
     [ApiController]
+    [Authorize]
     public class FrmCcActualizaDatosController : ControllerBase
     {
-        readonly FrmCcActualizaDatosBl BL_CC_ActualizaDatos;
+        private readonly FrmCcActualizaDatosBl _bl;
         public FrmCcActualizaDatosController(IConfiguration config)
         {
-            BL_CC_ActualizaDatos = new FrmCcActualizaDatosBl(config);
+            _bl = new FrmCcActualizaDatosBl(config);
         }
 
-        [HttpGet("CC_ActualizaDatos_SP")]
-        public ErrorDto CC_ActualizaDatos_SP(int CodEmpresa)
+        [HttpPost("CC_ActualizaDatos_Proceso_Ejecutar")]
+        public ErrorDto
+            CC_ActualizaDatos_Proceso_Ejecutar(
+                int CodEmpresa)
         {
-            return BL_CC_ActualizaDatos.CC_ActualizaDatos_SP(CodEmpresa);
+            return _bl
+                .CC_ActualizaDatos_Proceso_Ejecutar(
+                    CodEmpresa);
         }
     }
 }
