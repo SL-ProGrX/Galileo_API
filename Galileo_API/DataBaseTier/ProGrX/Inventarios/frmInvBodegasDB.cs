@@ -5,7 +5,7 @@ using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvBodegasDB
+    public class FrmInvBodegasDb
     {
         private readonly IConfiguration _config;
 
@@ -30,10 +30,10 @@ namespace Galileo.DataBaseTier
         #region Constructor y helpers
 
         /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvBodegasDB"/>.
+        /// Inicializa una nueva instancia de la clase <see cref="FrmInvBodegasDb"/>.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvBodegasDB(IConfiguration config)
+        public FrmInvBodegasDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
