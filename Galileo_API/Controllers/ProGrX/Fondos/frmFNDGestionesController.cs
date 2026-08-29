@@ -25,6 +25,14 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [HttpPost("Gestiones_Contratos_Busqueda_Obtener")]
+        public ErrorDto<List<FndGestionesContratosBusquedaResult>> Gestiones_Contratos_Busqueda_Obtener(
+            [FromBody] FndGestionesContratosBusquedaParams param)
+        {
+            return _bl.Gestiones_Contratos_Busqueda_Obtener(param);
+        }
+
+        [Authorize]
         [HttpPost("Gestiones_Contrato_Obtener")]
         public ErrorDto<FndGestionesContratoResult> Gestiones_Contrato_Obtener([FromBody] FndGestionesContratoParams param)
         {

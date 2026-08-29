@@ -23,6 +23,19 @@
         public string Nombre { get; set; } = string.Empty;
     }
 
+    public class FndGestionesContratosBusquedaParams
+    {
+        public required int CodEmpresa { get; set; }
+        public required int CodOperadora { get; set; }
+        public required string CodPlan { get; set; }
+    }
+
+    public class FndGestionesContratosBusquedaResult
+    {
+        public int Cod_Contrato { get; set; }
+        public string Cedula { get; set; } = string.Empty;
+    }
+
     public class FndGestionesContratoParams
     {
         public required int CodEmpresa { get; set; }
