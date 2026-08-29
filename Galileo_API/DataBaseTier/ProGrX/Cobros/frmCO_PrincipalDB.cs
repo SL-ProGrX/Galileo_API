@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 const string sql = @"
-                                SELECT TOP 10
+                                SELECT
                                     id_solicitud AS operacion,
                                     RTRIM(codigo) AS codigo,
                                     RTRIM(cedula) AS cedula,
@@ -1013,6 +1013,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 response.Result = cn.Query<OperacionBusquedaDto>(
                     sql,
                     new { cedula, linea }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Lista las operaciones formalizadas asociadas a una persona.
+        /// Equivale a la búsqueda F4 del campo Línea en el formulario original.
+        /// </summary>
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            var response = new ErrorDto<List<OperacionBusquedaDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+                    SELECT
+                        id_solicitud AS operacion,
+                        RTRIM(codigo) AS codigo,
+                        RTRIM(cedula) AS cedula,
+                        RTRIM(ISNULL(proceso, '')) AS proceso,
+                        RTRIM(ISNULL(estado, '')) AS estado,
+                        ISNULL(montoapr, 0) AS montoapr,
+                        ISNULL(saldo, 0) AS saldo
+                    FROM reg_creditos
+                    WHERE estadosol = 'F'
+                      AND cedula = @cedula
+                    ORDER BY id_solicitud
+                ";
+
+                response.Result = cn.Query<OperacionBusquedaDto>(
+                    sql,
+                    new { cedula }
                 ).ToList();
             }
             catch (Exception ex)
