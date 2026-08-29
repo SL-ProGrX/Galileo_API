@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
 using System.Data; 
+using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helpers;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualCargaArchivos;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
@@ -14,6 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         private readonly int vModulo = 3;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
+        private readonly string _rutaBaseArchivos;
 
         /// <summary>
         /// Inicializa una nueva instancia para gestionar la carga de deducciones del proceso mensual.
@@ -24,6 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
             _mGeneral = new CcProcesoMensualGeneralDb(config);
+            _rutaBaseArchivos = config["ArchivosGenerados:RutaBase"] ?? string.Empty;
         }
 
         /// <summary>
@@ -82,6 +85,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                 };
 
                 InsertarRegistrosPrmCargado(connection, transaction, registros);
+                GuardarArchivoRecepcion(connection, transaction, request);
 
                 RevisarCedulasCargadas(connection, transaction, request);
 
@@ -445,7 +449,85 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                     request.Pago,
                     request.CodInstitucion
                 },
-                transaction: transaction);
+                transaction: transaction,
+                commandTimeout: 0);
+        }
+
+        /// <summary>
+        /// Guarda una copia del archivo recibido en la carpeta de planilla de la institución y año del proceso.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Solicitud con los datos del archivo recibido.</param>
+        private void GuardarArchivoRecepcion(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualCargaDeduccionesRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.NombreArchivo)
+                || string.IsNullOrWhiteSpace(_rutaBaseArchivos))
+            {
+                return;
+            }
+
+            var nombreArchivo = ObtenerNombreArchivoRecepcion(request.NombreArchivo);
+            var rutaDirectorio = ObtenerRutaDirectorioRecepcion(connection, transaction, request, _rutaBaseArchivos);
+            var rutaArchivo = CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(
+                _rutaBaseArchivos,
+                rutaDirectorio,
+                nombreArchivo);
+
+            var contenido = Convert.FromBase64String(request.ArchivoBase64);
+
+            CcProcesoMensualArchivoRutaHelperDb.CrearDirectorioSiNoExiste(
+                _rutaBaseArchivos,
+                rutaDirectorio);
+
+            File.WriteAllBytes(rutaArchivo, contenido);
+        }
+
+        /// <summary>
+        /// Obtiene la ruta de recepción homologada con la generación de archivos de planilla.
+        /// </summary>
+        /// <param name="connection">Conexión activa a base de datos.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="request">Solicitud con institución y proceso.</param>
+        /// <param name="rutaBaseArchivos">Ruta base configurada para los archivos de planilla.</param>
+        /// <returns>Ruta del directorio de recepción.</returns>
+        private static string ObtenerRutaDirectorioRecepcion(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualCargaDeduccionesRequest request, string rutaBaseArchivos)
+        {
+            var nombreInstitucion = connection.QuerySingleOrDefault<string>(
+                "SELECT ISNULL(descripcion, '') FROM instituciones WHERE cod_institucion = @CodInstitucion",
+                new { request.CodInstitucion },
+                transaction: transaction) ?? string.Empty;
+
+            var requestRuta = new CcProcesoMensualGeneraArchivoRequest
+            {
+                EmpresaId = request.CodEmpresa,
+                CodInstitucion = request.CodInstitucion,
+                FechaProceso = request.FechaProceso,
+                NombreInstitucion = nombreInstitucion
+            };
+
+            return CcProcesoMensualArchivoRutaHelperDb.ObtenerRutaPlanilla(
+                requestRuta,
+                rutaBaseArchivos);
+        }
+
+        /// <summary>
+        /// Normaliza el nombre del archivo recibido evitando rutas o segmentos no permitidos.
+        /// </summary>
+        /// <param name="nombreArchivo">Nombre original del archivo.</param>
+        /// <returns>Nombre seguro del archivo recibido.</returns>
+        private static string ObtenerNombreArchivoRecepcion(string nombreArchivo)
+        {
+            var nombreSeguro = Path.GetFileName(nombreArchivo);
+
+            if (string.IsNullOrWhiteSpace(nombreSeguro)
+                || !string.Equals(nombreSeguro, nombreArchivo, StringComparison.Ordinal)
+                || nombreSeguro.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                throw new ArgumentException("El nombre del archivo de recepción no es válido.", nameof(nombreArchivo));
+            }
+
+            return $"R-{nombreSeguro}";
         }
 
         /// <summary>

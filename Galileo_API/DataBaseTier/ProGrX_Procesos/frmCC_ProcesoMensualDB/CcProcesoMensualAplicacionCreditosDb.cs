@@ -399,8 +399,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             while (paso <= ultimoPaso)
             {
-                var pasoActual = paso;
-
                 var resultado = context.Connection.QuerySingleOrDefault<CreditoAplicaAbonosMasivoResult>(
                      "spPrmCreditoAplicaAbonosMasivo",
                      new
@@ -416,13 +414,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
                 if (resultado is null)
                 {
-                    paso = pasoActual + 1;
+                    paso++;
                     continue;
                 }
                  
-                paso = resultado.PasoSiguiente > pasoActual
-                    ? resultado.PasoSiguiente
-                    : pasoActual + 1;
+                paso = resultado.PasoSiguiente;
             }
         }
 

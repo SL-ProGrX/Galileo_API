@@ -17,6 +17,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly CcProcesoMensualEnvioDb _db;
         private readonly PortalDB _portalDb;
         private readonly IConfiguration _config;
+        private readonly string _rutaBaseArchivos;
 
         public CcProcesoMensualArchivosBL(IEnumerable<ICcProcesoMensualArchivoGenerator> generadores, IConfiguration config)
         {
@@ -24,6 +25,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             _db = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
             _config = config;
+            _rutaBaseArchivos = config["ArchivosGenerados:RutaBase"] ?? string.Empty;
         }
 
         public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(int codEmpresa, CcProcesoMensualGeneraDeduccionesRequest request)
@@ -51,6 +53,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             };
 
             var archivoGenerado = GenerarArchivo(connection,archivoRequest);
+            CompletarArchivoDescarga(archivoGenerado);
 
             return DbHelper.CreateOkResponse(new CcProcesoMensualGeneraDeduccionesResponse
             {
@@ -240,8 +243,65 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             connection.Open();
 
             var archivo = GenerarArchivo(connection, request);
+            CompletarArchivoDescarga(archivo);
 
             return DbHelper.CreateOkResponse(archivo);
+        }
+
+        private void CompletarArchivoDescarga(CcProcesoMensualArchivoGeneradoModel archivo)
+        {
+            if (!DebeCargarArchivo(archivo))
+            {
+                return;
+            }
+
+            var rutaArchivo = ObtenerRutaArchivoDescarga(archivo.RutaArchivo);
+
+            if (!File.Exists(rutaArchivo))
+            {
+                return;
+            }
+
+            archivo.ArchivoBytes = File.ReadAllBytes(rutaArchivo);
+
+            if (string.IsNullOrWhiteSpace(archivo.NombreArchivo))
+            {
+                archivo.NombreArchivo = Path.GetFileName(rutaArchivo);
+            }
+        }
+
+        private static bool DebeCargarArchivo(CcProcesoMensualArchivoGeneradoModel archivo)
+        {
+            return archivo.Generado
+                && archivo.ArchivoBytes.Length == 0
+                && !string.IsNullOrWhiteSpace(archivo.RutaArchivo);
+        }
+
+        private string ObtenerRutaArchivoDescarga(string rutaArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(_rutaBaseArchivos))
+            {
+                throw new InvalidOperationException("La ruta base de archivos generados no está configurada.");
+            }
+
+            var rutaBase = Path.GetFullPath(_rutaBaseArchivos);
+            var rutaArchivoCompleta = Path.GetFullPath(rutaArchivo);
+
+            ValidarRutaArchivoGenerado(rutaBase, rutaArchivoCompleta);
+
+            return rutaArchivoCompleta;
+        }
+
+        private static void ValidarRutaArchivoGenerado(string rutaBase, string rutaArchivo)
+        {
+            var rutaBaseNormalizada = rutaBase.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                ? rutaBase
+                : rutaBase + Path.DirectorySeparatorChar;
+
+            if (!rutaArchivo.StartsWith(rutaBaseNormalizada, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("La ruta del archivo generado está fuera del directorio permitido.");
+            }
         }
     }
 }
