@@ -1,35 +1,72 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/frmCC_App_Log")]
     [ApiController]
-    public class FrmCcAppLogController : ControllerBase
+    [Authorize]
+    public class FrmCcAppLogController :
+        ControllerBase
     {
-        readonly FrmCcAppLogBl App_LogBL;
-        public FrmCcAppLogController(IConfiguration config)
+        private readonly FrmCcAppLogBl _bl;
+
+        public FrmCcAppLogController(
+            IConfiguration config)
         {
-            App_LogBL = new FrmCcAppLogBl(config);
+            _bl = new FrmCcAppLogBl(config);
         }
 
-        [HttpGet("CC_Estadistica_SP")]
-        public List<EstadisticaData> CC_Estadistica_SP(int CodEmpresa, string FechaInicio, string FechaCorte)
+        [HttpGet(
+            "CC_App_Log_Estadistica_Obtener")]
+        public ErrorDto<List<EstadisticaData>>
+            CC_App_Log_Estadistica_Obtener(
+                int CodEmpresa,
+                string FechaInicio,
+                string FechaCorte)
         {
-            return App_LogBL.CC_Estadistica_SP(CodEmpresa, FechaInicio, FechaCorte);
+            return _bl
+                .CC_App_Log_Estadistica_Obtener(
+                    CodEmpresa,
+                    FechaInicio,
+                    FechaCorte);
         }
 
-        [HttpGet("CC_Estadistica_Detalle_SP")]
-        public List<EstadisticaDetalleData> CC_Estadistica_Detalle_SP(int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
+        [HttpGet(
+            "CC_App_Log_Estadistica_Detalle_Obtener")]
+        public ErrorDto<List<EstadisticaDetalleData>>
+            CC_App_Log_Estadistica_Detalle_Obtener(
+                int CodEmpresa,
+                string Codigo,
+                string FechaInicio,
+                string FechaCorte)
         {
-            return App_LogBL.CC_Estadistica_Detalle_SP(CodEmpresa, Codigo, FechaInicio, FechaCorte);
+            return _bl
+                .CC_App_Log_Estadistica_Detalle_Obtener(
+                    CodEmpresa,
+                    Codigo,
+                    FechaInicio,
+                    FechaCorte);
         }
 
-        [HttpGet("CC_Estadistica_Analisis_SP")]
-        public List<EstadisticaAnalisisData> CC_Estadistica_Analisis_SP(int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
+        [HttpGet(
+            "CC_App_Log_Estadistica_Analisis_Obtener")]
+        public ErrorDto<List<EstadisticaAnalisisData>>
+            CC_App_Log_Estadistica_Analisis_Obtener(
+                int CodEmpresa,
+                string FechaInicio,
+                string FechaCorte,
+                int Ingreso)
         {
-            return App_LogBL.CC_Estadistica_Analisis_SP(CodEmpresa, FechaInicio, FechaCorte, Ingreso);
+            return _bl
+                .CC_App_Log_Estadistica_Analisis_Obtener(
+                    CodEmpresa,
+                    FechaInicio,
+                    FechaCorte,
+                    Ingreso);
         }
     }
 }

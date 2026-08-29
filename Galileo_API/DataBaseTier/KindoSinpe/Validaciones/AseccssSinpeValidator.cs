@@ -74,6 +74,8 @@ namespace Galileo_API.DataBaseTier
             ErrorDto response = new();
             _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result ?? new Galileo.Models.KindoSinpe.ParametrosSinpe();
 
+            _mKindo.UpdateOkTransaccionSinpe(CodEmpresa, string.Empty, 0, Convert.ToInt64(solicitud));
+
             Galileo.Models.KindoSinpe.vInfoSinpe? info = new();
             try
             {
@@ -106,6 +108,11 @@ namespace Galileo_API.DataBaseTier
                             {
                                 if (LaInformacionDeLaCuentaPIN.Account == null)
                                 {
+                                    _mKindo.UpdateErrorTransaccionSinpe(
+                                            CodEmpresa,
+                                            string.Empty,
+                                            LaInformacionDeLaCuentaPIN.Errors[0].Code,
+                                           Convert.ToInt64(solicitud));
                                     response = new ErrorDto
                                     {
                                         Code = -1,
@@ -843,6 +850,7 @@ namespace Galileo_API.DataBaseTier
                             .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                 idRechazo,
                                 rechazo);
+                        _mKindo.UpdateErrorTransaccionSinpe(CodEmpresa, string.Empty, idRechazo, Nsolicitud);
                     }
                     else
                     {
@@ -857,6 +865,11 @@ namespace Galileo_API.DataBaseTier
                                 .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                     idRechazo,
                                     rechazo);
+                            _mKindo.UpdateErrorTransaccionSinpe(
+                                    CodEmpresa,
+                                    respuesta.CodigoReferencia ?? string.Empty,
+                                    idRechazo,
+                                    Nsolicitud);
                         }
                         else
                         {
@@ -1299,7 +1312,15 @@ namespace Galileo_API.DataBaseTier
                     .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                         idRechazo,
                         rechazo);
-            }
+
+                _mKindo.UpdateErrorTransaccionSinpe(
+                    CodEmpresa,
+                    respuesta.CodigoReferencia
+                        ?? ElResultadoDeSendTransfer?.PINSendingResult?.SINPERefNumber
+                        ?? string.Empty,
+                    idRechazo,
+                    Nsolicitud);
+                        }
 
             return response;
         }

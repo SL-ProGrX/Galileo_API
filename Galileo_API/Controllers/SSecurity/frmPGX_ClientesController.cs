@@ -21,7 +21,7 @@ namespace Galileo.Controllers
 
         [HttpGet("Clientes_Obtener")]
         [Authorize]
-        public ClientesDataLista Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<ClientesDataLista> Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
         {
             return ClientesBL.Clientes_Obtener(pagina, paginacion, filtro);
         }
@@ -117,6 +117,20 @@ namespace Galileo.Controllers
             return ClientesBL.ServiciosCliente_Obtener(CodEmpresa);
         }
 
+        [HttpPost("ServicioAsignar_Guardar")]
+        [Authorize]
+        public ErrorDto ServicioAsignar_Guardar(ServicioAsignarDto request)
+        {
+            return ClientesBL.ServicioAsignar(request, "M");
+        }
+
+        [HttpPost("ServicioAsignar_Eliminar")]
+        [Authorize]
+        public ErrorDto ServicioAsignar_Eliminar(ServicioAsignarDto request)
+        {
+            return ClientesBL.ServicioAsignar(request, "E");
+        }
+
 
         [HttpGet("ListaSMTP")]
         [Authorize]
@@ -135,9 +149,9 @@ namespace Galileo.Controllers
 
         [HttpPost("Clientes_Sincronizar")]
         [Authorize]
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
         {
-            return ClientesBL.Clientes_Sincronizar(CodEmpresa, logos);
+            return ClientesBL.Clientes_Sincronizar(CodEmpresa, logos, idPortal);
         }
 
 

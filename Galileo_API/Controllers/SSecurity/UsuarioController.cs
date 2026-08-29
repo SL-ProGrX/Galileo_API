@@ -35,5 +35,11 @@ namespace Galileo.Controllers
         {
             return new UsuarioBL(_config).UsuarioCuentaMovimientosObtener(usuarioCuentaMovimientoRequestDto);
         }
+
+        [HttpPost("UsuarioCuentaMovimientoRevisar")]
+        public ErrorDto UsuarioCuentaMovimientoRevisar([FromBody] UsuarioCuentaMovimientoRevisarDto movimiento)
+        {
+            return new UsuarioBL(_config).UsuarioCuentaMovimientoRevisar(movimiento);
+        }
     }
 }

@@ -162,6 +162,15 @@
         public bool RevisionInd { get; set; } = false;
     }
 
+    public class UsuarioCuentaMovimientoRevisarDto
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public int SeqId { get; set; }
+        public string CodTransaccion { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+        public string UsuarioRevision { get; set; } = string.Empty;
+    }
+
     public class UsuarioCuentaMovimientoResultDto
     {
         public bool Revisado { get; set; } = false;
