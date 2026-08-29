@@ -2,16 +2,19 @@
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo_API.DataBaseTier;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmCcCuentasBancariasDb
     {
         private readonly PortalDB _portalDB;
+        private readonly VerificadorCoreFactory _factory;
 
         public FrmCcCuentasBancariasDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _factory = new VerificadorCoreFactory(config);
         }
 
         #region CC
@@ -153,6 +156,12 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SysCuentasBancariasDto data)
         {
+            var validacionSinpe = ValidarCuentaIbanSinpe(CodEmpresa, data);
+            if (validacionSinpe.Code == -1)
+            {
+                return validacionSinpe;
+            }
+
             const string sql = @"
                 UPDATE SYS_CUENTAS_BANCARIAS SET 
                     cod_banco        = @Cod_Banco,
@@ -209,6 +218,12 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ErrorDto CuentaBancaria_Insertar(int CodEmpresa, SysCuentasBancariasDto data)
         {
+            var validacionSinpe = ValidarCuentaIbanSinpe(CodEmpresa, data);
+            if (validacionSinpe.Code == -1)
+            {
+                return validacionSinpe;
+            }
+
             const string sql = @"
                 INSERT INTO SYS_CUENTAS_BANCARIAS(
                     Identificacion,
@@ -270,6 +285,37 @@ namespace Galileo.DataBaseTier
             }
 
             return resp;
+        }
+
+        private ErrorDto ValidarCuentaIbanSinpe(int CodEmpresa, SysCuentasBancariasDto data)
+        {
+            if (!data.Cuenta_Interbanca)
+            {
+                return DbHelper.CreateOkResponse();
+            }
+
+            var cedula = data.Identificacion?.Trim() ?? string.Empty;
+            var cuenta = data.Cuenta_Interna?.Trim() ?? string.Empty;
+            var usuario = data.Registro_Usuario?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(cuenta))
+            {
+                return DbHelper.ErrorResponse("Debe indicar la identificación y la cuenta IBAN para validar contra SINPE.");
+            }
+
+            try
+            {
+                var servicio = _factory.CrearServicio(CodEmpresa, usuario);
+                var validacion = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+
+                return validacion.Code == 0
+                    ? DbHelper.CreateOkResponse()
+                    : DbHelper.ErrorResponse("La cuenta IBAN no es válida para la cédula proporcionada.");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse("No fue posible validar la cuenta IBAN contra SINPE: " + ex.Message);
+            }
         }
 
         /// <summary>
