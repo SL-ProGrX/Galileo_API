@@ -68,13 +68,14 @@
 
     public class ServicioDto
     {
-        public string cod_servicio { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-        public decimal monto { get; set; }
-        public decimal costo { get; set; }
-        public int cantidad_usuarios { get; set; }
-        public DateTime registro_fecha { get; set; }
-        public string registro_usuario { get; set; } = string.Empty;
+        public string Cod_Servicio { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public decimal Costo { get; set; }
+        public int Cantidad_Usuarios { get; set; }
+        public DateTime Registro_Fecha { get; set; }
+        public string Registro_Usuario { get; set; } = string.Empty;
+        public bool Activo { get; set; }
     }
 
     public class ContactoDto
@@ -157,6 +158,17 @@
         public int Cantidad_Usuarios { get; set; }
         public int Registro_Fecha { get; set; }
         public int Registro_Usuario { get; set; }
+    }
+
+    public class ServicioAsignarDto
+    {
+        public int CodEmpresa { get; set; }
+        public string CodServicio { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public decimal Costo { get; set; }
+        public int CantidadUsuarios { get; set; }
+        public bool AplicaPorUsuario { get; set; }
+        public string Usuario { get; set; } = string.Empty;
     }
 
     public class EmpresaContactosDto
