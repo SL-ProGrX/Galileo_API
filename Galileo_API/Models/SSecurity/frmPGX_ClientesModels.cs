@@ -162,11 +162,16 @@
 
     public class ServicioAsignarDto
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int CodEmpresa { get; set; }
         public string CodServicio { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal Monto { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal Costo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int CantidadUsuarios { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool AplicaPorUsuario { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }

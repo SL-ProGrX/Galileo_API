@@ -192,7 +192,7 @@ namespace Galileo.DataBaseTier
             {
                 return DbHelper.CreateErrorResponse<List<UsuarioModel>>(ex.Message);
             }
-            return DbHelper.CreateOkResponse(result ?? new List<UsuarioModel>());
+            return DbHelper.CreateOkResponse(result);
         }
 
         public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)
@@ -214,7 +214,7 @@ namespace Galileo.DataBaseTier
             {
                 return DbHelper.CreateErrorResponse<List<UsuarioClienteDto>>(ex.Message);
             }
-            return DbHelper.CreateOkResponse(result ?? new List<UsuarioClienteDto>());
+            return DbHelper.CreateOkResponse(result);
         }
 
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
@@ -312,7 +312,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<TipoTransaccionBitacora>> UsuarioCuentaTiposTransaccionObtener()
         {
-            List<TipoTransaccionBitacora> resultado = new List<TipoTransaccionBitacora>();
+            List<TipoTransaccionBitacora> resultado;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -351,7 +351,7 @@ namespace Galileo.DataBaseTier
             {
                 return DbHelper.CreateErrorResponse<List<UsuarioCuentaBitacora>>(ex.Message);
             }
-            return DbHelper.CreateOkResponse(result ?? new List<UsuarioCuentaBitacora>());
+            return DbHelper.CreateOkResponse(result);
         }
 
         public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)

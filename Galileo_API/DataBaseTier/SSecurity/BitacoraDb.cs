@@ -50,11 +50,11 @@ namespace Galileo.DataBaseTier
 
         private static (DateTime ini, DateTime fin) GetDateRange(BitacoraRequestDto dto)
         {
-            var fechaInicio = dto.FechaInicio?.Date ?? new DateTime(1900, 1, 1);
-            var fechaCorte = dto.FechaCorte?.Date ?? new DateTime(2100, 12, 30);
+            var fechaInicio = dto.FechaInicio?.Date ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+            var fechaCorte = dto.FechaCorte?.Date ?? new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Unspecified);
 
             if (dto.todas == true)
-                return (new DateTime(1900, 1, 1, 0, 0, 0), new DateTime(2100, 12, 30, 23, 59, 59));
+                return (new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Unspecified));
 
             if (dto.todos == true)
                 return (fechaInicio, fechaCorte.AddDays(1).AddTicks(-1));

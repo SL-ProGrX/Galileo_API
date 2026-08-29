@@ -164,6 +164,7 @@
 
     public class UsuarioCuentaMovimientoRevisarDto
     {
+        [System.Text.Json.Serialization.JsonRequired]
         public int SeqId { get; set; }
         public string CodTransaccion { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
