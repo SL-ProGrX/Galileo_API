@@ -107,6 +107,43 @@ namespace Galileo.DataBaseTier
             return resultado;
         }
 
+        public ErrorDto UsuarioCuentaMovimientoRevisar(UsuarioCuentaMovimientoRevisarDto movimiento)
+        {
+            var resultado = new ErrorDto();
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                const string sql = """
+                    UPDATE US_TRANSAC_LOG
+                    SET Revisado_Usuario = @UsuarioRevision,
+                        Revisado_Fecha = GETDATE()
+                    WHERE Seq_Id = @SeqId
+                      AND Cod_Transac = @CodTransaccion
+                      AND Usuario = @Usuario;
+                    """;
+
+                var filasActualizadas = connection.Execute(sql, new
+                {
+                    movimiento.SeqId,
+                    movimiento.CodTransaccion,
+                    movimiento.Usuario,
+                    movimiento.UsuarioRevision
+                });
+
+                resultado.Code = filasActualizadas > 0 ? 0 : 1;
+                resultado.Description = filasActualizadas > 0
+                    ? "Movimiento marcado como revisado."
+                    : "No se encontró el movimiento para marcarlo como revisado.";
+            }
+            catch (Exception ex)
+            {
+                resultado.Code = -1;
+                resultado.Description = ex.Message;
+            }
+
+            return resultado;
+        }
+
         public List<LoginDbResult> ObtenerInformacionUsuario(string username, string userId)
         {
             List<LoginDbResult> resp = [];

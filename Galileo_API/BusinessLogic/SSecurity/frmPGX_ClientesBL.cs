@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _clientesDB = new FrmPgxClientesDb(config);
         }
 
-        public ClientesDataLista Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<ClientesDataLista> Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
         {
             return _clientesDB.Clientes_Obtener(pagina, paginacion, filtro);
         }
@@ -83,6 +83,11 @@ namespace Galileo.BusinessLogic
             return _clientesDB.ServiciosCliente_Obtener(CodEmpresa);
         }
 
+        public ErrorDto ServicioAsignar(ServicioAsignarDto request, string modo)
+        {
+            return _clientesDB.ServicioAsignar(request, modo);
+        }
+
         public List<SmtpDto> ListaSMTP(int CodEmpresa)
         {
             return _clientesDB.ListaSMTP(CodEmpresa);
@@ -93,9 +98,9 @@ namespace Galileo.BusinessLogic
             return _clientesDB.SMTP_Autorizar(info);
         }
 
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
         {
-            return _clientesDB.Clientes_Sincronizar(CodEmpresa, logos);
+            return _clientesDB.Clientes_Sincronizar(CodEmpresa, logos, idPortal);
         }
 
         public List<PaisesDto> ObtenerPaises()

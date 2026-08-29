@@ -61,6 +61,51 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         }
 
         /// <summary>
+        /// Resuelve el criterio de consulta como cédula o número de operación.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
+        /// <param name="criterio">Cédula o número de operación digitado.</param>
+        /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
+        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+            int CodEmpresa,
+            string criterio)
+        {
+            var criterioNormalizado = (criterio ?? string.Empty).Trim();
+            long? operacion = long.TryParse(criterioNormalizado, out var numeroOperacion)
+                ? numeroOperacion
+                : null;
+
+            const string sql = @"
+                SELECT TOP 1
+                    candidato.cedula
+                FROM (
+                    SELECT socios.cedula, 0 AS prioridad
+                    FROM SOCIOS AS socios
+                    WHERE socios.cedula = @criterio
+
+                    UNION ALL
+
+                    SELECT creditos.cedula, 1 AS prioridad
+                    FROM REG_CREDITOS AS creditos
+                    WHERE @operacion IS NOT NULL
+                      AND creditos.ID_SOLICITUD = @operacion
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM SOCIOS
+                          WHERE cedula = @criterio
+                      )
+                ) AS candidato
+                ORDER BY candidato.prioridad";
+
+            return DbHelper.ExecuteSingleQuery<string>(
+                CreatePortalDb(),
+                CodEmpresa,
+                sql,
+                string.Empty,
+                new { criterio = criterioNormalizado, operacion });
+        }
+
+        /// <summary>
         /// Consulta los datos de la persona para el formulario de consulta integrada.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
