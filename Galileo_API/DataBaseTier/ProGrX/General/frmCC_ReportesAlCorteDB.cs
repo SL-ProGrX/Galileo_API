@@ -304,7 +304,8 @@ namespace Galileo.DataBaseTier
                 resp = connection.Query<CbrAnalisisCubosData>(
                     procName,
                     new { Anio, Mes },
-                    commandType: CommandType.StoredProcedure
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0
                 ).ToList();
             }
             catch (Exception ex)
@@ -328,7 +329,8 @@ namespace Galileo.DataBaseTier
                 resp = connection.Query<CbrEstimacionData>(
                     procName,
                     new { Anio, Mes },
-                    commandType: CommandType.StoredProcedure
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0
                 ).ToList();
             }
             catch (Exception ex)

@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return conn.QueryFirstOrDefault<string>(
                     sql,
                     new { cedula },
-                    commandTimeout: 60
+                    commandTimeout: 0
                 ) ?? string.Empty;
             });
         }
@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandText: spName,
                     parameters: new { cedula },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60
+                    commandTimeout: 0
                 );
 
                 return conn.Query<CbrIncobrableListaItem>(cmd).ToList();
@@ -84,7 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         CxC_Operacion = cxcOperacion
                     },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60
+                    commandTimeout: 0
                 );
 
                 return conn.Query<CbrIncobrableMovimientoItem>(cmd).ToList();

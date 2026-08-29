@@ -123,7 +123,8 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
         {
             return conn.QueryFirstOrDefault<string>(
                 "select top 1 rtrim(Nombre) from socios where Cedula = @cedula",
-                new { cedula }) ?? string.Empty;
+                new { cedula },
+                commandTimeout: 0) ?? string.Empty;
         }
 
         private static dynamic? ObtenerAsignacion(SqlConnection conn, string cedula)
@@ -131,7 +132,8 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
             return conn.QueryFirstOrDefault<dynamic>(
                 @"select top 1 rtrim(Usuario) as Usuario, fecha_asignacion as Fecha, isnull(mantener,1) as Mantener
                   from cbr_asignacion where cedula = @cedula",
-                new { cedula });
+                new { cedula },
+                commandTimeout: 0);
         }
 
         private static void AplicarAsignacion(CoControlAsgManualExpedienteDetalle detalle, dynamic? asg)
@@ -166,7 +168,8 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 @"select top 1 1 from Vista_Morosidad Vm
                   inner join Reg_Creditos Reg on Vm.Id_Solicitud = Reg.Id_Solicitud
                   where Reg.Cedula = @cedula",
-                new { cedula });
+                new { cedula },
+                commandTimeout: 0);
 
             return mora == 1;
         }
@@ -195,7 +198,8 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
             {
                 var actual = conn.QueryFirstOrDefault<string>(
                     "select top 1 rtrim(Usuario) from cbr_asignacion where cedula = @cedula",
-                    new { cedula }) ?? "";
+                    new { cedula },
+                    commandTimeout: 0) ?? "";
 
                 if (!string.IsNullOrWhiteSpace(actual) &&
                     string.Equals(actual.Trim(), nuevo.Trim(), StringComparison.OrdinalIgnoreCase))
@@ -204,7 +208,8 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 }
 
                 conn.Execute("exec spCBRControlAsg @cedula, @nuevo, @mantener",
-                    new { cedula, nuevo, mantener });
+                    new { cedula, nuevo, mantener },
+                    commandTimeout: 0);
 
                 return DbHelper.OkResponse("Asignación Manual realizada satisfactoriamente.");
             });

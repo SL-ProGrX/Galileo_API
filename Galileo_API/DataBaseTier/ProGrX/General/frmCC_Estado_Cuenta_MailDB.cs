@@ -13,7 +13,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
     public sealed class FrmCcEstadoCuentaMailDb
     {
         private const int ModuloGeneral = 10;
-        private const int TiempoEsperaSegundos = 300;
+        private const int TiempoEsperaSegundos = 0;
         private const string TipoResumen = "RESUMEN";
         private const string TipoDetallado = "DETALLADO";
 
@@ -77,7 +77,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                             .Query<CcEstadoCuentaMailPeriodoData>(
                                 "spSys_Periodos_Cierre_Consulta",
                                 commandType:
-                                    CommandType.StoredProcedure)
+                                    CommandType.StoredProcedure,
+                                commandTimeout: 0)
                             .Skip(1)
                             .Select(periodo =>
                                 new DropDownListaGenericaModel

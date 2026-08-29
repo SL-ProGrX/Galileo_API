@@ -74,7 +74,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var idAplicacion = connection.QuerySingle<int>(
                     guiaSql,
-                    new { Usuario = usuario }
+                    new { Usuario = usuario },
+                    commandTimeout: 0
                 );
 
                 int contValidos = 0;
@@ -90,7 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         Usuario = usuario,
                         Cedula = cedula,
                         AplicacionId = idAplicacion
-                    });
+                    }, commandTimeout: 0);
 
                     const string validaSql =
                         @"select dbo.fxCBR_Fondos_Apl_Contratos_Proceso_Valida(
@@ -101,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         Cedula = cedula,
                         AplicacionId = idAplicacion
-                    });
+                    }, commandTimeout: 0);
 
                     if (valido)
                     {
