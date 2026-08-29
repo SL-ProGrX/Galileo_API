@@ -29,5 +29,10 @@ namespace Galileo.BusinessLogic
             return new UsuarioDB(_config).UsuarioCuentaMovimientosObtener(usuarioCuentaMovimientoRequestDto);
         }
 
+        public ErrorDto UsuarioCuentaMovimientoRevisar(UsuarioCuentaMovimientoRevisarDto movimiento)
+        {
+            return new UsuarioDB(_config).UsuarioCuentaMovimientoRevisar(movimiento);
+        }
+
     }
 }
