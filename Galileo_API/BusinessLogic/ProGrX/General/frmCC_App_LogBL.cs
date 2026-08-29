@@ -1,29 +1,60 @@
 using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 
 namespace Galileo.BusinessLogic
 {
     public class FrmCcAppLogBl
     {
-        readonly FrmCcAppLogDb App_LogDb;
+        private readonly FrmCcAppLogDb _db;
 
-        public FrmCcAppLogBl(IConfiguration config)
+        public FrmCcAppLogBl(
+            IConfiguration config)
         {
-            App_LogDb = new FrmCcAppLogDb(config);
-        }
-        public List<EstadisticaData> CC_Estadistica_SP(int CodEmpresa, string FechaInicio, string FechaCorte)
-        {
-            return App_LogDb.CC_Estadistica_SP(CodEmpresa, FechaInicio, FechaCorte);
+            _db = new FrmCcAppLogDb(config);
         }
 
-        public List<EstadisticaDetalleData> CC_Estadistica_Detalle_SP(int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
+        public ErrorDto<List<EstadisticaData>>
+            CC_App_Log_Estadistica_Obtener(
+                int CodEmpresa,
+                string FechaInicio,
+                string FechaCorte)
         {
-            return App_LogDb.CC_Estadistica_Detalle_SP(CodEmpresa, Codigo, FechaInicio, FechaCorte);
+            return _db
+                .CC_App_Log_Estadistica_Obtener(
+                    CodEmpresa,
+                    FechaInicio,
+                    FechaCorte);
         }
 
-        public List<EstadisticaAnalisisData> CC_Estadistica_Analisis_SP(int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
+        public ErrorDto<List<EstadisticaDetalleData>>
+            CC_App_Log_Estadistica_Detalle_Obtener(
+                int CodEmpresa,
+                string Codigo,
+                string FechaInicio,
+                string FechaCorte)
         {
-            return App_LogDb.CC_Estadistica_Analisis_SP(CodEmpresa, FechaInicio, FechaCorte, Ingreso);
+            return _db
+                .CC_App_Log_Estadistica_Detalle_Obtener(
+                    CodEmpresa,
+                    Codigo,
+                    FechaInicio,
+                    FechaCorte);
+        }
+
+        public ErrorDto<List<EstadisticaAnalisisData>>
+            CC_App_Log_Estadistica_Analisis_Obtener(
+                int CodEmpresa,
+                string FechaInicio,
+                string FechaCorte,
+                int Ingreso)
+        {
+            return _db
+                .CC_App_Log_Estadistica_Analisis_Obtener(
+                    CodEmpresa,
+                    FechaInicio,
+                    FechaCorte,
+                    Ingreso);
         }
     }
 }
