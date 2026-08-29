@@ -154,16 +154,22 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             );
         }
 
+        [Authorize]
         [HttpPost("ValidarPasoCobroJudicial")]
         public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
         {
             return _bl.ValidarPasoCobroJudicial(codEmpresa, operacion);
         }
 
+        [Authorize]
         [HttpPost("CobroJudicial_Ejecutar")]
         public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
         {
-            return _bl.CobroJudicial_Ejecutar(codEmpresa, request.operacion, request.usuario
+            return _bl.CobroJudicial_Ejecutar(
+                codEmpresa,
+                request.operacion,
+                request.usuario,
+                request.notas
             );
         }
 

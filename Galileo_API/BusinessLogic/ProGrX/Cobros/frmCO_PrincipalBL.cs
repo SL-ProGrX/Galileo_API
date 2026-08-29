@@ -115,9 +115,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.ValidarPasoCobroJudicial(codEmpresa, operacion);
         }
 
-        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario)
+        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
         {
-            return _db.CobroJudicial_Ejecutar(codEmpresa, operacion, usuario);
+            return _db.CobroJudicial_Ejecutar(codEmpresa, operacion, usuario, notas);
         }
 
         public ErrorDto<List<COAvisoDto>> Avisos_Listar(int codEmpresa, int operacion)
