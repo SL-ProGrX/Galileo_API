@@ -431,7 +431,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
             string cod_preanalisis,
-            string cod_garantia)
+            string cod_garantia,
+            DateTime? fechaFormaliza = null)
         {
             if (string.IsNullOrWhiteSpace(cod_preanalisis))
             {
@@ -443,7 +444,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia);
+            return _db.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia, fechaFormaliza);
         }
 
         /// <summary>
@@ -452,7 +453,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
             int codEmpresa,
             FrmPreaEstudiov2RefundicionesActualizarRequest request,
-            string cod_garantia)
+            string cod_garantia,
+            DateTime? fechaFormaliza = null)
         {
             if (string.IsNullOrWhiteSpace(request?.cod_preanalisis))
             {
@@ -464,7 +466,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia);
+            return _db.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia, fechaFormaliza);
         }
 
         /// <summary>

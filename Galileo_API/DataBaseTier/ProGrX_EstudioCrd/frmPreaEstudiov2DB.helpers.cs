@@ -9,6 +9,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
     public partial class FrmPreaEstudiov2DB
     {
         /// <summary>
+        /// Obtiene el estado actual del expediente desde la base de datos.
+        /// Se utiliza como validación defensiva antes de ejecutar operaciones
+        /// que dependen del estado (Abandonar, Adjuntos, Oficina, etc.).
+        /// </summary>
+        /// <param name="connection">Conexión activa a la BD.</param>
+        /// <param name="codPreanalisis">Código del preanálisis/expediente.</param>
+        /// <returns>Código del estado (ej: "R", "P", "A", "D", "B") o null si no existe.</returns>
+        private string? ObtenerEstadoExpediente(System.Data.IDbConnection connection, string codPreanalisis)
+        {
+            return connection.QueryFirstOrDefault<string>(
+                "SELECT Estado FROM CRD_PREA_PREANALISIS WHERE cod_preanalisis = @Expediente",
+                new { Expediente = codPreanalisis }
+            );
+        }
+
+        /// <summary>
+        /// Verifica si el expediente es un sub-expediente (contiene guión "-").
+        /// En VB6: fxSelectItemSubExpediente = "S" cuando el expediente contiene "-".
+        /// </summary>
+        /// <param name="codPreanalisis">Código del preanálisis/expediente.</param>
+        /// <returns>true si es sub-expediente, false si es principal.</returns>
+        private static bool EsSubExpediente(string codPreanalisis)
+        {
+            return codPreanalisis.Contains('-');
+        }
+        /// <summary>
         /// Navega al expediente siguiente o anterior según el scroll_code.
         /// 0 = anterior, 1 = siguiente.
         /// </summary>

@@ -102,9 +102,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var (edadAplica, edadJustificacion) = ObtenerJustificacionEdad(connection, codPreanalisis);
                 var lineaActual = GetString(row, "Cod_Linea");
                 var (_, _, porcFrapFap) = ObtenerParametrosCargas(connection);
+                var porcPsd = ObtenerPorcentajePsd(connection);
                 var ptsExtraFrap = row.ContainsKey("PTS_EXTRA_FRAP")
                     ? GetDecimal(row, "PTS_EXTRA_FRAP")
                     : GetDecimal(row, "PTS_EXTRA_FAP");
+                var credito = ConstruirCredito(connection, row);
+                var esExpedientePrincipal = EsExpedientePrincipal(codPreanalisis);
+                var psd = CalcularPsd(credito.monto, porcPsd, esExpedientePrincipal);
+                var montoGirar = CalcularMontoGirar(
+                    credito.monto,
+                    new RebajosMontoGirar(
+                        GetDecimal(row, "REFUNDICIONES"),
+                        GetDecimal(row, "DESEMBOLSOS"),
+                        credito.primera_cuota ? credito.cuota : 0m,
+                        psd,
+                        GetDecimal(row, "Monto_Interes"),
+                        GetDecimal(row, "MONTO_COMISION")),
+                    esExpedientePrincipal);
 
                 result.Result = new FrmPreaEstudiov2CargaResponse
                 {
@@ -134,7 +148,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         registro_usuario = GetString(row, "Usuario"),
                         registro_fecha = GetDateTime(row, "FECHA_CREACION"),
                     },
-                    credito = ConstruirCredito(connection, row),
+                    credito = credito,
                     salarios = new FrmPreaEstudiov2SalariosDto
                     {
                         tipo_salario = GetString(row, "tipo_salario"),
@@ -180,6 +194,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         fianzas = GetDecimal(row, "FIANZAS"),
                         comisiones = GetDecimal(row, "MONTO_COMISION"),
                         intereses = GetDecimal(row, "Monto_Interes"),
+                        psd = psd,
+                        monto_girar = montoGirar,
                         // VB6 (frmPreaEstudiov2.frm ~10120): Abs(Cuota - (REFUNDICIONES_CUOTA + DESEMBOLSOS_CUOTA))
                         diferencia_cuota = Math.Abs(GetDecimal(row, "Cuota") - (GetDecimal(row, "REFUNDICIONES_CUOTA") + GetDecimal(row, "DESEMBOLSOS_CUOTA"))),
                         salario_minimo_estudio = GetDecimal(row, "SALARIO_USURA"),
@@ -254,6 +270,71 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 return (0m, 0m);
             }
+        }
+
+        /// <summary>
+        /// Porcentaje de P.S.D. global. VB6: GlobalPorcPSD, CRD_PREA_PARAMETROS
+        /// COD_PARAMETRO='13'.
+        /// </summary>
+        private static decimal ObtenerPorcentajePsd(IDbConnection connection)
+        {
+            try
+            {
+                const string sql = "SELECT VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO = '13'";
+                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
+                return row is null
+                    ? 0m
+                    : GetDecimal(new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase), "VALOR");
+            }
+            catch (DataException)
+            {
+                return 0m;
+            }
+        }
+
+        /// <summary>
+        /// Replica v_Expediente de VB6: txtExpediente sin guion calcula P.S.D. y monto a girar.
+        /// </summary>
+        private static bool EsExpedientePrincipal(string codPreanalisis)
+            => !string.IsNullOrWhiteSpace(codPreanalisis)
+                && codPreanalisis.IndexOf("-", StringComparison.Ordinal) < 0;
+
+        /// <summary>
+        /// Replica ePolizaSD: txtPSD = txtMonto * GlobalPorcPSD / 100.
+        /// </summary>
+        private static decimal CalcularPsd(decimal monto, decimal porcentajePsd, bool esExpedientePrincipal)
+            => esExpedientePrincipal
+                ? Math.Round(monto * porcentajePsd / 100m, 2)
+                : 0m;
+
+        private readonly record struct RebajosMontoGirar(
+            decimal Refundiciones,
+            decimal Desembolsos,
+            decimal PrimeraCuota,
+            decimal Psd,
+            decimal Intereses,
+            decimal Comisiones);
+
+        /// <summary>
+        /// Replica eMontoGirar restando P.S.D., rebajos de formalización y primera cuota cuando aplica.
+        /// </summary>
+        private static decimal CalcularMontoGirar(
+            decimal monto,
+            RebajosMontoGirar rebajos,
+            bool esExpedientePrincipal)
+        {
+            if (!esExpedientePrincipal)
+            {
+                return 0m;
+            }
+
+            return monto - (
+                rebajos.Refundiciones
+                + rebajos.Desembolsos
+                + rebajos.PrimeraCuota
+                + rebajos.Psd
+                + rebajos.Intereses
+                + rebajos.Comisiones);
         }
 
         /// <summary>
@@ -884,6 +965,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     {
                         item = GetString(dict, "TIPO_SALARIO"),
                         descripcion = GetString(dict, "DescTipoSalario"),
+                        // Flag que indica si el campo Base (EXTRAS_FIJAS) es editable.
+                        // VB6: frmPreaEstudiov2.frm línea 10466 — solo desbloquea si MODIFICA_EXTRAS_FIJAS = 1.
+                        modifica_extras_fijas = GetBool(dict, "MODIFICA_EXTRAS_FIJAS"),
                     });
                 }
                 catalogos.tipos_salario = tipos_salario;
@@ -1183,6 +1267,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
         /// <summary>
         /// Cambia el expediente a estado abandonado.
+        /// VB6: btnAbandonar_Click (frmPreaEstudiov2.frm línea ~12507).
+        /// Validaciones defensivas replicadas del VB6:
+        ///   1. Estado "D" (Descartado) → no se puede abandonar
+        ///   2. Estado "B" (Abandonado) → ya fue abandonado anteriormente
+        ///   3. Estado "A" (Aprobado/Formalizado) → no se puede abandonar
+        ///   4. Sub-expediente → no se puede abandonar
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
             int codEmpresa,
@@ -1195,10 +1285,60 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 Result = new FrmPreaEstudiov2AbandonarResponse()
             };
 
+            var codPreanalisis = (request.cod_preanalisis ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(codPreanalisis))
+            {
+                response.Code = -1;
+                response.Description = "Debe indicar el expediente.";
+                return response;
+            }
+
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 connection.Open();
+
+                // Validación 1: Verificar si es sub-expediente
+                if (EsSubExpediente(codPreanalisis))
+                {
+                    response.Code = -1;
+                    response.Description = "No se puede ABANDONAR un expediente secundario, por favor seleccione el expediente principal e intente de nuevo.";
+                    return response;
+                }
+
+                // Obtener estado actual para validaciones
+                var estadoActual = ObtenerEstadoExpediente(connection, codPreanalisis);
+
+                if (string.IsNullOrEmpty(estadoActual))
+                {
+                    response.Code = -1;
+                    response.Description = "No se encontró el expediente especificado.";
+                    return response;
+                }
+
+                // Validación 2: Estado "D" (Descartado)
+                if (string.Equals(estadoActual, "D", StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Code = -1;
+                    response.Description = "No se puede ABANDONAR un expediente que ya ha sido DESCARTADO.";
+                    return response;
+                }
+
+                // Validación 3: Estado "B" (Abandonado)
+                if (string.Equals(estadoActual, "B", StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Code = -1;
+                    response.Description = "Ya este estudio ha sido ABANDONADO anteriormente, no se puede realizar la accin nuevamente.";
+                    return response;
+                }
+
+                // Validación 4: Estado "A" (Aprobado/Formalizado)
+                if (string.Equals(estadoActual, "A", StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Code = -1;
+                    response.Description = "No se puede ABANDONAR un expediente que ya ha sido FORMALIZADO.";
+                    return response;
+                }
 
                 const string sql = @"EXEC spCrdPreaCambiaEstadoPreanalisis @cod_preanalisis, @estado";
 
@@ -1206,7 +1346,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     sql,
                     new
                     {
-                        cod_preanalisis = request.cod_preanalisis.Trim(),
+                        cod_preanalisis = codPreanalisis,
                         estado = "B"
                     },
                     commandType: CommandType.Text
@@ -1214,7 +1354,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 response.Result = new FrmPreaEstudiov2AbandonarResponse
                 {
-                    cod_preanalisis = request.cod_preanalisis.Trim()
+                    cod_preanalisis = codPreanalisis
                 };
 
                 return response;

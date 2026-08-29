@@ -1,8 +1,10 @@
-namespace Galileo.Models.GEN
+namespace Galileo_API.Models.ProGrX_Procesos
 {
-    public class CcCaInstitucionesData
+    public sealed class CcCuotaMantenimientoEjecutarRequest
     {
-        public int idx { get; set; }
-        public string itmx { get; set; } = string.Empty;
+        public required int CodEmpresa { get; set; }
+        public required string Usuario { get; set; }
+        public required int CodContabilidad { get; set; }
+        public required int CodInstitucion { get; set; }
     }
 }

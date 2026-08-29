@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Galileo_API.Models.ProGrX_Procesos;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos
@@ -24,10 +25,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         /// <summary>
-        /// Consulta el listado de instituciones
+        /// Consulta las instituciones activas habilitadas para la cuota de mantenimiento.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Instituciones CCSS y OPC, o el error de acceso a datos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_CuotaMantenimiento_Instituciones_Obtener(int codEmpresa)
         {
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -46,12 +47,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         /// <summary>
-        /// Consulta la fecha del proceso anterior dado un proceso actual, si no encuentra un proceso anterior retorna el mismo proceso actual
+        /// Consulta la fecha del proceso anterior; si no existe, retorna el proceso actual.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="tx"></param>
-        /// <param name="proceso"></param>
-        /// <returns></returns>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="tx">Transacción que protege el proceso completo.</param>
+        /// <param name="proceso">Período actual de créditos.</param>
+        /// <returns>Período anterior configurado.</returns>
         private static decimal FxFechaProcesoAnterior(IDbConnection connection, IDbTransaction tx, decimal proceso)
         {
             const string sql = @"SELECT ISNULL(dbo.fxSIFPrmProcesoAnt(@Proceso), @Proceso);";
@@ -60,12 +61,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
 
         /// <summary>
-        /// Consulta la fecha del proceso siguiente dado un proceso actual, si no encuentra un proceso siguiente retorna el mismo proceso actual
+        /// Consulta la fecha del proceso siguiente; si no existe, retorna el proceso actual.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="tx"></param>
-        /// <param name="proceso"></param>
-        /// <returns></returns>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="tx">Transacción que protege el proceso completo.</param>
+        /// <param name="proceso">Período actual de créditos.</param>
+        /// <returns>Período siguiente configurado.</returns>
         private static decimal FxFechaProcesoSiguiente(IDbConnection connection, IDbTransaction tx, decimal proceso)
         {
             const string sql = @"SELECT ISNULL(dbo.fxSIFPrmProcesoSig(@Proceso), @Proceso);";
@@ -73,32 +74,44 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         }
 
         /// <summary>
-        /// Ejecuta el proceso de cuota de mantenimiento para los socios activos de una institución, el proceso se encarga de:
+        /// Ejecuta en una transacción el proceso de cuota de mantenimiento para una institución.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="codInstitucion"></param>
-        /// <returns></returns>
-        public ErrorDto Crd_CuotaMantenimiento_Ejecutar(int codEmpresa, string usuario, int codContabilidad, int codInstitucion)
+        /// <param name="request">Empresa, usuario, contabilidad e institución del proceso.</param>
+        /// <returns>Resultado de la transacción o el error de validación/ejecución.</returns>
+        public ErrorDto Crd_CuotaMantenimiento_Ejecutar(CcCuotaMantenimientoEjecutarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            ArgumentNullException.ThrowIfNull(request);
+
+            var usuario = request.Usuario?.Trim() ?? string.Empty;
+            var validacion = ValidarParametros(request, usuario);
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            if (CmdAplicar_Derecho_Obtener(request.CodEmpresa, usuario) == 0)
+            {
+                return DbHelper.ErrorResponse("El usuario no tiene derecho para ejecutar el proceso.", -2);
+            }
+
+            var globalesDto = mProGrxDll.sbSifParametrosInicializa(
+                request.CodEmpresa,
+                usuario,
+                request.CodContabilidad);
+            var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
+
+            if (glngFechaCR <= 0)
+            {
+                return DbHelper.ErrorResponse("No fue posible obtener el período de créditos para ejecutar el proceso.", -2);
+            }
+
+            using var connection = DbHelper.OpenConnection(_portalDB, request.CodEmpresa);
             connection.Open();
 
             using var tx = connection.BeginTransaction();
 
             try
             {
-                var globalesDto = mProGrxDll.sbSifParametrosInicializa(codEmpresa, usuario, codContabilidad);
-                var glngFechaCR = globalesDto?.Result?.GlngFechaCR ?? 0;
-
-                if (glngFechaCR <= 0)
-                {
-                    tx.Rollback();
-                    return DbHelper.ErrorResponse("No fue posible obtener el período (GlngFechaCR) para ejecutar el proceso.");
-                    
-                }
-
                 const string sqlFechaServidor = @"SELECT GETDATE();";
                 var fechaServidor = connection.ExecuteScalar<DateTime>(sqlFechaServidor, transaction: tx);
 
@@ -116,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                           AND R.estado = 'A'
                           AND S.estadoActual NOT IN ('S');";
 
-                connection.Execute(sqlExAsociados, new { CodInstitucion = codInstitucion, Codigo }, tx);
+                connection.Execute(sqlExAsociados, new { request.CodInstitucion, Codigo }, tx);
 
                 const string sqlActualizarActuales = @"
                 UPDATE R
@@ -130,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                   AND R.estado = 'A'
                   AND S.estadoActual = 'S';";
 
-                connection.Execute(sqlActualizarActuales, new { CodInstitucion = codInstitucion, Codigo, Monto }, tx);
+                connection.Execute(sqlActualizarActuales, new { request.CodInstitucion, Codigo, Monto }, tx);
 
                 const string sqlInsertNuevos = @"
                         INSERT INTO reg_creditos(
@@ -168,7 +181,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     sqlInsertNuevos,
                     new
                     {
-                        CodInstitucion = codInstitucion,
+                        request.CodInstitucion,
                         Codigo,
                         Monto,
                         Usuario = usuario,
@@ -195,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                               AND per_cobro_cuotaCr = 0
                       );";
 
-                connection.Execute(sqlCongelamiento, new { CodInstitucion = codInstitucion, Codigo }, tx);
+                connection.Execute(sqlCongelamiento, new { request.CodInstitucion, Codigo }, tx);
 
                 const string sqlSinAportes = @"
                     UPDATE reg_creditos
@@ -211,7 +224,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                               AND S.cod_institucion = @CodInstitucion
                       );";
 
-                connection.Execute(sqlSinAportes, new { CodInstitucion = codInstitucion, Codigo }, tx);
+                connection.Execute(sqlSinAportes, new { request.CodInstitucion, Codigo }, tx);
 
                 tx.Commit();
                 return DbHelper.OkResponse("Cuota de Mantenimiento Actualizada Satisfactoriamente...");
@@ -223,6 +236,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             }
         }
 
+        /// <summary>
+        /// Valida los datos mínimos antes de abrir la conexión transaccional.
+        /// </summary>
+        /// <param name="request">Datos recibidos para ejecutar el proceso.</param>
+        /// <param name="usuario">Usuario normalizado.</param>
+        /// <returns>Un error de validación o <see langword="null"/> si los datos son válidos.</returns>
+        private static ErrorDto? ValidarParametros(
+            CcCuotaMantenimientoEjecutarRequest request,
+            string usuario)
+        {
+            if (request.CodEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse("No fue posible determinar la empresa de la sesión actual.", -2);
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse("No fue posible determinar el usuario de la sesión actual.", -2);
+            }
+
+            if (request.CodContabilidad <= 0)
+            {
+                return DbHelper.ErrorResponse("No fue posible determinar la contabilidad de la sesión actual.", -2);
+            }
+
+            if (request.CodInstitucion is not (1 or 2))
+            {
+                return DbHelper.ErrorResponse("Debe seleccionar una institución válida.", -2);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Consulta el derecho de seguridad configurado para el botón Aplicar.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario de la sesión.</param>
+        /// <returns>Valor del derecho configurado.</returns>
         public int CmdAplicar_Derecho_Obtener(int codEmpresa, string usuario)
         {
             return _securityDb.Derecho(new ParametrosAccesoDto

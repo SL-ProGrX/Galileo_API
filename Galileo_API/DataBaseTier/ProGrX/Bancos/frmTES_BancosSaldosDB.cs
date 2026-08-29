@@ -4,6 +4,10 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Newtonsoft.Json;
+using System.Globalization;
+using System.Data;
+using System.Xml;
+using System.Xml.Linq;
 
 
 namespace Galileo_API.DataBaseTier
@@ -512,6 +516,95 @@ FETCH NEXT @fetch ROWS ONLY;";
             {
                 response.Code = -1;
                 response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Procesar carga masiva de cierres bancarios.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<TesBancosSaldosCargaMasivaResult> TES_BancosSaldos_Cierres_CargaMasiva(
+            int CodEmpresa,
+            string Usuario,
+            TesBancosSaldosCargaMasivaRequest request)
+        {
+            var response = new ErrorDto<TesBancosSaldosCargaMasivaResult>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new TesBancosSaldosCargaMasivaResult()
+            };
+
+            try
+            {
+                if (request == null || request.registros.Count == 0)
+                {
+                    response.Code = -1;
+                    response.Description = "No hay registros para procesar.";
+                    return response;
+                }
+
+                if (string.IsNullOrWhiteSpace(request.tipo_cierre))
+                {
+                    response.Code = -1;
+                    response.Description = "El tipo de cierre es requerido.";
+                    return response;
+                }
+
+                if (request.tipo_cierre != "DIARIO" && request.tipo_cierre != "MENSUAL")
+                {
+                    response.Code = -1;
+                    response.Description = "El tipo de cierre debe ser DIARIO o MENSUAL.";
+                    return response;
+                }
+
+                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                var parametros = new DynamicParameters();
+                parametros.Add("Usuario", Usuario);
+                parametros.Add("TipoCierre", request.tipo_cierre);
+                var registrosXml = new XElement(
+                    "registros",
+                    request.registros.Select(registro => new XElement(
+                        "registro",
+                        new XElement("linea", registro.linea?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                        new XElement("codigo_cuenta", registro.codigo_cuenta ?? string.Empty),
+                        new XElement("nombre_cuenta", registro.nombre_cuenta ?? string.Empty),
+                        new XElement("fecha_inicio", XmlConvert.ToString(registro.fecha_inicio, XmlDateTimeSerializationMode.Unspecified)),
+                        new XElement("fecha_corte", XmlConvert.ToString(registro.fecha_corte, XmlDateTimeSerializationMode.Unspecified)),
+                        new XElement("saldo_inicial", registro.saldo_inicial.ToString(CultureInfo.InvariantCulture)),
+                        new XElement("saldo_final", registro.saldo_final.ToString(CultureInfo.InvariantCulture)))));
+
+                parametros.Add(
+                    "RegistrosXml",
+                    registrosXml.ToString(SaveOptions.DisableFormatting),
+                    DbType.Xml);
+
+                using var result = conn.QueryMultiple(
+                    "spTes_W_BancosSaldos_Cierres_CargaMasiva",
+                    parametros,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
+
+                var resumen = result.ReadFirstOrDefault<TesBancosSaldosCargaMasivaResult>()
+                    ?? new TesBancosSaldosCargaMasivaResult();
+                resumen.errores = result.Read<TesBancosSaldosCargaMasivaErrorDto>().ToList();
+                resumen.registros_error = resumen.errores.Count;
+
+                response.Result = resumen;
+                response.Description = resumen.registros_error > 0
+                    ? $"Carga masiva procesada con errores. Insertados: {resumen.registros_insertados}. Actualizados: {resumen.registros_actualizados}. Errores: {resumen.registros_error}."
+                    : $"Carga masiva procesada correctamente. Insertados: {resumen.registros_insertados}. Actualizados: {resumen.registros_actualizados}.";
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
 
             return response;
