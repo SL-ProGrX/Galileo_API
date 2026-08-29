@@ -32,8 +32,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                       AND (@Cod_Plan IS NULL OR F.Cod_Plan LIKE @Cod_Plan)
                       AND (@Cod_Contrato IS NULL OR F.Cod_Contrato = @Cod_Contrato)
                       AND (@Cedula IS NULL OR F.Cedula LIKE @Cedula)
-                      AND (@Nombre IS NULL OR S.Nombre LIKE @Nombre)
-                    ORDER BY F.Cod_Operadora, F.Cod_plan, F.Cod_Contrato;";
+                      AND (@Nombre IS NULL OR S.Nombre LIKE @Nombre);";
+
+        private const string SqlContratosBusqueda = @"
+                    SELECT
+                        F.cod_Contrato AS Cod_Contrato,
+                        F.cedula AS Cedula
+                    FROM dbo.fnd_Contratos F
+                    WHERE F.cod_operadora = @CodOperadora
+                      AND F.cod_plan = @CodPlan
+                      AND F.Estado <> 'L'
+                    ORDER BY F.cod_Contrato;";
 
         private const string SqlContratoObtener = @"
                     SELECT
@@ -135,6 +144,41 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 param.CodEmpresa,
                 SqlBuscarContratos,
                 CrearParametrosBusqueda(param));
+        }
+
+        /// <summary>
+        /// Obtiene la lista corta de contratos (código y cédula) para el diálogo de búsqueda F4.
+        /// </summary>
+        /// <param name="param">Parámetros de búsqueda (operadora y plan).</param>
+        /// <returns>ErrorDto con la lista de contratos.</returns>
+        public ErrorDto<List<FndGestionesContratosBusquedaResult>> Gestiones_Contratos_Busqueda_Obtener(
+            FndGestionesContratosBusquedaParams param)
+        {
+            if (param is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los parámetros de búsqueda son requeridos.",
+                    -2,
+                    new List<FndGestionesContratosBusquedaResult>());
+            }
+
+            if (string.IsNullOrWhiteSpace(param.CodPlan))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El plan es requerido para buscar contratos.",
+                    -2,
+                    new List<FndGestionesContratosBusquedaResult>());
+            }
+
+            return DbHelper.ExecuteListQuery<FndGestionesContratosBusquedaResult>(
+                new PortalDB(_config),
+                param.CodEmpresa,
+                SqlContratosBusqueda,
+                new
+                {
+                    param.CodOperadora,
+                    CodPlan = NormalizarTexto(param.CodPlan)
+                });
         }
 
         /// <summary>
