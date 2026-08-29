@@ -3,6 +3,7 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
+using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
@@ -10,6 +11,7 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
@@ -22,6 +24,7 @@ namespace Galileo_API.DataBaseTier
         private readonly SinpeGalileoPin _PIN;
 
         private readonly Guid OperationId;
+        private readonly MTesoreria mTesoreria;
 
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
 
@@ -30,6 +33,7 @@ namespace Galileo_API.DataBaseTier
             _PIN = new SinpeGalileoPin(config);
             OperationId = Guid.NewGuid();
             _portalDB = new PortalDB(config);
+            mTesoreria = new MTesoreria(config);
         }
 
         #region Helpers privados (para reducir duplicidad)
@@ -2276,7 +2280,7 @@ WHERE COD_REFERENCIA = @codReferencia;";
         }
 
 
-        public void UpdateErrorTransaccionSinpe(int CodEmpresa, string cod_referencia, int cod_rechazo, long nsolicitud)
+        public void UpdateErrorTransaccionSinpe(int CodEmpresa, string cod_referencia, int cod_rechazo, long nsolicitud, string usuario)
         {
             const string Query = @"UPDATE TES_TRANSACCIONES
                                 SET
@@ -2291,7 +2295,12 @@ WHERE COD_REFERENCIA = @codReferencia;";
                 CodReferencia = cod_referencia,
                 nSolicitud = nsolicitud
             };
+
+            var Motivo = fxTesConsultaMotivo(CodEmpresa, cod_rechazo).Result;
+
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+
+            mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Convert.ToInt32(nsolicitud.ToString()), "10", "Solicitud Rechazada: " + cod_rechazo + " - " + Motivo, usuario.ToUpper());
         }
 
         public void UpdateOkTransaccionSinpe(int CodEmpresa, string cod_referencia, int cod_rechazo, long nsolicitud)
