@@ -100,6 +100,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.OperacionesPorPersonaLinea_Listar(codEmpresa, cedula, linea);
         }
 
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            return _db.OperacionesPorPersona_Listar(codEmpresa, cedula);
+        }
+
         public ErrorDto<string> CambiarDeductora(int codEmpresa, int operacion, int deductora)
         {
             return _db.CambiarDeductora(codEmpresa, operacion, deductora);

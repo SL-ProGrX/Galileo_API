@@ -136,6 +136,13 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [HttpGet("OperacionesPorPersona_Listar")]
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            return _bl.OperacionesPorPersona_Listar(codEmpresa, cedula);
+        }
+
+        [Authorize]
         [HttpPost("CambiarDeductora")]
         public ErrorDto<string> CambiarDeductora(int codEmpresa, COCambiarDeductoraRequestDto request)
         {
