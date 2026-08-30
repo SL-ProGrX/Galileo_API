@@ -19,6 +19,12 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _db.Gestiones_BuscarContratos(param);
         }
 
+        public ErrorDto<List<FndGestionesContratosBusquedaResult>> Gestiones_Contratos_Busqueda_Obtener(
+            FndGestionesContratosBusquedaParams param)
+        {
+            return _db.Gestiones_Contratos_Busqueda_Obtener(param);
+        }
+
         public ErrorDto<FndGestionesContratoResult> Gestiones_Contrato_Obtener(FndGestionesContratoParams param)
         {
             return _db.Gestiones_Contrato_Obtener(param);

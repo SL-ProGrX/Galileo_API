@@ -26,6 +26,19 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.CR_ConsultaCrdSocios_Obtener(CodEmpresa);
         }
 
+        /// <summary>
+        /// Resuelve el criterio de consulta como cédula o número de operación.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="criterio">Cédula o número de operación digitado.</param>
+        /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
+        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+            int CodEmpresa,
+            string criterio)
+        {
+            return _Db.CR_ConsultaCrdCriterio_Resolver(CodEmpresa, criterio);
+        }
+
         public ErrorDto<CrConsultaCrdData> CR_ConsultaCrdConsulta_Integrada_Obtener(int CodEmpresa, string cedula, string usuario)
         {
             return _Db.CR_ConsultaCrdConsulta_Integrada_Obtener(CodEmpresa, cedula, usuario);
