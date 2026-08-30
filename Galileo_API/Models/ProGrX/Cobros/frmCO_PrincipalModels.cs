@@ -7,6 +7,8 @@
         public string cedula { get; set; } = string.Empty;
         public decimal montoapr { get; set; }
         public decimal saldo { get; set; }
+        public string proceso { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
     }
 
     public class OperacionConsultarDto
