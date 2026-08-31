@@ -131,7 +131,7 @@ namespace Galileo_API.DataBaseTier
                 }
 
                 return DbHelper.OkResponse(
-                     $"Transferencias procesadas {result.Count} Correctamente");
+                     $"Transferencias procesadas Correctamente");
             }
             catch (Exception ex)
             {

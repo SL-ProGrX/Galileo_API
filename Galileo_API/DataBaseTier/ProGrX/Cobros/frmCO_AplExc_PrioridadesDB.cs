@@ -67,7 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                var raw = conn.Query<dynamic>(SP_LISTA).AsList();
+                var raw = conn.Query<dynamic>(SP_LISTA, commandTimeout: 0).AsList();
 
                 var lista = MapRaw(raw);
                 lista = AplicarFiltro(lista, filtros.filtro);
@@ -168,7 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add("@Codigo", cod);
                 p.Add("@Usuario", usuario);
 
-                var rs = conn.QueryFirstOrDefault<dynamic>(SP_DEL, p);
+                var rs = conn.QueryFirstOrDefault<dynamic>(SP_DEL, p, commandTimeout: 0);
 
                 int pass;
                 string mensaje;
@@ -210,13 +210,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         DESCRIPCION as descripcion
                     from vCBR_Excedente_Apl_Config_Garantias_Disponibles
                     order by CODIGO;";
-                return conn.Query<DropDownListaGenericaModel>(query).ToList();
+                return conn.Query<DropDownListaGenericaModel>(query, commandTimeout: 0).ToList();
             });
         }
 
         private static bool ExisteCodigo(SqlConnection conn, string codigo)
         {
-            var raw = conn.Query<dynamic>(SP_LISTA).AsList();
+            var raw = conn.Query<dynamic>(SP_LISTA, commandTimeout: 0).AsList();
 
             for (int i = 0; i < raw.Count; i++)
             {
@@ -385,7 +385,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add("@Activo", activo);
                 p.Add("@Usuario", usuario);
 
-                var rs = conn.QueryFirstOrDefault<dynamic>(SP_ADD, p);
+                var rs = conn.QueryFirstOrDefault<dynamic>(SP_ADD, p, commandTimeout: 0);
 
                 return ProcesarRespuestaGuardar(
                     CodEmpresa,
@@ -424,7 +424,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add("@Activo", activo);
                 p.Add("@Usuario", usuario);
 
-                var rs = conn.QueryFirstOrDefault<dynamic>(SP_UPD, p);
+                var rs = conn.QueryFirstOrDefault<dynamic>(SP_UPD, p, commandTimeout: 0);
 
                 return ProcesarRespuestaGuardar(
                     CodEmpresa,

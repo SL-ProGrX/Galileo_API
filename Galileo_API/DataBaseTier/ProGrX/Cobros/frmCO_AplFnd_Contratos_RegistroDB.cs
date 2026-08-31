@@ -295,7 +295,8 @@ ORDER BY NOMBRE;";
                     {
                         texto,
                         like
-                    }).ToList();
+                    },
+                    commandTimeout: 0).ToList();
 
                 return DbHelper.CreateOkResponse(lista);
             }

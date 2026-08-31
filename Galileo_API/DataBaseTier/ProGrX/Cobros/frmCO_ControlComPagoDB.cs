@@ -124,7 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 conn.Open();
 
                 var existe = request.cod_remesa > 0
-                    ? conn.ExecuteScalar<int>("SELECT COUNT(1) FROM dbo.CBR_REMESAS WHERE cod_remesa = @cod_remesa;", new { request.cod_remesa })
+                    ? conn.ExecuteScalar<int>("SELECT COUNT(1) FROM dbo.CBR_REMESAS WHERE cod_remesa = @cod_remesa;", new { request.cod_remesa }, commandTimeout: 0)
                     : 0;
 
                 var codRemesa = existe > 0
@@ -173,13 +173,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 conn.Open();
 
-                var existeAbierta = conn.ExecuteScalar<int>(validarSql, new { cod_remesa });
+                var existeAbierta = conn.ExecuteScalar<int>(validarSql, new { cod_remesa }, commandTimeout: 0);
                 if (existeAbierta == 0)
                 {
                     return DbHelper.ErrorResponse("Solo se pueden eliminar remesas abiertas.", -2);
                 }
 
-                conn.Execute(eliminarSql, new { cod_remesa });
+                conn.Execute(eliminarSql, new { cod_remesa }, commandTimeout: 0);
                 RegistrarBitacora(CodEmpresa, usuario, $"Remesa Comisiones de Cobros: {cod_remesa}", "Elimina - WEB");
 
                 return DbHelper.OkResponse("Ok");
@@ -284,7 +284,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return conn.Query<CoControlComPagoCargaData>(
                     sql,
-                    new { inicio = InicioDia(rango.fecha_inicio), corte = FinDia(rango.fecha_corte), id_banco }).ToList();
+                    new { inicio = InicioDia(rango.fecha_inicio), corte = FinDia(rango.fecha_corte), id_banco },
+                    commandTimeout: 0).ToList();
             });
         }
 
@@ -314,7 +315,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     conn.Execute(
                         "EXEC dbo.spCbrComision_RemesaCarga @cod_remesa, @usuario;",
                         new { request.cod_remesa, usuario = usuarioCarga },
-                        commandTimeout: 600);
+                        commandTimeout: 0);
                     procesados++;
                 }
 
@@ -349,7 +350,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 conn.Open();
 
                 ValidarRemesaAbiertaOProceso(conn, cod_remesa);
-                conn.Execute("EXEC dbo.spCbrComision_RemesaCierra @cod_remesa;", new { cod_remesa }, commandTimeout: 600);
+                conn.Execute("EXEC dbo.spCbrComision_RemesaCierra @cod_remesa;", new { cod_remesa }, commandTimeout: 0);
                 RegistrarBitacora(CodEmpresa, usuario, $"Remesa de Fondos Remesa : {cod_remesa}", "Genera - WEB");
 
                 return DbHelper.OkResponse("Remesa cerrada satisfactoriamente.");
@@ -401,7 +402,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 fecha_inicio = request.fecha_inicio.Date,
                 fecha_corte = request.fecha_corte.Date,
                 notas = NormalizarNotas(request.notas)
-            });
+            }, commandTimeout: 0);
         }
 
         private static int CO_ControlComPago_Remesa_Actualizar(SqlConnection conn, CoControlComPagoRemesaGuardarRequest request, string usuario)
@@ -425,7 +426,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 fecha_inicio = request.fecha_inicio.Date,
                 fecha_corte = request.fecha_corte.Date,
                 notas = NormalizarNotas(request.notas)
-            });
+            }, commandTimeout: 0);
 
             if (rows == 0)
             {
@@ -462,7 +463,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 FROM dbo.CBR_REMESAS
                 WHERE cod_remesa = @codRemesa;";
 
-            return conn.QueryFirstOrDefault<CoControlComPagoRemesaData>(sql, new { codRemesa })
+            return conn.QueryFirstOrDefault<CoControlComPagoRemesaData>(sql, new { codRemesa }, commandTimeout: 0)
                 ?? throw new InvalidOperationException("No se encontro la remesa seleccionada.");
         }
 
@@ -474,7 +475,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 WHERE cod_remesa = @codRemesa
                     AND estado IN ('A','P');";
 
-            var existe = conn.ExecuteScalar<int>(sql, new { codRemesa });
+            var existe = conn.ExecuteScalar<int>(sql, new { codRemesa }, commandTimeout: 0);
             if (existe == 0)
             {
                 throw new InvalidOperationException("La remesa actual ya se encuentra cerrada.");

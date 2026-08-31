@@ -53,7 +53,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     ORDER BY Descripcion;
                     """;
 
-                using var reader = connection.QueryMultiple(sql);
+                using var reader = connection.QueryMultiple(sql, commandTimeout: 0);
                 return new CcPolizaBeneficiariosCatalogosDto
                 {
                     polizas = reader.Read<CcPolizaBeneficiariosListaDto>().ToList(),
@@ -91,7 +91,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Cedula = cedula.Trim(),
                         Poliza = codPoliza.Trim()
                     },
-                    commandType: CommandType.StoredProcedure).ToList());
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList());
         }
 
         /// <summary>
@@ -118,7 +119,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 var persona = connection.QueryFirstOrDefault<CcPolizaBeneficiariosPadronDto>(
                     "spSYS_Consulta_Padron",
                     new { Identificacion = identificacion.Trim(), Pais = "CRI" },
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return DbHelper.CreateOkResponse<CcPolizaBeneficiariosPadronDto?>(persona);
             }
@@ -171,7 +173,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                             Usuario = usuario.Trim()
                         },
                         transaction,
-                        commandType: CommandType.StoredProcedure);
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0);
                 }
 
                 transaction.Commit();

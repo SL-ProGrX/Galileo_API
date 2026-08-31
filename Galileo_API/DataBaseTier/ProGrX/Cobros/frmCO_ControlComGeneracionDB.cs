@@ -31,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 connection.Execute(
                     sql: "exec spCbrComision_Actualiza",
-                    commandTimeout: 600
+                    commandTimeout: 0
                 );
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto

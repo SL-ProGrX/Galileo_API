@@ -43,7 +43,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var rows = conn.Query(
                     "dbo.spCBR_Instituciones_Planilla_Lista",
                     parameters,
-                    commandType: CommandType.StoredProcedure
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0
                 );
                 static string ToTrimString(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
 

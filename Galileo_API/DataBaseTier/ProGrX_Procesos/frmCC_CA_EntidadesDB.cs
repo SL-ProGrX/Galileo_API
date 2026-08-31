@@ -42,7 +42,7 @@ namespace Galileo.DataBaseTier
             {
                 var salida = new CaEntidadLista
                 {
-                    total = connection.QueryFirstOrDefault<int>("select COUNT(1) from prm_ca_Entidad"),
+                    total = connection.QueryFirstOrDefault<int>("select COUNT(1) from prm_ca_Entidad", commandTimeout: 0),
                     lista = new List<CaEntidadData>()
                 };
 
@@ -89,7 +89,8 @@ namespace Galileo.DataBaseTier
                         SortDirection = sortDirection,
                         OffsetRows = offsetRows,
                         FetchRows = fetchRows
-                    }).ToList();
+                    },
+                    commandTimeout: 0).ToList();
 
                 FormatearCuentasEntidad(CodEmpresa, salida.lista);
                 return salida;
@@ -118,7 +119,8 @@ namespace Galileo.DataBaseTier
             {
                 var existe = connection.QueryFirstOrDefault<int>(
                     "select isnull(count(*),0) as Existe from prm_ca_Entidad where cod_entidad = @cod_entidad",
-                    new { request.cod_entidad });
+                    new { request.cod_entidad },
+                    commandTimeout: 0);
 
                 if (request.isNew)
                 {
@@ -163,7 +165,8 @@ namespace Galileo.DataBaseTier
                     datos.cod_cuenta,
                     datos.activo,
                     usuario
-                });
+                },
+                commandTimeout: 0);
 
             RegistrarBitacora(CodEmpresa, usuario, $"Cargos Automáticos - Entidad: {datos.cod_entidad}", "Modifica - WEB");
             return DbHelper.OkResponse("Ok");
@@ -190,7 +193,8 @@ namespace Galileo.DataBaseTier
                     datos.cod_cuenta,
                     datos.activo,
                     usuario
-                });
+                },
+                commandTimeout: 0);
 
             RegistrarBitacora(CodEmpresa, usuario, $"Cargos Automáticos - Entidad: {datos.cod_entidad}", "Registra - WEB");
             return DbHelper.OkResponse("Ok");

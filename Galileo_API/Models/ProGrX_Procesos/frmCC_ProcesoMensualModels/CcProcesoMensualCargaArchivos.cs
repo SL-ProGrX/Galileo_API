@@ -11,6 +11,8 @@
             public int Pago { get; set; } = 0;
             public string Usuario { get; set; } = string.Empty;
             public string TipoCarga { get; set; } = string.Empty;
+            public string NombreArchivo { get; set; } = string.Empty;
+            public string ArchivoBase64 { get; set; } = string.Empty;
        
             public List<CcProcesoMensualCargaDeduccionFilaRequest> Filas { get; set; } = [];
         }

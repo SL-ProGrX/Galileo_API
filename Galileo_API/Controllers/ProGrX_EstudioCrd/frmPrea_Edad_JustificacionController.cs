@@ -15,7 +15,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
 
         public FrmPreaEdadJustificacionController(IConfiguration config)
         {
-            _bl = new FrmPreaEdadJustificacionBL(config);
+            _bl = new FrmPreaEdadJustificacionBL(config); 
         }
 
         [HttpPost("Prea_frmPreaEdadJustificacion_Cargar")]

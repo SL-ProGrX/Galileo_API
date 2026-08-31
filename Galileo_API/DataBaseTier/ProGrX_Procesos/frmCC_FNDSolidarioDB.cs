@@ -9,7 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 {
     public sealed class FrmCcFndSolidarioDB
     {
-        private const int TiempoEsperaSegundos = 5000;
+        private const int TiempoEsperaSegundos = 0;
 
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
@@ -134,7 +134,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
                     return connection
                         .Query<DropDownListaGenericaModel>(
-                            sql)
+                            sql,
+                            commandTimeout: TiempoEsperaSegundos)
                         .ToList();
                 });
         }
