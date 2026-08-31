@@ -15,7 +15,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
     public class FrmCcProcesoMensualController : ControllerBase
     {
-        private const int MaxCargaDeduccionesBytes = 100_000_000;
+        private const int MaxCargaDeduccionesBytes = 30_000_000;
 
         private readonly CcProcesoMensualBL _bl;
 
