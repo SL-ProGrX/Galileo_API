@@ -9,6 +9,15 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaArchivos
 {
+    public sealed class CcProcesoMensualCargaDeduccionesProgreso
+    {
+        public string Mensaje { get; init; } = string.Empty;
+        public int? Total { get; init; }
+        public int? Procesadas { get; init; }
+        public int? Exitosas { get; init; }
+        public int? Errores { get; init; }
+    }
+
     public class CcProcesoMensualCargaArchivosDb
     {
         private readonly PortalDB _portalDb;
@@ -35,9 +44,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         /// <param name="request">Solicitud con los datos de carga.</param>
         /// <param name="reglas">Reglas de transformación y filtrado para la carga.</param>
         /// <returns>Resultado de la operación de carga.</returns>
-        public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CargarDeduccionesGenerico(CcProcesoMensualCargaDeduccionesRequest request, IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> reglas)
+        public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CargarDeduccionesGenerico(
+            CcProcesoMensualCargaDeduccionesRequest request,
+            IReadOnlyCollection<CcProcesoMensualReglaDeduccionConfig> reglas,
+            Action<CcProcesoMensualCargaDeduccionesProgreso>? reportarProgreso = null)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, request.CodEmpresa);
+
+            ReportarProgreso(
+                reportarProgreso,
+                "Ejecutando validación previa de la carga de deducciones...",
+                total: request.Filas.Count,
+                procesadas: 0,
+                exitosas: 0,
+                errores: 0);
 
             _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "03", "PRE", request.Usuario, request.CodInstitucion, request.FechaProceso);
             connection.Open();
@@ -47,8 +67,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             {
               
 
+                ReportarProgreso(reportarProgreso, "Obteniendo configuración de la institución...");
                 var configuracion = ObtenerConfiguracionCarga(connection, transaction, request.CodInstitucion);
 
+                ReportarProgreso(reportarProgreso, "Eliminando carga anterior...");
                 EliminarCargaAnterior(connection, transaction, request);
                 var tiposArchivoPlano = new HashSet<string>
                     {
@@ -59,6 +81,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                         "33"
                     };
 
+                ReportarProgreso(reportarProgreso, "Transformando filas del archivo...");
                 var registros = request.TipoCarga switch
                 {
                     "30" =>
@@ -84,11 +107,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                        CrearRegistrosPrmCargadoDesdeFilasProcesadas(request),
                 };
 
-                InsertarRegistrosPrmCargado(connection, transaction, registros);
+                ReportarProgreso(
+                    reportarProgreso,
+                    $"Insertando {registros.Count} registros en prm_cargado...",
+                    total: registros.Count,
+                    procesadas: 0,
+                    exitosas: 0,
+                    errores: 0);
+
+                InsertarRegistrosPrmCargado(
+                    connection,
+                    transaction,
+                    registros,
+                    insertados => ReportarProgreso(
+                        reportarProgreso,
+                        $"Insertando registros en prm_cargado...",
+                        total: registros.Count,
+                        procesadas: insertados,
+                        exitosas: insertados,
+                        errores: 0));
+
+                ReportarProgreso(reportarProgreso, "Guardando archivo de recepción...");
                 GuardarArchivoRecepcion(connection, transaction, request);
 
+                ReportarProgreso(reportarProgreso, "Revisando cédulas cargadas...");
                 RevisarCedulasCargadas(connection, transaction, request);
 
+                ReportarProgreso(reportarProgreso, "Registrando bitácora de la carga...");
                 MProcesoMensualDb.SbBitacoraPlanilla(connection,
                                                     new CcProcesoMensualBitacoraPlanillaDto
                                                     {
@@ -110,12 +155,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                     Modulo = vModulo
                 });
 
+                ReportarProgreso(reportarProgreso, "Marcando institución como cargada...");
                 MarcarInstitucionCargaRealizada(connection, transaction, request.CodInstitucion);
-              
+               
 
+                ReportarProgreso(reportarProgreso, "Confirmando cambios de la carga...");
                 transaction.Commit();
 
+                ReportarProgreso(reportarProgreso, "Ejecutando validación posterior de la carga...");
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "03", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
+                ReportarProgreso(reportarProgreso, "Consultando casos no localizados...");
                 var existenNoEncontrados = ObtenerPersonasNoEncontradas(  connection, request.CodInstitucion, request.FechaProceso);
                 
                 return DbHelper.CreateOkResponse(
@@ -536,10 +585,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         /// <param name="connection">Conexión activa a base de datos.</param>
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="registros">Registros a insertar.</param>
-        private static void InsertarRegistrosPrmCargado(IDbConnection connection, IDbTransaction transaction, List<CcProcesoMensualPrmCargadoDbModel> registros)
+        private static void InsertarRegistrosPrmCargado(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            List<CcProcesoMensualPrmCargadoDbModel> registros,
+            Action<int>? reportarInsertados = null)
         {
             if (registros.Count == 0)
             {
+                reportarInsertados?.Invoke(0);
                 return;
             }
 
@@ -565,13 +619,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
                         @Up,
                         @Ut)";
 
+            var insertados = 0;
             foreach (var lote in registros.Chunk(500))
             {
                 connection.Execute(
                     query,
                     lote,
                     transaction: transaction);
+
+                insertados += lote.Length;
+                reportarInsertados?.Invoke(insertados);
             }
+        }
+
+        private static void ReportarProgreso(
+            Action<CcProcesoMensualCargaDeduccionesProgreso>? reportarProgreso,
+            string mensaje,
+            int? total = null,
+            int? procesadas = null,
+            int? exitosas = null,
+            int? errores = null)
+        {
+            reportarProgreso?.Invoke(new CcProcesoMensualCargaDeduccionesProgreso
+            {
+                Mensaje = mensaje,
+                Total = total,
+                Procesadas = procesadas,
+                Exitosas = exitosas,
+                Errores = errores
+            });
         }
 
         /// <summary>
