@@ -23,8 +23,8 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
     /// </summary>
     public sealed class CcProcesoMensualProcesoIniciarRequest
     {
-        public int CodInstitucion { get; set; }
-        public decimal FechaProceso { get; set; }
+        public int CodInstitucion { get; set; } = 0;
+        public decimal FechaProceso { get; set; } = 0;
         public string TipoProceso { get; set; } = string.Empty; // '02' o '03'
         public string ContextoJson { get; set; } = string.Empty;
     }
