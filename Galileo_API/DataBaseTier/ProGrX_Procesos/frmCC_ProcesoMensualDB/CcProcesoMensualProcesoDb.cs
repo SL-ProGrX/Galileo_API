@@ -11,7 +11,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 {
     /// <summary>
     /// Gestión del estado del proceso resiliente para proceso mensual.
-    /// Maneja la tabla CC_PROCESO_MENSUAL_PROCESO y sus operaciones CRUD.
+    /// Maneja la tabla PRM_PROCESO_MENSUAL_PROCESO y sus operaciones CRUD.
     /// </summary>
     public sealed class CcProcesoMensualProcesoDb
     {
@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             var hash = CalcularHash(codEmpresa, request.CodInstitucion, request.FechaProceso, request.TipoProceso, propietario);
 
             var resultado = connection.QueryFirstOrDefault<CcProcesoMensualProcesoResultado>(
-                "spCC_ProcesoMensual_Proceso_Iniciar",
+                "spPRM_ProcesoMensual_Proceso_Iniciar",
                 new
                 {
                     CodEmpresa = codEmpresa,
@@ -78,7 +78,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             var resultado = connection.QueryFirstOrDefault<CcProcesoMensualProcesoResultado>(
-                "spCC_ProcesoMensual_Proceso_Estado",
+                "spPRM_ProcesoMensual_Proceso_Estado",
                 new { ProcesoId = procesoId, Propietario = propietario },
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0);
@@ -101,7 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             return connection.QueryFirstOrDefault<CcProcesoMensualProcesoResultado>(
-                "spCC_ProcesoMensual_Proceso_Adquirir",
+                "spPRM_ProcesoMensual_Proceso_Adquirir",
                 new { ProcesoId = procesoId },
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0);
@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             connection.Execute(
-                "spCC_ProcesoMensual_Proceso_Avance",
+                "spPRM_ProcesoMensual_Proceso_Avance",
                 new
                 {
                     ProcesoId = procesoId,
@@ -142,7 +142,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             connection.Execute(
-                "spCC_ProcesoMensual_Proceso_Finalizar",
+                "spPRM_ProcesoMensual_Proceso_Finalizar",
                 new { ProcesoId = procesoId, Mensaje = mensaje },
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0);
@@ -157,7 +157,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             connection.Execute(
-                "spCC_ProcesoMensual_Proceso_Error",
+                "spPRM_ProcesoMensual_Proceso_Error",
                 new { ProcesoId = procesoId, Mensaje = mensaje },
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0);
@@ -173,7 +173,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             connection.Execute(
-                "spCC_ProcesoMensual_Proceso_ErrorRegistro",
+                "spPRM_ProcesoMensual_Proceso_ErrorRegistro",
                 new
                 {
                     ProcesoId = procesoId,
@@ -194,7 +194,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             return connection.Query<CcProcesoMensualProcesoError>(
-                "spCC_ProcesoMensual_Proceso_Errores",
+                "spPRM_ProcesoMensual_Proceso_Errores",
                 new { ProcesoId = procesoId },
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0).ToList();
@@ -209,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             return connection.QueryFirstOrDefault<string>(
-                "SELECT ContextoJson FROM CC_PROCESO_MENSUAL_PROCESO WHERE ProcesoId = @ProcesoId",
+                "SELECT ContextoJson FROM PRM_PROCESO_MENSUAL_PROCESO WHERE ProcesoId = @ProcesoId",
                 new { ProcesoId = procesoId },
                 commandTimeout: 0);
         }
@@ -223,7 +223,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             connection.Open();
 
             return connection.Execute(
-                "spCC_ProcesoMensual_Proceso_Recuperar",
+                "spPRM_ProcesoMensual_Proceso_Recuperar",
                 commandType: CommandType.StoredProcedure,
                 commandTimeout: 0);
         }
