@@ -29,8 +29,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
         public FrmSifGlobalesDB(IConfiguration config)
         {
+            const string nombreArchivoPredeterminado = "Global.ini";
+            if (Path.IsPathRooted(nombreArchivoPredeterminado))
+                throw new InvalidOperationException("El nombre predeterminado de Global.ini no es válido.");
+
+            var rutaPredeterminada = Path.Combine(
+                AppContext.BaseDirectory,
+                nombreArchivoPredeterminado);
             _rutaArchivo = config["SIF_Globales:RutaArchivo"]
-                ?? Path.Combine(AppContext.BaseDirectory, "Global.ini");
+                ?? rutaPredeterminada;
             _securityMainDb = new MSecurityMainDb(config);
         }
 
@@ -48,7 +55,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     }).ToList());
                 }
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<SifVariableGlobalDto>>(
+                    $"No fue posible leer las variables globales. {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<SifVariableGlobalDto>>(
+                    $"No fue posible leer las variables globales. {ex.Message}");
+            }
+            catch (System.Security.SecurityException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<SifVariableGlobalDto>>(
+                    $"No fue posible leer las variables globales. {ex.Message}");
+            }
+            catch (CryptographicException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<SifVariableGlobalDto>>(
+                    $"No fue posible leer las variables globales. {ex.Message}");
+            }
+            catch (FormatException ex)
             {
                 return DbHelper.CreateErrorResponse<List<SifVariableGlobalDto>>(
                     $"No fue posible leer las variables globales. {ex.Message}");
@@ -97,7 +124,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 return DbHelper.OkResponse("Variable global actualizada correctamente.");
             }
-            catch (Exception ex)
+            catch (FileNotFoundException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (IOException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (CryptographicException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (FormatException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (ArgumentException ex)
+            {
+                return DbHelper.ErrorResponse(
+                    $"No fue posible guardar la variable global. {ex.Message}");
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.ErrorResponse(
                     $"No fue posible guardar la variable global. {ex.Message}");
@@ -147,7 +204,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return $"{variable.PadRight(30)}={valor}";
             });
 
-            var temporal = Path.Combine(directorio, $"Global.{Guid.NewGuid():N}.tmp");
+            var nombreTemporal = Path.ChangeExtension(Path.GetRandomFileName(), ".tmp");
+            if (Path.IsPathRooted(nombreTemporal))
+                throw new InvalidOperationException("El nombre temporal generado no es válido.");
+
+            var temporal = Path.Combine(directorio, nombreTemporal);
             try
             {
                 File.WriteAllLines(temporal, lineas, Encoding.Latin1);
